@@ -244,9 +244,6 @@ void Inflator::ProcessInput(bool flush)
 {
 	while (true)
 	{
-		if (m_inQueue.IsEmpty())
-			return;
-
 		switch (m_state)
 		{
 		case PRE_STREAM:
@@ -278,6 +275,8 @@ void Inflator::ProcessInput(bool flush)
 			ProcessPoststreamTail();
 			m_state = m_repeat ? PRE_STREAM : AFTER_END;
 			Filter::MessageEnd(GetAutoSignalPropagation());
+			if (m_inQueue.IsEmpty())
+				return;
 			break;
 		case AFTER_END:
 			m_inQueue.TransferTo(*AttachedTransformation());
