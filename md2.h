@@ -21,8 +21,8 @@ public:
 private:
 	void Transform();
 	void Init();
-	SecByteBlock buf;
-	unsigned int len;
+	SecByteBlock m_X, m_C, m_buf;
+	unsigned int m_count;
 };
 
 NAMESPACE_END
