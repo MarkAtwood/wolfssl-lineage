@@ -72,10 +72,11 @@ void HMAC<T>::Update(const byte *input, unsigned int length)
 template <class T>
 void HMAC<T>::TruncatedFinal(byte *mac, unsigned int size)
 {
-	hash.Final(mac);
+	SecByteBlock innerHash(DIGESTSIZE);
+	hash.Final(innerHash);
 
 	hash.Update(k_opad, T::BLOCKSIZE);
-	hash.Update(mac, DIGESTSIZE);
+	hash.Update(innerHash, DIGESTSIZE);
 	hash.TruncatedFinal(mac, size);
 	Init();
 }
