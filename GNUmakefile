@@ -1,8 +1,9 @@
-# can't use -fno-rtti yet because it causes problems with exception handling in GCC 2.95.2
+# can't use -fno-rtti yet because it causes problems with exception
+# handling in GCC 2.95.2
 CXXFLAGS = -g
-# uncomment the next line to do a release build
+# uncomment the next two lines to do a release build
 # CXXFLAGS = -O2 -DNDEBUG -ffunction-sections -fdata-sections
-LDFLAGS = -Wl,--gc-sections
+# LDFLAGS = -Wl,--gc-sections
 ARFLAGS = -cr	# ar needs the dash on OpenBSD
 RANLIB = ranlib
 UNAME = $(shell uname)
@@ -23,7 +24,7 @@ endif
 
 SRCS = $(wildcard *.cpp)
 
-ifeq ($(SRCS),)				# workaround wildcard function bug in GNU Make 3.77
+ifeq ($(SRCS),)		# workaround wildcard function bug in GNU Make 3.77
 SRCS = $(shell ls *.cpp)
 endif
 
