@@ -15,6 +15,8 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+template class AbstractGroup<Integer>; 	// for MacOS X
+
 #define MAKE_DWORD(lowWord, highWord) ((dword(highWord)<<WORD_BITS) | (lowWord))
 
 // Add() and Subtract() are coded in Pentium assembly for a speed increase
