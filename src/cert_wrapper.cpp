@@ -26,7 +26,13 @@
 
 
 #include "cert_wrapper.hpp"
-#include "cmapi_cpp.h"
+
+#if defined(USE_CML_LIB)
+    #include "cmapi_cpp.h"
+#else
+    #include "asn.hpp"
+    #include "file.hpp"
+#endif // USE_CML_LIB
 
 
 x509::x509(const x509& that) : length_(that.length_),
@@ -51,6 +57,8 @@ x509& x509::operator=(const x509& that)
 }
 
 
+#if defined(USE_CML_LIB)
+
 // Get the peer's certificate, extract and save public key
 void CertManager::SetKey()
 {
@@ -71,6 +79,22 @@ void CertManager::SetKey()
     publicKey_.assign(key_buffer, sz);
 }
 
+#else // USE_CML_LIB
+
+// Get the peer's certificate, extract and save public key
+void CertManager::SetKey()
+{
+    // first cert is the peer's
+    x509* main = list_.front();
+    TaoCrypt::Sink sink(main->get_buffer(), main->get_length());
+    TaoCrypt::CertDecoder cert(sink);
+
+    size_t sz = cert.GetPublicKey().size();
+    publicKey_.allocate(sz);
+    publicKey_.assign(cert.GetPublicKey().GetKey(), sz);
+}
+
+#endif // USE_CML_LIB
 
 // Validate the peer's certificate list
 bool CertManager::Validate() const

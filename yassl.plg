@@ -3,27 +3,43 @@
 <pre>
 <h1>Build Log</h1>
 <h3>
---------------------Configuration: yassl - Win32 Debug--------------------
+--------------------Configuration: yassl - Win32 Release--------------------
 </h3>
 <h3>Command Lines</h3>
-Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSP2.tmp" with contents
+Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSPCC8.tmp" with contents
 [
-/nologo /MLd /W3 /Gm /GX /ZI /Od /I ".\include" /I ".\cryptopp51" /I ".\SMPDist\include\smp" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /FR"Debug/" /Fp"Debug/yassl.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
-"C:\src\yassl\src\cert_wrapper.cpp"
-"C:\src\yassl\src\crypto_wrapper.cpp"
-"C:\src\yassl\src\factory.cpp"
-"C:\src\yassl\src\handshake.cpp"
-"C:\src\yassl\src\socket_wrapper.cpp"
-"C:\src\yassl\src\ssl.cpp"
-"C:\src\yassl\src\yassl_imp.cpp"
-"C:\src\yassl\src\yassl_int.cpp"
+/nologo /ML /W3 /GX /O2 /I "include" /I "taocrypt\include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /Fp"Release/yassl.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c 
+"F:\yassl\src\cert_wrapper.cpp"
+"F:\yassl\src\crypto_wrapper.cpp"
+"F:\yassl\src\crypto_wrapper2.cpp"
+"F:\yassl\src\factory.cpp"
+"F:\yassl\src\handshake.cpp"
+"F:\yassl\src\socket_wrapper.cpp"
+"F:\yassl\src\ssl.cpp"
+"F:\yassl\src\yassl_imp.cpp"
+"F:\yassl\src\yassl_int.cpp"
 ]
-Creating command line "cl.exe @C:\DOCUME~1\tao\LOCALS~1\Temp\RSP2.tmp" 
-Creating command line "link.exe -lib /nologo /out:"Debug\yassl.lib"  .\Debug\cert_wrapper.obj .\Debug\crypto_wrapper.obj .\Debug\factory.obj .\Debug\handshake.obj .\Debug\socket_wrapper.obj .\Debug\ssl.obj .\Debug\yassl_imp.obj .\Debug\yassl_int.obj "
+Creating command line "cl.exe @C:\DOCUME~1\tao\LOCALS~1\Temp\RSPCC8.tmp" 
+Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSPCC9.tmp" with contents
+[
+/nologo /out:"Release\yassl.lib" 
+.\Release\cert_wrapper.obj
+.\Release\crypto_wrapper.obj
+.\Release\crypto_wrapper2.obj
+.\Release\factory.obj
+.\Release\handshake.obj
+.\Release\socket_wrapper.obj
+.\Release\ssl.obj
+.\Release\yassl_imp.obj
+.\Release\yassl_int.obj
+.\taocrypt\Release\taocrypt.lib
+]
+Creating command line "link.exe -lib @C:\DOCUME~1\tao\LOCALS~1\Temp\RSPCC9.tmp"
 <h3>Output Window</h3>
 Compiling...
 cert_wrapper.cpp
 crypto_wrapper.cpp
+crypto_wrapper2.cpp
 factory.cpp
 handshake.cpp
 socket_wrapper.cpp
@@ -31,9 +47,6 @@ ssl.cpp
 yassl_imp.cpp
 yassl_int.cpp
 Creating library...
-Creating command line "bscmake.exe /nologo /o"Debug/yassl.bsc"  .\Debug\cert_wrapper.sbr .\Debug\crypto_wrapper.sbr .\Debug\factory.sbr .\Debug\handshake.sbr .\Debug\socket_wrapper.sbr .\Debug\ssl.sbr .\Debug\yassl_imp.sbr .\Debug\yassl_int.sbr"
-Creating browse info file...
-<h3>Output Window</h3>
 
 
 

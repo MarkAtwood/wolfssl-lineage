@@ -262,12 +262,12 @@ struct ServerRSAParams {
 
 // Ephemeral Diffie-Hellman Parameters
 class ServerDHParams {
-    opaque* p_;
-    opaque* g_;
-    opaque* Ys_;
     int pSz_;
     int gSz_;
     int pubSz_;
+    opaque* p_;
+    opaque* g_;
+    opaque* Ys_;
 public:
     ServerDHParams() : pSz_(0), gSz_(0), pubSz_(0), p_(0), g_(0), Ys_(0) {}
     ~ServerDHParams() { delete[] Ys_; delete[] g_; delete[] p_; }

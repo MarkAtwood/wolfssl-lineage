@@ -3,7 +3,7 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
-Project: "client"=.\client.dsp - Package Owner=<4>
+Project: "client"=.\examples\client\client.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -18,7 +18,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "server"=.\server.dsp - Package Owner=<4>
+Project: "server"=.\examples\server\server.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -29,6 +29,18 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name yassl
     End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "taocrypt"=.\taocrypt\taocrypt.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
 }}}
 
 ###############################################################################
@@ -41,6 +53,9 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name taocrypt
+    End Project Dependency
 }}}
 
 ###############################################################################

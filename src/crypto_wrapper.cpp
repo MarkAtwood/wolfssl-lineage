@@ -22,34 +22,32 @@
 /*  The crypto wrapper source implements the policies for the cipher
  *  components used by SSL.
  *
- *  The implementation relies on a specfic library, the default is CryptoPP.
+ *  The implementation relies on a specfic library, taoCrypt.
  */
 
+#if !defined(USE_CRYPTOPP_LIB)
 
 #include "crypto_wrapper.hpp"
 
-#include "md5.h"
-#include "sha.h"
-#include "hmac.h"
-#include "modes.h"
-#include "des.h"
-#include "arc4.h"
-#include "rsa.h"
-#include "dsa.h"
-#include "dh.h"
-#include "osrng.h"
-#include "hex.h"
-#include "files.h"
-#include "base64.h"
+#include "md5.hpp"
+#include "sha.hpp"
+#include "hmac.hpp"
+#include "modes.hpp"
+#include "des.hpp"
+#include "arc4.hpp"
+#include "rsa.hpp"
+#include "dh.hpp"
+#include "random.hpp"
+#include "file.hpp"
 
 
 
 
 // MD5 Implementation
 struct MD5::MD5Impl {
-    CryptoPP::MD5 md5_;
+    TaoCrypt::MD5 md5_;
     MD5Impl() {}
-    explicit MD5Impl(const CryptoPP::MD5& md5) : md5_(md5) {}
+    explicit MD5Impl(const TaoCrypt::MD5& md5) : md5_(md5) {}
 };
 
 
@@ -88,9 +86,9 @@ void MD5::update(const byte* in, unsigned int sz)
 
 // SHA Implementation
 struct SHA::SHAImpl {
-    CryptoPP::SHA sha_;
+    TaoCrypt::SHA sha_;
     SHAImpl() {}
-    explicit SHAImpl(const CryptoPP::SHA& sha) : sha_(sha) {}
+    explicit SHAImpl(const TaoCrypt::SHA& sha) : sha_(sha) {}
 };
 
 
@@ -131,9 +129,9 @@ void SHA::update(const byte* in, unsigned int sz)
 
 // HMAC_MD5 Implementation
 struct HMAC_MD5::HMAC_MD5Impl {
-    CryptoPP::HMAC<CryptoPP::MD5> mac_;
+    TaoCrypt::HMAC<TaoCrypt::MD5> mac_;
     HMAC_MD5Impl() {}
-    explicit HMAC_MD5Impl(const CryptoPP::HMAC<CryptoPP::MD5>& md5) 
+    explicit HMAC_MD5Impl(const TaoCrypt::HMAC<TaoCrypt::MD5>& md5) 
         : mac_(md5) {}
 };
 
@@ -178,9 +176,9 @@ void HMAC_MD5::update(const byte* in, unsigned int sz)
 
 // HMAC_SHA Implementation
 struct HMAC_SHA::HMAC_SHAImpl {
-    CryptoPP::HMAC<CryptoPP::SHA> mac_;
+    TaoCrypt::HMAC<TaoCrypt::SHA> mac_;
     HMAC_SHAImpl() {}
-    explicit HMAC_SHAImpl(const CryptoPP::HMAC<CryptoPP::SHA>& sha) 
+    explicit HMAC_SHAImpl(const TaoCrypt::HMAC<TaoCrypt::SHA>& sha) 
         : mac_(sha) {}
 };
 
@@ -224,8 +222,8 @@ void HMAC_SHA::update(const byte* in, unsigned int sz)
 
 
 struct DES::DESImpl {
-    CryptoPP::CBC_Mode<CryptoPP::DES>::Encryption encryption;
-    CryptoPP::CBC_Mode<CryptoPP::DES>::Decryption decryption;
+    TaoCrypt::DES_CBC_Encryption encryption;
+    TaoCrypt::DES_CBC_Decryption decryption;
 };
 
 
@@ -236,32 +234,32 @@ DES::~DES() { delete pimpl_; }
 
 void DES::set_encryptKey(const byte* k, const byte* iv)
 {
-    pimpl_->encryption.SetKeyWithIV(k, DES_KEY_SZ, iv);
+    pimpl_->encryption.SetKey(k, DES_KEY_SZ, iv);
 }
 
 
 void DES::set_decryptKey(const byte* k, const byte* iv)
 {
-    pimpl_->decryption.SetKeyWithIV(k, DES_KEY_SZ, iv);
+    pimpl_->decryption.SetKey(k, DES_KEY_SZ, iv);
 }
 
 // DES encrypt plain of length sz into cipher
 void DES::encrypt(byte* cipher, const byte* plain, unsigned int sz)
 {
-    pimpl_->encryption.ProcessString(cipher, plain, sz);
+    pimpl_->encryption.Process(cipher, plain, sz);
 }
 
 
 // DES decrypt cipher of length sz into plain
 void DES::decrypt(byte* plain, const byte* cipher, unsigned int sz)
 {
-    pimpl_->decryption.ProcessString(plain, cipher, sz);
+    pimpl_->decryption.Process(plain, cipher, sz);
 }
 
 
 struct DES_EDE::DES_EDEImpl {
-    CryptoPP::CBC_Mode<CryptoPP::DES_EDE3>::Encryption encryption;
-    CryptoPP::CBC_Mode<CryptoPP::DES_EDE3>::Decryption decryption;
+    TaoCrypt::DES_EDE3_CBC_Encryption encryption;
+    TaoCrypt::DES_EDE3_CBC_Decryption decryption;
 };
 
 
@@ -272,34 +270,34 @@ DES_EDE::~DES_EDE() { delete pimpl_; }
 
 void DES_EDE::set_encryptKey(const byte* k, const byte* iv)
 {
-    pimpl_->encryption.SetKeyWithIV(k, DES_EDE_KEY_SZ, iv);
+    pimpl_->encryption.SetKey(k, DES_EDE_KEY_SZ, iv);
 }
 
 
 void DES_EDE::set_decryptKey(const byte* k, const byte* iv)
 {
-    pimpl_->decryption.SetKeyWithIV(k, DES_EDE_KEY_SZ, iv);
+    pimpl_->decryption.SetKey(k, DES_EDE_KEY_SZ, iv);
 }
 
 
 // 3DES encrypt plain of length sz into cipher
 void DES_EDE::encrypt(byte* cipher, const byte* plain, unsigned int sz)
 {
-    pimpl_->encryption.ProcessString(cipher, plain, sz);
+    pimpl_->encryption.Process(cipher, plain, sz);
 }
 
 
 // 3DES decrypt cipher of length sz into plain
 void DES_EDE::decrypt(byte* plain, const byte* cipher, unsigned int sz)
 {
-    pimpl_->decryption.ProcessString(plain, cipher, sz);
+    pimpl_->decryption.Process(plain, cipher, sz);
 }
 
 
 // Implementation of alledged RC4
 struct RC4::RC4Impl {
-    CryptoPP::ARC4::Encryption encryption;
-    CryptoPP::ARC4::Decryption decryption;
+    TaoCrypt::ARC4::Encryption encryption;
+    TaoCrypt::ARC4::Decryption decryption;
 };
 
 
@@ -323,19 +321,19 @@ void RC4::set_decryptKey(const byte* k, const byte* iv)
 // RC4 encrypt plain of length sz into cipher
 void RC4::encrypt(byte* cipher, const byte* plain, unsigned int sz)
 {
-    pimpl_->encryption.ProcessString(cipher, plain, sz);
+    pimpl_->encryption.Process(cipher, plain, sz);
 }
 
 
 // RC4 decrypt cipher of length sz into plain
 void RC4::decrypt(byte* plain, const byte* cipher, unsigned int sz)
 {
-    pimpl_->decryption.ProcessString(plain, cipher, sz);
+    pimpl_->decryption.Process(plain, cipher, sz);
 }
 
 
 struct RandomPool::RandomImpl {
-    CryptoPP::AutoSeededRandomPool RNG_;
+    TaoCrypt::RandomNumberGenerator RNG_;
 };
 
 RandomPool::RandomPool() : pimpl_(new RandomImpl) {}
@@ -348,19 +346,20 @@ void RandomPool::Fill(opaque* dst, size_t sz) const
 }
 
 
+/*
 // Implementation of DSS Authentication
 struct DSS::DSSImpl {
     void SetPublic (const byte*, unsigned int);
     void SetPrivate(const byte*, unsigned int);
-    CryptoPP::DSA::PublicKey publicKey_;
-    CryptoPP::DSA::PrivateKey privateKey_;
+    TaoCrypt::DSA::PublicKey publicKey_;
+    TaoCrypt::DSA::PrivateKey privateKey_;
 };
 
 
 // Decode and store the public key
 void DSS::DSSImpl::SetPublic(const byte* key, unsigned int sz)
 {
-    CryptoPP::StringSource public_str(key, sz, true);
+    TaoCrypt::StringSource public_str(key, sz, true);
     publicKey_.BERDecodeKey(public_str);
 }
 
@@ -368,10 +367,10 @@ void DSS::DSSImpl::SetPublic(const byte* key, unsigned int sz)
 // Decode and store the public key
 void DSS::DSSImpl::SetPrivate(const byte* key, unsigned int sz)
 {
-    CryptoPP::StringSource private_str(key, sz, true);
+    TaoCrypt::StringSource private_str(key, sz, true);
     privateKey_.BERDecodeKey(private_str);
-    CryptoPP::DSA::Signer   priv(privateKey_);
-    CryptoPP::DSA::Verifier pub(priv);
+    TaoCrypt::DSA::Signer   priv(privateKey_);
+    TaoCrypt::DSA::Verifier pub(priv);
     publicKey_ = pub.GetKey();
 }
 
@@ -397,7 +396,7 @@ DSS::~DSS()
 void DSS::sign(byte* sig,  const byte* message, unsigned int sz,
                const RandomPool& random)
 {
-    using namespace CryptoPP;
+    using namespace TaoCrypt;
 
     DSA::Signer signer(pimpl_->privateKey_);
     signer.SignMessage(random.pimpl_->RNG_, message, sz, sig);
@@ -408,36 +407,36 @@ void DSS::sign(byte* sig,  const byte* message, unsigned int sz,
 bool DSS::verify(const byte* message, unsigned int sz, const byte* sig,
                  unsigned int sig_sz)
 {
-    using namespace CryptoPP;
+    using namespace TaoCrypt;
 
     DSA::Verifier ver(pimpl_->publicKey_);
     return ver.VerifyMessage(message, sz, sig, sig_sz);
 }
-
+*/
 
 // Implementation of RSA key interface
 struct RSA::RSAImpl {
     void SetPublic (const byte*, unsigned int);
     void SetPrivate(const byte*, unsigned int);
-    CryptoPP::RSA::PublicKey publicKey_;
-    CryptoPP::RSA::PrivateKey privateKey_;
+    TaoCrypt::RSA_PublicKey publicKey_;
+    TaoCrypt::RSA_PrivateKey privateKey_;
 };
 
 
 // Decode and store the public key
 void RSA::RSAImpl::SetPublic(const byte* key, unsigned int sz)
 {
-    CryptoPP::StringSource public_str(key, sz, true);
-    publicKey_.BERDecodeKey(public_str);
+    TaoCrypt::Sink sink(key, sz);
+    publicKey_.Initialize(sink);
 }
 
 
 // Decode and store the private key
 void RSA::RSAImpl::SetPrivate(const byte* key, unsigned int sz)
 {
-    CryptoPP::StringSource private_str(key, sz, true);
-    privateKey_.BERDecodeKey(private_str);
-    publicKey_ = CryptoPP::RSA::PublicKey(privateKey_);
+    TaoCrypt::Sink sink(key, sz);
+    privateKey_.Initialize(sink);
+    publicKey_ = TaoCrypt::RSA_PublicKey(privateKey_);
 }
 
 
@@ -460,116 +459,7 @@ RSA::~RSA()
 // get cipher text length, varies on key size
 unsigned int RSA::get_cipherLength() const
 {
-    using namespace CryptoPP;
-
-    RSAES_PKCS1v15_Encryptor enc(pimpl_->publicKey_);
-    return enc.FixedCiphertextLength();
-}
-
-
-class PKCS_SSL_EncryptionPaddingScheme 
-    : public CryptoPP::PK_EncryptionMessageEncodingMethod
-{
-public:
-    static const char* StaticAlgorithmName() {return "SSL-EME-PKCS1-v1_5";}
-
-    unsigned int MaxUnpaddedLength(unsigned int paddedLength) const;
-    void Pad(CryptoPP::RandomNumberGenerator &rng, const byte* raw,
-             unsigned int inputLength, byte* padded,
-             unsigned int paddedLength) const;
-    CryptoPP::DecodingResult Unpad(const byte* padded,
-                                   unsigned int paddedLength, byte* raw) const;
-};
-
-struct PKCS1v15_SSL : public CryptoPP::SignatureStandard,
-                      public CryptoPP::EncryptionStandard
-{
-    typedef PKCS_SSL_EncryptionPaddingScheme EncryptionMessageEncodingMethod;
-    typedef CryptoPP::PKCS1v15_SignatureMessageEncodingMethod 
-                                             SignatureMessageEncodingMethod;
-};
-
-typedef CryptoPP::RSAES<PKCS1v15_SSL>::Encryptor RSAES_PKCS1v15_SSL_Encryptor;
-
-
-
-unsigned int PKCS_SSL_EncryptionPaddingScheme::MaxUnpaddedLength(unsigned int 
-                                               paddedLength) const
-{
-    return CryptoPP::SaturatingSubtract(paddedLength/8, 10U);
-}
-
-void PKCS_SSL_EncryptionPaddingScheme::Pad(CryptoPP::RandomNumberGenerator
-    &rng, const byte* input, unsigned int inputLen, byte* pkcsBlock,
-    unsigned int pkcsBlockLen) const
-{
-    assert (inputLen <= MaxUnpaddedLength(pkcsBlockLen));
-
-    // convert from bit length to byte length
-    if (pkcsBlockLen % 8 != 0)
-    {
-        pkcsBlock[0] = 0;
-        pkcsBlock++;
-    }
-    pkcsBlockLen /= 8;
-
-    pkcsBlock[0] = 1;  // block type 1 for SSL
-
-    // pad with 0xff bytes
-    memset(&pkcsBlock[1], 0xFF, pkcsBlockLen - inputLen - 2);
-
-    pkcsBlock[pkcsBlockLen-inputLen-1] = 0;     // separator
-    memcpy(pkcsBlock+pkcsBlockLen-inputLen, input, inputLen);
-}
-
-CryptoPP::DecodingResult PKCS_SSL_EncryptionPaddingScheme::Unpad(
-          const byte* pkcsBlock, unsigned int pkcsBlockLen, byte* output) const
-{
-    bool invalid = false;
-    unsigned int maxOutputLen = MaxUnpaddedLength(pkcsBlockLen);
-
-    // convert from bit length to byte length
-    if (pkcsBlockLen % 8 != 0)
-    {
-        invalid = (pkcsBlock[0] != 0) || invalid;
-        pkcsBlock++;
-    }
-    pkcsBlockLen /= 8;
-
-    // Require block type 1 for SSL.
-    invalid = (pkcsBlock[0] != 1) || invalid;
-
-    // skip past the padding until we find the separator
-    unsigned i=1;
-    while (i<pkcsBlockLen && pkcsBlock[i++]) { // null body
-		}
-    assert(i==pkcsBlockLen || pkcsBlock[i-1]==0);
-
-    unsigned int outputLen = pkcsBlockLen - i;
-    invalid = (outputLen > maxOutputLen) || invalid;
-
-    if (invalid)
-        return CryptoPP::DecodingResult();
-
-    memcpy (output, pkcsBlock+i, outputLen);
-    return CryptoPP::DecodingResult(outputLen);
-}
-
-
-CryptoPP::DecodingResult pubSSLDecrypt(CryptoPP::RSA::PublicKey& pubKey,
-                                       const byte* cipher, byte* plain)
-{
-    using namespace CryptoPP;
-
-    int paddedBitsBlock = pubKey.PreimageBound().BitCount() - 1;
-    SecByteBlock paddedBlock(BitsToBytes(paddedBitsBlock));
-    CryptoPP::Integer x = pubKey.ApplyFunction(CryptoPP::Integer(cipher, 
-               RSAES_PKCS1v15_SSL_Encryptor(pubKey).FixedCiphertextLength()));
-    if (x.ByteCount() > paddedBlock.size())
-        x = CryptoPP::Integer::Zero();	
-    x.Encode(paddedBlock, paddedBlock.size());
-    return PKCS_SSL_EncryptionPaddingScheme().Unpad(paddedBlock,
-                                                    paddedBitsBlock, plain);
+    return pimpl_->publicKey_.FixedCiphertextLength();
 }
 
 
@@ -577,13 +467,8 @@ CryptoPP::DecodingResult pubSSLDecrypt(CryptoPP::RSA::PublicKey& pubKey,
 void RSA::sign(byte* sig,  const byte* message, unsigned int sz,
                const RandomPool& random)
 {
-    using namespace CryptoPP;
-
-    CryptoPP::RSA::PublicKey inverse; // inverse public key
-    inverse.Initialize(pimpl_->publicKey_.GetModulus(),
-                       pimpl_->privateKey_.GetPrivateExponent());
-    RSAES_PKCS1v15_SSL_Encryptor enc(inverse);
-    enc.Encrypt(random.pimpl_->RNG_, message, sz, sig);
+    TaoCrypt::RSAES_Decryptor dec(pimpl_->privateKey_);
+    dec.SSL_Sign(message, sz, sig, random.pimpl_->RNG_);
 }
 
 
@@ -591,14 +476,8 @@ void RSA::sign(byte* sig,  const byte* message, unsigned int sz,
 bool RSA::verify(const byte* message, unsigned int sz, const byte* sig,
                  unsigned int sig_sz)
 {
-    using namespace CryptoPP;
-
-    byte plain[64];
-    DecodingResult dr = pubSSLDecrypt(pimpl_->publicKey_, sig, plain);
-
-    if ( (memcmp(plain, message, sz)) == 0)
-        return true;
-    return false;
+    TaoCrypt::RSAES_Encryptor enc(pimpl_->publicKey_);
+    return enc.SSL_Verify(message, sz, sig);
 }
 
 
@@ -606,10 +485,9 @@ bool RSA::verify(const byte* message, unsigned int sz, const byte* sig,
 void RSA::encrypt(byte* cipher, const byte* plain, unsigned int sz,
                   const RandomPool& random)
 {
-    using namespace CryptoPP;
-
-    RSAES_PKCS1v15_Encryptor enc(pimpl_->publicKey_);
-    enc.Encrypt(random.pimpl_->RNG_, plain, sz, cipher);
+  
+    TaoCrypt::RSAES_Encryptor enc(pimpl_->publicKey_);
+    enc.Encrypt(plain, sz, cipher, random.pimpl_->RNG_);
 }
 
 
@@ -617,28 +495,27 @@ void RSA::encrypt(byte* cipher, const byte* plain, unsigned int sz,
 void RSA::decrypt(byte* plain, const byte* cipher, unsigned int sz,
                   const RandomPool& random)
 {
-    using namespace CryptoPP;
-
-    RSAES_PKCS1v15_Decryptor dec(pimpl_->privateKey_);
-    dec.Decrypt(random.pimpl_->RNG_, cipher, sz, plain);
+    TaoCrypt::RSAES_Decryptor dec(pimpl_->privateKey_);
+    dec.Decrypt(cipher, sz, plain, random.pimpl_->RNG_);
 }
 
 
 struct DiffieHellman::DHImpl {
-    CryptoPP::DH         dh_;
-    CryptoPP::RandomPool ranPool_;
+    TaoCrypt::DH                     dh_;
+    TaoCrypt::RandomNumberGenerator& ranPool_;
     byte* publicKey_;
     byte* privateKey_;
     byte* agreedKey_;
 
-    DHImpl() : publicKey_(0), privateKey_(0), agreedKey_(0) {}
+    DHImpl(TaoCrypt::RandomNumberGenerator& r) : ranPool_(r), publicKey_(0),
+                                               privateKey_(0), agreedKey_(0) {}
     ~DHImpl() {delete[] agreedKey_; delete[] privateKey_; delete[] publicKey_;}
 
-    DHImpl(const DHImpl& that) : publicKey_(0), privateKey_(0), agreedKey_(0),
-                                 dh_(that.dh_), ranPool_(that.ranPool_)
+    DHImpl(const DHImpl& that) : dh_(that.dh_), ranPool_(that.ranPool_),
+                                 publicKey_(0), privateKey_(0), agreedKey_(0)
     {
-        AllocKeys(dh_.PublicKeyLength(), dh_.PrivateKeyLength(),
-                  dh_.AgreedValueLength());
+        size_t length = dh_.GetByteLength();
+        AllocKeys(length, length, length);
     }
 
     void AllocKeys(unsigned int pubSz, unsigned int privSz, unsigned int agrSz)
@@ -652,27 +529,17 @@ struct DiffieHellman::DHImpl {
 
 // server Side DH, server's view
 DiffieHellman::DiffieHellman(const char* file, const RandomPool& random)
-    : pimpl_(new DHImpl)
+    : pimpl_(new DHImpl(random.pimpl_->RNG_))
 {
-    using namespace CryptoPP;
-    std::string prime;
-    FileSource f(file, true, new HexDecoder(new StringSink(prime)));
-    
-    byte p[128];
-    for (int i = 0, j = 1; i < 128; i++)
-        p[i] = prime[j++];
+    using namespace TaoCrypt;
+    Sink sink;
+    FileSource(file, sink);
 
-    CryptoPP::Integer G = 5;
-    CryptoPP::Integer P(p, 128);
+    pimpl_->dh_.Initialize(sink);
 
-    pimpl_->ranPool_ = random.pimpl_->RNG_;
-    pimpl_->dh_.AccessGroupParameters().Initialize(P, G);
+    size_t length = pimpl_->dh_.GetByteLength();
 
-    unsigned int pub   = pimpl_->dh_.PublicKeyLength();
-    unsigned int priv  = pimpl_->dh_.PrivateKeyLength();
-    unsigned int agree = pimpl_->dh_.AgreedValueLength();
-
-    pimpl_->AllocKeys(pub, priv, agree);
+    pimpl_->AllocKeys(length, length, length);
     pimpl_->dh_.GenerateKeyPair(pimpl_->ranPool_, pimpl_->privateKey_,
                                                   pimpl_->publicKey_);
 }
@@ -681,12 +548,11 @@ DiffieHellman::DiffieHellman(const char* file, const RandomPool& random)
 DiffieHellman::DiffieHellman(const byte* p, unsigned int pSz, const byte* g,
                              unsigned int gSz, const byte* pub,
                              unsigned int pubSz, const RandomPool& random)
-    : pimpl_(new DHImpl)
+    : pimpl_(new DHImpl(random.pimpl_->RNG_))
 {
-    using CryptoPP::Integer;
-    pimpl_->ranPool_ = random.pimpl_->RNG_;
-    pimpl_->dh_.AccessGroupParameters().Initialize(Integer(p, pSz),
-                                                   Integer(g, gSz));
+    using TaoCrypt::Integer;
+
+    pimpl_->dh_.Initialize(Integer(p, pSz).Ref(), Integer(g, gSz).Ref());
     pimpl_->publicKey_ = new opaque[pubSz];
     memcpy(pimpl_->publicKey_, pub, pubSz);
 }
@@ -706,8 +572,6 @@ DiffieHellman::DiffieHellman(const DiffieHellman& that)
 DiffieHellman& DiffieHellman::operator=(const DiffieHellman& that)
 {
     pimpl_->dh_ = that.pimpl_->dh_;
-    pimpl_->ranPool_ = that.pimpl_->ranPool_;
-
     pimpl_->dh_.GenerateKeyPair(pimpl_->ranPool_, pimpl_->privateKey_,
                                                   pimpl_->publicKey_);
     return *this;
@@ -716,13 +580,13 @@ DiffieHellman& DiffieHellman::operator=(const DiffieHellman& that)
 
 void DiffieHellman::makeAgreement(const byte* other)
 {
-    pimpl_->dh_.Agree(pimpl_->agreedKey_, pimpl_->privateKey_, other, false); // add false???
+    pimpl_->dh_.Agree(pimpl_->agreedKey_, pimpl_->privateKey_, other); 
 }
 
 
 size_t DiffieHellman::get_agreedKeyLength() const
 {
-    return pimpl_->dh_.AgreedValueLength();
+    return pimpl_->dh_.GetByteLength();
 }
 
 
@@ -740,30 +604,30 @@ const byte* DiffieHellman::get_publicKey() const
 
 void DiffieHellman::set_sizes(int& pSz, int& gSz, int& pubSz) const
 {
-    using CryptoPP::Integer;
-    Integer p = pimpl_->dh_.AccessGroupParameters().GetModulus();
-    Integer g = pimpl_->dh_.AccessGroupParameters().GetGenerator();
+    using TaoCrypt::Integer;
+    Integer p = pimpl_->dh_.GetP();
+    Integer g = pimpl_->dh_.GetG();
 
     pSz   = p.ByteCount();
     gSz   = g.ByteCount();
-    pubSz = pimpl_->dh_.PublicKeyLength();
+    pubSz = pimpl_->dh_.GetByteLength();
 }
 
 
 void DiffieHellman::get_parms(byte* bp, byte* bg, byte* bpub) const
 {
-    using CryptoPP::Integer;
-    Integer p = pimpl_->dh_.AccessGroupParameters().GetModulus();
-    Integer g = pimpl_->dh_.AccessGroupParameters().GetGenerator();
+    using TaoCrypt::Integer;
+    Integer p = pimpl_->dh_.GetP();
+    Integer g = pimpl_->dh_.GetG();
 
     p.Encode(bp, p.ByteCount());
     g.Encode(bg, g.ByteCount());
-    memcpy(bpub, pimpl_->publicKey_, pimpl_->dh_.PublicKeyLength());
+    memcpy(bpub, pimpl_->publicKey_, pimpl_->dh_.GetByteLength());
 }
 
 
 struct Integer::IntegerImpl {
-    CryptoPP::Integer int_;
+    TaoCrypt::Integer int_;
 };
 
 Integer::Integer() : pimpl_(new IntegerImpl) {}
@@ -773,13 +637,13 @@ Integer::~Integer() { delete pimpl_; }
 
 void Integer::assign(const byte* num, unsigned int sz)
 {
-    pimpl_->int_ = CryptoPP::Integer(num, sz);
+    pimpl_->int_ = TaoCrypt::Integer(num, sz);
 }
 
 
 x509* PemToDer(const char* file, CertType type)
 {
-    using namespace CryptoPP;
+    using namespace TaoCrypt;
     using namespace std;
 
     string header; 
@@ -793,25 +657,31 @@ x509* PemToDer(const char* file, CertType type)
         footer = "-----END RSA PRIVATE KEY-----\r\n";
     }
 
-    string pem;
-    FileSource(file, true, new StringSink(pem));
+    Sink sink;
+    FileSource(file, sink);
+    string pem((const char*)sink.get_buffer(), sink.size());
 
-    if (pem.find(header) == -1) {
+    if (pem.find(header) == std::string::npos) {
         header.replace(header.find("\r\n"), 2, "\n");
         footer.replace(footer.find("\r\n"), 2, "\n");
 
-        if (pem.find(header) == -1)
+        if (pem.find(header) == std::string::npos)
             return 0;                   // bad format
     }
     pem.erase(0, pem.find(header) + header.length());
     pem.erase(pem.find(footer), footer.length());
 
-    string der;
-    StringSource(pem, true, new Base64Decoder(new StringSink(der)));
+    Sink der((const unsigned char*)pem.c_str(), pem.size());
+    throw std::runtime_error("add Base64Decoder(der)");
+    // Base64Decoder(der);
 
-    size_t sz = der.length();
+    size_t sz = der.size();
     auto_ptr<x509> x(new x509(sz));
-    memcpy(x->set_buffer(), der.c_str(), sz);
+    memcpy(x->set_buffer(), der.get_buffer(), sz);
 
     return x.release();
 }
+
+
+
+#endif // !USE_CRYPTOPP_LIB

@@ -1,0 +1,77 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: taocrypt - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSPCC6.tmp" with contents
+[
+/nologo /ML /W3 /GX /O2 /I "include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /Fp"Release/taocrypt.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c 
+"F:\yassl\taocrypt\src\aes.cpp"
+"F:\yassl\taocrypt\src\aestables.cpp"
+"F:\yassl\taocrypt\src\algebra.cpp"
+"F:\yassl\taocrypt\src\arc4.cpp"
+"F:\yassl\taocrypt\src\asn.cpp"
+"F:\yassl\taocrypt\src\coding.cpp"
+"F:\yassl\taocrypt\src\des.cpp"
+"F:\yassl\taocrypt\src\dh.cpp"
+"F:\yassl\taocrypt\src\file.cpp"
+"F:\yassl\taocrypt\src\hash.cpp"
+"F:\yassl\taocrypt\src\integer.cpp"
+"F:\yassl\taocrypt\src\md5.cpp"
+"F:\yassl\taocrypt\src\misc.cpp"
+"F:\yassl\taocrypt\src\random.cpp"
+"F:\yassl\taocrypt\src\rsa.cpp"
+"F:\yassl\taocrypt\src\sha.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\tao\LOCALS~1\Temp\RSPCC6.tmp" 
+Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSPCC7.tmp" with contents
+[
+/nologo /out:"Release\taocrypt.lib" 
+.\Release\aes.obj
+.\Release\aestables.obj
+.\Release\algebra.obj
+.\Release\arc4.obj
+.\Release\asn.obj
+.\Release\coding.obj
+.\Release\des.obj
+.\Release\dh.obj
+.\Release\file.obj
+.\Release\hash.obj
+.\Release\integer.obj
+.\Release\md5.obj
+.\Release\misc.obj
+.\Release\random.obj
+.\Release\rsa.obj
+.\Release\sha.obj
+]
+Creating command line "link.exe -lib @C:\DOCUME~1\tao\LOCALS~1\Temp\RSPCC7.tmp"
+<h3>Output Window</h3>
+Compiling...
+aes.cpp
+aestables.cpp
+algebra.cpp
+arc4.cpp
+asn.cpp
+coding.cpp
+des.cpp
+dh.cpp
+file.cpp
+hash.cpp
+integer.cpp
+md5.cpp
+misc.cpp
+random.cpp
+rsa.cpp
+sha.cpp
+Creating library...
+
+
+
+<h3>Results</h3>
+taocrypt.lib - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>
