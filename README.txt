@@ -1,5 +1,5 @@
 Crypto++: a C++ Class Library of Cryptographic Primitives
-Version 4.1  1/13/2000
+Version 4.2 RC1  10/29/2001
 
 This library includes:
 
@@ -19,7 +19,7 @@ This library includes:
 - key agreement schemes: Diffie-Hellman (DH), Unified Diffie-
   Hellman (DH2), Menezes-Qu-Vanstone (MQV), LUCDIF, XTR-DH  
 - elliptic curve cryptography: ECDSA, ECNR, ECIES, ECDHC, ECMQVC  
-- one-way hash functions: SHA-1, MD2, MD5, HAVAL, RIPEMD-160, 
+- one-way hash functions: SHA-1, MD2, MD4, MD5, HAVAL, RIPEMD-160, 
   Tiger, SHA-2 (SHA-256, SHA-384, and SHA-512), Panama  
 - message authentication codes: MD5-MAC, HMAC, XOR-MAC, CBC-MAC, DMAC  
 - cipher constructions based on hash functions: Luby-Rackoff, MDC  
@@ -45,8 +45,9 @@ This library includes:
 You are welcome to use it for any purpose without paying me, but see
 license.txt for the fine print.
 
-Crypto++ has been compiled successfully with MSVC 6.0 on Windows 2000,
-GCC 2.95.2 on FreeBSD 4.1, and CodeWarrior 5.3 on MacOS 8.
+This version of Crypto++ has been compiled successfully with MSVC 6.0
+and 7.0 on Windows 2000 SP2, GCC 2.95.3 on FreeBSD 4.3, GCC 2.95.2 on
+Linux 2.2 and SunOS 5.8, and GCC 3.0.2 on Cygwin 1.3.3.
 
 To compile Crypto++ with MSVC, open the "cryptest.dsw" workspace file
 and build the "cryptest" project. This will compile Crypto++ as a static
@@ -207,3 +208,12 @@ History
     - fixed a performance issue with EC over GF(p) decryption
     - fixed syntax to allow GCC to compile without -fpermissive
     - relaxed some restrictions in the license
+
+4.2 - added HMAC support for longer keys
+    - added MD4 (which is not secure so use for compatibility purposes only)
+    - added compatibility fixes/workarounds for STLport 4.5, GCC 3.0.2,
+      and MSVC 7.0
+    - changed MD2 to use public domain code
+    - fixed a bug with decompressing multiple messages with the same object
+    - fixed a bug in RC5 and RC6 with zero-length keys
+    - fixed a bug in Adler32 where incorrect checksum may be generated

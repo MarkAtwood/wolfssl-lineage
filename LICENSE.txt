@@ -3,16 +3,30 @@ This copyright applies only to this particular software distribution
 package, and does not imply a copyright on any particular file in 
 the library.
 
-All files in this library except the following are placed in
-the public domain by Wei Dai and other contributers.
-
-The following files are copyrighted by their respective original authors.
+The following files are copyrighted by their respective original authors:
 
 haval.cpp - Copyright 1992 Yuliang Zheng.
 idea.cpp - Copyright 1992 Colin Plumb.
 mars.cpp - Copyright 1998 Brian Gladman.
-md2.cpp - Copyright 1994, 1995 Sun Microsystems, Inc.
 serpent.cpp - Copyright 1998, 1999 Brian Gladman and Sam Simpson.
+
+All other files in this compilation are placed in the public domain by
+Wei Dai and other contributors.
+
+I would like to thank the following authors for placing their works into
+the public domain:
+
+Joan Daemen - 3way.cpp
+Leonard Janke - cast.cpp, seal.cpp
+Steve Reid - cast.cpp
+Phil Karn - des.cpp
+Michael Paul Johnson - diamond.cpp, sapphire.cpp
+Andrew M. Kuchling - md2.cpp, md4.cpp
+Colin Plumb - md5.cpp, md5mac.cpp
+Chris Morgan - rijndael.cpp
+Paulo Baretto - rijndael.cpp, skipjack.cpp, square.cpp
+Richard De Moliner - safer.cpp
+Matthew Skala - twofish.cpp
 
 Permission to use, copy, modify, and distribute this compilation for
 any purpose, including commercial applications, is hereby granted
