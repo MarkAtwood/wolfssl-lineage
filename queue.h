@@ -39,6 +39,8 @@ public:
 	unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax=ULONG_MAX) const;
 
 	// these member functions are not inherited
+	void SetNodeSize(unsigned int nodeSize) {m_nodeSize = nodeSize;}
+
 	unsigned long CurrentSize() const;
 	bool IsEmpty() const;
 
