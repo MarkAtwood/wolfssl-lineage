@@ -1,0 +1,325 @@
+/* crypto_wrapper.hpp                          
+ *
+ * Copyright (C) 2003 Sawtooth Consulting Ltd.
+ *
+ * This file is part of yaSSL.
+ *
+ * yaSSL is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * yaSSL is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
+ */
+
+
+/*  The crypto wrapper header is used to define policies for the cipher 
+ *  components used by SSL.  There are 3 policies to consider:
+ *
+ *  1) MAC, the Message Authentication Code used for each Message
+ *  2) Bulk Cipher, the Cipher used to encrypt/decrypt each Message
+ *  3) Atuhentication, the Digitial Signing/Verifiaction scheme used
+ *
+ *  This header doesn't rely on a specific crypto libraries internals,
+ *  only the implementation should.
+ */
+
+
+#ifndef __yaSSL_crypto_wrapper_hpp__
+#define __yaSSL_crypto_wrapper_hpp__
+
+#include "yassl_types.hpp"
+#include <memory>
+
+
+
+
+// MAC policy should implement a get_digest, update, and get sizes for pad and 
+// digest
+struct MAC {
+    virtual void   get_digest(byte*) = 0;
+    virtual void   get_digest(byte*, const byte*, unsigned int) = 0;
+    virtual void   update(const byte*, unsigned int) = 0;
+    virtual size_t get_digestSize() const = 0;
+    virtual size_t get_padSize() const = 0;
+    virtual ~MAC() {}
+};
+
+
+// For use with NULL MACs
+struct NO_MAC : public MAC {
+    void   get_digest(byte*);
+    void   get_digest(byte*, const byte*, unsigned int) {}
+    void   update(const byte*, unsigned int) {}
+    size_t get_digestSize() const { return 0; }
+    size_t get_padSize()    const { return 0; }
+};
+
+
+// MD5 Digest
+class MD5 : public MAC {
+public:
+    void   get_digest(byte*);
+    void   get_digest(byte*, const byte*, unsigned int);
+    void   update(const byte*, unsigned int);
+    size_t get_digestSize() const { return MD5_LEN; }
+    size_t get_padSize()    const { return PAD_MD5; }
+    MD5();
+    ~MD5();
+    MD5(const MD5&);
+    MD5& operator=(const MD5&);
+private:
+    struct MD5Impl;
+    MD5Impl* pimpl_;
+};
+
+
+// SHA-1 Digest
+class SHA : public MAC {
+public:
+    void   get_digest(byte*);
+    void   get_digest(byte*, const byte*, unsigned int);
+    void   update(const byte*, unsigned int);
+    size_t get_digestSize() const { return SHA_LEN; }
+    size_t get_padSize()    const { return PAD_SHA; }
+    SHA();
+    ~SHA();
+    SHA(const SHA&);
+    SHA& operator=(const SHA&);
+private:
+    struct SHAImpl;
+    SHAImpl* pimpl_;
+
+};
+
+
+// HMAC_MD5 
+class HMAC_MD5 : public MAC {
+public:
+    void   get_digest(byte*);
+    void   get_digest(byte*, const byte*, unsigned int);
+    void   update(const byte*, unsigned int);
+    size_t get_digestSize() const { return MD5_LEN; }
+    size_t get_padSize()    const { return PAD_MD5; }
+    HMAC_MD5(const byte*, unsigned int);
+    ~HMAC_MD5();
+    HMAC_MD5(const HMAC_MD5&);
+    HMAC_MD5& operator=(const HMAC_MD5&);
+private:
+    struct HMAC_MD5Impl;
+    HMAC_MD5Impl* pimpl_;
+};
+
+
+// HMAC_SHA-1
+class HMAC_SHA : public MAC {
+public:
+    void   get_digest(byte*);
+    void   get_digest(byte*, const byte*, unsigned int);
+    void   update(const byte*, unsigned int);
+    size_t get_digestSize() const { return SHA_LEN; }
+    size_t get_padSize()    const { return PAD_SHA; }
+    HMAC_SHA(const byte*, unsigned int);
+    ~HMAC_SHA();
+    HMAC_SHA(const HMAC_SHA&);
+    HMAC_SHA& operator=(const HMAC_SHA&);
+private:
+    struct HMAC_SHAImpl;
+    HMAC_SHAImpl* pimpl_;
+
+};
+
+
+// BulkCipher policy should implement encrypt, decrypt, get block size, 
+// and set keys for encrypt and decrypt
+struct BulkCipher {
+    virtual void   encrypt(byte*, const byte*, unsigned int) = 0;
+    virtual void   decrypt(byte*, const byte*, unsigned int) = 0;
+    virtual void   set_encryptKey(const byte*, const byte* = 0) = 0;
+    virtual void   set_decryptKey(const byte*, const byte* = 0) = 0;
+    virtual size_t get_blockSize() const = 0;
+    virtual ~BulkCipher() {}
+};
+
+
+// For use with NULL Ciphers
+struct NO_Cipher : public BulkCipher {
+    void   encrypt(byte*, const byte*, unsigned int) {}
+    void   decrypt(byte*, const byte*, unsigned int) {}
+    void   set_encryptKey(const byte*, const byte*)  {}
+    void   set_decryptKey(const byte*, const byte*)  {}
+    size_t get_blockSize() const { return 0; }
+};
+
+
+// SSLv3 and TLSv1 always use DES in CBC mode so IV is required
+class DES : public BulkCipher {
+public:
+    void   encrypt(byte*, const byte*, unsigned int);
+    void   decrypt(byte*, const byte*, unsigned int);
+    void   set_encryptKey(const byte*, const byte*);
+    void   set_decryptKey(const byte*, const byte*);
+    size_t get_blockSize() const { return DES_BLOCK; }
+    DES();
+    ~DES();
+private:
+    struct DESImpl;
+    DESImpl* pimpl_;
+
+    DES(const DES&);                // hide copy
+    DES& operator=(const DES&);     // & assign
+};
+
+
+// 3DES Encrypt-Decrypt-Encrypt in CBC mode
+class DES_EDE : public BulkCipher {
+public:
+    void   encrypt(byte*, const byte*, unsigned int);
+    void   decrypt(byte*, const byte*, unsigned int);
+    void   set_encryptKey(const byte*, const byte*);
+    void   set_decryptKey(const byte*, const byte*);
+    size_t get_blockSize() const { return DES_BLOCK; }
+    DES_EDE();
+    ~DES_EDE();
+private:
+    struct DES_EDEImpl;
+    DES_EDEImpl* pimpl_;
+
+    DES_EDE(const DES_EDE&);            // hide copy
+    DES_EDE& operator=(const DES_EDE&); // & assign
+};
+
+
+// Alledged RC4
+class RC4 : public BulkCipher {
+public:
+    void encrypt(byte*, const byte*, unsigned int);
+    void decrypt(byte*, const byte*, unsigned int);
+    void set_encryptKey(const byte*, const byte*);
+    void set_decryptKey(const byte*, const byte*);
+    size_t get_blockSize() const { return 0; }
+    RC4();
+    ~RC4();
+private:
+    struct RC4Impl;
+    RC4Impl* pimpl_;
+
+    RC4(const RC4&);             // hide copy
+    RC4& operator=(const RC4&);  // & assign
+};
+
+
+// Random number generator
+class RandomPool {
+public:
+    void Fill(opaque* dst, size_t sz) const;
+    RandomPool();
+    ~RandomPool();
+
+    friend class RSA;
+	friend class DSS;
+private:
+    struct RandomImpl;
+    RandomImpl* pimpl_;
+
+    RandomPool(const RandomPool&);              // hide copy
+    RandomPool& operator=(const RandomPool&);   // & assign
+};
+
+
+// Authentication policy should implement sign, and verify
+struct Auth {
+    virtual void  sign(byte*, const byte*, unsigned int, const RandomPool&) =0;
+    virtual bool  verify(const byte*, unsigned int, const byte*,
+                          unsigned int) = 0;
+    virtual ~Auth() {}
+};
+
+
+// For use with NULL Authentication schemes
+struct NO_Auth : public Auth {
+    void   sign(byte*, const byte*, unsigned int, const RandomPool&) {}
+    bool   verify(const byte*, unsigned int, const byte*, unsigned int) 
+                    { return true; }
+};
+
+
+// Digitial Signature Standard scheme
+class DSS : public Auth {
+public:
+    void sign(byte*, const byte*, unsigned int, const RandomPool&);
+    bool verify(const byte*, unsigned int, const byte*, unsigned int);
+    DSS(const byte*, unsigned int, bool publicKey = true);
+    ~DSS();
+private:
+    struct DSSImpl;
+    DSSImpl* pimpl_;
+
+    DSS(const DSS&);
+    DSS& operator=(const DSS&);
+};
+
+
+// RSA Authentication and exchange
+class RSA : public Auth {
+public:
+    void   sign(byte*, const byte*, unsigned int, const RandomPool&);
+    bool   verify(const byte*, unsigned int, const byte*, unsigned int);
+    void   encrypt(byte*, const byte*, unsigned int, const RandomPool&);
+    void   decrypt(byte*, const byte*, unsigned int, const RandomPool&);
+    size_t get_cipherLength() const;
+    RSA(const byte*, unsigned int, bool publicKey = true);
+    ~RSA();
+private:
+    struct RSAImpl;
+    RSAImpl* pimpl_;
+
+    RSA(const RSA&);            // hide copy
+    RSA& operator=(const RSA&); // & assing
+};
+
+
+/* hide for now TODO: figure out a way to give access to C clients p and g args
+// Diffie-Hellman agreement
+class DH  {
+    DH();
+    ~DH();
+private:
+    struct DHImpl;
+    DHImpl* pimpl_;
+
+    DH(const DH&);              // hide copy
+    DH& operator=(const DH&);   // & assign
+};
+*/
+
+
+// Lagrge Integer
+class Integer {
+public:
+    Integer();
+    ~Integer();
+    void assign(const byte*, unsigned int);
+private:
+    struct IntegerImpl;
+    IntegerImpl* pimpl_;
+
+    Integer(const Integer&);
+    Integer& operator=(const Integer&);
+};
+
+
+class x509;
+
+x509* PemToDer(const char*, CertType);
+
+
+
+#endif  // __yaSSL_crypto_wrapper_hpp__

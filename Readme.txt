@@ -1,0 +1,126 @@
+yaSSL Release notes, version 0.0.2
+
+The second release of yaSSL contains minor bug fixes, client certificate
+enhancements, session resumption, and improved TLS support including:
+
+- HMAC for MD5 and SHA-1
+- PRF (pseudo random function)
+- Master Secret and Key derivation routines
+- Record Authentication codes
+- Finish verify data check
+
+Once ephemeral RSA and DH are added yaSSL will be fully complaint with TLS.
+
+
+*** Complete Build ***
+
+See the first release notes for build instructions. 
+
+
+*** Update Build ***
+
+If you have already done a complete build of yaSSL as described in the release
+0.0.1 notes and downloaded the update to 0.0.2, place the update file
+yassl-update-0.0.2.tar.gz in the yaSSL home directory and issue the command:
+
+gzip -cd yassl-update-0.0.2.tar.gz | tar xvf -
+
+to update the first release.
+
+Then issue the make command on linux or rebuild the yaSSL project on Windows.
+
+
+**********************
+
+yassl Release notes, version 0.0.1
+
+The first release of yassl supports normal RSA mode SSLv3 connections with
+support for SHA-1 and MD5 digests.  Ciphers include DES, 3DES, and RC4.
+
+yassl uses the CryptoPP library for cryptography, the source is available at
+www.cryptopp.com .
+
+yassl uses CML (the Certificate Management Library) for x509 support.  More
+features will be in future versions.  The CML source is available for download
+from www.digitalnet.com/knowledge/cml_home.htm .
+
+The next release of yassl will support the 3 lesser-used SSL connection modes;
+HandShake resumption, Ephemeral RSA (or DH), and Client Authentication as well
+as full support for TLS.  Backwards support for SSLv2 is not planned at this
+time.
+
+
+**********************
+
+Building yassl on linux:
+
+use the ./buildall script to build everything.
+
+buildall will configure and build CML, CryptoPP, and yassl.  Testing was 
+preformed with gcc version 3.3.2 on kernel 2.4.22.
+
+
+**********************
+
+Building yassl on Windows:
+
+Testing was preformed on Windows 2000 with Visual C++ 6 sp5.
+
+1) decompress esnacc_r16.tgz in place, see buildall for syntax if unsure
+
+2) decompress smp_r23.tgz in place
+
+3) unzip cryptopp51/crypto51.zip in place
+
+4) Build SNACC (part of CML) using snacc_builds.dsw in the SNACC directory
+
+5) Build SMP (part of CMP) using smp.dsw in the smp directory
+
+6) Build yassl using yassl.dsw
+
+
+**********************
+
+examples, server and client:
+
+Please see the server and client examples in both versions to see how to link
+to yassl and the support libraries.  On linux do 'make server' and 'make
+client' to build them. On Windows you will find the example projects in the
+main workspace, yassl.dsw.
+
+The example server and client are compatible with openssl.
+
+
+**********************
+
+Building yassl into mysql on linux:
+
+Testing was done using mysql version 4.0.17.
+
+alter openssl_libs in the configure file, line 21056. Change '-lssl -lcrypto'
+to '-lyassl -lcryptopp -lcmapi -lcmlasn -lctil -lc++asn1'.
+
+see build/config_command for the configure command used to configure mysql
+please change /home/touska/ to the relevant directory of course.
+
+add yassl/lib to the LD_LIBRARY_PATH because libmysql/conf_to_src does not
+use the ssl lib directory though it does use the ssl libraries.
+
+make
+
+make install
+
+
+*********************
+
+License:  yassl is currently under the GPL, please see license information
+in the source and include files.
+
+
+*********************
+
+Contact: please send comments or questions to Todd A Ouska at todd@yassl.com
+and/or Larry Stefonic at larry@yassl.com or 425-741-6858.
+
+
+
