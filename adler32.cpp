@@ -12,11 +12,18 @@ void Adler32::Update(const byte *input, unsigned int length)
 	unsigned long s1 = m_s1;
 	unsigned long s2 = m_s2;
 
-	while (length % 8 != 0)
+	if (length % 8 != 0)
 	{
-		s1 += *input++;
-		s2 += s1;
-		length--;
+		do
+		{
+			s1 += *input++;
+			s2 += s1;
+			length--;
+		} while (length % 8 != 0);
+
+		if (s1 >= BASE)
+			s1 -= BASE;
+		s2 %= BASE;
 	}
 
 	while (length > 0)
@@ -38,6 +45,9 @@ void Adler32::Update(const byte *input, unsigned int length)
 		if (length % 0x8000 == 0)
 			s2 %= BASE;
 	}
+
+	assert(s1 < BASE);
+	assert(s2 < BASE);
 
 	m_s1 = (word16)s1;
 	m_s2 = (word16)s2;
