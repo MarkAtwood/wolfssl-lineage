@@ -16,7 +16,7 @@ public:
 	void TruncatedFinal(byte *hash, unsigned int size);
 	unsigned int DigestSize() const {return DIGESTSIZE;}
 
-	enum {DIGESTSIZE = 16};
+	enum {DIGESTSIZE = 16, BLOCKSIZE = 16};
 
 private:
 	void Transform();
