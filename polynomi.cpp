@@ -82,7 +82,7 @@ unsigned int PolynomialOver<T>::CoefficientCount(const Ring &ring) const
 }
 
 template <class T>
-PolynomialOver<T>::CoefficientType PolynomialOver<T>::GetCoefficient(unsigned int i, const Ring &ring) const 
+typename PolynomialOver<T>::CoefficientType PolynomialOver<T>::GetCoefficient(unsigned int i, const Ring &ring) const 
 {
 	return (i < m_coefficients.size()) ? m_coefficients[i] : ring.Zero();
 }
@@ -128,7 +128,7 @@ PolynomialOver<T>& PolynomialOver<T>::Reduce(const PolynomialOver<T>& t, const R
 }
 
 template <class T>
-PolynomialOver<T>::CoefficientType PolynomialOver<T>::EvaluateAt(const CoefficientType &x, const Ring &ring) const
+typename PolynomialOver<T>::CoefficientType PolynomialOver<T>::EvaluateAt(const CoefficientType &x, const Ring &ring) const
 {
 	int degree = Degree(ring);
 
@@ -472,7 +472,7 @@ void RingOfPolynomialsOver<T>::CalculateAlpha(std::vector<CoefficientType> &alph
 }
 
 template <class T>
-RingOfPolynomialsOver<T>::Element RingOfPolynomialsOver<T>::Interpolate(const CoefficientType x[], const CoefficientType y[], unsigned int n) const
+typename RingOfPolynomialsOver<T>::Element RingOfPolynomialsOver<T>::Interpolate(const CoefficientType x[], const CoefficientType y[], unsigned int n) const
 {
 	assert(n > 0);
 
@@ -494,7 +494,7 @@ RingOfPolynomialsOver<T>::Element RingOfPolynomialsOver<T>::Interpolate(const Co
 }
 
 template <class T>
-RingOfPolynomialsOver<T>::CoefficientType RingOfPolynomialsOver<T>::InterpolateAt(const CoefficientType &position, const CoefficientType x[], const CoefficientType y[], unsigned int n) const
+typename RingOfPolynomialsOver<T>::CoefficientType RingOfPolynomialsOver<T>::InterpolateAt(const CoefficientType &position, const CoefficientType x[], const CoefficientType y[], unsigned int n) const
 {
 	assert(n > 0);
 
