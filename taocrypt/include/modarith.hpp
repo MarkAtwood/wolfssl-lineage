@@ -23,8 +23,8 @@
 /* based on Wei Dai's modarith.h from CryptoPP */
 
 
-#ifndef TAO_CRYPT_MODARITH_HPP__
-#define TAO_CRYPT_MODARITH_HPP__
+#ifndef TAO_CRYPT_MODARITH_HPP
+#define TAO_CRYPT_MODARITH_HPP
 
 #include "misc.hpp"
 #include "integer.hpp"
@@ -166,4 +166,4 @@ private:
 
 } // namespace
 
-#endif // TAO_CRYPT_MODARITH_HPP__
+#endif // TAO_CRYPT_MODARITH_HPP

@@ -25,8 +25,8 @@
 
 
 
-#ifndef __yaSSL_handshake_hpp__
-#define __yaSSL_handshake_hpp__
+#ifndef yaSSL_HANDSHAKE_HPP
+#define yaSSL_HANDSHAKE_HPP
 
 #include "yassl_imp.hpp"
 #include "yassl_int.hpp"
@@ -49,17 +49,18 @@ void sendServerKeyExchange(SSL&, BufferOutput = buffered);
 void sendChangeCipher(SSL&, BufferOutput = buffered);
 void sendFinished(SSL&, ConnectionEnd, BufferOutput = buffered);
 void sendCertificate(SSL&, BufferOutput = buffered);
-int  sendData(SSL&, const Data&); 
+int  sendData(SSL&, const Data&);
+int  sendAlert(SSL& ssl, const Alert& alert);
 
 int  receiveData(SSL&, Data&); 
 void processReply(SSL&);
 
-void hmac(SSL&, byte*, const byte*, size_t, ContentType, bool verify = false);
-void TLS_hmac(SSL&, byte*, const byte*, size_t, ContentType,
+void hmac(SSL&, byte*, const byte*, uint, ContentType, bool verify = false);
+void TLS_hmac(SSL&, byte*, const byte*, uint, ContentType,
               bool verify = false);
-void PRF(byte* digest, size_t digLen, const byte* secret, size_t secLen,
-         const byte* label, size_t labLen, const byte* seed, size_t seedLen);
+void PRF(byte* digest, uint digLen, const byte* secret, uint secLen,
+         const byte* label, uint labLen, const byte* seed, uint seedLen);
 
 } // naemspace
 
-#endif // __yaSSL_handshake_hpp__
+#endif // yaSSL_HANDSHAKE_HPP

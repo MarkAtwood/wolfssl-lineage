@@ -21,8 +21,8 @@
 
 /* based on Wei Dai's misc.h from CryptoPP */
 
-#ifndef TAO_CRYPT_MISC_HPP__
-#define TAO_CRYPT_MISC_HPP__
+#ifndef TAO_CRYPT_MISC_HPP
+#define TAO_CRYPT_MISC_HPP
 
 #include <stdlib.h>
 #include <assert.h>
@@ -42,8 +42,8 @@ typedef unsigned long word;
 typedef unsigned long long dword;
 #endif // _MSC_VER
 
-const size_t WORD_SIZE = sizeof(word);
-const size_t WORD_BITS = WORD_SIZE * 8;
+const uint32 WORD_SIZE = sizeof(word);
+const uint32 WORD_BITS = WORD_SIZE * 8;
 
 
 #if defined(_MSC_VER)
@@ -84,9 +84,9 @@ inline unsigned int BitsToWords(unsigned int bitCount)
     return ((bitCount+WORD_BITS-1)/(WORD_BITS));
 }
 
-inline void CopyWords(word* r, const word* a, size_t n)
+inline void CopyWords(word* r, const word* a, uint32 n)
 {
-    for (size_t i = 0; i < n; i++)
+    for (uint32 i = 0; i < n; i++)
         r[i] = a[i];
 }
 
@@ -207,13 +207,13 @@ template <class T> inline T rotrFixed(T x, unsigned int y)
 
 #pragma intrinsic(_lrotl, _lrotr)
 
-template<> inline uint32 rotlFixed(uint32 x, size_t y)
+template<> inline uint32 rotlFixed(uint32 x, uint32 y)
 {
     assert(y < 32);
     return y ? _lrotl(x, y) : x;
 }
 
-template<> inline uint32 rotrFixed(uint32 x, size_t y)
+template<> inline uint32 rotrFixed(uint32 x, uint32 y)
 {
     assert(y < 32);
     return y ? _lrotr(x, y) : x;
@@ -238,33 +238,33 @@ inline uint32 ByteReverse(uint32 value)
 }
 
 /*
-inline void ByteReverse(uint32* out, const uint32* in, size_t byteCount)
+inline void ByteReverse(uint32* out, const uint32* in, uint32 byteCount)
 {
     assert(byteCount % sizeof(uint32) == 0);
-    size_t count = byteCount/sizeof(uint32);
-    for (size_t i=0; i<count; i++)
+    uint32 count = byteCount/sizeof(uint32);
+    for (uint32 i=0; i<count; i++)
         out[i] = ByteReverse(in[i]);
 }
 
-inline void ByteReverse(word* out, const word* in, size_t byteCount)
+inline void ByteReverse(word* out, const word* in, uint32 byteCount)
 {
     assert(byteCount % sizeof(word) == 0);
-    size_t count = byteCount/sizeof(word);
-    for (size_t i=0; i<count; i++)
+    uint32 count = byteCount/sizeof(word);
+    for (uint32 i=0; i<count; i++)
         out[i] = ByteReverse(in[i]);
 }
 */
 
 template <typename T>
-inline void ByteReverse(T* out, const T* in, size_t byteCount)
+inline void ByteReverse(T* out, const T* in, uint32 byteCount)
 {
     assert(byteCount % sizeof(T) == 0);
-    size_t count = byteCount/sizeof(T);
-    for (size_t i=0; i<count; i++)
+    uint32 count = byteCount/sizeof(T);
+    for (uint32 i=0; i<count; i++)
         out[i] = ByteReverse(in[i]);
 }
 
-inline void ByteReverse(byte* out, const byte* in, size_t byteCount)
+inline void ByteReverse(byte* out, const byte* in, uint32 byteCount)
 {
     uint32* o       = reinterpret_cast<uint32*>(out);
     const uint32* i = reinterpret_cast<const uint32*>(in);
@@ -280,7 +280,7 @@ inline T ByteReverseIf(T value, ByteOrder order)
 
 
 template <typename T>
-inline void ByteReverseIf(T* out, const T* in, size_t bc, ByteOrder order)
+inline void ByteReverseIf(T* out, const T* in, uint32 bc, ByteOrder order)
 {
     if (!HostByteOrderIs(order)) 
         ByteReverse(out, in, bc);
@@ -290,8 +290,8 @@ inline void ByteReverseIf(T* out, const T* in, size_t bc, ByteOrder order)
 
 
 template <class T>
-inline void GetUserKey(ByteOrder order, T* out, size_t outlen, const byte* in,
-                       size_t inlen)
+inline void GetUserKey(ByteOrder order, T* out, uint32 outlen, const byte* in,
+                       uint32 inlen)
 {
     const unsigned int U = sizeof(T);
     assert(inlen <= outlen*U);
@@ -649,4 +649,4 @@ unsigned long Crop(unsigned long value, unsigned int size);
 
 } // namespace
 
-#endif //
+#endif // TAO_CRYPT_MISC_HPP

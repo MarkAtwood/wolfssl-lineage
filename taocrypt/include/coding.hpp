@@ -20,8 +20,8 @@
  */
 
 
-#ifndef TAO_CRYPT_CODING_HPP__
-#define TAO_CRYPT_CODING_HPP__
+#ifndef TAO_CRYPT_CODING_HPP
+#define TAO_CRYPT_CODING_HPP
 
 #include "misc.hpp"
 #include "block.hpp"
@@ -66,4 +66,4 @@ class Base64Decoder {
 
 }  // namespace
 
-#endif // TAO_CRYPT_CODING_HPP__
+#endif // TAO_CRYPT_CODING_HPP

@@ -25,24 +25,21 @@
  */
 
 
-#ifndef yaSSL_cert_wrapper_hpp__
-#define yaSSL_cert_wrapper_hpp__
+#ifndef yaSSL_CERT_WRAPPER_HPP
+#define yaSSL_CERT_WRAPPER_HPP
 
 #ifdef _MSC_VER
     // disable truncated debug symbols
     #pragma warning(disable:4786)
 #endif
 
-#include "yassl_types.hpp"
-#include "buffer.hpp"
-#include <list>
-#include <algorithm>
+#include "yassl_types.hpp"  // x509
+#include "buffer.hpp"       // input_buffer
+#include <list>             // std::list
+#include <algorithm>        // std::for_each
 
 
 namespace yaSSL {
-
-
-inline void deleteCert(x509* cert) { delete cert; } // Certificate Helper
 
 
 // Certificate Manager keeps a list of thhe cert chain and public key
@@ -52,21 +49,24 @@ class CertManager {
     input_buffer     privateKey_;       // if server or client auth
 public:
     CertManager() {}
-    ~CertManager() { std::for_each(list_.begin(), list_.end(), deleteCert) ; }
+    ~CertManager() 
+    {
+        std::for_each(list_.begin(), list_.end(), del_ptr_zero()) ;
+    }
 
     void AddCert(x509* x) { list_.push_back(x); }  // take ownership
     void CopyCert(const x509* x) { if (x) list_.push_back(new x509(*x)); }
     bool Validate() const;
 
     void SetKey();
-    void SetPrivateKey(x509&);
+    void SetPrivateKey(const x509&);
 
     const x509*   get_cert()       const { return list_.front(); }
     const opaque* get_Key()        const { return publicKey_.get_buffer(); }
     const opaque* get_privateKey() const { return privateKey_.get_buffer(); }
 
-    size_t get_KeyLength()         const { return publicKey_.get_size(); }
-    size_t get_privateKeyLength()  const { return privateKey_.get_size(); }
+    uint get_KeyLength()           const { return publicKey_.get_size(); }
+    uint get_privateKeyLength()    const { return privateKey_.get_size(); }
 private:
     CertManager(const CertManager&);            // hide copy
     CertManager& operator=(const CertManager&); // and assign
@@ -75,4 +75,4 @@ private:
 
 } // naemspace
 
-#endif // yaSSL_cert_wrapper_hpp__
+#endif // yaSSL_CERT_WRAPPER_HPP

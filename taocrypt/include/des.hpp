@@ -20,8 +20,8 @@
  */
 
 
-#ifndef TAO_CRYPT_DES_HPP__
-#define TAO_CRYPT_DES_HPP__
+#ifndef TAO_CRYPT_DES_HPP
+#define TAO_CRYPT_DES_HPP
 
 #include <string.h>
 #include "misc.hpp"
@@ -38,7 +38,7 @@ public:
 
     DES_BASE(CipherDir DIR, Mode MODE) : dir_(DIR), mode_(MODE) {}
 
-    void Process(byte*, const byte*, size_t);
+    void Process(byte*, const byte*, uint32);
 protected:
     CipherDir dir_;
     Mode      mode_;
@@ -51,7 +51,7 @@ class DES : public DES_BASE {
 public:
     DES(CipherDir DIR, Mode MODE) : DES_BASE(DIR, MODE) {}
 
-    void SetKey(const byte*, size_t, CipherDir dir);
+    void SetKey(const byte*, uint32, CipherDir dir);
     void RawProcessBlock(uint32&, uint32&) const;
     void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
 private:
@@ -64,7 +64,7 @@ public:
     DES_EDE2(CipherDir DIR, Mode MODE) 
         : DES_BASE(DIR, MODE), des1_(DIR, MODE), des2_(DIR, MODE) {}
 
-    void SetKey(const byte*, size_t, CipherDir dir);
+    void SetKey(const byte*, uint32, CipherDir dir);
     void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
 private:
     DES des1_;
@@ -78,7 +78,7 @@ public:
         : DES_BASE(DIR, MODE), des1_(DIR, MODE), des2_(DIR, MODE),
                                des3_(DIR, MODE) {}
 
-    void SetKey(const byte*, size_t, CipherDir dir);
+    void SetKey(const byte*, uint32, CipherDir dir);
     void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
 private:
     DES des1_;
@@ -109,4 +109,4 @@ typedef BlockCipher<DECRYPTION, DES_EDE3, CBC> DES_EDE3_CBC_Decryption;
 } // namespace
 
 
-#endif // TAO_CRYPT_DES_HPP__
+#endif // TAO_CRYPT_DES_HPP

@@ -19,6 +19,9 @@
 #endif /* WIN32 */
 
 
+#include "../../taocrypt/test/memory.cpp"
+
+
 void err_sys(const char* msg)
 {
     printf("yassl server error: %s\n", msg);
@@ -80,12 +83,12 @@ int main(int argc, char** argv)
 
     SSL* ssl = SSL_new(ctx);
     SSL_set_fd(ssl, clientfd);
+   
     if (SSL_accept(ssl) != SSL_SUCCESS) err_sys("SSL_accept failed");
-
     printf("Using Cipher Suite %s\n", SSL_get_cipher(ssl));
 
     char command[1024];
-    SSL_read(ssl, command, sizeof(command));
+    command[SSL_read(ssl, command, sizeof(command))] = 0;
     printf("First client command: %s\n", command);
 
     char msg[] = "I hear you, fa shizzle!";

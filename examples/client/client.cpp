@@ -18,6 +18,7 @@
 #endif /* WIN32 */
 
 
+
 void err_sys(const char* msg)
 {
     printf("yassl client error: %s\n", msg);
@@ -59,18 +60,47 @@ int main(int argc, char** argv)
     SSL*        ssl = SSL_new(ctx);
 
     SSL_set_fd(ssl, sockfd);
-    if (SSL_connect(ssl) != SSL_SUCCESS) err_sys("SSL_connect failed");
 
+    if (SSL_connect(ssl) != SSL_SUCCESS) err_sys("SSL_connect failed");
     char msg[] = "hello yassl!";
     if (SSL_write(ssl, msg, sizeof(msg)) != sizeof(msg))
         err_sys("SSL_write failed");
 
     char reply[1024];
-    SSL_read(ssl, reply, sizeof(reply));
+    reply[SSL_read(ssl, reply, sizeof(reply))] = 0;
     printf("Server response: %s\n", reply);
 
+    // if resume test, comment the next three lines out
+    SSL_shutdown(ssl);
     SSL_CTX_free(ctx);
     SSL_free(ssl);
+    
+    // start reusme
+    /*
+    SSL_SESSION* session   = SSL_get_session(ssl);
+    SSL*         sslResume = SSL_new(ctx);
+
+    SSL_shutdown(ssl);
+    SSL_CTX_free(ctx);
+    SSL_free(ssl);
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (connect(sockfd, (const sockaddr*)&servaddr, sizeof(servaddr)) != 0)
+        err_sys("tcp connect failed");
+    SSL_set_fd(sslResume, sockfd);
+    SSL_set_session(sslResume, session);
+    
+    if (SSL_connect(sslResume) != SSL_SUCCESS) err_sys("SSL resume failed");
+  
+    if (SSL_write(sslResume, msg, sizeof(msg)) != sizeof(msg))
+        err_sys("SSL_write failed");
+
+    reply[SSL_read(sslResume, reply, sizeof(reply))] = 0;
+    printf("Server response: %s\n", reply);
+
+    SSL_free(sslResume);
+    // end reusme
+    */
 
     return 0;
 }

@@ -21,8 +21,8 @@
 
 
 
-#ifndef TAO_CRYPT_HASH_HPP__
-#define TAO_CRYPT_HASH_HPP__
+#ifndef TAO_CRYPT_HASH_HPP
+#define TAO_CRYPT_HASH_HPP
 
 #include "misc.hpp"
 
@@ -30,21 +30,21 @@ namespace TaoCrypt {
 
 class HASH {
 public:
-    HASH(size_t digSz, size_t buffSz) 
+    HASH(uint32 digSz, uint32 buffSz) 
         : digest_(new uint32[digSz]), buffer_(new byte[buffSz]) {}
     virtual ~HASH() { delete[] buffer_; delete[] digest_; }
 
     virtual ByteOrder getByteOrder()  const = 0;
-    virtual size_t    getBlockSize()  const = 0;
-    virtual size_t    getDigestSize() const = 0;
-    virtual size_t    getPadSize()    const = 0;
+    virtual uint32    getBlockSize()  const = 0;
+    virtual uint32    getDigestSize() const = 0;
+    virtual uint32    getPadSize()    const = 0;
 
     virtual void Init() = 0;
-    virtual void Update(const byte*, size_t);
+    virtual void Update(const byte*, uint32);
     virtual void Final(byte*);
 protected:
-    size_t  buffLen_;
-    size_t  length_;    // in Bits
+    uint32  buffLen_;
+    uint32  length_;    // in Bits
     uint32* digest_;
     byte*   buffer_;
 
@@ -54,4 +54,4 @@ protected:
 
 } // namespace
 
-#endif // TAO_CRYPT_HASH_HPP__
+#endif // TAO_CRYPT_HASH_HPP

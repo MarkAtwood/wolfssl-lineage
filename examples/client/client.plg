@@ -6,15 +6,26 @@
 --------------------Configuration: client - Win32 Debug--------------------
 </h3>
 <h3>Command Lines</h3>
-Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSPBD.tmp" with contents
+Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSP86D.tmp" with contents
+[
+/nologo /MLd /W3 /Gm /GX /ZI /Od /I "..\..\include" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"Debug/" /Fp"Debug/client.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
+"F:\yassl\examples\client\client.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\tao\LOCALS~1\Temp\RSP86D.tmp" 
+Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSP86E.tmp" with contents
 [
 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Ws2_32.lib /nologo /subsystem:console /incremental:yes /pdb:"Debug/client.pdb" /debug /machine:I386 /out:"Debug/client.exe" /pdbtype:sept 
 .\Debug\client.obj
 \yassl\Debug\yassl.lib
 ]
-Creating command line "link.exe @C:\DOCUME~1\tao\LOCALS~1\Temp\RSPBD.tmp"
+Creating command line "link.exe @C:\DOCUME~1\tao\LOCALS~1\Temp\RSP86E.tmp"
 <h3>Output Window</h3>
+Compiling...
+client.cpp
 Linking...
+Creating command line "bscmake.exe /nologo /o"Debug/client.bsc"  .\Debug\client.sbr"
+Creating browse info file...
+<h3>Output Window</h3>
 
 
 

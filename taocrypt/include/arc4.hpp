@@ -20,8 +20,8 @@
  */
 
 
-#ifndef TAO_CRYPT_ARC4_HPP__
-#define TAO_CRYPT_ARC4_HPP__
+#ifndef TAO_CRYPT_ARC4_HPP
+#define TAO_CRYPT_ARC4_HPP
 
 #include "misc.hpp"
 
@@ -36,8 +36,8 @@ public:
 
     ARC4() {}
 
-    void Process(byte*, const byte*, size_t);
-    void SetKey(const byte*, size_t);
+    void Process(byte*, const byte*, uint32);
+    void SetKey(const byte*, uint32);
 private:
     byte x_;
     byte y_;
@@ -50,5 +50,5 @@ private:
 } // namespace
 
 
-#endif // TAO_CRYPT_ARC4_HPP__
+#endif // TAO_CRYPT_ARC4_HPP
 

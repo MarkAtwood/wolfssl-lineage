@@ -20,8 +20,8 @@
  */
 
 
-#ifndef TAO_CRYPT_MD5_HPP__
-#define TAO_CRYPT_MD5_HPP__
+#ifndef TAO_CRYPT_MD5_HPP
+#define TAO_CRYPT_MD5_HPP
 
 #include "hash.hpp"
 
@@ -34,9 +34,9 @@ public:
     MD5() : HASH(DIGEST_SIZE / sizeof(uint32), BLOCK_SIZE) { Init(); }
 
     ByteOrder getByteOrder()  const { return ByteOrder(TAO_BYTE_ORDER); }
-    size_t    getBlockSize()  const { return BLOCK_SIZE; }
-    size_t    getDigestSize() const { return DIGEST_SIZE; }
-    size_t    getPadSize()    const { return PAD_SIZE; }
+    uint32    getBlockSize()  const { return BLOCK_SIZE; }
+    uint32    getDigestSize() const { return DIGEST_SIZE; }
+    uint32    getPadSize()    const { return PAD_SIZE; }
 
     MD5(const MD5&);
     MD5& operator= (const MD5&);
@@ -55,5 +55,5 @@ inline void swap(MD5& a, MD5& b)
 
 } // namespace
 
-#endif // TAO_CRYPT_MD5_HPP__
+#endif // TAO_CRYPT_MD5_HPP
 

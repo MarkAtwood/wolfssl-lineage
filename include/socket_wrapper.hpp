@@ -26,8 +26,8 @@
  */
 
 
-#ifndef __yaSSL_socket_wrapper_hpp__
-#define __yaSSL_socket_wrapper_hpp__
+#ifndef yaSSL_SOCKET_WRAPPER_HPP
+#define yaSSL_SOCKET_WRAPPER_HPP
 
 #include <cassert>
 
@@ -45,6 +45,7 @@
 
 namespace yaSSL {
 
+typedef unsigned int uint;
 
 #ifdef WIN32
     typedef SOCKET socket_t;
@@ -69,8 +70,9 @@ public:
     explicit Socket(socket_t s = INVALID_SOCKET) : socket_(s) {}
     virtual ~Socket();
 
-    void   set_fd(socket_t s) { socket_ = s; }
-    size_t get_ready() const;
+    void     set_fd(socket_t s) { socket_ = s; }
+    uint     get_ready() const;
+    socket_t get_fd() const { return socket_; }
 
     int send(const byte* buf, unsigned int len, int flags = 0) const;
     int receive(byte* buf, unsigned int len, int flags = 0)    const;
@@ -88,4 +90,4 @@ private:
 
 } // naemspace
 
-#endif // __yaSSL_socket_wrapper_hpp__
+#endif // yaSSL_SOCKET_WRAPPER_HPP

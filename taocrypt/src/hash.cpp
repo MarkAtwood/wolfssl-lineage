@@ -27,12 +27,12 @@
 
 namespace TaoCrypt {
 
-void HASH::Update(const byte* data, size_t len)
+void HASH::Update(const byte* data, uint32 len)
 {
     // do block size increments
-    size_t blockSz = getBlockSize();
+    uint32 blockSz = getBlockSize();
     while (len) {
-        size_t add = min(len, blockSz - buffLen_);
+        uint32 add = min(len, blockSz - buffLen_);
         memcpy(&buffer_[buffLen_], data, add);
 
         buffLen_ += add;
@@ -49,11 +49,11 @@ void HASH::Update(const byte* data, size_t len)
 
 void HASH::Final(byte* hash)
 {
-    size_t    blockSz   = getBlockSize();
-    size_t    digestSz  = getDigestSize();
-    size_t    padSz     = getPadSize();
+    uint32    blockSz   = getBlockSize();
+    uint32    digestSz  = getDigestSize();
+    uint32    padSz     = getPadSize();
     ByteOrder order     = getByteOrder();
-    size_t    prePadLen = length_ + buffLen_ * 8;  // in bits
+    uint32    prePadLen = length_ + buffLen_ * 8;  // in bits
 
     buffer_[buffLen_++] = 0x80;  // add 1
 

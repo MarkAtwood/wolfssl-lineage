@@ -39,16 +39,16 @@ Integer& BER_Decoder::GetInteger(Integer& integer)
 
 class BadHeader {};
 
-size_t BER_Decoder::GetSequence()
+uint32 BER_Decoder::GetSequence()
 {
-    size_t length(0);
+    uint32 length(0);
 
     byte b = sink_.next();
     if (b != (SEQUENCE | CONSTRUCTED)) throw BadHeader();
 
     b = sink_.next();
     if (b >= LONG_LENGTH) {        
-        size_t bytes = b & 0x7F;
+        uint32 bytes = b & 0x7F;
 
         while (bytes--) {
             b = sink_.next();
@@ -62,9 +62,9 @@ size_t BER_Decoder::GetSequence()
 }
 
 
-size_t BER_Decoder::GetVersion()
+uint32 BER_Decoder::GetVersion()
 {
-    size_t version(0);
+    uint32 version(0);
 
     byte b = sink_.next();
     if (b != INTEGER) throw BadHeader();
@@ -76,7 +76,7 @@ size_t BER_Decoder::GetVersion()
 }
 
 
-size_t BER_Decoder::GetExplicitVersion()
+uint32 BER_Decoder::GetExplicitVersion()
 {
     byte b = sink_.next();
 
@@ -186,8 +186,8 @@ void CertDecoder::SetPublicKey()
 
 void CertDecoder::StoreSequence()
 {
-    size_t read(0);
-    size_t length(0);
+    uint32 read(0);
+    uint32 length(0);
 
     byte b = sink_.next();
     ++read;
@@ -196,7 +196,7 @@ void CertDecoder::StoreSequence()
     b = sink_.next();
     ++read;
     if (b >= LONG_LENGTH) {        
-        size_t bytes = b & 0x7F;
+        uint32 bytes = b & 0x7F;
 
         while (bytes--) {
             b = sink_.next();

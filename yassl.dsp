@@ -101,6 +101,10 @@ SOURCE=.\src\handshake.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\log.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\socket_wrapper.cpp
 # End Source File
 # Begin Source File
@@ -141,11 +145,19 @@ SOURCE=.\include\handshake.hpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\include\lock.hpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\include\log.hpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\include\socket_wrapper.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\timer.hpp
 # End Source File
 # Begin Source File
 

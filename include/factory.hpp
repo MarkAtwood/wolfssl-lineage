@@ -28,8 +28,8 @@
 
 
 
-#ifndef yaSSL_factory_hpp__
-#define yaSSL_factory_hpp__
+#ifndef yaSSL_FACTORY_HPP
+#define yaSSL_FACTORY_HPP
 
 #include <map>
 #include "yassl_error.hpp"
@@ -75,4 +75,4 @@ private:
 
 } // naemspace
 
-#endif // yaSSL_factory_hpp__
+#endif // yaSSL_FACTORY_HPP

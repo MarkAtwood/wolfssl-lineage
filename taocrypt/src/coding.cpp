@@ -45,9 +45,10 @@ byte GetHex(byte b, byte b2)
 
 void HexDecoder::Decode()
 {
-    size_t bytes = coded_.size();
+    uint32 bytes = coded_.size();
     decoded_.New(bytes / 2);
-    size_t i(0);
+
+    uint32 i(0);
 
     while (bytes) {
         byte b  = coded_.next() - 0x30;

@@ -24,11 +24,8 @@
  */
 
 
-#ifndef yaSSL_types_hpp__
-#define yaSSL_types_hpp__
-
-#include <cstdlib>    // for size_t
-
+#ifndef yaSSL_TYPES_HPP
+#define yaSSL_TYPES_HPP
 
 namespace yaSSL {
 
@@ -41,6 +38,9 @@ typedef uint32         uint64[2];
 
 typedef uint8  opaque;
 typedef opaque byte;
+
+typedef unsigned int uint;
+
  
 // all length constants in bytes
 const int ID_LEN            =  32;  // session id length
@@ -81,6 +81,7 @@ const int MASTER_LABEL_SZ   =  13;  // TLS master secret label size
 const int KEY_LABEL_SZ      =  13;  // TLS key block expansion size
 const int FINISHED_LABEL_SZ =  15;  // TLS finished lable length
 const int SEED_LEN          = RAN_LEN * 2; // TLS seed, client + server random
+const int DEFAULT_TIMEOUT   = 500;  // Default Session timeout in seconds
 
 
 typedef uint8 Cipher;             // first byte is always 0x00 for SSLv3 & TLS
@@ -204,13 +205,13 @@ enum CertType { Cert = 0, PrivateKey };
 
 // an x509 version 3 certificate
 class x509 {
-    size_t  length_;
+    uint    length_;
     opaque* buffer_;
 public:
-    explicit x509(size_t sz) : length_(sz), buffer_(new opaque[sz]) {}
+    explicit x509(uint sz) : length_(sz), buffer_(new opaque[sz]) {}
     ~x509() { delete [] buffer_; }
 
-    size_t        get_length() const { return length_; }
+    uint          get_length() const { return length_; }
     const opaque* get_buffer() const { return buffer_; }
     opaque*       set_buffer()       { return buffer_; }
 
@@ -283,4 +284,4 @@ const opaque key_label   [KEY_LABEL_SZ + 1]    = "key expansion";
 
 } // naemspace
 
-#endif // yaSSL_types_hpp__
+#endif // yaSSL_TYPES_HPP

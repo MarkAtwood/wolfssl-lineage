@@ -71,7 +71,7 @@ void Socket::closeSocket()
 }
 
 
-size_t Socket::get_ready() const
+uint Socket::get_ready() const
 {
     unsigned long ready = 0;
 

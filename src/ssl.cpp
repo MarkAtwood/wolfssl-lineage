@@ -47,7 +47,7 @@ SSL* SSL_new(SSL_CTX* ctx)
 
 int SSL_set_fd(SSL* ssl, int fd)
 {
-    ssl->set_socket().set_fd(fd);
+    ssl->useSocket().set_fd(fd);
     return SSL_SUCCESS;
 }
 
@@ -58,13 +58,16 @@ int SSL_connect(SSL* ssl)
         sendClientHello(*ssl);
         processReply(*ssl);
 
-        sendClientKeyExchange(*ssl);
+        if (!ssl->getSecurity().get_resuming())
+            sendClientKeyExchange(*ssl);
         sendChangeCipher(*ssl);
         sendFinished(*ssl, client_end);
         ssl->flushBuffer();
-        processReply(*ssl);
+        if (!ssl->getSecurity().get_resuming())
+            processReply(*ssl);
 
         ssl->verifyState(serverFinishedComplete);
+        ssl->useLog().ShowTCP(ssl->getSocket().get_fd());
         return SSL_SUCCESS;
     }
     catch (Error& err) {
@@ -114,16 +117,23 @@ int SSL_accept(SSL* ssl)
     try {
         processReply(*ssl);
         sendServerHello(*ssl);
-        sendCertificate(*ssl);
-        if (ssl->get_connection().send_server_key_)
-            sendServerKeyExchange(*ssl);
-        sendServerHelloDone(*ssl);
-        ssl->flushBuffer();
 
-        processReply(*ssl);
+        if (!ssl->getSecurity().get_resuming()) {
+            sendCertificate(*ssl);
+            if (ssl->getSecurity().get_connection().send_server_key_)
+                sendServerKeyExchange(*ssl);
+            sendServerHelloDone(*ssl);
+            ssl->flushBuffer();
+
+            processReply(*ssl);
+        }
         sendChangeCipher(*ssl);
         sendFinished(*ssl, server_end);
         ssl->flushBuffer();
+        if (ssl->getSecurity().get_resuming())
+            processReply(*ssl);
+
+        ssl->useLog().ShowTCP(ssl->getSocket().get_fd());
         return SSL_SUCCESS;
     }
     catch (Error& err) {
@@ -138,7 +148,7 @@ int SSL_accept(SSL* ssl)
 
 int SSL_do_handshake(SSL* ssl)
 {
-    if (ssl->get_security().entity_ == client_end)
+    if (ssl->getSecurity().get_parms().entity_ == client_end)
         return SSL_connect(ssl);
     else
         return SSL_accept(ssl);
@@ -154,23 +164,32 @@ void SSL_free(SSL* ssl)
 int SSL_clear(SSL* ssl)
 {
     // TODO: reset
-    ssl->set_socket().closeSocket();
+    ssl->useSocket().closeSocket();
     return SSL_SUCCESS;
 }
 
 
 int SSL_shutdown(SSL* ssl)
 {
-    // TODO: send close_notify see if receive one back, reset
-    ssl->set_socket().closeSocket();
+    sendAlert(*ssl, Alert(warning, close_notify));
+    ssl->useLog().ShowTCP(ssl->getSocket().get_fd(), true);
+    ssl->useSocket().closeSocket();
+
     return SSL_SUCCESS;
 }
 
 
 SSL_SESSION* SSL_get_session(SSL* ssl)
 {
-    SSL_SESSION session(ssl);
-    return session.session_;
+    return GetSessions().lookup(
+        ssl->getSecurity().get_connection().sessionID_);
+}
+
+
+int SSL_set_session(SSL* ssl, SSL_SESSION* session)
+{
+    ssl->set_session(session);
+    return SSL_SUCCESS;
 }
 
 
@@ -200,7 +219,7 @@ const char* SSL_get_cipher_name(SSL* ssl)
 
 const char* SSL_get_cipher(SSL* ssl)
 {
-    return ssl->get_security().cipher_name_;
+    return ssl->getSecurity().get_parms().cipher_name_;
 }
 
 
@@ -232,7 +251,7 @@ const char* SSLeay_version(int)
 
 int SSL_get_error(SSL* ssl, int previous)
 {
-    return ssl->get_states().errorNumber_;
+    return ssl->getStates().getNumber();
 }
 
 
@@ -391,7 +410,7 @@ void SSL_set_connect_state(SSL*)
 
 void SSL_set_accept_state(SSL* ssl)
 {
-    ssl->set_security().entity_ = server_end;
+    ssl->useSecurity().use_parms().entity_ = server_end;
 }
 
 long SSL_get_verify_result(SSL*)
@@ -466,7 +485,7 @@ int read_file(SSL_CTX* ctx, const char* file, int format, CertType type)
     x509*& x = (type == Cert) ? ctx->certificate_ : ctx->privateKey_;
     
     if (format == SSL_FILETYPE_ASN1) {
-        size_t sz = input.tellg();
+        uint sz = input.tellg();
         input.seekg(0, std::ios::beg);    
         x = new x509(sz);  // takes ownership
         input.read(reinterpret_cast<char*>(x->set_buffer()), sz);
@@ -517,7 +536,7 @@ int SSL_CTX_set_default_verify_paths(SSL_CTX* ctx)
 }
 
 
-int  SSL_CTX_set_session_id_context(SSL_CTX*, const unsigned char*,
+int SSL_CTX_set_session_id_context(SSL_CTX*, const unsigned char*,
                                     unsigned int)
 {
     // TODO: create and store session id for reuse and verify
@@ -525,7 +544,7 @@ int  SSL_CTX_set_session_id_context(SSL_CTX*, const unsigned char*,
 }
 
 
-int  SSL_CTX_check_private_key(SSL_CTX* ctx)
+int SSL_CTX_check_private_key(SSL_CTX* ctx)
 {
     // TODO: check private against public for RSA match
     return SSL_NOT_IMPLEMENTED;

@@ -20,8 +20,8 @@
  */
 
 
-#ifndef TAO_CRYPT_HMAC_HPP__
-#define TAO_CRYPT_HMAC_HPP__
+#ifndef TAO_CRYPT_HMAC_HPP
+#define TAO_CRYPT_HMAC_HPP
 
 #include "hash.hpp"
 
@@ -33,11 +33,11 @@ public:
     enum { IPAD = 0x36, OPAD = 0x5C };
 
     HMAC() { Init(); }
-    void Update(const byte*, size_t);
+    void Update(const byte*, uint32);
     void Final(byte*);
     void Init();
 
-    void SetKey(const byte*, size_t);
+    void SetKey(const byte*, uint32);
 private:
     byte ipad_[T::BLOCK_SIZE];
     byte opad_[T::BLOCK_SIZE];
@@ -61,7 +61,7 @@ void HMAC<T>::Init()
 
 
 template <class T>
-void HMAC<T>::SetKey(const byte* key, size_t length)
+void HMAC<T>::SetKey(const byte* key, uint32 length)
 {
     Init();
 
@@ -74,7 +74,7 @@ void HMAC<T>::SetKey(const byte* key, size_t length)
     }
     memset(ipad_ + length, 0, T::BLOCK_SIZE - length);
 
-    for (size_t i = 0; i < T::BLOCK_SIZE; i++) {
+    for (uint32 i = 0; i < T::BLOCK_SIZE; i++) {
         opad_[i] = ipad_[i] ^ OPAD;
         ipad_[i] ^= IPAD;
     }
@@ -90,7 +90,7 @@ void HMAC<T>::KeyInnerHash()
 
 
 template <class T>
-void HMAC<T>::Update(const byte* msg, size_t length)
+void HMAC<T>::Update(const byte* msg, uint32 length)
 {
     if (!innerHashKeyed_)
         KeyInnerHash();
@@ -115,4 +115,4 @@ void HMAC<T>::Final(byte* hash)
 
 } // namespace
 
-#endif // TAO_CRYPT_HMAC_HPP__
+#endif // TAO_CRYPT_HMAC_HPP

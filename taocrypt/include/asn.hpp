@@ -20,8 +20,8 @@
  */
 
 
-#ifndef TAO_CRYPT_ASN_HPP__
-#define TAO_CRYPT_ASN_HPP__
+#ifndef TAO_CRYPT_ASN_HPP
+#define TAO_CRYPT_ASN_HPP
 
 
 #include "misc.hpp"
@@ -86,9 +86,9 @@ public:
     explicit BER_Decoder(Sink& s) : sink_(s) {}
 
     Integer& GetInteger(Integer&);
-    size_t   GetSequence();
-    size_t   GetVersion();
-    size_t   GetExplicitVersion();
+    uint32   GetSequence();
+    uint32   GetVersion();
+    uint32   GetExplicitVersion();
 private:
     virtual void ReadHeader() = 0;
 };
@@ -124,16 +124,16 @@ private:
 
 class PublicKey {
     const byte* key_;
-    size_t      sz_;
+    uint32      sz_;
 public:
-    PublicKey(const byte* k, size_t s) : key_(k), sz_(s) {}
+    PublicKey(const byte* k, uint32 s) : key_(k), sz_(s) {}
     PublicKey() : key_(0), sz_(0) {}
 
     const byte* GetKey() const { return key_; }
-    size_t      size()   const { return sz_; }
+    uint32      size()   const { return sz_; }
 
     void SetKey(const byte* k) { key_ = k; }
-    void SetSize(size_t s) { sz_ = s; }
+    void SetSize(uint32 s) { sz_ = s; }
 };
 
 
@@ -158,4 +158,4 @@ private:
 } // namespace
 
 
-#endif // TAO_CRYPT_ASN_HPP__
+#endif // TAO_CRYPT_ASN_HPP

@@ -33,16 +33,16 @@ namespace yaSSL {
 // construct key exchange with known ssl parms
 void ClientKeyExchange::createKey(SSL& ssl)
 {
-    const ClientKeyFactory& ckf = ssl.get_factory().clientKeyFactory_;
-    client_key_ = ckf.CreateObject(ssl.get_security().kea_);
+    const ClientKeyFactory& ckf = ssl.getFactory().getClientKey();
+    client_key_ = ckf.CreateObject(ssl.getSecurity().get_parms().kea_);
 }
 
 
 // construct key exchange with known ssl parms
 void ServerKeyExchange::createKey(SSL& ssl)
 {
-    const ServerKeyFactory& skf = ssl.get_factory().serverKeyFactory_;
-    server_key_ = skf.CreateObject(ssl.get_security().kea_);
+    const ServerKeyFactory& skf = ssl.getFactory().getServerKey();
+    server_key_ = skf.CreateObject(ssl.getSecurity().get_parms().kea_);
 }
 
 
@@ -50,13 +50,13 @@ void ServerKeyExchange::createKey(SSL& ssl)
 void EncryptedPreMasterSecret::build(SSL& ssl)
 {
     opaque tmp[SECRET_LEN];
-    ssl.get_random().Fill(tmp, SECRET_LEN);
-    ProtocolVersion pv = ssl.get_connection().version_;
+    ssl.getCrypto().get_random().Fill(tmp, SECRET_LEN);
+    ProtocolVersion pv = ssl.getSecurity().get_connection().version_;
     tmp[0] = pv.major_;
     tmp[1] = pv.minor_;
     ssl.set_preMaster(tmp, SECRET_LEN);
 
-    const CertManager& cert = ssl.get_certManager();
+    const CertManager& cert = ssl.getCrypto().get_certManager();
     RSA rsa(cert.get_Key(), cert.get_KeyLength());
     bool tls = ssl.isTLS();     // if TLS, put length for encrypted data
     alloc(rsa.get_cipherLength() + (tls ? 2 : 0));
@@ -67,17 +67,17 @@ void EncryptedPreMasterSecret::build(SSL& ssl)
         memcpy(secret_, len, sizeof(len));
         holder += 2;
     }
-    rsa.encrypt(holder, tmp, SECRET_LEN, ssl.get_random());
+    rsa.encrypt(holder, tmp, SECRET_LEN, ssl.getCrypto().get_random());
 }
 
 
 // build/set premaster and Client Public key, client side
 void ClientDiffieHellmanPublic::build(SSL& ssl)
 {
-    DiffieHellman& dhServer = ssl.use_dh();
+    DiffieHellman& dhServer = ssl.useCrypto().use_dh();
     DiffieHellman  dhClient(dhServer);
 
-    size_t keyLength = dhClient.get_agreedKeyLength(); // pub and agree same
+    uint keyLength = dhClient.get_agreedKeyLength(); // pub and agree same
 
     alloc(keyLength, true);
     dhClient.makeAgreement(dhServer.get_publicKey());
@@ -91,7 +91,7 @@ void ClientDiffieHellmanPublic::build(SSL& ssl)
 // build server exhange, server side
 void DH_Server::build(SSL& ssl)
 {
-    DiffieHellman& dhServer = ssl.use_dh();
+    DiffieHellman& dhServer = ssl.useCrypto().use_dh();
 
     int pSz, gSz, pubSz;
     dhServer.set_sizes(pSz, gSz, pubSz);
@@ -123,21 +123,21 @@ void DH_Server::build(SSL& ssl)
     SHA  sha;
 
     // md5
-    md5.update(ssl.get_connection().client_random_, RAN_LEN);
-    md5.update(ssl.get_connection().server_random_, RAN_LEN);
+    md5.update(ssl.getSecurity().get_connection().client_random_, RAN_LEN);
+    md5.update(ssl.getSecurity().get_connection().server_random_, RAN_LEN);
     md5.update(tmp.get_buffer(), tmp.get_size());
     md5.get_digest(hash);
 
     // sha
-    sha.update(ssl.get_connection().client_random_, RAN_LEN);
-    sha.update(ssl.get_connection().server_random_, RAN_LEN);
+    sha.update(ssl.getSecurity().get_connection().client_random_, RAN_LEN);
+    sha.update(ssl.getSecurity().get_connection().server_random_, RAN_LEN);
     sha.update(tmp.get_buffer(), tmp.get_size());
     sha.get_digest(&hash[MD5_LEN]);
 
-    const CertManager& cert = ssl.get_certManager();
+    const CertManager& cert = ssl.getCrypto().get_certManager();
     RSA   rsa(cert.get_privateKey(), cert.get_privateKeyLength(), false);
 
-    rsa.sign(sig, hash, sizeof(hash), ssl.get_random());
+    rsa.sign(sig, hash, sizeof(hash), ssl.getCrypto().get_random());
 
     rsa.verify(hash, sizeof(hash), sig, 64);
 
@@ -154,7 +154,7 @@ void DH_Server::build(SSL& ssl)
 // read PreMaster secret and decrypt, server side
 void EncryptedPreMasterSecret::read(SSL& ssl, input_buffer& input)
 {
-    const CertManager& cert = ssl.get_certManager();
+    const CertManager& cert = ssl.getCrypto().get_certManager();
     RSA rsa(cert.get_privateKey(), cert.get_privateKeyLength(), false);
     uint16 cipherLen = rsa.get_cipherLength();
     if (ssl.isTLS()) {
@@ -166,7 +166,8 @@ void EncryptedPreMasterSecret::read(SSL& ssl, input_buffer& input)
     input.read(secret_, length_);
 
     opaque preMasterSecret[SECRET_LEN];
-    rsa.decrypt(preMasterSecret, secret_, length_, ssl.get_random());
+    rsa.decrypt(preMasterSecret, secret_, length_, 
+                ssl.getCrypto().get_random());
 
     ssl.set_preMaster(preMasterSecret, SECRET_LEN);
     ssl.makeMasterSecret();
@@ -176,7 +177,7 @@ void EncryptedPreMasterSecret::read(SSL& ssl, input_buffer& input)
 // read client's public key, server side
 void ClientDiffieHellmanPublic::read(SSL& ssl, input_buffer& input)
 {
-    DiffieHellman& dh = ssl.use_dh();
+    DiffieHellman& dh = ssl.useCrypto().use_dh();
 
     uint16 keyLength;
     byte tmp[2];
@@ -242,31 +243,31 @@ void DH_Server::read(SSL& ssl, input_buffer& input)
     SHA  sha;
 
     // md5
-    md5.update(ssl.get_connection().client_random_, RAN_LEN);
-    md5.update(ssl.get_connection().server_random_, RAN_LEN);
+    md5.update(ssl.getSecurity().get_connection().client_random_, RAN_LEN);
+    md5.update(ssl.getSecurity().get_connection().server_random_, RAN_LEN);
     md5.update(message.get_buffer(), message.get_size());
     md5.get_digest(hash);
 
     // sha
-    sha.update(ssl.get_connection().client_random_, RAN_LEN);
-    sha.update(ssl.get_connection().server_random_, RAN_LEN);
+    sha.update(ssl.getSecurity().get_connection().client_random_, RAN_LEN);
+    sha.update(ssl.getSecurity().get_connection().server_random_, RAN_LEN);
     sha.update(message.get_buffer(), message.get_size());
     sha.get_digest(&hash[MD5_LEN]);
 
-    const CertManager& cert = ssl.get_certManager();
+    const CertManager& cert = ssl.getCrypto().get_certManager();
     RSA   rsa(cert.get_Key(), cert.get_KeyLength());
 
      rsa.verify(hash, sizeof(hash), signature_, length);
 
     // save input
-    ssl.set_dh(new DiffieHellman(parms_.get_p(), parms_.get_pSize(),
+    ssl.useCrypto().setDH(new DiffieHellman(parms_.get_p(), parms_.get_pSize(),
                parms_.get_g(), parms_.get_gSize(), parms_.get_pub(),
-               parms_.get_pubSize(), ssl.get_random()));
+               parms_.get_pubSize(), ssl.getCrypto().get_random()));
 }
 
 //#define FORCE_DIFFIE   // test diffie-hellman
 
-SecurityParameters::SecurityParameters(ConnectionEnd ce) : entity_(ce)
+Parameters::Parameters(ConnectionEnd ce) : entity_(ce)
 {
     pending_ = true;	// suite not set yet
 
@@ -370,7 +371,7 @@ output_buffer& operator<<(output_buffer& output, const HandShakeHeader& hdr)
 void HandShakeHeader::Process(input_buffer& input, SSL& ssl)
 {
     ssl.verifyState(*this);
-    const HandShakeFactory& hsf = ssl.get_factory().handShakeFactory_;
+    const HandShakeFactory& hsf = ssl.getFactory().getHandShake();
     std::auto_ptr<HandShakeBase> hs(hsf.CreateObject(type_));
     hashHandShake(ssl, input, c24to32(length_));
 
@@ -397,9 +398,13 @@ output_buffer& operator<<(output_buffer& output, const ChangeCipherSpec& cs)
 // CipherSpec processing handler
 void ChangeCipherSpec::Process(input_buffer& input, SSL& ssl)
 {
-    ssl.set_security().pending_ = false;
-    if (ssl.get_security().entity_ == server_end)
-        buildFinished(ssl, ssl.set_verify(), client); // build client verify
+    ssl.useSecurity().use_parms().pending_ = false;
+    if (ssl.getSecurity().get_resuming()) {
+        if (ssl.getSecurity().get_parms().entity_ == client_end)
+            buildFinished(ssl, ssl.useHashes().use_verify(), server); // server
+    }
+    else if (ssl.getSecurity().get_parms().entity_ == server_end)
+        buildFinished(ssl, ssl.useHashes().use_verify(), client);     // client
 }
 
 
@@ -425,9 +430,34 @@ output_buffer& operator<<(output_buffer& output, const Alert& a)
 // Alert processing handler
 void Alert::Process(input_buffer& input, SSL& ssl)
 {
+    if (ssl.getSecurity().get_parms().pending_ == false)  { // encrypted alert
+        int            aSz = get_length();  // alert size already read on input
+        opaque         verify[SHA_LEN];
+        const  opaque* data = input.get_buffer() + input.get_current() - aSz;
+
+        if (ssl.isTLS())
+            TLS_hmac(ssl, verify, data, aSz, alert, true);
+        else
+            hmac(ssl, verify, data, aSz, alert, true);
+
+        // read mac and fill
+        int    digestSz = ssl.getCrypto().get_mac().get_digestSize();
+        opaque mac[SHA_LEN];
+        input.read(mac, digestSz);
+
+        opaque fill;
+        int    padSz = ssl.getSecurity().get_parms().encrypt_size_ - aSz -
+                       digestSz;
+        for (int i = 0; i < padSz; i++) 
+            fill = input[AUTO];
+
+        // verify
+        if (memcmp(mac, verify, digestSz))
+            throw Error("Bad Alert Verify MAC", verify_error);
+    }
     if (level_ == fatal) {
-        ssl.set_states().recordLayer_    = recordNotReady;
-        ssl.set_states().handshakeLayer_ = handShakeNotReady;
+        ssl.useStates().useRecord()    = recordNotReady;
+        ssl.useStates().useHandShake() = handShakeNotReady;
         throw Error("Fatal Alert", ErrorNumber(description_));
     }
 }
@@ -444,13 +474,13 @@ output_buffer& operator<<(output_buffer& output, const Data& data)
 // Process handler for Data
 void Data::Process(input_buffer& input, SSL& ssl)
 {
-    int msgSz = ssl.get_security().encrypt_size_;
+    int msgSz = ssl.getSecurity().get_parms().encrypt_size_;
     int pad   = 0, padByte = 0;
-    if (ssl.get_security().cipher_type_ == block) {
+    if (ssl.getSecurity().get_parms().cipher_type_ == block) {
         pad = *(input.get_buffer() + input.get_current() + msgSz - 1);
         padByte = 1;
     }
-    int digestSz = ssl.get_mac().get_digestSize();
+    int digestSz = ssl.getCrypto().get_mac().get_digestSize();
     int dataSz = msgSz - digestSz - pad - padByte;   
     opaque verify[SHA_LEN];
 
@@ -517,7 +547,7 @@ const opaque* Certificate::get_buffer() const
 // output operator for Certificate
 output_buffer& operator<<(output_buffer& output, const Certificate& cert)
 {
-    size_t sz = cert.get_length() - 2 * CERT_HEADER;
+    uint sz = cert.get_length() - 2 * CERT_HEADER;
     opaque tmp[CERT_HEADER];
 
     c32to24(sz + CERT_HEADER, tmp);
@@ -533,7 +563,7 @@ output_buffer& operator<<(output_buffer& output, const Certificate& cert)
 // certificate processing handler
 void Certificate::Process(input_buffer& input, SSL& ssl)
 {
-    CertManager& cm = ssl.use_certManager();
+    CertManager& cm = ssl.useCrypto().use_certManager();
   
     uint32 list_sz;
     byte   tmp[3];
@@ -560,8 +590,8 @@ void Certificate::Process(input_buffer& input, SSL& ssl)
     cm.SetKey();
     cm.Validate();
 
-    if (ssl.get_security().entity_ == client_end)
-        ssl.set_states().clientState_ = serverCertComplete;
+    if (ssl.getSecurity().get_parms().entity_ == client_end)
+        ssl.useStates().useClient() = serverCertComplete;
     // TODO add server input certificate state and validate
 }
 
@@ -622,7 +652,22 @@ void ServerHello::Process(input_buffer& input, SSL& ssl)
     ssl.set_random(random_, server_end);
     ssl.set_sessionID(session_id_);
 
-    ssl.set_states().clientState_ = serverHelloComplete;
+    if (ssl.getSecurity().get_resuming())
+        if (memcmp(session_id_, ssl.getSecurity().get_resume().getID(),
+                   ID_LEN) == 0) {
+            ssl.set_masterSecret(ssl.getSecurity().get_resume().getSecret());
+            if (ssl.isTLS())
+                ssl.deriveTLSKeys();
+            else
+                ssl.deriveKeys();
+            ssl.useStates().useClient() = serverHelloDoneComplete;
+            return;
+        }
+        else {
+            ssl.useSecurity().set_resuming(false);
+            ssl.useLog().Trace("server denied resumption");
+        }
+    ssl.useStates().useClient() = serverHelloComplete;
 }
 
 
@@ -630,7 +675,7 @@ void ServerHello::Process(input_buffer& input, SSL& ssl)
 // Server Hello Done processing handler
 void ServerHelloDone::Process(input_buffer& input, SSL& ssl)
 {
-    ssl.set_states().clientState_ = serverHelloDoneComplete;
+    ssl.useStates().useClient() = serverHelloDoneComplete;
 }
 
 
@@ -647,7 +692,7 @@ input_buffer& operator>>(input_buffer& input, ClientHello& hello)
     // Session
     hello.id_len_ = input[AUTO];
     if (hello.id_len_) input.read(hello.session_id_, ID_LEN);
-
+    
     // Suites
     byte tmp[2];
     tmp[0] = input[AUTO];
@@ -695,17 +740,38 @@ output_buffer& operator<<(output_buffer& output, const ClientHello& hello)
 // Client Hello processing handler
 void ClientHello::Process(input_buffer& input, SSL& ssl)
 {
-    ssl.matchSuite(cipher_suites_, suite_len_);
-
-    // store
     ssl.set_random(random_, client_end);
-    ssl.set_pending(ssl.get_security().suite_[1]);
+
+    while (id_len_) {  // trying to resume
+        SSL_SESSION* session = GetSessions().lookup(session_id_);
+        if (!session)  {
+            ssl.useLog().Trace("session lookup failed");
+            break;
+        }
+        ssl.set_session(session);
+        ssl.useSecurity().set_resuming(true);
+        ssl.matchSuite(session->getSuite(), SUITE_LEN);
+        ssl.set_pending(ssl.getSecurity().get_parms().suite_[1]);
+        ssl.set_masterSecret(session->getSecret());
+
+        opaque serverRandom[RAN_LEN];
+        ssl.getCrypto().get_random().Fill(serverRandom, sizeof(serverRandom));
+        ssl.set_random(serverRandom, server_end);
+        if (ssl.isTLS())
+            ssl.deriveTLSKeys();
+        else
+            ssl.deriveKeys();
+        ssl.useStates().useServer() = clientKeyExchangeComplete;
+        return;
+    }
+    ssl.matchSuite(cipher_suites_, suite_len_);
+    ssl.set_pending(ssl.getSecurity().get_parms().suite_[1]);
 
     // process
-    if (ssl.get_connection().dh_init_needed_)
+    if (ssl.getSecurity().get_connection().dh_init_needed_)
         ssl.init_dh();
 
-    ssl.set_states().serverState_ = clientHelloComplete;
+    ssl.useStates().useServer() = clientHelloComplete;
 }
 
 
@@ -723,7 +789,7 @@ void ServerKeyExchange::Process(input_buffer& input, SSL& ssl)
     createKey(ssl);
     server_key_->read(ssl, input);
 
-    ssl.set_states().clientState_ = serverKeyExchangeComplete;
+    ssl.useStates().useClient() = serverKeyExchangeComplete;
 }
 
 
@@ -741,7 +807,7 @@ void ClientKeyExchange::Process(input_buffer& input, SSL& ssl)
     createKey(ssl);
     client_key_->read(ssl, input);
 
-    ssl.set_states().serverState_ = clientKeyExchangeComplete;
+    ssl.useStates().useServer() = clientKeyExchangeComplete;
 }
 
 
@@ -774,8 +840,8 @@ output_buffer& operator<<(output_buffer& output, const Finished& fin)
 void Finished::Process(input_buffer& input, SSL& ssl)
 {
     // verify hashes
-    const  Finished& verify = ssl.get_verify();
-    size_t finishedSz = ssl.isTLS() ? TLS_FINISHED_SZ : FINISHED_SZ;
+    const  Finished& verify = ssl.getHashes().get_verify();
+    uint finishedSz = ssl.isTLS() ? TLS_FINISHED_SZ : FINISHED_SZ;
 
     input.read(hashes_.md5_, finishedSz);
 
@@ -784,7 +850,7 @@ void Finished::Process(input_buffer& input, SSL& ssl)
 
     // read verify mac
     opaque verifyMAC[SHA_LEN];
-    size_t macSz = finishedSz + HANDSHAKE_HEADER;
+    uint macSz = finishedSz + HANDSHAKE_HEADER;
 
     if (ssl.isTLS())
         TLS_hmac(ssl, verifyMAC, input.get_buffer() + input.get_current()
@@ -795,12 +861,12 @@ void Finished::Process(input_buffer& input, SSL& ssl)
 
     // read mac and fill
     opaque mac[SHA_LEN];   // max size
-    int    digestSz = ssl.get_mac().get_digestSize();
+    int    digestSz = ssl.getCrypto().get_mac().get_digestSize();
     input.read(mac, digestSz);
 
     opaque fill;
-    int    padSz = ssl.get_security().encrypt_size_ - HANDSHAKE_HEADER -
-                                                      finishedSz - digestSz;
+    int    padSz = ssl.getSecurity().get_parms().encrypt_size_ -
+                     HANDSHAKE_HEADER - finishedSz - digestSz;
     for (int i = 0; i < padSz; i++) 
         fill = input[AUTO];
 
@@ -809,11 +875,47 @@ void Finished::Process(input_buffer& input, SSL& ssl)
         throw Error("Bad Finished verify MAC", verify_error);
 
     // update states
-    ssl.set_states().handshakeLayer_ = handShakeReady;
-    if (ssl.get_security().entity_ == client_end)
-        ssl.set_states().clientState_ = serverFinishedComplete;
+    ssl.useStates().useHandShake() = handShakeReady;
+    if (ssl.getSecurity().get_parms().entity_ == client_end)
+        ssl.useStates().useClient() = serverFinishedComplete;
     else
-        ssl.set_states().serverState_ = clientFinishedComplete;
+        ssl.useStates().useServer() = clientFinishedComplete;
+}
+
+
+void clean(volatile opaque* p, uint sz, RandomPool& ran)
+{
+    uint i(0);
+
+    for (i = 0; i < sz; ++i)
+        p[i] = 0;
+
+    ran.Fill(const_cast<opaque*>(p), sz);
+
+    for (i = 0; i < sz; ++i)
+        p[i] = 0;
+}
+
+
+void Connection::CleanMaster()
+{
+    if (!master_clean_) {
+        volatile opaque* p = master_secret_;
+        clean(p, SECRET_LEN, random_);
+        master_clean_ = true;
+    }
+}
+
+
+void Connection::CleanPreMaster()
+{
+    if (pre_master_secret_) {
+        volatile opaque* p = pre_master_secret_;
+        clean(p, pre_secret_len_, random_);
+
+        delete[] pre_master_secret_;
+        pre_master_secret_ = 0;
+    }
 }
 
 

@@ -343,7 +343,7 @@ RandomPool::RandomPool() : pimpl_(new RandomImpl) {}
 
 RandomPool::~RandomPool() { delete pimpl_; }
 
-void RandomPool::Fill(opaque* dst, size_t sz) const
+void RandomPool::Fill(opaque* dst, uint sz) const
 {
     pimpl_->RNG_.GenerateBlock(dst, sz);
 }
@@ -721,7 +721,7 @@ void DiffieHellman::makeAgreement(const byte* other)
 }
 
 
-size_t DiffieHellman::get_agreedKeyLength() const
+uint DiffieHellman::get_agreedKeyLength() const
 {
     return pimpl_->dh_.AgreedValueLength();
 }
@@ -810,7 +810,7 @@ x509* PemToDer(const char* file, CertType type)
     string der;
     StringSource(pem, true, new Base64Decoder(new StringSink(der)));
 
-    size_t sz = der.length();
+    uint sz = der.length();
     auto_ptr<x509> x(new x509(sz));
     memcpy(x->set_buffer(), der.c_str(), sz);
 

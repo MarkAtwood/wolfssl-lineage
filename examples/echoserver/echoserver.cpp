@@ -93,6 +93,7 @@ int main(int argc, char** argv)
                 break;
             }
 
+            command[echoSz] = 0;
             fputs(command, fout);
 
             if (SSL_write(ssl, command, echoSz) != echoSz)

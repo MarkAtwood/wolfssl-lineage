@@ -2204,8 +2204,8 @@ void AsymmetricMultiply(word *R, word *T, const word *A, unsigned int NA,
 
 void PositiveMultiply(Integer& product, const Integer& a, const Integer& b)
 {
-    size_t aSize = RoundupSize(a.WordCount());
-    size_t bSize = RoundupSize(b.WordCount());
+    unsigned int aSize = RoundupSize(a.WordCount());
+    unsigned int bSize = RoundupSize(b.WordCount());
 
     product.reg_.CleanNew(RoundupSize(aSize + bSize));
     product.sign_ = Integer::POSITIVE;
@@ -2414,7 +2414,8 @@ Integer::Integer(const wchar_t *str)
 }
 
 
-Integer::Integer(const byte *encodedInteger, size_t byteCount, Signedness s)
+Integer::Integer(const byte *encodedInteger, unsigned int byteCount,
+                 Signedness s)
 {
     Decode(encodedInteger, byteCount, s);
 }
@@ -2434,11 +2435,11 @@ void Integer::Decode(Sink& sink)
     if (b != INTEGER)  
         throw BadBER();
 
-    size_t length(0);
+    unsigned int length(0);
     b = sink.next();
 
     if (b >= LONG_LENGTH) {        
-        size_t bytes = b & 0x7F;
+        unsigned int bytes = b & 0x7F;
 
         while (bytes--) {
             b = sink.next();
@@ -2453,7 +2454,7 @@ void Integer::Decode(Sink& sink)
     else
         sink.prev();
  
-    size_t words = (length + WORD_SIZE - 1) / WORD_SIZE;
+    unsigned int words = (length + WORD_SIZE - 1) / WORD_SIZE;
     words = RoundupSize(words);
     if (words > reg_.size()) reg_.CleanNew(words);
 
@@ -2464,9 +2465,9 @@ void Integer::Decode(Sink& sink)
 }
 
 
-void Integer::Decode(const byte* input, size_t inputLen, Signedness s)
+void Integer::Decode(const byte* input, unsigned int inputLen, Signedness s)
 {
-    size_t idx(0);
+    unsigned int idx(0);
     byte b = input[idx++];
     sign_  = ((s==SIGNED) && (b & 0x80)) ? NEGATIVE : POSITIVE;
 
@@ -2494,10 +2495,10 @@ void Integer::Decode(const byte* input, size_t inputLen, Signedness s)
 }
 
 
-size_t Integer::Encode(byte* output, size_t outputLen,
+unsigned int Integer::Encode(byte* output, unsigned int outputLen,
                        Signedness signedness) const
 {
-    size_t idx(0);
+    unsigned int idx(0);
     if (signedness == UNSIGNED || NotNegative())
     {
         for (unsigned int i=outputLen; i > 0; i--)

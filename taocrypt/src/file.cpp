@@ -27,7 +27,7 @@ namespace TaoCrypt {
 
 
 
-size_t FileSource::size(bool use_current)
+uint32 FileSource::size(bool use_current)
 {
     using std::streampos;
 
@@ -46,15 +46,15 @@ size_t FileSource::size(bool use_current)
 }
 
 
-size_t FileSource::size_left()
+uint32 FileSource::size_left()
 {
     return size(true);
 }
 
 
-size_t FileSource::get(Sink& sink)
+uint32 FileSource::get(Sink& sink)
 {
-    size_t sz(size());
+    uint32 sz(size());
     if (sink.size() < sz)
         sink.set_size(sz);
 

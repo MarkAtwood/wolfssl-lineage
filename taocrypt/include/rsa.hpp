@@ -20,8 +20,8 @@
  */
 
 
-#ifndef TAO_CRYPT_RSA_HPP__
-#define TAO_CRYPT_RSA_HPP__
+#ifndef TAO_CRYPT_RSA_HPP
+#define TAO_CRYPT_RSA_HPP
 
 #include "integer.hpp"
 #include "random.hpp"
@@ -38,12 +38,12 @@ class PK_Lengths {
 public:
     explicit PK_Lengths(const Integer& i) : image_(i) {}
 
-    size_t PaddedBlockBitLength()  const {return image_.BitCount() - 1;}
-    size_t PaddedBlockByteLength() const 
+    uint32 PaddedBlockBitLength()  const {return image_.BitCount() - 1;}
+    uint32 PaddedBlockByteLength() const 
                 {return BitsToBytes(PaddedBlockBitLength());}
 
-    size_t FixedCiphertextLength()   const {return image_.ByteCount();}
-    size_t FixedMaxPlaintextLength() const 
+    uint32 FixedCiphertextLength()   const {return image_.ByteCount();}
+    uint32 FixedMaxPlaintextLength() const 
                 {return SaturatingSubtract(PaddedBlockBitLength() / 8, 10U); }
 };
 
@@ -67,7 +67,7 @@ public:
     void SetModulus(const Integer& n) {n_ = n;}
     void SetPublicExponent(const Integer& e) {e_ = e;}
 
-    size_t FixedCiphertextLength()
+    uint32 FixedCiphertextLength()
     {
         return PK_Lengths(n_).FixedCiphertextLength();
     }
@@ -129,17 +129,17 @@ private:
 
 class RSA_BlockType2  {
 public:
-    void   Pad(const byte*, size_t, byte*, size_t,
+    void   Pad(const byte*, uint32, byte*, uint32,
                RandomNumberGenerator&) const;
-    size_t UnPad(const byte*, size_t, byte*) const;
+    uint32 UnPad(const byte*, uint32, byte*) const;
 };
 
 
 class RSA_BlockType1  {
 public:
-    void   Pad(const byte*, size_t, byte*, size_t, 
+    void   Pad(const byte*, uint32, byte*, uint32, 
                RandomNumberGenerator&) const;
-    size_t UnPad(const byte*, size_t, byte*) const;
+    uint32 UnPad(const byte*, uint32, byte*) const;
 };
 
 
@@ -150,8 +150,8 @@ class RSA_Encryptor {
 public:
     explicit RSA_Encryptor(RSA_PublicKey& k) : key_(k) {}
 
-    void Encrypt(const byte*, size_t, byte*, RandomNumberGenerator&);
-    bool SSL_Verify(const byte* msg, size_t sz, const byte* sig);
+    void Encrypt(const byte*, uint32, byte*, RandomNumberGenerator&);
+    bool SSL_Verify(const byte* msg, uint32 sz, const byte* sig);
 };
 
 
@@ -162,13 +162,13 @@ class RSA_Decryptor {
 public:
     explicit RSA_Decryptor(RSA_PrivateKey& k) : key_(k) {}
 
-    size_t Decrypt(const byte*, size_t, byte*, RandomNumberGenerator&);
-    void   SSL_Sign(const byte*, size_t, byte*, RandomNumberGenerator&);
+    uint32 Decrypt(const byte*, uint32, byte*, RandomNumberGenerator&);
+    void   SSL_Sign(const byte*, uint32, byte*, RandomNumberGenerator&);
 };
 
 
 template<class Pad>
-void RSA_Encryptor<Pad>::Encrypt(const byte* plain, size_t sz, byte* cipher,
+void RSA_Encryptor<Pad>::Encrypt(const byte* plain, uint32 sz, byte* cipher,
                                  RandomNumberGenerator& rng)
 {
     PK_Lengths lengths(key_.GetModulus());
@@ -186,7 +186,7 @@ void RSA_Encryptor<Pad>::Encrypt(const byte* plain, size_t sz, byte* cipher,
 
 
 template<class Pad>
-size_t RSA_Decryptor<Pad>::Decrypt(const byte* cipher, size_t sz, byte* plain,
+uint32 RSA_Decryptor<Pad>::Decrypt(const byte* cipher, uint32 sz, byte* plain,
                                    RandomNumberGenerator& rng)
 {
     PK_Lengths lengths(key_.GetModulus());
@@ -206,7 +206,7 @@ size_t RSA_Decryptor<Pad>::Decrypt(const byte* cipher, size_t sz, byte* plain,
 
 
 template<class Pad>
-void RSA_Decryptor<Pad>::SSL_Sign(const byte* message, size_t sz, byte* sig,
+void RSA_Decryptor<Pad>::SSL_Sign(const byte* message, uint32 sz, byte* sig,
                                   RandomNumberGenerator& rng)
 {
     RSA_PublicKey inverse;
@@ -216,11 +216,11 @@ void RSA_Decryptor<Pad>::SSL_Sign(const byte* message, size_t sz, byte* sig,
 }
 
 
-void SSL_Decrypt(RSA_PublicKey& key, const byte* sig, size_t sz, byte* plain);
+void SSL_Decrypt(RSA_PublicKey& key, const byte* sig, uint32 sz, byte* plain);
 
 
 template<class Pad>
-bool RSA_Encryptor<Pad>::SSL_Verify(const byte* message, size_t sz,
+bool RSA_Encryptor<Pad>::SSL_Verify(const byte* message, uint32 sz,
                                     const byte* sig)
 {
     ByteBlock plain(PK_Lengths(key_.GetModulus()).FixedMaxPlaintextLength());
@@ -239,4 +239,4 @@ typedef RSA_Decryptor<> RSAES_Decryptor;
 
 } // namespace
 
-#endif // TAO_CRYPT_RSA_HPP__
+#endif // TAO_CRYPT_RSA_HPP

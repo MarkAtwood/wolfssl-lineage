@@ -20,8 +20,8 @@
  */
 
 
-#ifndef TAO_CRYPT_DH_HPP__
-#define TAO_CRYPT_DH_HPP__
+#ifndef TAO_CRYPT_DH_HPP
+#define TAO_CRYPT_DH_HPP
 
 #include "misc.hpp"
 #include "integer.hpp"
@@ -69,7 +69,7 @@ public:
     Integer& GetG() { return g_; }
 
     // for p and agree
-    size_t GetByteLength() const { return p_.ByteCount(); }
+    uint32 GetByteLength() const { return p_.ByteCount(); }
 private:
     // group parms
     Integer p_;
@@ -82,4 +82,4 @@ private:
 
 } // namespace
 
-#endif // TAO_CRYPT_DH_HPP__
+#endif // TAO_CRYPT_DH_HPP

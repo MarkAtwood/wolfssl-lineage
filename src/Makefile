@@ -46,7 +46,7 @@ AWK = gawk
 CPPFLAGS = 
 CXX = g++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -g -Wall
+CXXFLAGS = -g -O2
 CYGPATH_W = cygpath -w
 DEFS = -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE=\"yassl\" -DVERSION=\"0.3.0\" 
 DEPDIR = .deps
@@ -107,7 +107,8 @@ INCLUDES = -I../include -I../taocrypt/include
 
 lib_LIBRARIES = libyassl.a
 libyassl_a_SOURCES = cert_wrapper.cpp crypto_wrapper.cpp factory.cpp \
-	handshake.cpp socket_wrapper.cpp ssl.cpp yassl_imp.cpp yassl_int.cpp
+	handshake.cpp log.cpp socket_wrapper.cpp ssl.cpp yassl_imp.cpp \
+	yassl_int.cpp
 
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -118,8 +119,9 @@ LIBRARIES = $(lib_LIBRARIES)
 libyassl_a_AR = $(AR) cru
 libyassl_a_LIBADD =
 am_libyassl_a_OBJECTS = cert_wrapper.$(OBJEXT) crypto_wrapper.$(OBJEXT) \
-	factory.$(OBJEXT) handshake.$(OBJEXT) socket_wrapper.$(OBJEXT) \
-	ssl.$(OBJEXT) yassl_imp.$(OBJEXT) yassl_int.$(OBJEXT)
+	factory.$(OBJEXT) handshake.$(OBJEXT) log.$(OBJEXT) \
+	socket_wrapper.$(OBJEXT) ssl.$(OBJEXT) yassl_imp.$(OBJEXT) \
+	yassl_int.$(OBJEXT)
 libyassl_a_OBJECTS = $(am_libyassl_a_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir)
@@ -128,8 +130,9 @@ am__depfiles_maybe = depfiles
 DEP_FILES = ./$(DEPDIR)/cert_wrapper.Po \
 	./$(DEPDIR)/crypto_wrapper.Po \
 	./$(DEPDIR)/factory.Po ./$(DEPDIR)/handshake.Po \
-	./$(DEPDIR)/socket_wrapper.Po ./$(DEPDIR)/ssl.Po \
-	./$(DEPDIR)/yassl_imp.Po ./$(DEPDIR)/yassl_int.Po
+	./$(DEPDIR)/log.Po ./$(DEPDIR)/socket_wrapper.Po \
+	./$(DEPDIR)/ssl.Po ./$(DEPDIR)/yassl_imp.Po \
+	./$(DEPDIR)/yassl_int.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -195,6 +198,7 @@ include ./$(DEPDIR)/cert_wrapper.Po
 include ./$(DEPDIR)/crypto_wrapper.Po
 include ./$(DEPDIR)/factory.Po
 include ./$(DEPDIR)/handshake.Po
+include ./$(DEPDIR)/log.Po
 include ./$(DEPDIR)/socket_wrapper.Po
 include ./$(DEPDIR)/ssl.Po
 include ./$(DEPDIR)/yassl_imp.Po

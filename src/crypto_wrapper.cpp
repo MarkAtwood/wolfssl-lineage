@@ -39,6 +39,7 @@
 #include "dh.hpp"
 #include "random.hpp"
 #include "file.hpp"
+#include "coding.hpp"
 
 
 namespace yaSSL {
@@ -321,7 +322,7 @@ RandomPool::RandomPool() : pimpl_(new RandomImpl) {}
 
 RandomPool::~RandomPool() { delete pimpl_; }
 
-void RandomPool::Fill(opaque* dst, size_t sz) const
+void RandomPool::Fill(opaque* dst, uint sz) const
 {
     pimpl_->RNG_.GenerateBlock(dst, sz);
 }
@@ -495,7 +496,7 @@ struct DiffieHellman::DHImpl {
     DHImpl(const DHImpl& that) : dh_(that.dh_), ranPool_(that.ranPool_),
                                  publicKey_(0), privateKey_(0), agreedKey_(0)
     {
-        size_t length = dh_.GetByteLength();
+        uint length = dh_.GetByteLength();
         AllocKeys(length, length, length);
     }
 
@@ -515,10 +516,11 @@ DiffieHellman::DiffieHellman(const char* file, const RandomPool& random)
     using namespace TaoCrypt;
     Sink sink;
     FileSource(file, sink);
+    HexDecoder hd(sink);
 
     pimpl_->dh_.Initialize(sink);
 
-    size_t length = pimpl_->dh_.GetByteLength();
+    uint length = pimpl_->dh_.GetByteLength();
 
     pimpl_->AllocKeys(length, length, length);
     pimpl_->dh_.GenerateKeyPair(pimpl_->ranPool_, pimpl_->privateKey_,
@@ -565,7 +567,7 @@ void DiffieHellman::makeAgreement(const byte* other)
 }
 
 
-size_t DiffieHellman::get_agreedKeyLength() const
+uint DiffieHellman::get_agreedKeyLength() const
 {
     return pimpl_->dh_.GetByteLength();
 }
@@ -656,7 +658,7 @@ x509* PemToDer(const char* file, CertType type)
     throw std::runtime_error("add Base64Decoder(der)");
     // Base64Decoder(der);
 
-    size_t sz = der.size();
+    uint sz = der.size();
     auto_ptr<x509> x(new x509(sz));
     memcpy(x->set_buffer(), der.get_buffer(), sz);
 

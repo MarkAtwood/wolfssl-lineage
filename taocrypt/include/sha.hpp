@@ -20,8 +20,8 @@
  */
 
 
-#ifndef TAO_CRYPT_SHA_HPP__
-#define TAO_CRYPT_SHA_HPP__
+#ifndef TAO_CRYPT_SHA_HPP
+#define TAO_CRYPT_SHA_HPP
 
 #include "hash.hpp"
 
@@ -34,9 +34,9 @@ public:
     SHA() : HASH(DIGEST_SIZE / sizeof(uint32), BLOCK_SIZE) { Init(); }
 
     ByteOrder getByteOrder()  const { return ByteOrder(TAO_BYTE_ORDER); }
-    size_t    getBlockSize()  const { return BLOCK_SIZE; }
-    size_t    getDigestSize() const { return DIGEST_SIZE; }
-    size_t    getPadSize()    const { return PAD_SIZE; }
+    uint32    getBlockSize()  const { return BLOCK_SIZE; }
+    uint32    getDigestSize() const { return DIGEST_SIZE; }
+    uint32    getPadSize()    const { return PAD_SIZE; }
 
     void Init();
 
@@ -57,5 +57,5 @@ inline void swap(SHA& a, SHA& b)
 } // namespace
 
 
-#endif // TAO_CRYPT_SHA_HPP__
+#endif // TAO_CRYPT_SHA_HPP
 

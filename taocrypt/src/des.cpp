@@ -68,7 +68,7 @@ static const int bytebit[] = {
 };
 
 
-void DES::SetKey(const byte* key, size_t length, CipherDir dir)
+void DES::SetKey(const byte* key, uint32 length, CipherDir dir)
 {
     byte buffer[56+56+8];
     byte *const pc1m = buffer;                 /* place to modify pc1 into */
@@ -336,7 +336,7 @@ void DES::RawProcessBlock(uint32& lIn, uint32& rIn) const
 }
 
 
-void DES_BASE::Process(byte* out, const byte* in, size_t sz)
+void DES_BASE::Process(byte* out, const byte* in, uint32 sz)
 {
     if (mode_ == ECB)
         ECB_Process(out, in, sz);
@@ -390,7 +390,7 @@ void DES::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out) const
 }
 
 
-void DES_EDE2::SetKey(const byte* key, size_t sz, CipherDir dir)
+void DES_EDE2::SetKey(const byte* key, uint32 sz, CipherDir dir)
 {
     des1_.SetKey(key, sz, dir);
     des2_.SetKey(key + 8, sz, ReverseDir(dir));
@@ -411,7 +411,7 @@ void DES_EDE2::ProcessAndXorBlock(const byte* in, const byte* xOr,
 }
 
 
-void DES_EDE3::SetKey(const byte* key, size_t sz, CipherDir dir)
+void DES_EDE3::SetKey(const byte* key, uint32 sz, CipherDir dir)
 {
     des1_.SetKey(key+(dir==ENCRYPTION?0:2*8), sz, dir);
     des2_.SetKey(key+8, sz, ReverseDir(dir));

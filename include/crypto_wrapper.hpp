@@ -32,8 +32,8 @@
  */
 
 
-#ifndef __yaSSL_crypto_wrapper_hpp__
-#define __yaSSL_crypto_wrapper_hpp__
+#ifndef yaSSL_CRYPTO_WRAPPER_HPP
+#define yaSSL_CRYPTO_WRAPPER_HPP
 
 #include "yassl_types.hpp"
 #include <memory>
@@ -47,8 +47,8 @@ struct MAC {
     virtual void   get_digest(byte*) = 0;
     virtual void   get_digest(byte*, const byte*, unsigned int) = 0;
     virtual void   update(const byte*, unsigned int) = 0;
-    virtual size_t get_digestSize() const = 0;
-    virtual size_t get_padSize() const = 0;
+    virtual uint   get_digestSize() const = 0;
+    virtual uint   get_padSize() const = 0;
     virtual ~MAC() {}
 };
 
@@ -58,8 +58,8 @@ struct NO_MAC : public MAC {
     void   get_digest(byte*);
     void   get_digest(byte*, const byte*, unsigned int) {}
     void   update(const byte*, unsigned int) {}
-    size_t get_digestSize() const { return 0; }
-    size_t get_padSize()    const { return 0; }
+    uint   get_digestSize() const { return 0; }
+    uint   get_padSize()    const { return 0; }
 };
 
 
@@ -69,8 +69,8 @@ public:
     void   get_digest(byte*);
     void   get_digest(byte*, const byte*, unsigned int);
     void   update(const byte*, unsigned int);
-    size_t get_digestSize() const { return MD5_LEN; }
-    size_t get_padSize()    const { return PAD_MD5; }
+    uint   get_digestSize() const { return MD5_LEN; }
+    uint   get_padSize()    const { return PAD_MD5; }
     MD5();
     ~MD5();
     MD5(const MD5&);
@@ -87,8 +87,8 @@ public:
     void   get_digest(byte*);
     void   get_digest(byte*, const byte*, unsigned int);
     void   update(const byte*, unsigned int);
-    size_t get_digestSize() const { return SHA_LEN; }
-    size_t get_padSize()    const { return PAD_SHA; }
+    uint   get_digestSize() const { return SHA_LEN; }
+    uint   get_padSize()    const { return PAD_SHA; }
     SHA();
     ~SHA();
     SHA(const SHA&);
@@ -106,8 +106,8 @@ public:
     void   get_digest(byte*);
     void   get_digest(byte*, const byte*, unsigned int);
     void   update(const byte*, unsigned int);
-    size_t get_digestSize() const { return MD5_LEN; }
-    size_t get_padSize()    const { return PAD_MD5; }
+    uint   get_digestSize() const { return MD5_LEN; }
+    uint   get_padSize()    const { return PAD_MD5; }
     HMAC_MD5(const byte*, unsigned int);
     ~HMAC_MD5();
 private:
@@ -125,8 +125,8 @@ public:
     void   get_digest(byte*);
     void   get_digest(byte*, const byte*, unsigned int);
     void   update(const byte*, unsigned int);
-    size_t get_digestSize() const { return SHA_LEN; }
-    size_t get_padSize()    const { return PAD_SHA; }
+    uint   get_digestSize() const { return SHA_LEN; }
+    uint   get_padSize()    const { return PAD_SHA; }
     HMAC_SHA(const byte*, unsigned int);
     ~HMAC_SHA();
 private:
@@ -145,7 +145,7 @@ struct BulkCipher {
     virtual void   decrypt(byte*, const byte*, unsigned int) = 0;
     virtual void   set_encryptKey(const byte*, const byte* = 0) = 0;
     virtual void   set_decryptKey(const byte*, const byte* = 0) = 0;
-    virtual size_t get_blockSize() const = 0;
+    virtual uint   get_blockSize() const = 0;
     virtual ~BulkCipher() {}
 };
 
@@ -156,7 +156,7 @@ struct NO_Cipher : public BulkCipher {
     void   decrypt(byte*, const byte*, unsigned int) {}
     void   set_encryptKey(const byte*, const byte*)  {}
     void   set_decryptKey(const byte*, const byte*)  {}
-    size_t get_blockSize() const { return 0; }
+    uint   get_blockSize() const { return 0; }
 };
 
 
@@ -167,7 +167,7 @@ public:
     void   decrypt(byte*, const byte*, unsigned int);
     void   set_encryptKey(const byte*, const byte*);
     void   set_decryptKey(const byte*, const byte*);
-    size_t get_blockSize() const { return DES_BLOCK; }
+    uint   get_blockSize() const { return DES_BLOCK; }
     DES();
     ~DES();
 private:
@@ -186,7 +186,7 @@ public:
     void   decrypt(byte*, const byte*, unsigned int);
     void   set_encryptKey(const byte*, const byte*);
     void   set_decryptKey(const byte*, const byte*);
-    size_t get_blockSize() const { return DES_BLOCK; }
+    uint   get_blockSize() const { return DES_BLOCK; }
     DES_EDE();
     ~DES_EDE();
 private:
@@ -205,7 +205,7 @@ public:
     void decrypt(byte*, const byte*, unsigned int);
     void set_encryptKey(const byte*, const byte*);
     void set_decryptKey(const byte*, const byte*);
-    size_t get_blockSize() const { return 0; }
+    uint get_blockSize() const { return 0; }
     RC4();
     ~RC4();
 private:
@@ -220,7 +220,7 @@ private:
 // Random number generator
 class RandomPool {
 public:
-    void Fill(opaque* dst, size_t sz) const;
+    void Fill(opaque* dst, uint sz) const;
     RandomPool();
     ~RandomPool();
 
@@ -276,7 +276,7 @@ public:
     bool   verify(const byte*, unsigned int, const byte*, unsigned int);
     void   encrypt(byte*, const byte*, unsigned int, const RandomPool&);
     void   decrypt(byte*, const byte*, unsigned int, const RandomPool&);
-    size_t get_cipherLength() const;
+    uint   get_cipherLength() const;
     RSA(const byte*, unsigned int, bool publicKey = true);
     ~RSA();
 private:
@@ -300,7 +300,7 @@ public:
     DiffieHellman(const DiffieHellman&);  
     DiffieHellman& operator=(const DiffieHellman&);
 
-    size_t      get_agreedKeyLength() const;
+    uint        get_agreedKeyLength() const;
     const byte* get_agreedKey()       const;
     const byte* get_publicKey()       const;
     void        makeAgreement(const byte*);
@@ -335,4 +335,4 @@ x509* PemToDer(const char*, CertType);
 
 } // naemspace
 
-#endif  // __yaSSL_crypto_wrapper_hpp__
+#endif  // yaSSL_CRYPTO_WRAPPER_HPP

@@ -107,7 +107,8 @@ INCLUDES = -I../include -I../taocrypt/include
 
 lib_LIBRARIES = libyassl.a
 libyassl_a_SOURCES = cert_wrapper.cpp crypto_wrapper.cpp factory.cpp \
-	handshake.cpp socket_wrapper.cpp ssl.cpp yassl_imp.cpp yassl_int.cpp
+	handshake.cpp log.cpp socket_wrapper.cpp ssl.cpp yassl_imp.cpp \
+	yassl_int.cpp
 
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -118,8 +119,9 @@ LIBRARIES = $(lib_LIBRARIES)
 libyassl_a_AR = $(AR) cru
 libyassl_a_LIBADD =
 am_libyassl_a_OBJECTS = cert_wrapper.$(OBJEXT) crypto_wrapper.$(OBJEXT) \
-	factory.$(OBJEXT) handshake.$(OBJEXT) socket_wrapper.$(OBJEXT) \
-	ssl.$(OBJEXT) yassl_imp.$(OBJEXT) yassl_int.$(OBJEXT)
+	factory.$(OBJEXT) handshake.$(OBJEXT) log.$(OBJEXT) \
+	socket_wrapper.$(OBJEXT) ssl.$(OBJEXT) yassl_imp.$(OBJEXT) \
+	yassl_int.$(OBJEXT)
 libyassl_a_OBJECTS = $(am_libyassl_a_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir)
@@ -128,8 +130,9 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/cert_wrapper.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/crypto_wrapper.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/factory.Po ./$(DEPDIR)/handshake.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/socket_wrapper.Po ./$(DEPDIR)/ssl.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/yassl_imp.Po ./$(DEPDIR)/yassl_int.Po
+@AMDEP_TRUE@	./$(DEPDIR)/log.Po ./$(DEPDIR)/socket_wrapper.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/ssl.Po ./$(DEPDIR)/yassl_imp.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/yassl_int.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -195,6 +198,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/crypto_wrapper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/factory.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/handshake.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/socket_wrapper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ssl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yassl_imp.Po@am__quote@

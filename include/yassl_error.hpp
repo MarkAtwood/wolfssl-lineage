@@ -23,8 +23,8 @@
 /* yaSSL error header defines error codes and an exception class
  */
 
-#ifndef yaSSL_error_hpp__
-#define yaSSL_error_hpp__
+#ifndef yaSSL_ERROR_HPP
+#define yaSSL_ERROR_HPP
 
 #include "log.hpp"
 #include <stdexcept>
@@ -72,4 +72,4 @@ public:
 
 } // naemspace
 
-#endif // #define yaSSL_error_hpp__
+#endif // yaSSL_ERROR_HPP

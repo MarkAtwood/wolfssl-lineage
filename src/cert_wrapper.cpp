@@ -76,7 +76,7 @@ void CertManager::SetKey()
     const CML::ASN::Cert& raw = cm.base();
     CTIL::CSM_Buffer key = raw.pubKeyInfo.key;
 
-    size_t sz;
+    uint sz;
     opaque* key_buffer = reinterpret_cast<opaque*>(key.Get(sz));
     publicKey_.allocate(sz);
     publicKey_.assign(key_buffer, sz);
@@ -92,7 +92,7 @@ void CertManager::SetKey()
     TaoCrypt::Sink sink(main->get_buffer(), main->get_length());
     TaoCrypt::CertDecoder cert(sink);
 
-    size_t sz = cert.GetPublicKey().size();
+    uint sz = cert.GetPublicKey().size();
     publicKey_.allocate(sz);
     publicKey_.assign(cert.GetPublicKey().GetKey(), sz);
 }
@@ -109,7 +109,7 @@ bool CertManager::Validate() const
 
 
 // Set the private key
-void CertManager::SetPrivateKey(x509& key)
+void CertManager::SetPrivateKey(const x509& key)
 {
     privateKey_.allocate(key.get_length());
     privateKey_.assign(key.get_buffer(), key.get_length());

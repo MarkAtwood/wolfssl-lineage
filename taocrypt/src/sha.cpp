@@ -92,7 +92,7 @@ void SHA::Swap(SHA& other)
 
 void SHA::Transform()
 {
-    size_t W[BLOCK_SIZE / sizeof(size_t)];
+    uint32 W[BLOCK_SIZE / sizeof(uint32)];
 
     // Copy context->state[] to working vars 
     uint32 a = digest_[0];

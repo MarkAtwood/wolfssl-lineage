@@ -19,8 +19,6 @@
 #endif /* WIN32 */
 
 
-//#include "../../taocrypt/test/memory.cpp"
-
 void err_sys(const char* msg)
 {
     fputs("yassl client error: ", stderr);

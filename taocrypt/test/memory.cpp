@@ -4,6 +4,7 @@
 #include <cstdlib>      // malloc
 #include <cstring>      // memset
 #include <fstream>      // ofstream
+#include <sstream>      // stringstream
 #include <cassert>      // assert
 #include <iomanip>      // setiosflags
 
@@ -75,10 +76,10 @@ const size_t size_elements(sizeof(sizes) / sizeof(size_tracker));
 
 bool Tracking(false);
 
-using   taoLock::LockManager;
-typedef LockManager::Lock Lock;
+using   yaSSL::Mutex;
+typedef Mutex::Lock Lock;
 
-LockManager lm;
+Mutex mutex;
 
 MemoryTracker theTracker;
 
@@ -193,8 +194,18 @@ void show(alloc_node* ptr, void* arg)
 MemoryTracker::MemoryTracker() : log_("memory.log")
 {
 #ifdef __GNUC__
+    // Force pool allocator to cleanup at exit
     setenv("GLIBCPP_FORCE_NEW", "1", 0);
 #endif
+
+#ifdef _MSC_VER
+    // msvc6 needs to create Facility for ostream before main starts, otherwise
+    // if another ostream is created and destroyed in main scope, log stats
+    // will access a dead Facility reference (std::numput)
+    int msvcFac = 6;
+    log_ << "MSVC " << msvcFac << "workaround" << std::endl; 
+#endif
+
 
     Tracking = true;
 }
@@ -213,7 +224,6 @@ MemoryTracker::~MemoryTracker()
 
 void MemoryTracker::LogStats()
 {
-    // log it
     log_ << "Number of Allocs:     " << Allocs    << '\n';
     log_ << "Number of DeAllocs:   " << DeAllocs  << '\n';
     log_ << "Number of bytes used: " << Bytes     << '\n';
@@ -263,7 +273,7 @@ void* operator new(size_t sz)
     void* ptr = malloc(sz + sizeof(alloc_node));
     if (ptr) {
         if (Tracking) {
-            Lock l(lm);
+            Lock l(mutex);
             ++Allocs;
             Bytes += sz;
             ++sizes[powerOf2(sz)].count_;
@@ -281,7 +291,7 @@ void operator delete(void* ptr)
     if (ptr) {
         ptr = static_cast<char*>(ptr) - sizeof(alloc_node);  // correct offset
         if (Tracking) {
-            Lock l(lm);
+            Lock l(mutex);
             ++DeAllocs;
             remove(ptr);
         }

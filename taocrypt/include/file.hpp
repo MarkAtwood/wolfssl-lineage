@@ -20,8 +20,8 @@
  */
 
 
-#ifndef TAO_CRYPT_FILE_HPP__
-#define TAO_CRYPT_FILE_HPP__
+#ifndef TAO_CRYPT_FILE_HPP
+#define TAO_CRYPT_FILE_HPP
 
 #include "misc.hpp"
 #include "block.hpp"
@@ -33,23 +33,23 @@ namespace TaoCrypt {
 
 class Sink {
     ByteBlock buffer_;
-    size_t    current_;
+    uint32    current_;
 public:
-    explicit Sink(size_t sz = 0) : buffer_(sz), current_(0) {}
-    Sink(const byte* b, size_t sz) : buffer_(b, sz), current_(0) {}
+    explicit Sink(uint32 sz = 0) : buffer_(sz), current_(0) {}
+    Sink(const byte* b, uint32 sz) : buffer_(b, sz), current_(0) {}
 
-    size_t size() const { return buffer_.size(); }
-    void   set_size(size_t sz) { buffer_.New(sz); }
-    void   grow(size_t sz)     { buffer_.CleanGrow(sz); }
-    void   put(const byte*, size_t);
+    uint32 size() const { return buffer_.size(); }
+    void   set_size(uint32 sz) { buffer_.New(sz); }
+    void   grow(uint32 sz)     { buffer_.CleanGrow(sz); }
+    void   put(const byte*, uint32);
     byte*  get_buffer() const { return buffer_.get_buffer(); }
     const byte*  get_current() const { return &buffer_[current_]; }
 
-    byte operator[] (size_t i) { current_ = i; return next(); }
+    byte operator[] (uint32 i) { current_ = i; return next(); }
     byte next() { return buffer_[current_++]; }
     byte prev() { return buffer_[--current_]; }
 
-    void eat(size_t i) { current_ += i; }
+    void eat(uint32 i) { current_ += i; }
     void reset(ByteBlock&);
 private:
     // do i need these ???
@@ -77,10 +77,10 @@ public:
     FileSource(const std::string& fname, Sink& sink) : file_(fname.c_str())
             { get(sink); }
    
-    size_t   size(bool use_current = false);
+    uint32   size(bool use_current = false);
 private:
-    size_t   get(Sink&);
-    size_t   size_left();                     
+    uint32   get(Sink&);
+    uint32   size_left();                     
 
     FileSource(const FileSource&);            // hide
     FileSource& operator=(const FileSource&); // hide
@@ -90,4 +90,4 @@ private:
 
 } // namespace
 
-#endif // TAO_CRYPT_FILE_HPP__
+#endif // TAO_CRYPT_FILE_HPP

@@ -1,21 +1,20 @@
 crypto_wrapper.o crypto_wrapper.o: crypto_wrapper.cpp \
   ../include/crypto_wrapper.hpp ../include/yassl_types.hpp \
-  /usr/include/c++/3.3.1/cstdlib \
+  /usr/include/c++/3.3.1/memory \
+  /usr/include/c++/3.3.1/bits/stl_algobase.h \
   /usr/include/c++/3.3.1/i686-pc-cygwin/bits/c++config.h \
   /usr/include/c++/3.3.1/i686-pc-cygwin/bits/os_defines.h \
-  /usr/include/c++/3.3.1/cstddef \
+  /usr/include/c++/3.3.1/cstring /usr/include/c++/3.3.1/cstddef \
   /usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/stddef.h \
-  /usr/include/stdlib.h /usr/include/_ansi.h /usr/include/newlib.h \
+  /usr/include/string.h /usr/include/_ansi.h /usr/include/newlib.h \
   /usr/include/sys/config.h /usr/include/machine/ieeefp.h \
   /usr/include/cygwin/config.h /usr/include/sys/reent.h \
-  /usr/include/sys/_types.h /usr/include/machine/stdlib.h \
-  /usr/include/alloca.h /usr/include/c++/3.3.1/memory \
-  /usr/include/c++/3.3.1/bits/stl_algobase.h \
-  /usr/include/c++/3.3.1/cstring /usr/include/string.h \
-  /usr/include/c++/3.3.1/climits \
+  /usr/include/sys/_types.h /usr/include/c++/3.3.1/climits \
   /usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/limits.h \
   /usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/syslimits.h \
-  /usr/include/limits.h /usr/include/c++/3.3.1/new \
+  /usr/include/limits.h /usr/include/c++/3.3.1/cstdlib \
+  /usr/include/stdlib.h /usr/include/machine/stdlib.h \
+  /usr/include/alloca.h /usr/include/c++/3.3.1/new \
   /usr/include/c++/3.3.1/exception /usr/include/c++/3.3.1/iosfwd \
   /usr/include/c++/3.3.1/i686-pc-cygwin/bits/c++locale.h \
   /usr/include/c++/3.3.1/clocale /usr/include/locale.h \
@@ -89,23 +88,28 @@ crypto_wrapper.o crypto_wrapper.o: crypto_wrapper.cpp \
   /usr/include/c++/3.3.1/bits/ostream.tcc \
   /usr/include/c++/3.3.1/i686-pc-cygwin/bits/basic_file.h \
   /usr/include/c++/3.3.1/bits/fstream.tcc \
-  /usr/include/c++/3.3.1/stdexcept ../taocrypt/include/dh.hpp
+  /usr/include/c++/3.3.1/stdexcept ../taocrypt/include/dh.hpp \
+  ../taocrypt/include/coding.hpp
 
 ../include/crypto_wrapper.hpp:
 
 ../include/yassl_types.hpp:
 
-/usr/include/c++/3.3.1/cstdlib:
+/usr/include/c++/3.3.1/memory:
+
+/usr/include/c++/3.3.1/bits/stl_algobase.h:
 
 /usr/include/c++/3.3.1/i686-pc-cygwin/bits/c++config.h:
 
 /usr/include/c++/3.3.1/i686-pc-cygwin/bits/os_defines.h:
 
+/usr/include/c++/3.3.1/cstring:
+
 /usr/include/c++/3.3.1/cstddef:
 
 /usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/stddef.h:
 
-/usr/include/stdlib.h:
+/usr/include/string.h:
 
 /usr/include/_ansi.h:
 
@@ -121,18 +125,6 @@ crypto_wrapper.o crypto_wrapper.o: crypto_wrapper.cpp \
 
 /usr/include/sys/_types.h:
 
-/usr/include/machine/stdlib.h:
-
-/usr/include/alloca.h:
-
-/usr/include/c++/3.3.1/memory:
-
-/usr/include/c++/3.3.1/bits/stl_algobase.h:
-
-/usr/include/c++/3.3.1/cstring:
-
-/usr/include/string.h:
-
 /usr/include/c++/3.3.1/climits:
 
 /usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/limits.h:
@@ -140,6 +132,14 @@ crypto_wrapper.o crypto_wrapper.o: crypto_wrapper.cpp \
 /usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/syslimits.h:
 
 /usr/include/limits.h:
+
+/usr/include/c++/3.3.1/cstdlib:
+
+/usr/include/stdlib.h:
+
+/usr/include/machine/stdlib.h:
+
+/usr/include/alloca.h:
 
 /usr/include/c++/3.3.1/new:
 
@@ -356,3 +356,5 @@ crypto_wrapper.o crypto_wrapper.o: crypto_wrapper.cpp \
 /usr/include/c++/3.3.1/stdexcept:
 
 ../taocrypt/include/dh.hpp:
+
+../taocrypt/include/coding.hpp:

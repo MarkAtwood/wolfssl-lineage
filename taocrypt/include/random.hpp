@@ -21,8 +21,8 @@
 
 
 
-#ifndef TAO_CRYPT_RANDOM_HPP__
-#define TAO_CRYPT_RANDOM_HPP__
+#ifndef TAO_CRYPT_RANDOM_HPP
+#define TAO_CRYPT_RANDOM_HPP
 
 #include "arc4.hpp"
 
@@ -37,7 +37,7 @@ public:
     OS_Seed();
     ~OS_Seed();
 
-    void GenerateSeed(byte*, size_t sz);
+    void GenerateSeed(byte*, uint32 sz);
 
 #if defined(_WIN64)
     typedef unsigned __int64 ProviderHandle;
@@ -62,7 +62,7 @@ public:
     OS_Seed();
     ~OS_Seed();
 
-    void GenerateSeed(byte*, size_t sz);
+    void GenerateSeed(byte*, uint32 sz);
 private:
     int fd_;
 
@@ -78,7 +78,7 @@ public:
     RandomNumberGenerator();
     ~RandomNumberGenerator() {}
 
-    void GenerateBlock(byte*, size_t sz);
+    void GenerateBlock(byte*, uint32 sz);
     byte GenerateByte();
 private:
     OS_Seed seed_;
@@ -93,5 +93,5 @@ private:
 
 }  // namespace
 
-#endif // TAO_CRYPT_RANDOM_HPP__
+#endif // TAO_CRYPT_RANDOM_HPP
 

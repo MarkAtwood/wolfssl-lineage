@@ -44,7 +44,7 @@ RandomNumberGenerator::RandomNumberGenerator()
 }
 
 
-void RandomNumberGenerator::GenerateBlock(byte* output, size_t sz)
+void RandomNumberGenerator::GenerateBlock(byte* output, uint32 sz)
 {
     cipher_.Process(output, output, sz);
 }
@@ -75,7 +75,7 @@ OS_Seed::~OS_Seed()
 }
 
 
-void OS_Seed::GenerateSeed(byte* output, size_t sz)
+void OS_Seed::GenerateSeed(byte* output, uint32 sz)
 {
     if ( !CryptGenRandom(handle_, sz, output))
         throw std::runtime_error("CryptGenRandom error");
@@ -99,7 +99,7 @@ OS_Seed::~OS_Seed()
 }
 
 
-void OS_Seed::GenerateSeed(byte* output, size_t sz)
+void OS_Seed::GenerateSeed(byte* output, uint32 sz)
 {
     while (sz) {
         int len = read(fd_, output, sz);

@@ -1,22 +1,17 @@
 yassl_imp.o yassl_imp.o: yassl_imp.cpp ../include/yassl_imp.hpp \
-  ../include/yassl_types.hpp /usr/include/c++/3.3.1/cstdlib \
+  ../include/yassl_types.hpp ../include/buffer.hpp \
+  /usr/include/c++/3.3.1/cassert /usr/include/assert.h \
+  /usr/include/_ansi.h /usr/include/newlib.h /usr/include/sys/config.h \
+  /usr/include/machine/ieeefp.h /usr/include/cygwin/config.h \
+  /usr/include/c++/3.3.1/functional \
   /usr/include/c++/3.3.1/i686-pc-cygwin/bits/c++config.h \
   /usr/include/c++/3.3.1/i686-pc-cygwin/bits/os_defines.h \
   /usr/include/c++/3.3.1/cstddef \
   /usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/stddef.h \
-  /usr/include/stdlib.h /usr/include/_ansi.h /usr/include/newlib.h \
-  /usr/include/sys/config.h /usr/include/machine/ieeefp.h \
-  /usr/include/cygwin/config.h /usr/include/sys/reent.h \
-  /usr/include/sys/_types.h /usr/include/machine/stdlib.h \
-  /usr/include/alloca.h ../include/buffer.hpp \
-  /usr/include/c++/3.3.1/memory \
-  /usr/include/c++/3.3.1/bits/stl_algobase.h \
-  /usr/include/c++/3.3.1/cstring /usr/include/string.h \
-  /usr/include/c++/3.3.1/climits \
-  /usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/limits.h \
-  /usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/syslimits.h \
-  /usr/include/limits.h /usr/include/c++/3.3.1/new \
-  /usr/include/c++/3.3.1/exception /usr/include/c++/3.3.1/iosfwd \
+  /usr/include/c++/3.3.1/bits/stl_function.h ../include/yassl_error.hpp \
+  ../include/log.hpp /usr/include/c++/3.3.1/fstream \
+  /usr/include/c++/3.3.1/istream /usr/include/c++/3.3.1/ios \
+  /usr/include/c++/3.3.1/iosfwd \
   /usr/include/c++/3.3.1/i686-pc-cygwin/bits/c++locale.h \
   /usr/include/c++/3.3.1/clocale /usr/include/locale.h \
   /usr/include/c++/3.3.1/cctype /usr/include/ctype.h \
@@ -25,6 +20,7 @@ yassl_imp.o yassl_imp.o: yassl_imp.cpp ../include/yassl_imp.hpp \
   /usr/include/c++/3.3.1/i686-pc-cygwin/bits/c++io.h \
   /usr/include/c++/3.3.1/cstdio /usr/include/stdio.h \
   /usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/stdarg.h \
+  /usr/include/sys/reent.h /usr/include/sys/_types.h \
   /usr/include/sys/types.h /usr/include/machine/types.h \
   /usr/include/sys/features.h /usr/include/cygwin/types.h \
   /usr/include/sys/sysmacros.h /usr/include/stdint.h \
@@ -37,6 +33,21 @@ yassl_imp.o yassl_imp.o: yassl_imp.cpp ../include/yassl_imp.hpp \
   /usr/include/c++/3.3.1/cwchar /usr/include/c++/3.3.1/ctime \
   /usr/include/wchar.h /usr/include/c++/3.3.1/bits/functexcept.h \
   /usr/include/c++/3.3.1/exception_defines.h \
+  /usr/include/c++/3.3.1/exception \
+  /usr/include/c++/3.3.1/bits/char_traits.h \
+  /usr/include/c++/3.3.1/cstring /usr/include/string.h \
+  /usr/include/c++/3.3.1/bits/localefwd.h \
+  /usr/include/c++/3.3.1/bits/ios_base.h \
+  /usr/include/c++/3.3.1/i686-pc-cygwin/bits/atomicity.h \
+  /usr/include/c++/3.3.1/bits/locale_classes.h \
+  /usr/include/c++/3.3.1/string /usr/include/c++/3.3.1/memory \
+  /usr/include/c++/3.3.1/bits/stl_algobase.h \
+  /usr/include/c++/3.3.1/climits \
+  /usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/limits.h \
+  /usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/syslimits.h \
+  /usr/include/limits.h /usr/include/c++/3.3.1/cstdlib \
+  /usr/include/stdlib.h /usr/include/machine/stdlib.h \
+  /usr/include/alloca.h /usr/include/c++/3.3.1/new \
   /usr/include/c++/3.3.1/bits/stl_pair.h \
   /usr/include/c++/3.3.1/bits/type_traits.h \
   /usr/include/c++/3.3.1/bits/stl_iterator_base_types.h \
@@ -45,19 +56,9 @@ yassl_imp.o yassl_imp.o: yassl_imp.cpp ../include/yassl_imp.hpp \
   /usr/include/c++/3.3.1/bits/stl_iterator.h \
   /usr/include/c++/3.3.1/bits/stl_alloc.h \
   /usr/include/c++/3.3.1/bits/stl_threads.h \
-  /usr/include/c++/3.3.1/i686-pc-cygwin/bits/atomicity.h \
   /usr/include/c++/3.3.1/bits/stl_construct.h \
   /usr/include/c++/3.3.1/bits/stl_uninitialized.h \
   /usr/include/c++/3.3.1/bits/stl_raw_storage_iter.h \
-  /usr/include/c++/3.3.1/cassert /usr/include/assert.h \
-  ../include/yassl_error.hpp ../include/log.hpp \
-  /usr/include/c++/3.3.1/fstream /usr/include/c++/3.3.1/istream \
-  /usr/include/c++/3.3.1/ios /usr/include/c++/3.3.1/bits/char_traits.h \
-  /usr/include/c++/3.3.1/bits/localefwd.h \
-  /usr/include/c++/3.3.1/bits/ios_base.h \
-  /usr/include/c++/3.3.1/bits/locale_classes.h \
-  /usr/include/c++/3.3.1/string \
-  /usr/include/c++/3.3.1/bits/stl_function.h \
   /usr/include/c++/3.3.1/bits/basic_string.h \
   /usr/include/c++/3.3.1/algorithm /usr/include/c++/3.3.1/bits/stl_algo.h \
   /usr/include/c++/3.3.1/bits/stl_heap.h \
@@ -83,38 +84,32 @@ yassl_imp.o yassl_imp.o: yassl_imp.cpp ../include/yassl_imp.hpp \
   /usr/include/c++/3.3.1/typeinfo /usr/include/c++/3.3.1/ostream \
   /usr/include/c++/3.3.1/bits/ostream.tcc \
   /usr/include/c++/3.3.1/i686-pc-cygwin/bits/basic_file.h \
-  /usr/include/c++/3.3.1/bits/fstream.tcc \
+  /usr/include/c++/3.3.1/bits/fstream.tcc ../include/socket_wrapper.hpp \
+  /usr/include/sys/time.h /usr/include/sys/select.h \
+  /usr/include/sys/cdefs.h /usr/include/sys/socket.h \
+  /usr/include/features.h /usr/include/cygwin/socket.h \
+  /usr/include/asm/socket.h /usr/include/cygwin/if.h \
+  /usr/include/cygwin/sockios.h /usr/include/cygwin/uio.h \
+  /usr/include/netinet/in.h /usr/include/cygwin/in.h \
+  /usr/include/asm/byteorder.h /usr/include/arpa/inet.h \
   /usr/include/c++/3.3.1/stdexcept ../include/factory.hpp \
   /usr/include/c++/3.3.1/map /usr/include/c++/3.3.1/bits/stl_tree.h \
   /usr/include/c++/3.3.1/bits/stl_map.h \
   /usr/include/c++/3.3.1/bits/stl_multimap.h /usr/include/c++/3.3.1/list \
   /usr/include/c++/3.3.1/bits/stl_list.h \
   /usr/include/c++/3.3.1/bits/list.tcc ../include/yassl_int.hpp \
-  ../include/socket_wrapper.hpp /usr/include/sys/time.h \
-  /usr/include/sys/select.h /usr/include/sys/cdefs.h \
-  /usr/include/sys/socket.h /usr/include/features.h \
-  /usr/include/cygwin/socket.h /usr/include/asm/socket.h \
-  /usr/include/cygwin/if.h /usr/include/cygwin/sockios.h \
-  /usr/include/cygwin/uio.h /usr/include/netinet/in.h \
-  /usr/include/cygwin/in.h /usr/include/asm/byteorder.h \
-  /usr/include/arpa/inet.h ../include/crypto_wrapper.hpp \
-  ../include/cert_wrapper.hpp ../include/handshake.hpp
+  ../include/crypto_wrapper.hpp ../include/cert_wrapper.hpp \
+  ../include/lock.hpp ../include/handshake.hpp
 
 ../include/yassl_imp.hpp:
 
 ../include/yassl_types.hpp:
 
-/usr/include/c++/3.3.1/cstdlib:
+../include/buffer.hpp:
 
-/usr/include/c++/3.3.1/i686-pc-cygwin/bits/c++config.h:
+/usr/include/c++/3.3.1/cassert:
 
-/usr/include/c++/3.3.1/i686-pc-cygwin/bits/os_defines.h:
-
-/usr/include/c++/3.3.1/cstddef:
-
-/usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/stddef.h:
-
-/usr/include/stdlib.h:
+/usr/include/assert.h:
 
 /usr/include/_ansi.h:
 
@@ -126,35 +121,27 @@ yassl_imp.o yassl_imp.o: yassl_imp.cpp ../include/yassl_imp.hpp \
 
 /usr/include/cygwin/config.h:
 
-/usr/include/sys/reent.h:
+/usr/include/c++/3.3.1/functional:
 
-/usr/include/sys/_types.h:
+/usr/include/c++/3.3.1/i686-pc-cygwin/bits/c++config.h:
 
-/usr/include/machine/stdlib.h:
+/usr/include/c++/3.3.1/i686-pc-cygwin/bits/os_defines.h:
 
-/usr/include/alloca.h:
+/usr/include/c++/3.3.1/cstddef:
 
-../include/buffer.hpp:
+/usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/stddef.h:
 
-/usr/include/c++/3.3.1/memory:
+/usr/include/c++/3.3.1/bits/stl_function.h:
 
-/usr/include/c++/3.3.1/bits/stl_algobase.h:
+../include/yassl_error.hpp:
 
-/usr/include/c++/3.3.1/cstring:
+../include/log.hpp:
 
-/usr/include/string.h:
+/usr/include/c++/3.3.1/fstream:
 
-/usr/include/c++/3.3.1/climits:
+/usr/include/c++/3.3.1/istream:
 
-/usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/limits.h:
-
-/usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/syslimits.h:
-
-/usr/include/limits.h:
-
-/usr/include/c++/3.3.1/new:
-
-/usr/include/c++/3.3.1/exception:
+/usr/include/c++/3.3.1/ios:
 
 /usr/include/c++/3.3.1/iosfwd:
 
@@ -179,6 +166,10 @@ yassl_imp.o yassl_imp.o: yassl_imp.cpp ../include/yassl_imp.hpp \
 /usr/include/stdio.h:
 
 /usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/stdarg.h:
+
+/usr/include/sys/reent.h:
+
+/usr/include/sys/_types.h:
 
 /usr/include/sys/types.h:
 
@@ -226,6 +217,46 @@ yassl_imp.o yassl_imp.o: yassl_imp.cpp ../include/yassl_imp.hpp \
 
 /usr/include/c++/3.3.1/exception_defines.h:
 
+/usr/include/c++/3.3.1/exception:
+
+/usr/include/c++/3.3.1/bits/char_traits.h:
+
+/usr/include/c++/3.3.1/cstring:
+
+/usr/include/string.h:
+
+/usr/include/c++/3.3.1/bits/localefwd.h:
+
+/usr/include/c++/3.3.1/bits/ios_base.h:
+
+/usr/include/c++/3.3.1/i686-pc-cygwin/bits/atomicity.h:
+
+/usr/include/c++/3.3.1/bits/locale_classes.h:
+
+/usr/include/c++/3.3.1/string:
+
+/usr/include/c++/3.3.1/memory:
+
+/usr/include/c++/3.3.1/bits/stl_algobase.h:
+
+/usr/include/c++/3.3.1/climits:
+
+/usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/limits.h:
+
+/usr/lib/gcc-lib/i686-pc-cygwin/3.3.1/include/syslimits.h:
+
+/usr/include/limits.h:
+
+/usr/include/c++/3.3.1/cstdlib:
+
+/usr/include/stdlib.h:
+
+/usr/include/machine/stdlib.h:
+
+/usr/include/alloca.h:
+
+/usr/include/c++/3.3.1/new:
+
 /usr/include/c++/3.3.1/bits/stl_pair.h:
 
 /usr/include/c++/3.3.1/bits/type_traits.h:
@@ -242,39 +273,11 @@ yassl_imp.o yassl_imp.o: yassl_imp.cpp ../include/yassl_imp.hpp \
 
 /usr/include/c++/3.3.1/bits/stl_threads.h:
 
-/usr/include/c++/3.3.1/i686-pc-cygwin/bits/atomicity.h:
-
 /usr/include/c++/3.3.1/bits/stl_construct.h:
 
 /usr/include/c++/3.3.1/bits/stl_uninitialized.h:
 
 /usr/include/c++/3.3.1/bits/stl_raw_storage_iter.h:
-
-/usr/include/c++/3.3.1/cassert:
-
-/usr/include/assert.h:
-
-../include/yassl_error.hpp:
-
-../include/log.hpp:
-
-/usr/include/c++/3.3.1/fstream:
-
-/usr/include/c++/3.3.1/istream:
-
-/usr/include/c++/3.3.1/ios:
-
-/usr/include/c++/3.3.1/bits/char_traits.h:
-
-/usr/include/c++/3.3.1/bits/localefwd.h:
-
-/usr/include/c++/3.3.1/bits/ios_base.h:
-
-/usr/include/c++/3.3.1/bits/locale_classes.h:
-
-/usr/include/c++/3.3.1/string:
-
-/usr/include/c++/3.3.1/bits/stl_function.h:
 
 /usr/include/c++/3.3.1/bits/basic_string.h:
 
@@ -344,26 +347,6 @@ yassl_imp.o yassl_imp.o: yassl_imp.cpp ../include/yassl_imp.hpp \
 
 /usr/include/c++/3.3.1/bits/fstream.tcc:
 
-/usr/include/c++/3.3.1/stdexcept:
-
-../include/factory.hpp:
-
-/usr/include/c++/3.3.1/map:
-
-/usr/include/c++/3.3.1/bits/stl_tree.h:
-
-/usr/include/c++/3.3.1/bits/stl_map.h:
-
-/usr/include/c++/3.3.1/bits/stl_multimap.h:
-
-/usr/include/c++/3.3.1/list:
-
-/usr/include/c++/3.3.1/bits/stl_list.h:
-
-/usr/include/c++/3.3.1/bits/list.tcc:
-
-../include/yassl_int.hpp:
-
 ../include/socket_wrapper.hpp:
 
 /usr/include/sys/time.h:
@@ -394,8 +377,30 @@ yassl_imp.o yassl_imp.o: yassl_imp.cpp ../include/yassl_imp.hpp \
 
 /usr/include/arpa/inet.h:
 
+/usr/include/c++/3.3.1/stdexcept:
+
+../include/factory.hpp:
+
+/usr/include/c++/3.3.1/map:
+
+/usr/include/c++/3.3.1/bits/stl_tree.h:
+
+/usr/include/c++/3.3.1/bits/stl_map.h:
+
+/usr/include/c++/3.3.1/bits/stl_multimap.h:
+
+/usr/include/c++/3.3.1/list:
+
+/usr/include/c++/3.3.1/bits/stl_list.h:
+
+/usr/include/c++/3.3.1/bits/list.tcc:
+
+../include/yassl_int.hpp:
+
 ../include/crypto_wrapper.hpp:
 
 ../include/cert_wrapper.hpp:
+
+../include/lock.hpp:
 
 ../include/handshake.hpp:

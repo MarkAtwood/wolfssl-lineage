@@ -20,8 +20,8 @@
  */
 
 
-#ifndef TAO_CRYPT_INTEGER_HPP__
-#define TAO_CRYPT_INTEGER_HPP__
+#ifndef TAO_CRYPT_INTEGER_HPP
+#define TAO_CRYPT_INTEGER_HPP
 
 #include "misc.hpp"
 #include "block.hpp"
@@ -64,7 +64,7 @@ public:
         // BER Decode Sink
         explicit Integer(Sink&);
 
-        Integer(const byte* encodedInteger, size_t byteCount,
+        Integer(const byte* encodedInteger, unsigned int byteCount,
                 Signedness s = UNSIGNED);
 
         ~Integer() {}
@@ -81,10 +81,11 @@ public:
         static Integer Power2(unsigned int e);
 
         unsigned int MinEncodedSize(Signedness = UNSIGNED) const;
-        size_t Encode(byte* output, size_t outputLen,
-                      Signedness = UNSIGNED) const;
+        unsigned int Encode(byte* output, unsigned int outputLen,
+                            Signedness = UNSIGNED) const;
 
-        void Decode(const byte* input, size_t inputLen, Signedness = UNSIGNED);
+        void Decode(const byte* input, unsigned int inputLen,
+                    Signedness = UNSIGNED);
         void Decode(Sink&);
 
         bool  IsConvertableToLong() const;
@@ -246,4 +247,4 @@ Integer ModularRoot(const Integer& a, const Integer& dp, const Integer& dq,
 
 }   // namespace
 
-#endif // TAO_CRYPT_INTEGER_HPP__
+#endif // TAO_CRYPT_INTEGER_HPP

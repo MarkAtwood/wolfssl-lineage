@@ -20,8 +20,8 @@
  */
 
 
-#ifndef TAO_CRYPT_BLOCK_HPP__
-#define TAO_CRYPT_BLOCK_HPP__
+#ifndef TAO_CRYPT_BLOCK_HPP
+#define TAO_CRYPT_BLOCK_HPP
 
 #include <string.h>
 #include "misc.hpp"
@@ -30,7 +30,7 @@
 namespace TaoCrypt {
 
 template<typename T>
-T* reallocate(T* p, size_t oldSize, size_t newSize, bool preserve)
+T* reallocate(T* p, uint32 oldSize, uint32 newSize, bool preserve)
 {
     if (oldSize == newSize)
         return p;
@@ -51,10 +51,10 @@ T* reallocate(T* p, size_t oldSize, size_t newSize, bool preserve)
 template<typename T>
 class Block {
 public:
-    explicit Block(size_t s = 0) : sz_(s), buffer_(new T[sz_]) 
+    explicit Block(uint32 s = 0) : sz_(s), buffer_(new T[sz_]) 
                     { CleanNew(sz_); }
 
-    Block(const T* buff, size_t s) : sz_(s), buffer_(new T[sz_])
+    Block(const T* buff, uint32 s) : sz_(s), buffer_(new T[sz_])
         { memcpy(buffer_, buff, sz_ * sizeof(T)); }
 
     Block(const Block& other) : sz_(other.sz_), buffer_(new T[sz_])
@@ -66,19 +66,19 @@ public:
         return *this;
     }
 
-    T& operator[] (size_t i) { assert(i < sz_); return buffer_[i]; }
-    const T& operator[] (size_t i) const 
+    T& operator[] (uint32 i) { assert(i < sz_); return buffer_[i]; }
+    const T& operator[] (uint32 i) const 
         { assert(i < sz_); return buffer_[i]; }
 
-    T* operator+ (size_t i) { return buffer_ + i; }
-    const T* operator+ (size_t i) const { return buffer_ + i; }
+    T* operator+ (uint32 i) { return buffer_ + i; }
+    const T* operator+ (uint32 i) const { return buffer_ + i; }
 
-    size_t size() const { return sz_; }
+    uint32 size() const { return sz_; }
 
     T* get_buffer() const { return buffer_; }
     T* begin()      const { return get_buffer(); }
 
-    void CleanGrow(size_t newSize)
+    void CleanGrow(uint32 newSize)
     {
         if (newSize > sz_) {
             buffer_ = reallocate(buffer_, sz_, newSize, true);
@@ -87,19 +87,19 @@ public:
         }
     }
 
-    void CleanNew(unsigned int newSize)
+    void CleanNew(uint32 newSize)
     {
         New(newSize);
         memset(buffer_, 0, sz_ * sizeof(T));
     }
 
-    void New(unsigned int newSize)
+    void New(uint32 newSize)
     {
         buffer_ = reallocate(buffer_, sz_, newSize, false);
         sz_ = newSize;
     }
 
-    void resize(unsigned int newSize)
+    void resize(uint32 newSize)
     {
         buffer_ = reallocate(buffer_, sz_, newSize, true);
         sz_ = newSize;
@@ -112,7 +112,7 @@ public:
 
     ~Block() { delete[] buffer_; }
 private:
-    size_t sz_;     // size in Ts
+    uint32 sz_;     // size in Ts
     T*     buffer_;
 };
 
@@ -123,4 +123,4 @@ typedef Block<word> WordBlock;
 
 } // namespace
 
-#endif // TAO_CRYPT_BLOCK_HPP__
+#endif // TAO_CRYPT_BLOCK_HPP

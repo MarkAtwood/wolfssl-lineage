@@ -21,8 +21,8 @@
 
 /* based on Wei Dai's algebra.h from CryptoPP */
 
-#ifndef TAO_CRYPT_ALGEBRA_HPP__
-#define TAO_CRYPT_ALGEBRA_HPP__
+#ifndef TAO_CRYPT_ALGEBRA_HPP
+#define TAO_CRYPT_ALGEBRA_HPP
 
 #include "misc.hpp"
 
@@ -311,4 +311,4 @@ protected:
 } // namespace
 
 
-#endif // TAO_CRYPT_ALGEBRA_HPP__
+#endif // TAO_CRYPT_ALGEBRA_HPP

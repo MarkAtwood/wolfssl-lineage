@@ -20,8 +20,8 @@
  */
 
 
-#ifndef TAO_CRYPT_AES_HPP__
-#define TAO_CRYPT_AES_HPP__
+#ifndef TAO_CRYPT_AES_HPP
+#define TAO_CRYPT_AES_HPP
 
 #include <string.h>
 #include "misc.hpp"
@@ -39,8 +39,8 @@ public:
     AES(CipherDir DIR, Mode MODE) : dir_(DIR), mode_(MODE) {}
     virtual ~AES() {}
 
-    void Process(byte*, const byte*, size_t);
-    void SetKey(const byte* iv, size_t sz, CipherDir fake = ENCRYPTION);
+    void Process(byte*, const byte*, uint32);
+    void SetKey(const byte* iv, uint32 sz, CipherDir fake = ENCRYPTION);
 
     void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
 private:
@@ -61,7 +61,7 @@ private:
 
     static const uint32 rcon_[];
 
-    size_t    rounds_;
+    uint32    rounds_;
     WordBlock key_;
 
     void encrypt(const byte*, const byte*, byte*) const;
@@ -82,4 +82,4 @@ typedef BlockCipher<DECRYPTION, AES, CBC> AES_CBC_Decryption;
 
 } // naemspace
 
-#endif // TAO_CRYPT_AES_HPP__
+#endif // TAO_CRYPT_AES_HPP

@@ -25,8 +25,8 @@
  */
 
 
-#ifndef __yaSSL_imp_hpp__
-#define __yaSSL_imp_hpp__
+#ifndef yaSSL_IMP_HPP
+#define yaSSL_IMP_HPP
 
 #ifdef _MSC_VER
     // disable truncated debug symbols
@@ -44,56 +44,20 @@ namespace yaSSL {
 
 class SSL;  // forward THE ssl type
 
-// Base Class for all handshake messages
-class HandShakeBase {
-    int     length_;
-public:
-    int     get_length() const { return length_; }
-    void    set_length(int l)  { length_ = l; }
-
-    // for building buffer's type field
-    virtual HandShakeType get_type() const { return no_shake; } // TODO: pure
-
-    // handles dispactch of proper >>
-    virtual input_buffer&  set(input_buffer& in) { return in; } // TODO: pure
-    virtual output_buffer& get(output_buffer& out) const { return out; }
-    // TODO: make pure
-
-    virtual void Process(input_buffer&, SSL&) {}; // TODO: make pure
-
-    virtual ~HandShakeBase() {}
-};
-
-
-class x509;  
-
-// Certificate could be a chain
-class Certificate : public HandShakeBase {
-    const x509* cert_;
-public:
-    Certificate() : cert_(0) {}
-    explicit Certificate(const x509* cert); 
-    friend output_buffer& operator<<(output_buffer&, const Certificate&);
-
-    const opaque* get_buffer() const;
-  
-    // Process handles input, needs SSL
-    input_buffer&  set(input_buffer& in)         { return in; }
-    output_buffer& get(output_buffer& out) const { return out << *this; }
-
-    HandShakeType get_type() const { return certificate; }
-    void Process(input_buffer&, SSL&);
-private:
-    Certificate(const Certificate&);            // hide copy
-    Certificate& operator=(const Certificate&); // and assign
-};
-
 
 struct ProtocolVersion {
     uint8 major_;
     uint8 minor_;     // major and minor SSL/TLS version numbers
 
     ProtocolVersion(uint8 maj = 3, uint8 min = 0) : major_(maj), minor_(min) {}
+};
+
+
+// Record Layer Header for PlainText, Compressed, and CipherText
+struct RecordLayerHeader {
+    ContentType     type_;
+    ProtocolVersion version_;
+    uint16          length_;             // should not exceed 2^14
 };
 
 
@@ -136,6 +100,7 @@ class Alert : public Message {
     AlertDescription description_;
 public:
     Alert() {}
+    Alert(AlertLevel al, AlertDescription ad) : level_(al), description_(ad) {}
 
     ContentType get_type()   const { return alert; }
     uint16      get_length() const { return SIZEOF_ENUM * 2; }
@@ -209,6 +174,27 @@ private:
 };
 
 
+// Base Class for all handshake messages
+class HandShakeBase {
+    int     length_;
+public:
+    int     get_length() const { return length_; }
+    void    set_length(int l)  { length_ = l; }
+
+    // for building buffer's type field
+    virtual HandShakeType get_type() const { return no_shake; } // TODO: pure
+
+    // handles dispactch of proper >>
+    virtual input_buffer&  set(input_buffer& in) { return in; } // TODO: pure
+    virtual output_buffer& get(output_buffer& out) const { return out; }
+    // TODO: make pure
+
+    virtual void Process(input_buffer&, SSL&) {}; // TODO: make pure
+
+    virtual ~HandShakeBase() {}
+};
+
+
 struct HelloRequest : public HandShakeBase {
     input_buffer&  set(input_buffer& in)         { return in;}
     output_buffer& get(output_buffer& out) const { return out; }
@@ -278,6 +264,30 @@ public:
 private:
     ServerHello(const ServerHello&);            // hide copy
     ServerHello& operator=(const ServerHello&); // and assign
+};
+
+
+class x509;  
+
+// Certificate could be a chain
+class Certificate : public HandShakeBase {
+    const x509* cert_;
+public:
+    Certificate() : cert_(0) {}
+    explicit Certificate(const x509* cert); 
+    friend output_buffer& operator<<(output_buffer&, const Certificate&);
+
+    const opaque* get_buffer() const;
+  
+    // Process handles input, needs SSL
+    input_buffer&  set(input_buffer& in)         { return in; }
+    output_buffer& get(output_buffer& out) const { return out << *this; }
+
+    HandShakeType get_type() const { return certificate; }
+    void Process(input_buffer&, SSL&);
+private:
+    Certificate(const Certificate&);            // hide copy
+    Certificate& operator=(const Certificate&); // and assign
 };
 
 
@@ -580,18 +590,13 @@ private:
 };
 
 
-// Record Layer Header for PlainText, Compressed, and CipherText
-struct RecordLayerHeader {
-    ContentType     type_;
-    ProtocolVersion version_;
-    uint16          length_;             // should not exceed 2^14
-};
+class RandomPool;  // forward for connection
 
 
 // SSL Connection defined on page 11
 struct Connection {
-    opaque          *master_secret_;
     opaque          *pre_master_secret_;
+    opaque          master_secret_[SECRET_LEN];
     opaque          client_random_[RAN_LEN];
     opaque          server_random_[RAN_LEN];
     opaque          sessionID_[ID_LEN];
@@ -603,24 +608,39 @@ struct Connection {
     opaque          server_write_IV_[DES_IV_SZ];
     uint32          sequence_number_;
     uint32          peer_sequence_number_;
-    uint32          secret_len_;                       // pre master length
+    uint32          pre_secret_len_;                   // pre master length
     bool            send_server_key_;                  // server key exchange?
     bool            dh_init_needed_;                   // server dh init parms
+    bool            master_clean_;                     // master secret clean?
+    bool            TLS_;                              // TLSv1 or greater
     ProtocolVersion version_;
+    RandomPool&     random_;
 
-    Connection(ProtocolVersion v) : master_secret_(0), pre_master_secret_(0), 
-        sequence_number_(0), peer_sequence_number_(0), secret_len_(0),
-        send_server_key_(false), dh_init_needed_(false), version_(v) {}
+    Connection(ProtocolVersion v, RandomPool& ran) : pre_master_secret_(0),
+        sequence_number_(0), peer_sequence_number_(0), pre_secret_len_(0),
+        send_server_key_(false), dh_init_needed_(false), master_clean_(false),
+        TLS_(v.major_ >= 3 && v.minor_ >= 1), version_(v), random_(ran) {}
 
-    ~Connection() { delete[] pre_master_secret_; delete[] master_secret_; }
+    ~Connection() 
+    { 
+        CleanMaster(); CleanPreMaster(); delete[] pre_master_secret_;
+    }
 
-    void AllocSecret(size_t sz) { secret_len_ = sz;
-         master_secret_ = new opaque[sz]; pre_master_secret_ = new opaque[sz];}
+    void AllocPreSecret(uint sz) 
+    { 
+        pre_master_secret_ = new opaque[pre_secret_len_ = sz];
+    }
+
+    void CleanPreMaster();
+    void CleanMaster();
+private:
+    Connection(const Connection&);              // hide copy
+    Connection& operator=(const Connection&);   // and assign
 };
 
 
 // TLSv1 Security Spec, defined on page 56 of RFC 2246
-struct SecurityParameters {
+struct Parameters {
     ConnectionEnd        entity_;
     BulkCipherAlgorithm  bulk_cipher_algorithm_;
     CipherType           cipher_type_;
@@ -639,7 +659,10 @@ struct SecurityParameters {
     Cipher               suites_[MAX_SUITE_SZ];
     char                 cipher_name_[MAX_SUITE_NAME];
 
-    SecurityParameters(ConnectionEnd);
+    Parameters(ConnectionEnd);
+private:
+    Parameters(const Parameters&);              // hide copy
+    Parameters& operator=(const Parameters&);   // and assing
 };
 
 
@@ -708,4 +731,4 @@ output_buffer& operator<<(output_buffer&, const HandShakeBase&);
 
 } // naemspace
 
-#endif // __yaSSL_imp_hpp__
+#endif // yaSSL_IMP_HPP

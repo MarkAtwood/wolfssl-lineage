@@ -35,15 +35,18 @@ extern "C" {
 #endif
 
 
-
-typedef struct SSL_METHOD  SSL_METHOD;   /* forward the SSL types C style */
-typedef struct SSL_CTX     SSL_CTX;
-typedef struct SSL_SESSION SSL_SESSION;
-
 #ifdef __cplusplus
-    class  SSL;	
+    class SSL;
+    class SSL_SESSION;
+    class SSL_METHOD;
+    class SSL_CTX;
+    class SSL_CIPHER;
 #else
-    typedef struct SSL SSL;          
+    typedef struct SSL         SSL;          
+    typedef struct SSL_SESION  SSL_SESSION;
+    typedef struct SSL_METHOD  SSL_METHOD;
+    typedef struct SSL_CTX     SSL_CTX;
+    typedef struct SSL_CIPHER  SSL_CIPHER;
 #endif
 
 
@@ -192,6 +195,7 @@ const char* SSLeay_version(int);
 int  SSL_get_error(SSL*, int);
 void SSL_load_error_strings(void);
 
+int          SSL_set_session(SSL *ssl, SSL_SESSION *session);
 SSL_SESSION* SSL_get_session(SSL* ssl);
 long         SSL_SESSION_set_timeout(SSL_SESSION*, long);
 X509*        SSL_get_peer_certificate(SSL*);
@@ -336,7 +340,6 @@ long SSL_CTX_set_tmp_dh(SSL_CTX*, DH*);
 void OpenSSL_add_all_algorithms(void);
 void SSLeay_add_ssl_algorithms(void);
 
-typedef struct SSL_CIPHER SSL_CIPHER;
 
 SSL_CIPHER* SSL_get_current_cipher(SSL*);
 char*       SSL_CIPHER_description(SSL_CIPHER*, char*, int);

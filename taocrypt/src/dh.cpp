@@ -46,7 +46,7 @@ void DH::GeneratePrivate(RandomNumberGenerator& rng, byte* priv)
 void DH::GeneratePublic(RandomNumberGenerator& rng, const byte* priv,
                         byte* pub)
 {
-    const size_t bc(p_.ByteCount());
+    const uint32 bc(p_.ByteCount());
     Integer x(priv, bc);
     Integer y(a_exp_b_mod_c(g_, x, p_));
     y.Encode(pub, bc);
@@ -55,7 +55,7 @@ void DH::GeneratePublic(RandomNumberGenerator& rng, const byte* priv,
 
 void DH::Agree(byte* agree, const byte* priv, const byte* otherPub)
 {
-    const size_t bc(p_.ByteCount());
+    const uint32 bc(p_.ByteCount());
     Integer x(priv, bc);
     Integer y(otherPub, bc);
 
