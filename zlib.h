@@ -33,7 +33,10 @@ public:
 	class UnsupportedAlgorithm : public Err {public: UnsupportedAlgorithm() : Err(INVALID_DATA_FORMAT, "ZlibDecompressor: unsupported algorithm") {}};
 	class UnsupportedPresetDictionary : public Err {public: UnsupportedPresetDictionary() : Err(INVALID_DATA_FORMAT, "ZlibDecompressor: unsupported preset dictionary") {}};
 
-	ZlibDecompressor(BufferedTransformation *outQueue = NULL, bool repeat = false);
+	/*! \param repeat decompress multiple compressed streams in series
+		\param autoSignalPropagation 0 to turn off MessageEnd signal
+	*/
+	ZlibDecompressor(BufferedTransformation *outQueue = NULL, bool repeat = false, int autoSignalPropagation = -1);
 	unsigned int GetLog2WindowSize() const {return m_log2WindowSize;}
 
 private:

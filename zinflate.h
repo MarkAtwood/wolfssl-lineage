@@ -89,7 +89,10 @@ public:
 	class UnexpectedEndErr : public Err {public: UnexpectedEndErr() : Err(INVALID_DATA_FORMAT, "Inflator: unexpected end of compressed block") {}};
 	class BadBlockErr : public Err {public: BadBlockErr() : Err(INVALID_DATA_FORMAT, "Inflator: error in compressed block") {}};
 
-	Inflator(BufferedTransformation *outQueue = NULL, bool repeat = false);
+	/*! \param repeat decompress multiple compressed streams in series
+		\param autoSignalPropagation 0 to turn off MessageEnd signal
+	*/
+	Inflator(BufferedTransformation *outQueue = NULL, bool repeat = false, int autoSignalPropagation = -1);
 	void Put(byte b) {Inflator::Put(&b, 1);}
 	void Put(const byte *inString, unsigned int length);
 

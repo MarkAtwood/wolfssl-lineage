@@ -44,8 +44,8 @@ unsigned int ZlibCompressor::GetCompressionLevel() const
 
 // *************************************************************
 
-ZlibDecompressor::ZlibDecompressor(BufferedTransformation *outQueue, bool repeat)
-	: Inflator(outQueue, repeat)
+ZlibDecompressor::ZlibDecompressor(BufferedTransformation *outQueue, bool repeat, int propagation)
+	: Inflator(outQueue, repeat, propagation)
 {
 }
 

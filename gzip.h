@@ -35,7 +35,10 @@ public:
 	class CrcErr : public Err {public: CrcErr() : Err(DATA_INTEGRITY_CHECK_FAILED, "Gunzip: CRC check error") {}};
 	class LengthErr : public Err {public: LengthErr() : Err(DATA_INTEGRITY_CHECK_FAILED, "Gunzip: length check error") {}};
 
-	Gunzip(BufferedTransformation *outQueue = NULL, bool repeat = false);
+	/*! \param repeat decompress multiple compressed streams in series
+		\param autoSignalPropagation 0 to turn off MessageEnd signal
+	*/
+	Gunzip(BufferedTransformation *outQueue = NULL, bool repeat = false, int autoSignalPropagation = -1);
 
 protected:
 	enum {MAGIC1=0x1f, MAGIC2=0x8b,   // flags for the header

@@ -162,8 +162,9 @@ bool HuffmanDecoder::Decode(LowFirstBitReader &reader, value_t &value) const
 
 // *************************************************************
 
-Inflator::Inflator(BufferedTransformation *outQueue, bool repeat)
-	: Filter(outQueue), m_repeat(repeat), m_decodersInitializedWithFixedCodes(false)
+Inflator::Inflator(BufferedTransformation *outQueue, bool repeat, int propagation)
+	: Filter(outQueue), BufferedTransformationWithAutoSignal(propagation)
+	, m_repeat(repeat), m_decodersInitializedWithFixedCodes(false)
 	, m_state(PRE_STREAM), m_reader(m_inQueue)
 {
 }
@@ -241,8 +242,11 @@ void Inflator::MessageEnd(int propagation)
 
 void Inflator::ProcessInput(bool flush)
 {
-	while (1)
+	while (true)
 	{
+		if (m_inQueue.IsEmpty())
+			return;
+
 		switch (m_state)
 		{
 		case PRE_STREAM:

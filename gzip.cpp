@@ -40,8 +40,8 @@ void Gzip::WritePoststreamTail()
 
 // *************************************************************
 
-Gunzip::Gunzip(BufferedTransformation *outQueue, bool repeat)
-	: Inflator(outQueue, repeat), m_length(0)
+Gunzip::Gunzip(BufferedTransformation *outQueue, bool repeat, int propagation)
+	: Inflator(outQueue, repeat, propagation), m_length(0)
 {
 }
 
