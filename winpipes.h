@@ -44,6 +44,7 @@ public:
 	{
 	public:
 		Err(HANDLE h, const std::string& operation, int error);
+		~Err() throw() {} 
 
 		HANDLE GetHandle() const {return m_h;}
 		const std::string & GetOperation() const {return m_operation;}
