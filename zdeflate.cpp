@@ -83,12 +83,15 @@ HuffmanEncoder::HuffmanEncoder(const unsigned int *codeBits, unsigned int nCodes
 
 struct HuffmanNode
 {
-	inline bool operator<(const HuffmanNode &rhs) const {return freq < rhs.freq;}
 	unsigned int symbol;
 	union {unsigned int parent, depth, freq;};
 };
 
-inline bool operator<(unsigned int i, const HuffmanNode &rhs) {return i < rhs.freq;}
+struct FreqLessThan
+{
+	inline bool operator()(unsigned int lhs, const HuffmanNode &rhs) {return lhs < rhs.freq;}
+	inline bool operator()(const HuffmanNode &lhs, const HuffmanNode &rhs) const {return lhs.freq < rhs.freq;}
+};
 
 void HuffmanEncoder::GenerateCodeLengths(unsigned int *codeBits, unsigned int maxCodeBits, const unsigned int *codeCounts, unsigned int nCodes)
 {
@@ -102,8 +105,8 @@ void HuffmanEncoder::GenerateCodeLengths(unsigned int *codeBits, unsigned int ma
 		tree[i].symbol = i;
 		tree[i].freq = codeCounts[i];
 	}
-	sort(tree.Begin(), tree.End());
-	unsigned int treeBegin = upper_bound(tree.Begin(), tree.End(), 0) - tree.Begin();
+	sort(tree.Begin(), tree.End(), FreqLessThan());
+	unsigned int treeBegin = upper_bound(tree.Begin(), tree.End(), 0, FreqLessThan()) - tree.Begin();
 	if (treeBegin == nCodes)
 	{	// special case for no codes
 		fill(codeBits, codeBits+nCodes, 0);

@@ -58,10 +58,12 @@ const int SD_SEND = 1;
 const int SD_BOTH = 2;
 #endif
 
+#ifndef socklen_t	// "#define socklen_t int" appears in socket.h on cygwin
 #ifdef HAS_WINDOWS_STYLE_SOCKETS	// use HAS_ instead of USE_ because cygwin doesn't have socklen_t
 typedef int socklen_t;
 #else
 typedef ::socklen_t socklen_t;
+#endif
 #endif
 
 //! wrapper for Windows or Berkeley Sockets
@@ -73,6 +75,7 @@ public:
 	{
 	public:
 		Err(socket_t s, const std::string& operation, int error);
+		~Err() throw() {}	// needed with GCC 3.0.2, not sure why
 
 		socket_t GetSocket() const {return m_s;}
 		const std::string & GetOperation() const {return m_operation;}

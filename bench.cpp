@@ -151,7 +151,7 @@ void BenchMark(const char *name, StreamCipher &cipher, double timeTotal)
 	OutputResultBytes(name, length, timeTaken);
 }
 
-void BenchMark(const char *name, HashModule &hash, double timeTotal)
+void BenchMark(const char *name, HashModule &hm, double timeTotal)
 {
 	const int BUF_SIZE=1024; // update 1024 bytes at a time
 	SecByteBlock buf(BUF_SIZE);
@@ -165,7 +165,7 @@ void BenchMark(const char *name, HashModule &hash, double timeTotal)
 	{
 		length *= 2;
 		for (; i<length; i+=BUF_SIZE)
-			hash.Update(buf, BUF_SIZE);
+			hm.Update(buf, BUF_SIZE);
 		timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND;
 	}
 	while (timeTaken < 2.0/3*timeTotal);

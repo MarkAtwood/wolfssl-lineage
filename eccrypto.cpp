@@ -82,6 +82,14 @@ template<> struct EcRecommendedParameters<ECP>
 	unsigned int h;
 };
 
+struct OIDLessThan
+{
+	template <typename T>
+	inline bool operator()(const EcRecommendedParameters<T>& a, const OID& b) {return a.oid < b;}
+	template <typename T>
+	inline bool operator()(const OID& a, const EcRecommendedParameters<T>& b) {return a < b.oid;}
+};
+
 static void GetRecommendedParameters(const EcRecommendedParameters<EC2N> *&begin, const EcRecommendedParameters<EC2N> *&end)
 {
 	// this array must be sorted by OID
@@ -335,10 +343,7 @@ template <class EC> OID ECParameters<EC>::GetNextRecommendedParametersOID(const 
 {
 	const EcRecommendedParameters<EC> *begin, *end;
 	GetRecommendedParameters(begin, end);
-	// VC60 workaround: problem with operator< if using upper_bound
-	const EcRecommendedParameters<EC> *it = std::lower_bound(begin, end, oid);
-	if (it != end && it->oid == oid)
-		++it;
+	const EcRecommendedParameters<EC> *it = std::upper_bound(begin, end, oid, OIDLessThan());
 	return (it == end ? OID() : it->oid);
 }
 
@@ -346,7 +351,7 @@ template <class EC> void ECParameters<EC>::LoadRecommendedParameters(const OID &
 {
 	const EcRecommendedParameters<EC> *begin, *end;
 	GetRecommendedParameters(begin, end);
-	const EcRecommendedParameters<EC> *it = std::lower_bound(begin, end, oid);
+	const EcRecommendedParameters<EC> *it = std::lower_bound(begin, end, oid, OIDLessThan());
 	if (it == end || it->oid != oid)
 		throw UnknownOID();
 

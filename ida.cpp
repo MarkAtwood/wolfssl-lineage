@@ -116,7 +116,7 @@ void RawIDA::ComputeV(unsigned int i)
 	if (m_outputToInput[i] == m_threshold && i * m_threshold <= 1000*1000)
 	{
 		m_v[i].Resize(m_threshold);
-		PrepareBulkPolynomialInterpolationAt(field, m_v[i].ptr, m_outputChannelIds[i], m_inputChannelIds.begin(), m_w.ptr, m_threshold);
+		PrepareBulkPolynomialInterpolationAt(field, m_v[i].ptr, m_outputChannelIds[i], &m_inputChannelIds[0], m_w.ptr, m_threshold);
 	}
 }
 
@@ -132,7 +132,7 @@ void RawIDA::AddOutputChannel(word32 channelId)
 void RawIDA::PrepareInterpolation()
 {
 	assert(m_inputChannelIds.size() == m_threshold);
-	PrepareBulkPolynomialInterpolation(field, m_w.ptr, m_inputChannelIds.begin(), m_threshold);
+	PrepareBulkPolynomialInterpolation(field, m_w.ptr, &m_inputChannelIds[0], m_threshold);
 //	polynomialRing.PrepareBulkInterpolation(m_w, m_inputChannelIds.begin(), m_threshold);
 	for (unsigned int i=0; i<m_outputChannelIds.size(); i++)
 		ComputeV(i);
@@ -166,7 +166,7 @@ void RawIDA::ProcessInputQueues()
 			else
 			{
 				m_u.Resize(m_threshold);
-				PrepareBulkPolynomialInterpolationAt(field, m_u.ptr, m_outputChannelIds[i], m_inputChannelIds.begin(), m_w.ptr, m_threshold);
+				PrepareBulkPolynomialInterpolationAt(field, m_u.ptr, m_outputChannelIds[i], &m_inputChannelIds[0], m_w.ptr, m_threshold);
 				m_outputQueues[i].PutWord32(BulkPolynomialInterpolateAt(field, m_y.ptr, m_u.ptr, m_threshold));
 			}
 		}

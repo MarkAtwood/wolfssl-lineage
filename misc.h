@@ -551,13 +551,20 @@ template <class T> struct SecBlock
 
 // CodeWarrior defines _MSC_VER
 #if !defined(_MSC_VER) || defined(__MWERKS__)
-	T *operator +(unsigned int offset)
+	template <typename I>
+	T *operator +(I offset)
 		{return ptr+offset;}
-	const T *operator +(unsigned int offset) const
+
+	template <typename I>
+	const T *operator +(I offset) const
 		{return ptr+offset;}
-	T& operator[](unsigned int index)
+
+	template <typename I>
+	T& operator[](I index)
 		{assert(index<size); return ptr[index];}
-	const T& operator[](unsigned int index) const
+
+	template <typename I>
+	const T& operator[](I index) const
 		{assert(index<size); return ptr[index];}
 #endif
 

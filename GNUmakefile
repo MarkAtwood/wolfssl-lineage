@@ -1,7 +1,9 @@
-CXXFLAGS = -w
+# can't use -fno-rtti yet because it causes problems with exception handling in GCC 2.95.2
+CXXFLAGS = -g
 # uncomment the next line to do a release build
-# CXXFLAGS = -w -O2 -DNDEBUG
-ARFLAGS = cr
+# CXXFLAGS = -O2 -DNDEBUG -ffunction-sections -fdata-sections
+LDFLAGS = -Wl,--gc-sections
+ARFLAGS = -cr	# ar needs the dash on OpenBSD
 RANLIB = ranlib
 UNAME = $(shell uname)
 

@@ -386,7 +386,7 @@ std::ostream& PolynomialOver<T>::Output(std::ostream &out, const Ring &ring) con
 				else
 				{
 					CoefficientType inverse = ring.Inverse(m_coefficients[i]);
-					ostrstream pstr, nstr;
+					std::ostrstream pstr, nstr;
 
 					pstr << m_coefficients[i];
 					nstr << inverse;
