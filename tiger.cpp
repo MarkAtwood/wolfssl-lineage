@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include "tiger.h"
+#include "misc.h"
 
 #ifdef WORD64_AVAILABLE
 
@@ -14,7 +15,7 @@ void Tiger::Init()
 	digest[2] = W64LIT(0xF096A5B4C3B2E187);
 }
 
-void Tiger::Final(byte *hash)
+void Tiger::TruncatedFinal(byte *hash, unsigned int size)
 {
 	PadLastBlock(56, 0x01);
 	CorrectEndianess(data, data, 56);
@@ -23,7 +24,7 @@ void Tiger::Final(byte *hash)
 
 	Transform(digest, data);
 	CorrectEndianess(digest, digest, DigestSize());
-	memcpy(hash, digest, DigestSize());
+	memcpy(hash, digest, size);
 
 	Reinit();		// reinit for next use
 }

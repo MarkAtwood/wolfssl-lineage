@@ -16,7 +16,7 @@ public:
 	enum {DIGESTSIZE = 24};
 	Tiger() : IteratedHash<word64, false, 64>(DIGESTSIZE) {Init();}
 	static void Transform(word64 *digest, const word64 *data);
-	void Final(byte *hash);
+	void TruncatedFinal(byte *hash, unsigned int size);
 
 protected:
 	void Init();
