@@ -13,66 +13,82 @@ typedef DES_EDE2_Decryption Default_ECB_Decryption;
 typedef SHA DefaultHashModule;
 typedef HMAC<DefaultHashModule> DefaultMAC;
 
-class DefaultEncryptor : public Filter
+class DefaultEncryptor : public ProxyFilter
 {
 public:
 	DefaultEncryptor(const char *passphrase, BufferedTransformation *outQueue = NULL);
 
-	void Detach(BufferedTransformation *newOut = NULL);
-	BufferedTransformation *AttachedTransformation();
-
-	void Put(byte inByte);
-	void Put(const byte *inString, unsigned int length);
+protected:
+	void FirstPut(const byte *);
+	void LastPut(const byte *inString, unsigned int length);
 
 private:
+	SecByteBlock m_passphrase;
 	member_ptr<Default_ECB_Encryption> m_cipher;
 };
 
-class DefaultDecryptor : public FilterWithBufferedInput
+class DefaultDecryptor : public ProxyFilter
 {
 public:
-	DefaultDecryptor(const char *passphrase, BufferedTransformation *outQueue = NULL);
+	DefaultDecryptor(const char *passphrase, BufferedTransformation *outQueue = NULL, bool throwException=true);
 
-	void Detach(BufferedTransformation *newOut = NULL);
-	BufferedTransformation *AttachedTransformation();
+	class Err : public BufferedTransformation::Err
+	{
+	public:
+		Err(const std::string &s) 
+			: BufferedTransformation::Err(DATA_INTEGRITY_CHECK_FAILED, s) {}
+	};
+	class KeyBadErr : public Err {public: KeyBadErr() : Err("DefaultDecryptor: cannot decrypt message with this passphrase") {}};
 
-	// MAC_GOOD and MAC_BAD are not used in this class but are defined for DefaultDecryptorWithMAC
-	enum State {WAITING_FOR_KEYCHECK, KEY_GOOD, KEY_BAD, MAC_GOOD, MAC_BAD};
+	enum State {WAITING_FOR_KEYCHECK, KEY_GOOD, KEY_BAD};
 	State CurrentState() const {return m_state;}
 
 protected:
 	void FirstPut(const byte *inString);
-	void NextPut(const byte *inString, unsigned int length);
 	void LastPut(const byte *inString, unsigned int length);
 
 	State m_state;
 
 private:
 	void CheckKey(const byte *salt, const byte *keyCheck);
-	SecBlock<char> m_passphrase;
+
+	SecByteBlock m_passphrase;
 	member_ptr<Default_ECB_Decryption> m_cipher;
+	member_ptr<FilterWithBufferedInput> m_decryptor;
+	bool m_throwException;
 };
 
-class DefaultEncryptorWithMAC : public DefaultEncryptor
+class DefaultEncryptorWithMAC : public ProxyFilter
 {
 public:
 	DefaultEncryptorWithMAC(const char *passphrase, BufferedTransformation *outQueue = NULL);
 
-	void Put(byte inByte);
-	void Put(const byte *inString, unsigned int length);
-	void InputFinished();
+protected:
+	void FirstPut(const byte *inString) {}
+	void LastPut(const byte *inString, unsigned int length);
 
 private:
 	member_ptr<DefaultMAC> m_mac;
 };
 
-class DefaultDecryptorWithMAC : public DefaultDecryptor
+class DefaultDecryptorWithMAC : public ProxyFilter
 {
 public:
-	DefaultDecryptorWithMAC(const char *passphrase, BufferedTransformation *outQueue = NULL);
+	class MACBadErr : public DefaultDecryptor::Err {public: MACBadErr() : DefaultDecryptor::Err("DefaultDecryptorWithMAC: MAC check failed") {}};
 
-	void Detach(BufferedTransformation *newOut = NULL);
-	BufferedTransformation *AttachedTransformation();
+	DefaultDecryptorWithMAC(const char *passphrase, BufferedTransformation *outQueue = NULL, bool throwException=true);
+
+	DefaultDecryptor::State CurrentState() const;
+	bool CheckLastMAC() const;
+
+protected:
+	void FirstPut(const byte *inString) {}
+	void LastPut(const byte *inString, unsigned int length);
+
+private:
+	member_ptr<DefaultMAC> m_mac;
+	HashVerifier *m_hashVerifier;
+	bool m_throwException;
 };
 
 NAMESPACE_END

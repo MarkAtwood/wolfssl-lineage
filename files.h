@@ -12,8 +12,12 @@ NAMESPACE_BEGIN(CryptoPP)
 class FileSource : public Source
 {
 public:
-	class Err : public Exception {public: Err(const char *message) : Exception(message) {}};
-	class OpenErr : public Err {public: OpenErr(const char *message) : Err(message) {}};
+	class Err : public BufferedTransformation::Err
+	{
+	public:
+		Err(const std::string &s) : BufferedTransformation::Err(INPUT_ERROR, s) {}
+	};
+	class OpenErr : public Err {public: OpenErr(const std::string &filename) : Err("FileSource: error opening file for reading: " + filename) {}};
 	class ReadErr : public Err {public: ReadErr() : Err("FileSource: error reading file") {}};
 
 	FileSource(std::istream &in, bool pumpAndClose=false,
@@ -34,8 +38,12 @@ private:
 class FileSink : public Sink
 {
 public:
-	class Err : public Exception {public: Err(const char *message) : Exception(message) {}};
-	class OpenErr : public Err {public: OpenErr(const char *message) : Err(message) {}};
+	class Err : public BufferedTransformation::Err
+	{
+	public:
+		Err(const std::string &s) : BufferedTransformation::Err(OUTPUT_ERROR, s) {}
+	};
+	class OpenErr : public Err {public: OpenErr(const std::string &filename) : Err("FileSink: error opening file for writing: " + filename) {}};
 	class WriteErr : public Err {public: WriteErr() : Err("FileSink: error writing file") {}};
 
 	FileSink(std::ostream &out);
@@ -43,7 +51,8 @@ public:
 
 	std::ostream& GetStream() {return out;}
 
-	void InputFinished();
+	void Flush(bool=true, int=-1);
+	void MessageEnd(int=-1);
 	void Put(byte inByte)
 	{
 		out.put(inByte);

@@ -77,7 +77,7 @@ RWFunction<r>::RWFunction(BufferedTransformation &bt)
 {
 	BERSequenceDecoder seq(bt);
 	n.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 }
 
 template <word r>
@@ -90,7 +90,7 @@ void RWFunction<r>::DEREncode(BufferedTransformation &bt) const
 {
 	DERSequenceEncoder seq(bt);
 	n.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 template <word r>
@@ -172,7 +172,7 @@ InvertibleRWFunction<r>::InvertibleRWFunction(BufferedTransformation &bt)
 	p.BERDecode(seq);
 	q.BERDecode(seq);
 	u.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 }
 
 template <word r>
@@ -188,7 +188,7 @@ void InvertibleRWFunction<r>::DEREncode(BufferedTransformation &bt) const
 	p.DEREncode(seq);
 	q.DEREncode(seq);
 	u.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 template <word r>

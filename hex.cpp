@@ -25,4 +25,10 @@ void HexDecoder::Put(const byte *inString, unsigned int length)
 		HexDecoder::Put(*inString++);
 }
 
+void HexDecoder::MessageEnd(int propagate)
+{
+	last = -1;
+	Filter::MessageEnd(propagate);
+}
+
 NAMESPACE_END

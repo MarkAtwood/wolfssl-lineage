@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(CryptoPP)
 // can be passed to functions that ask for a RNG but doesn't actually use it
 class NullRNG : public RandomNumberGenerator
 {
-	byte GetByte() {assert(false); return 0x7d;}
+	byte GenerateByte() {assert(false); return 0x7d;}
 };
 
 // linear congruential generator
@@ -23,7 +23,7 @@ public:
 	LC_RNG(word32 init_seed)
 		: seedBytes((byte *)&seed) {seed=init_seed;}
 
-	byte GetByte();
+	byte GenerateByte();
 
 	word32 GetSeed() {return seed;}
 
@@ -45,7 +45,7 @@ public:
 	// cipher will be deleted by destructor
 	X917RNG(BlockTransformation *cipher, const byte *seed);
 
-	byte GetByte();
+	byte GenerateByte();
 
 private:
 	member_ptr<BlockTransformation> cipher;

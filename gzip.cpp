@@ -14,7 +14,7 @@ Gzip::Gzip(int dlevel, BufferedTransformation *bt)
 	AttachedTransformation()->Put(MAGIC2);
 	AttachedTransformation()->Put(DEFLATED);
 	AttachedTransformation()->Put(0);		// general flag
-	AttachedTransformation()->PutLong(0);	// time stamp
+	AttachedTransformation()->PutWord32(0);	// time stamp
 	byte extra = (dlevel == 1) ? FAST : ((dlevel == 9) ? SLOW : 0);
 	AttachedTransformation()->Put(extra);
 	AttachedTransformation()->Put(GZIP_OS_CODE);
@@ -34,26 +34,22 @@ void Gzip::Put(const byte *inString, unsigned int length)
 	m_totalLen += length;
 }
 
-void Gzip::InputFinished()
+void Gzip::MessageEnd(int propagation)
 {
-	Deflator::InputFinished();
+	Deflator::MessageEnd(0);
 	SecByteBlock crc(4);
 	m_crc.Final(crc);
 	AttachedTransformation()->Put(crc, 4);
-	AttachedTransformation()->PutLong(m_totalLen, false);
+	AttachedTransformation()->PutWord32(m_totalLen, false);
+	Filter::MessageEnd(propagation);
 }
 
-Gunzip::Gunzip(BufferedTransformation *output,
-			   BufferedTransformation *bypassed)
-	: Fork(output, bypassed), m_tail(8)
+Gunzip::Gunzip(BufferedTransformation *outQueue, bool repeat)
+	: Filter(outQueue), m_inflator(new InflatorRedirector(*this))
+	, m_repeat(repeat), m_autoSignalPropagation(-1)
 {
-	m_inflator.SelectOutPort(1);
-	m_inflator.Attach(new TailProcesser(*this));
-	m_inflator.SelectOutPort(0);
-	m_inflator.Attach(new BodyProcesser(*this));
-
+	m_totalLen = 0;
 	m_state = PROCESS_HEADER;
-	m_tailLen = 0;
 }
 
 void Gunzip::Put(const byte *inString, unsigned int length)
@@ -62,25 +58,36 @@ void Gunzip::Put(const byte *inString, unsigned int length)
 	{
 		case PROCESS_HEADER:
 			m_inQueue.Put(inString, length);
-			if (m_inQueue.CurrentSize()>=MAX_HEADERSIZE)
+			if (m_inQueue.CurrentSize() >= MAX_HEADERSIZE)
 				ProcessHeader();
 			break;
 		case PROCESS_BODY:
 			m_inflator.Put(inString, length);
 			break;
+		case PROCESS_TAIL:
+			m_inQueue.Put(inString, length);
+			if (m_inQueue.CurrentSize() >= TAIL_SIZE)
+				ProcessTail();
+			break;
 		case AFTER_END:
-			AccessPort(1).Put(inString, length);
+			AttachedTransformation()->Put(inString, length);
 			break;
 	}
 }
 
-void Gunzip::InputFinished()
+void Gunzip::MessageEnd(int propagation)
 {
-	if (m_state==PROCESS_HEADER)
+	if (m_state == AFTER_END)
+		Filter::MessageEnd(propagation);
+
+	if (m_state == PROCESS_HEADER)
 		ProcessHeader();
 
-	if (m_state!=AFTER_END)
-		m_inflator.InputFinished();
+	if (m_state == PROCESS_BODY)
+		m_inflator.MessageEnd();
+
+	if (m_state == PROCESS_TAIL)
+		ProcessTail();
 }
 
 void Gunzip::ProcessHeader()
@@ -98,7 +105,7 @@ void Gunzip::ProcessHeader()
 	if (flags & EXTRA_FIELDS)	// skip extra fields
 	{
 		word16 length;
-		if(!m_inQueue.GetShort(length, false)) goto error;
+		if(!m_inQueue.GetWord16(length, false)) goto error;
 		if (m_inQueue.Skip(length)!=length) goto error;
 	}
 
@@ -121,52 +128,48 @@ error:
 
 void Gunzip::ProcessTail()
 {
-	assert(m_tailLen == 8);
+	if (m_inQueue.CurrentSize() < TAIL_SIZE)
+		throw TailErr();
 
-	if (!m_crc.Verify(m_tail))
+	SecByteBlock tail(TAIL_SIZE);
+	m_inQueue.Get(tail, TAIL_SIZE);
+
+	if (!m_crc.Verify(tail))
 		throw CrcErr();
 
-	if ((((word32)m_tail[4]) | ((word32)m_tail[5] << 8) | ((word32)m_tail[6] << 16) | ((word32)m_tail[7] << 24)) != m_totalLen)
+	if ((((word32)tail[4]) | ((word32)tail[5] << 8) | ((word32)tail[6] << 16) | ((word32)tail[7] << 24)) != m_totalLen)
 		throw LengthErr();
 
-	m_tailLen = 9;	// signal TailProcesser to bypass everything from now on
-}
+	Filter::MessageEnd(m_autoSignalPropagation);
 
-Gunzip::BodyProcesser::BodyProcesser(Gunzip &parent)
-	: parent(parent)
-{
-	parent.m_totalLen = 0;
-}
-
-void Gunzip::BodyProcesser::Put(const byte *inString, unsigned int length)
-{
-	parent.AccessPort(0).Put(inString, length);
-	parent.m_crc.Update(inString, length);
-	parent.m_totalLen += length;
-}
-
-Gunzip::TailProcesser::TailProcesser(Gunzip &parent)
-	: parent(parent)
-{
-	parent.m_tailLen = 0;
-}
-
-void Gunzip::TailProcesser::Put(const byte *inString, unsigned int length)
-{
-	if (parent.m_tailLen < 8)
+	if (m_repeat)
 	{
-		int l = STDMIN(8-parent.m_tailLen, length);
-		memcpy(parent.m_tail+parent.m_tailLen, inString, l);
-		inString += l;
-		length -= l;
-		parent.m_tailLen += l;
+		m_totalLen = 0;
+		m_state = PROCESS_HEADER;
+		m_inflator.Reset();
 	}
+	else
+	{
+		m_state = AFTER_END;
+		m_inQueue.TransferTo(*AttachedTransformation());
+	}
+}
 
-	if (parent.m_tailLen == 8)
-		parent.ProcessTail();
+void Gunzip::InflatorRedirector::Put(const byte *inString, unsigned int length)
+{
+	if (parent.m_state == PROCESS_BODY)
+	{
+		parent.AttachedTransformation()->Put(inString, length);
+		parent.m_crc.Update(inString, length);
+		parent.m_totalLen += length;
+	}
+	else
+		parent.Put(inString, length);
+}
 
-	if (length)
-		parent.AccessPort(1).Put(inString, length);
+void Gunzip::InflatorRedirector::MessageEnd(int)
+{
+	parent.m_state = PROCESS_TAIL;
 }
 
 NAMESPACE_END

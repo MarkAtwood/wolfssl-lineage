@@ -3,7 +3,7 @@
 
 #include "cryptlib.h"
 #include "filters.h"
-#include "queue.h"
+#include "mqueue.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -17,11 +17,13 @@ public:
 
 	bool Attachable() {return true;}
 	void Detach(BufferedTransformation *newOut = NULL);
-	void Attach(BufferedTransformation *newOut);
-	void Close();
+	void MessageEnd(int propagation);
+	void MessageSeriesEnd(int propagation);
 
-	unsigned long MaxRetrieveable()
-		{return outPorts[currentPort]->MaxRetrieveable();}
+	BufferedTransformation *AttachedTransformation()
+		{return outPorts[currentPort]->AttachedTransformation();}
+	unsigned long MaxRetrievable() const
+		{return outPorts[currentPort]->MaxRetrievable();}
 
 	unsigned int Get(byte &outByte)
 		{return outPorts[currentPort]->Get(outByte);}
@@ -55,11 +57,12 @@ class Join;
 class JoinInterface : public BufferedTransformation
 {
 public:
-	JoinInterface(Join &p, ByteQueue &b, int i)
+	JoinInterface(Join &p, MessageQueue &b, int i)
 		: parent(p), bq(b), id(i) {}
 
-	unsigned long MaxRetrieveable();
-	void Close();
+	unsigned long MaxRetrievable() const;
+	void MessageEnd(int propagation);
+	void MessageSeriesEnd(int propagation);
 	bool Attachable() {return true;}
 	void Detach(BufferedTransformation *bt);
 	void Attach(BufferedTransformation *bt);
@@ -75,7 +78,7 @@ public:
 
 private:
 	Join &parent;
-	ByteQueue &bq;
+	MessageQueue &bq;
 	const int id;
 };
 
@@ -90,23 +93,28 @@ public:
 	// the caller will be responsible for deleting it.
 	JoinInterface *ReleaseInterface(unsigned int i);
 
-	virtual void NotifyInput(unsigned int interfaceId, unsigned int length);
-	virtual void NotifyClose(unsigned int interfaceId);
-
 	void Put(byte inByte) {AttachedTransformation()->Put(inByte);}
 	void Put(const byte *inString, unsigned int length)
 		{AttachedTransformation()->Put(inString, length);}
 
 protected:
+	friend class JoinInterface;
+
+	virtual void NotifyInput(unsigned int interfaceId, unsigned int length) =0;
+	virtual void NotifyMessageEnd(unsigned int interfaceId) =0;
+	virtual void NotifyMessageSeriesEnd(unsigned int interfaceId) {}
+
 	unsigned int NumberOfPorts() const {return numberOfPorts;}
-	ByteQueue& AccessPort(unsigned int i) {return *inPorts[i];}
+	MessageQueue& AccessPort(unsigned int i) {return *inPorts[i];}
+	const MessageQueue& AccessPort(unsigned int i) const {return *inPorts[i];}
 	unsigned int InterfacesOpen() const {return interfacesOpen;}
+	bool AllCurrentMessagesAreComplete() const;
 
 private:
 	Join(const Join &); // no copying allowed
 
 	unsigned int numberOfPorts;
-	vector_member_ptrs<ByteQueue> inPorts;
+	vector_member_ptrs<MessageQueue> inPorts;
 	unsigned int interfacesOpen;
 	vector_member_ptrs<JoinInterface> interfaces;
 };

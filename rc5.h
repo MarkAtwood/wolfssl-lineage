@@ -12,7 +12,8 @@ public:
 	typedef word32 RC5_WORD;
 
 	// values of KEYLENGTH and ROUNDS are defaults only
-	enum {KEYLENGTH=16, BLOCKSIZE = sizeof(RC5_WORD)*2, ROUNDS=12};  // == 8
+	// default number of rounds has been increased to 16 from 12
+	enum {KEYLENGTH=16, BLOCKSIZE = sizeof(RC5_WORD)*2, ROUNDS=16};
 	unsigned int BlockSize() const {return BLOCKSIZE;}
 	static unsigned int KeyLength(unsigned int keylength)
 		{return STDMIN(keylength, 255U);}

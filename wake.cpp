@@ -119,7 +119,7 @@ void WAKEEncryption::Put(const byte *inString, unsigned int length)
 	}
 }
 
-void WAKEEncryption::InputFinished()
+void WAKEEncryption::MessageEnd(int propagation)
 {
 	if (inbufSize == INBUFMAX)
 		ProcessInbuf();
@@ -127,6 +127,7 @@ void WAKEEncryption::InputFinished()
 	memset(inbuf+inbufSize, 4-(inbufSize%4), 4-(inbufSize%4));
 	inbufSize += 4-(inbufSize%4);
 	ProcessInbuf();
+	Filter::MessageEnd(propagation);
 }
 
 void WAKEDecryption::ProcessInbuf()
@@ -157,10 +158,11 @@ void WAKEDecryption::ProcessInbuf()
 	inbufSize=0;
 }
 
-void WAKEDecryption::InputFinished()
+void WAKEDecryption::MessageEnd(int propagation)
 {
 	lastBlock = true;
 	ProcessInbuf();
+	Filter::MessageEnd(propagation);
 }
 
 NAMESPACE_END

@@ -39,10 +39,10 @@ void SplitFork::Put(const byte *inString, unsigned int length)
 
 void SplitJoin::NotifyInput(unsigned int /* interfaceId */, unsigned int /* length */)
 {
-	unsigned long n=AccessPort(0).MaxRetrieveable();
+	unsigned long n=AccessPort(0).MaxRetrievable();
 
 	for (int i=1; n && i<NumberOfPorts(); i++)
-		n = STDMIN(n, AccessPort(i).MaxRetrieveable());
+		n = STDMIN(n, AccessPort(i).MaxRetrievable());
 
 	if (n)
 	{

@@ -19,7 +19,7 @@ public:
 	}
 
 	void Put(const byte *inString, unsigned int length);
-	void InputFinished();
+	void MessageEnd(int propagation=-1);
 
 private:
 	void LineBreak();
@@ -46,7 +46,7 @@ public:
 	}
 
 	void Put(const byte *inString, unsigned int length);
-	void InputFinished();
+	void MessageEnd(int propagation=-1);
 
 private:
 	static int ConvToNumber(byte inByte);

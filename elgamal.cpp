@@ -19,7 +19,7 @@ ElGamalEncryptor::ElGamalEncryptor(BufferedTransformation &bt)
 	p.BERDecode(seq);
 	g.BERDecode(seq);
 	y.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 
 	modulusLen=p.ByteCount();
 	gpc.Precompute(p, g, ExponentBitLength(), 1);
@@ -32,7 +32,7 @@ void ElGamalEncryptor::DEREncode(BufferedTransformation &bt) const
 	p.DEREncode(seq);
 	g.DEREncode(seq);
 	y.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 void ElGamalEncryptor::Precompute(unsigned int precomputationStorage)
@@ -118,7 +118,7 @@ ElGamalDecryptor::ElGamalDecryptor(BufferedTransformation &bt)
 	g.BERDecode(seq);
 	y.BERDecode(seq);
 	x.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 
 	modulusLen=p.ByteCount();
 	gpc.Precompute(p, g, ExponentBitLength(), 1);
@@ -132,7 +132,7 @@ void ElGamalDecryptor::DEREncode(BufferedTransformation &bt) const
 	g.DEREncode(seq);
 	y.DEREncode(seq);
 	x.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 unsigned int ElGamalDecryptor::Decrypt(const byte *cipherText, byte *plainText)

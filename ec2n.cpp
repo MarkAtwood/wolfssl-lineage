@@ -163,7 +163,7 @@ void EcPrecomputation<EC2N>::Load(BufferedTransformation &bt)
 		seq.Get(buffer, size);
 		ep->g[i].y.Decode(buffer, size);
 	}
-	seq.OutputFinished();
+	seq.MessageEnd();
 }
 
 void EcPrecomputation<EC2N>::Save(BufferedTransformation &bt) const
@@ -182,7 +182,7 @@ void EcPrecomputation<EC2N>::Save(BufferedTransformation &bt) const
 		ep->g[i].y.Encode(buffer, size);
 		seq.Put(buffer, size);
 	}
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 EC2N::Point EcPrecomputation<EC2N>::Multiply(const Integer &exponent) const

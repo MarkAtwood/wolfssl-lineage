@@ -121,7 +121,6 @@ public:
 
 	ByteQueueNode *next;
 
-private:
 	inline unsigned int MaxSize() const {return buf.size;}
 
 	SecByteBlock buf;
@@ -179,6 +178,11 @@ unsigned long ByteQueue::CurrentSize() const
 		size += current->CurrentSize();
 
 	return size;
+}
+
+bool ByteQueue::IsEmpty() const
+{
+	return head==tail && head->CurrentSize()==0;
 }
 
 void ByteQueue::Clear()
@@ -261,6 +265,13 @@ unsigned int ByteQueue::TransferTo(BufferedTransformation &target, unsigned int 
 	return transferMax - bytesLeft;
 }
 
+unsigned long ByteQueue::Skip()
+{
+	unsigned long size = CurrentSize();
+	Clear();
+	return size;
+}
+
 unsigned int ByteQueue::Skip(unsigned int skipMax)
 {
 	unsigned int bytesLeft = skipMax;
@@ -301,6 +312,36 @@ unsigned int ByteQueue::CopyTo(BufferedTransformation &target, unsigned int copy
 	for (ByteQueueNode *current=head; bytesLeft && current; current=current->next)
 		bytesLeft -= current->CopyTo(target, bytesLeft);
 	return copyMax - bytesLeft;
+}
+
+byte * ByteQueue::Spy(unsigned int &contiguousSize)
+{
+	contiguousSize = head->tail - head->head;
+	return head->buf + head->head;
+}
+
+const byte * ByteQueue::Spy(unsigned int &contiguousSize) const
+{
+	contiguousSize = head->tail - head->head;
+	return head->buf + head->head;
+}
+
+byte * ByteQueue::MakeNewSpace(unsigned int &contiguousSize)
+{
+	if (tail->tail == tail->MaxSize())
+	{
+		tail->next = new ByteQueueNode(nodeSize);
+		tail = tail->next;
+	}
+
+	contiguousSize = tail->MaxSize() - tail->tail;
+	return tail->buf + tail->tail;
+}
+
+void ByteQueue::OccupyNewSpace(unsigned int size)
+{
+	tail->tail += size;
+	assert(tail->tail <= tail->MaxSize());
 }
 
 ByteQueue & ByteQueue::operator=(const ByteQueue &rhs)

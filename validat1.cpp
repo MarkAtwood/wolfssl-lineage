@@ -27,6 +27,7 @@
 #include "rijndael.h"
 #include "twofish.h"
 #include "serpent.h"
+#include "skipjack.h"
 #include "rng.h"
 
 #include <stdlib.h>
@@ -67,9 +68,9 @@ bool ValidateAll()
 	pass=ThreeWayValidate() && pass;
 	pass=GOSTValidate() && pass;
 	pass=SHARKValidate() && pass;
-	pass=SHARK2Validate() && pass;
 	pass=CASTValidate() && pass;
 	pass=SquareValidate() && pass;
+	pass=SKIPJACKValidate() && pass;
 	pass=SEALValidate() && pass;
 	pass=RC6Validate() && pass;
 	pass=MARSValidate() && pass;
@@ -87,6 +88,7 @@ bool ValidateAll()
 	pass=LUCValidate() && pass;
 	pass=LUCDIFValidate() && pass;
 	pass=LUCELGValidate() && pass;
+	pass=XTRDHValidate() && pass;
 	pass=RabinValidate() && pass;
 	pass=RWValidate() && pass;
 	pass=BlumGoldwasserValidate() && pass;
@@ -259,7 +261,7 @@ bool BlockTransformationTest(const CipherFactory &cg, BufferedTransformation &va
 	SecByteBlock key(cg.KeyLength());
 	bool pass=true, fail;
 
-	while (valdata.MaxRetrieveable() && tuples--)
+	while (valdata.MaxRetrievable() && tuples--)
 	{
 		valdata.Get(key, cg.KeyLength());
 		valdata.Get(plain, cg.BlockSize());
@@ -302,7 +304,7 @@ public:
 		while (len--)
 			Put(*inString++);
 	}
-	void InputFinished()
+	void MessageEnd(int)
 	{
 		if (counter != outputLen)
 			fail = true;
@@ -329,7 +331,7 @@ bool TestFilter(BufferedTransformation &bt, const byte *in, unsigned int inLen, 
 		in += randomLen;
 		inLen -= randomLen;
 	}
-	bt.Close();
+	bt.MessageEnd();
 	byte result = 0;
 	bt.Get(result);
 	return result == 1;
@@ -365,6 +367,23 @@ bool CipherModesValidate()
 	DESDecryption desD(key);
 	bool pass=true, fail;
 
+	{
+		// from FIPS 81
+		const byte encrypted[] = {
+			0xE5, 0xC7, 0xCD, 0xDE, 0x87, 0x2B, 0xF2, 0x7C, 
+			0x43, 0xE9, 0x34, 0x00, 0x8C, 0x38, 0x9C, 0x0F, 
+			0x68, 0x37, 0x88, 0x49, 0x9A, 0x7C, 0x05, 0xF6};
+
+		CBCRawEncryptor cbcE(desE, iv);
+		fail = !TestFilter(cbcE, plain, sizeof(plain), encrypted, sizeof(encrypted));
+		pass = pass && !fail;
+		cout << (fail ? "FAILED   " : "passed   ") << "CBC encryption" << endl;
+		
+		CBCRawDecryptor cbcD(desD, iv);
+		fail = !TestFilter(cbcD, encrypted, sizeof(encrypted), plain, sizeof(plain));
+		pass = pass && !fail;
+		cout << (fail ? "FAILED   " : "passed   ") << "CBC decryption" << endl;
+	}
 	{
 		// generated with Crypto++, matches FIPS 81
 		// but has extra 8 bytes as result of padding
@@ -496,7 +515,7 @@ bool RC2Validate()
 	SecByteBlock key(128);
 	bool pass=true, fail;
 
-	while (valdata.MaxRetrieveable())
+	while (valdata.MaxRetrievable())
 	{
 		byte keyLen, effectiveLen;
 
@@ -701,7 +720,7 @@ bool RC5Validate()
 	cout << "\nRC5 validation suite running...\n\n";
 
 	FileSource valdata("rc5val.dat", true, new HexDecoder);
-	return BlockTransformationTest(FixedRoundsCipherFactory<RC5Encryption, RC5Decryption>(), valdata);
+	return BlockTransformationTest(VariableRoundsCipherFactory<RC5Encryption, RC5Decryption>(16, 12), valdata);
 }
 
 bool RC6Validate()
@@ -809,7 +828,7 @@ bool Diamond2Validate()
 	bool pass=true, fail;
 	apbt diamond;
 
-	while (valdata.MaxRetrieveable() >= 1)
+	while (valdata.MaxRetrievable() >= 1)
 	{
 		valdata.Get(blocksize);
 		valdata.Get(rounds);
@@ -876,23 +895,6 @@ bool SHARKValidate()
 #endif
 }
 
-bool SHARK2Validate()
-{
-	return true;	// SHARK2 is not yet available
-
-#if 0
-	cout << "\nSHARK2 validation suite running...\n\n";
-
-#ifdef WORD64_AVAILABLE
-	FileSource valdata("shark2va.dat", true, new HexDecoder);
-	return BlockTransformationTest(FixedRoundsCipherFactory<SHARK2Encryption, SHARK2Decryption>(), valdata);
-#else
-	cout << "word64 not available, skipping SHARK2 validation." << endl;
-	return true;
-#endif
-#endif
-}
-
 bool CASTValidate()
 {
 	cout << "\nCAST-128 validation suite running...\n\n";
@@ -911,6 +913,14 @@ bool SquareValidate()
 
 	FileSource valdata("squareva.dat", true, new HexDecoder);
 	return BlockTransformationTest(FixedRoundsCipherFactory<SquareEncryption, SquareDecryption>(), valdata);
+}
+
+bool SKIPJACKValidate()
+{
+	cout << "\nSKIPJACK validation suite running...\n\n";
+
+	FileSource valdata("skipjack.dat", true, new HexDecoder);
+	return BlockTransformationTest(FixedRoundsCipherFactory<SKIPJACKEncryption, SKIPJACKDecryption>(), valdata);
 }
 
 bool SEALValidate()

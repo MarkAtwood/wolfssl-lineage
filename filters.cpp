@@ -14,24 +14,15 @@ Filter::Filter(BufferedTransformation *outQ)
 
 void Filter::Detach(BufferedTransformation *newOut)
 {
-	std::auto_ptr<BufferedTransformation> out(newOut ? newOut : new ByteQueue);
-	m_outQueue->Close();
-	m_outQueue->TransferTo(*out);
-	m_outQueue.reset(out.release());
-}
-
-void Filter::Attach(BufferedTransformation *newOut)
-{
-	if (m_outQueue->Attachable())
-		m_outQueue->Attach(newOut);
-	else
-		Detach(newOut);
+	m_outQueue.reset(newOut ? newOut : new ByteQueue);
+	NotifyAttachmentChange();
 }
 
 void Filter::Insert(Filter *filter)
 {
 	filter->m_outQueue.reset(m_outQueue.release());
 	m_outQueue.reset(filter);
+	NotifyAttachmentChange();
 }
 
 // *************************************************************
@@ -99,8 +90,8 @@ void FilterWithBufferedInput::BlockQueue::Put(const byte *inString, unsigned int
 
 FilterWithBufferedInput::FilterWithBufferedInput(unsigned int firstSize, unsigned int blockSize, unsigned int lastSize, BufferedTransformation *outQ)
 	: Filter(outQ), m_firstSize(firstSize), m_blockSize(blockSize), m_lastSize(lastSize)
-	, m_firstInputDone(firstSize == 0)
-	, m_queue(m_firstInputDone ? m_blockSize : 1, m_firstInputDone ? (2*m_blockSize+m_lastSize-2)/m_blockSize : m_firstSize)
+	, m_firstInputDone(false)
+	, m_queue(1, m_firstSize)
 {
 }
 
@@ -111,6 +102,9 @@ void FilterWithBufferedInput::Put(byte inByte)
 
 void FilterWithBufferedInput::Put(const byte *inString, unsigned int length)
 {
+	if (length == 0)
+		return;
+
 	unsigned int newLength = m_queue.CurrentSize() + length;
 
 	if (!m_firstInputDone && newLength >= m_firstSize)
@@ -176,17 +170,52 @@ void FilterWithBufferedInput::Put(const byte *inString, unsigned int length)
 	m_queue.Put(inString, newLength - m_queue.CurrentSize());
 }
 
-void FilterWithBufferedInput::InputFinished()
+void FilterWithBufferedInput::MessageEnd(int propagation)
 {
+	if (!m_firstInputDone && m_firstSize==0)
+		FirstPut(NULL);
+
 	SecByteBlock temp(m_queue.CurrentSize());
 	m_queue.GetAll(temp);
 	LastPut(temp, temp.size);
+
+	m_firstInputDone = false;
+	m_queue.ResetQueue(1, m_firstSize);
+
+	Filter::MessageEnd(propagation);
 }
 
 void FilterWithBufferedInput::ForceNextPut()
 {
 	if (m_firstInputDone && m_queue.CurrentSize() >= m_blockSize)
 		NextPut(m_queue.GetBlock(), m_blockSize);
+}
+
+// *************************************************************
+
+
+
+// *************************************************************
+
+ProxyFilter::ProxyFilter(Filter *filter, unsigned int firstSize, unsigned int lastSize, BufferedTransformation *outQ)
+	: FilterWithBufferedInput(firstSize, 1, lastSize, outQ), m_filter(filter), m_proxy(NULL)
+{
+	if (m_filter.get())
+		m_filter->Attach(m_proxy = new OutputProxy(*this));
+}
+
+void ProxyFilter::SetFilter(Filter *filter)
+{
+	m_filter.reset(filter);
+	m_proxy=NULL;
+	if (m_filter.get())
+		m_filter->Attach(m_proxy = new OutputProxy(*this));
+}
+
+void ProxyFilter::NextPut(const byte *s, unsigned int len) 
+{
+	if (m_filter.get())
+		m_filter->Put(s, len);
 }
 
 // *************************************************************
@@ -198,28 +227,83 @@ void StreamCipherFilter::Put(const byte *inString, unsigned int length)
 	AttachedTransformation()->Put(temp, length);
 }
 
-void HashFilter::InputFinished()
+void HashFilter::Put(byte inByte)
 {
-	SecByteBlock buf(hash.DigestSize());
-	hash.Final(buf);
+	m_hashModule.Update(&inByte, 1);
+	if (m_putMessage)
+		AttachedTransformation()->Put(inByte);
+}
+
+void HashFilter::Put(const byte *inString, unsigned int length)
+{
+	m_hashModule.Update(inString, length);
+	if (m_putMessage)
+		AttachedTransformation()->Put(inString, length);
+}
+
+void HashFilter::MessageEnd(int propagation)
+{
+	SecByteBlock buf(m_hashModule.DigestSize());
+	m_hashModule.Final(buf);
 	AttachedTransformation()->Put(buf, buf.size);
+	Filter::MessageEnd(propagation);
 }
 
-void HashComparisonFilter::PutHash(const byte *eh)
+// *************************************************************
+
+HashVerifier::HashVerifier(HashModule &hm, BufferedTransformation *outQueue, word32 flags)
+	: FilterWithBufferedInput(flags & HASH_AT_BEGIN ? hm.DigestSize() : 0, 1, flags & HASH_AT_BEGIN ? 0 : hm.DigestSize(), outQueue)
+	, m_hashModule(hm), m_flags(flags)
+	, m_expectedHash(flags & HASH_AT_BEGIN ? hm.DigestSize() : 0), m_verified(false)
 {
-	memcpy(expectedHash, eh, expectedHash.size);
 }
 
-void HashComparisonFilter::InputFinished()
+void HashVerifier::FirstPut(const byte *inString)
 {
-	AttachedTransformation()->Put(hash.Verify(expectedHash));
+	if (m_flags & HASH_AT_BEGIN)
+	{
+		memcpy(m_expectedHash, inString, m_expectedHash.size);
+		if (m_flags & PUT_HASH)
+			AttachedTransformation()->Put(inString, m_expectedHash.size);
+	}
 }
 
-void SignerFilter::InputFinished()
+void HashVerifier::NextPut(const byte *inString, unsigned int length)
+{
+	m_hashModule.Update(inString, length);
+	if (m_flags & PUT_MESSAGE)
+		AttachedTransformation()->Put(inString, length);
+}
+
+void HashVerifier::LastPut(const byte *inString, unsigned int length)
+{
+	if (m_flags & HASH_AT_BEGIN)
+	{
+		assert(length == 0);
+		m_verified = m_hashModule.Verify(m_expectedHash);
+	}
+	else
+	{
+		m_verified = (length==m_hashModule.DigestSize() && m_hashModule.Verify(inString));
+		if (m_flags & PUT_HASH)
+			AttachedTransformation()->Put(inString, length);
+	}
+
+	if (m_flags & PUT_RESULT)
+		AttachedTransformation()->Put(m_verified);
+
+	if ((m_flags & THROW_EXCEPTION) && !m_verified)
+		throw HashVerificationFailed();
+}
+
+// *************************************************************
+
+void SignerFilter::MessageEnd(int propagation)
 {
 	SecByteBlock buf(signer.SignatureLength());
 	signer.Sign(rng, messageAccumulator.release(), buf);
 	AttachedTransformation()->Put(buf, buf.size);
+	Filter::MessageEnd(propagation);
 }
 
 void VerifierFilter::PutSignature(const byte *sig)
@@ -227,9 +311,10 @@ void VerifierFilter::PutSignature(const byte *sig)
 	memcpy(signature.ptr, sig, signature.size);
 }
 
-void VerifierFilter::InputFinished()
+void VerifierFilter::MessageEnd(int propagation)
 {
 	AttachedTransformation()->Put((byte)verifier.Verify(messageAccumulator.release(), signature));
+	Filter::MessageEnd(propagation);
 }
 
 StringSource::StringSource(const char *source, bool pumpAndClose, BufferedTransformation *outQueue)
@@ -238,7 +323,7 @@ StringSource::StringSource(const char *source, bool pumpAndClose, BufferedTransf
 	if (pumpAndClose)
 	{
 		PumpAll();
-		Close();
+		MessageEnd();
 	}
 }
 
@@ -248,7 +333,7 @@ StringSource::StringSource(const byte *source, unsigned int length, bool pumpAnd
 	if (pumpAndClose)
 	{
 		PumpAll();
-		Close();
+		MessageEnd();
 	}
 }
 
@@ -258,7 +343,7 @@ StringSource::StringSource(const std::string &source, bool pumpAndClose, Buffere
 	if (pumpAndClose)
 	{
 		PumpAll();
-		Close();
+		MessageEnd();
 	}
 }
 
@@ -275,7 +360,7 @@ unsigned long StringSource::PumpAll()
 	return Pump(m_length-m_count);
 }
 
-unsigned long StringStore::MaxRetrieveable()
+unsigned long StringStore::MaxRetrievable() const
 {
 	return m_length - m_count;
 }
@@ -326,6 +411,7 @@ unsigned int StringStore::CopyTo(BufferedTransformation &target, unsigned int co
 	return len;
 }
 
+/*
 BufferedTransformation *Insert(const byte *in, unsigned int length, BufferedTransformation *outQueue)
 {
 	outQueue->Put(in, length);
@@ -334,8 +420,9 @@ BufferedTransformation *Insert(const byte *in, unsigned int length, BufferedTran
 
 unsigned int Extract(Source *source, byte *out, unsigned int length)
 {
-	while (source->MaxRetrieveable() < length && source->Pump(1));
+	while (source->MaxRetrievable() < length && source->Pump(1));
 	return source->Get(out, length);
 }
+*/
 
 NAMESPACE_END

@@ -1,4 +1,5 @@
 // mars.cpp - modified by Sean Woods from Brian Gladman's mars6.c for Crypto++
+// key setup updated by Wei Dai to reflect IBM's "tweak" proposed in August 1999
 
 /* This is an independent implementation of the MARS encryption         */
 /* algorithm designed by a team at IBM as a candidate for the US        */
@@ -41,41 +42,36 @@ MARS::MARS(const byte *userKey, unsigned int keylen)
 {
 	assert(keylen == KeyLength(keylen));
 
-	const unsigned int c=(keylen - 1)/4 + 1;
-	SecBlock<word32> k(c);
+	// Initialize T[] with the key data
+	SecBlock<word32> T(15);
+	GetUserKeyLittleEndian(T.ptr, 15, userKey, keylen);
+	assert(keylen%4==0 && keylen/4 < 15);
+	T[keylen/4] = keylen/4;
 
-	GetUserKeyLittleEndian(k.ptr, c, userKey, keylen);
-
-	SecBlock<word32> VK(47);
-	word32 j, m, w, *t = VK + 7;
-	int i;
-
-	for (i = 0; i < 7; i++)
-		t[i-7] = Sbox[i];
-
-	for(i = 0; i < 39; ++i)
-		t[i] = rotlFixed(t[i - 7] ^ t[i - 2], 3) ^ k[i % c] ^ i;
-
-	t[39] = keylen / 4;
-
-	for(j = 0; j < 7; ++j)
+	for (unsigned int j=0; j<4; j++)	// compute 10 words of K[] in each iteration
 	{
-		for(i = 1; i < 40; ++i)
-			t[i] = rotlFixed(t[i] + Sbox[t[i - 1] & 511], 9);
+		unsigned int i;
+		// Do linear transformation
+		for (i=0; i<15; i++)
+			T[i] = T[i] ^ rotlFixed(T[(i+8)%15] ^ T[(i+13)%15], 3) ^ (4*i+j);
 
-		t[0] = rotlFixed(t[0] + Sbox[t[39] & 511], 9);
+		// Do four rounds of stirring
+		for (unsigned int k=0; k<4; k++)
+			for (i=0; i<15; i++)
+			   T[i] = rotlFixed(T[i] + Sbox[T[(i+14)%15]%512], 9);
+
+		// Store next 10 key words into K[]
+		for (i=0; i<10; i++)
+			EK[10*j+i] = T[4*i%15];
 	}
 
-	for(i = 0; i < 40; ++i)
-		EK[(7*i) % 40] = t[i];
-
-	for(i = 5; i < 37; i += 2)
+	// Modify multiplication key-words
+	for(unsigned int i = 5; i < 37; i += 2)
 	{
-		w = EK[i] | 3; 
-
-		if(m = gen_mask(w))
-			w ^= (rotlMod(Sbox[265 + (EK[i] & 3)], EK[i + 3]) & m);
-
+		word32 w = EK[i] | 3;
+		word32 m = gen_mask(w);
+		if(m)
+			w ^= (rotlMod(Sbox[265 + (EK[i] & 3)], EK[i-1]) & m);
 		EK[i] = w;
 	}
 }

@@ -15,8 +15,8 @@ class PublicBlumBlumShub : public RandomNumberGenerator,
 public:
 	PublicBlumBlumShub(const Integer &n, const Integer &seed);
 
-	unsigned int GetBit();
-	byte GetByte();
+	unsigned int GenerateBit();
+	byte GenerateByte();
 
 	byte ProcessByte(byte input)
 		{return (input ^ GetByte());}

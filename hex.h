@@ -46,6 +46,8 @@ public:
 
 	void Put(const byte *inString, unsigned int length);
 
+	void MessageEnd(int propagate=-1);
+
 private:
 	static int ConvToNumber(byte inByte)
 	{

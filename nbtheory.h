@@ -90,6 +90,10 @@ Integer ModularRoot(const Integer &a, const Integer &e, const Integer &p, const 
 // and u=inverse of p mod q have been precalculated
 Integer ModularRoot(const Integer &a, const Integer &dp, const Integer &dq, const Integer &p, const Integer &q, const Integer &u);
 
+// find r1 and r2 such that ax^2 + bx + c == 0 (mod p) for x in {r1, r2}, p prime
+// returns true if solutions exist
+bool SolveModularQuadraticEquation(Integer &r1, Integer &r2, const Integer &a, const Integer &b, const Integer &c, const Integer &p);
+
 // returns log base 2 of estimated number of operations to calculate discrete log or factor a number
 unsigned int DiscreteLogWorkFactor(unsigned int bitlength);
 unsigned int FactoringWorkFactor(unsigned int bitlength);

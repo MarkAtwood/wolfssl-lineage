@@ -18,10 +18,13 @@ PolynomialMod2::PolynomialMod2()
 PolynomialMod2::PolynomialMod2(word value, unsigned int bitLength)
 	: reg(bitsToWords(bitLength))
 {
-	assert(reg.size>0);
+	assert(value==0 || reg.size>0);
 
-	reg[0] = value;
-	SetWords(reg+1, 0, reg.size-1);
+	if (reg.size > 0)
+	{
+		reg[0] = value;
+		SetWords(reg+1, 0, reg.size-1);
+	}
 }
 
 PolynomialMod2::PolynomialMod2(const PolynomialMod2& t)
@@ -158,7 +161,7 @@ unsigned int PolynomialMod2::Parity() const
 
 PolynomialMod2& PolynomialMod2::operator=(const PolynomialMod2& t)
 {
-	reg.CopyFrom(t.reg);
+	reg.Assign(t.reg);
 	return *this;
 }
 
@@ -490,6 +493,9 @@ GF2NT::GF2NT(unsigned int t0, unsigned int t1, unsigned int t2)
 
 const GF2NT::Element& GF2NT::MultiplicativeInverse(const Element &a) const
 {
+	if (t0-t1 < WORD_BITS)
+		return GF2NP::MultiplicativeInverse(a);
+
 	SecWordBlock T(m_modulus.reg.size * 4);
 	word *b = T;
 	word *c = T+m_modulus.reg.size;
@@ -642,6 +648,9 @@ const GF2NT::Element& GF2NT::Multiply(const Element &a, const Element &b) const
 
 const GF2NT::Element& GF2NT::Reduced(const Element &a) const
 {
+	if (t0-t1 < WORD_BITS)
+		return m_domain.Mod(a, m_modulus);
+
 	SecWordBlock b(a.reg);
 
 	unsigned i;
@@ -680,7 +689,7 @@ const GF2NT::Element& GF2NT::Reduced(const Element &a) const
 			if ((t0-t1)%WORD_BITS > t0%WORD_BITS)
 				b[i-(t0-t1)/WORD_BITS-1] ^= temp << (WORD_BITS - (t0-t1)%WORD_BITS);
 			else
-				assert(temp==0);
+				assert(temp << (WORD_BITS - (t0-t1)%WORD_BITS) == 0);
 		}
 		else
 			b[i-(t0-t1)/WORD_BITS] ^= temp;

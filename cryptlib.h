@@ -16,9 +16,11 @@ NAMESPACE_BEGIN(CryptoPP)
 class Exception : public std::exception
 {
 public:
-	explicit Exception(const std::string& s) : m_what(s) {}
+	explicit Exception(const std::string &s) : m_what(s) {}
 	virtual ~Exception() throw() {}
 	const char *what() const throw() {return (m_what.c_str());}
+	const std::string &GetWhat() const {return m_what;}
+	void SetWhat(const std::string &s) {m_what = s;}
 
 private:
 	std::string m_what;
@@ -100,29 +102,33 @@ public:
 	virtual ~RandomNumberGenerator() {}
 
 	/// generate new random byte and return it
-	virtual byte GetByte() =0;
+	virtual byte GenerateByte() =0;
 
 	/// generate new random bit and return it
-	/** Default implementation is to call GetByte() and return its parity. */
-	virtual unsigned int GetBit();
+	/** Default implementation is to call GenerateByte() and return its parity. */
+	virtual unsigned int GenerateBit();
 
 	/// generate a random 32 bit word in the range min to max, inclusive
-	virtual word32 GetLong(word32 a=0, word32 b=0xffffffffL);
-	/// generate a random 16 bit word in the range min to max, inclusive
-	virtual word16 GetShort(word16 a=0, word16 b=0xffff)
-		{return (word16)GetLong(a, b);}
+	virtual word32 GenerateWord32(word32 a=0, word32 b=0xffffffffL);
 
 	/// generate random array of bytes
-	//* Default implementation is to call GetByte size times.
-	virtual void GetBlock(byte *output, unsigned int size);
-};
+	//* Default implementation is to call GenerateByte() size times.
+	virtual void GenerateBlock(byte *output, unsigned int size);
 
-/// randomly shuffle the specified array, resulting permutation is uniformly distributed
-template <class IT> void RandomShuffle(RandomNumberGenerator &rng, IT begin, IT end)
-{
-	for (; begin != end; ++begin)
-		std::iter_swap(begin, begin + rng.GetLong(0, end-begin-1));
-}
+	/// randomly shuffle the specified array, resulting permutation is uniformly distributed
+	template <class IT> void Shuffle(IT begin, IT end)
+	{
+		for (; begin != end; ++begin)
+			std::iter_swap(begin, begin + GenerateWord32(0, end-begin-1));
+	}
+
+	// for backwards compatibility, maybe be remove later
+	byte GetByte() {return GenerateByte();}
+	unsigned int GetBit() {return GenerateBit();}
+	word32 GetLong(word32 a=0, word32 b=0xffffffffL) {return GenerateWord32(a, b);}
+	word16 GetShort(word16 a=0, word16 b=0xffff) {return (word16)GenerateWord32(a, b);}
+	void GetBlock(byte *output, unsigned int size) {GenerateBlock(output, size);}
+};
 
 /// abstract base class for hash functions
 /** HashModule objects are stateful.  They are created in an initial state,
@@ -203,54 +209,124 @@ public:
 		virtual void Put(byte inByte) =0;
 		/// input multiple bytes
 		virtual void Put(const byte *inString, unsigned int length) =0;
-		/// signal that no more input is available
-		/** A user should call Close() instead since it
-			will automaticly call InputFinish() for this and all
-			attached objects
-		*/
-		virtual void InputFinished() {}
 
 		/// input a 16-bit word, big-endian or little-endian depending on highFirst
-		void PutShort(word16 value, bool highFirst=true);
+		void PutWord16(word16 value, bool highFirst=true);
 		/// input a 32-bit word
-		void PutLong(word32 value, bool highFirst=true);
+		void PutWord32(word32 value, bool highFirst=true);
 	//@}
 
-	//@Man: RETRIEVAL
+	//@Man: SIGNALS
+	//@{
+		/// process everything in internal buffers and output them
+		/** throws exception if completeFlush == true and it's
+			not possible to flush everything */
+		virtual void Flush(bool completeFlush, int propagation=-1);
+		/// mark end of an input segment, message, or packet
+		/** propagation != 0 means pass on the signal to attached
+			BufferedTransformation objects, with propagation
+			decremented at each step until it reaches 0.
+			-1 means unlimited propagation. */
+		virtual void MessageEnd(int propagation=-1);
+		/// same as Put() followed by MessageEnd() but may be more efficient
+		virtual void PutMessageEnd(const byte *inString, unsigned int length, int propagation=-1);
+		/// mark end of a series of messages
+		/** There should be a MessageEnd immediately before MessageSeriesEnd. */
+		virtual void MessageSeriesEnd(int propagation=-1);
+
+		/// set propagation of automatically generated signals
+		/** propagation == 0 means do not automaticly generate signals */
+		virtual void SetAutoSignalPropagation(int propagation) {}
+
+		// for backwards compatibility
+		void Close() {MessageEnd();}
+	//@}
+
+	//@Man: ERRORS
+	//@{
+		/// error types
+		enum ErrorType {
+			/// received a Flush(true) signal but can't flush buffers
+			CANNOT_FLUSH,
+			/// data integerity check (such as CRC or MAC) failed
+			DATA_INTEGRITY_CHECK_FAILED,
+			/// received input data that doesn't conform to expected format
+			INVALID_DATA_FORMAT,
+			/// error reading from input device
+			INPUT_ERROR,
+			/// error writing to output device
+			OUTPUT_ERROR,
+			/// some error not belong to any of the above categories
+			OTHER_ERROR
+		};
+
+		class Err : public Exception
+		{
+		public:
+			Err(ErrorType errorType, const std::string &s="");
+			ErrorType GetErrorType() const {return m_errorType;}
+			void SetErrorType(ErrorType errorType) {m_errorType = errorType;}
+		private:
+			ErrorType m_errorType;
+		};
+
+	//@Man: RETRIEVAL OF ONE MESSAGE
 	//@{
 		/// returns number of bytes that is currently ready for retrieval
 		/** All retrieval functions return the actual number of bytes
 			retrieved, which is the lesser of the request number and
-			MaxRetrieveable(). */
-		virtual unsigned long MaxRetrieveable() =0;
+			MaxRetrievable(). */
+		virtual unsigned long MaxRetrievable() const;
+
+		// old mispelled name
+		unsigned long MaxRetrieveable() const {return MaxRetrievable();}
+
+		/// returns whether any bytes are currently ready for retrieval
+		virtual bool AnyRetrievable() const;
 
 		/// try to retrieve a single byte
-		virtual unsigned int Get(byte &outByte) =0;
+		virtual unsigned int Get(byte &outByte);
 		/// try to retrieve multiple bytes
-		virtual unsigned int Get(byte *outString, unsigned int getMax) =0;
+		virtual unsigned int Get(byte *outString, unsigned int getMax);
 
 		/// try to retrieve a 16-bit word, big-endian or little-endian depending on highFirst
-		unsigned int GetShort(word16 &value, bool highFirst=true);
+		unsigned int GetWord16(word16 &value, bool highFirst=true);
 		/// try to retrieve a 32-bit word
-		unsigned int GetLong(word32 &value, bool highFirst=true);
+		unsigned int GetWord32(word32 &value, bool highFirst=true);
 
 		/// move all of the buffered output to target as input
 		virtual unsigned long TransferTo(BufferedTransformation &target);
 		/// same as above but only transfer up to transferMax bytes
 		virtual unsigned int TransferTo(BufferedTransformation &target, unsigned int transferMax);
 
+		/// discard all bytes from the output buffer
+		virtual unsigned long Skip();
 		/// discard some bytes from the output buffer
 		virtual unsigned int Skip(unsigned int skipMax);
 
 		/// peek at the next byte without removing it from the output buffer
-		virtual unsigned int Peek(byte &outByte) const =0;
+		virtual unsigned int Peek(byte &outByte) const;
 		/// peek at multiple bytes without removing them from the output buffer
-		virtual unsigned int Peek(byte *outString, unsigned int peekMax) const =0;
+		virtual unsigned int Peek(byte *outString, unsigned int peekMax) const;
 
 		/// copy all of the buffered output to target as input
-		virtual unsigned long CopyTo(BufferedTransformation &target) const =0;
+		virtual unsigned long CopyTo(BufferedTransformation &target) const;
 		/// same as above but only copy up to copyMax bytes
-		virtual unsigned int CopyTo(BufferedTransformation &target, unsigned int copyMax) const =0;
+		virtual unsigned int CopyTo(BufferedTransformation &target, unsigned int copyMax) const;
+	//@}
+
+	//@Man: RETRIEVAL OF MULTIPLE MESSAGES
+	//@{
+		virtual unsigned long TotalBytesRetrievable() const;
+		virtual unsigned int NumberOfMessages() const;
+		virtual bool CurrentMessageIsComplete() const;
+		virtual bool RetrieveNextMessage();
+		virtual unsigned int SkipMessages();
+		virtual unsigned int SkipMessages(unsigned int count);
+		virtual unsigned int TransferMessagesTo(BufferedTransformation &target);
+		virtual unsigned int TransferMessagesTo(BufferedTransformation &target, unsigned int count);
+		virtual unsigned int CopyMessagesTo(BufferedTransformation &target) const;
+		virtual unsigned int CopyMessagesTo(BufferedTransformation &target, unsigned int count) const;
 	//@}
 
 	//@Man: ATTACHMENT
@@ -269,14 +345,9 @@ public:
 		virtual const BufferedTransformation *AttachedTransformation() const
 			{return const_cast<BufferedTransformation *>(this)->AttachedTransformation();}
 		/// delete the current attachment chain and replace it with newAttachment
-		/** Close() and TransferTo(*newAttachment) will be called on 
-			AttachedTransformation() first if it is not NULL.
-		*/
 		virtual void Detach(BufferedTransformation *newAttachment = 0) {}
 		/// add newAttachment to the end of attachment chain
-		virtual void Attach(BufferedTransformation *newAttachment) {}
-		/// call InputFinished() for all attached objects
-		virtual void Close() {InputFinished();}
+		virtual void Attach(BufferedTransformation *newAttachment);
 	//@}
 };
 

@@ -4,13 +4,14 @@
 #include "cryptlib.h"
 #include "misc.h"
 #include "smartptr.h"
+#include "queue.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
 // Filter provides an implementation of BufferedTransformation's
 // attachment interface
 
-class Filter : public BufferedTransformation
+class Filter : virtual public BufferedTransformation
 {
 public:
 	Filter(BufferedTransformation *outQ);
@@ -19,40 +20,31 @@ public:
 	BufferedTransformation *AttachedTransformation() {return m_outQueue.get();}
 	const BufferedTransformation *AttachedTransformation() const {return m_outQueue.get();}
 	void Detach(BufferedTransformation *newOut = NULL);
-	void Attach(BufferedTransformation *newOut);
-	void Close()
-		{InputFinished(); m_outQueue->Close();}
-
-	unsigned long MaxRetrieveable()
-		{return m_outQueue->MaxRetrieveable();}
-
-	unsigned int Get(byte &outByte)
-		{return m_outQueue->Get(outByte);}
-	unsigned int Get(byte *outString, unsigned int getMax)
-		{return m_outQueue->Get(outString, getMax);}
-
-	unsigned long TransferTo(BufferedTransformation &target)
-		{return m_outQueue->TransferTo(target);}
-	unsigned int TransferTo(BufferedTransformation &target, unsigned int transferMax)
-		{return m_outQueue->TransferTo(target, transferMax);}
-
-	unsigned int Peek(byte &outByte) const
-		{return m_outQueue->Peek(outByte);}
-	unsigned int Peek(byte *outString, unsigned int peekMax) const
-		{return m_outQueue->Peek(outString, peekMax);}
-
-	unsigned long CopyTo(BufferedTransformation &target) const
-		{return m_outQueue->CopyTo(target);}
-	unsigned int CopyTo(BufferedTransformation &target, unsigned int copyMax) const
-		{return m_outQueue->CopyTo(target, copyMax);}
 
 protected:
+	virtual void NotifyAttachmentChange() {}
 	void Insert(Filter *nextFilter);	// insert filter after this one
 
 private:
 	void operator=(const Filter &); // assignment not allowed
 
 	member_ptr<BufferedTransformation> m_outQueue;
+};
+
+class TransparentFilter : public Filter
+{
+public:
+	TransparentFilter(BufferedTransformation *outQ=NULL) : Filter(outQ) {}
+	void Put(byte inByte) {BufferedTransformation::Put(inByte);}
+	void Put(const byte *inString, unsigned int length) {BufferedTransformation::Put(inString, length);}
+};
+
+class OpaqueFilter : public Filter
+{
+public:
+	OpaqueFilter(BufferedTransformation *outQ=NULL) : Filter(outQ) {}
+	void Put(byte inByte) {}
+	void Put(const byte *inString, unsigned int length) {}
 };
 
 // FilterWithBufferedInput divides up the input stream into
@@ -67,17 +59,18 @@ public:
 	FilterWithBufferedInput(unsigned int firstSize, unsigned int blockSize, unsigned int lastSize, BufferedTransformation *outQ);
 	void Put(byte inByte);
 	void Put(const byte *inString, unsigned int length);
-	void InputFinished();
+	void MessageEnd(int propagation=-1);
 
 	// the input buffer may contain more than blockSize bytes if lastSize != 0
 	// ForceNextPut() forces a call to NextPut() if this is the case
 	void ForceNextPut();
 
 protected:
-	bool DidFirstPut() {return m_firstSize != 0 && m_firstInputDone;}
+	bool DidFirstPut() {return m_firstInputDone;}
 
-	// FirstPut() is called if firstSize != 0 and totalLength >= firstSize
-	virtual void FirstPut(const byte *inString) {assert(false);}
+	// FirstPut() is called if (firstSize != 0 and totalLength >= firstSize)
+	// or (firstSize == 0 and (totalLength > 0 or a MessageEnd() is received))
+	virtual void FirstPut(const byte *inString) =0;
 	// NextPut() is called if totalLength >= firstSize+blockSize+lastSize
 	// length parameter is always blockSize unless blockSize == 1
 	virtual void NextPut(const byte *inString, unsigned int length) =0;
@@ -111,6 +104,17 @@ private:
 	BlockQueue m_queue;
 };
 
+class FilterWithInputQueue : public Filter
+{
+public:
+	FilterWithInputQueue(BufferedTransformation *attachment) : Filter(attachment) {}
+	void Put(byte inByte) {m_inQueue.Put(inByte);}
+	void Put(const byte *inString, unsigned int length) {m_inQueue.Put(inString, length);}
+
+protected:
+	ByteQueue m_inQueue;
+};
+
 class StreamCipherFilter : public Filter
 {
 public:
@@ -130,41 +134,44 @@ private:
 class HashFilter : public Filter
 {
 public:
-	HashFilter(HashModule &hm, BufferedTransformation *outQueue = NULL)
-		: hash(hm), Filter(outQueue) {}
+	HashFilter(HashModule &hm, BufferedTransformation *outQueue = NULL, bool putMessage=false)
+		: Filter(outQueue), m_hashModule(hm), m_putMessage(putMessage) {}
 
-	void InputFinished();
+	void MessageEnd(int propagation=-1);
 
-	void Put(byte inByte)
-		{hash.Update(&inByte, 1);}
-
-	void Put(const byte *inString, unsigned int length)
-		{hash.Update(inString, length);}
+	void Put(byte inByte);
+	void Put(const byte *inString, unsigned int length);
 
 private:
-	HashModule &hash;
+	HashModule &m_hashModule;
+	bool m_putMessage;
 };
 
-class HashComparisonFilter : public Filter
+class HashVerifier : public FilterWithBufferedInput
 {
 public:
-	HashComparisonFilter(HashModule &hm, BufferedTransformation *outQueue = NULL)
-		: hash(hm), expectedHash(hm.DigestSize()), Filter(outQueue) {}
+	class HashVerificationFailed : public BufferedTransformation::Err
+	{
+	public:
+		HashVerificationFailed()
+			: BufferedTransformation::Err(DATA_INTEGRITY_CHECK_FAILED, "HashVerifier: message hash not correct") {}
+	};
 
-	// this function must be called before InputFinished() or Close()
-	void PutHash(const byte *expectedHash);
+	enum Flags {HASH_AT_BEGIN=1, PUT_MESSAGE=2, PUT_HASH=4, PUT_RESULT=8, THROW_EXCEPTION=16};
+	HashVerifier(HashModule &hm, BufferedTransformation *outQueue = NULL, word32 flags = HASH_AT_BEGIN | PUT_RESULT);
 
-	void InputFinished();
+	bool GetLastResult() const {return m_verified;}
 
-	void Put(byte inByte)
-		{hash.Update(&inByte, 1);}
-
-	void Put(const byte *inString, unsigned int length)
-		{hash.Update(inString, length);}
+protected:
+	void FirstPut(const byte *inString);
+	void NextPut(const byte *inString, unsigned int length);
+	void LastPut(const byte *inString, unsigned int length);
 
 private:
-	HashModule &hash;
-	SecByteBlock expectedHash;
+	HashModule &m_hashModule;
+	word32 m_flags;
+	SecByteBlock m_expectedHash;
+	bool m_verified;
 };
 
 class SignerFilter : public Filter
@@ -173,7 +180,7 @@ public:
 	SignerFilter(RandomNumberGenerator &rng, const PK_Signer &signer, BufferedTransformation *outQueue = NULL)
 		: rng(rng), signer(signer), messageAccumulator(signer.NewMessageAccumulator()), Filter(outQueue) {}
 
-	void InputFinished();
+	void MessageEnd(int propagation);
 
 	void Put(byte inByte)
 		{messageAccumulator->Update(&inByte, 1);}
@@ -194,10 +201,10 @@ public:
 		: verifier(verifier), messageAccumulator(verifier.NewMessageAccumulator())
 		, signature(verifier.SignatureLength()), Filter(outQueue) {}
 
-	// this function must be called before InputFinished() or Close()
+	// this function must be called before MessageEnd()
 	void PutSignature(const byte *sig);
 
-	void InputFinished();
+	void MessageEnd(int propagation);
 
 	void Put(byte inByte)
 		{messageAccumulator->Update(&inByte, 1);}
@@ -221,8 +228,8 @@ public:
 		{Pump(1);}
 	void Put(const byte *, unsigned int length)
 		{Pump(length);}
-	void InputFinished()
-		{PumpAll();}
+	void MessageEnd(int propagation=-1)
+		{PumpAll(); Filter::MessageEnd(propagation);}
 
 	virtual unsigned int Pump(unsigned int pumpMax) =0;
 	virtual unsigned long PumpAll() =0;
@@ -245,21 +252,6 @@ private:
 
 class Sink : public BufferedTransformation
 {
-public:
-	unsigned long MaxRetrieveable()
-		{return 0;}
-	unsigned int Get(byte &)
-		{return 0;}
-	unsigned int Get(byte *, unsigned int)
-		{return 0;}
-	unsigned int Peek(byte &) const
-		{return 0;}
-	unsigned int Peek(byte *outString, unsigned int peekMax) const
-		{return 0;}
-	unsigned long CopyTo(BufferedTransformation &target) const
-		{return 0;}
-	unsigned int CopyTo(BufferedTransformation &target, unsigned int copyMax) const
-		{return 0;}
 };
 
 class BitBucket : public Sink
@@ -267,6 +259,62 @@ class BitBucket : public Sink
 public:
 	void Put(byte) {}
 	void Put(const byte *, unsigned int) {}
+};
+
+class Redirector : public Sink
+{
+public:
+	Redirector(BufferedTransformation *target, bool passSignal=true) : m_target(target), m_passSignal(passSignal) {}
+	void Redirect(BufferedTransformation *target) {m_target = target;}
+	void SetPassSignal(bool passSignal) {m_passSignal = passSignal;}
+	void Put(byte b) 
+		{if (m_target) m_target->Put(b);}
+	void Put(const byte *string, unsigned int len) 
+		{if (m_target) m_target->Put(string, len);}
+	void Flush(bool completeFlush, int propagation=-1) 
+		{if (m_target && m_passSignal) m_target->Flush(completeFlush, propagation);}
+	void MessageEnd(int propagation=-1)
+		{if (m_target && m_passSignal) m_target->MessageEnd(propagation);}
+	void MessageSeriesEnd(int propagation=-1) 
+		{if (m_target && m_passSignal) m_target->MessageSeriesEnd(propagation);}
+
+private:
+	BufferedTransformation *m_target;
+	bool m_passSignal;
+};
+
+class OutputProxy : public Sink
+{
+public:
+	OutputProxy(BufferedTransformation &parent, bool passSignal=true) : m_parent(parent), m_passSignal(passSignal) {}
+	void SetPassSignal(bool passSignal) {m_passSignal = passSignal;}
+	void Put(byte b) 
+		{m_parent.BufferedTransformation::Put(b);}
+	void Put(const byte *string, unsigned int len) 
+		{m_parent.BufferedTransformation::Put(string, len);}
+	void Flush(bool completeFlush, int propagation=-1) 
+		{if (m_passSignal) m_parent.BufferedTransformation::Flush(completeFlush, propagation);}
+	void MessageEnd(int propagation=-1)
+		{if (m_passSignal) m_parent.BufferedTransformation::MessageEnd(propagation);}
+	void MessageSeriesEnd(int propagation=-1) 
+		{if (m_passSignal) m_parent.BufferedTransformation::MessageSeriesEnd(propagation);}
+
+private:
+	BufferedTransformation &m_parent;
+	bool m_passSignal;
+};
+
+class ProxyFilter : public FilterWithBufferedInput
+{
+public:
+	ProxyFilter(Filter *filter, unsigned int firstSize, unsigned int lastSize, BufferedTransformation *outQ);
+
+	void SetFilter(Filter *filter);
+	void NextPut(const byte *s, unsigned int len);
+
+protected:
+	member_ptr<Filter> m_filter;
+	OutputProxy *m_proxy;
 };
 
 class StringSink : public Sink
@@ -290,8 +338,6 @@ public:
 		{}
 	void Put(const byte *, unsigned int length)
 		{}
-	void InputFinished()
-		{}
 };
 
 class StringStore : public Store
@@ -302,7 +348,7 @@ public:
 	StringStore(const byte *store, unsigned int length)
 		: m_store(store), m_length(length), m_count(0) {}
 
-	unsigned long MaxRetrieveable();
+	unsigned long MaxRetrievable() const;
 
 	unsigned int Get(byte &outByte);
 	unsigned int Get(byte *outString, unsigned int getMax);
@@ -318,8 +364,10 @@ private:
 	unsigned int m_length, m_count;
 };
 
+/*
 BufferedTransformation *Insert(const byte *in, unsigned int length, BufferedTransformation *outQueue);
 unsigned int Extract(Source *source, byte *out, unsigned int length);
+*/
 
 NAMESPACE_END
 

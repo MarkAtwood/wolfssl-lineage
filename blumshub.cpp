@@ -13,7 +13,7 @@ PublicBlumBlumShub::PublicBlumBlumShub(const Integer &n, const Integer &seed)
 	bitsLeft = maxBits;
 }
 
-unsigned int PublicBlumBlumShub::GetBit()
+unsigned int PublicBlumBlumShub::GenerateBit()
 {
 	if (bitsLeft==0)
 	{
@@ -24,7 +24,7 @@ unsigned int PublicBlumBlumShub::GetBit()
 	return current.GetBit(--bitsLeft);
 }
 
-byte PublicBlumBlumShub::GetByte()
+byte PublicBlumBlumShub::GenerateByte()
 {
 	byte b=0;
 	for (int i=0; i<8; i++)

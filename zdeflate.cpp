@@ -184,10 +184,11 @@ void Deflator::Put(const byte *inString, unsigned int length)
 		lazy_deflate(inString, length);
 }
 
-void Deflator::InputFinished()
+void Deflator::MessageEnd(int propagation)
 {
 	minlookahead = 0;
 	Put(NULL, 0);
+	Filter::MessageEnd(propagation);
 }
 
 /* Set match_start to the longest match starting at the given string and

@@ -613,6 +613,31 @@ Integer ModularSquareRoot(const Integer &a, const Integer &p)
 	return x;
 }
 
+bool SolveModularQuadraticEquation(Integer &r1, Integer &r2, const Integer &a, const Integer &b, const Integer &c, const Integer &p)
+{
+	Integer D = (b.Squared() - 4*a*c) % p;
+	switch (Jacobi(D, p))
+	{
+	default:
+		assert(false);	// not reached
+		return false;
+	case -1:
+		return false;
+	case 0:
+		r1 = r2 = (-b*(a+a).InverseMod(p)) % p;
+		assert(((r1.Squared()*a + r1*b + c) % p).IsZero());
+		return true;
+	case 1:
+		Integer s = ModularSquareRoot(D, p);
+		Integer t = (a+a).InverseMod(p);
+		r1 = (s-b)*t % p;
+		r2 = (-s-b)*t % p;
+		assert(((r1.Squared()*a + r1*b + c) % p).IsZero());
+		assert(((r2.Squared()*a + r2*b + c) % p).IsZero());
+		return true;
+	}
+}
+
 Integer ModularRoot(const Integer &a, const Integer &dp, const Integer &dq,
 					const Integer &p, const Integer &q, const Integer &u)
 {
@@ -1022,6 +1047,8 @@ PrimeAndGenerator::PrimeAndGenerator(signed int delta, RandomNumberGenerator &rn
 		// find g such that g is a quadratic residue mod p, then g has order q
 		// g=4 always works, but this way we get the smallest quadratic residue (other than 1)
 		for (g=2; Jacobi(g, p) != 1; ++g);
+		// contributed by Walt Tuvell: g should be the following according to the Law of Quadratic Reciprocity
+		assert((p%8==1 || p%8==7) ? g==2 : (p%12==1 || p%12==11) ? g==3 : g==4);
 	}
 	else
 	{

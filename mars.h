@@ -12,7 +12,7 @@ public:
 	enum {KEYLENGTH=16, BLOCKSIZE=16};
 	unsigned int BlockSize() const {return BLOCKSIZE;}
 	static unsigned int KeyLength(unsigned int keylength)
-		{return keylength < 1 ? 1 : (keylength <= 39 ? keylength : 39);}
+		{return keylength < 16 ? 16 : (keylength <= 56 ? ((keylength+3)/4)*4 : 56);}
 
 protected:
 	MARS(const byte *userKey, unsigned int keylength);

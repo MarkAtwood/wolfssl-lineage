@@ -10,7 +10,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class ModularArithmetic : public RingWithDefaultMultiplicativeGroup<Integer>
+class ModularArithmetic : public AbstractRing<Integer>
 {
 public:
 

@@ -8,18 +8,18 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-unsigned int RandomNumberGenerator::GetBit()
+unsigned int RandomNumberGenerator::GenerateBit()
 {
 	return Parity(GetByte());
 }
 
-void RandomNumberGenerator::GetBlock(byte *output, unsigned int size)
+void RandomNumberGenerator::GenerateBlock(byte *output, unsigned int size)
 {
 	while (size--)
 		*output++ = GetByte();
 }
 
-word32 RandomNumberGenerator::GetLong(word32 min, word32 max)
+word32 RandomNumberGenerator::GenerateWord32(word32 min, word32 max)
 {
 	word32 range = max-min;
 	const int maxBytes = BytePrecision(range);
@@ -58,35 +58,248 @@ bool HashModule::Verify(const byte *digestIn)
 	return memcmp(digest, digestIn, DigestSize()) == 0;
 }
 
+BufferedTransformation::Err::Err(ErrorType errorType, const std::string &s)
+	: Exception(s), m_errorType(errorType)
+{
+	if (GetWhat() == "")
+	{
+		switch (errorType)
+		{
+		case CANNOT_FLUSH:
+			SetWhat("BufferedTransformation: cannot flush buffer");
+			break;
+		case DATA_INTEGRITY_CHECK_FAILED:
+			SetWhat("BufferedTransformation: data integrity check failed");
+			break;
+		case INVALID_DATA_FORMAT:
+			SetWhat("BufferedTransformation: invalid data format");
+			break;
+		case OUTPUT_ERROR:
+			SetWhat("BufferedTransformation: cannot write to output device");
+			break;
+		case OTHER_ERROR:
+			SetWhat("BufferedTransformation: unknown error");
+			break;
+		default:
+			assert(false);
+			break;
+		}
+	}
+}
+
+void BufferedTransformation::Put(byte b)
+{
+	if (AttachedTransformation())
+		AttachedTransformation()->Put(b);
+}
+
+void BufferedTransformation::Put(const byte *inString, unsigned int length)
+{
+	if (AttachedTransformation())
+		AttachedTransformation()->Put(inString, length);
+}
+
+void BufferedTransformation::Flush(bool completeFlush, int propagation)
+{
+	if (AttachedTransformation() && propagation)
+		AttachedTransformation()->Flush(completeFlush, propagation-1);
+}
+
+void BufferedTransformation::MessageEnd(int propagation)
+{
+	if (AttachedTransformation() && propagation)
+		AttachedTransformation()->MessageEnd(propagation-1);
+}
+
+void BufferedTransformation::MessageSeriesEnd(int propagation)
+{
+	if (AttachedTransformation() && propagation)
+		AttachedTransformation()->MessageSeriesEnd(propagation-1);
+}
+
+void BufferedTransformation::PutMessageEnd(const byte *inString, unsigned int length, int propagation)
+{
+	Put(inString, length);
+	MessageEnd(propagation);
+}
+
+unsigned long BufferedTransformation::MaxRetrievable() const
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->MaxRetrievable();
+	else
+		return 0;
+}
+
+bool BufferedTransformation::AnyRetrievable() const
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->AnyRetrievable();
+	else
+		return false;
+}
+
+unsigned int BufferedTransformation::Get(byte &outByte)
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->Get(outByte);
+	else
+		return 0;
+}
+
+unsigned int BufferedTransformation::Get(byte *outString, unsigned int getMax)
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->Get(outString, getMax);
+	else
+		return 0;
+}
+
+unsigned long BufferedTransformation::Skip()
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->Skip();
+	else
+		return 0;
+}
+
+unsigned int BufferedTransformation::Skip(unsigned int skipMax)
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->Skip(skipMax);
+	else
+		return 0;
+}
+
+unsigned int BufferedTransformation::Peek(byte &outByte) const
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->Peek(outByte);
+	else
+		return 0;
+}
+
+unsigned int BufferedTransformation::Peek(byte *outString, unsigned int peekMax) const
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->Peek(outString, peekMax);
+	else
+		return 0;
+}
+
+unsigned long BufferedTransformation::CopyTo(BufferedTransformation &target) const
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->CopyTo(target);
+	else
+		return 0;
+}
+
+unsigned int BufferedTransformation::CopyTo(BufferedTransformation &target, unsigned int copyMax) const
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->CopyTo(target, copyMax);
+	else
+		return 0;
+}
+
 unsigned long BufferedTransformation::TransferTo(BufferedTransformation &target)
 {
-	SecByteBlock buf(256);
-	unsigned int l;
-	unsigned long total = 0;
-
-	while ((l=Get(buf, 256)) != 0)
-	{
-		target.Put(buf, l);
-		total += l;
-	}
-	return total;
+	if (AttachedTransformation())
+		return AttachedTransformation()->TransferTo(target);
+	else
+		return 0;
 }
 
 unsigned int BufferedTransformation::TransferTo(BufferedTransformation &target, unsigned int size)
 {
-	SecByteBlock buf(256);
-	unsigned int l, total = 0;
-
-	while (size && (l=Get(buf, STDMIN(size, 256U))))
-	{
-		target.Put(buf, l);
-		size -= l;
-		total += l;
-	}
-	return total;
+	if (AttachedTransformation())
+		return AttachedTransformation()->TransferTo(target, size);
+	else
+		return 0;
 }
 
-void BufferedTransformation::PutShort(word16 value, bool highFirst)
+unsigned long BufferedTransformation::TotalBytesRetrievable() const
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->TotalBytesRetrievable();
+	else
+		return 0;
+}
+
+unsigned int BufferedTransformation::NumberOfMessages() const
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->NumberOfMessages();
+	else
+		return 0;
+}
+
+bool BufferedTransformation::CurrentMessageIsComplete() const
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->CurrentMessageIsComplete();
+	else
+		return false;
+}
+
+bool BufferedTransformation::RetrieveNextMessage()
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->RetrieveNextMessage();
+	else
+		return false;
+}
+
+unsigned int BufferedTransformation::SkipMessages()
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->SkipMessages();
+	else
+		return 0;
+}
+
+unsigned int BufferedTransformation::SkipMessages(unsigned int count)
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->SkipMessages(count);
+	else
+		return 0;
+}
+
+unsigned int BufferedTransformation::TransferMessagesTo(BufferedTransformation &target)
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->TransferMessagesTo(target);
+	else
+		return 0;
+}
+
+unsigned int BufferedTransformation::TransferMessagesTo(BufferedTransformation &target, unsigned int count)
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->TransferMessagesTo(target, count);
+	else
+		return 0;
+}
+
+unsigned int BufferedTransformation::CopyMessagesTo(BufferedTransformation &target) const
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->CopyMessagesTo(target);
+	else
+		return 0;
+}
+
+unsigned int BufferedTransformation::CopyMessagesTo(BufferedTransformation &target, unsigned int count) const
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->CopyMessagesTo(target, count);
+	else
+		return 0;
+}
+
+void BufferedTransformation::PutWord16(word16 value, bool highFirst)
 {
 	if (highFirst)
 	{
@@ -100,7 +313,7 @@ void BufferedTransformation::PutShort(word16 value, bool highFirst)
 	}
 }
 
-void BufferedTransformation::PutLong(word32 value, bool highFirst)
+void BufferedTransformation::PutWord32(word32 value, bool highFirst)
 {
 	if (highFirst)
 	{
@@ -114,9 +327,9 @@ void BufferedTransformation::PutLong(word32 value, bool highFirst)
 	}
 }
 
-unsigned int BufferedTransformation::GetShort(word16 &value, bool highFirst)
+unsigned int BufferedTransformation::GetWord16(word16 &value, bool highFirst)
 {
-	if (MaxRetrieveable()<2)
+	if (MaxRetrievable()<2)
 		return 0;
 
 	byte buf[2];
@@ -130,9 +343,9 @@ unsigned int BufferedTransformation::GetShort(word16 &value, bool highFirst)
 	return 2;
 }
 
-unsigned int BufferedTransformation::GetLong(word32 &value, bool highFirst)
+unsigned int BufferedTransformation::GetWord32(word32 &value, bool highFirst)
 {
-	if (MaxRetrieveable()<4)
+	if (MaxRetrievable()<4)
 		return 0;
 
 	byte buf[4];
@@ -146,14 +359,15 @@ unsigned int BufferedTransformation::GetLong(word32 &value, bool highFirst)
 	return 4;
 }
 
-unsigned int BufferedTransformation::Skip(unsigned int skipMax)
+void BufferedTransformation::Attach(BufferedTransformation *newOut)
 {
-	byte b;
-	unsigned int skipActual=0;
+	if (!Attachable())
+		return;
 
-	while (skipMax-- && Get(b))
-		skipActual++;
-	return skipActual;
+	if (AttachedTransformation() && AttachedTransformation()->Attachable())
+		AttachedTransformation()->Attach(newOut);
+	else
+		Detach(newOut);
 }
 
 unsigned int PK_FixedLengthCryptoSystem::MaxPlainTextLength(unsigned int cipherTextLength) const

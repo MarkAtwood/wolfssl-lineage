@@ -1,9 +1,8 @@
 #ifndef CRYPTOPP_ASN_H
 #define CRYPTOPP_ASN_H
 
-#include "cryptlib.h"
+#include "filters.h"
 #include "queue.h"
-#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -32,7 +31,7 @@ enum ASNTag
 	GENERALIZED_TIME 	= 0x18,
 	GRAPHIC_STRING		= 0x19,
 	VISIBLE_STRING		= 0x1a,
-	GENERAL_STRING		= 0x1b,
+	GENERAL_STRING		= 0x1b
 };
 
 enum ASNIdFlag
@@ -43,7 +42,7 @@ enum ASNIdFlag
 	CONSTRUCTED 		= 0x20,
 	APPLICATION 		= 0x40,
 	CONTEXT_SPECIFIC	= 0x80,
-	PRIVATE 			= 0xc0,
+	PRIVATE 			= 0xc0
 };
 
 #define BERDecodeError() throw BERDecodeErr()
@@ -72,7 +71,7 @@ unsigned int BERDecodeTextString(BufferedTransformation &bt, std::string &str, b
 unsigned int DEREncodeBitString(const byte *str, unsigned int strLen, BufferedTransformation &bt);
 unsigned int BERDecodeBitString(BufferedTransformation &bt, SecByteBlock &str);
 
-class BERSequenceDecoder : public BufferedTransformation
+class BERSequenceDecoder : public Store
 {
 public:
 	BERSequenceDecoder(BufferedTransformation &inQueue, byte asnTag = SEQUENCE | CONSTRUCTED);
@@ -82,10 +81,7 @@ public:
 	bool IsDefiniteLength() const {return m_definiteLength;}
 	unsigned int RemainingLength() const {assert(m_definiteLength); return m_length;}
 
-	void Put(byte inByte) {}
-	void Put(const byte *inString, unsigned int length) {}
-
-	unsigned long MaxRetrieveable();
+	unsigned long MaxRetrievable() const;
 
 	unsigned int Get(byte &outByte);
 	unsigned int Get(byte *outString, unsigned int getMax);
@@ -97,7 +93,7 @@ public:
 	unsigned int CopyTo(BufferedTransformation &target, unsigned int copyMax) const;
 
 	// call this to denote end of sequence
-	void OutputFinished();
+	void MessageEnd(int=-1);
 
 protected:
 	BufferedTransformation &m_inQueue;
@@ -116,7 +112,7 @@ public:
 	~DERSequenceEncoder();
 
 	// call this to denote end of sequence
-	void InputFinished();
+	void MessageEnd(int=-1);
 
 private:
 	BufferedTransformation &m_outQueue;

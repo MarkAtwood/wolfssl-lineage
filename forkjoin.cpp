@@ -31,26 +31,21 @@ void Fork::SelectOutPort(unsigned int portNumber)
 
 void Fork::Detach(BufferedTransformation *newOut)
 {
-	std::auto_ptr<BufferedTransformation> out(newOut ? newOut : new ByteQueue);
-	outPorts[currentPort]->Close();
-	outPorts[currentPort]->TransferTo(*out);
-	outPorts[currentPort].reset(out.release());
+	outPorts[currentPort].reset(newOut ? newOut : new ByteQueue);
 }
 
-void Fork::Attach(BufferedTransformation *newOut)
+void Fork::MessageEnd(int propagation)
 {
-	if (outPorts[currentPort]->Attachable())
-		outPorts[currentPort]->Attach(newOut);
-	else
-		Detach(newOut);
+	if (propagation)
+		for (unsigned int i=0; i<numberOfPorts; i++)
+			outPorts[i]->MessageEnd(propagation-1);
 }
 
-void Fork::Close()
+void Fork::MessageSeriesEnd(int propagation)
 {
-	InputFinished();
-
-	for (unsigned int i=0; i<numberOfPorts; i++)
-		outPorts[i]->Close();
+	if (propagation)
+		for (unsigned int i=0; i<numberOfPorts; i++)
+			outPorts[i]->MessageSeriesEnd(propagation);
 }
 
 void Fork::Put(byte inByte)
@@ -76,7 +71,7 @@ Join::Join(unsigned int n, BufferedTransformation *outQ)
 {
 	for (unsigned int i=0; i<numberOfPorts; i++)
 	{
-		inPorts[i].reset(new ByteQueue);
+		inPorts[i].reset(new MessageQueue);
 		interfaces[i].reset(new JoinInterface(*this, *inPorts[i], i));
 	}
 }
@@ -86,15 +81,12 @@ JoinInterface * Join::ReleaseInterface(unsigned int i)
 	return interfaces[i].release();
 }
 
-void Join::NotifyInput(unsigned int i, unsigned int /* length */)
+bool Join::AllCurrentMessagesAreComplete() const
 {
-	AccessPort(i).TransferTo(*AttachedTransformation());
-}
-
-void Join::NotifyClose(unsigned int /* id */)
-{
-	if ((--interfacesOpen) == 0)
-		AttachedTransformation()->Close();
+	for (unsigned int i=0; i<NumberOfPorts(); i++)
+		if (!AccessPort(i).CurrentMessageIsComplete())
+			return false;
+	return true;
 }
 
 // ********************************************************
@@ -111,14 +103,19 @@ void JoinInterface::Put(const byte *inString, unsigned int length)
 	parent.NotifyInput(id, length);
 }
 
-unsigned long JoinInterface::MaxRetrieveable() 
+unsigned long JoinInterface::MaxRetrievable() const
 {
-	return parent.MaxRetrieveable();
+	return parent.MaxRetrievable();
 }
 
-void JoinInterface::Close() 
+void JoinInterface::MessageEnd(int)
 {
-	parent.NotifyClose(id);
+	parent.NotifyMessageEnd(id);
+}
+
+void JoinInterface::MessageSeriesEnd(int) 
+{
+	parent.NotifyMessageSeriesEnd(id);
 }
 
 void JoinInterface::Detach(BufferedTransformation *bt) 

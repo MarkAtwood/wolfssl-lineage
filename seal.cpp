@@ -59,7 +59,7 @@ SEAL::SEAL(const byte *key, word32 counter, unsigned int L)
 	Generate(counter, buffer);
 }
 
-byte SEAL::GetByte()
+byte SEAL::GenerateByte()
 {
 	if (position == L/8)
 		IncrementCounter();

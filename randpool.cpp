@@ -68,34 +68,31 @@ void RandomPool::Put(const byte *inString, unsigned int length)
 	}
 }
 
-unsigned int RandomPool::Get(byte &outByte)
+byte RandomPool::GenerateByte()
 {
 	if (getPos == pool.size)
 		Stir();
 
-	outByte = pool[getPos++];
-	return 1;
+	return pool[getPos++];
 }
 
-unsigned int RandomPool::Get(byte *outString, unsigned int getMax)
+void RandomPool::GenerateBlock(byte *outString, unsigned int size)
 {
 	unsigned t;
-	unsigned int length = getMax;
 
-	while (length > (t = pool.size - getPos))
+	while (size > (t = pool.size - getPos))
 	{
 		memcpy(outString, pool+getPos, t);
 		outString += t;
-		length -= t;
+		size -= t;
 		Stir();
 	}
 
-	if (length)
+	if (size)
 	{
-		memcpy(outString, pool+getPos, length);
-		getPos += length;
+		memcpy(outString, pool+getPos, size);
+		getPos += size;
 	}
-	return getMax;
 }
 
 NAMESPACE_END

@@ -33,7 +33,7 @@ public:
 	}
 
 	void Put(const byte *inString, unsigned int length);
-	void InputFinished();
+	void MessageEnd(int propagation=-1);
 
 protected:
 	virtual void ProcessInbuf();
@@ -49,7 +49,7 @@ public:
 	WAKEDecryption(const byte *key, BufferedTransformation *outQueue = NULL)
 		: WAKEEncryption(key, outQueue) {lastBlock=false;}
 
-	void InputFinished();
+	void MessageEnd(int propagation=-1);
 
 protected:
 	virtual void ProcessInbuf();

@@ -18,7 +18,7 @@ LUCFunction::LUCFunction(BufferedTransformation &bt)
 	BERSequenceDecoder seq(bt);
 	n.BERDecode(seq);
 	e.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 }
 
 void LUCFunction::DEREncode(BufferedTransformation &bt) const
@@ -26,7 +26,7 @@ void LUCFunction::DEREncode(BufferedTransformation &bt) const
 	DERSequenceEncoder seq(bt);
 	n.DEREncode(seq);
 	e.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 Integer LUCFunction::ApplyFunction(const Integer &x) const
@@ -87,7 +87,7 @@ InvertibleLUCFunction::InvertibleLUCFunction(BufferedTransformation &bt)
 	p.BERDecode(seq);
 	q.BERDecode(seq);
 	u.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 }
 
 void InvertibleLUCFunction::DEREncode(BufferedTransformation &bt) const
@@ -101,7 +101,7 @@ void InvertibleLUCFunction::DEREncode(BufferedTransformation &bt) const
 	p.DEREncode(seq);
 	q.DEREncode(seq);
 	u.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 Integer InvertibleLUCFunction::CalculateInverse(const Integer &x) const
@@ -122,7 +122,7 @@ LUCELG_Encryptor::LUCELG_Encryptor(BufferedTransformation &bt)
 	p.BERDecode(seq);
 	g.BERDecode(seq);
 	y.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 	modulusLen=p.ByteCount();
 }
 
@@ -132,7 +132,7 @@ void LUCELG_Encryptor::DEREncode(BufferedTransformation &bt) const
 	p.DEREncode(seq);
 	g.DEREncode(seq);
 	y.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 void LUCELG_Encryptor::Encrypt(RandomNumberGenerator &rng, const byte *plainText, unsigned int plainTextLength, byte *cipherText)
@@ -197,7 +197,7 @@ LUCELG_Decryptor::LUCELG_Decryptor(BufferedTransformation &bt)
 	g.BERDecode(seq);
 	y.BERDecode(seq);
 	x.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 	modulusLen=p.ByteCount();
 }
 
@@ -208,7 +208,7 @@ void LUCELG_Decryptor::DEREncode(BufferedTransformation &bt) const
 	g.DEREncode(seq);
 	y.DEREncode(seq);
 	x.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 unsigned int LUCELG_Decryptor::Decrypt(const byte *cipherText, byte *plainText)
@@ -246,7 +246,7 @@ LUCELG_DigestVerifier::LUCELG_DigestVerifier(BufferedTransformation &bt)
 	q.BERDecode(seq);
 	g.BERDecode(seq);
 	y.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 }
 
 Integer LUCELG_DigestVerifier::EncodeDigest(const byte *digest, unsigned int digestLen) const
@@ -269,7 +269,7 @@ void LUCELG_DigestVerifier::DEREncode(BufferedTransformation &bt) const
 	q.DEREncode(seq);
 	g.DEREncode(seq);
 	y.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 bool LUCELG_DigestVerifier::VerifyDigest(const byte *digest, unsigned int digestLen, const byte *signature) const
@@ -321,7 +321,7 @@ LUCELG_DigestSigner::LUCELG_DigestSigner(BufferedTransformation &bt)
 	g.BERDecode(seq);
 	y.BERDecode(seq);
 	x.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 }
 
 void LUCELG_DigestSigner::DEREncode(BufferedTransformation &bt) const
@@ -332,7 +332,7 @@ void LUCELG_DigestSigner::DEREncode(BufferedTransformation &bt) const
 	g.DEREncode(seq);
 	y.DEREncode(seq);
 	x.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 void LUCELG_DigestSigner::SignDigest(RandomNumberGenerator &rng, const byte *digest, unsigned int digestLen, byte *signature) const
@@ -372,7 +372,7 @@ LUCDIF::LUCDIF(BufferedTransformation &bt)
 	BERSequenceDecoder seq(bt);
 	p.BERDecode(seq);
 	g.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 }
 
 void LUCDIF::DEREncode(BufferedTransformation &bt) const
@@ -380,7 +380,7 @@ void LUCDIF::DEREncode(BufferedTransformation &bt) const
 	DERSequenceEncoder seq(bt);
 	p.DEREncode(seq);
 	g.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 bool LUCDIF::ValidateDomainParameters(RandomNumberGenerator &rng) const

@@ -13,7 +13,7 @@ FileSource::FileSource (std::istream &i, bool pumpAndClose, BufferedTransformati
 	if (pumpAndClose)
 	{
 		PumpAll();
-		Close();
+		MessageEnd();
 	}
 }
 
@@ -21,16 +21,12 @@ FileSource::FileSource (const char *filename, bool pumpAndClose, BufferedTransfo
 	: Source(outQueue), file(filename, std::ios::in | std::ios::binary), in(file)
 {
 	if (!file)
-	{
-		std::string message = "FileSource: error opening file for reading: ";
-		message += filename;
-		throw OpenErr(message.c_str());
-	}
+		throw OpenErr(filename);
 
 	if (pumpAndClose)
 	{
 		PumpAll();
-		Close();
+		MessageEnd();
 	}
 }
 
@@ -74,18 +70,19 @@ FileSink::FileSink(const char *filename, bool binary)
 	: file(filename, std::ios::out | (binary ? std::ios::binary : std::ios::openmode(0)) | std::ios::trunc), out(file)
 {
 	if (!file)
-	{
-		std::string message = "FileSource: error opening file for writing: ";
-		message += filename;
-		throw OpenErr(message.c_str());
-	}
+		throw OpenErr(filename);
 }
 
-void FileSink::InputFinished()
+void FileSink::Flush(bool, int)
 {
 	out.flush();
 	if (!out.good())
 	  throw WriteErr();
+}
+
+void FileSink::MessageEnd(int)
+{
+	Flush(true);
 }
 
 void FileSink::Put(const byte *inString, unsigned int length)

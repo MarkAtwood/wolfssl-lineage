@@ -129,10 +129,10 @@ History
     - fixed bug with attaching objects to Deflator
 
 3.2 - added DES-XEX3, ECDSA, DefaultEncryptorWithMAC
-	- renamed DES-EDE to DES-EDE2 and TripleDES to DES-EDE3
-	- optimized ARC4
-	- generalized DSA to allow keys longer than 1024 bits
-	- fixed bug in GF2N and ModularArithmetic that can cause calculation errors
-	- fixed crashing bug in Inflator when given invalid inputs
-	- fixed endian bug in Serpent
-	- fixed padding bug in Tiger
+    - renamed DES-EDE to DES-EDE2 and TripleDES to DES-EDE3
+    - optimized ARC4
+    - generalized DSA to allow keys longer than 1024 bits
+    - fixed bugs in GF2N and ModularArithmetic that can cause calculation errors
+    - fixed crashing bug in Inflator when given invalid inputs
+    - fixed endian bug in Serpent
+    - fixed padding bug in Tiger

@@ -58,7 +58,7 @@ NRDigestVerifier::NRDigestVerifier(BufferedTransformation &bt)
 	m_q.BERDecode(seq);
 	m_g.BERDecode(seq);
 	m_y.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 
 	m_gpc.Precompute(m_p, m_g, ExponentBitLength(), 1);
 	m_ypc.Precompute(m_p, m_y, ExponentBitLength(), 1);
@@ -71,7 +71,7 @@ void NRDigestVerifier::DEREncode(BufferedTransformation &bt) const
 	m_q.DEREncode(seq);
 	m_g.DEREncode(seq);
 	m_y.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 bool NRDigestVerifier::VerifyDigest(const byte *digest, unsigned int digestLen, const byte *signature) const
@@ -132,7 +132,7 @@ NRDigestSigner::NRDigestSigner(BufferedTransformation &bt)
 	m_g.BERDecode(seq);
 	m_y.BERDecode(seq);
 	m_x.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 
 	m_gpc.Precompute(m_p, m_g, ExponentBitLength(), 1);
 	m_ypc.Precompute(m_p, m_y, ExponentBitLength(), 1);
@@ -146,7 +146,7 @@ void NRDigestSigner::DEREncode(BufferedTransformation &bt) const
 	m_g.DEREncode(seq);
 	m_y.DEREncode(seq);
 	m_x.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 void NRDigestSigner::SignDigest(RandomNumberGenerator &rng, const byte *digest, unsigned int digestLen, byte *signature) const

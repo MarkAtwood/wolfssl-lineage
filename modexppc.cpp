@@ -53,7 +53,7 @@ void ModExpPrecomputation::Load(const Integer &mod, BufferedTransformation &bt)
 	ep->g.resize(ep->storage);
 	for (unsigned i=0; i<ep->storage; i++)
 		ep->g[i].BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 }
 
 void ModExpPrecomputation::Save(BufferedTransformation &bt) const
@@ -64,7 +64,7 @@ void ModExpPrecomputation::Save(BufferedTransformation &bt) const
 	ep->exponentBase.DEREncode(seq);
 	for (unsigned i=0; i<ep->storage; i++)
 		ep->g[i].DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 Integer ModExpPrecomputation::Exponentiate(const Integer &exponent) const

@@ -15,9 +15,11 @@ public:
 
 	void Put(byte inByte);
 	void Put(const byte *inString, unsigned int length);
-	virtual void InputFinished();
+	void MessageEnd(int propagation=-1);
 
 protected:
+	void Reset();
+	void WriteHeader();
 	void Process(unsigned int message);
 	virtual void Share(word32 message);
 
@@ -25,6 +27,7 @@ protected:
 	word32 m_threshold;
 	word32 m_buffer;
 	unsigned int m_count;
+	bool m_headerWritten;
 };
 
 class ShareJoin : public Join
@@ -32,13 +35,13 @@ class ShareJoin : public Join
 public:
 	ShareJoin(unsigned int n, BufferedTransformation *outQ = NULL);
 
-	void NotifyInput(unsigned int interfaceId, unsigned int length);
-
 protected:
 	void ReadIndex();
 	virtual void Assemble(unsigned long);
 	void Output(word32);
-	void NotifyClose(unsigned int);
+
+	void NotifyInput(unsigned int interfaceId, unsigned int length);
+	void NotifyMessageEnd(unsigned int);
 
 	word32 m_threshold;
 	SecBlock<word32> m_x;
@@ -51,10 +54,11 @@ class DisperseFork : public ShareFork
 public:
 	DisperseFork(unsigned int m, unsigned int n, BufferedTransformation *const *outports = NULL);
 
-	virtual void InputFinished();
+	void MessageEnd(int propagation=-1);
 
 protected:
-	virtual void Share(word32 message);
+	void Reset();
+	void Share(word32 message);
 
 	SecBlock<word32> m_poly;
 	unsigned int m_polyCount;
@@ -65,7 +69,7 @@ class DisperseJoin : public ShareJoin
 public:
 	DisperseJoin(unsigned int n, BufferedTransformation *outQ = NULL);
 
-	void NotifyClose(unsigned int id);
+	void NotifyMessageEnd(unsigned int id);
 
 protected:
 	virtual void Assemble(unsigned long);

@@ -24,6 +24,7 @@
 #include "shark.h"
 #include "cast.h"
 #include "square.h"
+#include "skipjack.h"
 #include "seal.h"
 #include "rc6.h"
 #include "mars.h"
@@ -57,6 +58,7 @@
 #include "tea.h"
 #include "dh.h"
 #include "mqv.h"
+#include "xtrcrypt.h"
 
 #include "bench.h"
 
@@ -205,7 +207,7 @@ void BenchMarkEncryption(const char *name, PK_Encryptor &key, float timeTotal, b
 	cout << "<TR><TH>" << name << " Encryption" << (pc ? " with precomputation" : "");
 	cout << "<TD>" << i;
 	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << (unsigned int)(1000*timeTaken/i) << endl;
+	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
 
 	logtotal += log(i/timeTaken);
 	logcount++;
@@ -236,7 +238,7 @@ void BenchMarkDecryption(const char *name, PK_Decryptor &priv, PK_Encryptor &pub
 	cout << "<TR><TH>" << name << " Decryption";
 	cout << "<TD>" << i;
 	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << (unsigned int)(1000*timeTaken/i) << endl;
+	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
 
 	logtotal += log(i/timeTaken);
 	logcount++;
@@ -258,7 +260,7 @@ void BenchMarkSigning(const char *name, PK_Signer &key, float timeTotal, bool pc
 	cout << "<TR><TH>" << name << " Signature" << (pc ? " with precomputation" : "");
 	cout << "<TD>" << i;
 	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << (unsigned int)(1000*timeTaken/i) << endl;
+	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
 
 	logtotal += log(i/timeTaken);
 	logcount++;
@@ -288,7 +290,7 @@ void BenchMarkVerification(const char *name, PK_Signer &priv, PK_Verifier &pub, 
 	cout << "<TR><TH>" << name << " Verification" << (pc ? " with precomputation" : "");
 	cout << "<TD>" << i;
 	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << (unsigned int)(1000*timeTaken/i) << endl;
+	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
 
 	logtotal += log(i/timeTaken);
 	logcount++;
@@ -315,7 +317,7 @@ void BenchMarkKeyGen(const char *name, PK_SimpleKeyAgreementDomain &d, float tim
 	cout << "<TR><TH>" << name << " Key-Pair Generation" << (pc ? " with precomputation" : "");
 	cout << "<TD>" << i;
 	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << (unsigned int)(1000*timeTaken/i) << endl;
+	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
 
 	logtotal += log(i/timeTaken);
 	logcount++;
@@ -342,7 +344,7 @@ void BenchMarkKeyGen(const char *name, PK_AuthenticatedKeyAgreementDomain &d, fl
 	cout << "<TR><TH>" << name << " Key-Pair Generation" << (pc ? " with precomputation" : "");
 	cout << "<TD>" << i;
 	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << (unsigned int)(1000*timeTaken/i) << endl;
+	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
 
 	logtotal += log(i/timeTaken);
 	logcount++;
@@ -376,7 +378,7 @@ void BenchMarkAgreement(const char *name, PK_SimpleKeyAgreementDomain &d, float 
 	cout << "<TR><TH>" << name << " Agreement" << (pc ? " with precomputation" : "");
 	cout << "<TD>" << i;
 	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << (unsigned int)(1000*timeTaken/i) << endl;
+	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
 
 	logtotal += log(i/timeTaken);
 	logcount++;
@@ -407,7 +409,7 @@ void BenchMarkAgreement(const char *name, PK_AuthenticatedKeyAgreementDomain &d,
 	cout << "<TR><TH>" << name << " Key Agreement" << (pc ? " with precomputation" : "");
 	cout << "<TD>" << i;
 	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << (unsigned int)(1000*timeTaken/i) << endl;
+	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
 
 	logtotal += log(i/timeTaken);
 	logcount++;
@@ -487,7 +489,7 @@ void BenchMarkAll(float t)
 	BenchMarkKeyed<DES_EDE3_Encryption>("DES-EDE3", t);
 	BenchMarkKeyed<IDEAEncryption>("IDEA", t);
 	BenchMarkKeyed<RC2Encryption>("RC2", t);
-	BenchMarkKeyed<RC5Encryption>("RC5 (r=12)", t);
+	BenchMarkKeyed<RC5Encryption>("RC5 (r=16)", t);
 	BenchMarkKeyed<BlowfishEncryption>("Blowfish", t);
 	BenchMarkKeyed<Diamond2Encryption>("Diamond2", t);
 	BenchMarkKeyed<Diamond2LiteEncryption>("Diamond2 Lite", t);
@@ -500,6 +502,7 @@ void BenchMarkAll(float t)
 #endif
 	BenchMarkKeyed<CAST128Encryption>("CAST-128", t);
 	BenchMarkKeyed<SquareEncryption>("Square", t);
+	BenchMarkKeyed<SKIPJACKEncryption>("SKIPJACK", t);
 	BenchMarkKeyed<RC6Encryption>("RC6", t);
 	BenchMarkKeyed<MARSEncryption>("MARS", t);
 	BenchMarkKeyed<RijndaelEncryption>("Rijndael", t);
@@ -561,7 +564,6 @@ void BenchMarkAll(float t)
 
 	cout << "<TABLE border=1><COLGROUP><COL align=left><COL align=right><COL align=right><COL align=right>" << endl;
 	cout << "<THEAD><TR><TH>Operation<TH>Iterations<TH>Total Time<TH>Milliseconds/Operation" << endl;
-
 	cout << "<TBODY style=\"background: yellow\">" << endl;
 	BenchMarkCrypto<RSAES_OAEP_SHA_Decryptor, RSAES_OAEP_SHA_Encryptor>("rsa512.dat", "RSA 512", t);
 	BenchMarkCrypto<RabinDecryptor, RabinEncryptor>("rabi512.dat", "Rabin 512", t);
@@ -611,9 +613,13 @@ void BenchMarkAll(float t)
 	BenchMarkSignature<LUCELG_Signer<SHA>, LUCELG_Verifier<SHA> >("lucs1024.dat", "LUCELG 1024", t);
 
 	cout << "<TBODY style=\"background: yellow\">" << endl;
+	BenchMarkKeyAgreement<XTR_DH>("xtrdh171.dat", "XTR-DH 171", t);
+	BenchMarkKeyAgreement<XTR_DH>("xtrdh342.dat", "XTR-DH 342", t);
 	BenchMarkKeyAgreement<DH>("dh512.dat", "DH 512", t);
 	BenchMarkKeyAgreement<DH>("dh1024.dat", "DH 1024", t);
 	BenchMarkKeyAgreement<DH>("dh2048.dat", "DH 2048", t);
+	BenchMarkKeyAgreement<LUCDIF>("lucd512.dat", "LUCDIF 512", t);
+	BenchMarkKeyAgreement<LUCDIF>("lucd1024.dat", "LUCDIF 1024", t);
 	BenchMarkKeyAgreement<MQV>("mqv512.dat", "MQV 512", t);
 	BenchMarkKeyAgreement<MQV>("mqv1024.dat", "MQV 1024", t);
 	BenchMarkKeyAgreement<MQV>("mqv2048.dat", "MQV 2048", t);

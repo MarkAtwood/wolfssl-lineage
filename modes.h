@@ -73,7 +73,7 @@ public:
 	OFB(const BlockTransformation &cipher, const byte *IV, int feedBackSize = 0)
     	: FeedBackMode(cipher, IV, feedBackSize) {}
 
-	byte GetByte()
+	byte GenerateByte()
 	{
 		if (counter==FBS)
 			DoFeedBack();
@@ -81,7 +81,7 @@ public:
 	}
 
 	byte ProcessByte(byte input)
-		{return (input ^ OFB::GetByte());}
+		{return (input ^ OFB::GenerateByte());}
 
 	void ProcessString(byte *outString, const byte *inString, unsigned int length);
 	void ProcessString(byte *inoutString, unsigned int length);
@@ -93,7 +93,7 @@ public:
 	// cipher should be an *encryption* object
 	CounterMode(const BlockTransformation &cipher, const byte *IV);
 
-	byte GetByte()
+	byte GenerateByte()
 	{
 		if (size==S)
 			IncrementCounter();
@@ -101,7 +101,7 @@ public:
 	}
 
 	byte ProcessByte(byte input)
-		{return (input ^ CounterMode::GetByte());}
+		{return (input ^ CounterMode::GenerateByte());}
 
 	void ProcessString(byte *outString, const byte *inString, unsigned int length);
 	void ProcessString(byte *inoutString, unsigned int length);

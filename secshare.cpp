@@ -42,17 +42,32 @@ template<> const Field Polynomial::fixedRing(field);
 NAMESPACE_BEGIN(CryptoPP)
 
 ShareFork::ShareFork(RandomNumberGenerator &rng, word32 m, word32 n, BufferedTransformation *const *outports)
-	: Fork(n, outports), m_rng(rng), m_threshold(m), m_count(0)
+	: Fork(n, outports), m_rng(rng), m_threshold(m)
 {
+	Reset();
+}
+
+void ShareFork::Reset()
+{
+	m_count = 0;
+	m_headerWritten = false;
+}
+
+void ShareFork::WriteHeader()
+{
+	assert(!m_headerWritten);
 	for (unsigned int i=0; i<NumberOfPorts(); i++)
 	{
-		AccessPort(i).PutLong(m_threshold);
-		AccessPort(i).PutLong(i+1);
+		AccessPort(i).PutWord32(m_threshold);
+		AccessPort(i).PutWord32(i+1);
 	}
+	m_headerWritten = true;
 }
 
 void ShareFork::Put(byte inByte)
 {
+	if (!m_headerWritten)
+		WriteHeader();
 	m_buffer = (m_buffer<<8) | inByte;
 	if (++m_count == 4)
 	{
@@ -75,11 +90,14 @@ void ShareFork::Share(word32 message)
 	poly.SetCoefficient(0, message);
 
 	for (unsigned int i=0; i<NumberOfPorts(); i++)
-		AccessPort(i).PutLong(poly.EvaluateAt(i+1));
+		AccessPort(i).PutWord32(poly.EvaluateAt(i+1));
 }
 
-void ShareFork::InputFinished()
+void ShareFork::MessageEnd(int propagation)
 {
+	if (!m_headerWritten)
+		WriteHeader();
+
 	byte filler = 4-m_count;
 	assert(filler > 0 && filler <= 4);
 
@@ -87,6 +105,10 @@ void ShareFork::InputFinished()
 		Put(filler);
 
 	assert(m_count == 0);
+
+	Fork::MessageEnd(propagation);
+
+	Reset();
 }
 
 // ****************************************************************
@@ -99,10 +121,10 @@ ShareJoin::ShareJoin(unsigned int n, BufferedTransformation *outQ)
 
 void ShareJoin::NotifyInput(unsigned int /* interfaceId */, unsigned int /* length */)
 {
-	unsigned long n = AccessPort(0).MaxRetrieveable();
+	unsigned long n = AccessPort(0).MaxRetrievable();
 
 	for (unsigned int i=1; n && i<NumberOfPorts(); i++)
-		n = STDMIN(n, AccessPort(i).MaxRetrieveable());
+		n = STDMIN(n, AccessPort(i).MaxRetrievable());
 
 	if (!m_indexRead && n>=8)
 	{
@@ -118,23 +140,26 @@ void ShareJoin::ReadIndex()
 {
 	for (unsigned int i=0; i<NumberOfPorts(); i++)
 	{
-		AccessPort(i).GetLong(m_threshold);
-		AccessPort(i).GetLong(m_x[i]);
+		AccessPort(i).GetWord32(m_threshold);
+		AccessPort(i).GetWord32(m_x[i]);
 	}
 
 	m_indexRead = true;
 }
 
-void ShareJoin::NotifyClose(unsigned int id)
+void ShareJoin::NotifyMessageEnd(unsigned int)
 {
-	if (InterfacesOpen() == 1)
-	{
-		byte filler = m_buffer & 0xff;
-		for (unsigned int i=3; i && i>=filler; --i)
-			AttachedTransformation()->Put(byte(m_buffer>>(8*i)));
-	}
+	if (!AllCurrentMessagesAreComplete())
+		return;
 
-	Join::NotifyClose(id);
+	byte filler = m_buffer & 0xff;
+	for (unsigned int i=3; i && i>=filler; --i)
+		AttachedTransformation()->Put(byte(m_buffer>>(8*i)));
+
+	AttachedTransformation()->MessageEnd();
+
+	m_indexRead = false;
+	m_firstOutput = true;
 }
 
 void ShareJoin::Assemble(unsigned long n)
@@ -144,7 +169,7 @@ void ShareJoin::Assemble(unsigned long n)
 	while (n>=4)
 	{
 		for (unsigned int i=0; i<NumberOfPorts(); i++)
-			AccessPort(i).GetLong(y[i]);
+			AccessPort(i).GetWord32(y[i]);
 
 		Output(polynomialRing.InterpolateAt(0, m_x, y, NumberOfPorts()));
 		n -= 4;
@@ -156,7 +181,7 @@ void ShareJoin::Output(word32 message)
 	if (m_firstOutput)
 		m_firstOutput = false;
 	else
-		AttachedTransformation()->PutLong(m_buffer);
+		AttachedTransformation()->PutWord32(m_buffer);
 
 	m_buffer = message;
 }
@@ -165,8 +190,15 @@ void ShareJoin::Output(word32 message)
 
 DisperseFork::DisperseFork(unsigned int m, unsigned int n, BufferedTransformation *const *outports)
 	: ShareFork(*(RandomNumberGenerator *)0, m, n, outports),
-	  m_poly(m), m_polyCount(0)
+	  m_poly(m)
 {
+	Reset();
+}
+
+void DisperseFork::Reset()
+{
+	ShareFork::Reset();
+	m_polyCount = 0;
 }
 
 void DisperseFork::Share(word32 message)
@@ -178,19 +210,36 @@ void DisperseFork::Share(word32 message)
 		Polynomial poly(m_poly.Begin(), m_poly.End());
 
 		for (unsigned int i=0; i<NumberOfPorts(); i++)
-			AccessPort(i).PutLong(poly.EvaluateAt(i+1));
+			AccessPort(i).PutWord32(poly.EvaluateAt(i+1));
 
 		m_polyCount = 0;
 	}
 }
 
-void DisperseFork::InputFinished()
+void DisperseFork::MessageEnd(int propagation)
 {
-	ShareFork::InputFinished();
+	if (!m_headerWritten)
+		WriteHeader();
 
-	word32 filler = m_threshold - m_polyCount;
-	for (word32 i=0; i<filler; i++)
-		Share(filler);
+	{
+		byte filler = 4-m_count;
+		assert(filler > 0 && filler <= 4);
+
+		for (byte i = 0; i<filler; i++)
+			Put(filler);
+
+		assert(m_count == 0);
+	}
+
+	{
+		word32 filler = m_threshold - m_polyCount;
+		for (word32 i=0; i<filler; i++)
+			Share(filler);
+	}
+
+	Fork::MessageEnd(propagation);
+
+	Reset();
 }
 
 DisperseJoin::DisperseJoin(unsigned int n, BufferedTransformation *outQ)
@@ -206,7 +255,7 @@ void DisperseJoin::Assemble(unsigned long n)
 		unsigned int i;
 
 		for (i=0; i<NumberOfPorts(); i++)
-			AccessPort(i).GetLong(y[i]);
+			AccessPort(i).GetWord32(y[i]);
 
 		Polynomial poly(polynomialRing.Interpolate(m_x, y, NumberOfPorts()));
 
@@ -228,16 +277,16 @@ void DisperseJoin::Assemble(unsigned long n)
 	}
 }
 
-void DisperseJoin::NotifyClose(unsigned int id)
+void DisperseJoin::NotifyMessageEnd(unsigned int id)
 {
-	if (InterfacesOpen() == 1)
-	{
-		word32 filler = m_polyBuffer[m_threshold-1];
-		for (word32 i=0; i+filler < m_threshold; ++i)
-			Output(m_polyBuffer[i]);
-	}
+	if (!AllCurrentMessagesAreComplete())
+		return;
 
-	ShareJoin::NotifyClose(id);
+	word32 filler = m_polyBuffer[m_threshold-1];
+	for (word32 i=0; i+filler < m_threshold; ++i)
+		Output(m_polyBuffer[i]);
+
+	ShareJoin::NotifyMessageEnd(id);
 }
 
 NAMESPACE_END

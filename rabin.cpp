@@ -24,7 +24,7 @@ RabinFunction::RabinFunction(BufferedTransformation &bt)
 	n.BERDecode(seq);
 	r.BERDecode(seq);
 	s.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 }
 
 void RabinFunction::DEREncode(BufferedTransformation &bt) const
@@ -33,7 +33,7 @@ void RabinFunction::DEREncode(BufferedTransformation &bt) const
 	n.DEREncode(seq);
 	r.DEREncode(seq);
 	s.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 Integer RabinFunction::ApplyFunction(const Integer &in) const
@@ -118,7 +118,7 @@ InvertibleRabinFunction::InvertibleRabinFunction(BufferedTransformation &bt)
 	p.BERDecode(seq);
 	q.BERDecode(seq);
 	u.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 }
 
 void InvertibleRabinFunction::DEREncode(BufferedTransformation &bt) const
@@ -130,7 +130,7 @@ void InvertibleRabinFunction::DEREncode(BufferedTransformation &bt) const
 	p.DEREncode(seq);
 	q.DEREncode(seq);
 	u.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 Integer InvertibleRabinFunction::CalculateInverse(const Integer &in) const

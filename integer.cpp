@@ -17,7 +17,7 @@ NAMESPACE_BEGIN(CryptoPP)
 #define MAKE_DWORD(lowWord, highWord) ((dword(highWord)<<WORD_BITS) | (lowWord))
 
 // CodeWarrior defines _MSC_VER
-#if defined(_MSC_VER) && !defined(__MWERKS__) && defined(_M_IX86) && (_M_IX86<=500)
+#if defined(_MSC_VER) && !defined(__MWERKS__) && defined(_M_IX86) && (_M_IX86<=600)
 
 // Add() and Subtract() are coded in Pentium assembly for a speed increase
 // of about 10-20 percent for a RSA signature
@@ -120,7 +120,7 @@ loopend:
 	}
 }
 
-#else	// defined(_MSC_VER) && !defined(__MWERKS__) && defined(_M_IX86) && (_M_IX86<=500)
+#else	// defined(_MSC_VER) && !defined(__MWERKS__) && defined(_M_IX86) && (_M_IX86<=600)
 
 static word Add(word *C, const word *A, const word *B, unsigned int N)
 {
@@ -154,7 +154,7 @@ static word Subtract(word *C, const word *A, const word *B, unsigned int N)
 	return borrow;
 }
 
-#endif	// defined(_MSC_VER) && !defined(__MWERKS__) && defined(_M_IX86) && (_M_IX86<=500)
+#endif	// defined(_MSC_VER) && !defined(__MWERKS__) && defined(_M_IX86) && (_M_IX86<=600)
 
 static int Compare(const word *A, const word *B, unsigned int N)
 {
@@ -214,6 +214,7 @@ static word LinearMultiply(word *C, const word *A, word B, unsigned int N)
 
 static void AtomicMultiply(word *C, word A0, word A1, word B0, word B1)
 {
+/*
 	word s;
 	dword d;
 
@@ -239,6 +240,16 @@ static void AtomicMultiply(word *C, word A0, word A1, word B0, word B1)
 			s = 0;
 			d = (dword)(A0-A1)*(B1-B0);
 		}
+*/
+	// this segment is the branchless equivalent of above
+	word D[4] = {A1-A0, A0-A1, B0-B1, B1-B0};
+	unsigned int ai = A1 < A0;
+	unsigned int bi = B0 < B1;
+	unsigned int di = ai & bi;
+	dword d = (dword)D[di]*D[di+2];
+	D[1] = D[3] = 0;
+	unsigned int si = ai + !bi;
+	word s = D[si];
 
 	dword A0B0 = (dword)A0*B0;
 	C[0] = LOW_WORD(A0B0);
@@ -254,31 +265,14 @@ static void AtomicMultiply(word *C, word A0, word A1, word B0, word B1)
 
 static word AtomicMultiplyAdd(word *C, word A0, word A1, word B0, word B1)
 {
-	word s;
-	dword d;
-
-	if (A1 >= A0)
-		if (B0 >= B1)
-		{
-			s = 0;
-			d = (dword)(A1-A0)*(B0-B1);
-		}
-		else
-		{
-			s = (A1-A0);
-			d = (dword)s*(word)(B0-B1);
-		}
-	else
-		if (B0 > B1)
-		{
-			s = (B0-B1);
-			d = (word)(A1-A0)*(dword)s;
-		}
-		else
-		{
-			s = 0;
-			d = (dword)(A0-A1)*(B1-B0);
-		}
+	word D[4] = {A1-A0, A0-A1, B0-B1, B1-B0};
+	unsigned int ai = A1 < A0;
+	unsigned int bi = B0 < B1;
+	unsigned int di = ai & bi;
+	dword d = (dword)D[di]*D[di+2];
+	D[1] = D[3] = 0;
+	unsigned int si = ai + !bi;
+	word s = D[si];
 
 	dword A0B0 = (dword)A0*B0;
 	dword t = A0B0 + C[0];
@@ -317,18 +311,6 @@ static inline void AtomicMultiplyBottom(word *C, word A0, word A1, word B0, word
 	C[1] = HIGH_WORD(t) + A0*B1 + A1*B0;
 }
 
-static inline void AtomicMultiplyBottomAdd(word *C, word A0, word A1, word B0, word B1)
-{
-	dword t = (dword)A0*B0 + C[0];
-	C[0] = LOW_WORD(t);
-	C[1] += HIGH_WORD(t) + A0*B1 + A1*B0;
-}
-
-static void CombaMultiply(word *R, const word *A, const word *B)
-{
-	dword p;
-	word c=0, d=0, e=0;
-
 #define MulAcc(x, y)								\
 	p = (dword)A[x] * B[y] + c; 					\
 	c = LOW_WORD(p);								\
@@ -343,6 +325,72 @@ static void CombaMultiply(word *R, const word *A, const word *B)
 	p = (dword)e + HIGH_WORD(p);					\
 	d = LOW_WORD(p);								\
 	e = HIGH_WORD(p);
+
+#define MulAcc1(x, y)								\
+	p = (dword)A[x] * A[y] + c; 					\
+	c = LOW_WORD(p);								\
+	p = (dword)d + HIGH_WORD(p);					\
+	d = LOW_WORD(p);								\
+	e += HIGH_WORD(p);
+
+#define SaveMulAcc1(s, x, y) 						\
+	R[s] = c;										\
+	p = (dword)A[x] * A[y] + d; 					\
+	c = LOW_WORD(p);								\
+	p = (dword)e + HIGH_WORD(p);					\
+	d = LOW_WORD(p);								\
+	e = HIGH_WORD(p);
+
+#define SquAcc(x, y)								\
+	p = (dword)A[x] * A[y];	\
+	p = p + p + c; 					\
+	c = LOW_WORD(p);								\
+	p = (dword)d + HIGH_WORD(p);					\
+	d = LOW_WORD(p);								\
+	e += HIGH_WORD(p);
+
+#define SaveSquAcc(s, x, y) 						\
+	R[s] = c;										\
+	p = (dword)A[x] * A[y];	\
+	p = p + p + d; 					\
+	c = LOW_WORD(p);								\
+	p = (dword)e + HIGH_WORD(p);					\
+	d = LOW_WORD(p);								\
+	e = HIGH_WORD(p);
+
+static void CombaSquare4(word *R, const word *A)
+{
+	dword p;
+	word c, d, e;
+
+	p = (dword)A[0] * A[0];
+	R[0] = LOW_WORD(p);
+	c = HIGH_WORD(p);
+	d = e = 0;
+
+	SquAcc(0, 1);
+
+	SaveSquAcc(1, 2, 0);
+	MulAcc1(1, 1);
+
+	SaveSquAcc(2, 0, 3);
+	SquAcc(1, 2);
+
+	SaveSquAcc(3, 3, 1);
+	MulAcc1(2, 2);
+
+	SaveSquAcc(4, 2, 3);
+
+	R[5] = c;
+	p = (dword)A[3] * A[3] + d;
+	R[6] = LOW_WORD(p);
+	R[7] = e + HIGH_WORD(p);
+}
+
+static void CombaMultiply4(word *R, const word *A, const word *B)
+{
+	dword p;
+	word c, d, e;
 
 	p = (dword)A[0] * B[0];
 	R[0] = LOW_WORD(p);
@@ -372,10 +420,170 @@ static void CombaMultiply(word *R, const word *A, const word *B)
 	p = (dword)A[3] * B[3] + d;
 	R[6] = LOW_WORD(p);
 	R[7] = e + HIGH_WORD(p);
+}
+
+static void CombaMultiply8(word *R, const word *A, const word *B)
+{
+	dword p;
+	word c, d, e;
+
+	p = (dword)A[0] * B[0];
+	R[0] = LOW_WORD(p);
+	c = HIGH_WORD(p);
+	d = e = 0;
+
+	MulAcc(0, 1);
+	MulAcc(1, 0);
+
+	SaveMulAcc(1, 2, 0);
+	MulAcc(1, 1);
+	MulAcc(0, 2);
+
+	SaveMulAcc(2, 0, 3);
+	MulAcc(1, 2);
+	MulAcc(2, 1);
+	MulAcc(3, 0);
+
+	SaveMulAcc(3, 0, 4);
+	MulAcc(1, 3);
+	MulAcc(2, 2);
+	MulAcc(3, 1);
+	MulAcc(4, 0);
+
+	SaveMulAcc(4, 0, 5);
+	MulAcc(1, 4);
+	MulAcc(2, 3);
+	MulAcc(3, 2);
+	MulAcc(4, 1);
+	MulAcc(5, 0);
+
+	SaveMulAcc(5, 0, 6);
+	MulAcc(1, 5);
+	MulAcc(2, 4);
+	MulAcc(3, 3);
+	MulAcc(4, 2);
+	MulAcc(5, 1);
+	MulAcc(6, 0);
+
+	SaveMulAcc(6, 0, 7);
+	MulAcc(1, 6);
+	MulAcc(2, 5);
+	MulAcc(3, 4);
+	MulAcc(4, 3);
+	MulAcc(5, 2);
+	MulAcc(6, 1);
+	MulAcc(7, 0);
+
+	SaveMulAcc(7, 1, 7);
+	MulAcc(2, 6);
+	MulAcc(3, 5);
+	MulAcc(4, 4);
+	MulAcc(5, 3);
+	MulAcc(6, 2);
+	MulAcc(7, 1);
+
+	SaveMulAcc(8, 2, 7);
+	MulAcc(3, 6);
+	MulAcc(4, 5);
+	MulAcc(5, 4);
+	MulAcc(6, 3);
+	MulAcc(7, 2);
+
+	SaveMulAcc(9, 3, 7);
+	MulAcc(4, 6);
+	MulAcc(5, 5);
+	MulAcc(6, 4);
+	MulAcc(7, 3);
+
+	SaveMulAcc(10, 4, 7);
+	MulAcc(5, 6);
+	MulAcc(6, 5);
+	MulAcc(7, 4);
+
+	SaveMulAcc(11, 5, 7);
+	MulAcc(6, 6);
+	MulAcc(7, 5);
+
+	SaveMulAcc(12, 6, 7);
+	MulAcc(7, 6);
+
+	R[13] = c;
+	p = (dword)A[7] * B[7] + d;
+	R[14] = LOW_WORD(p);
+	R[15] = e + HIGH_WORD(p);
+}
+
+static void CombaMultiplyBottom4(word *R, const word *A, const word *B)
+{
+	dword p;
+	word c, d, e;
+
+	p = (dword)A[0] * B[0];
+	R[0] = LOW_WORD(p);
+	c = HIGH_WORD(p);
+	d = e = 0;
+
+	MulAcc(0, 1);
+	MulAcc(1, 0);
+
+	SaveMulAcc(1, 2, 0);
+	MulAcc(1, 1);
+	MulAcc(0, 2);
+
+	R[2] = c;
+	R[3] = d + A[0] * B[3] + A[1] * B[2] + A[2] * B[1] + A[3] * B[0];
+}
+
+static void CombaMultiplyBottom8(word *R, const word *A, const word *B)
+{
+	dword p;
+	word c, d, e;
+
+	p = (dword)A[0] * B[0];
+	R[0] = LOW_WORD(p);
+	c = HIGH_WORD(p);
+	d = e = 0;
+
+	MulAcc(0, 1);
+	MulAcc(1, 0);
+
+	SaveMulAcc(1, 2, 0);
+	MulAcc(1, 1);
+	MulAcc(0, 2);
+
+	SaveMulAcc(2, 0, 3);
+	MulAcc(1, 2);
+	MulAcc(2, 1);
+	MulAcc(3, 0);
+
+	SaveMulAcc(3, 0, 4);
+	MulAcc(1, 3);
+	MulAcc(2, 2);
+	MulAcc(3, 1);
+	MulAcc(4, 0);
+
+	SaveMulAcc(4, 0, 5);
+	MulAcc(1, 4);
+	MulAcc(2, 3);
+	MulAcc(3, 2);
+	MulAcc(4, 1);
+	MulAcc(5, 0);
+
+	SaveMulAcc(5, 0, 6);
+	MulAcc(1, 5);
+	MulAcc(2, 4);
+	MulAcc(3, 3);
+	MulAcc(4, 2);
+	MulAcc(5, 1);
+	MulAcc(6, 0);
+
+	R[6] = c;
+	R[7] = d + A[0] * B[7] + A[1] * B[6] + A[2] * B[5] + A[3] * B[4] +
+				A[4] * B[3] + A[5] * B[2] + A[6] * B[1] + A[7] * B[0];
+}
 
 #undef MulAcc
 #undef SaveMulAcc
-}
 
 static void AtomicInverseModPower2(word *C, word A0, word A1)
 {
@@ -421,7 +629,9 @@ void RecursiveMultiply(word *R, word *T, const word *A, const word *B, unsigned 
 	if (N==2)
 		AtomicMultiply(R, A[0], A[1], B[0], B[1]);
 	else if (N==4)
-		CombaMultiply(R, A, B);
+		CombaMultiply4(R, A, B);
+	else if (N==8)
+		CombaMultiply8(R, A, B);
 	else
 	{
 		const unsigned int N2 = N/2;
@@ -488,7 +698,13 @@ void RecursiveSquare(word *R, word *T, const word *A, unsigned int N)
 	if (N==2)
 		AtomicSquare(R, A[0], A[1]);
 	else if (N==4)
-		CombaMultiply(R, A, A);
+	{
+		// VC60 workaround: MSVC 6.0 has an optimization bug that makes
+		// (dword)A*B where either A or B has been cast to a dword before
+		// very expensive. Revisit a CombaSquare4() function when this
+		// bug is fixed.
+		CombaMultiply4(R, A, A);
+	}
 	else
 	{
 		const unsigned int N2 = N/2;
@@ -515,11 +731,9 @@ void RecursiveMultiplyBottom(word *R, word *T, const word *A, const word *B, uns
 	if (N==2)
 		AtomicMultiplyBottom(R, A[0], A[1], B[0], B[1]);
 	else if (N==4)
-	{
-		AtomicMultiply(R, A[0], A[1], B[0], B[1]);
-		AtomicMultiplyBottomAdd(R+2, A[0], A[1], B[2], B[3]);
-		AtomicMultiplyBottomAdd(R+2, A[2], A[3], B[0], B[1]);
-	}
+		CombaMultiplyBottom4(R, A, B);
+	else if (N==8)
+		CombaMultiplyBottom8(R, A, B);
 	else
 	{
 		const unsigned int N2 = N/2;
@@ -547,6 +761,14 @@ void RecursiveMultiplyTop(word *R, word *T, const word *L, const word *A, const 
 		AtomicMultiply(T, A[0], A[1], B[0], B[1]);
 		R[0] = T[2];
 		R[1] = T[3];
+	}
+	else if (N==4)
+	{
+		CombaMultiply4(T, A, B);
+		R[0] = T[4];
+		R[1] = T[5];
+		R[2] = T[6];
+		R[3] = T[7];
 	}
 	else
 	{

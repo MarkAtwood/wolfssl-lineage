@@ -5,6 +5,46 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+CBCRawEncryptor::CBCRawEncryptor(const BlockTransformation &cipher, const byte *IV, BufferedTransformation *outQueue)
+	: CipherMode(cipher, IV), FilterWithBufferedInput(0, S, 0, outQueue)
+{
+}
+
+void CBCRawEncryptor::NextPut(const byte *inString, unsigned int)
+{
+	xorbuf(reg, inString, S);
+	cipher.ProcessBlock(reg);
+	AttachedTransformation()->Put(reg, S);
+}
+
+void CBCRawEncryptor::LastPut(const byte *inString, unsigned int length)
+{
+	assert(length < S);
+	if (length > 0)
+	{
+		xorbuf(reg, inString, length);
+		cipher.ProcessBlock(reg);
+		AttachedTransformation()->Put(reg, S);
+	}
+}
+
+CBCRawDecryptor::CBCRawDecryptor(const BlockTransformation &cipher, const byte *IV, BufferedTransformation *outQueue)
+	: CipherMode(cipher, IV), FilterWithBufferedInput(0, S, 0, outQueue)
+{
+}
+
+void CBCRawDecryptor::NextPut(const byte *inString, unsigned int)
+{
+	cipher.ProcessBlock(inString, buffer);
+	xorbuf(buffer, reg, S);
+	AttachedTransformation()->Put(buffer, S);
+	memcpy(reg, inString, S);
+}
+
+void CBCRawDecryptor::LastPut(const byte *inString, unsigned int length)
+{
+}
+
 CBCPaddedEncryptor::CBCPaddedEncryptor(const BlockTransformation &cipher, const byte *IV, BufferedTransformation *outQueue)
 	: CipherMode(cipher, IV), FilterWithBufferedInput(0, S, 0, outQueue)
 {

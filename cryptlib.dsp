@@ -238,15 +238,6 @@ SOURCE=.\idea.cpp
 # Begin Source File
 
 SOURCE=.\integer.cpp
-
-!IF  "$(CFG)" == "cryptlib - Win32 Release"
-
-# ADD CPP /FAs
-
-!ELSEIF  "$(CFG)" == "cryptlib - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -287,6 +278,10 @@ SOURCE=.\modes.cpp
 # Begin Source File
 
 SOURCE=.\modexppc.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\mqueue.cpp
 # End Source File
 # Begin Source File
 
@@ -407,6 +402,14 @@ SOURCE=.\sharkbox.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\skipjack.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\socketft.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\square.cpp
 # End Source File
 # Begin Source File
@@ -436,6 +439,14 @@ SOURCE=.\twofish.cpp
 # Begin Source File
 
 SOURCE=.\wake.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\xtr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\xtrcrypt.cpp
 # End Source File
 # Begin Source File
 
@@ -663,6 +674,10 @@ SOURCE=.\modexppc.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\mqueue.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\mqv.h
 # End Source File
 # Begin Source File
@@ -775,7 +790,15 @@ SOURCE=.\shark.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\skipjack.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\smartptr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\socketft.h
 # End Source File
 # Begin Source File
 
@@ -804,6 +827,14 @@ SOURCE=.\words.h
 # Begin Source File
 
 SOURCE=.\xormac.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\xtr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\xtrcrypt.h
 # End Source File
 # Begin Source File
 

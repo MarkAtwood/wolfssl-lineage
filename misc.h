@@ -43,6 +43,16 @@ inline unsigned int bitsToWords(unsigned int bitCount)
 void xorbuf(byte *buf, const byte *mask, unsigned int count);
 void xorbuf(byte *output, const byte *input, const byte *mask, unsigned int count);
 
+inline unsigned int RoundDownToMultipleOf(unsigned int n, unsigned int m)
+{
+	return n - n%m;
+}
+
+inline unsigned int RoundUpToMultipleOf(unsigned int n, unsigned int m)
+{
+	return RoundDownToMultipleOf(n+m-1, m);
+}
+
 // ************** rotate functions ***************
 
 template <class T> inline T rotlFixed(T x, unsigned int y)
@@ -356,12 +366,12 @@ inline void PutBlockBigEndian(byte *block, T a, T b, T c, T d)
 
 template <class T> struct SecBlock
 {
-	SecBlock(unsigned int size=0)
+	explicit SecBlock(unsigned int size=0)
 		: size(size) {ptr = SecAlloc(T, size);}
 	SecBlock(const SecBlock<T> &t)
-		: size(t.size) {ptr = SecAlloc(T, size); CopyFrom(t);}
-	SecBlock(const T *t, unsigned int size)
-		: size(size) {ptr = SecAlloc(T, size); memcpy(ptr, t, size*sizeof(T));}
+		: size(t.size) {ptr = SecAlloc(T, size); memcpy(ptr, t.ptr, size*sizeof(T));}
+	SecBlock(const T *t, unsigned int len)
+		: size(len) {ptr = SecAlloc(T, len); memcpy(ptr, t, len*sizeof(T));}
 	~SecBlock()
 		{SecFree(ptr, size);}
 
@@ -398,7 +408,13 @@ template <class T> struct SecBlock
 	T* End()
 		{return ptr+size;}
 
-	void CopyFrom(const SecBlock<T> &t)
+	void Assign(const T *t, unsigned int len)
+	{
+		New(len);
+		memcpy(ptr, t, len*sizeof(T));
+	}
+
+	void Assign(const SecBlock<T> &t)
 	{
 		New(t.size);
 		memcpy(ptr, t.ptr, size*sizeof(T));
@@ -406,7 +422,7 @@ template <class T> struct SecBlock
 
 	SecBlock& operator=(const SecBlock<T> &t)
 	{
-		CopyFrom(t);
+		Assign(t);
 		return *this;
 	}
 

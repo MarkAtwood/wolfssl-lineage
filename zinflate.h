@@ -7,22 +7,30 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class Inflator : public Fork
+class Inflator : public Filter
 {
 public:
-	class Err : public Exception {public: Err(const char *message) : Exception(message) {}};
+	class Err : public BufferedTransformation::Err
+	{
+	public:
+		Err(const std::string &s)
+			: BufferedTransformation::Err(INVALID_DATA_FORMAT, s) {}
+	};
 	class UnexpectedEndErr : public Err {public: UnexpectedEndErr() : Err("Inflator: unexpected end of compressed block") {}};
+	class BadBlockErr : public Err {public: BadBlockErr() : Err("Inflator: error in compress block") {}};
 
-	Inflator(BufferedTransformation *output = NULL,
-			 BufferedTransformation *bypassed = NULL);
+	Inflator(BufferedTransformation *outQueue = NULL, bool repeat = false);
 
-	void Put(byte b)
-		{Inflator::Put(&b, 1);}
-
+	void Put(byte b) {Inflator::Put(&b, 1);}
 	void Put(const byte *inString, unsigned int length);
-	void InputFinished();
+	void MessageEnd(int propagation=-1);
+	void SetAutoSignalPropagation(int propagation) {m_autoSignalPropagation = propagation;}
+
+	void Reset(bool repeat = false);
 
 private:
+	void Inflator::InflateBlock();
+
 	struct huft {
 	  byte e;                /* number of extra bits or operation */
 	  byte b;                /* number of bits in this code or subcode */
@@ -58,7 +66,8 @@ private:
 	word32 bb;                         /* bit buffer */
 	unsigned bk;                    /* bits in bit buffer */
 
-	bool afterEnd;
+	bool m_repeat, m_afterEnd;
+	int m_autoSignalPropagation;
 };
 
 NAMESPACE_END

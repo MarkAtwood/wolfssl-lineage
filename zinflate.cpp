@@ -63,56 +63,71 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-const unsigned int WSIZE = 0x8000;
-const unsigned long MAX_CHUNKSIZE = 0x10000L;
+static const unsigned int WSIZE = 0x8000;
+static const unsigned long MAX_CHUNKSIZE = 0x10000L;
 
-Inflator::Inflator(BufferedTransformation *output, BufferedTransformation *bypassed)
-	: Fork(output, bypassed), slide(WSIZE)
+Inflator::Inflator(BufferedTransformation *outQueue, bool repeat)
+	: Filter(outQueue), slide(WSIZE), m_repeat(repeat), m_afterEnd(false)
+	, m_autoSignalPropagation(-1)
 {
 	wp = 0;
 	bb = 0;
 	bk = 0;
-	afterEnd = false;
 }
 
-void Inflator::Put(const byte *inString, unsigned int length)
+void Inflator::Reset(bool repeat)
 {
-	if (afterEnd)
-		AccessPort(1).Put(inString, length);
-	else
+	inQueue.Clear();
+	m_repeat = repeat;
+	m_afterEnd = false;
+	wp = 0;
+	bb = 0;
+	bk = 0;
+}
+
+void Inflator::InflateBlock()
+{
+	inflate_block(m_afterEnd);
+	if (m_afterEnd)
 	{
-		inQueue.Put(inString, length);
-
-		while(!afterEnd && inQueue.CurrentSize() >= MAX_CHUNKSIZE)
-			inflate_block(afterEnd);
-
-		if (afterEnd)
+		flush_output(wp);
+		Filter::MessageEnd(m_autoSignalPropagation);
+		if (!m_repeat)
 		{
-			flush_output(wp);
 			if (bk>=8)  // undo too much lookahead
-				AccessPort(1).Put(byte(bb>>(bk-=8)));
-
-			inQueue.TransferTo(AccessPort(1));
+				AttachedTransformation()->Put(byte(bb>>(bk-=8)));
+			inQueue.TransferTo(*AttachedTransformation());
 		}
 	}
 }
 
-void Inflator::InputFinished()
+void Inflator::Put(const byte *inString, unsigned int length)
 {
-	while(!afterEnd && inQueue.CurrentSize())
-		inflate_block(afterEnd);
+	if (m_afterEnd && !m_repeat)
+		AttachedTransformation()->Put(inString, length);
+	else
+	{
+		LazyPutter lp(inQueue, inString, length);
 
-	flush_output(wp);
+		while(inQueue.CurrentSize() >= MAX_CHUNKSIZE)
+			InflateBlock();
+	}
+}
 
-	if (bk>=8)  // undo too much lookahead
-		AccessPort(1).Put(byte(bb>>(bk-=8)));
-
-	inQueue.TransferTo(AccessPort(1));
+void Inflator::MessageEnd(int propagation)
+{
+	if (!m_afterEnd || m_repeat)
+	{
+		while (!inQueue.IsEmpty())
+			InflateBlock();
+	}
+	else
+		Filter::MessageEnd(propagation);
 }
 
 void Inflator::flush_output(unsigned int w)
 {
-	AccessPort(0).Put(slide, w);
+	AttachedTransformation()->Put(slide, w);
 	wp = 0;
 }
 
@@ -372,7 +387,7 @@ int Inflator::huft_build(unsigned *b, unsigned n, unsigned s, const word16 *d, c
 		{
           if (h)
             huft_free(u[0]);
-          return 3;             /* not enough memory */
+          throw;             /* not enough memory */
 		}
         *t = q + 2;             /* link to list for huft_free() */
         *(t = &(q->v.t)) = (struct huft *)NULL;
@@ -883,7 +898,7 @@ int Inflator::inflate_block(bool &e)
 		status = 2;
   }
 	if (status)
-		throw Err("Inflator: error decompressing block");
+		throw BadBlockErr();
 	return status;
 }
 

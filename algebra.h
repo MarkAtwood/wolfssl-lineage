@@ -1,6 +1,8 @@
 #ifndef CRYPTOPP_ALGEBRA_H
 #define CRYPTOPP_ALGEBRA_H
 
+#include "config.h"
+
 NAMESPACE_BEGIN(CryptoPP)
 
 class Integer;
@@ -39,6 +41,10 @@ template <class T> class AbstractRing : public AbstractGroup<T>
 public:
 	typedef T Element;
 
+	AbstractRing() {m_mg.m_pRing = this;}
+	AbstractRing(const AbstractRing &source) {}
+	AbstractRing& operator=(const AbstractRing &source) {}
+
 	virtual bool IsUnit(const Element &a) const =0;
 	virtual const Element& One() const =0;
 	virtual const Element& Multiply(const Element &a, const Element &b) const =0;
@@ -50,58 +56,44 @@ public:
 	virtual Element Exponentiate(const Element &a, const Integer &e) const;
 	virtual Element CascadeExponentiate(const Element &x, const Integer &e1, const Element &y, const Integer &e2) const;
 
-	virtual const AbstractGroup<T>& MultiplicativeGroup() const =0;
-};
-
-template <class T> class MultiplicativeGroupT : public AbstractGroup<T>
-{
-public:
-	typedef AbstractRing<T> Ring;
-	typedef T Element;
-
-	MultiplicativeGroupT(const Ring &m_ring)
-		: m_ring(m_ring) {}
-
-	const Ring & GetRing() const
-		{return m_ring;}
-
-	bool Equal(const Element &a, const Element &b) const
-		{return m_ring.Equal(a, b);}
-
-	const Element& Zero() const
-		{return m_ring.One();}
-
-	const Element& Add(const Element &a, const Element &b) const
-		{return m_ring.Multiply(a, b);}
-
-	Element& Accumulate(Element &a, const Element &b) const
-		{return a = m_ring.Multiply(a, b);}
-
-	const Element& Inverse(const Element &a) const
-		{return m_ring.MultiplicativeInverse(a);}
-
-	const Element& Subtract(const Element &a, const Element &b) const
-		{return m_ring.Divide(a, b);}
-
-	Element& Reduce(Element &a, const Element &b) const
-		{return a = m_ring.Divide(a, b);}
-
-	const Element& Double(const Element &a) const
-		{return m_ring.Square(a);}
-
-protected:
-	const Ring &m_ring;
-};
-
-template <class T> class RingWithDefaultMultiplicativeGroup : public AbstractRing<T>
-{
-public:
-	typedef T Element;
-	RingWithDefaultMultiplicativeGroup() : m_mg(*this) {}
-	const AbstractGroup<T>& MultiplicativeGroup() const
+	virtual const AbstractGroup<T>& MultiplicativeGroup() const
 		{return m_mg;}
+
 private:
-	MultiplicativeGroupT<T> m_mg;
+	class MultiplicativeGroupT : public AbstractGroup<T>
+	{
+	public:
+		const AbstractRing<T>& GetRing() const
+			{return *m_pRing;}
+
+		bool Equal(const Element &a, const Element &b) const
+			{return GetRing().Equal(a, b);}
+
+		const Element& Zero() const
+			{return GetRing().One();}
+
+		const Element& Add(const Element &a, const Element &b) const
+			{return GetRing().Multiply(a, b);}
+
+		Element& Accumulate(Element &a, const Element &b) const
+			{return a = GetRing().Multiply(a, b);}
+
+		const Element& Inverse(const Element &a) const
+			{return GetRing().MultiplicativeInverse(a);}
+
+		const Element& Subtract(const Element &a, const Element &b) const
+			{return GetRing().Divide(a, b);}
+
+		Element& Reduce(Element &a, const Element &b) const
+			{return a = GetRing().Divide(a, b);}
+
+		const Element& Double(const Element &a) const
+			{return GetRing().Square(a);}
+
+		const AbstractRing<T> *m_pRing;
+	};
+
+	MultiplicativeGroupT m_mg;
 };
 
 // ********************************************************
@@ -118,7 +110,7 @@ template <class Element, class Iterator, class ConstIterator>
 
 // ********************************************************
 
-template <class T> class AbstractEuclideanDomain : public RingWithDefaultMultiplicativeGroup<T>
+template <class T> class AbstractEuclideanDomain : public AbstractRing<T>
 {
 public:
 	typedef T Element;
@@ -193,7 +185,7 @@ private:
 	mutable Element result;
 };
 
-template <class T> class QuotientRing : public RingWithDefaultMultiplicativeGroup<typename T::Element>
+template <class T> class QuotientRing : public AbstractRing<typename T::Element>
 {
 public:
 	typedef T EuclideanDomain;

@@ -34,7 +34,7 @@ const word16 LC_RNG::a=16807;
 const word16 LC_RNG::r=2836;
 #endif
 
-byte LC_RNG::GetByte()
+byte LC_RNG::GenerateByte()
 {
 	word32 hi = seed/q;
 	word32 lo = seed%q;
@@ -67,7 +67,7 @@ X917RNG::X917RNG(BlockTransformation *c, const byte *seed)
 	cipher->ProcessBlock(dtbuf);
 }
 
-byte X917RNG::GetByte()
+byte X917RNG::GenerateByte()
 {
 	if (randbuf_counter==0)
 	{

@@ -98,6 +98,10 @@ public:
 	unsigned int MaxPlainTextLength() const {return STDMIN(255U, modulusLen-3);}
 	unsigned int CipherTextLength() const {return 2*modulusLen;}
 
+	const Integer & GetPrime() const {return p;}
+	const Integer & GetGenerator() const {return g;}
+	const Integer & GetPublicResidue() const {return y;}
+
 protected:
 	LUCELG_Encryptor() {}
 	void RawEncrypt(const Integer &k, const Integer &m, Integer &a, Integer &b) const;

@@ -11,13 +11,13 @@
 #include "dh.h"
 #include "mqv.h"
 #include "luc.h"
+#include "xtrcrypt.h"
 #include "rabin.h"
 #include "rw.h"
 #include "blumgold.h"
 #include "eccrypto.h"
 #include "ecp.h"
 #include "ec2n.h"
-// #include "zeroknow.h"
 #include "asn.h"
 #include "rng.h"
 #include "files.h"
@@ -37,7 +37,7 @@ class FixedRNG : public RandomNumberGenerator
 public:
 	FixedRNG(BufferedTransformation &source) : m_source(source) {}
 
-	byte GetByte()
+	byte GenerateByte()
 	{
 		byte b;
 		m_source.Get(b);
@@ -336,8 +336,17 @@ bool LUCDIFValidate()
 {
 	cout << "\nLUCDIF validation suite running...\n\n";
 
-	FileSource f("lucdif.dat", true, new HexDecoder());
+	FileSource f("lucd512.dat", true, new HexDecoder());
 	LUCDIF dh(f);
+	return SimpleKeyAgreementValidate(dh);
+}
+
+bool XTRDHValidate()
+{
+	cout << "\nXTR-DH validation suite running...\n\n";
+
+	FileSource f("xtrdh171.dat", true, new HexDecoder());
+	XTR_DH dh(f);
 	return SimpleKeyAgreementValidate(dh);
 }
 

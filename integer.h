@@ -84,16 +84,17 @@ public:
 		/// create a random integer of special type
 		/** Ideally, the random integer created should be uniformly distributed
 			over {x | min <= x <= max and x is of rnType and x % mod == equiv}.
-			However the actual distribution may not uniform because sequential
+			However the actual distribution may not be uniform because sequential
 			search is used to find an appropriate number from a random starting
 			point.
 			May return (with very small probability) a pseudoprime when a prime
-			is requested and max > lastSmallPrime*lastSmallPrime.
+			is requested and max > lastSmallPrime*lastSmallPrime (lastSmallPrime
+			is declared in nbtheory.h).
 			Throws RandomNumberNotFound if the set is empty.
 		*/
 		Integer(RandomNumberGenerator &rng, const Integer &min, const Integer &max, RandomNumberType rnType=ANY, const Integer &equiv=Zero(), const Integer &mod=One());
 
-		/// create the integer 2**e
+		/// return the integer 2**e
 		static Integer Power2(unsigned int e);
 	//@}
 
@@ -132,11 +133,17 @@ public:
 		byte GetByte(unsigned int n) const;
 
 		///
+		bool IsZero() const {return !*this;}
+		///
+		bool NotZero() const {return !IsZero();}
+		///
 		bool IsNegative() const {return sign == NEGATIVE;}
 		///
-		bool NotNegative() const {return sign == POSITIVE;}
+		bool NotNegative() const {return !IsNegative();}
 		///
-		bool IsPositive() const {return sign == POSITIVE && !!*this;}
+		bool IsPositive() const {return NotNegative() && NotZero();}
+		///
+		bool NotPositive() const {return !IsPositive();}
 		///
 		bool IsEven() const {return GetBit(0) == 0;}
 		///

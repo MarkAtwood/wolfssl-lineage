@@ -25,7 +25,7 @@ DH::DH(BufferedTransformation &bt)
 	BERSequenceDecoder seq(bt);
 	p.BERDecode(seq);
 	g.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 
 	gpc.Precompute(p, g, ExponentBitLength(), 1);
 }
@@ -35,7 +35,7 @@ void DH::DEREncode(BufferedTransformation &bt) const
 	DERSequenceEncoder seq(bt);
 	p.DEREncode(seq);
 	g.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 void DH::Precompute(unsigned int precomputationStorage)
@@ -69,7 +69,9 @@ void DH::GenerateKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *pub
 bool DH::Agree(byte *agreedValue, const byte *privateKey, const byte *otherPublicKey, bool validateOtherPublicKey) const
 {
 	Integer w(otherPublicKey, PublicKeyLength());
-	if (validateOtherPublicKey && !(w > 1 && w < p && Jacobi(w, p) == 1))
+	// verifying that Jacobi(w, p) == 1 is omitted because it's too costly
+	// and at most 1 bit is leaked if it's false
+	if (validateOtherPublicKey && !(w > 1 && w < p))
 		return false;
 
 	Integer s(privateKey, PrivateKeyLength());

@@ -30,7 +30,7 @@ MQV::MQV(BufferedTransformation &bt)
 	p.BERDecode(seq);
 	q.BERDecode(seq);
 	g.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 
 	gpc.Precompute(p, g, ExponentBitLength(), 1);
 }
@@ -41,7 +41,7 @@ void MQV::DEREncode(BufferedTransformation &bt) const
 	p.DEREncode(seq);
 	q.DEREncode(seq);
 	g.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 void MQV::Precompute(unsigned int precomputationStorage)

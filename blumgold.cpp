@@ -17,7 +17,7 @@ BlumGoldwasserPublicKey::BlumGoldwasserPublicKey(BufferedTransformation &bt)
 {
 	BERSequenceDecoder seq(bt);
 	n.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 	modulusLen = n.ByteCount();
 }
 
@@ -25,7 +25,7 @@ void BlumGoldwasserPublicKey::DEREncode(BufferedTransformation &bt) const
 {
 	DERSequenceEncoder seq(bt);
 	n.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 unsigned int BlumGoldwasserPublicKey::MaxPlainTextLength(unsigned int cipherTextLength) const
@@ -89,7 +89,7 @@ BlumGoldwasserPrivateKey::BlumGoldwasserPrivateKey(BufferedTransformation &bt)
 	p.BERDecode(seq);
 	q.BERDecode(seq);
 	u.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 
 	modulusLen = n.ByteCount();
 
@@ -104,7 +104,7 @@ void BlumGoldwasserPrivateKey::DEREncode(BufferedTransformation &bt) const
 	p.DEREncode(seq);
 	q.DEREncode(seq);
 	u.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 unsigned int BlumGoldwasserPrivateKey::Decrypt(const byte *input, unsigned int cipherTextLength, byte *output)

@@ -15,7 +15,7 @@ public:
     ARC4(const byte *userKey, unsigned int keyLength=KEYLENGTH);
     ~ARC4();
 
-    byte GetByte();
+    byte GenerateByte();
 
     byte ProcessByte(byte input);
     void ProcessString(byte *outString, const byte *inString, unsigned int length);

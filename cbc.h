@@ -6,6 +6,33 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+/// CBC mode encryptor
+
+/** Compatible with FIPS 81.
+	Padded with '\0's if plaintext length is not a multiple of block size.
+*/
+class CBCRawEncryptor : protected CipherMode, public FilterWithBufferedInput
+{
+public:
+	CBCRawEncryptor(const BlockTransformation &cipher, const byte *IV, BufferedTransformation *outQueue = NULL);
+
+protected:
+	void FirstPut(const byte *) {}
+	void NextPut(const byte *inString, unsigned int length);
+	void LastPut(const byte *inString, unsigned int length);
+};
+
+class CBCRawDecryptor : protected CipherMode, public FilterWithBufferedInput
+{
+public:
+	CBCRawDecryptor(const BlockTransformation &cipher, const byte *IV, BufferedTransformation *outQueue = NULL);
+
+protected:
+	void FirstPut(const byte *) {}
+	void NextPut(const byte *inString, unsigned int length);
+	void LastPut(const byte *inString, unsigned int length);
+};
+
 /// CBC mode encryptor with padding
 
 /** Compatible with RFC 2040.
@@ -16,6 +43,7 @@ public:
 	CBCPaddedEncryptor(const BlockTransformation &cipher, const byte *IV, BufferedTransformation *outQueue = NULL);
 
 protected:
+	void FirstPut(const byte *) {}
 	void NextPut(const byte *inString, unsigned int length);
 	void LastPut(const byte *inString, unsigned int length);
 };
@@ -26,6 +54,7 @@ public:
 	CBCPaddedDecryptor(const BlockTransformation &cipher, const byte *IV, BufferedTransformation *outQueue = NULL);
 
 protected:
+	void FirstPut(const byte *) {}
 	void NextPut(const byte *inString, unsigned int length);
 	void LastPut(const byte *inString, unsigned int length);
 };
@@ -53,6 +82,7 @@ public:
 	CBC_CTS_Decryptor(const BlockTransformation &cipher, const byte *IV, BufferedTransformation *outQueue = NULL);
 
 protected:
+	void FirstPut(const byte *inString) {}
 	void NextPut(const byte *inString, unsigned int length);
 	void LastPut(const byte *inString, unsigned int length);
 };

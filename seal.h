@@ -17,9 +17,9 @@ public:
 
 	word32 NextCount() const {return counter+1;}
 
-	byte GetByte();
+	byte GenerateByte();
 	byte ProcessByte(byte input)
-		{return (input ^ SEAL::GetByte());}
+		{return (input ^ SEAL::GenerateByte());}
 
 	void ProcessString(byte *outString, const byte *inString, unsigned int length);
 	void ProcessString(byte *inoutString, unsigned int length)

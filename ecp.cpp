@@ -350,7 +350,7 @@ void EcPrecomputation<ECP>::Load(BufferedTransformation &bt)
 		ep->g[i].x.BERDecode(seq);
 		ep->g[i].y.BERDecode(seq);
 	}
-	seq.OutputFinished();
+	seq.MessageEnd();
 }
 
 void EcPrecomputation<ECP>::Save(BufferedTransformation &bt) const
@@ -365,7 +365,7 @@ void EcPrecomputation<ECP>::Save(BufferedTransformation &bt) const
 		ep->g[i].x.DEREncode(seq);
 		ep->g[i].y.DEREncode(seq);
 	}
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 ECP::Point EcPrecomputation<ECP>::Multiply(const Integer &exponent) const

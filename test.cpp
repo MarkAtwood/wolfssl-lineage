@@ -48,8 +48,8 @@ bool RSAVerifyFile(const char *pubFilename, const char *messageFilename, const c
 
 void DigestFile(const char *file);
 
-char *EncryptString(const char *plaintext, const char *passPhrase);
-char *DecryptString(const char *ciphertext, const char *passPhrase);
+string EncryptString(const char *plaintext, const char *passPhrase);
+string DecryptString(const char *ciphertext, const char *passPhrase);
 
 void EncryptFile(const char *in, const char *out, const char *passPhrase);
 void DecryptFile(const char *in, const char *out, const char *passPhrase);
@@ -158,6 +158,7 @@ int main(int argc, char *argv[])
 			return 0;
 		case 't':
 		  {
+			// VC60 workaround: use char array instead of std::string to workaround MSVC's getline bug
 			char passPhrase[MAX_PHRASE_LENGTH], plaintext[1024];
 
 			cout << "Passphrase: ";
@@ -166,14 +167,12 @@ int main(int argc, char *argv[])
 			cout << "\nPlaintext: ";
 			cin.getline(plaintext, 1024);
 
-			char *ciphertext = EncryptString(plaintext, passPhrase);
+			string ciphertext = EncryptString(plaintext, passPhrase);
 			cout << "\nCiphertext: " << ciphertext << endl;
 
-			char *decrypted = DecryptString(ciphertext, passPhrase);
+			string decrypted = DecryptString(ciphertext.c_str(), passPhrase);
 			cout << "\nDecrypted: " << decrypted << endl;
 
-			delete [] ciphertext;
-			delete [] decrypted;
 			return 0;
 		  }
 		case 'e':
@@ -238,12 +237,12 @@ void GenerateRSAKey(unsigned int keyLength, const char *privFilename, const char
 	RSAES_OAEP_SHA_Decryptor priv(randPool, keyLength);
 	HexEncoder privFile(new FileSink(privFilename));
 	priv.DEREncode(privFile);
-	privFile.Close();
+	privFile.MessageEnd();
 
 	RSAES_OAEP_SHA_Encryptor pub(priv);
 	HexEncoder pubFile(new FileSink(pubFilename));
 	pub.DEREncode(pubFile);
-	pubFile.Close();
+	pubFile.MessageEnd();
 }
 
 char *RSAEncryptString(const char *pubFilename, const char *seed, const char *message)
@@ -265,7 +264,7 @@ char *RSAEncryptString(const char *pubFilename, const char *seed, const char *me
 
 	HexEncoder hexEncoder;
 	hexEncoder.Put((byte *)outstr, pub.CipherTextLength());
-	hexEncoder.Close();
+	hexEncoder.MessageEnd();
 	hexEncoder.Get((byte *)outstr, 2*pub.CipherTextLength());
 
 	outstr[2*pub.CipherTextLength()] = 0;
@@ -279,7 +278,7 @@ char *RSADecryptString(const char *privFilename, const char *ciphertext)
 
 	HexDecoder hexDecoder;
 	hexDecoder.Put((byte *)ciphertext, strlen(ciphertext));
-	hexDecoder.Close();
+	hexDecoder.MessageEnd();
 	SecByteBlock buf(priv.CipherTextLength());
 	hexDecoder.Get(buf, priv.CipherTextLength());
 
@@ -303,7 +302,7 @@ bool RSAVerifyFile(const char *pubFilename, const char *messageFilename, const c
 	RSASSA_PKCS1v15_SHA_Verifier pub(pubFile);
 
 	FileSource signatureFile(signatureFilename, true, new HexDecoder);
-	if (signatureFile.MaxRetrieveable() != pub.SignatureLength())
+	if (signatureFile.MaxRetrievable() != pub.SignatureLength())
 		return false;
 	SecByteBlock signature(pub.SignatureLength());
 	signatureFile.Get(signature, signature.size);
@@ -336,37 +335,25 @@ void DigestFile(const char *filename)
 	cout << endl;
 }
 
-char *EncryptString(const char *instr, const char *passPhrase)
+string EncryptString(const char *instr, const char *passPhrase)
 {
-	unsigned int len=strlen(instr);
-	char* outstr;
+	string outstr;
 
-	DefaultEncryptorWithMAC encryptor(passPhrase, new HexEncoder());
-	encryptor.Put((byte *)instr, len);
-	encryptor.Close();
+	DefaultEncryptorWithMAC encryptor(passPhrase, new HexEncoder(new StringSink(outstr)));
+	encryptor.Put((byte *)instr, strlen(instr));
+	encryptor.MessageEnd();
 
-	unsigned int outputLength = encryptor.MaxRetrieveable();
-	outstr = new char[outputLength+1];
-	encryptor.Get((byte *)outstr, outputLength);
-	outstr[outputLength] = 0;
 	return outstr;
 }
 
-char *DecryptString(const char *instr, const char *passPhrase)
+string DecryptString(const char *instr, const char *passPhrase)
 {
-	unsigned int len=strlen(instr);
-	char* outstr;
-	DefaultDecryptorWithMAC *p;
+	string outstr;
 
-	HexDecoder decryptor(p=new DefaultDecryptorWithMAC(passPhrase));
-	decryptor.Put((byte *)instr, len);
-	decryptor.Close();
-	assert(p->CurrentState() == DefaultDecryptorWithMAC::MAC_GOOD);
+	HexDecoder decryptor(new DefaultDecryptorWithMAC(passPhrase, new StringSink(outstr)));
+	decryptor.Put((byte *)instr, strlen(instr));
+	decryptor.MessageEnd();
 
-	unsigned int outputLength = decryptor.MaxRetrieveable();
-	outstr = new char[outputLength+1];
-	decryptor.Get((byte *)outstr, outputLength);
-	outstr[outputLength] = 0;
 	return outstr;
 }
 
@@ -377,20 +364,7 @@ void EncryptFile(const char *in, const char *out, const char *passPhrase)
 
 void DecryptFile(const char *in, const char *out, const char *passPhrase)
 {
-	DefaultDecryptorWithMAC *p;
-	FileSource file(in, false, p = new DefaultDecryptorWithMAC(passPhrase));
-	file.Pump(256);
-	if (p->CurrentState() != DefaultDecryptorWithMAC::KEY_GOOD)
-	{
-		cerr << "Incorrect passphrase.\n";
-		return;
-	}
-
-	file.Attach(new FileSink(out));
-	file.PumpAll();
-	file.Close();
-	if (p->CurrentState() != DefaultDecryptorWithMAC::MAC_GOOD)
-		cerr << "Invalid MAC. The file may have been tempered with.\n";
+	FileSource f(in, true, new DefaultDecryptorWithMAC(passPhrase, new FileSink(out)));
 }
 
 void ShareFile(int n, int m, const char *filename)
@@ -409,7 +383,7 @@ void ShareFile(int n, int m, const char *filename)
 	rng.GetBlock(key, 16);
 	ShareFork pss(rng, m, n);
 	pss.Put(key, 16);
-	pss.Close();
+	pss.MessageEnd();
 
 	char outname[256];
 	strcpy(outname, filename);
@@ -449,6 +423,7 @@ void AssembleFile(char *out, char **filenames, int n)
 
 	for (i=0; i<n; i++)
 	{
+		// VC60 workaround: auto_ptr lacks reset()
 		inFiles[i] = (auto_ptr<FileSource>&) auto_ptr<FileSource>(new FileSource(filenames[i], false, pss.ReleaseInterface(i)));
 		inFiles[i]->Pump(28);
 		inFiles[i]->Detach();
@@ -472,7 +447,7 @@ void AssembleFile(char *out, char **filenames, int n)
 	for (i=0; i<n; i++)
 	{
 		inFiles[i]->PumpAll();
-		inFiles[i]->Close();
+		inFiles[i]->MessageEnd();
 	}
 }
 
@@ -519,7 +494,6 @@ bool Validate(int alg)
 	case 28: return HMACValidate();
 	case 29: return XMACCValidate();
 	case 30: return SHARKValidate();
-	case 31: return SHARK2Validate();
 	case 32: return LUCDIFValidate();
 	case 33: return LUCELGValidate();
 	case 34: return SEALValidate();
@@ -538,6 +512,8 @@ bool Validate(int alg)
 	case 47: return CipherModesValidate();
 	case 48: return CRC32Validate();
 	case 49: return ECDSAValidate();
+	case 50: return XTRDHValidate();
+	case 51: return SKIPJACKValidate();
 	default: return ValidateAll();
 	}
 }

@@ -54,7 +54,7 @@ void Base64Encoder::Put(const byte *inString, unsigned int length)
 		Base64Encoder::Put(*inString++);
 }
 
-void Base64Encoder::InputFinished()
+void Base64Encoder::MessageEnd(int propagation)
 {
 	if (inBufSize)
 	{
@@ -65,6 +65,8 @@ void Base64Encoder::InputFinished()
 
 	if (lineLength) // force a line break unless the current line is empty
 		LineBreak();
+
+	Filter::MessageEnd(propagation);
 }
 
 Base64Decoder::Base64Decoder(BufferedTransformation *outQueue)
@@ -115,7 +117,7 @@ void Base64Decoder::Put(const byte *inString, unsigned int length)
 		Base64Decoder::Put(*inString++);
 }
 
-void Base64Decoder::InputFinished()
+void Base64Decoder::MessageEnd(int propagation)
 {
 	if (inBufSize)
 	{
@@ -123,6 +125,8 @@ void Base64Decoder::InputFinished()
 			inBuf[i]=0;
 		DecodeQuantum();
 	}
+
+	Filter::MessageEnd(propagation);
 }
 
 NAMESPACE_END

@@ -181,7 +181,11 @@ SOURCE=.\lucc512.dat
 # End Source File
 # Begin Source File
 
-SOURCE=.\lucdif.dat
+SOURCE=.\lucd1024.dat
+# End Source File
+# Begin Source File
+
+SOURCE=.\lucd512.dat
 # End Source File
 # Begin Source File
 
@@ -297,6 +301,10 @@ SOURCE=.\sharkval.dat
 # End Source File
 # Begin Source File
 
+SOURCE=.\skipjack.dat
+# End Source File
+# Begin Source File
+
 SOURCE=.\squareva.dat
 # End Source File
 # Begin Source File
@@ -306,6 +314,14 @@ SOURCE=.\twofishv.dat
 # Begin Source File
 
 SOURCE=.\usage.dat
+# End Source File
+# Begin Source File
+
+SOURCE=.\xtrdh171.dat
+# End Source File
+# Begin Source File
+
+SOURCE=.\xtrdh342.dat
 # End Source File
 # End Group
 # Begin Source File

@@ -20,7 +20,7 @@ RSAFunction::RSAFunction(BufferedTransformation &bt)
 	BERSequenceDecoder seq(bt);
 	n.BERDecode(seq);
 	e.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 }
 
 void RSAFunction::DEREncode(BufferedTransformation &bt) const
@@ -28,7 +28,7 @@ void RSAFunction::DEREncode(BufferedTransformation &bt) const
 	DERSequenceEncoder seq(bt);
 	n.DEREncode(seq);
 	e.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 Integer RSAFunction::ApplyFunction(const Integer &x) const
@@ -94,7 +94,7 @@ InvertibleRSAFunction::InvertibleRSAFunction(BufferedTransformation &bt)
 	dp.BERDecode(seq);
 	dq.BERDecode(seq);
 	u.BERDecode(seq);
-	seq.OutputFinished();
+	seq.MessageEnd();
 }
 
 void InvertibleRSAFunction::DEREncode(BufferedTransformation &bt) const
@@ -109,7 +109,7 @@ void InvertibleRSAFunction::DEREncode(BufferedTransformation &bt) const
 	dp.DEREncode(seq);
 	dq.DEREncode(seq);
 	u.DEREncode(seq);
-	seq.InputFinished();
+	seq.MessageEnd();
 }
 
 Integer InvertibleRSAFunction::CalculateInverse(const Integer &x) const 

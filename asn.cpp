@@ -204,31 +204,28 @@ BERSequenceDecoder::~BERSequenceDecoder()
 {
 	try	// avoid throwing in constructor
 	{
-		OutputFinished();
+		if (!m_finished)
+			MessageEnd();
 	}
 	catch (...)
 	{
 	}
 }
 
-void BERSequenceDecoder::OutputFinished()
+void BERSequenceDecoder::MessageEnd(int)
 {
-	if (m_finished)
-		return;
-	else
-		m_finished = true;
-
+	m_finished = true;
 	if (!m_definiteLength)
 	{	// remove end-of-content Octets
 		word16 i;
-		if (!m_inQueue.GetShort(i) || (i!=0))
+		if (!m_inQueue.GetWord16(i) || (i!=0))
 			BERDecodeError();
 	}
 }
 
-unsigned long BERSequenceDecoder::MaxRetrieveable()
+unsigned long BERSequenceDecoder::MaxRetrievable() const
 {
-	unsigned long maxRet = m_inQueue.MaxRetrieveable();
+	unsigned long maxRet = m_inQueue.MaxRetrievable();
 
 	if (m_definiteLength)
 		return STDMIN(maxRet, (unsigned long)m_length);
@@ -264,7 +261,7 @@ unsigned int BERSequenceDecoder::Peek(byte *outString, unsigned int peekMax) con
 
 unsigned long BERSequenceDecoder::CopyTo(BufferedTransformation &target) const
 {
-	return m_inQueue.CopyTo(target, m_definiteLength ? m_length : m_inQueue.MaxRetrieveable());
+	return m_inQueue.CopyTo(target, m_definiteLength ? m_length : m_inQueue.MaxRetrievable());
 }
 
 unsigned int BERSequenceDecoder::CopyTo(BufferedTransformation &target, unsigned int copyMax) const
@@ -296,20 +293,17 @@ DERSequenceEncoder::~DERSequenceEncoder()
 {
 	try	// avoid throwing in constructor
 	{
-		InputFinished();
+		if (!m_finished)
+			MessageEnd();
 	}
 	catch (...)
 	{
 	}
 }
 
-void DERSequenceEncoder::InputFinished()
+void DERSequenceEncoder::MessageEnd(int)
 {
-	if (m_finished)
-		return;
-	else
-		m_finished = true;
-
+	m_finished = true;
 	unsigned int length = (unsigned int)CurrentSize();
 	m_outQueue.Put(m_asnTag);
 	DERLengthEncode(length, m_outQueue);

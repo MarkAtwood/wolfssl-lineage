@@ -19,7 +19,7 @@ public:
 		{Deflator::Put(&inByte, 1);}
 	void Put(const byte *inString, unsigned int length);
 
-	void InputFinished();
+	void MessageEnd(int propagation=-1);
 
 private:
 #ifdef SMALL_MEM
