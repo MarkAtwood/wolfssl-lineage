@@ -33,8 +33,8 @@ namespace yaSSL {
         class Mutex {
             CRITICAL_SECTION cs_;
         public:
-            Mutex()  { InitializeCriticalSection(&cs_); }
-            ~Mutex() { DeleteCriticalSection(&cs_);     }
+            Mutex();
+            ~Mutex();
 
             class Lock;
             friend class Lock;
@@ -42,15 +42,8 @@ namespace yaSSL {
             class Lock {
                 Mutex& mutex_;
             public:
-                explicit Lock(Mutex& lm) : mutex_(lm)
-                {
-                    EnterCriticalSection(&mutex_.cs_); 
-                }
-
-                ~Lock()
-                {
-                    LeaveCriticalSection(&mutex_.cs_); 
-                }
+                explicit Lock(Mutex& lm);
+                ~Lock();
             };
         };
     #else  // WIN32
@@ -60,8 +53,8 @@ namespace yaSSL {
             pthread_mutex_t mutex_;
         public:
 
-            Mutex()  { pthread_mutex_init(&mutex_, 0);    }
-            ~Mutex() { pthread_mutex_destroy(&mutex_); }
+            Mutex();
+            ~Mutex();
 
             class Lock;
             friend class Lock;
@@ -69,15 +62,8 @@ namespace yaSSL {
             class Lock {
                 Mutex& mutex_;
             public:
-                explicit Lock(Mutex& lm) : mutex_(lm)
-                {
-                    pthread_mutex_lock(&mutex_.mutex_); 
-                }
-
-                ~Lock()
-                {
-                    pthread_mutex_unlock(&mutex_.mutex_); 
-                }
+                explicit Lock(Mutex& lm);
+                ~Lock();
             };
         };
 

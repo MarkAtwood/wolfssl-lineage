@@ -82,23 +82,21 @@ class States {
     std::string      errorString_;
     int              errorNumber_;
 public:
-    States() : recordLayer_(recordReady), handshakeLayer_(preHandshake),
-               clientState_(serverNull),  serverState_(clientNull),
-               errorNumber_(0) {}
+    States();
 
-    const RecordLayerState& getRecord()    const { return recordLayer_; }
-    const HandShakeState&   getHandShake() const { return handshakeLayer_; }
-    const ClientState&      getClient()    const { return clientState_; }
-    const ServerState&      getServer()    const { return serverState_; }
-    const std::string&      getString()    const { return errorString_; }
-          int               getNumber()    const { return errorNumber_; }
+    const RecordLayerState& getRecord()    const;
+    const HandShakeState&   getHandShake() const;
+    const ClientState&      getClient()    const;
+    const ServerState&      getServer()    const;
+    const std::string&      getString()    const;
+          int               getNumber()    const;
 
-    RecordLayerState& useRecord()    { return recordLayer_; }
-    HandShakeState&   useHandShake() { return handshakeLayer_; }
-    ClientState&      useClient()    { return clientState_; }
-    ServerState&      useServer()    { return serverState_; }
-    std::string&      useString()    { return errorString_; }
-    int&              useNumber()    { return errorNumber_; }
+    RecordLayerState& useRecord();
+    HandShakeState&   useHandShake();
+    ClientState&      useClient();
+    ServerState&      useServer();
+    std::string&      useString();
+    int&              useNumber();
 private:
     States(const States&);              // hide copy
     States& operator=(const States&);   // and assign
@@ -111,16 +109,12 @@ class sslFactory {
     ServerKeyFactory    serverKeyFactory_;      // creates new server key types
     ClientKeyFactory    clientKeyFactory_;      // creates new client key types
 
-    sslFactory() :           
-            messageFactory_(InitMessageFactory),
-            handShakeFactory_(InitHandShakeFactory),
-            serverKeyFactory_(InitServerKeyFactory),
-            clientKeyFactory_(InitClientKeyFactory) {}
+    sslFactory();
 public:
-    const MessageFactory&   getMessage()   const { return messageFactory_; }
-    const HandShakeFactory& getHandShake() const { return handShakeFactory_; }
-    const ServerKeyFactory& getServerKey() const { return serverKeyFactory_; }
-    const ClientKeyFactory& getClientKey() const { return clientKeyFactory_; }
+    const MessageFactory&   getMessage()   const;
+    const HandShakeFactory& getHandShake() const;
+    const ServerKeyFactory& getServerKey() const;
+    const ClientKeyFactory& getClientKey() const;
 
     friend sslFactory& GetSSL_Factory();        // singleton creator
 private:
@@ -161,11 +155,11 @@ public:
     SSL_SESSION(const SSL&, RandomPool&);
     ~SSL_SESSION();
 
-    const opaque* getID()      const { return sessionID_; }
-    const opaque* getSecret()  const { return master_secret_; }
-    const Cipher* getSuite()   const { return suite_; }
-          uint    getBornOn()  const { return bornOn_; }
-          uint    getTimeOut() const { return timeout_; }
+    const opaque* getID()      const;
+    const opaque* getSecret()  const;
+    const Cipher* getSuite()   const;
+          uint    getBornOn()  const;
+          uint    getTimeOut() const;
 
     SSL_SESSION& operator=(const SSL_SESSION&); // allow assign for resumption
 private:
@@ -185,12 +179,10 @@ public:
     void         add(const SSL&);
     void         remove(const opaque*);
 
-    uint get_timeOut() const { return timeout_; }
+    uint get_timeOut() const;
 
-    ~Sessions() 
-    { 
-        std::for_each(list_.begin(), list_.end(), del_ptr_zero()); 
-    }
+    ~Sessions();
+
     friend Sessions& GetSessions(); // singleton creator
 private:
     Sessions(const Sessions&);              // hide copy
@@ -208,11 +200,10 @@ class SSL_METHOD {
     ConnectionEnd   side_;
     bool            rollback_;
 public:
-    explicit SSL_METHOD(ConnectionEnd ce, ProtocolVersion pv) 
-        : version_(pv), side_(ce), rollback_(false) {}
+    explicit SSL_METHOD(ConnectionEnd ce, ProtocolVersion pv);
 
-    ProtocolVersion getVersion() const { return version_; }
-    ConnectionEnd   getSide()    const { return side_; }
+    ProtocolVersion getVersion() const;
+    ConnectionEnd   getSide()    const;
 private:
     SSL_METHOD(const SSL_METHOD&);              // hide copy
     SSL_METHOD& operator=(const SSL_METHOD&);   // and assign
@@ -224,13 +215,12 @@ class SSL_CTX {
     x509*       certificate_;
     x509*       privateKey_;
 public:
-    explicit SSL_CTX(SSL_METHOD* meth) : method_(meth), certificate_(0),
-                                         privateKey_(0) {}
-    ~SSL_CTX() { delete method_; delete certificate_; delete privateKey_; }
+    explicit SSL_CTX(SSL_METHOD* meth);
+    ~SSL_CTX();
 
-    const x509*       getCert()   const { return certificate_; }
-    const x509*       getKey()    const { return privateKey_; }
-    const SSL_METHOD* getMethod() const { return method_; }
+    const x509*       getCert()   const;
+    const x509*       getKey()    const;
+    const SSL_METHOD* getMethod() const;
 
     friend int read_file(SSL_CTX*, const char*, int, CertType);
 private:
@@ -246,24 +236,24 @@ class Crypto {
     RandomPool          random_;                // random number generator
     CertManager         cert_;                  // manages certificates
 public:
-    Crypto() : mac_(0), cipher_(0), dh_(0) {}
-    ~Crypto() { delete dh_; delete cipher_; delete mac_; }
+    Crypto();
+    ~Crypto();
 
-    const MAC&           get_mac()         const { return *mac_; }
-    const BulkCipher&    get_cipher()      const { return *cipher_; }
-    const DiffieHellman& get_dh()          const { return *dh_; }
-    const RandomPool&    get_random()      const { return random_; }
-    const CertManager&   get_certManager() const { return cert_; }
+    const MAC&           get_mac()         const;
+    const BulkCipher&    get_cipher()      const;
+    const DiffieHellman& get_dh()          const;
+    const RandomPool&    get_random()      const;
+    const CertManager&   get_certManager() const;
           
-    MAC&           use_mac()         { return *mac_; }
-    BulkCipher&    use_cipher()      { return *cipher_; }
-    DiffieHellman& use_dh()          { return *dh_; }
-    RandomPool&    use_random()      { return random_; }
-    CertManager&   use_certManager() { return cert_; }
+    MAC&           use_mac();
+    BulkCipher&    use_cipher();
+    DiffieHellman& use_dh();
+    RandomPool&    use_random();
+    CertManager&   use_certManager();
 
-    void setDH(DiffieHellman* dh) { dh_ = dh; }
-    void setMAC(MAC* mac)         { mac_ = mac; }
-    void setCipher(BulkCipher* c) { cipher_ = c; }
+    void setDH(DiffieHellman* dh);
+    void setMAC(MAC* mac);
+    void setCipher(BulkCipher* c);
 private:
     Crypto(const Crypto&);              // hide copy
     Crypto& operator=(const Crypto&);   // and assign
@@ -277,13 +267,13 @@ class sslHashes {
 public:
     sslHashes() {}
 
-    const MD5&      get_MD5()    const { return md5HandShake_; }
-    const SHA&      get_SHA()    const { return shaHandShake_; }
-    const Finished& get_verify() const { return verify_; }
+    const MD5&      get_MD5()    const;
+    const SHA&      get_SHA()    const;
+    const Finished& get_verify() const;
 
-    MD5&      use_MD5()    { return md5HandShake_; }
-    SHA&      use_SHA()    { return shaHandShake_; }
-    Finished& use_verify() { return verify_; }
+    MD5&      use_MD5();
+    SHA&      use_SHA();
+    Finished& use_verify();
 private:
     sslHashes(const sslHashes&);             // hide copy
     sslHashes& operator=(const sslHashes&); // and assign
@@ -298,19 +288,13 @@ class Buffers {
     outputList handShakeList_;                      // buffered handshake msgs
 public:
     Buffers() {}
-    ~Buffers()
-    {
-        std::for_each(handShakeList_.begin(), handShakeList_.end(),
-                      del_ptr_zero()) ;
-        std::for_each(dataList_.begin(), dataList_.end(),
-                      del_ptr_zero()) ;
-    }
+    ~Buffers();
 
-    const inputList&  getData()      const { return dataList_; }
-    const outputList& getHandShake() const { return handShakeList_; }
+    const inputList&  getData()      const;
+    const outputList& getHandShake() const;
 
-    inputList&  useData()      { return dataList_; }
-    outputList& useHandShake() { return handShakeList_; }
+    inputList&  useData();
+    outputList& useHandShake();
 private:
     Buffers(const Buffers&);             // hide copy
     Buffers& operator=(const Buffers&); // and assign   
@@ -323,19 +307,18 @@ class Security {
     SSL_SESSION   resumeSession_;                 // if resuming
     bool          resuming_;                      // trying to resume
 public:
-    Security(ProtocolVersion pv, RandomPool& ran, ConnectionEnd ce)
-        : conn_(pv, ran), parms_(ce), resumeSession_(ran), resuming_(false) {}
+    Security(ProtocolVersion pv, RandomPool& ran, ConnectionEnd ce);
 
-    const Connection&  get_connection() const { return conn_; }
-    const Parameters&  get_parms()      const { return parms_;}
-    const SSL_SESSION& get_resume()     const { return resumeSession_; }
-          bool         get_resuming()   const { return resuming_; }
+    const Connection&  get_connection() const;
+    const Parameters&  get_parms()      const;
+    const SSL_SESSION& get_resume()     const;
+          bool         get_resuming()   const;
 
-    Connection&  use_connection() { return conn_; }
-    Parameters&  use_parms()      { return parms_; }
-    SSL_SESSION& use_resume()     { return resumeSession_; }
+    Connection&  use_connection();
+    Parameters&  use_parms();
+    SSL_SESSION& use_resume();
 
-    void set_resuming(bool b)   { resuming_ = b; }
+    void set_resuming(bool b);
 private:
     Security(const Security&);              // hide copy
     Security& operator=(const Security&);   // and assign
@@ -355,19 +338,19 @@ public:
     SSL(SSL_CTX* ctx);
 
     // gets and uses
-    const Crypto&     getCrypto()   const { return crypto_; }
-    const Security&   getSecurity() const { return secure_; }
-    const States&     getStates()   const { return states_; }
-    const sslHashes&  getHashes()   const { return hashes_; }
-    const sslFactory& getFactory()  const { return GetSSL_Factory(); }
-    const Socket&     getSocket()   const { return socket_; }
+    const Crypto&     getCrypto()   const;
+    const Security&   getSecurity() const;
+    const States&     getStates()   const;
+    const sslHashes&  getHashes()   const;
+    const sslFactory& getFactory()  const;
+    const Socket&     getSocket()   const;
 
-    Crypto&    useCrypto()   { return crypto_; }
-    Security&  useSecurity() { return secure_; }
-    States&    useStates()   { return states_; }
-    sslHashes& useHashes()   { return hashes_; }
-    Socket&    useSocket()   { return socket_; }
-    Log&       useLog()      { return log_; }
+    Crypto&    useCrypto();
+    Security&  useSecurity();
+    States&    useStates();
+    sslHashes& useHashes();
+    Socket&    useSocket();
+    Log&       useLog();
 
     // sets
     void set_pending(Cipher suite);
@@ -379,12 +362,12 @@ public:
     void set_error(const Error& e);
 
     // helpers
-    bool isTLS() const { return secure_.get_connection().TLS_; }
+    bool isTLS() const;
     void makeMasterSecret();
     void makeTLSMasterSecret();
-    void addData(input_buffer* data) { buffers_.useData().push_back(data); }
+    void addData(input_buffer* data);
     void fillData(Data&);
-    void addBuffer(output_buffer* b) { buffers_.useHandShake().push_back(b);}
+    void addBuffer(output_buffer* b);
     void flushBuffer();
     void verifyState(const RecordLayerHeader&);
     void verifyState(const HandShakeHeader&);

@@ -1,4 +1,4 @@
-/* timer.hpp                                
+/* yassl_error.cpp                                
  *
  * Copyright (C) 2003 Sawtooth Consulting Ltd.
  *
@@ -19,20 +19,35 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-#ifndef yaSSL_TIMER_HPP
-#define yaSSL_TIMER_HPP
+
+/* yaSSL error implements and an exception class
+ */
+
+
+#include "yassl_error.hpp"
 
 namespace yaSSL {
 
-typedef double       timer_d;
-typedef unsigned int uint;
+
+Error::Error(const char* s, ErrorNumber e, Library l) 
+    : std::runtime_error(s), error_(e), lib_(l) 
+{
+}
+
+
+ErrorNumber Error::get_number() const
+{
+    return error_;
+}
+
+
+Library Error::get_lib() const
+{
+
+    return lib_;
+}
 
 
 
-timer_d timer();
-uint    lowResTimer();
 
-
-
-} // namespace
-#endif // yaSSL_TIMER_HPP
+}  // namespace yaSSL

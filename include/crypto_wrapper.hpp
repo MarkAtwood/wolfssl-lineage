@@ -56,10 +56,10 @@ struct MAC {
 // For use with NULL MACs
 struct NO_MAC : public MAC {
     void   get_digest(byte*);
-    void   get_digest(byte*, const byte*, unsigned int) {}
-    void   update(const byte*, unsigned int) {}
-    uint   get_digestSize() const { return 0; }
-    uint   get_padSize()    const { return 0; }
+    void   get_digest(byte*, const byte*, unsigned int);
+    void   update(const byte*, unsigned int);
+    uint   get_digestSize() const;
+    uint   get_padSize()    const;
 };
 
 
@@ -69,8 +69,8 @@ public:
     void   get_digest(byte*);
     void   get_digest(byte*, const byte*, unsigned int);
     void   update(const byte*, unsigned int);
-    uint   get_digestSize() const { return MD5_LEN; }
-    uint   get_padSize()    const { return PAD_MD5; }
+    uint   get_digestSize() const;
+    uint   get_padSize()    const;
     MD5();
     ~MD5();
     MD5(const MD5&);
@@ -87,8 +87,8 @@ public:
     void   get_digest(byte*);
     void   get_digest(byte*, const byte*, unsigned int);
     void   update(const byte*, unsigned int);
-    uint   get_digestSize() const { return SHA_LEN; }
-    uint   get_padSize()    const { return PAD_SHA; }
+    uint   get_digestSize() const;
+    uint   get_padSize()    const;
     SHA();
     ~SHA();
     SHA(const SHA&);
@@ -106,8 +106,8 @@ public:
     void   get_digest(byte*);
     void   get_digest(byte*, const byte*, unsigned int);
     void   update(const byte*, unsigned int);
-    uint   get_digestSize() const { return MD5_LEN; }
-    uint   get_padSize()    const { return PAD_MD5; }
+    uint   get_digestSize() const;
+    uint   get_padSize()    const;
     HMAC_MD5(const byte*, unsigned int);
     ~HMAC_MD5();
 private:
@@ -125,8 +125,8 @@ public:
     void   get_digest(byte*);
     void   get_digest(byte*, const byte*, unsigned int);
     void   update(const byte*, unsigned int);
-    uint   get_digestSize() const { return SHA_LEN; }
-    uint   get_padSize()    const { return PAD_SHA; }
+    uint   get_digestSize() const;
+    uint   get_padSize()    const;
     HMAC_SHA(const byte*, unsigned int);
     ~HMAC_SHA();
 private:
@@ -225,7 +225,7 @@ public:
     ~RandomPool();
 
     friend class RSA;
-	friend class DSS;
+    friend class DSS;
     friend class DiffieHellman;
 private:
     struct RandomImpl;

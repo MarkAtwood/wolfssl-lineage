@@ -107,6 +107,114 @@ void c32toa(uint32 u32, opaque* c)
 }
 
 
+States::States() : recordLayer_(recordReady), handshakeLayer_(preHandshake),
+           clientState_(serverNull),  serverState_(clientNull),
+           errorNumber_(0) {}
+
+const RecordLayerState& States::getRecord() const 
+{
+    return recordLayer_;
+}
+
+
+const HandShakeState& States::getHandShake() const
+{
+    return handshakeLayer_;
+}
+
+
+const ClientState& States::getClient() const
+{
+    return clientState_;
+}
+
+
+const ServerState& States::getServer() const
+{
+    return serverState_;
+}
+
+
+const std::string& States::getString() const
+{
+    return errorString_;
+}
+
+
+int States::getNumber() const
+{
+    return errorNumber_;
+}
+
+
+RecordLayerState& States::useRecord()
+{
+    return recordLayer_;
+}
+
+
+HandShakeState& States::useHandShake()
+{
+    return handshakeLayer_;
+}
+
+
+ClientState& States::useClient()
+{
+    return clientState_;
+}
+
+
+ServerState& States::useServer()
+{
+    return serverState_;
+}
+
+
+std::string& States::useString()
+{
+    return errorString_;
+}
+
+
+int& States::useNumber()
+{
+    return errorNumber_;
+}
+
+
+sslFactory::sslFactory() :           
+        messageFactory_(InitMessageFactory),
+        handShakeFactory_(InitHandShakeFactory),
+        serverKeyFactory_(InitServerKeyFactory),
+        clientKeyFactory_(InitClientKeyFactory) 
+{}
+
+
+const MessageFactory& sslFactory::getMessage() const
+{
+    return messageFactory_;
+}
+
+
+const HandShakeFactory& sslFactory::getHandShake() const
+{
+    return handShakeFactory_;
+}
+
+
+const ServerKeyFactory& sslFactory::getServerKey() const
+{
+    return serverKeyFactory_;
+}
+
+
+const ClientKeyFactory& sslFactory::getClientKey() const
+{
+    return clientKeyFactory_;
+}
+
+
 SSL::SSL(SSL_CTX* ctx) 
     : secure_(ctx->getMethod()->getVersion(), crypto_.use_random(),
               ctx->getMethod()->getSide())
@@ -676,6 +784,96 @@ void SSL::set_session(SSL_SESSION* s)
 }
 
 
+const Crypto& SSL::getCrypto() const
+{
+    return crypto_;
+}
+
+
+const Security& SSL::getSecurity() const
+{
+    return secure_;
+}
+
+
+const States& SSL::getStates() const
+{
+    return states_;
+}
+
+
+const sslHashes& SSL::getHashes() const
+{
+    return hashes_;
+}
+
+
+const sslFactory& SSL::getFactory() const
+{
+    return GetSSL_Factory();
+}
+
+
+const Socket& SSL::getSocket() const
+{
+    return socket_;
+}
+
+
+Crypto& SSL::useCrypto()
+{
+    return crypto_;
+}
+
+
+Security& SSL::useSecurity()
+{
+    return secure_;
+}
+
+
+States& SSL::useStates()
+{
+    return states_;
+}
+
+
+sslHashes& SSL::useHashes()
+{
+    return hashes_;
+}
+
+
+Socket& SSL::useSocket()
+{
+    return socket_;
+}
+
+
+Log& SSL::useLog()
+{
+    return log_;
+}
+
+
+bool SSL::isTLS() const
+{
+    return secure_.get_connection().TLS_;
+}
+
+
+void SSL::addData(input_buffer* data)
+{
+    buffers_.useData().push_back(data);
+}
+
+
+void SSL::addBuffer(output_buffer* b)
+{
+    buffers_.useHandShake().push_back(b);
+}
+
+
 SSL_SESSION::SSL_SESSION(const SSL& ssl, RandomPool& ran) 
     : timeout_(DEFAULT_TIMEOUT), random_(ran)
 {
@@ -712,6 +910,36 @@ SSL_SESSION& SSL_SESSION::operator=(const SSL_SESSION& that)
 }
 
 
+const opaque* SSL_SESSION::getID() const
+{
+    return sessionID_;
+}
+
+
+const opaque* SSL_SESSION::getSecret() const
+{
+    return master_secret_;
+}
+
+
+const Cipher* SSL_SESSION::getSuite() const
+{
+    return suite_;
+}
+
+
+uint  SSL_SESSION::getBornOn() const
+{
+    return bornOn_;
+}
+
+
+uint  SSL_SESSION::getTimeOut() const
+{
+    return timeout_;
+}
+
+
 extern void clean(volatile opaque*, uint, RandomPool&);
 
 SSL_SESSION::~SSL_SESSION()
@@ -742,6 +970,18 @@ void Sessions::add(const SSL& ssl)
 {
     Lock guard(mutex_);
     list_.push_back(new SSL_SESSION(ssl, random_));
+}
+
+
+uint Sessions::get_timeOut() const
+{
+    return timeout_;
+}
+
+
+Sessions::~Sessions() 
+{ 
+    std::for_each(list_.begin(), list_.end(), del_ptr_zero()); 
 }
 
 
@@ -795,6 +1035,269 @@ void Sessions::remove(const opaque* id)
         list_.erase(find);
     }
 }
+
+
+SSL_METHOD::SSL_METHOD(ConnectionEnd ce, ProtocolVersion pv) 
+    : version_(pv), side_(ce), rollback_(false) 
+{}
+
+
+ProtocolVersion SSL_METHOD::getVersion() const
+{
+    return version_;
+}
+
+
+ConnectionEnd SSL_METHOD::getSide() const
+{
+    return side_;
+}
+
+
+SSL_CTX::SSL_CTX(SSL_METHOD* meth) 
+    : method_(meth), certificate_(0), privateKey_(0) 
+{}
+
+
+SSL_CTX::~SSL_CTX()
+{
+    delete method_;
+    delete certificate_;
+    delete privateKey_;
+}
+
+
+const x509* SSL_CTX::getCert() const
+{
+    return certificate_;
+}
+
+
+const x509* SSL_CTX::getKey() const
+{
+    return privateKey_;
+}
+
+
+const SSL_METHOD* SSL_CTX::getMethod() const
+{
+    return method_;
+}
+
+
+Crypto::Crypto() 
+    : mac_(0), cipher_(0), dh_(0) 
+{}
+
+
+Crypto::~Crypto()
+{
+    delete dh_;
+    delete cipher_;
+    delete mac_;
+}
+
+
+const MAC& Crypto::get_mac() const
+{
+    return *mac_;
+}
+
+
+const BulkCipher& Crypto::get_cipher() const
+{
+    return *cipher_;
+}
+
+
+const DiffieHellman& Crypto::get_dh() const
+{
+    return *dh_;
+}
+
+
+const RandomPool& Crypto::get_random() const
+{
+    return random_;
+}
+
+
+const CertManager& Crypto::get_certManager() const
+{
+    return cert_;
+}
+
+
+      
+MAC& Crypto::use_mac()
+{
+    return *mac_;
+}
+
+
+BulkCipher& Crypto::use_cipher()
+{
+    return *cipher_;
+}
+
+
+DiffieHellman& Crypto::use_dh()
+{
+    return *dh_;
+}
+
+
+RandomPool& Crypto::use_random()
+{
+    return random_;
+}
+
+
+CertManager& Crypto::use_certManager()
+{
+    return cert_;
+}
+
+
+
+void Crypto::setDH(DiffieHellman* dh)
+{
+    dh_ = dh;
+}
+
+
+void Crypto::setMAC(MAC* mac)
+{
+    mac_ = mac;
+}
+
+
+void Crypto::setCipher(BulkCipher* c)
+{
+    cipher_ = c;
+}
+
+
+const MD5& sslHashes::get_MD5() const
+{
+    return md5HandShake_;
+}
+
+
+const SHA& sslHashes::get_SHA() const
+{
+    return shaHandShake_;
+}
+
+
+const Finished& sslHashes::get_verify() const
+{
+    return verify_;
+}
+
+
+MD5& sslHashes::use_MD5(){
+    return md5HandShake_;
+}
+
+
+SHA& sslHashes::use_SHA()
+{
+    return shaHandShake_;
+}
+
+
+Finished& sslHashes::use_verify()
+{
+    return verify_;
+}
+
+
+Buffers::~Buffers()
+{
+    std::for_each(handShakeList_.begin(), handShakeList_.end(),
+                  del_ptr_zero()) ;
+    std::for_each(dataList_.begin(), dataList_.end(),
+                  del_ptr_zero()) ;
+}
+
+
+const Buffers::inputList& Buffers::getData() const
+{
+    return dataList_;
+}
+
+
+const Buffers::outputList& Buffers::getHandShake() const
+{
+    return handShakeList_;
+}
+
+
+Buffers::inputList& Buffers::useData()
+{
+    return dataList_;
+}
+
+
+Buffers::outputList& Buffers::useHandShake()
+{
+    return handShakeList_;
+}
+
+
+Security::Security(ProtocolVersion pv, RandomPool& ran, ConnectionEnd ce)
+    : conn_(pv, ran), parms_(ce), resumeSession_(ran), resuming_(false) 
+{}
+
+
+const Connection& Security::get_connection() const
+{
+    return conn_;
+}
+
+
+const Parameters& Security::get_parms() const
+{
+    return parms_;
+}
+
+
+const SSL_SESSION& Security::get_resume() const
+{
+    return resumeSession_;
+}
+
+
+bool Security::get_resuming() const
+{
+    return resuming_;
+}
+
+
+Connection& Security::use_connection()
+{
+    return conn_;
+}
+
+
+Parameters& Security::use_parms()
+{
+    return parms_;
+}
+
+
+SSL_SESSION& Security::use_resume()
+{
+    return resumeSession_;
+}
+
+
+void Security::set_resuming(bool b)
+{
+    resuming_ = b;
+}
+
 
 
 

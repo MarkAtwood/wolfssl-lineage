@@ -56,15 +56,31 @@ struct MD5::MD5Impl {
 
 MD5::MD5() : pimpl_(new MD5Impl) {}
 
+
 MD5::~MD5() { delete pimpl_; }
 
+
 MD5::MD5(const MD5& that) : pimpl_(new MD5Impl(that.pimpl_->md5_)) {}
+
 
 MD5& MD5::operator=(const MD5& that)
 {
     pimpl_->md5_ = that.pimpl_->md5_;
     return *this;
 }
+
+
+uint MD5::get_digestSize() const
+{
+    return MD5_LEN;
+}
+
+
+uint MD5::get_padSize() const
+{
+    return PAD_MD5;
+}
+
 
 // Fill out with MD5 digest from in that is sz bytes, out must be >= digest sz
 void MD5::get_digest(byte* out, const byte* in, unsigned int sz)
@@ -97,14 +113,29 @@ struct SHA::SHAImpl {
 
 SHA::SHA() : pimpl_(new SHAImpl) {}
 
+
 SHA::~SHA() { delete pimpl_; }
 
+
 SHA::SHA(const SHA& that) : pimpl_(new SHAImpl(that.pimpl_->sha_)) {}
+
 
 SHA& SHA::operator=(const SHA& that)
 {
     pimpl_->sha_ = that.pimpl_->sha_;
     return *this;
+}
+
+
+uint SHA::get_digestSize() const
+{
+    return SHA_LEN;
+}
+
+
+uint SHA::get_padSize() const
+{
+    return PAD_SHA;
 }
 
 
@@ -143,7 +174,20 @@ HMAC_MD5::HMAC_MD5(const byte* secret, unsigned int len)
     pimpl_->mac_.SetKey(secret, len);
 }
 
+
 HMAC_MD5::~HMAC_MD5() { delete pimpl_; }
+
+
+uint HMAC_MD5::get_digestSize() const
+{
+    return MD5_LEN;
+}
+
+
+uint HMAC_MD5::get_padSize() const
+{
+    return PAD_MD5;
+}
 
 
 // Fill out with MD5 digest from in that is sz bytes, out must be >= digest sz
@@ -180,7 +224,20 @@ HMAC_SHA::HMAC_SHA(const byte* secret, unsigned int len)
     pimpl_->mac_.SetKey(secret, len);
 }
 
+
 HMAC_SHA::~HMAC_SHA() { delete pimpl_; }
+
+
+uint HMAC_SHA::get_digestSize() const
+{
+    return SHA_LEN;
+}
+
+
+uint HMAC_SHA::get_padSize() const
+{
+    return PAD_SHA;
+}
 
 
 // Fill out with SHA digest from in that is sz bytes, out must be >= digest sz
@@ -661,7 +718,7 @@ x509* PemToDer(const char* file, CertType type)
 
     uint sz = der.size();
     auto_ptr<x509> x(new x509(sz));
-    memcpy(x->set_buffer(), der.get_buffer(), sz);
+    memcpy(x->use_buffer(), der.get_buffer(), sz);
 
     return x.release();
 }

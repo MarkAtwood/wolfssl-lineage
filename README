@@ -1,5 +1,15 @@
 
-yaSSL Release notes, version 0.6.0
+yaSSL Release notes, version 0.7.0
+
+This release of yaSSL contains minor bug fixes, source cleanup, a binary beta
+(2) of the yaSSL libraries, and improved documentation.
+
+Please see build instructions in release notes 0.3.0.
+
+
+
+
+******************yaSSL Release notes, version 0.6.0
 
 This release of yaSSL contains minor bug fixes, source cleanup, and binary beta
 (1) of the yaSSL libraries.

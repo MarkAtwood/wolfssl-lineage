@@ -33,6 +33,11 @@ namespace yaSSL {
 void hashHandShake(SSL&, const input_buffer&, uint);
 
 
+ProtocolVersion::ProtocolVersion(uint8 maj, uint8 min) 
+    : major_(maj), minor_(min) 
+{}
+
+
 // construct key exchange with known ssl parms
 void ClientKeyExchange::createKey(SSL& ssl)
 {
@@ -177,6 +182,36 @@ void EncryptedPreMasterSecret::read(SSL& ssl, input_buffer& input)
 }
 
 
+EncryptedPreMasterSecret::EncryptedPreMasterSecret()
+    : secret_(0), length_(0)
+{}
+
+
+EncryptedPreMasterSecret::~EncryptedPreMasterSecret()
+{
+    delete[] secret_;
+}
+
+
+int EncryptedPreMasterSecret::get_length() const
+{
+    return length_;
+}
+
+
+opaque* EncryptedPreMasterSecret::get_clientKey() const
+{
+    return secret_;
+}
+
+
+void EncryptedPreMasterSecret::alloc(int sz)
+{
+    length_ = sz;
+    secret_ = new opaque[sz];
+}
+
+
 // read client's public key, server side
 void ClientDiffieHellmanPublic::read(SSL& ssl, input_buffer& input)
 {
@@ -194,6 +229,36 @@ void ClientDiffieHellmanPublic::read(SSL& ssl, input_buffer& input)
 
     ssl.set_preMaster(dh.get_agreedKey(), keyLength);
     ssl.makeMasterSecret();
+}
+
+
+ClientDiffieHellmanPublic::ClientDiffieHellmanPublic()
+    : length_(0), Yc_(0)
+{}
+
+
+ClientDiffieHellmanPublic::~ClientDiffieHellmanPublic()
+{
+    delete[] Yc_;
+}
+
+
+int ClientDiffieHellmanPublic::get_length() const
+{
+    return length_;
+}
+
+
+opaque* ClientDiffieHellmanPublic::get_clientKey() const
+{
+    return Yc_;
+}
+
+
+void ClientDiffieHellmanPublic::alloc(int sz, bool offset) 
+{
+    length_ = sz + (offset ? KEY_OFFSET : 0); 
+    Yc_ = new opaque[length_];
 }
 
 
@@ -267,6 +332,30 @@ void DH_Server::read(SSL& ssl, input_buffer& input)
                parms_.get_g(), parms_.get_gSize(), parms_.get_pub(),
                parms_.get_pubSize(), ssl.getCrypto().get_random()));
 }
+
+
+DH_Server::DH_Server()
+    : length_(0), keyMessage_(0)
+{}
+
+
+DH_Server::~DH_Server()
+{
+    delete[] keyMessage_;
+}
+
+
+int DH_Server::get_length() const
+{
+    return length_;
+}
+
+
+opaque* DH_Server::get_serverKey() const
+{
+    return keyMessage_;
+}
+
 
 //#define FORCE_DIFFIE   // test diffie-hellman
 
@@ -383,6 +472,106 @@ void HandShakeHeader::Process(input_buffer& input, SSL& ssl)
 }
 
 
+ContentType HandShakeHeader::get_type() const
+{
+    return handshake;
+}
+
+
+uint16 HandShakeHeader::get_length() const
+{
+    return c24to32(length_);
+}
+
+
+HandShakeType HandShakeHeader::get_handshakeType() const
+{
+    return type_;
+}
+
+
+void HandShakeHeader::set_type(HandShakeType hst)
+{
+    type_ = hst;
+}
+
+
+void HandShakeHeader::set_length(uint32 u32)
+{
+    c32to24(u32, length_);
+}
+
+
+input_buffer& HandShakeHeader::set(input_buffer& in)
+{
+    return in >> *this;
+}
+
+
+output_buffer& HandShakeHeader::get(output_buffer& out) const
+{
+    return out << *this;
+}
+
+
+
+int HandShakeBase::get_length() const
+{
+    return length_;
+}
+
+
+void HandShakeBase::set_length(int l)
+{
+    length_ = l;
+}
+
+
+// for building buffer's type field
+HandShakeType HandShakeBase::get_type() const
+{
+    return no_shake;
+}
+
+
+input_buffer& HandShakeBase::set(input_buffer& in)
+{
+    return in;
+}
+
+ 
+output_buffer& HandShakeBase::get(output_buffer& out) const
+{
+    return out;
+}
+
+
+void HandShakeBase::Process(input_buffer&, SSL&) 
+{}
+
+
+input_buffer& HelloRequest::set(input_buffer& in)
+{
+    return in;
+}
+
+
+output_buffer& HelloRequest::get(output_buffer& out) const
+{
+    return out;
+}
+
+
+void HelloRequest::Process(input_buffer&, SSL&)
+{}
+
+
+HandShakeType HelloRequest::get_type() const
+{
+    return hello_request;
+}
+
+
 // input operator for CipherSpec
 input_buffer& operator>>(input_buffer& input, ChangeCipherSpec& cs)
 {
@@ -398,6 +587,35 @@ output_buffer& operator<<(output_buffer& output, const ChangeCipherSpec& cs)
 }
 
 
+ChangeCipherSpec::ChangeCipherSpec() 
+    : type_(change_cipher_spec_choice)
+{}
+
+
+input_buffer& ChangeCipherSpec::set(input_buffer& in)
+{
+    return in >> *this;
+}
+
+
+output_buffer& ChangeCipherSpec::get(output_buffer& out) const
+{
+    return out << *this;
+}
+
+
+ContentType ChangeCipherSpec::get_type() const
+{
+    return change_cipher_spec;
+}
+
+
+uint16 ChangeCipherSpec::get_length() const
+{
+    return SIZEOF_ENUM;
+}
+
+
 // CipherSpec processing handler
 void ChangeCipherSpec::Process(input_buffer& input, SSL& ssl)
 {
@@ -408,6 +626,35 @@ void ChangeCipherSpec::Process(input_buffer& input, SSL& ssl)
     }
     else if (ssl.getSecurity().get_parms().entity_ == server_end)
         buildFinished(ssl, ssl.useHashes().use_verify(), client);     // client
+}
+
+
+Alert::Alert(AlertLevel al, AlertDescription ad)
+    : level_(al), description_(ad)
+{}
+
+
+ContentType Alert::get_type() const
+{
+    return alert;
+}
+
+
+uint16 Alert::get_length() const
+{
+    return SIZEOF_ENUM * 2;
+}
+
+
+input_buffer& Alert::set(input_buffer& in)
+{
+    return in >> *this;
+}
+
+
+output_buffer& Alert::get(output_buffer& out) const
+{
+    return out << *this;
 }
 
 
@@ -463,6 +710,61 @@ void Alert::Process(input_buffer& input, SSL& ssl)
         ssl.useStates().useHandShake() = handShakeNotReady;
         throw Error("Fatal Alert", ErrorNumber(description_));
     }
+}
+
+
+Data::Data()
+    : length_(0), buffer_(0), write_buffer_(0)
+{}
+
+
+Data::Data(uint16 len, opaque* b)
+    : length_(len), buffer_(b), write_buffer_(0)
+{}
+
+
+Data::Data(uint16 len, const opaque* w)
+    : length_(len), buffer_(0), write_buffer_(w)
+{}
+
+input_buffer& Data::set(input_buffer& in)
+{
+    return in;
+}
+
+
+output_buffer& Data::get(output_buffer& out) const
+{
+    return out << *this;
+}
+
+
+ContentType Data::get_type() const
+{
+    return application_data;
+}
+
+
+uint16 Data::get_length() const
+{
+    return length_;
+}
+
+
+const opaque* Data::get_buffer() const
+{
+    return write_buffer_;
+}
+
+
+void Data::set_length(uint16 l)
+{
+    length_ = l;
+}
+
+opaque* Data::set_buffer()
+{
+    return buffer_;
 }
 
 
@@ -586,7 +888,7 @@ void Certificate::Process(input_buffer& input, SSL& ssl)
         
         x509* myCert;
         cm.AddCert(myCert = new x509(cert_sz));
-        input.read(myCert->set_buffer(), myCert->get_length());
+        input.read(myCert->use_buffer(), myCert->get_length());
 
         list_sz -= cert_sz + CERT_HEADER;
     }
@@ -597,6 +899,112 @@ void Certificate::Process(input_buffer& input, SSL& ssl)
         ssl.useStates().useClient() = serverCertComplete;
     // TODO add server input certificate state and validate
 }
+
+
+Certificate::Certificate()
+    : cert_(0)
+{}
+
+
+input_buffer& Certificate::set(input_buffer& in)
+{
+    return in;
+}
+
+
+output_buffer& Certificate::get(output_buffer& out) const
+{
+    return out << *this;
+}
+
+
+HandShakeType Certificate::get_type() const
+{
+    return certificate;
+}
+
+
+ServerDHParams::ServerDHParams()
+    : pSz_(0), gSz_(0), pubSz_(0), p_(0), g_(0), Ys_(0)
+{}
+
+
+ServerDHParams::~ServerDHParams()
+{
+    delete[] Ys_;
+    delete[] g_;
+    delete[] p_;
+}
+
+
+int ServerDHParams::get_pSize() const
+{
+    return pSz_;
+}
+
+
+int ServerDHParams::get_gSize() const
+{
+    return gSz_;
+}
+
+
+int ServerDHParams::get_pubSize() const
+{
+    return pubSz_;
+}
+
+
+const opaque* ServerDHParams::get_p() const
+{
+    return p_;
+}
+
+
+const opaque* ServerDHParams::get_g() const
+{
+    return g_;
+}
+
+
+const opaque* ServerDHParams::get_pub() const
+{
+    return Ys_;
+}
+
+
+opaque* ServerDHParams::alloc_p(int sz)
+{
+    p_ = new opaque[pSz_ = sz];
+    return p_;
+}
+
+
+opaque* ServerDHParams::alloc_g(int sz)
+{
+    g_ = new opaque[gSz_ = sz];
+    return g_;
+}
+
+
+opaque* ServerDHParams::alloc_pub(int sz)
+{
+    Ys_ = new opaque[pubSz_ = sz];
+    return Ys_;
+}
+
+
+int ServerKeyBase::get_length() const
+{
+    return 0;
+}
+
+
+opaque* ServerKeyBase::get_serverKey() const
+{
+    return 0;
+}
+
 
 // input operator for ServerHello
 input_buffer& operator>>(input_buffer& input, ServerHello& hello)
@@ -674,11 +1082,75 @@ void ServerHello::Process(input_buffer& input, SSL& ssl)
 }
 
 
+ServerHello::ServerHello(ProtocolVersion pv)
+    : server_version_(pv)
+{}
+
+
+input_buffer& ServerHello::set(input_buffer& in)
+{
+    return in  >> *this;
+}
+
+
+output_buffer& ServerHello::get(output_buffer& out) const
+{
+    return out << *this;
+}
+
+
+HandShakeType ServerHello::get_type() const
+{
+    return server_hello;
+}
+
+
+const opaque* ServerHello::get_random() const
+{
+    return random_;
+}
+
 
 // Server Hello Done processing handler
 void ServerHelloDone::Process(input_buffer& input, SSL& ssl)
 {
     ssl.useStates().useClient() = serverHelloDoneComplete;
+}
+
+
+ServerHelloDone::ServerHelloDone()
+{
+    set_length(0);
+}
+
+
+input_buffer& ServerHelloDone::set(input_buffer& in)
+{
+    return in;
+}
+
+
+output_buffer& ServerHelloDone::get(output_buffer& out) const
+{
+    return out;
+}
+
+
+HandShakeType ServerHelloDone::get_type() const
+{
+    return server_hello_done;
+}
+
+
+int ClientKeyBase::get_length() const
+{
+    return 0;
+}
+
+
+opaque* ClientKeyBase::get_clientKey() const
+{
+    return 0;
 }
 
 
@@ -778,6 +1250,34 @@ void ClientHello::Process(input_buffer& input, SSL& ssl)
 }
 
 
+input_buffer& ClientHello::set(input_buffer& in)
+{
+    return in  >> *this;
+}
+
+
+output_buffer& ClientHello::get(output_buffer& out) const
+{
+    return out << *this;
+}
+
+
+HandShakeType ClientHello::get_type() const
+{
+    return client_hello;
+}
+
+
+const opaque* ClientHello::get_random() const
+{
+    return random_;
+}
+
+ClientHello::ClientHello(ProtocolVersion pv)
+    : client_version_(pv)
+{}
+
+
 // output operator for ServerKeyExchange
 output_buffer& operator<<(output_buffer& output, const ServerKeyExchange& sk)
 {
@@ -796,6 +1296,60 @@ void ServerKeyExchange::Process(input_buffer& input, SSL& ssl)
 }
 
 
+ServerKeyExchange::ServerKeyExchange(SSL& ssl)
+{
+    createKey(ssl);
+}
+
+
+ServerKeyExchange::ServerKeyExchange()
+    : server_key_(0)
+{}
+
+
+ServerKeyExchange::~ServerKeyExchange()
+{
+    delete server_key_;
+}
+
+
+void ServerKeyExchange::build(SSL& ssl) 
+{ 
+    server_key_->build(ssl); 
+    set_length(server_key_->get_length());
+}
+
+
+const opaque* ServerKeyExchange::getKey() const
+{
+    return server_key_->get_serverKey();
+}
+
+
+int ServerKeyExchange::getKeyLength() const
+{
+    return server_key_->get_length();
+}
+
+
+input_buffer& ServerKeyExchange::set(input_buffer& in)
+{
+    return in;      // process does
+}
+
+
+output_buffer& ServerKeyExchange::get(output_buffer& out) const
+{
+    return out << *this;
+}
+
+
+HandShakeType ServerKeyExchange::get_type() const
+{
+    return server_key_exchange;
+}
+
+
 // output operator for ClientKeyExchange
 output_buffer& operator<<(output_buffer& output, const ClientKeyExchange& ck)
 {
@@ -811,6 +1365,59 @@ void ClientKeyExchange::Process(input_buffer& input, SSL& ssl)
     client_key_->read(ssl, input);
 
     ssl.useStates().useServer() = clientKeyExchangeComplete;
+}
+
+
+ClientKeyExchange::ClientKeyExchange(SSL& ssl)
+{
+    createKey(ssl);
+}
+
+
+ClientKeyExchange::ClientKeyExchange()
+    : client_key_(0)
+{}
+
+
+ClientKeyExchange::~ClientKeyExchange()
+{
+    delete client_key_;
+}
+
+
+void ClientKeyExchange::build(SSL& ssl) 
+{ 
+    client_key_->build(ssl); 
+    set_length(client_key_->get_length());
+}
+
+const opaque* ClientKeyExchange::getKey() const
+{
+    return client_key_->get_clientKey();
+}
+
+
+int ClientKeyExchange::getKeyLength() const
+{
+    return client_key_->get_length();
+}
+
+
+input_buffer& ClientKeyExchange::set(input_buffer& in)
+{
+    return in;
+}
+
+
+output_buffer& ClientKeyExchange::get(output_buffer& out) const
+{
+    return out << *this;
+}
+
+
+HandShakeType ClientKeyExchange::get_type() const
+{
+    return client_key_exchange;
 }
 
 
@@ -886,6 +1493,42 @@ void Finished::Process(input_buffer& input, SSL& ssl)
 }
 
 
+Finished::Finished()
+{
+    set_length(FINISHED_SZ);
+}
+
+
+uint8* Finished::set_md5()
+{
+    return hashes_.md5_;
+}
+
+
+uint8* Finished::set_sha()
+{
+    return hashes_.sha_;
+}
+
+
+input_buffer& Finished::set(input_buffer& in)
+{
+    return in  >> *this;
+}
+
+
+output_buffer& Finished::get(output_buffer& out) const
+{
+    return out << *this;
+}
+
+
+HandShakeType Finished::get_type() const
+{
+    return finished;
+}
+
+
 void clean(volatile opaque* p, uint sz, RandomPool& ran)
 {
     uint i(0);
@@ -897,6 +1540,27 @@ void clean(volatile opaque* p, uint sz, RandomPool& ran)
 
     for (i = 0; i < sz; ++i)
         p[i] = 0;
+}
+
+
+
+Connection::Connection(ProtocolVersion v, RandomPool& ran)
+    : pre_master_secret_(0), sequence_number_(0), peer_sequence_number_(0),
+      pre_secret_len_(0), send_server_key_(false), dh_init_needed_(false),
+      master_clean_(false), TLS_(v.major_ >= 3 && v.minor_ >= 1), version_(v),
+      random_(ran) 
+{}
+
+
+Connection::~Connection() 
+{ 
+    CleanMaster(); CleanPreMaster(); delete[] pre_master_secret_;
+}
+
+
+void Connection::AllocPreSecret(uint sz) 
+{ 
+    pre_master_secret_ = new opaque[pre_secret_len_ = sz];
 }
 
 

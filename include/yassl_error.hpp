@@ -62,10 +62,10 @@ class Error : public std::runtime_error {
     Library     lib_;
 public:
     explicit Error(const char* s = "", ErrorNumber e = no_error,
-                   Library l = yaSSL_Lib) 
-        : std::runtime_error(s), error_(e), lib_(l) {}
+                   Library l = yaSSL_Lib);
 
-    ErrorNumber get_number() const { return error_; }
+    ErrorNumber get_number() const;
+    Library     get_lib()    const;
 };
 
 

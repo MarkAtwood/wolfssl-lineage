@@ -49,12 +49,12 @@ class x509 {
     uint    length_;
     opaque* buffer_;
 public:
-    explicit x509(uint sz) : length_(sz), buffer_(new opaque[sz]) {}
-    ~x509() { delete [] buffer_; }
+    explicit x509(uint sz);
+    ~x509();
 
-    uint          get_length() const { return length_; }
-    const opaque* get_buffer() const { return buffer_; }
-    opaque*       set_buffer()       { return buffer_; }
+    uint          get_length() const;
+    const opaque* get_buffer() const;
+    opaque*       use_buffer();
 
     x509(const x509&);
     x509& operator=(const x509&);
@@ -70,24 +70,21 @@ class CertManager {
     input_buffer     privateKey_;       // if server or client auth
 public:
     CertManager() {}
-    ~CertManager() 
-    {
-        std::for_each(list_.begin(), list_.end(), del_ptr_zero()) ;
-    }
+    ~CertManager();
 
-    void AddCert(x509* x) { list_.push_back(x); }  // take ownership
-    void CopyCert(const x509* x) { if (x) list_.push_back(new x509(*x)); }
+    void AddCert(x509* x);  // take ownership
+    void CopyCert(const x509* x);
     bool Validate() const;
 
     void SetKey();
     void SetPrivateKey(const x509&);
 
-    const x509*   get_cert()       const { return list_.front(); }
-    const opaque* get_Key()        const { return publicKey_.get_buffer(); }
-    const opaque* get_privateKey() const { return privateKey_.get_buffer(); }
+    const x509*   get_cert()       const;
+    const opaque* get_Key()        const;
+    const opaque* get_privateKey() const;
 
-    uint get_KeyLength()           const { return publicKey_.get_size(); }
-    uint get_privateKeyLength()    const { return privateKey_.get_size(); }
+    uint get_KeyLength()           const;
+    uint get_privateKeyLength()    const;
 private:
     CertManager(const CertManager&);            // hide copy
     CertManager& operator=(const CertManager&); // and assign

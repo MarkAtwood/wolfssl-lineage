@@ -50,7 +50,7 @@ struct ProtocolVersion {
     uint8 major_;
     uint8 minor_;     // major and minor SSL/TLS version numbers
 
-    ProtocolVersion(uint8 maj = 3, uint8 min = 0) : major_(maj), minor_(min) {}
+    ProtocolVersion(uint8 maj = 3, uint8 min = 0);
 };
 
 
@@ -78,16 +78,16 @@ struct Message {
 class ChangeCipherSpec : public Message {
     CipherChoice type_;
 public:
-    ChangeCipherSpec() : type_(change_cipher_spec_choice) {}
+    ChangeCipherSpec();
 
     friend input_buffer& operator>>(input_buffer&, ChangeCipherSpec&);
     friend output_buffer& operator<<(output_buffer&, const ChangeCipherSpec&);
 
-    input_buffer& set(input_buffer& in) { return in >> *this; }
-    output_buffer& get(output_buffer& out) const { return out << *this; }
+    input_buffer& set(input_buffer& in);
+    output_buffer& get(output_buffer& out) const;
 
-    ContentType get_type()   const { return change_cipher_spec; }
-    uint16      get_length() const { return SIZEOF_ENUM; }
+    ContentType get_type()   const;
+    uint16      get_length() const;
     void Process(input_buffer&, SSL&);
 private:
     ChangeCipherSpec(const ChangeCipherSpec&);            // hide copy
@@ -101,17 +101,17 @@ class Alert : public Message {
     AlertDescription description_;
 public:
     Alert() {}
-    Alert(AlertLevel al, AlertDescription ad) : level_(al), description_(ad) {}
+    Alert(AlertLevel al, AlertDescription ad);
 
-    ContentType get_type()   const { return alert; }
-    uint16      get_length() const { return SIZEOF_ENUM * 2; }
+    ContentType get_type()   const;
+    uint16      get_length() const;
     void Process(input_buffer&, SSL&);
 
     friend input_buffer& operator>>(input_buffer&, Alert&);
     friend output_buffer& operator<<(output_buffer&, const Alert&);
    
-    input_buffer& set(input_buffer& in) { return in >> *this; }
-    output_buffer& get(output_buffer& out) const { return out << *this; }
+    input_buffer& set(input_buffer& in);
+    output_buffer& get(output_buffer& out) const;
 private:
     Alert(const Alert&);            // hide copy
     Alert& operator=(const Alert&); // and assign
@@ -123,21 +123,20 @@ class Data : public Message {
     opaque*       buffer_;         // read  buffer used by fillData input
     const opaque* write_buffer_;   // write buffer used by output operator
 public:
-    Data() : length_(0), buffer_(0), write_buffer_(0) {}
-    Data(uint16 len, opaque* b) : length_(len), buffer_(b), write_buffer_(0) {}
-    Data(uint16 len, const opaque* w) : length_(len), buffer_(0),
-                                        write_buffer_(w) {}
+    Data();
+    Data(uint16 len, opaque* b);
+    Data(uint16 len, const opaque* w);
 
     friend output_buffer& operator<<(output_buffer&, const Data&);
 
-    input_buffer& set(input_buffer& in) { return in; }
-    output_buffer& get(output_buffer& out) const { return out << *this; }
+    input_buffer& set(input_buffer& in);
+    output_buffer& get(output_buffer& out) const;
 
-    ContentType   get_type()     const { return application_data; }
-    uint16        get_length()   const { return length_; }
-    const opaque* get_buffer()   const { return write_buffer_; }
-    void          set_length(uint16 l) { length_ = l; }
-    opaque*       set_buffer()         { return buffer_; }
+    ContentType   get_type()     const;
+    uint16        get_length()   const;
+    const opaque* get_buffer()   const;
+    void          set_length(uint16 l);
+    opaque*       set_buffer();
     void Process(input_buffer&, SSL&);
 private:
     Data(const Data&);            // hide copy
@@ -156,19 +155,19 @@ class HandShakeHeader : public Message {
 public:
     HandShakeHeader() {}
 
-    ContentType   get_type()   const { return handshake; }
-    uint16        get_length() const { return c24to32(length_); }
-    HandShakeType get_handshakeType() const { return type_; }
+    ContentType   get_type()   const;
+    uint16        get_length() const;
+    HandShakeType get_handshakeType() const;
     void Process(input_buffer&, SSL&);
 
-    void set_type(HandShakeType hst) { type_ = hst; }
-    void set_length(uint32 u32) { c32to24(u32, length_); }
+    void set_type(HandShakeType hst);
+    void set_length(uint32 u32);
 
     friend input_buffer& operator>>(input_buffer&, HandShakeHeader&);
     friend output_buffer& operator<<(output_buffer&, const HandShakeHeader&);
 
-    input_buffer& set(input_buffer& in) { return in >> *this; }
-    output_buffer& get(output_buffer& out) const { return out << *this; }
+    input_buffer& set(input_buffer& in);
+    output_buffer& get(output_buffer& out) const;
 private:
     HandShakeHeader(const HandShakeHeader&);            // hide copy
     HandShakeHeader& operator=(const HandShakeHeader&); // and assign
@@ -179,30 +178,29 @@ private:
 class HandShakeBase {
     int     length_;
 public:
-    int     get_length() const { return length_; }
-    void    set_length(int l)  { length_ = l; }
+    int     get_length() const;
+    void    set_length(int);
 
     // for building buffer's type field
-    virtual HandShakeType get_type() const { return no_shake; } // TODO: pure
+    virtual HandShakeType get_type() const;                  // TODO: make pure
 
     // handles dispactch of proper >>
-    virtual input_buffer&  set(input_buffer& in) { return in; } // TODO: pure
-    virtual output_buffer& get(output_buffer& out) const { return out; }
-    // TODO: make pure
+    virtual input_buffer&  set(input_buffer& in);            // TODO: make pure
+    virtual output_buffer& get(output_buffer& out) const;    // TODO: make pure
 
-    virtual void Process(input_buffer&, SSL&) {}; // TODO: make pure
+    virtual void Process(input_buffer&, SSL&);               // TODO: make pure
 
     virtual ~HandShakeBase() {}
 };
 
 
 struct HelloRequest : public HandShakeBase {
-    input_buffer&  set(input_buffer& in)         { return in;}
-    output_buffer& get(output_buffer& out) const { return out; }
+    input_buffer&  set(input_buffer& in);
+    output_buffer& get(output_buffer& out) const;
 
-    void Process(input_buffer&, SSL&) {}
+    void Process(input_buffer&, SSL&);
 
-    HandShakeType get_type() const { return hello_request; };
+    HandShakeType get_type() const;
 };
 
 
@@ -220,17 +218,17 @@ public:
     friend input_buffer&  operator>>(input_buffer&, ClientHello&);
     friend output_buffer& operator<<(output_buffer&, const ClientHello&);
   
-    input_buffer&  set(input_buffer& in)         { return in  >> *this; }
-    output_buffer& get(output_buffer& out) const { return out << *this; }
+    input_buffer&  set(input_buffer& in);
+    output_buffer& get(output_buffer& out) const;
 
-    HandShakeType  get_type() const { return client_hello; };
+    HandShakeType  get_type() const;
     void Process(input_buffer&, SSL&);
 
-    const opaque* get_random() const { return random_; }
+    const opaque* get_random() const;
     friend void buildClientHello(SSL&, ClientHello&, CompressionMethod);
 
     ClientHello() {}
-    explicit ClientHello(ProtocolVersion pv) : client_version_(pv) {}
+    explicit ClientHello(ProtocolVersion pv);
 private:
     ClientHello(const ClientHello&);            // hide copy
     ClientHello& operator=(const ClientHello&); // and assign
@@ -247,20 +245,19 @@ class ServerHello : public HandShakeBase {
     opaque              cipher_suite_[SUITE_LEN];
     CompressionMethod   compression_method_;
 public:
-    explicit ServerHello(ProtocolVersion pv) : server_version_(pv) {}
+    explicit ServerHello(ProtocolVersion pv);
     ServerHello() {}
-    
-        
+          
     friend input_buffer&  operator>>(input_buffer&, ServerHello&);
     friend output_buffer& operator<<(output_buffer&, const ServerHello&);
    
-    input_buffer&  set(input_buffer& in)         { return in  >> *this; }
-    output_buffer& get(output_buffer& out) const { return out << *this; }
+    input_buffer&  set(input_buffer& in);
+    output_buffer& get(output_buffer& out) const;
 
-    HandShakeType  get_type() const { return server_hello; };
+    HandShakeType  get_type() const;
     void Process(input_buffer&, SSL&);
 
-    const opaque* get_random() const { return random_; }
+    const opaque* get_random() const;
     friend void buildServerHello(SSL&, ServerHello&);
 private:
     ServerHello(const ServerHello&);            // hide copy
@@ -274,17 +271,17 @@ class x509;
 class Certificate : public HandShakeBase {
     const x509* cert_;
 public:
-    Certificate() : cert_(0) {}
+    Certificate();
     explicit Certificate(const x509* cert); 
     friend output_buffer& operator<<(output_buffer&, const Certificate&);
 
     const opaque* get_buffer() const;
   
     // Process handles input, needs SSL
-    input_buffer&  set(input_buffer& in)         { return in; }
-    output_buffer& get(output_buffer& out) const { return out << *this; }
+    input_buffer&  set(input_buffer& in);
+    output_buffer& get(output_buffer& out) const;
 
-    HandShakeType get_type() const { return certificate; }
+    HandShakeType get_type() const;
     void Process(input_buffer&, SSL&);
 private:
     Certificate(const Certificate&);            // hide copy
@@ -309,34 +306,20 @@ class ServerDHParams {
     opaque* g_;
     opaque* Ys_;
 public:
-    ServerDHParams() : pSz_(0), gSz_(0), pubSz_(0), p_(0), g_(0), Ys_(0) {}
-    ~ServerDHParams() { delete[] Ys_; delete[] g_; delete[] p_; }
+    ServerDHParams();
+    ~ServerDHParams();
 
-    int get_pSize()   const { return pSz_; }
-    int get_gSize()   const { return gSz_; }
-    int get_pubSize() const { return pubSz_; }
+    int get_pSize()   const;
+    int get_gSize()   const;
+    int get_pubSize() const;
 
-    const opaque* get_p()   const { return p_; }
-    const opaque* get_g()   const { return g_; }
-    const opaque* get_pub() const { return Ys_; }
+    const opaque* get_p()   const;
+    const opaque* get_g()   const;
+    const opaque* get_pub() const;
 
-    opaque* alloc_p(int sz)
-    {
-        p_ = new opaque[pSz_ = sz];
-        return p_;
-    }
-
-    opaque* alloc_g(int sz)
-    {
-        g_ = new opaque[gSz_ = sz];
-        return g_;
-    }
-
-    opaque* alloc_pub(int sz)
-    {
-        Ys_ = new opaque[pubSz_ = sz];
-        return Ys_;
-    }
+    opaque* alloc_p(int sz);
+    opaque* alloc_g(int sz);
+    opaque* alloc_pub(int sz);
 private:
     ServerDHParams(const ServerDHParams&);            // hide copy
     ServerDHParams& operator=(const ServerDHParams&); // and assign
@@ -347,8 +330,8 @@ struct ServerKeyBase {
     virtual ~ServerKeyBase() {}
     virtual void build(SSL&) {}
     virtual void read(SSL&, input_buffer&) {}
-    virtual int  get_length() const { return 0; }
-    virtual opaque* get_serverKey() const { return 0; }
+    virtual int  get_length() const;            // TODO: make pure
+    virtual opaque* get_serverKey() const;      // TODO: make pure
 };
 
 
@@ -392,13 +375,13 @@ class DH_Server : public ServerKeyBase {
     int             length_;                // total length of message
     opaque*         keyMessage_;            // total exchange message
 public:
-    DH_Server() : length_(0), keyMessage_(0) {}
-    ~DH_Server() { delete[] keyMessage_; }
+    DH_Server();
+    ~DH_Server();
 
     void build(SSL&);
     void read(SSL&, input_buffer&);
-    int  get_length() const { return length_; }
-    opaque* get_serverKey() const { return keyMessage_; }
+    int  get_length() const;
+    opaque* get_serverKey() const;
 private:
     DH_Server(const DH_Server&);            // hide copy
     DH_Server& operator=(const DH_Server&); // and assign
@@ -415,27 +398,23 @@ struct RSA_Server : public ServerKeyBase {
 class ServerKeyExchange : public HandShakeBase {
     ServerKeyBase* server_key_;
 public:
-    explicit ServerKeyExchange(SSL& ssl) { createKey(ssl); }
-    ServerKeyExchange() : server_key_(0) {}
-    ~ServerKeyExchange() { delete server_key_; }
+    explicit ServerKeyExchange(SSL&);
+    ServerKeyExchange();
+    ~ServerKeyExchange();
 
     void createKey(SSL&);
-    void build(SSL& ssl) 
-    { 
-        server_key_->build(ssl); 
-        set_length(server_key_->get_length());
-    }
+    void build(SSL& ssl);
+   
+    const opaque* getKey()       const;
+    int           getKeyLength() const;
 
-    const opaque* getKey()       const { return server_key_->get_serverKey(); }
-    int           getKeyLength() const { return server_key_->get_length(); }
-
-    input_buffer&  set(input_buffer& in)         { return in;} // process does
-    output_buffer& get(output_buffer& out) const { return out << *this; }
+    input_buffer&  set(input_buffer& in);
+    output_buffer& get(output_buffer& out) const;
 
     friend output_buffer& operator<<(output_buffer&, const ServerKeyExchange&);
 
     void Process(input_buffer&, SSL&);
-    HandShakeType get_type() const { return server_key_exchange; };
+    HandShakeType get_type() const;
 private:
     ServerKeyExchange(const ServerKeyExchange&);            // hide copy
     ServerKeyExchange& operator=(const ServerKeyExchange&); // and assign
@@ -450,13 +429,13 @@ struct CertificateRequest : public HandShakeBase  {
 
 
 struct ServerHelloDone : public HandShakeBase {
-    ServerHelloDone() { set_length(0); }
-    input_buffer&  set(input_buffer& in)         { return in;}
-    output_buffer& get(output_buffer& out) const { return out; }
+    ServerHelloDone();
+    input_buffer&  set(input_buffer& in);
+    output_buffer& get(output_buffer& out) const;
 
     void Process(input_buffer& input, SSL& ssl);
 
-    HandShakeType get_type() const { return server_hello_done; };
+    HandShakeType get_type() const;
 };
 
 
@@ -469,8 +448,8 @@ struct ClientKeyBase {
     virtual ~ClientKeyBase() {}
     virtual void build(SSL&) {}
     virtual void read(SSL&, input_buffer&) {}
-    virtual int  get_length() const { return 0; }
-    virtual opaque* get_clientKey() const { return 0; }
+    virtual int  get_length() const;
+    virtual opaque* get_clientKey() const;
 };
 
 
@@ -478,13 +457,14 @@ class EncryptedPreMasterSecret : public ClientKeyBase {
     opaque* secret_;
     int     length_;
 public:
-    EncryptedPreMasterSecret() : secret_(0), length_(0) {}
-    ~EncryptedPreMasterSecret() { delete[] secret_; }
+    EncryptedPreMasterSecret();
+    ~EncryptedPreMasterSecret();
+
     void    build(SSL&);
     void    read(SSL&, input_buffer&);
-    int     get_length()    const { return length_; }
-    opaque* get_clientKey() const { return secret_; }
-    void    alloc(int sz) { length_ = sz; secret_ = new opaque[sz]; }
+    int     get_length()    const;
+    opaque* get_clientKey() const;
+    void    alloc(int sz);
 private:
     // hide copy and assign
     EncryptedPreMasterSecret(const EncryptedPreMasterSecret&);           
@@ -516,16 +496,14 @@ class  ClientDiffieHellmanPublic : public ClientKeyBase {
     // dh_Yc only if explicit, otherwise sent in certificate
     enum { KEY_OFFSET = 2 };
 public:
-    ClientDiffieHellmanPublic() : length_(0), Yc_(0) {}
-    ~ClientDiffieHellmanPublic() { delete[] Yc_; }
+    ClientDiffieHellmanPublic();
+    ~ClientDiffieHellmanPublic();
 
     void    build(SSL&);
     void    read(SSL&, input_buffer&);
-    int     get_length()    const { return length_; }
-    opaque* get_clientKey() const { return Yc_; }
-    void    alloc(int sz, bool offset = false) 
-                { length_ = sz + (offset ? KEY_OFFSET : 0); 
-                  Yc_ = new opaque[length_]; }
+    int     get_length()    const;
+    opaque* get_clientKey() const;
+    void    alloc(int sz, bool offset = false);
 private:
     // hide copy and assign
     ClientDiffieHellmanPublic(const ClientDiffieHellmanPublic&);
@@ -536,26 +514,22 @@ private:
 class ClientKeyExchange : public HandShakeBase {
     ClientKeyBase*  client_key_;
 public:
-    explicit ClientKeyExchange(SSL& ssl) { createKey(ssl); }
-    ClientKeyExchange() : client_key_(0) {}
-    ~ClientKeyExchange() { delete client_key_; }
+    explicit ClientKeyExchange(SSL& ssl);
+    ClientKeyExchange();
+    ~ClientKeyExchange();
 
     void createKey(SSL&);
-    void build(SSL& ssl) 
-    { 
-        client_key_->build(ssl); 
-        set_length(client_key_->get_length());
-    }
-
-    const opaque* getKey()       const { return client_key_->get_clientKey(); }
-    int           getKeyLength() const { return client_key_->get_length(); }
+    void build(SSL& ssl);
+   
+    const opaque* getKey()       const;
+    int           getKeyLength() const;
 
     friend output_buffer& operator<<(output_buffer&, const ClientKeyExchange&);
    
-    input_buffer&  set(input_buffer& in)         { return in; } // process does
-    output_buffer& get(output_buffer& out) const { return out << *this; }
+    input_buffer&  set(input_buffer& in);
+    output_buffer& get(output_buffer& out) const;
 
-    HandShakeType  get_type() const { return client_key_exchange; };
+    HandShakeType  get_type() const;
     void Process(input_buffer&, SSL&);
 private:
     ClientKeyExchange(const ClientKeyExchange&);            // hide copy
@@ -571,20 +545,20 @@ struct CertificateVerify : public HandShakeBase {
 class Finished : public HandShakeBase {
     Hashes hashes_;
 public:
-    Finished() { set_length(FINISHED_SZ); }
+    Finished();
 
-    uint8* set_md5() { return hashes_.md5_; }
-    uint8* set_sha() { return hashes_.sha_; }
+    uint8* set_md5();
+    uint8* set_sha();
 
     friend input_buffer& operator>>(input_buffer&, Finished&);
     friend output_buffer& operator<<(output_buffer&, const Finished&);
 
-    input_buffer&  set(input_buffer& in)         { return in  >> *this;}
-    output_buffer& get(output_buffer& out) const { return out << *this; }
+    input_buffer&  set(input_buffer& in);
+    output_buffer& get(output_buffer& out) const;
 
     void Process(input_buffer&, SSL&);
 
-    HandShakeType get_type() const { return finished; };
+    HandShakeType get_type() const;
 private:
     Finished(const Finished&);            // hide copy
     Finished& operator=(const Finished&); // and assign
@@ -617,21 +591,10 @@ struct Connection {
     ProtocolVersion version_;
     RandomPool&     random_;
 
-    Connection(ProtocolVersion v, RandomPool& ran) : pre_master_secret_(0),
-        sequence_number_(0), peer_sequence_number_(0), pre_secret_len_(0),
-        send_server_key_(false), dh_init_needed_(false), master_clean_(false),
-        TLS_(v.major_ >= 3 && v.minor_ >= 1), version_(v), random_(ran) {}
+    Connection(ProtocolVersion v, RandomPool& ran);
+    ~Connection();
 
-    ~Connection() 
-    { 
-        CleanMaster(); CleanPreMaster(); delete[] pre_master_secret_;
-    }
-
-    void AllocPreSecret(uint sz) 
-    { 
-        pre_master_secret_ = new opaque[pre_secret_len_ = sz];
-    }
-
+    void AllocPreSecret(uint sz);
     void CleanPreMaster();
     void CleanMaster();
 private:

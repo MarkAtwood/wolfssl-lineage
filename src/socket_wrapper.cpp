@@ -52,6 +52,23 @@
 namespace yaSSL {
 
 
+Socket::Socket(socket_t s) 
+    : socket_(s) 
+{}
+
+
+void Socket::set_fd(socket_t s)
+{
+    socket_ = s;
+}
+
+
+socket_t Socket::get_fd() const
+{
+    return socket_;
+}
+
+
 Socket::~Socket()
 {
     closeSocket();

@@ -490,7 +490,7 @@ int read_file(SSL_CTX* ctx, const char* file, int format, CertType type)
         uint sz = input.tellg();
         input.seekg(0, std::ios::beg);    
         x = new x509(sz);  // takes ownership
-        input.read(reinterpret_cast<char*>(x->set_buffer()), sz);
+        input.read(reinterpret_cast<char*>(x->use_buffer()), sz);
     }
     else
         x = PemToDer(file, type);

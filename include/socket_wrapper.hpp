@@ -67,12 +67,12 @@ typedef unsigned char byte;
 class Socket {
     socket_t socket_;                    // underlying socket descriptor
 public:
-    explicit Socket(socket_t s = INVALID_SOCKET) : socket_(s) {}
+    explicit Socket(socket_t s = INVALID_SOCKET);
     virtual ~Socket();
 
-    void     set_fd(socket_t s) { socket_ = s; }
+    void     set_fd(socket_t s);
     uint     get_ready() const;
-    socket_t get_fd() const { return socket_; }
+    socket_t get_fd()    const;
 
     int send(const byte* buf, unsigned int len, int flags = 0) const;
     int receive(byte* buf, unsigned int len, int flags = 0)    const;

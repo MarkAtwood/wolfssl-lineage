@@ -38,6 +38,17 @@
 namespace yaSSL {
 
 
+x509::x509(uint sz) : length_(sz), buffer_(new opaque[sz]) 
+{
+}
+
+
+x509::~x509() 
+{ 
+    delete [] buffer_; 
+}
+
+
 x509::x509(const x509& that) : length_(that.length_),
                                buffer_(new opaque[length_])
 {
@@ -57,6 +68,92 @@ x509& x509::operator=(const x509& that)
     x509 temp(that);
     Swap(temp);
     return *this;
+}
+
+
+uint x509::get_length() const
+{ 
+    return length_; 
+}
+
+
+const opaque* x509::get_buffer() const
+{ 
+    return buffer_; 
+}
+
+
+opaque* x509::use_buffer()
+{ 
+    return buffer_; 
+}
+
+
+//CertManager
+
+CertManager::~CertManager()
+{
+    std::for_each(list_.begin(), list_.end(), del_ptr_zero()) ;
+}
+
+
+void CertManager::AddCert(x509* x)
+{ 
+    list_.push_back(x);  // take ownership
+}
+
+
+void CertManager::CopyCert(const x509* x)
+{
+    if (x)
+        list_.push_back(new x509(*x));
+}
+
+
+const x509* CertManager::get_cert() const
+{ 
+    return list_.front();
+}
+
+
+const opaque* CertManager::get_Key() const
+{ 
+    return publicKey_.get_buffer();
+}
+
+
+const opaque* CertManager::get_privateKey() const
+{ 
+    return privateKey_.get_buffer();
+}
+
+
+uint CertManager::get_KeyLength() const
+{ 
+    return publicKey_.get_size();
+}
+
+
+uint CertManager::get_privateKeyLength() const
+{ 
+    return privateKey_.get_size();
+}
+
+
+// Validate the peer's certificate list
+bool CertManager::Validate() const
+{
+    bool valid = false;
+
+    return valid;
+}
+
+
+// Set the private key
+void CertManager::SetPrivateKey(const x509& key)
+{
+    privateKey_.allocate(key.get_length());
+    privateKey_.assign(key.get_buffer(), key.get_length());
 }
 
 
@@ -99,21 +196,6 @@ void CertManager::SetKey()
 
 #endif // USE_CML_LIB
 
-// Validate the peer's certificate list
-bool CertManager::Validate() const
-{
-    bool valid = false;
-
-    return valid;
-}
-
-
-// Set the private key
-void CertManager::SetPrivateKey(const x509& key)
-{
-    privateKey_.allocate(key.get_length());
-    privateKey_.assign(key.get_buffer(), key.get_length());
-}
 
 
 } // namespace
