@@ -48,7 +48,7 @@ public:
 
 	AbstractRing() {m_mg.m_pRing = this;}
 	AbstractRing(const AbstractRing &source) {m_mg.m_pRing = this;}
-	AbstractRing& operator=(const AbstractRing &source) {}
+	AbstractRing& operator=(const AbstractRing &source) {return *this;}
 
 	virtual bool IsUnit(const Element &a) const =0;
 	virtual const Element& One() const =0;
