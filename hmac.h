@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(CryptoPP)
 
 //! <a href="http://www.weidai.com/scan-mirror/mac.html#HMAC">HMAC</a>
 /*! HMAC(K, text) = H(K XOR opad, H(K XOR ipad, text)) */
-template <class T> class HMAC : public MessageAuthenticationCode, public VariableKeyLength<16, 0, T::BLOCKSIZE>
+template <class T> class HMAC : public MessageAuthenticationCode, public VariableKeyLength<16, 0, UINT_MAX>
 {
 public:
 	// put enums here for Metrowerks 4
@@ -33,15 +33,26 @@ private:
 
 template <class T>
 HMAC<T>::HMAC(const byte *userKey, unsigned int keylength)
-	: k_ipad(MAX_KEYLENGTH), k_opad(MAX_KEYLENGTH)
+	: k_ipad(T::BLOCKSIZE), k_opad(T::BLOCKSIZE)
 {
 	assert(keylength == KeyLength(keylength));
 
-	memset(k_ipad, IPAD, MAX_KEYLENGTH);
-	xorbuf(k_ipad, userKey, keylength);
+	if (keylength <= T::BLOCKSIZE)
+		memcpy(k_ipad, userKey, keylength);
+	else
+	{
+		T().CalculateDigest(k_ipad, userKey, keylength);
+		keylength = T::DIGESTSIZE;
+	}
 
-	memset(k_opad, OPAD, MAX_KEYLENGTH);
-	xorbuf(k_opad, userKey, keylength);
+	assert(keylength <= T::BLOCKSIZE);
+	memset(k_ipad+keylength, 0, T::BLOCKSIZE-keylength);
+
+	for (unsigned int i=0; i<T::BLOCKSIZE; i++)
+	{
+		k_opad[i] = k_ipad[i] ^ OPAD;
+		k_ipad[i] ^= IPAD;
+	}
 
 	Init();
 }
@@ -49,7 +60,7 @@ HMAC<T>::HMAC(const byte *userKey, unsigned int keylength)
 template <class T>
 void HMAC<T>::Init()
 {
-	hash.Update(k_ipad, MAX_KEYLENGTH);
+	hash.Update(k_ipad, T::BLOCKSIZE);
 }
 
 template <class T>
@@ -63,7 +74,7 @@ void HMAC<T>::Final(byte *mac)
 {
 	hash.Final(mac);
 
-	hash.Update(k_opad, MAX_KEYLENGTH);
+	hash.Update(k_opad, T::BLOCKSIZE);
 	hash.Update(mac, DIGESTSIZE);
 	hash.Final(mac);
 	Init();
