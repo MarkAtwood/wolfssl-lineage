@@ -34,10 +34,11 @@
 #endif
 
 
+#include "yassl_types.hpp"  // SignatureAlgorithm
 #include "buffer.hpp"       // input_buffer
 #include "asn.hpp"          // SignerList
-#include <list>             // std::list
-#include <algorithm>        // std::for_each
+#include "list.hpp"         // mySTL::list
+#include "algorithm.hpp"    // mySTL::for_each
 
 namespace yaSSL {
    
@@ -67,18 +68,20 @@ private:
 
 // Certificate Manager keeps a list of the cert chain and public key
 class CertManager {
-    typedef std::list<x509*> CertList;
+    typedef mySTL::list<x509*> CertList;
 
-    CertList     list_;             // self
-    input_buffer publicKey_;        
+    CertList     list_;                 // self      
     input_buffer privateKey_;
 
-    CertList     peerList_;         // peer
+    CertList     peerList_;             // peer
     input_buffer peerPublicKey_;
-    X509*        peerX509_;         // peer's openSSL X509
+    X509*        peerX509_;             // peer's openSSL X509
 
-    SignerList   signers_;          // decoded CA keys and names
-                                    //    plus verified chained certs
+    SignatureAlgorithm keyType_;        // self   key type
+    SignatureAlgorithm peerKeyType_;    // peer's key type
+
+    SignerList   signers_;              // decoded CA keys and names
+                                        //    plus verified chained certs
     bool verifyPeer_;
     bool failNoCert_;
     bool sendVerify_;
@@ -88,15 +91,17 @@ public:
 
     void AddPeerCert(x509* x);      // take ownership
     void CopySelfCert(const x509* x);
-    void CopyCaCert(const x509* x);
-    void Validate();
+    int  CopyCaCert(const x509* x);
+    int  Validate();
 
-    void SetPrivateKey(const x509&);
+    int SetPrivateKey(const x509&);
 
-    const x509*   get_cert()       const;
-    const opaque* get_peerKey()    const;
-    const opaque* get_privateKey() const;
-          X509*   get_peerX509()   const;
+    const x509*        get_cert()        const;
+    const opaque*      get_peerKey()     const;
+    const opaque*      get_privateKey()  const;
+          X509*        get_peerX509()    const;
+    SignatureAlgorithm get_keyType()     const;
+    SignatureAlgorithm get_peerKeyType() const;
 
     uint get_peerKeyLength()       const;
     uint get_privateKeyLength()    const;

@@ -255,6 +255,8 @@ public:
     RandomPool();
     ~RandomPool();
 
+    int GetError() const;
+
     friend class RSA;
     friend class DSS;
     friend class DiffieHellman;
@@ -330,7 +332,7 @@ class DiffieHellman  {
 public:
     DiffieHellman(const byte*, unsigned int, const byte*, unsigned int,
                   const byte*, unsigned int, const RandomPool& random);
-    DiffieHellman(const char*, const RandomPool&);
+    //DiffieHellman(const char*, const RandomPool&);
     DiffieHellman(const Integer&, const Integer&, const RandomPool&);
     ~DiffieHellman();
 

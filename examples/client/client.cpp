@@ -22,7 +22,6 @@ void client_test(void* args)
     SSL_METHOD* method = TLSv1_client_method();
     SSL_CTX*    ctx = SSL_CTX_new(method);
 
-    //SSL_CTX_set_cipher_list(ctx, "EDH-DSS-DES-CBC-SHA");
     set_certs(ctx);
     SSL* ssl = SSL_new(ctx);
 

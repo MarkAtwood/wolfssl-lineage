@@ -30,7 +30,7 @@
 #include "random.hpp"
 #include "file.hpp"
 #include <cstring>
-#include <algorithm>
+#include "algorithm.hpp"    // mySTL::swap
 
 
 #ifdef TAOCRYPT_X86ASM_AVAILABLE
@@ -201,7 +201,7 @@ public:
         void Negate();		
         void SetPositive() { sign_ = POSITIVE; }
         void SetNegative() { if (!!(*this)) sign_ = NEGATIVE; }
-        void swap(Integer& a);
+        void Swap(Integer& a);
 
         bool	    operator!() const;
         Integer     operator+() const {return *this;}
@@ -298,7 +298,7 @@ inline word    operator%(const Integer &a, word b) {return a.Modulo(b);}
 
 inline void swap(Integer &a, Integer &b)
 {
-    a.swap(b);
+    a.Swap(b);
 }
 
 

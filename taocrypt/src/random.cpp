@@ -26,7 +26,7 @@
 
 
 #include "random.hpp"
-#include <stdexcept>
+#include "stdexcept.hpp"
 
 #if defined(WIN32)
     #define _WIN32_WINNT 0x0400
@@ -70,9 +70,9 @@ byte RandomNumberGenerator::GenerateByte()
 
 OS_Seed::OS_Seed()
 {
-    if( !CryptAcquireContext(&handle_, 0, 0, PROV_RSA_FULL,
+    if(!CryptAcquireContext(&handle_, 0, 0, PROV_RSA_FULL,
                              CRYPT_VERIFYCONTEXT))
-        throw std::runtime_error("bad wincrypt acquire");
+        error_.SetError(WINCRYPT_E);
 }
 
 
@@ -84,8 +84,8 @@ OS_Seed::~OS_Seed()
 
 void OS_Seed::GenerateSeed(byte* output, word32 sz)
 {
-    if ( !CryptGenRandom(handle_, sz, output))
-        throw std::runtime_error("CryptGenRandom error");
+    if (!CryptGenRandom(handle_, sz, output))
+        error_.SetError(CRYPTGEN_E);
 }
 
 
@@ -96,7 +96,7 @@ OS_Seed::OS_Seed()
 {
     fd_ = open("/dev/urandom",O_RDONLY);
     if (fd_ == -1)
-        throw std::runtime_error("open /dev/urandom error");
+        error_.SetError(OPEN_RAN_E);
 }
 
 
@@ -111,8 +111,10 @@ void OS_Seed::GenerateSeed(byte* output, word32 sz)
 {
     while (sz) {
         int len = read(fd_, output, sz);
-        if (len == -1)
-            throw std::runtime_error("read /dev/urandom error");
+        if (len == -1) {
+            error_.SetError(READ_RAN_E);
+            return;
+        }
 
         sz     -= len;
         output += len;

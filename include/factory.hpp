@@ -31,7 +31,8 @@
 #ifndef yaSSL_FACTORY_HPP
 #define yaSSL_FACTORY_HPP
 
-#include <map>
+#include "vector.hpp"
+#include "pair.hpp"
 #include "yassl_error.hpp"
 
 
@@ -54,28 +55,45 @@ template<class    AbstractProduct,
          typename ProductCreator = AbstractProduct* (*)()
         >
 class Factory {                                             
-    typedef std::map<IdentifierType, ProductCreator> CallBackMap;
-    CallBackMap callbacks_;
+    typedef mySTL::pair<IdentifierType, ProductCreator> CallBack;
+    typedef mySTL::vector<CallBack> CallBackVector;
+
+    CallBackVector callbacks_;
 public:
     // pass function pointer to register all callbacks upon creation
     explicit Factory(void (*init)(Factory<AbstractProduct, IdentifierType,
-                                  ProductCreator>&)) { init(*this); }
-    // return true if registration succeeds
-    bool Register(const IdentifierType& id, ProductCreator pc)
-        { return callbacks_.insert(
-                        CPP_TYPENAME CallBackMap::value_type(id, pc)).second; }
+                                  ProductCreator>&))
+    { 
+        init(*this); 
+    }
 
-    // return true if message id was previously registered
-    bool UnRegister(const IdentifierType& id) 
-        { return callbacks_.erase(id) == 1; }
+    // reservce place in vector before registering, used by init funcion
+    void Reserve(size_t sz)
+    {
+        callbacks_.reserve(sz);
+    }
 
-    // THE Creator, returns a new object of the proper type or throws
+    // register callback
+    void Register(const IdentifierType& id, ProductCreator pc)
+    {
+        callbacks_.push_back(mySTL::make_pair(id, pc));
+    }
+
+    // THE Creator, returns a new object of the proper type or 0
     AbstractProduct* CreateObject(const IdentifierType& id) const
     {
-        typename CallBackMap::const_iterator i = callbacks_.find(id);
-        if (i == callbacks_.end()) 
-            throw Error("UnKnown Facotry ClassID", factory_error);
-        return (i->second)();
+        const CallBack* first = callbacks_.begin();
+        const CallBack* last  = callbacks_.end();
+
+        while (first != last) {
+            if (first->first == id)
+                break;
+            ++first;
+        }
+
+        if (first == callbacks_.end())
+            return 0;
+        return (first->second)();
     }
 private:
     Factory(const Factory&);            // hide copy

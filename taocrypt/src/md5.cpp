@@ -23,7 +23,7 @@
 /* based on Wei Dai's md5.cpp from CryptoPP */
 
 #include "md5.hpp"
-#include <algorithm>
+#include "algorithm.hpp"    // mySTL::swap
 
 namespace TaoCrypt {
 
@@ -60,10 +60,10 @@ MD5& MD5::operator= (const MD5& that)
 
 void MD5::Swap(MD5& other)
 {
-    std::swap(buffer_,  other.buffer_);
-    std::swap(buffLen_, other.buffLen_);
-    std::swap(digest_,  other.digest_);
-    std::swap(length_,  other.length_);
+    mySTL::swap(buffer_,  other.buffer_);
+    mySTL::swap(buffLen_, other.buffLen_);
+    mySTL::swap(digest_,  other.digest_);
+    mySTL::swap(length_,  other.length_);
 }
 
 

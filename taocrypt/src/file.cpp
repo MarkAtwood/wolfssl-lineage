@@ -24,25 +24,40 @@
 
 #include "file.hpp"
 
+
 namespace TaoCrypt {
+
+
+FileSource::FileSource(const char* fname, Source& source)
+{
+    file_ = fopen(fname, "rb");
+    if (file_) get(source);
+}
+
+
+FileSource::~FileSource()
+{
+    if (file_)
+        fclose(file_);
+}
 
 
 
 // return size of source from beginning or current position
 word32 FileSource::size(bool use_current)
 {
-    using std::streampos;
+    long current = ftell(file_);
+    long begin   = current;
 
-    streampos current = file_.tellg();
-    streampos begin;
+    if (!use_current) {
+        fseek(file_, 0, SEEK_SET);
+        begin = ftell(file_);
+    }
 
-    if (use_current)
-        begin = current;
-    else
-        begin = file_.seekg(0, std::ios::beg).tellg();
+    fseek(file_, 0, SEEK_END);
+    long end = ftell(file_);
 
-    streampos end = file_.seekg(0, std::ios::end).tellg();
-    file_.seekg(current);
+    fseek(file_, current, SEEK_SET);
 
     return end - begin;
 }
@@ -61,24 +76,40 @@ word32 FileSource::get(Source& source)
     if (source.size() < sz)
         source.grow(sz);
 
-    file_.read(reinterpret_cast<char*>(source.buffer_.get_buffer()), sz);
+    size_t bytes = fread(source.buffer_.get_buffer(), 1, sz, file_);
 
-    return sz;
+    if (bytes == 1)
+        return sz;
+    else
+        return 0;
+}
+
+
+FileSink::FileSink(const char* fname, Source& source)
+{
+    file_ = fopen(fname, "wb");
+    if (file_) put(source);
+}
+
+
+FileSink::~FileSink()
+{
+    if (file_)
+        fclose(file_);
 }
 
 
 // fill source from file sink
 void FileSink::put(Source& source)
 {
-    file_.write(reinterpret_cast<const char*>(source.get_buffer()),
-                                              source.size());
+    fwrite(source.get_buffer(), 1, source.size(), file_);
 }
 
 
 // swap with other and reset to beginning
 void Source::reset(ByteBlock& otherBlock)
 {
-    buffer_.swap(otherBlock);   
+    buffer_.Swap(otherBlock);   
     current_ = 0;
 }
 

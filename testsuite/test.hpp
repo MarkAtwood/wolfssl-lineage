@@ -190,7 +190,7 @@ inline void set_dsaServerCerts(SSL_CTX* ctx)
             != SSL_SUCCESS)
             if (SSL_CTX_use_certificate_file(ctx, dsaCert3, SSL_FILETYPE_PEM)
                 != SSL_SUCCESS)
-                err_sys("failed to use certificate: certs/server-cert.pem");
+                err_sys("failed to use certificate: certs/dsa-cert.pem");
     
     // To allow testing from several dirs
     if (SSL_CTX_use_PrivateKey_file(ctx, dsaKey, SSL_FILETYPE_ASN1)

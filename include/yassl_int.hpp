@@ -76,12 +76,14 @@ enum ServerState {
 
 // combines all states
 class States {
+    enum {MAX_ERROR_SZ = 80 };
+
     RecordLayerState recordLayer_;
     HandShakeState   handshakeLayer_;
     ClientState      clientState_;
     ServerState      serverState_;
-    std::string      errorString_;
-    int              errorNumber_;
+    char             errorString_[MAX_ERROR_SZ];
+    YasslError       what_;
 public:
     States();
 
@@ -89,15 +91,15 @@ public:
     const HandShakeState&   getHandShake() const;
     const ClientState&      getClient()    const;
     const ServerState&      getServer()    const;
-    const std::string&      getString()    const;
-          int               getNumber()    const;
+    const char*             getString()    const;
+          YasslError        What()         const;
 
     RecordLayerState& useRecord();
     HandShakeState&   useHandShake();
     ClientState&      useClient();
     ServerState&      useServer();
-    std::string&      useString();
-    int&              useNumber();
+    char*             useString();
+    void              SetError(YasslError);
 private:
     States(const States&);              // hide copy
     States& operator=(const States&);   // and assign
@@ -190,7 +192,7 @@ private:
 
 // holds all sessions
 class Sessions {
-    std::list<SSL_SESSION*> list_;
+    mySTL::list<SSL_SESSION*> list_;
     RandomPool random_;                 // for session cleaning
     Mutex      mutex_;                  // no-op for single threaded
 
@@ -261,7 +263,7 @@ struct DH_Parms {
 // the SSL context
 class SSL_CTX {
 public:
-    typedef std::list<x509*> CertList;
+    typedef mySTL::list<x509*> CertList;
 private:
     SSL_METHOD* method_;
     x509*       certificate_;
@@ -355,8 +357,8 @@ private:
 
 // holds input and output buffers
 class Buffers {
-    typedef std::list<input_buffer*>  inputList;
-    typedef std::list<output_buffer*> outputList;
+    typedef mySTL::list<input_buffer*>  inputList;
+    typedef mySTL::list<output_buffer*> outputList;
 
     inputList  dataList_;                // list of users app data / handshake
     outputList handShakeList_;           // buffered handshake msgs
@@ -419,6 +421,7 @@ public:
     const sslHashes&  getHashes()   const;
     const sslFactory& getFactory()  const;
     const Socket&     getSocket()   const;
+          YasslError  GetError()    const;
 
     Crypto&    useCrypto();
     Security&  useSecurity();
@@ -434,10 +437,11 @@ public:
     void set_session(SSL_SESSION*);
     void set_preMaster(const opaque*, uint);
     void set_masterSecret(const opaque*);
-    void set_error(const Error& e);
+    void SetError(YasslError);
 
     // helpers
     bool isTLS() const;
+    void order_error();
     void makeMasterSecret();
     void makeTLSMasterSecret();
     void addData(input_buffer* data);
@@ -452,7 +456,7 @@ public:
     void matchSuite(const opaque*, uint length);
     void deriveKeys();
     void deriveTLSKeys();
-    void init_dh();
+    void Send(const byte*, uint);
 
     uint bufferedData();
     uint get_SEQIncrement(bool);

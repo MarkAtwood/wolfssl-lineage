@@ -31,7 +31,25 @@
 #include "openssl/ssl.h"  // for DH
 
 
+void* operator new(size_t sz, yaSSL::new_t)
+{
+    void* ptr = ::operator new(sz);
+
+    if (!ptr) abort();
+
+    return ptr;
+}
+
+void* operator new[](size_t sz, yaSSL::new_t n)
+{
+    return operator new (sz, n);
+}
+
+
 namespace yaSSL {
+
+
+new_t ys;   // for library new
 
 
 // convert a 32 bit integer into a 24 bit one
@@ -110,7 +128,7 @@ void c32toa(uint32 u32, opaque* c)
 
 States::States() : recordLayer_(recordReady), handshakeLayer_(preHandshake),
            clientState_(serverNull),  serverState_(clientNull),
-           errorNumber_(0) {}
+           what_(no_error) {}
 
 const RecordLayerState& States::getRecord() const 
 {
@@ -136,15 +154,15 @@ const ServerState& States::getServer() const
 }
 
 
-const std::string& States::getString() const
+const char* States::getString() const
 {
     return errorString_;
 }
 
 
-int States::getNumber() const
+YasslError States::What() const
 {
-    return errorNumber_;
+    return what_;
 }
 
 
@@ -172,15 +190,15 @@ ServerState& States::useServer()
 }
 
 
-std::string& States::useString()
+char* States::useString()
 {
     return errorString_;
 }
 
 
-int& States::useNumber()
+void States::SetError(YasslError ye)
 {
-    return errorNumber_;
+    what_ = ye;
 }
 
 
@@ -221,15 +239,26 @@ SSL::SSL(SSL_CTX* ctx)
     : secure_(ctx->getMethod()->getVersion(), crypto_.use_random(),
               ctx->getMethod()->getSide(), ctx->GetCiphers())
 {
+    if (int err = crypto_.get_random().GetError()) {
+        SetError(YasslError(err));
+        return;
+    }
+
     CertManager& cm = crypto_.use_certManager();
     cm.CopySelfCert(ctx->getCert());
 
     bool serverSide = secure_.use_parms().entity_ == server_end;
 
-    if (ctx->getKey())
-        cm.SetPrivateKey(*ctx->getKey());
-    else if (serverSide)
-        throw Error("No Server Key File", no_key_file);
+    if (ctx->getKey()) {
+        if (int err = cm.SetPrivateKey(*ctx->getKey())) {
+            SetError(YasslError(err));
+            return;
+        }
+    }
+    else if (serverSide) {
+        SetError(no_key_file);
+        return;
+    }
 
     if (ctx->getMethod()->verifyPeer())
         cm.setVerifyPeer();
@@ -244,7 +273,10 @@ SSL::SSL(SSL_CTX* ctx)
     SSL_CTX::CertList::const_iterator last(ca.end());
 
     while (first != last) {
-        cm.CopyCaCert(*first);
+        if (int err = cm.CopyCaCert(*first)) {
+            SetError(YasslError(err));
+            return;
+        }
         ++first;
     }
 }
@@ -265,8 +297,8 @@ void SSL::set_pending(Cipher suite)
         parms.key_size_  = AES_256_KEY_SZ;
         parms.iv_size_   = AES_BLOCK_SZ;
         parms.cipher_type_ = block;
-        crypto_.setDigest(new SHA);
-        crypto_.setCipher(new AES(AES_256_KEY_SZ));
+        crypto_.setDigest(new (ys) SHA);
+        crypto_.setCipher(new (ys) AES(AES_256_KEY_SZ));
         strncpy(parms.cipher_name_, cipher_names[TLS_RSA_WITH_AES_256_CBC_SHA],
                 MAX_SUITE_NAME);
         break;
@@ -279,8 +311,8 @@ void SSL::set_pending(Cipher suite)
         parms.key_size_  = AES_128_KEY_SZ;
         parms.iv_size_   = AES_BLOCK_SZ;
         parms.cipher_type_ = block;
-        crypto_.setDigest(new SHA);
-        crypto_.setCipher(new AES);
+        crypto_.setDigest(new (ys) SHA);
+        crypto_.setCipher(new (ys) AES);
         strncpy(parms.cipher_name_, cipher_names[TLS_RSA_WITH_AES_128_CBC_SHA],
                 MAX_SUITE_NAME);
         break;
@@ -293,8 +325,8 @@ void SSL::set_pending(Cipher suite)
         parms.key_size_  = DES_EDE_KEY_SZ;
         parms.iv_size_   = DES_IV_SZ;
         parms.cipher_type_ = block;
-        crypto_.setDigest(new SHA);
-        crypto_.setCipher(new DES_EDE);
+        crypto_.setDigest(new (ys) SHA);
+        crypto_.setCipher(new (ys) DES_EDE);
         strncpy(parms.cipher_name_, cipher_names[SSL_RSA_WITH_3DES_EDE_CBC_SHA]
                 , MAX_SUITE_NAME);
         break;
@@ -307,8 +339,8 @@ void SSL::set_pending(Cipher suite)
         parms.key_size_  = DES_KEY_SZ;
         parms.iv_size_   = DES_IV_SZ;
         parms.cipher_type_ = block;
-        crypto_.setDigest(new SHA);
-        crypto_.setCipher(new DES);
+        crypto_.setDigest(new (ys) SHA);
+        crypto_.setCipher(new (ys) DES);
         strncpy(parms.cipher_name_, cipher_names[SSL_RSA_WITH_DES_CBC_SHA],
                 MAX_SUITE_NAME);
         break;
@@ -321,8 +353,8 @@ void SSL::set_pending(Cipher suite)
         parms.key_size_  = RC4_KEY_SZ;
         parms.iv_size_   = 0;
         parms.cipher_type_ = stream;
-        crypto_.setDigest(new SHA);
-        crypto_.setCipher(new RC4);
+        crypto_.setDigest(new (ys) SHA);
+        crypto_.setCipher(new (ys) RC4);
         strncpy(parms.cipher_name_, cipher_names[SSL_RSA_WITH_RC4_128_SHA],
                 MAX_SUITE_NAME);
         break;
@@ -335,8 +367,8 @@ void SSL::set_pending(Cipher suite)
         parms.key_size_  = RC4_KEY_SZ;
         parms.iv_size_   = 0;
         parms.cipher_type_ = stream;
-        crypto_.setDigest(new MD5);
-        crypto_.setCipher(new RC4);
+        crypto_.setDigest(new (ys) MD5);
+        crypto_.setCipher(new (ys) RC4);
         strncpy(parms.cipher_name_, cipher_names[SSL_RSA_WITH_RC4_128_MD5],
                 MAX_SUITE_NAME);
         break;
@@ -351,9 +383,8 @@ void SSL::set_pending(Cipher suite)
         parms.iv_size_   = DES_IV_SZ;
         parms.cipher_type_ = block;
         secure_.use_connection().send_server_key_  = true; // eph
-        secure_.use_connection().dh_init_needed_   = true;
-        crypto_.setDigest(new SHA);
-        crypto_.setCipher(new DES);
+        crypto_.setDigest(new (ys) SHA);
+        crypto_.setCipher(new (ys) DES);
         strncpy(parms.cipher_name_, cipher_names[SSL_DHE_RSA_WITH_DES_CBC_SHA],
                 MAX_SUITE_NAME);
         break;
@@ -368,15 +399,14 @@ void SSL::set_pending(Cipher suite)
         parms.iv_size_   = DES_IV_SZ;
         parms.cipher_type_ = block;
         secure_.use_connection().send_server_key_  = true; // eph
-        secure_.use_connection().dh_init_needed_   = true;
-        crypto_.setDigest(new SHA);
-        crypto_.setCipher(new DES);
+        crypto_.setDigest(new (ys) SHA);
+        crypto_.setCipher(new (ys) DES);
         strncpy(parms.cipher_name_, cipher_names[SSL_DHE_DSS_WITH_DES_CBC_SHA],
                 MAX_SUITE_NAME);
         break;
 
     default:
-        throw Error("UnKnown CipherSuite", unknown_cipher);
+        SetError(unknown_cipher);
     }
 }
 
@@ -413,26 +443,11 @@ void SSL::set_sessionID(const opaque* sessionID)
 
 
 // store error 
-void SSL::set_error(const Error& e)
+void SSL::SetError(YasslError ye)
 {
-    states_.useNumber() = e.get_number();
-    states_.useString() = e.what();
-}
-
-
-// default Diffie-Hellman init
-void SSL::init_dh()
-{ 
-    if (!crypto_.DhSet()) {
-        try {
-        crypto_.SetDH(new DiffieHellman("../../certs/dh1024.dat",
-                                        crypto_.get_random()));
-        }
-        catch (...) {
-        crypto_.SetDH(new DiffieHellman("../certs/dh1024.dat",
-                                        crypto_.get_random()));
-        }
-    }
+    states_.SetError(ye);
+    //strncpy(states_.useString(), e.what(), mySTL::named_exception::NAME_SIZE);
+    // TODO: add string here
 }
 
 
@@ -440,7 +455,7 @@ void SSL::init_dh()
 namespace {
 
 // DeriveKeys and MasterSecret helper sets prefix letters
-static void setPrefix(opaque* sha_input, int i)
+static bool setPrefix(opaque* sha_input, int i)
 {
     switch (i) {
     case 0:
@@ -465,19 +480,22 @@ static void setPrefix(opaque* sha_input, int i)
         memcpy(sha_input, "GGGGGGG", 7);
         break;
     default:
-        throw Error("Bad prefix index", prefix_error);
-    }   
+        return false;  // prefix_error
+    }
+    return true;
 }
 
 
 const char handshake_order[] = "Out of order HandShake Message!";
 
-void order_error()
-{
-    throw Error(handshake_order, out_of_order);
-}
 
 } // namespcae for locals
+
+
+void SSL::order_error()
+{
+    SetError(out_of_order);
+}
 
 
 // Create and store the master secret see page 32, 6.1
@@ -499,7 +517,10 @@ void SSL::makeMasterSecret()
 
         for (int i = 0; i < MASTER_ROUNDS; ++i) {
             opaque prefix[PREFIX];
-            setPrefix(prefix, i);
+            if (!setPrefix(prefix, i)) {
+                SetError(prefix_error);
+                return;
+            }
 
             sha_input.set_current(0);
             sha_input.write(prefix, i + 1);
@@ -559,7 +580,10 @@ void SSL::deriveKeys()
 
     for (int i = 0; i < rounds; ++i) {
         int j = i + 1;
-        setPrefix(sha_input, i);
+        if (!setPrefix(sha_input, i)) {
+            SetError(prefix_error);
+            return;
+        }
 
         memcpy(&sha_input[j], secure_.get_connection().master_secret_,
                SECRET_LEN);
@@ -663,8 +687,8 @@ struct SumBuffer {
 
 uint SSL::bufferedData()
 {
-    return std::for_each(buffers_.getData().begin(), buffers_.getData().end(),
-                         SumData()).total_;
+    return mySTL::for_each(buffers_.getData().begin(),buffers_.getData().end(),
+                           SumData()).total_;
 }
 
 
@@ -681,7 +705,8 @@ inline T min(T a, T b)
 
 // use input buffer to fill data
 void SSL::fillData(Data& data)
-{   
+{
+    if (GetError()) return;
     uint dataSz   = data.get_length();        // input, data size to fill
     uint elements = buffers_.getData().size();
 
@@ -709,7 +734,9 @@ void SSL::fillData(Data& data)
 // flush output buffer
 void SSL::flushBuffer()
 {
-    uint sz = std::for_each(buffers_.getHandShake().begin(),
+    if (GetError()) return;
+
+    uint sz = mySTL::for_each(buffers_.getHandShake().begin(),
                             buffers_.getHandShake().end(),
                             SumBuffer()).total_;
     output_buffer out(sz);
@@ -722,7 +749,14 @@ void SSL::flushBuffer()
         buffers_.useHandShake().pop_front();
         delete front;
     }
-    socket_.send(out.get_buffer(), out.get_size());
+    Send(out.get_buffer(), out.get_size());
+}
+
+
+void SSL::Send(const byte* buffer, uint sz)
+{
+    if (socket_.send(buffer, sz) != sz)
+        SetError(send_error);
 }
 
 
@@ -748,17 +782,23 @@ const byte* SSL::get_macSecret(bool verify)
 
 void SSL::verifyState(const RecordLayerHeader& rlHeader)
 {
+    if (GetError()) return;
+
     if (states_.getRecord() == recordNotReady || 
             (rlHeader.type_ == application_data &&        // data and handshake
-             states_.getHandShake() != handShakeReady) ) // isn't complete yet
-              throw Error("RecordLayer read after fatal error!", record_layer);
+             states_.getHandShake() != handShakeReady) )  // isn't complete yet
+              SetError(record_layer);
 }
 
 
 void SSL::verifyState(const HandShakeHeader& hsHeader)
 {
-    if (states_.getHandShake() == handShakeNotReady)
-        throw Error("HandShake read after fatal error!", handshake_layer);
+    if (GetError()) return;
+
+    if (states_.getHandShake() == handShakeNotReady) {
+        SetError(handshake_layer);
+        return;
+    }
 
     if (secure_.get_parms().entity_ == client_end)
         verifyClientState(hsHeader.get_handshakeType());
@@ -769,24 +809,29 @@ void SSL::verifyState(const HandShakeHeader& hsHeader)
 
 void SSL::verifyState(ClientState cs)
 {
+    if (GetError()) return;
     if (states_.getClient() != cs) order_error();
 }
 
 
 void SSL::verifyState(ServerState ss)
 {
+    if (GetError()) return;
     if (states_.getServer() != ss) order_error();
 }
 
 
 void SSL::verfiyHandShakeComplete()
 {
+    if (GetError()) return;
     if (states_.getHandShake() != handShakeReady) order_error();
 }
 
 
 void SSL::verifyClientState(HandShakeType hsType)
 {
+    if (GetError()) return;
+
     switch(hsType) {
     case server_hello :
         if (states_.getClient() != serverNull)
@@ -823,6 +868,8 @@ void SSL::verifyClientState(HandShakeType hsType)
 
 void SSL::verifyServerState(HandShakeType hsType)
 {
+    if (GetError()) return;
+
     switch(hsType) {
     case client_hello :
         if (states_.getServer() != clientNull)
@@ -854,8 +901,10 @@ void SSL::verifyServerState(HandShakeType hsType)
 // try to find a suite match
 void SSL::matchSuite(const opaque* peer, uint length)
 {
-    if (length == 0 || (length % 2) != 0)
-        throw Error("Bad suite input", bad_input);
+    if (length == 0 || (length % 2) != 0) {
+        SetError(bad_input);
+        return;
+    }
 
     // start with best, if a match we are good, Ciphers are at odd index
     // since all SSL and TLS ciphers have 0x00 first byte
@@ -867,7 +916,7 @@ void SSL::matchSuite(const opaque* peer, uint length)
                 return;
             }
 
-    throw Error("No suite match", match_error);
+    SetError(match_error);
 }
 
 
@@ -911,6 +960,12 @@ const sslFactory& SSL::getFactory() const
 const Socket& SSL::getSocket() const
 {
     return socket_;
+}
+
+
+YasslError SSL::GetError() const
+{
+    return states_.What();
 }
 
 
@@ -1072,19 +1127,19 @@ typedef Mutex::Lock Lock;
 void Sessions::add(const SSL& ssl) 
 {
     Lock guard(mutex_);
-    list_.push_back(new SSL_SESSION(ssl, random_));
+    list_.push_back(new (ys) SSL_SESSION(ssl, random_));
 }
 
 
 Sessions::~Sessions() 
 { 
-    std::for_each(list_.begin(), list_.end(), del_ptr_zero()); 
+    mySTL::for_each(list_.begin(), list_.end(), del_ptr_zero()); 
 }
 
 
 namespace { // locals
 
-typedef std::list<SSL_SESSION*>::iterator iterator;
+typedef mySTL::list<SSL_SESSION*>::iterator iterator;
 
 struct sess_match {
     const opaque* id_;
@@ -1106,7 +1161,7 @@ struct sess_match {
 SSL_SESSION* Sessions::lookup(const opaque* id, SSL_SESSION* copy)
 {
     Lock guard(mutex_);
-    iterator find = std::find_if(list_.begin(), list_.end(), sess_match(id));
+    iterator find = mySTL::find_if(list_.begin(), list_.end(), sess_match(id));
 
     if (find != list_.end()) {
         uint current = lowResTimer();
@@ -1127,7 +1182,7 @@ SSL_SESSION* Sessions::lookup(const opaque* id, SSL_SESSION* copy)
 void Sessions::remove(const opaque* id)
 {
     Lock guard(mutex_);
-    iterator find = std::find_if(list_.begin(), list_.end(), sess_match(id));
+    iterator find = mySTL::find_if(list_.begin(), list_.end(), sess_match(id));
 
     if (find != list_.end()) {
         del_ptr_zero()(*find);
@@ -1188,7 +1243,7 @@ SSL_CTX::~SSL_CTX()
     delete certificate_;
     delete privateKey_;
 
-    std::for_each(caList_.begin(), caList_.end(), del_ptr_zero());
+    mySTL::for_each(caList_.begin(), caList_.end(), del_ptr_zero());
 }
 
 
@@ -1279,7 +1334,7 @@ bool SSL_CTX::SetCipherList(const char* list)
         if (!haystack)    // last cipher
             len = min(sizeof(name), strlen(prev));
         else
-            len = min(sizeof(name), (uint)(haystack - prev));
+            len = min(sizeof(name), (size_t)(haystack - prev));
 
         strncpy(name, prev, len);
         name[(len == sizeof(name)) ? len - 1 : len] = 0;
@@ -1390,7 +1445,7 @@ void Crypto::SetDH(DiffieHellman* dh)
 void Crypto::SetDH(const DH_Parms& dh)
 {
     if (dh.set_)
-        dh_ = new DiffieHellman(dh.p_, dh.g_, random_);
+        dh_ = new (ys) DiffieHellman(dh.p_, dh.g_, random_);
 }
 
 
@@ -1461,9 +1516,9 @@ Hashes& sslHashes::use_certVerify()
 
 Buffers::~Buffers()
 {
-    std::for_each(handShakeList_.begin(), handShakeList_.end(),
+    mySTL::for_each(handShakeList_.begin(), handShakeList_.end(),
                   del_ptr_zero()) ;
-    std::for_each(dataList_.begin(), dataList_.end(),
+    mySTL::for_each(dataList_.begin(), dataList_.end(),
                   del_ptr_zero()) ;
 }
 
@@ -1550,7 +1605,7 @@ X509_NAME::X509_NAME(const char* n, size_t sz)
     : name_(0)
 {
     if (sz) {
-        name_ = new char[sz];
+        name_ = new (ys) char[sz];
         memcpy(name_, n, sz);
     }
 }

@@ -29,7 +29,8 @@
 
 #include "misc.hpp"
 #include "block.hpp"
-#include <list>
+#include "list.hpp"
+#include "error.hpp"
 
 
 
@@ -91,6 +92,7 @@ enum Constants
     MAX_SEQ_SZ    =  5,    // enum(seq|con) + length(4)
     MAX_ALGO_SIZE =  9,
     MAX_DIGEST_SZ = 25,    // SHA + enum(Bit or Octet) + length(4)
+    DSA_SIG_SZ    = 40,
 };
 
 
@@ -116,6 +118,8 @@ public:
     word32   GetSet();
     word32   GetVersion();
     word32   GetExplicitVersion();
+
+    Error GetError();
 private:
     virtual void ReadHeader() = 0;
 
@@ -217,12 +221,12 @@ private:
 };
 
 
-typedef std::list<Signer*> SignerList;
+typedef mySTL::list<Signer*> SignerList;
 
 
 enum SigType  { SHAwDSA = 517, MD2wRSA = 646, MD5wRSA = 648, SHAwRSA =649};
 enum HashType { MD2h = 646, MD5h = 649, SHAh = 88 };
-enum KeyType  { DSA = 515, RSA = 645 };     // sums of algo OID
+enum KeyType  { DSAk = 515, RSAk = 645 };     // sums of algo OID
 
 
 // an x509v Certificate BER Decoder
@@ -232,9 +236,12 @@ public:
     ~CertDecoder();
 
     const PublicKey& GetPublicKey()  const { return key_; }
+    KeyType          GetKeyType()    const { return KeyType(keyOID_); }
     const char*      GetIssuer()     const { return issuer_; }
     const char*      GetCommonName() const { return subject_; }
     const byte*      GetHash()       const { return subjectHash_; }
+
+    void DecodeToKey();
 
     enum DateType { BEFORE, AFTER };   
     enum NameType { ISSUER, SUBJECT };
@@ -255,9 +262,9 @@ private:
     void   Decode(SignerList*);
     void   StoreKey();
     void   AddDSA();
-    void   ValidateSelfSignature();
-    void   ValidateSignature(SignerList*);
-    void   ConfirmSignature(Source&);
+    bool   ValidateSelfSignature();
+    bool   ValidateSignature(SignerList*);
+    bool   ConfirmSignature(Source&);
     void   GetKey();
     void   GetName(NameType);
     void   GetValidity();
@@ -274,6 +281,7 @@ word32 GetLength(Source&);
 word32 SetLength(word32, byte*);
 word32 SetSequence(word32, byte*);
 
+word32 EncodeDSA_Signature(const byte* signature, byte* output);
 word32 EncodeDSA_Signature(const Integer& r, const Integer& s, byte* output);
 word32 DecodeDSA_Signature(byte* decoded, const byte* encoded, word32 sz);
 
@@ -284,14 +292,12 @@ public:
     DER_Encoder() {}
     virtual ~DER_Encoder() {}
 
-    //Integer& SetInteger(Integer&);
-    //word32 SetAlgoID(SigType, byte*);
-    word32   SetAlgoID(HashType, byte*);
-    //void   SetSet();
-    //void   SetVersion();
-    //void   SetExplicitVersion();
+    word32 SetAlgoID(HashType, byte*);
+
+    Error  GetError() const { return error_; }
 private:
     //virtual void WriteHeader() = 0;
+    Error error_;
 
     DER_Encoder(const DER_Encoder&);            // hide copy
     DER_Encoder& operator=(const DER_Encoder&); // and assign

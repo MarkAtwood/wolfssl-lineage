@@ -36,8 +36,7 @@
 #include "openssl/ssl.h"
 #include "handshake.hpp"
 #include "yassl_int.hpp"
-#include <fstream>
-
+#include <cstdio>
 
 
 namespace yaSSL {
@@ -94,12 +93,7 @@ void SSL_CTX_free(SSL_CTX* ctx)
 
 SSL* SSL_new(SSL_CTX* ctx)
 {
-    try {
-        return new SSL(ctx);
-    }
-    catch (...) {
-        return 0;
-    }
+    return new SSL(ctx);
 }
 
 
@@ -118,107 +112,77 @@ int SSL_set_fd(SSL* ssl, int fd)
 
 int SSL_connect(SSL* ssl)
 {
-    try {
-        sendClientHello(*ssl);
+    sendClientHello(*ssl);
+    processReply(*ssl);
+
+    if(ssl->getCrypto().get_certManager().sendVerify())
+        sendCertificate(*ssl);
+
+    if (!ssl->getSecurity().get_resuming())
+        sendClientKeyExchange(*ssl);
+
+    if(ssl->getCrypto().get_certManager().sendVerify())
+        sendCertificateVerify(*ssl);
+
+    sendChangeCipher(*ssl);
+    sendFinished(*ssl, client_end);
+    ssl->flushBuffer();
+    if (!ssl->getSecurity().get_resuming())
         processReply(*ssl);
 
-        if(ssl->getCrypto().get_certManager().sendVerify())
-            sendCertificate(*ssl);
+    ssl->verifyState(serverFinishedComplete);
+    ssl->useLog().ShowTCP(ssl->getSocket().get_fd());
 
-        if (!ssl->getSecurity().get_resuming())
-            sendClientKeyExchange(*ssl);
-
-        if(ssl->getCrypto().get_certManager().sendVerify())
-            sendCertificateVerify(*ssl);
-
-        sendChangeCipher(*ssl);
-        sendFinished(*ssl, client_end);
-        ssl->flushBuffer();
-        if (!ssl->getSecurity().get_resuming())
-            processReply(*ssl);
-
-        ssl->verifyState(serverFinishedComplete);
-        ssl->useLog().ShowTCP(ssl->getSocket().get_fd());
-        return SSL_SUCCESS;
-    }
-    catch (Error& err) {
-        ssl->set_error(err);
+    if (ssl->GetError())
         return SSL_FATAL_ERROR;
-    }
-    catch (...) {
-        return SSL_UNKNOWN;
-    }
+    return SSL_SUCCESS;
 }
 
 
 int SSL_write(SSL* ssl, const void* buffer, int sz)
 {
-    try {
-        const Data data(sz, static_cast<const opaque*>(buffer));
-        return sendData(*ssl, data);
-    }
-    catch (Error& err) {
-        ssl->set_error(err);
-        return SSL_FATAL_ERROR;
-    }
-    catch (...) {
-        return SSL_UNKNOWN;
-    }
+    const Data data(sz, static_cast<const opaque*>(buffer));
+    return sendData(*ssl, data);
 }
 
 
 int SSL_read(SSL* ssl, void* buffer, int sz)
 {
-    try {
-       Data data(sz, static_cast<opaque*>(buffer));
-       return receiveData(*ssl, data);
-    }
-    catch (Error& err) {
-        ssl->set_error(err);
-        return SSL_FATAL_ERROR;
-    }
-    catch (...) {
-        return SSL_UNKNOWN;
-    }
+    Data data(sz, static_cast<opaque*>(buffer));
+    return receiveData(*ssl, data);
 }
 
 
 int SSL_accept(SSL* ssl)
 {
-    try {
-        processReply(*ssl);
-        sendServerHello(*ssl);
+    processReply(*ssl);
+    sendServerHello(*ssl);
 
-        if (!ssl->getSecurity().get_resuming()) {
-            sendCertificate(*ssl);
+    if (!ssl->getSecurity().get_resuming()) {
+        sendCertificate(*ssl);
 
-            if (ssl->getSecurity().get_connection().send_server_key_)
-                sendServerKeyExchange(*ssl);
+        if (ssl->getSecurity().get_connection().send_server_key_)
+            sendServerKeyExchange(*ssl);
 
-            if(ssl->getCrypto().get_certManager().verifyPeer())
-                sendCertificateRequest(*ssl);
+        if(ssl->getCrypto().get_certManager().verifyPeer())
+            sendCertificateRequest(*ssl);
 
-            sendServerHelloDone(*ssl);
-            ssl->flushBuffer();
-
-            processReply(*ssl);
-        }
-        sendChangeCipher(*ssl);
-        sendFinished(*ssl, server_end);
+        sendServerHelloDone(*ssl);
         ssl->flushBuffer();
-        if (ssl->getSecurity().get_resuming())
-            processReply(*ssl);
 
-        ssl->useLog().ShowTCP(ssl->getSocket().get_fd());
-        return SSL_SUCCESS;
+        processReply(*ssl);
     }
-    catch (Error& err) {
-        ssl->set_error(err);
+    sendChangeCipher(*ssl);
+    sendFinished(*ssl, server_end);
+    ssl->flushBuffer();
+    if (ssl->getSecurity().get_resuming())
+        processReply(*ssl);
+
+    ssl->useLog().ShowTCP(ssl->getSocket().get_fd());
+
+    if (ssl->GetError())
         return SSL_FATAL_ERROR;
-    }
-    catch (...) {
-        return SSL_UNKNOWN;
-    }
+    return SSL_SUCCESS;
 }
 
 
@@ -240,21 +204,12 @@ int SSL_clear(SSL* ssl)
 
 int SSL_shutdown(SSL* ssl)
 {
-    try {
-        Alert alert(warning, close_notify);
-        sendAlert(*ssl, alert);
-        ssl->useLog().ShowTCP(ssl->getSocket().get_fd(), true);
-        ssl->useSocket().closeSocket();
+    Alert alert(warning, close_notify);
+    sendAlert(*ssl, alert);
+    ssl->useLog().ShowTCP(ssl->getSocket().get_fd(), true);
+    ssl->useSocket().closeSocket();
 
-        return SSL_SUCCESS;
-    }
-    catch (Error& err) {
-        ssl->set_error(err);
-        return SSL_FATAL_ERROR;
-    }
-    catch (...) {
-        return SSL_UNKNOWN;
-    }
+    return SSL_SUCCESS;
 }
 
 
@@ -342,7 +297,7 @@ const char* SSLeay_version(int)
 
 int SSL_get_error(SSL* ssl, int /*previous*/)
 {
-    return ssl->getStates().getNumber();
+    return ssl->getStates().What();
 }
 
 
@@ -399,6 +354,7 @@ char* X509_NAME_oneline(X509_NAME* name, char* buffer, int sz)
 
     if (!buffer) {
         buffer = (char*)malloc(len);
+        if (!buffer) return buffer;
         copySz = len;
     }
 
@@ -475,35 +431,42 @@ int read_file(SSL_CTX* ctx, const char* file, int format, CertType type)
     if (format != SSL_FILETYPE_ASN1 && format != SSL_FILETYPE_PEM)
         return SSL_BAD_FILETYPE;
 
-    std::ifstream input(file, std::ios::in | std::ios::binary | std::ios::ate);
-    if (!input.is_open())
+    FILE* input = fopen(file, "rb");
+    if (!input)
         return SSL_BAD_FILE;
 
-    try {
-        if (type == CA)
-            ctx->AddCA(PemToDer(file, Cert));  // takes ownership
-        else {
-            x509*& x = (type == Cert) ? ctx->certificate_ : ctx->privateKey_;
-
-            if (format == SSL_FILETYPE_ASN1) {
-                uint sz = input.tellg();
-                input.seekg(0, std::ios::beg);    
-                x = new x509(sz);  // takes ownership
-                input.read(reinterpret_cast<char*>(x->use_buffer()), sz);
-            }
-            else
-                x = PemToDer(file, type);
+    if (type == CA) {
+        x509* ptr = PemToDer(file, Cert);
+        if (!ptr) {
+            fclose(input);
+            return SSL_BAD_FILE;
         }
-        return SSL_SUCCESS;
+        ctx->AddCA(ptr);  // takes ownership
     }
-    catch (Error& /*err*/) {
-        //ssl->set_error(err);
-        return SSL_FATAL_ERROR;
-    }
-    catch (...) {
-        return SSL_UNKNOWN;
-    }
+    else {
+        x509*& x = (type == Cert) ? ctx->certificate_ : ctx->privateKey_;
 
+        if (format == SSL_FILETYPE_ASN1) {
+            fseek(input, 0, SEEK_END);
+            long sz = ftell(input);
+            rewind(input);
+            x = new (ys) x509(sz); // takes ownership
+            size_t bytes = fread(x->use_buffer(), sz, 1, input);
+            if (bytes != 1) {
+                fclose(input);
+                return SSL_BAD_FILE;
+            }
+        }
+        else {
+            x = PemToDer(file, type);
+            if (!x) {
+                fclose(input);
+                return SSL_BAD_FILE;
+            }
+        }
+    }
+    fclose(input);
+    return SSL_SUCCESS;
 }
 
 
@@ -683,7 +646,8 @@ void OpenSSL_add_all_algorithms()  // compatibility only
 DH* DH_new(void)
 {
     DH* dh = new DH;
-    dh->p = dh->g = 0;
+    if (dh)
+        dh->p = dh->g = 0;
     return dh;
 }
 
@@ -700,14 +664,13 @@ void DH_free(DH* dh)
 // be created
 BIGNUM* BN_bin2bn(const unsigned char* num, int sz, BIGNUM* retVal)
 {
-    using std::auto_ptr;
+    using mySTL::auto_ptr;
     bool created = false;
     auto_ptr<BIGNUM> bn;
 
     if (!retVal) {
         created = true;
-        auto_ptr<BIGNUM> tmp(new BIGNUM);
-        bn = tmp;
+        bn.reset(new (ys) BIGNUM);
         retVal = bn.get();
     }
 

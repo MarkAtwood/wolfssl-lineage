@@ -28,8 +28,9 @@
 #define yaSSL_BUFFER_HPP
 
 #include <cassert>              // assert
-#include <memory>            
 #include "yassl_error.hpp"      // Error
+#include "memory.hpp"           // mySTL::auto_ptr
+#include "algorithm.hpp"        // mySTL::swap
 
 
 #ifdef _MSC_VER
@@ -106,6 +107,9 @@ public:
     
     // end of input test
     bool eof();
+
+    // peek ahead
+    byte peek() const;
 
     // write function, should use at/near construction
     void assign(const byte* t, uint s);
@@ -191,7 +195,7 @@ struct del_ptr_zero
     void operator()(T*& p) const
     {
         T* tmp = 0;
-        std::swap(tmp, p);
+        mySTL::swap(tmp, p);
         checked_delete(tmp); 
     }
 };

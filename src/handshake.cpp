@@ -355,20 +355,14 @@ void p_hash(output_buffer& result, const output_buffer& secret,
     uint   lastLen = result.get_capacity() % len;
     opaque previous[SHA_LEN];  // max size
     opaque current[SHA_LEN];   // max size
-    std::auto_ptr<Digest> hmac;
+    mySTL::auto_ptr<Digest> hmac;
 
     if (lastLen) times += 1;
 
-    if (hash == md5) {
-        std::auto_ptr<Digest> tmp(new HMAC_MD5(secret.get_buffer(),
-                                               secret.get_size()));
-        hmac = tmp;
-    }
-    else {
-        std::auto_ptr<Digest> tmp(new HMAC_SHA(secret.get_buffer(),
-                                               secret.get_size()));
-        hmac = tmp;
-    }
+    if (hash == md5)
+        hmac.reset(new (ys) HMAC_MD5(secret.get_buffer(), secret.get_size()));
+    else
+        hmac.reset(new (ys) HMAC_SHA(secret.get_buffer(), secret.get_size()));
                                                                    // A0 = seed
     hmac->get_digest(previous, seed.get_buffer(), seed.get_size());// A1
     uint lastTime = times - 1;
@@ -452,6 +446,63 @@ void buildSHA_CertVerify(SSL& ssl, byte* digest)
 } // namespace for locals
 
 
+// some clients still send sslv2 client hello
+void ProcessOldClientHello(input_buffer& input, SSL& ssl)
+{
+    byte b0 = input[AUTO];
+    byte b1 = input[AUTO];
+
+    uint16 sz = ((b0 & 0x7f) << 8) | b1;
+
+    // hashHandShake manually
+    const opaque* buffer = input.get_buffer() + input.get_current();
+    ssl.useHashes().use_MD5().update(buffer, sz);
+    ssl.useHashes().use_SHA().update(buffer, sz);
+
+    b1 = input[AUTO];  // does this value mean client_hello?
+
+    ClientHello ch;
+    ch.client_version_.major_ = input[AUTO];
+    ch.client_version_.minor_ = input[AUTO];
+
+    byte len[2];
+
+    input.read(len, sizeof(len));
+    ato16(len, ch.suite_len_);
+
+    input.read(len, sizeof(len));
+    uint16 sessionLen;
+    ato16(len, sessionLen);
+    ch.id_len_ = sessionLen;
+
+    input.read(len, sizeof(len));
+    uint16 randomLen;
+    ato16(len, randomLen);
+
+    int j = 0;
+    for (uint16 i = 0; i < ch.suite_len_; i += 3) {    
+        byte first = input[AUTO];
+        if (first)  // sslv2 type
+            input.read(len, SUITE_LEN); // skip
+        else {
+            input.read(&ch.cipher_suites_[j], SUITE_LEN);
+            j += SUITE_LEN;
+        }
+    }
+    ch.suite_len_ = j;
+
+    if (ch.id_len_)
+        input.read(ch.session_id_, ch.id_len_);
+
+    if (randomLen < RAN_LEN)
+        memset(ch.random_, 0, RAN_LEN - randomLen);
+    input.read(&ch.random_[RAN_LEN - randomLen], randomLen);
+ 
+
+    ch.Process(input, ssl);
+}
+
+
 // Build a finished message, see 7.6.9
 void buildFinished(SSL& ssl, Finished& fin, const opaque* sender) 
 {
@@ -518,7 +569,7 @@ void hmac(SSL& ssl, byte* digest, const byte* buffer, uint sz,
 void TLS_hmac(SSL& ssl, byte* digest, const byte* buffer, uint sz,
               ContentType content, bool verify)
 {
-    std::auto_ptr<Digest> hmac;
+    mySTL::auto_ptr<Digest> hmac;
     opaque seq[SEQ_SZ] = { 0x00, 0x00, 0x00, 0x00 };
     opaque length[LENGTH_SZ];
     opaque inner[SIZEOF_ENUM + VERSION_SZ + LENGTH_SZ]; // type + version + len
@@ -526,16 +577,11 @@ void TLS_hmac(SSL& ssl, byte* digest, const byte* buffer, uint sz,
     c16toa(sz, length);
     c32toa(ssl.get_SEQIncrement(verify), &seq[sizeof(uint32)]);
 
-    if (ssl.getSecurity().get_parms().mac_algorithm_ == sha) {
-        std::auto_ptr<Digest> tmp(new HMAC_SHA(ssl.get_macSecret(verify),
-                                  SHA_LEN));
-        hmac = tmp;
-    }
-    else {
-        std::auto_ptr<Digest> tmp(new HMAC_MD5(ssl.get_macSecret(verify),
-                                  MD5_LEN));
-        hmac = tmp;
-    }
+    if (ssl.getSecurity().get_parms().mac_algorithm_ == sha)
+        hmac.reset(new (ys) HMAC_SHA(ssl.get_macSecret(verify), SHA_LEN));
+    else
+        hmac.reset(new (ys) HMAC_MD5(ssl.get_macSecret(verify), MD5_LEN));
+    
     hmac->update(seq, SEQ_SZ);                                       // seq_num
     inner[0] = content;                                              // type
     inner[SIZEOF_ENUM] = ssl.getSecurity().get_connection().version_.major_;  
@@ -596,16 +642,17 @@ void build_certHashes(SSL& ssl, Hashes& hashes)
 }
 
 
-std::auto_ptr<input_buffer> null_buffer;
+mySTL::auto_ptr<input_buffer> null_buffer;
 
 // do process input requests
-std::auto_ptr<input_buffer>
-DoProcessReply(SSL& ssl, std::auto_ptr<input_buffer> buffered)
+mySTL::auto_ptr<input_buffer>
+DoProcessReply(SSL& ssl, mySTL::auto_ptr<input_buffer> buffered)
 {
     ssl.getSocket().wait();                  // wait for input if blocking
     uint ready = ssl.getSocket().get_ready();
     if (!ready) return buffered;
 
+    // add buffered data if its there
     uint buffSz = buffered.get() ? buffered.get()->get_size() : 0;
     input_buffer buffer(buffSz + ready);
     if (buffSz) {
@@ -613,10 +660,17 @@ DoProcessReply(SSL& ssl, std::auto_ptr<input_buffer> buffered)
         buffered = null_buffer;
     }
 
+    // add new data
     uint read  = ssl.getSocket().receive(buffer.get_buffer() + buffSz, ready);
     buffer.add_size(read);
     uint offset = 0;
     const MessageFactory& mf = ssl.getFactory().getMessage();
+
+    // old style sslv2 client hello?
+    if (ssl.getSecurity().get_parms().entity_ == server_end &&
+                  ssl.getStates().getServer() == clientNull) 
+        if (buffer.peek() != handshake)
+            ProcessOldClientHello(buffer, ssl);
 
     while(!buffer.eof()) {
         // each record
@@ -627,9 +681,8 @@ DoProcessReply(SSL& ssl, std::auto_ptr<input_buffer> buffered)
         // make sure we have enough input in buffer to process this record
         if (hdr.length_ > buffer.get_remaining()) { 
             uint sz = buffer.get_remaining() + RECORD_HEADER;
-            std::auto_ptr<input_buffer> tmp(new input_buffer(sz,
-              buffer.get_buffer() + buffer.get_current() - RECORD_HEADER, sz));
-            buffered = tmp;
+            buffered.reset(new (ys) input_buffer(sz, buffer.get_buffer() +
+                           buffer.get_current() - RECORD_HEADER, sz));
             break;
         }
 
@@ -637,9 +690,14 @@ DoProcessReply(SSL& ssl, std::auto_ptr<input_buffer> buffered)
             // each message in record
             if (ssl.getSecurity().get_parms().pending_ == false) // cipher enabled
                 decrypt_message(ssl, buffer, hdr.length_);
-            std::auto_ptr<Message> msg(mf.CreateObject(hdr.type_));
+            mySTL::auto_ptr<Message> msg(mf.CreateObject(hdr.type_));
+            if (!msg.get()) {
+                ssl.SetError(factory_error);
+                return buffered = null_buffer;
+            }
             buffer >> *msg;
             msg->Process(buffer, ssl);
+            if (ssl.GetError()) return buffered = null_buffer;
         }
         offset += hdr.length_ + RECORD_HEADER;
     }
@@ -649,11 +707,17 @@ DoProcessReply(SSL& ssl, std::auto_ptr<input_buffer> buffered)
 
 // process input requests
 void processReply(SSL& ssl)
-{   
-    std::auto_ptr<input_buffer> buffered;
+{
+    if (ssl.GetError()) return;
+    mySTL::auto_ptr<input_buffer> buffered;
 
-    while ( (buffered = DoProcessReply(ssl, buffered)).get() )
-        ; // keep procssing
+    for (;;) {
+        mySTL::auto_ptr<input_buffer> tmp = DoProcessReply(ssl, buffered);
+        if (tmp.get())      // had only part of a record's data, call again
+            buffered = tmp;
+        else
+            break;
+    }
 }
 
 
@@ -661,6 +725,7 @@ void processReply(SSL& ssl)
 void sendClientHello(SSL& ssl)
 {
     ssl.verifyState(serverNull);
+    if (ssl.GetError()) return;
 
     ClientHello       ch(ssl.getSecurity().get_connection().version_);
     RecordLayerHeader rlHeader;
@@ -673,7 +738,7 @@ void sendClientHello(SSL& ssl)
     buildOutput(out, rlHeader, hsHeader, ch);
     hashHandShake(ssl, out);
 
-    ssl.getSocket().send(out.get_buffer(), out.get_size());
+    ssl.Send(out.get_buffer(), out.get_size());
 }
 
 
@@ -681,6 +746,7 @@ void sendClientHello(SSL& ssl)
 void sendClientKeyExchange(SSL& ssl, BufferOutput buffer)
 {
     ssl.verifyState(serverHelloDoneComplete);
+    if (ssl.GetError()) return;
 
     ClientKeyExchange ck(ssl);
     ck.build(ssl);
@@ -688,7 +754,7 @@ void sendClientKeyExchange(SSL& ssl, BufferOutput buffer)
 
     RecordLayerHeader rlHeader;
     HandShakeHeader   hsHeader;
-    std::auto_ptr<output_buffer> out(new output_buffer);
+    mySTL::auto_ptr<output_buffer> out(new (ys) output_buffer);
     buildHeaders(ssl, hsHeader, rlHeader, ck);
     buildOutput(*out.get(), rlHeader, hsHeader, ck);
     hashHandShake(ssl, *out.get());
@@ -696,19 +762,20 @@ void sendClientKeyExchange(SSL& ssl, BufferOutput buffer)
     if (buffer == buffered)
         ssl.addBuffer(out.release());
     else
-        ssl.getSocket().send(out->get_buffer(), out->get_size());
+        ssl.Send(out->get_buffer(), out->get_size());
 }
 
 
 // send server key exchange
 void sendServerKeyExchange(SSL& ssl, BufferOutput buffer)
 {
+    if (ssl.GetError()) return;
     ServerKeyExchange sk(ssl);
     sk.build(ssl);
 
     RecordLayerHeader rlHeader;
     HandShakeHeader   hsHeader;
-    std::auto_ptr<output_buffer> out(new output_buffer);
+    mySTL::auto_ptr<output_buffer> out(new (ys) output_buffer);
     buildHeaders(ssl, hsHeader, rlHeader, sk);
     buildOutput(*out.get(), rlHeader, hsHeader, sk);
     hashHandShake(ssl, *out.get());
@@ -716,7 +783,7 @@ void sendServerKeyExchange(SSL& ssl, BufferOutput buffer)
     if (buffer == buffered)
         ssl.addBuffer(out.release());
     else
-        ssl.getSocket().send(out->get_buffer(), out->get_size());
+        ssl.Send(out->get_buffer(), out->get_size());
 }
 
 
@@ -728,26 +795,29 @@ void sendChangeCipher(SSL& ssl, BufferOutput buffer)
             ssl.verifyState(clientKeyExchangeComplete);
         else
             ssl.verifyState(clientFinishedComplete);
+    if (ssl.GetError()) return;
 
     ChangeCipherSpec ccs;
     RecordLayerHeader rlHeader;
     buildHeader(ssl, rlHeader, ccs);
-    std::auto_ptr<output_buffer> out(new output_buffer);
+    mySTL::auto_ptr<output_buffer> out(new (ys) output_buffer);
     buildOutput(*out.get(), rlHeader, ccs);
    
     if (buffer == buffered)
         ssl.addBuffer(out.release());
     else
-        ssl.getSocket().send(out->get_buffer(), out->get_size());
+        ssl.Send(out->get_buffer(), out->get_size());
 }
 
 
 // send finished
 void sendFinished(SSL& ssl, ConnectionEnd side, BufferOutput buffer)
 {
+    if (ssl.GetError()) return;
+
     Finished fin;
     buildFinished(ssl, fin, side == client_end ? client : server);
-    std::auto_ptr<output_buffer> out(new output_buffer);
+    mySTL::auto_ptr<output_buffer> out(new (ys) output_buffer);
     cipherFinished(ssl, fin, *out.get());                   // hashes handshake
 
     if (ssl.getSecurity().get_resuming()) {
@@ -764,7 +834,7 @@ void sendFinished(SSL& ssl, ConnectionEnd side, BufferOutput buffer)
     if (buffer == buffered)
         ssl.addBuffer(out.release());
     else
-        ssl.getSocket().send(out->get_buffer(), out->get_size());
+        ssl.Send(out->get_buffer(), out->get_size());
 }
 
 
@@ -772,12 +842,14 @@ void sendFinished(SSL& ssl, ConnectionEnd side, BufferOutput buffer)
 int sendData(SSL& ssl, const Data& data)
 {
     ssl.verfiyHandShakeComplete();
+    if (ssl.GetError()) return 0;
 
     output_buffer out;
     buildMessage(ssl, out, data);
-    ssl.getSocket().send(out.get_buffer(), out.get_size());
+    ssl.Send(out.get_buffer(), out.get_size());
     ssl.useLog().ShowData(data.get_length(), true);
 
+    if (ssl.GetError()) return 0;
     return data.get_length();
 }
 
@@ -787,7 +859,7 @@ int sendAlert(SSL& ssl, const Alert& alert)
 {
     output_buffer out;
     buildAlert(ssl, out, alert);
-    ssl.getSocket().send(out.get_buffer(), out.get_size());
+    ssl.Send(out.get_buffer(), out.get_size());
 
     return alert.get_length();
 }
@@ -797,12 +869,14 @@ int sendAlert(SSL& ssl, const Alert& alert)
 int receiveData(SSL& ssl, Data& data)
 {
     ssl.verfiyHandShakeComplete();
+    if (ssl.GetError()) return 0;
 
     if (!ssl.bufferedData())
         processReply(ssl);
     ssl.fillData(data);
     ssl.useLog().ShowData(data.get_length());
 
+    if (ssl.GetError()) return 0;
     return data.get_length(); 
 }
 
@@ -814,11 +888,12 @@ void sendServerHello(SSL& ssl, BufferOutput buffer)
         ssl.verifyState(clientKeyExchangeComplete);
     else
         ssl.verifyState(clientHelloComplete);
+    if (ssl.GetError()) return;
 
     ServerHello       sh(ssl.getSecurity().get_connection().version_);
     RecordLayerHeader rlHeader;
     HandShakeHeader   hsHeader;
-    std::auto_ptr<output_buffer> out(new output_buffer);
+    mySTL::auto_ptr<output_buffer> out(new (ys) output_buffer);
 
     buildServerHello(ssl, sh);
     ssl.set_random(sh.get_random(), server_end);
@@ -829,17 +904,19 @@ void sendServerHello(SSL& ssl, BufferOutput buffer)
     if (buffer == buffered)
         ssl.addBuffer(out.release());
     else
-        ssl.getSocket().send(out->get_buffer(), out->get_size());
+        ssl.Send(out->get_buffer(), out->get_size());
 }
 
 
 // send server hello done
 void sendServerHelloDone(SSL& ssl, BufferOutput buffer)
 {
+    if (ssl.GetError()) return;
+
     ServerHelloDone   shd;
     RecordLayerHeader rlHeader;
     HandShakeHeader   hsHeader;
-    std::auto_ptr<output_buffer> out(new output_buffer);
+    mySTL::auto_ptr<output_buffer> out(new (ys) output_buffer);
 
     buildHeaders(ssl, hsHeader, rlHeader, shd);
     buildOutput(*out.get(), rlHeader, hsHeader, shd);
@@ -848,17 +925,19 @@ void sendServerHelloDone(SSL& ssl, BufferOutput buffer)
     if (buffer == buffered)
         ssl.addBuffer(out.release());
     else
-        ssl.getSocket().send(out->get_buffer(), out->get_size());
+        ssl.Send(out->get_buffer(), out->get_size());
 }
 
 
 // send certificate
 void sendCertificate(SSL& ssl, BufferOutput buffer)
 {
+    if (ssl.GetError()) return;
+
     Certificate       cert(ssl.getCrypto().get_certManager().get_cert());
     RecordLayerHeader rlHeader;
     HandShakeHeader   hsHeader;
-    std::auto_ptr<output_buffer> out(new output_buffer);
+    mySTL::auto_ptr<output_buffer> out(new (ys) output_buffer);
 
     buildHeaders(ssl, hsHeader, rlHeader, cert);
     buildOutput(*out.get(), rlHeader, hsHeader, cert);
@@ -867,18 +946,20 @@ void sendCertificate(SSL& ssl, BufferOutput buffer)
     if (buffer == buffered)
         ssl.addBuffer(out.release());
     else
-        ssl.getSocket().send(out->get_buffer(), out->get_size());
+        ssl.Send(out->get_buffer(), out->get_size());
 }
 
 
 // send certificate request
 void sendCertificateRequest(SSL& ssl, BufferOutput buffer)
 {
+    if (ssl.GetError()) return;
+
     CertificateRequest request;
     request.Build();
     RecordLayerHeader  rlHeader;
     HandShakeHeader    hsHeader;
-    std::auto_ptr<output_buffer> out(new output_buffer);
+    mySTL::auto_ptr<output_buffer> out(new (ys) output_buffer);
 
     buildHeaders(ssl, hsHeader, rlHeader, request);
     buildOutput(*out.get(), rlHeader, hsHeader, request);
@@ -887,18 +968,20 @@ void sendCertificateRequest(SSL& ssl, BufferOutput buffer)
     if (buffer == buffered)
         ssl.addBuffer(out.release());
     else
-        ssl.getSocket().send(out->get_buffer(), out->get_size());
+        ssl.Send(out->get_buffer(), out->get_size());
 }
 
 
 // send certificate verify
 void sendCertificateVerify(SSL& ssl, BufferOutput buffer)
 {
+    if (ssl.GetError()) return;
+
     CertificateVerify  verify;
     verify.Build(ssl);
     RecordLayerHeader  rlHeader;
     HandShakeHeader    hsHeader;
-    std::auto_ptr<output_buffer> out(new output_buffer);
+    mySTL::auto_ptr<output_buffer> out(new (ys) output_buffer);
 
     buildHeaders(ssl, hsHeader, rlHeader, verify);
     buildOutput(*out.get(), rlHeader, hsHeader, verify);
@@ -907,7 +990,7 @@ void sendCertificateVerify(SSL& ssl, BufferOutput buffer)
     if (buffer == buffered)
         ssl.addBuffer(out.release());
     else
-        ssl.getSocket().send(out->get_buffer(), out->get_size());
+        ssl.Send(out->get_buffer(), out->get_size());
 }
 
 

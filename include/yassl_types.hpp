@@ -27,6 +27,19 @@
 #ifndef yaSSL_TYPES_HPP
 #define yaSSL_TYPES_HPP
 
+#include<cstddef>
+
+namespace yaSSL {
+
+// library allocation
+struct new_t {};      // yaSSL New type
+extern new_t ys;      // pass in parameter
+
+} // namespace yaSSL
+
+void* operator new  (size_t, yaSSL::new_t);
+void* operator new[](size_t, yaSSL::new_t);
+
 namespace yaSSL {
 
 
@@ -83,7 +96,9 @@ const int RC4_KEY_SZ        =  16;  // RC4 Key length
 const int AES_128_KEY_SZ    =  16;  // AES 128bit Key length
 const int AES_256_KEY_SZ    =  32;  // AES 256bit Key length
 const int AES_BLOCK_SZ      =  16;  // AES 128bit block size, rfc 3268
-const int AES_IV_SZ         = AES_BLOCK_SZ; // AES Init Vector length  
+const int AES_IV_SZ         = AES_BLOCK_SZ; // AES Init Vector length
+const int DSS_SIG_SZ        =  40;  // two 20 byte high byte first Integers
+const int DSS_ENCODED_EXTRA =   6;  // seqID + len(1) + (intID + len(1)) * 2
 const int EVP_SALT_SZ       =   8;
 const int MASTER_LABEL_SZ   =  13;  // TLS master secret label size
 const int KEY_LABEL_SZ      =  13;  // TLS key block expansion size

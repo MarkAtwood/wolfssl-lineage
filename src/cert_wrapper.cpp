@@ -39,7 +39,7 @@
 namespace yaSSL {
 
 
-x509::x509(uint sz) : length_(sz), buffer_(new opaque[sz]) 
+x509::x509(uint sz) : length_(sz), buffer_(new (ys) opaque[sz]) 
 {
 }
 
@@ -51,7 +51,7 @@ x509::~x509()
 
 
 x509::x509(const x509& that) : length_(that.length_),
-                               buffer_(new opaque[length_])
+                               buffer_(new (ys) opaque[length_])
 {
     memcpy(buffer_, that.buffer_, length_);
 }
@@ -59,8 +59,8 @@ x509::x509(const x509& that) : length_(that.length_),
 
 void x509::Swap(x509& that)
 {
-    std::swap(length_, that.length_);
-    std::swap(buffer_, that.buffer_);
+    mySTL::swap(length_, that.length_);
+    mySTL::swap(buffer_, that.buffer_);
 }
 
 
@@ -100,11 +100,11 @@ CertManager::~CertManager()
 {
     delete peerX509_;
 
-    std::for_each(signers_.begin(), signers_.end(), del_ptr_zero()) ;
+    mySTL::for_each(signers_.begin(), signers_.end(), del_ptr_zero()) ;
 
-    std::for_each(peerList_.begin(), peerList_.end(), del_ptr_zero()) ;
+    mySTL::for_each(peerList_.begin(), peerList_.end(), del_ptr_zero()) ;
 
-    std::for_each(list_.begin(), list_.end(), del_ptr_zero()) ;
+    mySTL::for_each(list_.begin(), list_.end(), del_ptr_zero()) ;
 }
 
 
@@ -153,19 +153,22 @@ void CertManager::AddPeerCert(x509* x)
 void CertManager::CopySelfCert(const x509* x)
 {
     if (x)
-        list_.push_back(new x509(*x));
+        list_.push_back(new (ys) x509(*x));
 }
 
 
 // add to signers
-void CertManager::CopyCaCert(const x509* x)
+int CertManager::CopyCaCert(const x509* x)
 {
     TaoCrypt::Source source(x->get_buffer(), x->get_length());
     TaoCrypt::CertDecoder cert(source, true, &signers_);
 
-    const TaoCrypt::PublicKey& key = cert.GetPublicKey();
-    signers_.push_back(new TaoCrypt::Signer(key.GetKey(), key.size(),
+    if (!cert.GetError().What()) {
+        const TaoCrypt::PublicKey& key = cert.GetPublicKey();
+        signers_.push_back(new (ys) TaoCrypt::Signer(key.GetKey(), key.size(),
                                         cert.GetCommonName(), cert.GetHash()));
+    }
+    return cert.GetError().What();
 }
 
 
@@ -184,6 +187,18 @@ const opaque* CertManager::get_peerKey() const
 X509* CertManager::get_peerX509() const
 {
     return peerX509_;
+}
+
+
+SignatureAlgorithm CertManager::get_peerKeyType() const
+{
+    return peerKeyType_;
+}
+
+
+SignatureAlgorithm CertManager::get_keyType() const
+{
+    return keyType_;
 }
 
 
@@ -206,19 +221,22 @@ uint CertManager::get_privateKeyLength() const
 
 
 // Validate the peer's certificate list, from root to peer (last to first)
-void CertManager::Validate()
+int CertManager::Validate()
 {
-    CertList::reverse_iterator last  = peerList_.rbegin();
+    CertList::iterator last  = peerList_.rbegin();  // fix this
     int count = peerList_.size();
 
     while ( count > 1 ) {
         TaoCrypt::Source source((*last)->get_buffer(), (*last)->get_length());
         TaoCrypt::CertDecoder cert(source, true, &signers_);
 
+        if (int err = cert.GetError().What())
+            return err;
+
         const TaoCrypt::PublicKey& key = cert.GetPublicKey();
-        signers_.push_back(new TaoCrypt::Signer(key.GetKey(), key.size(),
+        signers_.push_back(new (ys) TaoCrypt::Signer(key.GetKey(), key.size(),
                                         cert.GetCommonName(), cert.GetHash()));
-        ++last;
+        --last;
         --count;
     }
 
@@ -227,22 +245,46 @@ void CertManager::Validate()
         TaoCrypt::Source source((*last)->get_buffer(), (*last)->get_length());
         TaoCrypt::CertDecoder cert(source, true, &signers_);
 
+        if (int err = cert.GetError().What())
+            return err;
+
         uint sz = cert.GetPublicKey().size();
         peerPublicKey_.allocate(sz);
         peerPublicKey_.assign(cert.GetPublicKey().GetKey(), sz);
 
+        if (cert.GetKeyType() == TaoCrypt::RSAk)
+            peerKeyType_ = rsa_sa_algo;
+        else
+            peerKeyType_ = dsa_sa_algo;
+
         int iSz = cert.GetIssuer() ? strlen(cert.GetIssuer()) + 1 : 0;
         int sSz = cert.GetCommonName() ? strlen(cert.GetCommonName()) + 1 : 0;
-        peerX509_ = new X509(cert.GetIssuer(), iSz, cert.GetCommonName(), sSz);
+        peerX509_ = new (ys) X509(cert.GetIssuer(), iSz, cert.GetCommonName(),
+                                  sSz);
     }
+    return 0;
 }
 
 
 // Set the private key
-void CertManager::SetPrivateKey(const x509& key)
+int CertManager::SetPrivateKey(const x509& key)
 {
     privateKey_.allocate(key.get_length());
     privateKey_.assign(key.get_buffer(), key.get_length());
+
+    // set key type
+    if (x509* cert = list_.front()) {
+        TaoCrypt::Source source(cert->get_buffer(), cert->get_length());
+        TaoCrypt::CertDecoder cert(source, false);
+        cert.DecodeToKey();
+        if (int err = cert.GetError().What())
+            return err;
+        if (cert.GetKeyType() == TaoCrypt::RSAk)
+            keyType_ = rsa_sa_algo;
+        else
+            keyType_ = dsa_sa_algo;
+    }
+    return 0;
 }
 
 

@@ -24,7 +24,7 @@
 
 #include "des.hpp"
 #include <string.h>
-#include <algorithm>
+#include "algorithm.hpp"    // mySTL::swap
 
 
 namespace TaoCrypt {
@@ -111,8 +111,8 @@ void DES::SetKey(const byte* key, word32 /*length*/, CipherDir dir)
     // reverse key schedule order
     if (dir == DECRYPTION)
         for (i = 0; i < 16; i += 2) {
-            std::swap(k_[i],   k_[32 - 2 - i]);
-            std::swap(k_[i+1], k_[32 - 1 - i]);
+            mySTL::swap(k_[i],   k_[32 - 2 - i]);
+            mySTL::swap(k_[i+1], k_[32 - 1 - i]);
         }
    
 }

@@ -56,13 +56,14 @@ struct MD5::MD5Impl {
 };
 
 
-MD5::MD5() : pimpl_(new MD5Impl) {}
+MD5::MD5() : pimpl_(new (ys) MD5Impl) {}
 
 
 MD5::~MD5() { delete pimpl_; }
 
 
-MD5::MD5(const MD5& that) : Digest(), pimpl_(new MD5Impl(that.pimpl_->md5_)) {}
+MD5::MD5(const MD5& that) : Digest(), pimpl_(new (ys) 
+                                             MD5Impl(that.pimpl_->md5_)) {}
 
 
 MD5& MD5::operator=(const MD5& that)
@@ -113,14 +114,14 @@ struct SHA::SHAImpl {
 };
 
 
-SHA::SHA() : pimpl_(new SHAImpl) {}
+SHA::SHA() : pimpl_(new (ys) SHAImpl) {}
 
 
 SHA::~SHA() { delete pimpl_; }
 
 
-SHA::SHA(const SHA& that) : Digest(), pimpl_(new SHAImpl(that.pimpl_->sha_)) {}
-
+SHA::SHA(const SHA& that) : Digest(), pimpl_(new (ys)
+                                             SHAImpl(that.pimpl_->sha_)) {}
 
 SHA& SHA::operator=(const SHA& that)
 {
@@ -171,7 +172,7 @@ struct HMAC_MD5::HMAC_MD5Impl {
 
 
 HMAC_MD5::HMAC_MD5(const byte* secret, unsigned int len) 
-    : pimpl_(new HMAC_MD5Impl) 
+    : pimpl_(new (ys) HMAC_MD5Impl) 
 {
     pimpl_->mac_.SetKey(secret, len);
 }
@@ -221,7 +222,7 @@ struct HMAC_SHA::HMAC_SHAImpl {
 
 
 HMAC_SHA::HMAC_SHA(const byte* secret, unsigned int len) 
-    : pimpl_(new HMAC_SHAImpl) 
+    : pimpl_(new (ys) HMAC_SHAImpl) 
 {
     pimpl_->mac_.SetKey(secret, len);
 }
@@ -269,7 +270,7 @@ struct DES::DESImpl {
 };
 
 
-DES::DES() : pimpl_(new DESImpl) {}
+DES::DES() : pimpl_(new (ys) DESImpl) {}
 
 DES::~DES() { delete pimpl_; }
 
@@ -305,7 +306,7 @@ struct DES_EDE::DES_EDEImpl {
 };
 
 
-DES_EDE::DES_EDE() : pimpl_(new DES_EDEImpl) {}
+DES_EDE::DES_EDE() : pimpl_(new (ys) DES_EDEImpl) {}
 
 DES_EDE::~DES_EDE() { delete pimpl_; }
 
@@ -343,7 +344,7 @@ struct RC4::RC4Impl {
 };
 
 
-RC4::RC4() : pimpl_(new RC4Impl) {}
+RC4::RC4() : pimpl_(new (ys) RC4Impl) {}
 
 RC4::~RC4() { delete pimpl_; }
 
@@ -385,7 +386,7 @@ struct AES::AESImpl {
 };
 
 
-AES::AES(unsigned int ks) : pimpl_(new AESImpl(ks)) {}
+AES::AES(unsigned int ks) : pimpl_(new (ys) AESImpl(ks)) {}
 
 AES::~AES() { delete pimpl_; }
 
@@ -426,9 +427,14 @@ struct RandomPool::RandomImpl {
     TaoCrypt::RandomNumberGenerator RNG_;
 };
 
-RandomPool::RandomPool() : pimpl_(new RandomImpl) {}
+RandomPool::RandomPool() : pimpl_(new (ys) RandomImpl) {}
 
 RandomPool::~RandomPool() { delete pimpl_; }
+
+int RandomPool::GetError() const
+{
+    return pimpl_->RNG_.GetError(); 
+}
 
 void RandomPool::Fill(opaque* dst, uint sz) const
 {
@@ -465,7 +471,7 @@ void DSS::DSSImpl::SetPrivate(const byte* key, unsigned int sz)
 
 // Set public or private key
 DSS::DSS(const byte* key, unsigned int sz, bool publicKey) 
-    : pimpl_(new DSSImpl)
+    : pimpl_(new (ys) DSSImpl)
 {
     if (publicKey) 
         pimpl_->SetPublic(key, sz);
@@ -487,24 +493,24 @@ uint DSS::get_signatureLength() const
 
 
 // DSS Sign message of length sz into sig
-void DSS::sign(byte* sig,  const byte* message, unsigned int sz,
+void DSS::sign(byte* sig,  const byte* sha_digest, unsigned int /* shaSz */,
                const RandomPool& random)
 {
     using namespace TaoCrypt;
 
     DSA_Signer signer(pimpl_->privateKey_);
-    signer.Sign(message, sz, sig, random.pimpl_->RNG_);
+    signer.Sign(sha_digest, sig, random.pimpl_->RNG_);
 }
 
 
 // DSS Verify message of length sz against sig, is it correct?
-bool DSS::verify(const byte* message, unsigned int sz, const byte* sig,
-                 unsigned int)
+bool DSS::verify(const byte* sha_digest, unsigned int /* shaSz */,
+                 const byte* sig, unsigned int /* sigSz */)
 {
     using namespace TaoCrypt;
 
     DSA_Verifier ver(pimpl_->publicKey_);
-    return ver.Verify(message, sz, sig);
+    return ver.Verify(sha_digest, sig);
 }
 
 
@@ -536,7 +542,7 @@ void RSA::RSAImpl::SetPrivate(const byte* key, unsigned int sz)
 
 // Set public or private key
 RSA::RSA(const byte* key, unsigned int sz, bool publicKey) 
-    : pimpl_(new RSAImpl)
+    : pimpl_(new (ys) RSAImpl)
 {
     if (publicKey) 
         pimpl_->SetPublic(key, sz);
@@ -608,13 +614,14 @@ struct Integer::IntegerImpl {
     explicit IntegerImpl(const TaoCrypt::Integer& i) : int_(i) {}
 };
 
-Integer::Integer() : pimpl_(new IntegerImpl) {}
+Integer::Integer() : pimpl_(new (ys) IntegerImpl) {}
 
 Integer::~Integer() { delete pimpl_; }
 
 
 
-Integer::Integer(const Integer& other) : pimpl_(new IntegerImpl(other.pimpl_->int_))
+Integer::Integer(const Integer& other) : pimpl_(new (ys) 
+                                               IntegerImpl(other.pimpl_->int_))
 {}
 
 
@@ -652,22 +659,24 @@ struct DiffieHellman::DHImpl {
 
     void AllocKeys(unsigned int pubSz, unsigned int privSz, unsigned int agrSz)
     {
-        publicKey_  = new byte[pubSz];
-        privateKey_ = new byte[privSz];
-        agreedKey_  = new byte[agrSz];
+        publicKey_  = new (ys) byte[pubSz];
+        privateKey_ = new (ys) byte[privSz];
+        agreedKey_  = new (ys) byte[agrSz];
     }
 };
 
 
+
+/*
 // server Side DH, server's view
 DiffieHellman::DiffieHellman(const char* file, const RandomPool& random)
-    : pimpl_(new DHImpl(random.pimpl_->RNG_))
+    : pimpl_(new (ys) DHImpl(random.pimpl_->RNG_))
 {
     using namespace TaoCrypt;
     Source source;
     FileSource(file, source);
     if (source.size() == 0)
-        throw Error("bad dh init file");
+        return; // TODO add error state, and force check
     HexDecoder hd(source);
 
     pimpl_->dh_.Initialize(source);
@@ -678,17 +687,19 @@ DiffieHellman::DiffieHellman(const char* file, const RandomPool& random)
     pimpl_->dh_.GenerateKeyPair(pimpl_->ranPool_, pimpl_->privateKey_,
                                                   pimpl_->publicKey_);
 }
+*/
+
 
 // server Side DH, client's view
 DiffieHellman::DiffieHellman(const byte* p, unsigned int pSz, const byte* g,
                              unsigned int gSz, const byte* pub,
                              unsigned int pubSz, const RandomPool& random)
-    : pimpl_(new DHImpl(random.pimpl_->RNG_))
+    : pimpl_(new (ys) DHImpl(random.pimpl_->RNG_))
 {
     using TaoCrypt::Integer;
 
     pimpl_->dh_.Initialize(Integer(p, pSz).Ref(), Integer(g, gSz).Ref());
-    pimpl_->publicKey_ = new opaque[pubSz];
+    pimpl_->publicKey_ = new (ys) opaque[pubSz];
     memcpy(pimpl_->publicKey_, pub, pubSz);
 }
 
@@ -696,7 +707,7 @@ DiffieHellman::DiffieHellman(const byte* p, unsigned int pSz, const byte* g,
 // Server Side DH, server's view
 DiffieHellman::DiffieHellman(const Integer& p, const Integer& g,
                              const RandomPool& random)
-: pimpl_(new DHImpl(random.pimpl_->RNG_))
+: pimpl_(new (ys) DHImpl(random.pimpl_->RNG_))
 {
     using TaoCrypt::Integer;
 
@@ -714,7 +725,7 @@ DiffieHellman::~DiffieHellman() { delete pimpl_; }
 
 // Client side and view, use server that for p and g
 DiffieHellman::DiffieHellman(const DiffieHellman& that) 
-    : pimpl_(new DHImpl(*that.pimpl_))
+    : pimpl_(new (ys) DHImpl(*that.pimpl_))
 {   
     pimpl_->dh_.GenerateKeyPair(pimpl_->ranPool_, pimpl_->privateKey_,
                                                   pimpl_->publicKey_);
@@ -779,43 +790,66 @@ void DiffieHellman::get_parms(byte* bp, byte* bg, byte* bpub) const
 
 
 // convert PEM file to DER x509 type
-x509* PemToDer(const char* file, CertType type)
+x509* PemToDer(const char* fname, CertType type)
 {
     using namespace TaoCrypt;
-    using namespace std;
 
-    string header; 
-    string footer;
+    char header[80];
+    char footer[80];
 
     if (type == Cert) {
-        header = "-----BEGIN CERTIFICATE-----\r\n";
-        footer = "-----END CERTIFICATE-----\r\n";
+        strncpy(header, "-----BEGIN CERTIFICATE-----", sizeof(header));
+        strncpy(footer, "-----END CERTIFICATE-----", sizeof(footer));
     } else {
-        header = "-----BEGIN RSA PRIVATE KEY-----\r\n";
-        footer = "-----END RSA PRIVATE KEY-----\r\n";
+        strncpy(header, "-----BEGIN RSA PRIVATE KEY-----", sizeof(header));
+        strncpy(footer, "-----END RSA PRIVATE KEY-----", sizeof(header));
     }
 
-    Source source;
-    FileSource(file, source);
-    string pem((const char*)source.get_buffer(), source.size());
+    FILE* file = fopen(fname, "rb");
+    if (!file)
+        return 0;
 
-    if (pem.find(header) == std::string::npos) {
-        header.replace(header.find("\r\n"), 2, "\n");
-        footer.replace(footer.find("\r\n"), 2, "\n");
+    long begin = -1;
+    long end   = 0;
+    bool foundEnd = false;
 
-        if (pem.find(header) == std::string::npos)
-            throw Error("bad cert header", certificate_error);
+    char line[80];
+
+    while(fgets(line, sizeof(line), file))
+        if (strncmp(header, line, strlen(header)) == 0) {
+            begin = ftell(file);
+            break;
+        }
+
+    while(fgets(line, sizeof(line), file))
+        if (strncmp(footer, line, strlen(footer)) == 0) {
+            foundEnd = true;
+            break;
+        }
+        else
+            end = ftell(file);
+
+    if (begin == -1 || !foundEnd) {
+        fclose(file);
+        return 0;
     }
-    pem.erase(0, pem.find(header) + header.length());
-    pem.erase(pem.find(footer), footer.length());
 
-    Source der((const unsigned char*)pem.c_str(), pem.size());
+    mySTL::auto_ptr<byte> tmp(new (ys) byte[end - begin]);
+    fseek(file, begin, SEEK_SET);
+    size_t bytes = fread(tmp.get(), end - begin, 1, file);
+    if (bytes != 1) {
+        fclose(file);
+        return 0;
+    }
+    
+    Source der(tmp.get(), end - begin);
     Base64Decoder b64Dec(der);
 
     uint sz = der.size();
-    auto_ptr<x509> x(new x509(sz));
+    mySTL::auto_ptr<x509> x(new (ys) x509(sz));
     memcpy(x->use_buffer(), der.get_buffer(), sz);
 
+    fclose(file);
     return x.release();
 }
 

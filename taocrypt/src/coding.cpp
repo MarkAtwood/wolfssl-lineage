@@ -237,8 +237,7 @@ void Base64Decoder::Decode()
                 endLine = coded_.next();
                 bytes--;
             }
-            if (endLine != '\n')
-                throw std::runtime_error("no newline, after 64 inputs");
+            assert(endLine == '\n');
         }
     }
 

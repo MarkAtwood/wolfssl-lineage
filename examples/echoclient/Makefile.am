@@ -3,4 +3,4 @@ bin_PROGRAMS        = echoclient
 echoclient_SOURCES  = echoclient.cpp
 echoclient_LDFLAGS  = -L../../src/ -L../../taocrypt/src
 echoclient_LDADD    = -lyassl -ltaocrypt $(EXTRA_SOCKET)
-EXTRA_DIST = echoclient.dsp
+EXTRA_DIST = echoclient.dsp input quit

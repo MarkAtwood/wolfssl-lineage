@@ -35,7 +35,7 @@
 
 #include "yassl_types.hpp"
 #include "factory.hpp"
-#include <list>
+#include "list.hpp"         // mySTL::list
 
 
 namespace yaSSL {
@@ -226,6 +226,7 @@ public:
 
     const opaque* get_random() const;
     friend void buildClientHello(SSL&, ClientHello&, CompressionMethod);
+    friend void ProcessOldClientHello(input_buffer& input, SSL& ssl);
 
     ClientHello() {}
     explicit ClientHello(ProtocolVersion pv);
@@ -422,7 +423,7 @@ private:
 class CertificateRequest : public HandShakeBase  {
     ClientCertificateType         certificate_types_[CERT_TYPES];
     int                           typeTotal_;
-    std::list<DistinguishedName>  certificate_authorities_;
+    mySTL::list<DistinguishedName>  certificate_authorities_;
 public:
     CertificateRequest();
     ~CertificateRequest();
@@ -555,7 +556,6 @@ private:
 
 class CertificateVerify : public HandShakeBase {
     Hashes             hashes_;
-    SignatureAlgorithm algo_;
     byte*              signature_;  // owns
 public:
     CertificateVerify();
@@ -620,7 +620,6 @@ struct Connection {
     uint32          peer_sequence_number_;
     uint32          pre_secret_len_;                   // pre master length
     bool            send_server_key_;                  // server key exchange?
-    bool            dh_init_needed_;                   // server dh init parms
     bool            master_clean_;                     // master secret clean?
     bool            TLS_;                              // TLSv1 or greater
     ProtocolVersion version_;
@@ -654,6 +653,7 @@ struct Parameters {
     CompressionMethod    compression_algorithm_;
     KeyExchangeAlgorithm kea_;                        // yassl additions
     SignatureAlgorithm   sig_algo_;                   // signature auth type
+    SignatureAlgorithm   verify_algo_;                // cert verify auth type
     bool                 pending_;                  
     bool                 resumable_;                  // new conns by session
     uint16               encrypt_size_;               // current msg encrypt sz

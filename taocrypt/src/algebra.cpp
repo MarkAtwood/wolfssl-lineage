@@ -23,8 +23,8 @@
 
 #include "algebra.hpp"
 #include "integer.hpp"
+#include "vector.hpp"   // mySTL::vector (simple)
 
-#include <vector>
 
 namespace TaoCrypt {
 
@@ -136,7 +136,7 @@ template <class T> T AbstractGroup<T>::CascadeScalarMultiply(const Element &x,
 
     const unsigned w = (expLen <= 46 ? 1 : (expLen <= 260 ? 2 : 3));
     const unsigned tableSize = 1<<w;
-    std::vector<Element> powerTable(tableSize << w);
+    mySTL::vector<Element> powerTable(tableSize << w);
 
     powerTable[1] = x;
     powerTable[tableSize] = y;
@@ -204,43 +204,6 @@ template <class T> T AbstractGroup<T>::CascadeScalarMultiply(const Element &x,
     return result;
 }
 
-template <class Element, class Iterator> Element GeneralCascadeMultiplication(
-            const AbstractGroup<Element> &group, Iterator begin, Iterator end)
-{
-    if (end-begin == 1)
-        return group.ScalarMultiply(begin->base, begin->exponent);
-    else if (end-begin == 2)
-        return group.CascadeScalarMultiply(begin->base, begin->exponent,
-            (begin+1)->base, (begin+1)->exponent);
-    else
-    {
-        Integer q, t;
-        Iterator last = end;
-        --last;
-
-        std::make_heap(begin, end);
-        std::pop_heap(begin, end);
-
-        while (!!begin->exponent)
-        {
-            // last->exponent is largest exponent, begin->exponent next largest
-            t = last->exponent;
-            Integer::Divide(last->exponent, q, t, begin->exponent);
-
-            if (q == Integer::One())
-                group.Accumulate(begin->base, last->base);	
-                // avoid overhead of ScalarMultiply()
-            else
-                group.Accumulate(begin->base,
-                                 group.ScalarMultiply(last->base, q));
-
-            std::push_heap(begin, end);
-            std::pop_heap(begin, end);
-        }
-
-        return group.ScalarMultiply(last->base, last->exponent);
-    }
-}
 
 struct WindowSlider
 {
@@ -298,8 +261,8 @@ template <class T>
 void AbstractGroup<T>::SimultaneousMultiply(T *results, const T &base,
                           const Integer *expBegin, unsigned int expCount) const
 {
-    std::vector<std::vector<Element> > buckets(expCount);
-    std::vector<WindowSlider> exponents;
+    mySTL::vector<mySTL::vector<Element> > buckets(expCount);
+    mySTL::vector<WindowSlider> exponents;
     exponents.reserve(expCount);
     unsigned int i;
 

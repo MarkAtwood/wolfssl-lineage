@@ -24,17 +24,17 @@
 #include "sha.hpp"
 #include "asn.hpp"
 #include "modarith.hpp"
-#include <stdexcept>
+#include "stdexcept.hpp"
 
 namespace TaoCrypt {
 
 
 void DSA_PublicKey::Swap(DSA_PublicKey& other)
 {
-    p_.swap(other.p_);
-    q_.swap(other.q_);
-    g_.swap(other.g_);
-    y_.swap(other.y_);
+    p_.Swap(other.p_);
+    q_.Swap(other.q_);
+    g_.Swap(other.g_);
+    y_.Swap(other.y_);
 }
 
 
@@ -167,8 +167,8 @@ DSA_Signer::DSA_Signer(const DSA_PrivateKey& key)
 {}
 
 
-word32 DSA_Signer::Sign(const byte* msg, word32 msgSz, byte* sig,
-                      RandomNumberGenerator& rng)
+word32 DSA_Signer::Sign(const byte* sha_digest, byte* sig,
+                        RandomNumberGenerator& rng)
 {
     const Integer& p = key_.GetModulus();
     const Integer& q = key_.GetSubGroupOrder();
@@ -180,12 +180,7 @@ word32 DSA_Signer::Sign(const byte* msg, word32 msgSz, byte* sig,
     r_ =  a_exp_b_mod_c(g, k, p);
     r_ %= q;
 
-    byte hash[SHA::DIGEST_SIZE];
-    SHA sha;
-    sha.Update(msg, msgSz);
-    sha.Final(hash);
-
-    Integer H(hash, sizeof(hash));  // sha Hash(msg)
+    Integer H(sha_digest, SHA::DIGEST_SIZE);  // sha Hash(m)
 
     Integer kInv = k.InverseMod(q);
     s_ = (kInv * (H + x*r_)) % q;
@@ -194,7 +189,23 @@ word32 DSA_Signer::Sign(const byte* msg, word32 msgSz, byte* sig,
 
     int rSz = r_.ByteCount();
 
-    return r_.Encode(sig,  rSz) + s_.Encode(sig + rSz, s_.ByteCount());
+    if (rSz == 19) {
+        sig[0] = 0;
+        sig++;
+    }
+    
+    r_.Encode(sig,  rSz);
+
+    int sSz = s_.ByteCount();
+
+    if (sSz == 19) {
+        sig[rSz] = 0;
+        sig++;
+    }
+
+    s_.Encode(sig + rSz, sSz);
+
+    return 40;
 }
 
 
@@ -203,7 +214,7 @@ DSA_Verifier::DSA_Verifier(const DSA_PublicKey& key)
 {}
 
 
-bool DSA_Verifier::Verify(const byte* msg, word32 msgSz, const byte* sig)
+bool DSA_Verifier::Verify(const byte* sha_digest, const byte* sig)
 {
     const Integer& p = key_.GetModulus();
     const Integer& q = key_.GetSubGroupOrder();
@@ -218,12 +229,7 @@ bool DSA_Verifier::Verify(const byte* msg, word32 msgSz, const byte* sig)
     if (r_ >= q || r_ < 1 || s_ >= q || s_ < 1)
         return false;
 
-    byte hash[SHA::DIGEST_SIZE];
-    SHA sha;
-    sha.Update(msg, msgSz);
-    sha.Final(hash);
-
-    Integer H(hash, sizeof(hash));  // sha Hash(msg)
+    Integer H(sha_digest, SHA::DIGEST_SIZE);  // sha Hash(m)
 
     Integer w = s_.InverseMod(q);
     Integer u1 = (H  * w) % q;

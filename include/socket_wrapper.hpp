@@ -74,8 +74,8 @@ public:
     uint     get_ready() const;
     socket_t get_fd()    const;
 
-    int send(const byte* buf, unsigned int len, int flags = 0) const;
-    int receive(byte* buf, unsigned int len, int flags = 0)    const;
+    uint send(const byte* buf, unsigned int len, int flags = 0) const;
+    uint receive(byte* buf, unsigned int len, int flags = 0)    const;
 
     void wait() const;
 

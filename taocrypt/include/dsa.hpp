@@ -94,7 +94,7 @@ class DSA_Signer {
 public:
     explicit DSA_Signer(const DSA_PrivateKey&);
 
-    word32 Sign(const byte*, word32, byte*, RandomNumberGenerator&);
+    word32 Sign(const byte* sha_digest, byte* sig, RandomNumberGenerator&);
 
     const Integer& GetR() const;
     const Integer& GetS() const;
@@ -111,7 +111,7 @@ class DSA_Verifier {
 public:
     explicit DSA_Verifier(const DSA_PublicKey&);
 
-    bool Verify(const byte* msg, word32 msgSz, const byte* sig);
+    bool Verify(const byte* sha_digest, const byte* sig);
 
     const Integer& GetR() const;
     const Integer& GetS() const;

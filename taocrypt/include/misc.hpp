@@ -30,6 +30,18 @@
 
 namespace TaoCrypt {
 
+// library allocation
+struct new_t {};      // TaoCrypt New type
+extern new_t tc;      // pass in parameter
+
+} // namespace TaoCrypt
+
+void* operator new  (size_t, TaoCrypt::new_t);
+void* operator new[](size_t, TaoCrypt::new_t);
+
+
+namespace TaoCrypt {
+
 
 // define this if running on a big-endian CPU
 #if !defined(LITTLE_ENDIAN_ORDER) && (defined(__BIG_ENDIAN__) || \
@@ -746,6 +758,8 @@ unsigned int  BitPrecision(unsigned long);
 unsigned long Crop(unsigned long value, unsigned int size);
 
 void CallNewHandler();
+
+
 
 } // namespace
 

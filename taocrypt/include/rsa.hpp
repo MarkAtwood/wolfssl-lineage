@@ -27,7 +27,7 @@
 
 #include "integer.hpp"
 #include "random.hpp"
-#include <stdexcept>
+#include "stdexcept.hpp"
 
 
 namespace TaoCrypt {
@@ -86,8 +86,8 @@ public:
 
     void Swap(RSA_PublicKey& other)
     {
-        n_.swap(other.n_);
-        e_.swap(other.e_);
+        n_.Swap(other.n_);
+        e_.Swap(other.e_);
     }
 };
 
@@ -182,9 +182,7 @@ void RSA_Encryptor<Pad>::Encrypt(const byte* plain, word32 sz, byte* cipher,
                                  RandomNumberGenerator& rng)
 {
     PK_Lengths lengths(key_.GetModulus());
-
-    if (sz > lengths.FixedMaxPlaintextLength())
-        throw std::runtime_error("message too long for this public key");
+    assert(sz <= lengths.FixedMaxPlaintextLength());
 
     ByteBlock paddedBlock(lengths.PaddedBlockByteLength());
     padding_.Pad(plain, sz, paddedBlock.get_buffer(),
@@ -201,10 +199,11 @@ word32 RSA_Decryptor<Pad>::Decrypt(const byte* cipher, word32 sz, byte* plain,
                                    RandomNumberGenerator& rng)
 {
     PK_Lengths lengths(key_.GetModulus());
+    assert(sz == lengths.FixedCiphertextLength());
 
     if (sz != lengths.FixedCiphertextLength())
-        throw std::runtime_error("bad cipher text size");
-
+        return 0;
+       
     ByteBlock paddedBlock(lengths.PaddedBlockByteLength());
     Integer x = key_.CalculateInverse(rng, Integer(cipher,
                                       lengths.FixedCiphertextLength()).Ref());

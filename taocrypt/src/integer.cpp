@@ -35,7 +35,7 @@
 #include "integer.hpp"
 #include "modarith.hpp"
 #include "asn.hpp"
-#include <stdexcept>
+#include "stdexcept.hpp"
 
 #include "algebra.cpp"
 
@@ -103,7 +103,7 @@ CPP_TYPENAME AllocatorBase<T>::pointer AlignedAllocator<T>::allocate(
         assert(IsAlignedOn(p, 16));
         return (T*)p;
     }
-    return new T[n];
+    return new (tc) T[n];
 }
 
 
@@ -462,14 +462,9 @@ template <class T>
 static Integer StringToInteger(const T *str)
 {
     word radix;
-#if (defined(__GNUC__) && __GNUC__ <= 3)        // GCC workaround
-    // std::char_traits doesn't exist in GCC 2.x
-    // std::char_traits<wchar_t>::length() not defined in GCC 3.2
+
     unsigned int length;
     for (length = 0; str[length] != 0; length++) {}
-#else
-    unsigned int length = std::char_traits<T>::length(str);
-#endif
 
     Integer v;
 
@@ -1125,7 +1120,7 @@ static bool IsP4()
     word32 cpuid[4];
 
     CpuId(0, cpuid);
-    std::swap(cpuid[2], cpuid[3]);
+    mySTL::swap(cpuid[2], cpuid[3]);
     if (memcmp(cpuid+1, "GenuineIntel", 12) != 0)
         return false;
 
@@ -2499,8 +2494,8 @@ void AsymmetricMultiply(word *R, word *T, const word *A, unsigned int NA,
 
     if (NA > NB)
     {
-        std::swap(A, B);
-        std::swap(NA, NB);
+        mySTL::swap(A, B);
+        mySTL::swap(NA, NB);
     }
 
     assert(NB % NA == 0);
@@ -2636,8 +2631,8 @@ unsigned int AlmostInverse(word *R, word *T, const word *A, unsigned int NA,
 
         if (Compare(f, g, fgLen)==-1)
         {
-            std::swap(f, g);
-            std::swap(b, c);
+            mySTL::swap(f, g);
+            mySTL::swap(b, c);
             s++;
         }
 
@@ -2769,8 +2764,10 @@ Integer::Integer(Source& source)
 void Integer::Decode(Source& source)
 {
     byte b = source.next();
-    if (b != INTEGER)  
-        throw BadBER();
+    if (b != INTEGER) {
+        source.SetError(INTEGER_E);
+        return;
+    }
 
     word32 length = GetLength(source);
 
@@ -2881,8 +2878,7 @@ void Integer::Randomize(RandomNumberGenerator& rng, unsigned int nbits)
 void Integer::Randomize(RandomNumberGenerator& rng, const Integer& min,
                         const Integer& max)
 {
-    if (min > max)
-        throw std::runtime_error("Integer: Min must be no greater than Max");
+    assert(min <= max);
 
     Integer range = max - min;
     const unsigned int nbits = range.BitCount();
@@ -3276,10 +3272,10 @@ signed long Integer::ConvertToLong() const
 }
 
 
-void Integer::swap(Integer& a)
+void Integer::Swap(Integer& a)
 {
-    reg_.swap(a.reg_);
-    std::swap(sign_, a.sign_);
+    reg_.Swap(a.reg_);
+    mySTL::swap(sign_, a.sign_);
 }
 
 
@@ -3551,8 +3547,7 @@ void PositiveDivide(Integer& remainder, Integer& quotient,
     unsigned aSize = a.WordCount();
     unsigned bSize = b.WordCount();
 
-    if (!bSize)
-        throw Integer::DivideByZero();
+    assert(bSize);
 
     if (a.PositiveCompare(b) == -1)
     {
@@ -3641,9 +3636,6 @@ Integer Integer::Modulo(const Integer &b) const
 void Integer::Divide(word &remainder, Integer &quotient,
                      const Integer &dividend, word divisor)
 {
-    if (!divisor)
-        throw Integer::DivideByZero();
-
     assert(divisor);
 
     if ((divisor & (divisor-1)) == 0)	// divisor is a power of 2
@@ -3685,9 +3677,6 @@ Integer Integer::DividedBy(word b) const
 
 word Integer::Modulo(word divisor) const
 {
-    if (!divisor)
-        throw Integer::DivideByZero();
-
     assert(divisor);
 
     word remainder;
@@ -4080,10 +4069,7 @@ MontgomeryRepresentation::MontgomeryRepresentation(const Integer &m)
       u((word)0, modulus.reg_.size()),
       workspace(5*modulus.reg_.size())
 {
-    if (!modulus.IsOdd())
-        throw std::runtime_error("MontgomeryRepresentation: "
-            "Montgomery representation requires an odd modulus");
-
+    assert(modulus.IsOdd());
     RecursiveInverseModPower2(u.reg_.get_buffer(), workspace.get_buffer(),
                               modulus.reg_.get_buffer(), modulus.reg_.size());
 }

@@ -35,7 +35,7 @@
 #include "sha.hpp"
 #include "coding.hpp"
 #include <time.h>     // gmtime();
-#include <memory>     // auto_ptr
+#include "memory.hpp"   // mySTL::auto_ptr
 
 namespace TaoCrypt {
 
@@ -89,7 +89,7 @@ void GetTime(int& value, const byte* date, int& i)
 
 
 // Make sure before and after dates are valid
-void ValidateDate(const byte* date, byte format, CertDecoder::DateType dt)
+bool ValidateDate(const byte* date, byte format, CertDecoder::DateType dt)
 {
     tm certTime;
     memset(&certTime, 0, sizeof(certTime));
@@ -118,10 +118,15 @@ void ValidateDate(const byte* date, byte format, CertDecoder::DateType dt)
     time_t ltime = time(0);
     tm* localTime = gmtime(&ltime);
 
-    if (dt == CertDecoder::BEFORE)
-        assert(*localTime > certTime);
+    if (dt == CertDecoder::BEFORE) {
+        if (*localTime < certTime)
+            return false;
+    }
     else
-        assert(*localTime < certTime); 
+        if (*localTime > certTime)
+            return false;
+
+    return true;
 }
 
 
@@ -182,7 +187,7 @@ PublicKey::PublicKey(const byte* k, word32 s) : key_(0), sz_(0)
 void PublicKey::SetSize(word32 s)
 {
     sz_ = s;
-    key_ = new byte[sz_];
+    key_ = new (tc) byte[sz_];
 }
 
 
@@ -194,14 +199,15 @@ void PublicKey::SetKey(const byte* k)
 
 void PublicKey::AddToEnd(const byte* data, word32 len)
 {
-    std::auto_ptr<byte> tmp(new byte[sz_ + len]);
+    mySTL::auto_ptr<byte> tmp(new (tc) byte[sz_ + len]);
 
     memcpy(tmp.get(), key_, sz_);
     memcpy(tmp.get() + sz_, data, len);
 
     byte* del = 0;
-    std::swap(del, key_);
+    mySTL::swap(del, key_);
     delete[] del;
+
     key_ = tmp.release();
     sz_ += len;
 }
@@ -212,7 +218,7 @@ Signer::Signer(const byte* k, word32 kSz, const char* n, const byte* h)
 {
     if (n) {
         int sz = strlen(n);
-        name_ = new char[sz + 1];
+        name_ = new (tc) char[sz + 1];
         memcpy(name_, n, sz);
         name_[sz] = 0;
     }
@@ -226,9 +232,16 @@ Signer::~Signer()
 }
 
 
+Error BER_Decoder::GetError()
+{ 
+    return source_.GetError(); 
+}
+
+
 Integer& BER_Decoder::GetInteger(Integer& integer)
 {
-    integer.Decode(source_);
+    if (!source_.GetError().What())
+        integer.Decode(source_);
     return integer;
 }
 
@@ -236,8 +249,13 @@ Integer& BER_Decoder::GetInteger(Integer& integer)
 // Read a Sequence, return length
 word32 BER_Decoder::GetSequence()
 {
+    if (source_.GetError().What()) return 0;
+
     byte b = source_.next();
-    if (b != (SEQUENCE | CONSTRUCTED)) throw BadCertificate();
+    if (b != (SEQUENCE | CONSTRUCTED)) {
+        source_.SetError(SEQUENCE_E);
+        return 0;
+    }
 
     return GetLength(source_);
 }
@@ -246,8 +264,13 @@ word32 BER_Decoder::GetSequence()
 // Read a Sequence, return length
 word32 BER_Decoder::GetSet()
 {
+    if (source_.GetError().What()) return 0;
+
     byte b = source_.next();
-    if (b != (SET | CONSTRUCTED)) throw BadCertificate();
+    if (b != (SET | CONSTRUCTED)) {
+        source_.SetError(SET_E);
+        return 0;
+    }
 
     return GetLength(source_);
 }
@@ -256,11 +279,19 @@ word32 BER_Decoder::GetSet()
 // Read Version, return it
 word32 BER_Decoder::GetVersion()
 {
+    if (source_.GetError().What()) return 0;
+
     byte b = source_.next();
-    if (b != INTEGER) throw BadCertificate();
+    if (b != INTEGER) {
+        source_.SetError(INTEGER_E);
+        return 0;
+    }
 
     b = source_.next();
-    if (b != 0x01) throw BadCertificate();  // version length not 1
+    if (b != 0x01) {
+        source_.SetError(VERSION_E);
+        return 0;
+    }
 
     return source_.next();
 }
@@ -269,6 +300,8 @@ word32 BER_Decoder::GetVersion()
 // Read ExplicitVersion, return it or 0 if not there (not an error)
 word32 BER_Decoder::GetExplicitVersion()
 {
+    if (source_.GetError().What()) return 0;
+
     byte b = source_.next();
 
     if (b == (CONTEXT_SPECIFIC | CONSTRUCTED)) { // not an error if not here
@@ -286,7 +319,7 @@ word32 BER_Decoder::GetExplicitVersion()
 void RSA_Private_Decoder::Decode(RSA_PrivateKey& key)
 {
     ReadHeader();
-
+    if (source_.GetError().What()) return;
     // public
     key.SetModulus(GetInteger(Integer().Ref()));
     key.SetPublicExponent(GetInteger(Integer().Ref()));
@@ -312,7 +345,7 @@ void RSA_Private_Decoder::ReadHeader()
 void DSA_Private_Decoder::Decode(DSA_PrivateKey& key)
 {
     ReadHeader();
-
+    if (source_.GetError().What()) return;
     // group parameters
     key.SetModulus(GetInteger(Integer().Ref()));
     key.SetSubGroupOrder(GetInteger(Integer().Ref()));
@@ -335,6 +368,7 @@ void DSA_Private_Decoder::ReadHeader()
 void RSA_Public_Decoder::Decode(RSA_PublicKey& key)
 {
     ReadHeader();
+    if (source_.GetError().What()) return;
 
     // public key
     key.SetModulus(GetInteger(Integer().Ref()));
@@ -352,6 +386,7 @@ void RSA_Public_Decoder::ReadHeader()
 void DSA_Public_Decoder::Decode(DSA_PublicKey& key)
 {
     ReadHeader();
+    if (source_.GetError().What()) return;
 
     // group parameters
     key.SetModulus(GetInteger(Integer().Ref()));
@@ -379,6 +414,7 @@ void DH_Decoder::ReadHeader()
 void DH_Decoder::Decode(DH& key)
 {
     ReadHeader();
+    if (source_.GetError().What()) return;
 
     // group parms
     key.SetP(GetInteger(Integer().Ref()));
@@ -406,6 +442,8 @@ CertDecoder::~CertDecoder()
 // process certificate header, set signature offset
 void CertDecoder::ReadHeader()
 {
+    if (source_.GetError().What()) return;
+
     GetSequence();  // total
     certBegin_ = source_.get_index();
 
@@ -420,50 +458,71 @@ void CertDecoder::ReadHeader()
 // Decode a x509v3 Certificate
 void CertDecoder::Decode(SignerList* signers)
 {
-    ReadHeader();
-    signatureOID_ = GetAlgoId();
-    GetName(ISSUER);   
-    GetValidity();
-    GetName(SUBJECT);   
-    GetKey();
+    if (source_.GetError().What()) return;
+    DecodeToKey();
+    if (source_.GetError().What()) return;
 
     if (source_.get_index() != sigIndex_)
         source_.set_index(sigIndex_);
 
     word32 confirmOID = GetAlgoId();
     GetSignature();
+    if (source_.GetError().What()) return;
 
-    if ( confirmOID != signatureOID_ )
-        throw BadCertificate();
+    if ( confirmOID != signatureOID_ ) {
+        source_.SetError(SIG_OID_E);
+        return;
+    }
 
-    if ( memcmp(issuerHash_, subjectHash_, SHA::DIGEST_SIZE) == 0 )
-        ValidateSelfSignature();
+    if ( memcmp(issuerHash_, subjectHash_, SHA::DIGEST_SIZE) == 0 ) {
+        if (!ValidateSelfSignature())
+            source_.SetError(SIG_CONFIRM_E);
+    }
     else
-        ValidateSignature(signers);
+        if (!ValidateSignature(signers))
+            source_.SetError(SIG_CONFIRM_E);
+}
+
+
+void CertDecoder::DecodeToKey()
+{
+    ReadHeader();
+    signatureOID_ = GetAlgoId();
+    GetName(ISSUER);   
+    GetValidity();
+    GetName(SUBJECT);   
+    GetKey();
 }
 
 
 // Read public key
 void CertDecoder::GetKey()
 {
+    if (source_.GetError().What()) return;
+
     GetSequence();    
     keyOID_ = GetAlgoId();
 
-    if (keyOID_ == RSA) {
+    if (keyOID_ == RSAk) {
         byte b = source_.next();
-        if (b != BIT_STRING) throw BadCertificate();
+        if (b != BIT_STRING) {
+            source_.SetError(BIT_STR_E);
+            return;
+        }
         b = source_.next();      // length, future
         b = source_.next(); 
         while(b != 0)
             b = source_.next();
     }
-    else if (keyOID_ == DSA)
+    else if (keyOID_ == DSAk)
         ;   // do nothing
-    else
-        throw BadCertificate();
+    else {
+        source_.SetError(UNKNOWN_OID_E);
+        return;
+    }
 
     StoreKey();
-    if (keyOID_ == DSA)
+    if (keyOID_ == DSAk)
         AddDSA();
 }
 
@@ -471,6 +530,8 @@ void CertDecoder::GetKey()
 // Save public key
 void CertDecoder::StoreKey()
 {
+    if (source_.GetError().What()) return;
+
     word32 read = source_.get_index();
     word32 length = GetSequence();
 
@@ -488,8 +549,13 @@ void CertDecoder::StoreKey()
 // DSA has public key after group
 void CertDecoder::AddDSA()
 {
+    if (source_.GetError().What()) return;
+
     byte b = source_.next();
-    if (b != BIT_STRING) throw BadCertificate();
+    if (b != BIT_STRING) {
+        source_.SetError(BIT_STR_E);
+        return;
+    }
     b = source_.next();      // length, future
     b = source_.next(); 
     while(b != 0)
@@ -497,7 +563,10 @@ void CertDecoder::AddDSA()
 
     word32 idx = source_.get_index();
     b = source_.next();
-    if (b != INTEGER) throw BadCertificate();
+    if (b != INTEGER) {
+        source_.SetError(INTEGER_E);
+        return;
+    }
 
     word32 length = GetLength(source_);
     length += source_.get_index() - idx;
@@ -509,10 +578,14 @@ void CertDecoder::AddDSA()
 // process algo OID by summing, return it
 word32 CertDecoder::GetAlgoId()
 {
+    if (source_.GetError().What()) return 0;
     word32 length = GetSequence();
     
     byte b = source_.next();
-    if (b != OBJECT_IDENTIFIER) throw BadCertificate();
+    if (b != OBJECT_IDENTIFIER) {
+        source_.SetError(OBJECT_ID_E);
+        return 0;
+    }
 
     length = GetLength(source_);
     word32 oid = 0;
@@ -520,13 +593,19 @@ word32 CertDecoder::GetAlgoId()
     while(length--)
         oid += source_.next();        // just sum it up for now
 
-    if (oid != SHAwDSA && oid != DSA) {
+    if (oid != SHAwDSA && oid != DSAk) {
         b = source_.next();               // should have NULL tag and 0
 
-        if (b != TAG_NULL) throw BadCertificate();
+        if (b != TAG_NULL) {
+            source_.SetError(TAG_NULL_E);
+            return 0;
+        }
 
         b = source_.next();
-        if (b != 0) throw BadCertificate();
+        if (b != 0) {
+            source_.SetError(EXPECT_0_E);
+            return 0;
+        }
     }
  
     return oid;
@@ -536,17 +615,24 @@ word32 CertDecoder::GetAlgoId()
 // read cert signature, store in signature_
 word32 CertDecoder::GetSignature()
 {
+    if (source_.GetError().What()) return 0;
     byte b = source_.next();
 
-    if (b != BIT_STRING) throw BadCertificate();
+    if (b != BIT_STRING) {
+        source_.SetError(BIT_STR_E);
+        return 0;
+    }
 
     sigLength_ = GetLength(source_);
   
     b = source_.next();
-    if (b != 0) throw BadCertificate();  // first byte always 0
+    if (b != 0) {
+        source_.SetError(EXPECT_0_E);
+        return 0;
+    }
     sigLength_--;
 
-    signature_ = new byte[sigLength_];
+    signature_ = new (tc) byte[sigLength_];
     memcpy(signature_, source_.get_current(), sigLength_);
     source_.advance(sigLength_);
 
@@ -557,13 +643,17 @@ word32 CertDecoder::GetSignature()
 // read cert digest, store in signature_
 word32 CertDecoder::GetDigest()
 {
+    if (source_.GetError().What()) return 0;
     byte b = source_.next();
 
-    if (b != OCTET_STRING) throw BadCertificate();
+    if (b != OCTET_STRING) {
+        source_.SetError(OCTET_STR_E);
+        return 0;
+    }
 
     sigLength_ = GetLength(source_);
 
-    signature_ = new byte[sigLength_];
+    signature_ = new (tc) byte[sigLength_];
     memcpy(signature_, source_.get_current(), sigLength_);
     source_.advance(sigLength_);
 
@@ -574,6 +664,8 @@ word32 CertDecoder::GetDigest()
 // process NAME, either issuer or subject
 void CertDecoder::GetName(NameType nt)
 {
+    if (source_.GetError().What()) return;
+
     SHA    sha;
     word32 length = GetSequence();  // length of all distinguished names
     length += source_.get_index();
@@ -583,8 +675,10 @@ void CertDecoder::GetName(NameType nt)
         GetSequence();
 
         byte b = source_.next();
-        if (b != OBJECT_IDENTIFIER)
-            throw BadCertificate();
+        if (b != OBJECT_IDENTIFIER) {
+            source_.SetError(OBJECT_ID_E);
+            return;
+        }
 
         word32 oidSz = GetLength(source_);
         byte joint[2];
@@ -599,7 +693,7 @@ void CertDecoder::GetName(NameType nt)
 
             if (id == COMMON_NAME) {
                 char*& ptr = (nt == ISSUER) ? issuer_ : subject_;
-                ptr = new char[strLen + 1];
+                ptr = new (tc) char[strLen + 1];
                 memcpy(ptr, source_.get_current(), strLen);
                 ptr[strLen] = 0;
             }
@@ -623,34 +717,46 @@ void CertDecoder::GetName(NameType nt)
 // process a Date, either BEFORE or AFTER
 void CertDecoder::GetDate(DateType dt)
 {
+    if (source_.GetError().What()) return;
+
     byte b = source_.next();
-    if (b != UTC_TIME && b != GENERALIZED_TIME)
-        throw BadCertificate();
+    if (b != UTC_TIME && b != GENERALIZED_TIME) {
+        source_.SetError(TIME_E);
+        return;
+    }
 
     word32 length = GetLength(source_);
     byte date[MAX_DATE_SZ];
-    if (length > MAX_DATE_SZ || length < MIN_DATE_SZ)
-        throw BadCertificate();
+    if (length > MAX_DATE_SZ || length < MIN_DATE_SZ) {
+        source_.SetError(DATE_SZ_E);
+        return;
+    }
 
     memcpy(date, source_.get_current(), length);
     source_.advance(length);
 
-    ValidateDate(date, b, dt);
+    if (!ValidateDate(date, b, dt))
+        if (dt == BEFORE)
+            source_.SetError(BEFORE_DATE_E);
+        else
+            source_.SetError(AFTER_DATE_E);
 }
 
 
 void CertDecoder::GetValidity()
 {
+    if (source_.GetError().What()) return;
+
     GetSequence();
     GetDate(BEFORE);
     GetDate(AFTER);
 }
 
 
-void CertDecoder::ValidateSelfSignature()
+bool CertDecoder::ValidateSelfSignature()
 {
     Source pub(key_.GetKey(), key_.size());
-    ConfirmSignature(pub);
+    return ConfirmSignature(pub);
 }
 
 
@@ -658,6 +764,8 @@ void CertDecoder::ValidateSelfSignature()
 void CertDecoder::GetCompareHash(const byte* plain, word32 sz, byte* digest,
                                  word32 digSz)
 {
+    if (source_.GetError().What()) return;
+
     Source s(plain, sz);
     CertDecoder dec(s, false);
 
@@ -665,15 +773,17 @@ void CertDecoder::GetCompareHash(const byte* plain, word32 sz, byte* digest,
     dec.GetAlgoId();
     dec.GetDigest();
 
-    if (dec.sigLength_ > digSz)
-        throw BadCertificate();
+    if (dec.sigLength_ > digSz) {
+        source_.SetError(SIG_LEN_E);
+        return;
+    }
 
     memcpy(digest, dec.signature_, dec.sigLength_);
 }
 
 
 // validate signature signed by someone else
-void CertDecoder::ValidateSignature(SignerList* signers)
+bool CertDecoder::ValidateSignature(SignerList* signers)
 {
     assert(signers);
 
@@ -685,62 +795,61 @@ void CertDecoder::ValidateSignature(SignerList* signers)
       
             const PublicKey& iKey = (*first)->GetPublicKey();
             Source pub(iKey.GetKey(), iKey.size());
-            ConfirmSignature(pub);
-
-            return;
+            return ConfirmSignature(pub);
         }   
         ++first;
     }
-    assert(0);  // couldn't validate
+    return false;
 }
 
 
 // RSA confirm
-void CertDecoder::ConfirmSignature(Source& pub)
+bool CertDecoder::ConfirmSignature(Source& pub)
 {
     HashType ht;
-    std::auto_ptr<HASH> hasher;
+    mySTL::auto_ptr<HASH> hasher;
 
     if (signatureOID_ == MD5wRSA) {
-        std::auto_ptr<HASH> tmp(new MD5);
-        hasher = tmp;
+        hasher.reset(new (tc) MD5);
         ht = MD5h;
     }
     else if (signatureOID_ == MD2wRSA) {
-        std::auto_ptr<HASH> tmp(new MD2);
-        hasher = tmp;
+        hasher.reset(new (tc) MD2);
         ht = MD2h;
     }
     else if (signatureOID_ == SHAwRSA || signatureOID_ == SHAwDSA) {
-        std::auto_ptr<HASH> tmp(new SHA);
-        hasher = tmp;
+        hasher.reset(new (tc) SHA);
         ht = SHAh;
     }
-    else
-        throw BadCertificate();
+    else {
+        source_.SetError(UNKOWN_SIG_E);
+        return false;
+    }
 
     byte digest[SHA::DIGEST_SIZE];      // largest size
 
     hasher->Update(source_.get_buffer() + certBegin_, sigIndex_ - certBegin_);
     hasher->Final(digest);
 
-    // put in ASN.1 signature format
-    Source build;
-    Signature_Encoder(digest, hasher->getDigestSize(), ht, build);
+    if (keyOID_ == RSAk) {
+        // put in ASN.1 signature format
+        Source build;
+        Signature_Encoder(digest, hasher->getDigestSize(), ht, build);
 
-    if (keyOID_ == RSA) {
         RSA_PublicKey pubKey(pub);
         RSAES_Encryptor enc(pubKey);
-        assert(enc.SSL_Verify(build.get_buffer(), build.size(), signature_));
+
+        return enc.SSL_Verify(build.get_buffer(), build.size(), signature_);
     }
     else  { // DSA
         // extract r and s from sequence
-        byte seqDecoded[48];
+        byte seqDecoded[DSA_SIG_SZ];
         DecodeDSA_Signature(seqDecoded, signature_, sigLength_);
 
         DSA_PublicKey pubKey(pub);
         DSA_Verifier  ver(pubKey);
-        ver.Verify(build.get_buffer(), build.size(), seqDecoded);
+
+        return ver.Verify(digest, seqDecoded);
     }
 }
 
@@ -811,7 +920,8 @@ word32 DER_Encoder::SetAlgoID(HashType aOID, byte* output)
         break;
 
     default:
-        throw std::runtime_error("bad Hash OID");
+        error_.SetError(UNKOWN_HASH_E);
+        return 0;
     }
 
 
@@ -835,6 +945,15 @@ word32 SetSequence(word32 len, byte* output)
   
     output[0] = SEQUENCE | CONSTRUCTED;
     return SetLength(len, output + 1) + 1;
+}
+
+
+word32 EncodeDSA_Signature(const byte* signature, byte* output)
+{
+    Integer r(signature, 20);
+    Integer s(signature + 20, 20);
+
+    return EncodeDSA_Signature(r, s, output);
 }
 
 
@@ -869,30 +988,63 @@ word32 EncodeDSA_Signature(const Integer& r, const Integer& s, byte* output)
 }
 
 
+// put sequence encoded dsa signature into decoded in 2 20 byte integers
 word32 DecodeDSA_Signature(byte* decoded, const byte* encoded, word32 sz)
 {
     Source source(encoded, sz);
 
-    if (source.next() != (SEQUENCE | CONSTRUCTED))
-        throw std::runtime_error("bad encoded DSA signature");
+    if (source.next() != (SEQUENCE | CONSTRUCTED)) {
+        source.SetError(SEQUENCE_E);
+        return 0;
+    }
 
     GetLength(source);  // total
 
     // r
-    if (source.next() != INTEGER)
-        throw std::runtime_error("bad encoded DSA signature");
+    if (source.next() != INTEGER) {
+        source.SetError(INTEGER_E);
+        return 0;
+    }
     word32 rLen = GetLength(source);
+    if (rLen != 20)
+        if (rLen == 21) {       // zero at front, eat
+            source.next();
+            --rLen;
+        }
+        else if (rLen == 19) {  // add zero to front so 20 bytes
+            decoded[0] = 0;
+            decoded++;
+        }
+        else {
+            source.SetError(DSA_SZ_E);
+            return 0;
+        }
     memcpy(decoded, source.get_buffer() + source.get_index(), rLen);
     source.advance(rLen);
 
     // s
-    if (source.next() != INTEGER)
-        throw std::runtime_error("bad encoded DSA signature");
+    if (source.next() != INTEGER) {
+        source.SetError(INTEGER_E);
+        return 0;
+    }
     word32 sLen = GetLength(source);
+    if (sLen != 20)
+        if (sLen == 21) {
+            source.next();          // zero at front, eat
+            --sLen;
+        }
+        else if (sLen == 19) {
+            decoded[rLen] = 0;      // add zero to front so 20 bytes
+            decoded++;
+        }
+        else {
+            source.SetError(DSA_SZ_E);
+            return 0;
+        }
     memcpy(decoded + rLen, source.get_buffer() + source.get_index(), sLen);
     source.advance(sLen);
 
-    return rLen + sLen;
+    return 40;
 }
 
 

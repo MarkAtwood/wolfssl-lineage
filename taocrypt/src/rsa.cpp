@@ -24,7 +24,7 @@
 #include "rsa.hpp"
 #include "asn.hpp"
 #include "modarith.hpp"
-#include <stdexcept>
+#include "stdexcept.hpp"
 
 namespace TaoCrypt {
 
@@ -56,12 +56,14 @@ Integer RSA_PrivateKey::CalculateInverse(RandomNumberGenerator& rng,
     Integer r(rng, Integer::One(), n_ - Integer::One());
     Integer re = modn.Exponentiate(r, e_);
     re = modn.Multiply(re, x);			// blind
+
     // here we follow the notation of PKCS #1 and let u=q inverse mod p
     // but in ModRoot, u=p inverse mod q, so we reverse the order of p and q
+
     Integer y = ModularRoot(re, dq_, dp_, q_, p_, u_);
-    y = modn.Divide(y, r);				// unblind
-    if (modn.Exponentiate(y, e_) != x)		// check
-        throw std::runtime_error("error during priv key operation");
+    y = modn.Divide(y, r);				    // unblind
+    assert(modn.Exponentiate(y, e_) == x);  // check
+       
     return y;
 }
 
@@ -129,7 +131,7 @@ word32 RSA_BlockType2::UnPad(const byte *pkcsBlock, unsigned int pkcsBlockLen,
     invalid = (outputLen > maxOutputLen) || invalid;
 
     if (invalid)
-        throw std::runtime_error("invalid block type 2 unpad");
+        return 0;
 
     memcpy (output, pkcsBlock+i, outputLen);
     return outputLen;

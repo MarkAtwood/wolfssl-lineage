@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(yassl,0.9.5)
+AM_INIT_AUTOMAKE(yassl,0.9.6)
 
 
 AC_PROG_CXX
@@ -9,7 +9,7 @@ AC_PROG_RANLIB
 
 
 
-CXXFLAGS="-g -Wall"
+CXXFLAGS="-g -Wall -fno-exceptions -fno-rtti"
 AC_SUBST(CXXFLAGS)
 
 if expr "$host_os" : "solaris" > /dev/null
@@ -19,6 +19,15 @@ else
     EXTRA_SOCKET=""
 fi
 AC_SUBST(EXTRA_SOCKET)
+
+
+if expr "$host_os" : ".*bsd.*" > /dev/null
+then
+    EXTRA_PTHREAD="-pthread"
+else
+    EXTRA_PTHREAD="-lpthread"
+fi
+AC_SUBST(EXTRA_PTHREAD)
 
 
 

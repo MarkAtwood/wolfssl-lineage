@@ -27,7 +27,8 @@
 
 #ifndef NDEBUG
     #include <ctime>
-    #include <sstream>
+    #include <cstdio>
+    #include <cstring>
 #endif
 
 
@@ -37,8 +38,11 @@ namespace yaSSL {
 
 #ifndef NDEBUG
 
-    Log::Log(const char* str) : log_(str)
+    enum { MAX_MSG = 81 };
+
+    Log::Log(const char* str)
     {
+        log_ = fopen(str, "w");
         Trace("********** Logger Attached **********");
     }
 
@@ -46,12 +50,15 @@ namespace yaSSL {
     Log::~Log()
     {
         Trace("********** Logger Detached **********");
+        fclose(log_);
     }
 
 
     // Trace a message
-    void Log::Trace(const char* msg)
-    {   
+    void Log::Trace(const char* str)
+    {
+        if (!log_) return;
+
         time_t clicks = time(0);
         char   timeStr[32];
 
@@ -60,7 +67,15 @@ namespace yaSSL {
         unsigned int len = strlen(timeStr);
         timeStr[len - 1] = 0;
 
-        log_ << timeStr << ": " << msg << '\n';
+        char msg[MAX_MSG];
+
+        strncpy(msg, timeStr, sizeof(timeStr));
+        strncat(msg, ":", 1);
+        strncat(msg, str, MAX_MSG - sizeof(timeStr) - 2);
+        strncat(msg, "\n", 1);
+        msg[MAX_MSG - 1] = 0;
+
+        fputs(msg, log_);
     }
 
 
@@ -77,34 +92,44 @@ namespace yaSSL {
         getpeername(fd, (sockaddr*)&peeraddr, &len);
 
         const char* p = reinterpret_cast<const char*>(&peeraddr.sin_addr);
-        std::stringstream msg;
+        char msg[MAX_MSG];
+        char number[16];
     
         if (ended)
-            msg << "yaSSL conn DONE  w/ peer ";
+            strncpy(msg, "yaSSL conn DONE  w/ peer ", 26);
         else
-            msg << "yaSSL conn BEGUN w/ peer ";
+            strncpy(msg, "yaSSL conn BEGUN w/ peer ", 26);
         for (int i = 0; i < 4; ++i) {
-            msg << static_cast<unsigned short>(p[i]);
-            if (i < 3) msg << ".";
+            sprintf(number, "%u", static_cast<unsigned short>(p[i]));
+            strncat(msg, number, 8);
+            if (i < 3)
+                strncat(msg, ".", 1);
         }
-        msg << " port " << htons(peeraddr.sin_port);
+        strncat(msg, " port ", 8);
+        sprintf(number, "%d", htons(peeraddr.sin_port));
+        strncat(msg, number, 8);
 
-        Trace(msg.str().c_str());
+        msg[MAX_MSG - 1] = 0;
+        Trace(msg);
     }
 
 
     // log processed data
     void Log::ShowData(uint bytes, bool sent)
     {
-        std::stringstream msg;
+        char msg[MAX_MSG];
+        char number[16];
 
         if (sent)
-            msg << "Sent     ";
+            strncpy(msg, "Sent     ", 10); 
         else
-            msg << "Received ";
-        msg << bytes << " bytes of application data";
+            strncpy(msg, "Received ", 10);
+        sprintf(number, "%u", bytes);
+        strncat(msg, number, 8);
+        strncat(msg, " bytes of application data", 27);
 
-        Trace(msg.str().c_str());
+        msg[MAX_MSG - 1] = 0;
+        Trace(msg);
     }
 
 

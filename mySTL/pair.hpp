@@ -1,4 +1,4 @@
-/* log.hpp                                
+/* mySTL pair.hpp                                
  *
  * Copyright (C) 2003 Sawtooth Consulting Ltd.
  *
@@ -20,39 +20,42 @@
  */
 
 
-/* yaSSL log interface
+/* mySTL pair implements pair
  *
  */
 
-#ifndef yaSSL_LOG_HPP
-#define yaSSL_LOG_HPP
-
-#include "socket_wrapper.hpp"
-
-#ifndef NDEBUG
-#include <cstdio>
-#endif
-
-namespace yaSSL {
-
-typedef unsigned int uint;
+#ifndef mySTL_PAIR_HPP
+#define mySTL_PAIR_HPP
 
 
-// Debug logger
-class Log {
-#ifndef NDEBUG
-    FILE* log_;
-#endif
-public:
-    explicit Log(const char* str = "yaSSL.log");
-    ~Log();
 
-    void Trace(const char*);
-    void ShowTCP(socket_t, bool ended = false);
-    void ShowData(uint, bool sent = false);
+namespace mySTL {
+
+
+template<typename T1, typename T2>
+struct pair {
+    typedef T1 first_type;
+    typedef T2 second_type;
+
+    first_type  first;
+    second_type second;
+
+    pair() {}
+    pair(const T1& t1, const T2& t2) : first(t1), second(t2) {}
+
+    template<typename U1, typename U2>
+    pair(const pair<U1, U2>& p) : first(p.first), second(p.second) {}
 };
 
 
-} // naemspace
+template<typename T1, typename T2>
+inline pair<T1, T2> make_pair(const T1& a, const T2& b)
+{
+    return pair<T1, T2>(a, b);
+}
 
-#endif // yaSSL_LOG_HPP
+
+
+} // namespace mySTL
+
+#endif // mySTL_PAIR_HPP

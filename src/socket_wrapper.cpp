@@ -106,28 +106,31 @@ uint Socket::get_ready() const
 }
 
 
-int Socket::send(const byte* buf, unsigned int len, int flags) const
+uint Socket::send(const byte* buf, unsigned int sz, int flags) const
 {
     assert(socket_ != INVALID_SOCKET);
-    unsigned int sent = ::send(socket_, (const char *)buf, len, flags);
+    int sent = ::send(socket_, reinterpret_cast<const char *>(buf), sz, flags);
 
-    if (sent != len) throw Error("Bad TCP Send", send_error, SocketLib);
+    if (sent == -1)
+        return 0;
 
     return sent;
 }
 
 
-int Socket::receive(byte* buf, unsigned int len, int flags) const
+uint Socket::receive(byte* buf, unsigned int sz, int flags) const
 {
     assert(socket_ != INVALID_SOCKET);
-    unsigned int recvd = ::recv(socket_, (char *)buf, len, flags);
+    int recvd = ::recv(socket_, reinterpret_cast<char *>(buf), sz, flags);
 
-    if (recvd != len) throw Error("Bad TCP Receive", receive_error, SocketLib);
+    if (recvd == -1) 
+        return 0;
 
     return recvd;
 }
 
 
+// wait if blocking for input, or error
 void Socket::wait() const
 {
     byte b;

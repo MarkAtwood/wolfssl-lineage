@@ -28,6 +28,7 @@
 #define TAO_CRYPT_RANDOM_HPP
 
 #include "arc4.hpp"
+#include "error.hpp"
 
 namespace TaoCrypt {
 
@@ -38,7 +39,8 @@ public:
     OS_Seed();
     ~OS_Seed();
 
-    void GenerateSeed(byte*, word32 sz);
+    void   GenerateSeed(byte*, word32 sz);
+    Error  GetError() const { return error_; }
 private:
 #if defined(WIN32)
     #if defined(_WIN64)
@@ -51,6 +53,7 @@ private:
 #else
     int fd_;
 #endif
+    Error error_;
 
     OS_Seed(const OS_Seed&);              // hide copy
     OS_Seed& operator=(const OS_Seed&);   // hide assign
@@ -65,6 +68,8 @@ public:
 
     void GenerateBlock(byte*, word32 sz);
     byte GenerateByte();
+
+    ErrorNumber GetError() const { return seed_.GetError().What(); }
 private:
     OS_Seed seed_;
     ARC4    cipher_;

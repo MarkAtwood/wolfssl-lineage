@@ -22,7 +22,7 @@
 /* based on Wei Dai's sha.cpp from CryptoPP */
 
 #include <string.h>
-#include <algorithm>
+#include "algorithm.hpp"    // mySTL::swap
 #include "sha.hpp"
 
 
@@ -84,10 +84,10 @@ SHA& SHA::operator= (const SHA& that)
 
 void SHA::Swap(SHA& other)
 {
-    std::swap(buffer_,  other.buffer_);
-    std::swap(buffLen_, other.buffLen_);
-    std::swap(digest_,  other.digest_);
-    std::swap(length_,  other.length_);
+    mySTL::swap(buffer_,  other.buffer_);
+    mySTL::swap(buffLen_, other.buffLen_);
+    mySTL::swap(digest_,  other.digest_);
+    mySTL::swap(length_,  other.length_);
 }
 
 

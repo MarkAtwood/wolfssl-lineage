@@ -26,13 +26,13 @@
 #ifndef yaSSL_ERROR_HPP
 #define yaSSL_ERROR_HPP
 
-#include <stdexcept>
+#include "stdexcept.hpp"
 
 
 namespace yaSSL {
 
 
-enum ErrorNumber {
+enum YasslError {
     no_error            = 0,
 
     // 10 - 47 from AlertDescription, 0 also close_notify
@@ -52,20 +52,23 @@ enum ErrorNumber {
     send_error          = 113,
     receive_error       = 114,
     certificate_error   = 115,
+
+    // 1000+ from TaoCrypt error.hpp
+
 };
 
 
 enum Library { yaSSL_Lib = 0, CryptoLib, SocketLib };
 
 // Base class for all yaSSL exceptions
-class Error : public std::runtime_error {
-    ErrorNumber error_;
+class Error : public mySTL::runtime_error {
+    YasslError  error_;
     Library     lib_;
 public:
-    explicit Error(const char* s = "", ErrorNumber e = no_error,
+    explicit Error(const char* s = "", YasslError e = no_error,
                    Library l = yaSSL_Lib);
 
-    ErrorNumber get_number() const;
+    YasslError  get_number() const;
     Library     get_lib()    const;
 };
 

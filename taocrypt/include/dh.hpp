@@ -46,14 +46,14 @@ public:
     DH& operator=(const DH& that) 
     {
         DH tmp(that);
-        swap(tmp);
+        Swap(tmp);
         return *this;
     }
 
-    void swap(DH& other)
+    void Swap(DH& other)
     {
-        p_.swap(other.p_);
-        g_.swap(other.g_);
+        p_.Swap(other.p_);
+        g_.Swap(other.g_);
     }
 
     void Initialize(Source&);

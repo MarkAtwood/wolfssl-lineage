@@ -29,13 +29,13 @@
 namespace yaSSL {
 
 
-Error::Error(const char* s, ErrorNumber e, Library l) 
-    : std::runtime_error(s), error_(e), lib_(l) 
+Error::Error(const char* s, YasslError e, Library l) 
+    : mySTL::runtime_error(s), error_(e), lib_(l) 
 {
 }
 
 
-ErrorNumber Error::get_number() const
+YasslError Error::get_number() const
 {
     return error_;
 }

@@ -28,7 +28,8 @@
 
 #include "misc.hpp"
 #include "block.hpp"
-#include <fstream>
+#include "error.hpp"
+#include <cstdio>
 
 namespace TaoCrypt {
 
@@ -36,6 +37,7 @@ namespace TaoCrypt {
 class Source {
     ByteBlock buffer_;
     word32    current_;
+    Error     error_;
 public:
     explicit Source(word32 sz = 0) : buffer_(sz), current_(0) {}
     Source(const byte* b, word32 sz) : buffer_(b, sz), current_(0) {}
@@ -61,20 +63,23 @@ public:
     void advance(word32 i) { current_ += i; }
     void reset(ByteBlock&);
 
+    Error  GetError()              { return error_; }
+    void   SetError(ErrorNumber w) { error_.SetError(w); }
+
     friend class FileSource;  // for get()
 private:
     Source(const Source& that) : buffer_(that.buffer_), current_(that.current_) {}
     Source& operator=(const Source& that)
     {
         Source tmp(that);
-        swap(tmp);
+        Swap(tmp);
         return *this;
     }
 
-    void swap(Source& other) 
+    void Swap(Source& other) 
     {
-        buffer_.swap(other.buffer_);
-        std::swap(current_, other.current_);
+        buffer_.Swap(other.buffer_);
+        mySTL::swap(current_, other.current_);
     }
 
 };
@@ -82,11 +87,10 @@ private:
 
 // File Source
 class FileSource {
-    std::ifstream file_;
+    FILE* file_;
 public:
-    FileSource(const std::string& fname, Source& source)
-        : file_(fname.c_str(), std::ios::in | std::ios::binary)
-        { get(source); }
+    FileSource(const char* fname, Source& source);
+    ~FileSource();
    
     word32   size(bool use_current = false);
 private:
@@ -100,11 +104,10 @@ private:
 
 // File Sink
 class FileSink {
-    std::ofstream file_;
+    FILE* file_;
 public:
-    FileSink(const std::string& fname, Source& source)
-        : file_(fname.c_str(), std::ios::out | std::ios::binary)
-        { put(source); }
+    FileSink(const char* fname, Source& source);
+    ~FileSink();
 
     word32 size(bool use_current = false);
 private:

@@ -26,7 +26,27 @@
 #include <new>        // for NewHandler
 
 
+void* operator new(size_t sz, TaoCrypt::new_t)
+{
+    void* ptr = ::operator new(sz);
+
+    if (!ptr) abort();
+
+    return ptr;
+}
+
+void* operator new[](size_t sz, TaoCrypt::new_t tc)
+{
+    return operator new (sz, tc);
+}
+
+
+
 namespace TaoCrypt {
+
+
+new_t tc;   // for library new
+
 
 inline void XorWords(word* r, const word* a, unsigned int n)
 {
@@ -95,14 +115,7 @@ using std::set_new_handler;
 
 void CallNewHandler()
 {
-    new_handler newHandler = set_new_handler(0);
-    if (newHandler)
-        set_new_handler(newHandler);
-
-    if (newHandler)
-        newHandler();
-    else
-        throw std::bad_alloc();
+    abort();
 }
 
 

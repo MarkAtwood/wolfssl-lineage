@@ -18,7 +18,6 @@
 #include "coding.hpp"
 #include "random.hpp"
 
-
 using TaoCrypt::byte;
 using TaoCrypt::word32;
 using TaoCrypt::SHA;
@@ -561,9 +560,8 @@ int aes_test()
 
 int rsa_test()
 {
-    std::string name = "../certs/client-key.der";
 	Source source;
-    FileSource(name, source);
+    FileSource("../certs/client-key.der", source);
     if (source.size() == 0) {
         FileSource("../../certs/client-key.der", source);  // for testsuite
         if (source.size() == 0) {
@@ -593,9 +591,8 @@ int rsa_test()
 
 
     // test decode   
-    name = "../certs/client-cert.der";
     Source source2;
-    FileSource(name, source2);
+    FileSource("../certs/client-cert.der", source2);
     if (source2.size() == 0) {
         FileSource("../../certs/client-cert.der", source2);  // for testsuite
         if (source2.size() == 0) {
@@ -614,9 +611,8 @@ int rsa_test()
 
 int dh_test()
 {
-    std::string name = "../certs/dh1024.dat";
     Source source;
-    FileSource(name, source);
+    FileSource("../certs/dh1024.dat", source);
     if (source.size() == 0) {
         FileSource("../../certs/dh1024.dat", source);  // for testsuite
         if (source.size() == 0) {
@@ -653,9 +649,8 @@ int dh_test()
 
 int dsa_test()
 {
-    std::string name = "../certs/dsa512.der";
     Source source;
-    FileSource(name, source);
+    FileSource("../certs/dsa512.der", source);
     if (source.size() == 0) {
         FileSource("../../certs/dsa512.der", source);  // for testsuite
         if (source.size() == 0) {
@@ -666,24 +661,28 @@ int dsa_test()
     }
 
     const char msg[] = "this is the message";
-    byte signature[80];
+    byte signature[40];
 
     DSA_PrivateKey priv(source);
     DSA_Signer signer(priv);
-    word32 signLen = signer.Sign((byte*)msg, sizeof(msg), signature, rng);
 
-    byte encoded[sizeof(signature) + 16];
-    byte decoded[sizeof(encoded)];
+    SHA sha;
+    byte digest[SHA::DIGEST_SIZE];
+    sha.Update((byte*)msg, sizeof(msg));
+    sha.Final(digest);
+
+    signer.Sign(digest, signature, rng);
+
+    byte encoded[sizeof(signature) + 6];
+    byte decoded[40];
 
     word32 encSz = EncodeDSA_Signature(signer.GetR(), signer.GetS(), encoded);
     DecodeDSA_Signature(decoded, encoded, encSz);
 
-    assert(memcmp(decoded, signature, signLen) == 0);
-
     DSA_PublicKey pub(priv);
     DSA_Verifier verifier(pub);
 
-    if (!verifier.Verify((byte*)msg, sizeof(msg), signature))
+    if (!verifier.Verify(digest, decoded))
         return -90;
 
     return 0;

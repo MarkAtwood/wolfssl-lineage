@@ -131,9 +131,6 @@ class MontgomeryRepresentation : public ModularArithmetic
 public:
     MontgomeryRepresentation(const Integer &modulus);	// modulus must be odd
 
-    virtual ModularArithmetic * Clone() const 
-        {return new MontgomeryRepresentation(*this);}
-
     bool IsMontgomeryRepresentation() const {return true;}
 
     Integer ConvertIn(const Integer &a) const

@@ -4,6 +4,7 @@
 #include "../../testsuite/test.hpp"
 
 
+
 THREAD_RETURN YASSL_API server_test(void* args)
 {
 #ifdef WIN32
@@ -28,9 +29,9 @@ THREAD_RETURN YASSL_API server_test(void* args)
     SSL_METHOD* method = TLSv1_server_method();
     SSL_CTX*    ctx = SSL_CTX_new(method);
 
+    //SSL_CTX_set_cipher_list(ctx, "RC4-SHA");
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
     set_serverCerts(ctx);
-    //set_dsaServerCerts(ctx);
     set_tmpDH(ctx);
 
     SSL* ssl = SSL_new(ctx);

@@ -45,7 +45,6 @@ THREAD_RETURN YASSL_API echoserver_test(void* args)
     SSL_METHOD* method = TLSv1_server_method();
     SSL_CTX*    ctx    = SSL_CTX_new(method);
 
-    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
     set_serverCerts(ctx);
 
     bool shutdown(false);
@@ -66,6 +65,27 @@ THREAD_RETURN YASSL_API echoserver_test(void* args)
             if ( strncmp(command, "quit", 4) == 0) {
                 printf("client sent quit command: shutting down!\n");
                 shutdown = true;
+                break;
+            }
+            else if ( strncmp(command, "GET", 3) == 0) {
+                char type[]   = "HTTP/1.0 200 ok\r\nContent-type:"
+                                " text/html\r\n\r\n";
+                char header[] = "<html><body BGCOLOR=\"#ffffff\">\n<pre>\n";
+                char body[]   = "greetings from yaSSL\n";
+                char footer[] = "</body></html>\r\n\r\n";
+            
+                strncpy(command, type, sizeof(type));
+                echoSz = sizeof(type) - 1;
+
+                strncpy(&command[echoSz], header, sizeof(header));
+                echoSz += sizeof(header) - 1;
+                strncpy(&command[echoSz], body, sizeof(body));
+                echoSz += sizeof(body) - 1;
+                strncpy(&command[echoSz], footer, sizeof(footer));
+                echoSz += sizeof(footer);
+
+                if (SSL_write(ssl, command, echoSz) != echoSz)
+                    err_sys("SSL_write failed");
                 break;
             }
             command[echoSz] = 0;

@@ -27,11 +27,11 @@
 #ifndef TAO_CRYPT_BLOCK_HPP
 #define TAO_CRYPT_BLOCK_HPP
 
-#include <algorithm>        // std::swap
-#include <stdexcept>        // std::runtime_error
-#include <string.h>         // memcpy
-//#include <limits>           // std::numeric_limits some std_libs don't have
+#include "algorithm.hpp"    // mySTL::swap
+#include "stdexcept.hpp"    // mySTL::runtime_error
 #include "misc.hpp"
+#include <string.h>         // memcpy
+#include <cstddef>          // ptrdiff_t
 
 
 #if defined(_MSC_VER) && defined(_CRTAPI1)
@@ -64,14 +64,10 @@ public:
     void          construct(pointer p, const T& val) {new (p) T(val);}
     void          destroy(pointer p) {p->~T();}
     size_type     max_size() const {return ~size_type(0)/sizeof(T);}
-    //size_type     max_size() const {return std::numeric_limits<T>::max();}
-    // will use numeric_limits when better supported    
 protected:
     static void CheckSize(size_t n)
     {
-        if (n > ~size_t(0) / sizeof(T))
-            throw std::runtime_error("AllocatorBase: requested size would"
-                                     "cause integer overflow");
+        assert(n <= ~size_t(0) / sizeof(T));
     }
 };
 
@@ -89,7 +85,7 @@ typename A::pointer StdReallocate(A& a, T* p, typename A::size_type oldSize,
         typename A::pointer newPointer = b.allocate(newSize, 0);
         memcpy(newPointer, p, sizeof(T) * min(oldSize, newSize));
         a.deallocate(p, oldSize);
-        std::swap(a, b);
+        mySTL::swap(a, b);
         return newPointer;
     }
     else {
@@ -112,7 +108,7 @@ public:
         CheckSize(n);
         if (n == 0)
             return 0;
-        return new T[n];
+        return new (tc) T[n];
     }
 
     void deallocate(void* p, size_type n)
@@ -148,7 +144,7 @@ public:
 
     Block& operator=(const Block& that) {
         Block tmp(that);
-        swap(tmp);
+        Swap(tmp);
         return *this;
     }
 
@@ -191,10 +187,10 @@ public:
         sz_ = newSize;
     }
 
-    void swap(Block& other) {
-        std::swap(sz_, other.sz_);
-        std::swap(buffer_, other.buffer_);
-        std::swap(allocator_, other.allocator_);
+    void Swap(Block& other) {
+        mySTL::swap(sz_, other.sz_);
+        mySTL::swap(buffer_, other.buffer_);
+        mySTL::swap(allocator_, other.allocator_);
     }
 
     ~Block() { allocator_.deallocate(buffer_, sz_); }

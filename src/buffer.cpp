@@ -25,6 +25,7 @@
  */
 
 #include "buffer.hpp"
+#include "yassl_types.hpp"
 
 namespace yaSSL {
 
@@ -35,8 +36,7 @@ namespace yaSSL {
 
 void Check::check(uint i, uint limit) 
 { 
-    if (i >= limit) 
-        throw Error("Buffer Out of Range", range_error); 
+    assert(i < limit);
 }
 
 
@@ -61,13 +61,13 @@ input_buffer::input_buffer()
 
 
 input_buffer::input_buffer(uint s) 
-    : size_(0), current_(0), buffer_(new byte[s]), end_(buffer_ + s) 
+    : size_(0), current_(0), buffer_(new (ys) byte[s]), end_(buffer_ + s)
 {}
 
 
 // with assign
 input_buffer::input_buffer(uint s, const byte* t, uint len) 
-    : size_(0), current_(0), buffer_(new byte[s]), end_(buffer_ + s) 
+    : size_(0), current_(0), buffer_(new (ys) byte[s]), end_(buffer_ + s) 
 { 
     assign(t, len); 
 }
@@ -82,9 +82,8 @@ input_buffer::~input_buffer()
 // users can pass defualt zero length buffer and then allocate
 void input_buffer::allocate(uint s) 
 { 
-    if (buffer_) 
-        throw Error("Buffer ReAlloc", realloc_error);
-    buffer_ = new byte[s];
+    assert(!buffer_);       // find realloc error
+    buffer_ = new (ys) byte[s];
     end_ = buffer_ + s; 
 }
 
@@ -130,8 +129,9 @@ uint input_buffer::get_remaining() const
 
 
 void input_buffer::set_current(uint i) 
-{ 
-    check(i - 1, size_); 
+{
+    if (i)
+        check(i - 1, size_); 
     current_ = i; 
 }
 
@@ -150,6 +150,13 @@ const byte& input_buffer::operator[](uint i)
 bool input_buffer::eof() 
 { 
     return current_ >= size_; 
+}
+
+
+// peek ahead
+byte input_buffer::peek() const
+{
+    return buffer_[current_];
 }
 
 
@@ -190,13 +197,13 @@ output_buffer::output_buffer()
 
 // with allocate
 output_buffer::output_buffer(uint s) 
-    : current_(0), buffer_(new byte[s]), end_(buffer_ + s) 
+    : current_(0), buffer_(new (ys) byte[s]), end_(buffer_ + s) 
 {}
 
 
 // with assign
 output_buffer::output_buffer(uint s, const byte* t, uint len) 
-    : current_(0), buffer_(new byte[s]), end_(buffer_+ s) 
+    : current_(0), buffer_(new (ys) byte[s]), end_(buffer_+ s) 
 { 
     write(t, len); 
 }
@@ -230,9 +237,8 @@ void output_buffer::set_current(uint c)
 // users can pass defualt zero length buffer and then allocate
 void output_buffer::allocate(uint s) 
 { 
-    if (buffer_) 
-        throw Error("Buffer ReAlloc", realloc_error);
-    buffer_ = new byte[s]; end_ = buffer_ + s; 
+    assert(!buffer_);   // find realloc error
+    buffer_ = new (ys) byte[s]; end_ = buffer_ + s; 
 }
 
 
