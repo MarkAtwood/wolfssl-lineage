@@ -1,4 +1,13 @@
-yaSSL Release notes, version 0.2.0
+yaSSL Release notes, version 0.2.5
+
+This release of yaSSL contains minor bug fixes and a beta binary of the yaSSL
+libraries for win32 and linux.
+
+See the notes at the bottom of this page for build instructions.
+
+
+
+*******************yaSSL Release notes, version 0.2.0
 
 This release of yaSSL contains minor bug fixes and initial alternate crypto
 functionality. 
@@ -9,7 +18,9 @@ See the notes in Readme.txt for build instructions.
 
 *** Update Build ***
 
-If you have already done a complete build of yaSSL as described in the release 0.0.1 - 0.1.0 notes and downloaded the update to 0.2.0, place the update file yassl-update-0.2.0.tar.gz in the yaSSL home directory and issue the command:
+If you have already done a complete build of yaSSL as described in the release
+0.0.1 - 0.1.0 notes and downloaded the update to 0.2.0, place the update file
+yassl-update-0.2.0.tar.gz in the yaSSL home directory and issue the command:
 
 gzip -cd yassl-update-0.2.0.tar.gz | tar xvf -
 
