@@ -46,7 +46,7 @@ Rijndael::Rijndael(const byte *userKey, unsigned int keylen)
 	switch(keylen)
 	{
 	case 16:
-		for (;;)
+		while (true)
 		{
 			temp  = rk[3];
 			rk[4] = rk[0] ^
@@ -64,7 +64,8 @@ Rijndael::Rijndael(const byte *userKey, unsigned int keylen)
 		}
 
 	case 24:
-		for (;;) {
+		while (true)
+		{
 			temp = rk[ 5];
 			rk[ 6] = rk[ 0] ^
 				(Te4[(temp >> 16) & 0xff] & 0xff000000) ^
@@ -83,7 +84,8 @@ Rijndael::Rijndael(const byte *userKey, unsigned int keylen)
 		}
 
 	case 32:
-        for (;;) {
+		while (true)
+		{
         	temp = rk[ 7];
         	rk[ 8] = rk[ 0] ^
         		(Te4[(temp >> 16) & 0xff] & 0xff000000) ^
