@@ -27,12 +27,13 @@
 #define yaSSL_openssl_h__
 
 #include <stdio.h>   /* ERR_print fp */
+#include "rsa.h"
 
 #ifdef __cplusplus
+namespace yaSSL {
 extern "C" {
 #endif
 
-#include "rsa.h"
 
 
 typedef struct SSL_METHOD  SSL_METHOD;   /* forward the SSL types C style */
@@ -385,6 +386,7 @@ int         RAND_load_file(const char*, long);
 
 
 #ifdef __cplusplus
+}      /* namespace  */
 }      /* extern "C" */
 #endif
 

@@ -30,6 +30,9 @@
 #include <cstdlib>    // for size_t
 
 
+namespace yaSSL {
+
+
 typedef unsigned char  uint8;
 typedef unsigned short uint16;
 typedef unsigned int   uint32;
@@ -277,5 +280,7 @@ const opaque tls_server[FINISHED_LABEL_SZ + 1] = "server finished";
 const opaque master_label[MASTER_LABEL_SZ + 1] = "master secret";
 const opaque key_label   [KEY_LABEL_SZ + 1]    = "key expansion";
 
+
+} // naemspace
 
 #endif // yaSSL_types_hpp__

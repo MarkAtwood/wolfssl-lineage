@@ -32,25 +32,14 @@
 #include "yassl_int.hpp"
 #include "buffer.hpp"
 
+
+namespace yaSSL {
+
+
 enum BufferOutput { buffered, unbuffered };
 
-void buildClientHello(SSL&, ClientHello&, CompressionMethod = no_compression);
-void buildHeader(SSL&, RecordLayerHeader&, const Message&);
-void buildHeaders(SSL&, HandShakeHeader&, RecordLayerHeader&,
-                  const HandShakeBase&);
-void buildOutput(output_buffer&, const RecordLayerHeader&, const Message&);
-void buildOutput(output_buffer&, const RecordLayerHeader&, 
-                const HandShakeHeader&, const HandShakeBase&);
 void buildFinished(SSL&, Finished&, const opaque*);
-
-void hashHandShake(SSL&, const output_buffer&);
 void hashHandShake(SSL&, const input_buffer&, unsigned int);
-
-void cipherFinished(SSL&, Finished&, output_buffer&);
-void verifyFinished(SSL&, input_buffer&, unsigned int);
-
-void buildData(SSL&, output_buffer&, const Data&);
-void processData(SSL&, input_buffer&, unsigned int, input_buffer&);
 
 void sendClientHello(SSL&);
 void sendServerHello(SSL&, BufferOutput = buffered);
@@ -60,9 +49,9 @@ void sendServerKeyExchange(SSL&, BufferOutput = buffered);
 void sendChangeCipher(SSL&, BufferOutput = buffered);
 void sendFinished(SSL&, ConnectionEnd, BufferOutput = buffered);
 void sendCertificate(SSL&, BufferOutput = buffered);
-int  sendData(SSL&, const Data&);
+int  sendData(SSL&, const Data&); 
 
-int  receiveData(SSL&, Data&);
+int  receiveData(SSL&, Data&); 
 void processReply(SSL&);
 
 void hmac(SSL&, byte*, const byte*, size_t, ContentType, bool verify = false);
@@ -71,5 +60,6 @@ void TLS_hmac(SSL&, byte*, const byte*, size_t, ContentType,
 void PRF(byte* digest, size_t digLen, const byte* secret, size_t secLen,
          const byte* label, size_t labLen, const byte* seed, size_t seedLen);
 
+} // naemspace
 
 #endif // __yaSSL_handshake_hpp__

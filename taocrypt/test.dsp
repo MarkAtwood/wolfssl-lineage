@@ -92,6 +92,10 @@ SOURCE=.\test\test.cpp
 # Begin Group "Header Files"
 
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
+# Begin Source File
+
+SOURCE=.\test\lock.hpp
+# End Source File
 # End Group
 # Begin Group "Resource Files"
 

@@ -38,7 +38,6 @@ public:
     DH(Integer& p, Integer& g) : p_(p), g_(g) {}
     explicit DH(Sink&);
 
-    /*
     DH(const DH& that) : p_(that.p_), g_(that.g_) {}
     DH& operator=(const DH& that) 
     {
@@ -52,7 +51,6 @@ public:
         p_.swap(other.p_);
         g_.swap(other.g_);
     }
-    */
 
     void Initialize(Sink&);
     void Initialize(Integer& p, Integer& g)
@@ -78,7 +76,7 @@ private:
     Integer g_;
 
     void GeneratePrivate(RandomNumberGenerator&, byte*);
-    void GeneratePublic(RandomNumberGenerator&, const byte*, byte*);
+    void GeneratePublic(RandomNumberGenerator&, const byte*, byte*);    
 };
 
 

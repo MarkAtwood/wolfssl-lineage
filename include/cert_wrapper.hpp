@@ -39,6 +39,8 @@
 #include <algorithm>
 
 
+namespace yaSSL {
+
 
 inline void deleteCert(x509* cert) { delete cert; } // Certificate Helper
 
@@ -70,5 +72,7 @@ private:
     CertManager& operator=(const CertManager&); // and assign
 };
 
+
+} // naemspace
 
 #endif // yaSSL_cert_wrapper_hpp__

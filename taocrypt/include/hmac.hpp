@@ -38,16 +38,6 @@ public:
     void Init();
 
     void SetKey(const byte*, size_t);
-
-    HMAC(const HMAC&);
-    HMAC& operator= (const HMAC& that)
-    {
-        HMAC tmp(that);
-        Swap(tmp);
-
-        return *this;
-    }
-    void Swap(HMAC&);
 private:
     byte ipad_[T::BLOCK_SIZE];
     byte opad_[T::BLOCK_SIZE];
@@ -56,41 +46,10 @@ private:
     T    mac_;
 
     void KeyInnerHash();
+
+    HMAC(const HMAC&);
+    HMAC& operator= (const HMAC&);
 };
-
-
-template <int I, typename T>
-void ArraySwap(T* a, T* b)
-{
-    T tmp[I];
-    size_t len = I * sizeof(T);
-    memcpy(tmp, a, len);
-    memcpy(a, b, len);
-    memcpy(b, tmp, len);
-}
-
-
-template <class T>
-void HMAC<T>::Swap(HMAC& other)
-{
-    
-    ArraySwap<T::BLOCK_SIZE>(ipad_, other.ipad_);
-    ArraySwap<T::BLOCK_SIZE>(opad_, other.opad_);
-    ArraySwap<T::DIGEST_SIZE>(innerHash_, other.innerHash_);
-    std::swap(innerHashKeyed_, other.innerHashKeyed_);
-    swap(mac_, other.mac_);
-}
-
-
-template <class T>
-HMAC<T>::HMAC(const HMAC& that) : mac_(that.mac_)
-{
-    innerHashKeyed_ = that.innerHashKeyed_;
-
-    memcpy(ipad_, that.ipad_, T::BLOCK_SIZE);
-    memcpy(opad_, that.opad_, T::BLOCK_SIZE);
-    memcpy(innerHash_, that.innerHash_, T::DIGEST_SIZE);
-}
 
 
 template <class T>

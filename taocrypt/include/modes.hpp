@@ -45,12 +45,17 @@ public:
             { cipher_.SetKey(k, sz, DIR); cipher_.SetIV(iv); }
 private:
     T cipher_;
+
+    BlockCipher(const BlockCipher&);            // hide copy
+    BlockCipher& operator=(const BlockCipher&); // and assign
 };
 
 
 template<int BLOCK_SIZE>
 class Mode_BASE {
 public:
+    Mode_BASE() {}
+
     virtual void ProcessAndXorBlock(const byte*, const byte*, byte*) const = 0;
 
     void ECB_Process(byte*, const byte*, size_t);
@@ -58,9 +63,12 @@ public:
     void CBC_Decrypt(byte*, const byte*, size_t);
 
     void SetIV(const byte* iv) { memcpy(reg_, iv, BLOCK_SIZE); }
-protected:
+private:
     byte reg_[BLOCK_SIZE];
     byte tmp_[BLOCK_SIZE];
+
+    Mode_BASE(const Mode_BASE&);            // hide copy
+    Mode_BASE& operator=(const Mode_BASE&); // and assign
 };
 
 

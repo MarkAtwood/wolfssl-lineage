@@ -31,6 +31,9 @@
 #include <cassert>
 #include "yassl_error.hpp"
 
+
+namespace yaSSL {
+
 typedef unsigned char byte;
 const size_t AUTO = 0xFEEDBEEF;
 
@@ -202,6 +205,6 @@ typedef in_buffer<byte, Check> input_buffer;
 typedef out_buffer<byte, Check> output_buffer;
 
 
-
+} // naemspace
 
 #endif // yaSSL_buffer_hpp__

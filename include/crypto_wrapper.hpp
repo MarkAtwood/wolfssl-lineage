@@ -39,7 +39,7 @@
 #include <memory>
 
 
-
+namespace yaSSL {
 
 // MAC policy should implement a get_digest, update, and get sizes for pad and 
 // digest
@@ -110,11 +110,12 @@ public:
     size_t get_padSize()    const { return PAD_MD5; }
     HMAC_MD5(const byte*, unsigned int);
     ~HMAC_MD5();
-    HMAC_MD5(const HMAC_MD5&);
-    HMAC_MD5& operator=(const HMAC_MD5&);
 private:
     struct HMAC_MD5Impl;
     HMAC_MD5Impl* pimpl_;
+
+    HMAC_MD5(const HMAC_MD5&);
+    HMAC_MD5& operator=(const HMAC_MD5&);
 };
 
 
@@ -128,12 +129,12 @@ public:
     size_t get_padSize()    const { return PAD_SHA; }
     HMAC_SHA(const byte*, unsigned int);
     ~HMAC_SHA();
-    HMAC_SHA(const HMAC_SHA&);
-    HMAC_SHA& operator=(const HMAC_SHA&);
 private:
     struct HMAC_SHAImpl;
     HMAC_SHAImpl* pimpl_;
 
+    HMAC_SHA(const HMAC_SHA&);
+    HMAC_SHA& operator=(const HMAC_SHA&);
 };
 
 
@@ -332,5 +333,6 @@ class x509;
 x509* PemToDer(const char*, CertType);
 
 
+} // naemspace
 
 #endif  // __yaSSL_crypto_wrapper_hpp__

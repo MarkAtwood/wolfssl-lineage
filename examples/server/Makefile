@@ -46,7 +46,7 @@ AWK = gawk
 CPPFLAGS = 
 CXX = g++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -g
+CXXFLAGS = -g -Wall
 CYGPATH_W = cygpath -w
 DEFS = -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE=\"yassl\" -DVERSION=\"0.3.0\" 
 DEPDIR = .deps
@@ -73,7 +73,7 @@ PACKAGE_VERSION =
 PATH_SEPARATOR = :
 RANLIB = ranlib
 SET_MAKE = 
-SHELL = /bin/bash
+SHELL = /bin/sh
 STRIP = 
 VERSION = 0.3.0
 ac_ct_CXX = g++

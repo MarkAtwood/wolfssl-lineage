@@ -29,6 +29,60 @@
 #include "yassl_int.hpp"
 
 
+namespace yaSSL {
+
+
+// Build a client hello message from cipher suites and compression method
+void buildClientHello(SSL& ssl, ClientHello& hello,
+                      CompressionMethod compression = no_compression)
+{
+    ssl.get_random().Fill(hello.random_, RAN_LEN);
+    hello.id_len_ = 0;
+    hello.suite_len_ = ssl.get_security().suites_size_;
+    memcpy(hello.cipher_suites_, ssl.get_security().suites_, hello.suite_len_);
+    hello.comp_len_ = 1;                   
+    hello.compression_methods_ = compression;   
+
+    hello.set_length(sizeof(ProtocolVersion) +
+                     RAN_LEN +
+                     hello.id_len_    + sizeof(hello.id_len_) +
+                     hello.suite_len_ + sizeof(hello.suite_len_) +
+                     hello.comp_len_  + sizeof(hello.comp_len_));
+}
+
+
+// Build a server hello message
+void buildServerHello(SSL& ssl, ServerHello& hello)
+{
+    ssl.get_random().Fill(hello.random_, RAN_LEN);
+    hello.id_len_ = ID_LEN;
+    ssl.get_random().Fill(hello.session_id_, ID_LEN);
+
+    hello.cipher_suite_[0] = ssl.get_security().suite_[0];
+    hello.cipher_suite_[1] = ssl.get_security().suite_[1];
+    hello.compression_method_ = no_compression;
+
+    hello.set_length(sizeof(ProtocolVersion) + RAN_LEN + ID_LEN +
+                     sizeof(hello.id_len_) + SUITE_LEN + SIZEOF_ENUM);
+}
+
+
+// add handshake from buffer into md5 and sha hashes, use handshake header
+void hashHandShake(SSL& ssl, const input_buffer& input, unsigned int sz)
+{
+    MD5& md5 = ssl.use_MD5();
+    SHA& sha = ssl.use_SHA();
+    int  hdrSz = HANDSHAKE_HEADER;
+    sz += hdrSz;
+    const opaque* buffer = input.get_buffer() + input.get_current() - hdrSz;
+
+    md5.update(buffer, sz);
+    sha.update(buffer, sz);
+}
+
+
+// locals
+namespace {
 
 // Write a plaintext record to buffer
 void buildOutput(output_buffer& buffer, const RecordLayerHeader& rlHdr, 
@@ -76,42 +130,6 @@ void buildHeaders(SSL& ssl, HandShakeHeader& hsHeader,
 }
 
 
-
-// Build a client hello message from cipher suites and compression method
-void buildClientHello(SSL& ssl, ClientHello& hello,
-                      CompressionMethod compression)
-{
-    ssl.get_random().Fill(hello.random_, RAN_LEN);
-    hello.id_len_ = 0;
-    hello.suite_len_ = ssl.get_security().suites_size_;
-    memcpy(hello.cipher_suites_, ssl.get_security().suites_, hello.suite_len_);
-    hello.comp_len_ = 1;                   
-    hello.compression_methods_ = compression;   
-
-    hello.set_length(sizeof(ProtocolVersion) +
-                     RAN_LEN +
-                     hello.id_len_    + sizeof(hello.id_len_) +
-                     hello.suite_len_ + sizeof(hello.suite_len_) +
-                     hello.comp_len_  + sizeof(hello.comp_len_));
-}
-
-
-// Build a server hello message
-void buildServerHello(SSL& ssl, ServerHello& hello)
-{
-    ssl.get_random().Fill(hello.random_, RAN_LEN);
-    hello.id_len_ = ID_LEN;
-    ssl.get_random().Fill(hello.session_id_, ID_LEN);
-
-    hello.cipher_suite_[0] = ssl.get_security().suite_[0];
-    hello.cipher_suite_[1] = ssl.get_security().suite_[1];
-    hello.compression_method_ = no_compression;
-
-    hello.set_length(sizeof(ProtocolVersion) + RAN_LEN + ID_LEN +
-                     sizeof(hello.id_len_) + SUITE_LEN + SIZEOF_ENUM);
-}
-
-
 // add handshake from buffer into md5 and sha hashes, exclude record header
 void hashHandShake(SSL& ssl, const output_buffer& output)
 {
@@ -126,23 +144,8 @@ void hashHandShake(SSL& ssl, const output_buffer& output)
 }
 
 
-// add handshake from buffer into md5 and sha hashes, use handshake header
-void hashHandShake(SSL& ssl, const input_buffer& input, unsigned int sz)
-{
-    MD5& md5 = ssl.use_MD5();
-    SHA& sha = ssl.use_SHA();
-    int  hdrSz = HANDSHAKE_HEADER;
-    sz += hdrSz;
-    const opaque* buffer = input.get_buffer() + input.get_current() - hdrSz;
-
-    md5.update(buffer, sz);
-    sha.update(buffer, sz);
-}
-
-
-
 // calculate MD5 hash for finished
-static void buildMD5(SSL& ssl, Finished& fin, const opaque* sender)
+void buildMD5(SSL& ssl, Finished& fin, const opaque* sender)
 {
     //size_t secretLen = ssl.get_connection().secret_len_; // NEWTAO always 48
     size_t secretLen = SECRET_LEN;
@@ -172,7 +175,7 @@ static void buildMD5(SSL& ssl, Finished& fin, const opaque* sender)
 
 
 // calculate SHA hash for finished
-static void buildSHA(SSL& ssl, Finished& fin, const opaque* sender)
+void buildSHA(SSL& ssl, Finished& fin, const opaque* sender)
 {
     //size_t secretLen = ssl.get_connection().secret_len_; // NEWTAO always 48
     size_t secretLen = SECRET_LEN;
@@ -200,6 +203,102 @@ static void buildSHA(SSL& ssl, Finished& fin, const opaque* sender)
 }
 
 
+void decrypt_message(SSL& ssl, input_buffer& input, size_t sz)
+{
+    input_buffer plain(sz);
+    opaque*      cipher = input.get_buffer() + input.get_current();
+
+    ssl.use_cipher().decrypt(plain.get_buffer(), cipher, sz);
+    memcpy(cipher, plain.get_buffer(), sz);
+    ssl.set_security().encrypt_size_ = sz;
+}
+
+
+// write headers, handshake hash, mac, pad, and encrypt
+void cipherFinished(SSL& ssl, Finished& fin, output_buffer& output)
+{
+    size_t digestSz = ssl.get_mac().get_digestSize();
+    size_t finishedSz = ssl.isTLS() ? TLS_FINISHED_SZ : FINISHED_SZ;
+    size_t sz  = RECORD_HEADER + HANDSHAKE_HEADER + finishedSz + digestSz;
+    size_t pad = 0;
+    if (ssl.get_security().cipher_type_ == block) {
+        sz += 1;       // pad byte
+        size_t blockSz = ssl.get_cipher().get_blockSize();
+        pad = (sz - RECORD_HEADER) % blockSz;
+        pad = blockSz - pad;
+        sz += pad;
+    }
+
+    RecordLayerHeader rlHeader;
+    HandShakeHeader   hsHeader;
+    buildHeaders(ssl, hsHeader, rlHeader, fin);
+    rlHeader.length_ = sz - RECORD_HEADER;   // record header includes mac
+                                             // and pad, hanshake doesn't
+    output.allocate(sz);
+    output << rlHeader << hsHeader << fin;
+    
+    hashHandShake(ssl, output);
+    opaque digest[SHA_LEN];                  // max size
+    if (ssl.isTLS())
+        TLS_hmac(ssl, digest, output.get_buffer() + RECORD_HEADER,
+                 output.get_size() - RECORD_HEADER, handshake);
+    else
+        hmac(ssl, digest, output.get_buffer() + RECORD_HEADER,
+             output.get_size() - RECORD_HEADER, handshake);
+    output.write(digest, digestSz);
+
+    if (ssl.get_security().cipher_type_ == block)
+        for (size_t i = 0; i <= pad; i++) output[AUTO] = pad; // pad byte gets
+                                                              // pad value too
+    input_buffer cipher(rlHeader.length_);
+    ssl.use_cipher().encrypt(cipher.get_buffer(), output.get_buffer() + 
+                             RECORD_HEADER, output.get_size() - RECORD_HEADER);
+    output.set_current(RECORD_HEADER);
+    output.write(cipher.get_buffer(), cipher.get_capacity());
+}
+
+
+// build a data layer message for output
+void buildData(SSL& ssl, output_buffer& output, const Data& data)
+{
+    size_t digestSz = ssl.get_mac().get_digestSize();
+    size_t sz  = RECORD_HEADER + data.get_length() + digestSz;                
+    size_t pad = 0;
+    if (ssl.get_security().cipher_type_ == block) {
+        sz += 1;       // pad byte
+        size_t blockSz = ssl.get_cipher().get_blockSize();
+        pad = (sz - RECORD_HEADER) % blockSz;
+        pad = blockSz - pad;
+        sz += pad;
+    }
+
+    RecordLayerHeader rlHeader;
+    buildHeader(ssl, rlHeader, data);
+    rlHeader.length_ = sz - RECORD_HEADER;   // record header includes mac
+                                             // and pad, hanshake doesn't
+    output.allocate(sz);
+    output << rlHeader << data;
+    
+    opaque digest[SHA_LEN];                  // max size
+    if (ssl.isTLS())
+        TLS_hmac(ssl, digest, output.get_buffer() + RECORD_HEADER,
+                 output.get_size() - RECORD_HEADER, application_data);
+    else
+        hmac(ssl, digest, output.get_buffer() + RECORD_HEADER,
+             output.get_size() - RECORD_HEADER, application_data);
+    output.write(digest, digestSz);
+
+    if (ssl.get_security().cipher_type_ == block)
+        for (size_t i = 0; i <= pad; i++) output[AUTO] = pad; // pad byte gets
+                                                              // pad value too
+    input_buffer cipher(rlHeader.length_);
+    ssl.use_cipher().encrypt(cipher.get_buffer(), output.get_buffer() + 
+                             RECORD_HEADER, output.get_size() - RECORD_HEADER);
+    output.set_current(RECORD_HEADER);
+    output.write(cipher.get_buffer(), cipher.get_capacity());
+}
+
+
 void buildFinishedTLS(SSL& ssl, Finished& fin, const opaque* sender) 
 {
     opaque handshake_hash[FINISHED_SZ];
@@ -222,6 +321,55 @@ void buildFinishedTLS(SSL& ssl, Finished& fin, const opaque* sender)
 
     fin.set_length(TLS_FINISHED_SZ);  // shorter length for TLS
 }
+
+
+// compute p_hash for MD5 or SHA-1 for TLSv1 PRF
+void p_hash(output_buffer& result, const output_buffer& secret,
+            const output_buffer& seed, MACAlgorithm hash)
+{
+    size_t   len = hash == md5 ? MD5_LEN : SHA_LEN;
+    size_t   times = result.get_capacity() / len;
+    size_t   lastLen = result.get_capacity() % len;
+    opaque   previous[SHA_LEN];  // max size
+    opaque   current[SHA_LEN];   // max size
+    std::auto_ptr<MAC> hmac;
+
+    if (lastLen) times += 1;
+
+    if (hash == md5)
+        hmac = std::auto_ptr<MAC>(new HMAC_MD5(secret.get_buffer(),
+                                               secret.get_size()));
+    else
+        hmac = std::auto_ptr<MAC>(new HMAC_SHA(secret.get_buffer(),
+                                               secret.get_size()));
+                                                                   // A0 = seed
+    hmac->get_digest(previous, seed.get_buffer(), seed.get_size());// A1
+    size_t lastTime = times - 1;
+
+    for (size_t i = 0; i < times; i++) {
+        hmac->update(previous, len);  
+        hmac->get_digest(current, seed.get_buffer(), seed.get_size());
+
+        if (lastLen && (i == lastTime))
+            result.write(current, lastLen);
+        else {
+            result.write(current, len);
+            //memcpy(previous, current, len);
+            hmac->get_digest(previous, previous, len);
+        }
+    }
+}
+
+
+// calculate XOR for TLSv1 PRF
+void get_xor(byte *digest, size_t digLen, output_buffer& md5,
+             output_buffer& sha)
+{
+    for (size_t i = 0; i < digLen; i++) 
+        digest[i] = md5[AUTO] ^ sha[AUTO];
+}
+
+} // namespace for locals
 
 
 // Build a finished message, see 7.6.9
@@ -311,138 +459,6 @@ void TLS_hmac(SSL& ssl, byte* digest, const byte* buffer, size_t sz,
 }
 
 
-// write headers, handshake hash, mac, pad, and encrypt
-void cipherFinished(SSL& ssl, Finished& fin, output_buffer& output)
-{
-    size_t digestSz = ssl.get_mac().get_digestSize();
-    size_t finishedSz = ssl.isTLS() ? TLS_FINISHED_SZ : FINISHED_SZ;
-    size_t sz  = RECORD_HEADER + HANDSHAKE_HEADER + finishedSz + digestSz;
-    size_t pad = 0;
-    if (ssl.get_security().cipher_type_ == block) {
-        sz += 1;       // pad byte
-        size_t blockSz = ssl.get_cipher().get_blockSize();
-        pad = (sz - RECORD_HEADER) % blockSz;
-        pad = blockSz - pad;
-        sz += pad;
-    }
-
-    RecordLayerHeader rlHeader;
-    HandShakeHeader   hsHeader;
-    buildHeaders(ssl, hsHeader, rlHeader, fin);
-    rlHeader.length_ = sz - RECORD_HEADER;   // record header includes mac
-                                             // and pad, hanshake doesn't
-    output.allocate(sz);
-    output << rlHeader << hsHeader << fin;
-    
-    hashHandShake(ssl, output);
-    opaque digest[SHA_LEN];                  // max size
-    if (ssl.isTLS())
-        TLS_hmac(ssl, digest, output.get_buffer() + RECORD_HEADER,
-                 output.get_size() - RECORD_HEADER, handshake);
-    else
-        hmac(ssl, digest, output.get_buffer() + RECORD_HEADER,
-             output.get_size() - RECORD_HEADER, handshake);
-    output.write(digest, digestSz);
-
-    if (ssl.get_security().cipher_type_ == block)
-        for (size_t i = 0; i <= pad; i++) output[AUTO] = pad; // pad byte gets
-                                                              // pad value too
-    input_buffer cipher(rlHeader.length_);
-    ssl.use_cipher().encrypt(cipher.get_buffer(), output.get_buffer() + 
-                             RECORD_HEADER, output.get_size() - RECORD_HEADER);
-    output.set_current(RECORD_HEADER);
-    output.write(cipher.get_buffer(), cipher.get_capacity());
-}
-
-
-// build a data layer message for output
-void buildData(SSL& ssl, output_buffer& output, const Data& data)
-{
-    size_t digestSz = ssl.get_mac().get_digestSize();
-    size_t sz  = RECORD_HEADER + data.get_length() + digestSz;                
-    size_t pad = 0;
-    if (ssl.get_security().cipher_type_ == block) {
-        sz += 1;       // pad byte
-        size_t blockSz = ssl.get_cipher().get_blockSize();
-        pad = (sz - RECORD_HEADER) % blockSz;
-        pad = blockSz - pad;
-        sz += pad;
-    }
-
-    RecordLayerHeader rlHeader;
-    buildHeader(ssl, rlHeader, data);
-    rlHeader.length_ = sz - RECORD_HEADER;   // record header includes mac
-                                             // and pad, hanshake doesn't
-    output.allocate(sz);
-    output << rlHeader << data;
-    
-    opaque digest[SHA_LEN];                  // max size
-    if (ssl.isTLS())
-        TLS_hmac(ssl, digest, output.get_buffer() + RECORD_HEADER,
-                 output.get_size() - RECORD_HEADER, application_data);
-    else
-        hmac(ssl, digest, output.get_buffer() + RECORD_HEADER,
-             output.get_size() - RECORD_HEADER, application_data);
-    output.write(digest, digestSz);
-
-    if (ssl.get_security().cipher_type_ == block)
-        for (size_t i = 0; i <= pad; i++) output[AUTO] = pad; // pad byte gets
-                                                              // pad value too
-    input_buffer cipher(rlHeader.length_);
-    ssl.use_cipher().encrypt(cipher.get_buffer(), output.get_buffer() + 
-                             RECORD_HEADER, output.get_size() - RECORD_HEADER);
-    output.set_current(RECORD_HEADER);
-    output.write(cipher.get_buffer(), cipher.get_capacity());
-}
-
-
-// compute p_hash for MD5 or SHA-1 for TLSv1 PRF
-void p_hash(output_buffer& result, const output_buffer& secret,
-            const output_buffer& seed, MACAlgorithm hash)
-{
-    size_t   len = hash == md5 ? MD5_LEN : SHA_LEN;
-    size_t   times = result.get_capacity() / len;
-    size_t   lastLen = result.get_capacity() % len;
-    opaque   previous[SHA_LEN];  // max size
-    opaque   current[SHA_LEN];   // max size
-    std::auto_ptr<MAC> hmac;
-
-    if (lastLen) times += 1;
-
-    if (hash == md5)
-        hmac = std::auto_ptr<MAC>(new HMAC_MD5(secret.get_buffer(),
-                                               secret.get_size()));
-    else
-        hmac = std::auto_ptr<MAC>(new HMAC_SHA(secret.get_buffer(),
-                                               secret.get_size()));
-                                                                   // A0 = seed
-    hmac->get_digest(previous, seed.get_buffer(), seed.get_size());// A1
-    size_t lastTime = times - 1;
-
-    for (size_t i = 0; i < times; i++) {
-        hmac->update(previous, len);  
-        hmac->get_digest(current, seed.get_buffer(), seed.get_size());
-
-        if (lastLen && (i == lastTime))
-            result.write(current, lastLen);
-        else {
-            result.write(current, len);
-            //memcpy(previous, current, len);
-            hmac->get_digest(previous, previous, len);
-        }
-    }
-}
-
-
-// calculate XOR for TLSv1 PRF
-void get_xor(byte *digest, size_t digLen, output_buffer& md5,
-             output_buffer& sha)
-{
-    for (size_t i = 0; i < digLen; i++) 
-        digest[i] = md5[AUTO] ^ sha[AUTO];
-}
-
-
 // compute TLSv1 PRF (pseudo random function using HMAC)
 void PRF(byte* digest, size_t digLen, const byte* secret, size_t secLen,
          const byte* label, size_t labLen, const byte* seed, size_t seedLen)
@@ -470,53 +486,13 @@ void PRF(byte* digest, size_t digLen, const byte* secret, size_t secLen,
 }
 
 
-// Process incoming cipherd data into plain
-void processData(SSL& ssl, input_buffer& cipher, unsigned int cipherSz, 
-                 input_buffer& plain)
-{
-    size_t curr = cipher.get_current();
-    ssl.use_cipher().decrypt(plain.get_buffer(), cipher.get_buffer() + curr,
-                             cipherSz);
-    cipher.set_current(curr + cipherSz);
-}
-
-
-void sendClientHello(SSL& ssl)
-{
-    ssl.verifyState(serverNull);
-
-    ClientHello       ch(ssl.get_connection().version_);
-    RecordLayerHeader rlHeader;
-    HandShakeHeader   hsHeader;
-    output_buffer     out;
-
-    buildClientHello(ssl, ch);
-    ssl.set_random(ch.get_random(), client_end);
-    buildHeaders(ssl, hsHeader, rlHeader, ch);
-    buildOutput(out, rlHeader, hsHeader, ch);
-    hashHandShake(ssl, out);
-
-    ssl.get_socket().send(out.get_buffer(), out.get_size());
-}
-
-
-static void decrypt_message(SSL& ssl, input_buffer& input, size_t sz)
-{
-    input_buffer plain(sz);
-    opaque*      cipher = input.get_buffer() + input.get_current();
-
-    ssl.use_cipher().decrypt(plain.get_buffer(), cipher, sz);
-    memcpy(cipher, plain.get_buffer(), sz);
-    ssl.set_security().encrypt_size_ = sz;
-}
-
-
 void processReply(SSL& ssl)
 {
     ssl.get_socket().receive(NULL, 0);        // wait if no input and blocking
     size_t ready = ssl.get_socket().get_ready();
 #if defined(__CYGWIN__)  // non-blocking, can't turn off?
-    if (!ready) {
+    size_t tries(20);
+    while (!ready && --tries) {
         usleep(50000);
         ready = ssl.get_socket().get_ready();
     }
@@ -545,6 +521,25 @@ void processReply(SSL& ssl)
         }
         offset += hdr.length_ + RECORD_HEADER;
     }
+}
+
+
+void sendClientHello(SSL& ssl)
+{
+    ssl.verifyState(serverNull);
+
+    ClientHello       ch(ssl.get_connection().version_);
+    RecordLayerHeader rlHeader;
+    HandShakeHeader   hsHeader;
+    output_buffer     out;
+
+    buildClientHello(ssl, ch);
+    ssl.set_random(ch.get_random(), client_end);
+    buildHeaders(ssl, hsHeader, rlHeader, ch);
+    buildOutput(out, rlHeader, hsHeader, ch);
+    hashHandShake(ssl, out);
+
+    ssl.get_socket().send(out.get_buffer(), out.get_size());
 }
 
 
@@ -703,3 +698,6 @@ void sendCertificate(SSL& ssl, BufferOutput buffer)
     else
         ssl.get_socket().send(out->get_buffer(), out->get_size());
 }
+
+
+} // namespace

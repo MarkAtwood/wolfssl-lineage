@@ -35,6 +35,9 @@
 #endif // USE_CML_LIB
 
 
+namespace yaSSL {
+
+
 x509::x509(const x509& that) : length_(that.length_),
                                buffer_(new opaque[length_])
 {
@@ -112,3 +115,5 @@ void CertManager::SetPrivateKey(x509& key)
     privateKey_.assign(key.get_buffer(), key.get_length());
 }
 
+
+} // namespace

@@ -34,12 +34,17 @@ public:
     typedef ARC4 Encryption;
     typedef ARC4 Decryption;
 
+    ARC4() {}
+
     void Process(byte*, const byte*, size_t);
     void SetKey(const byte*, size_t);
 private:
     byte x_;
     byte y_;
     byte state_[STATE_SIZE];
+
+    ARC4(const ARC4&);                  // hide copy
+    const ARC4 operator=(const ARC4&);  // and assign
 };
 
 } // namespace

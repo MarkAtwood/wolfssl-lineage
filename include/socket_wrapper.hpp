@@ -29,7 +29,7 @@
 #ifndef __yaSSL_socket_wrapper_hpp__
 #define __yaSSL_socket_wrapper_hpp__
 
-#include <assert.h>
+#include <cassert>
 
 #ifdef WIN32
     #include <winsock2.h>
@@ -41,6 +41,9 @@
     #include <netinet/in.h>
     #include <arpa/inet.h>
 #endif
+
+
+namespace yaSSL {
 
 
 #ifdef WIN32
@@ -69,8 +72,8 @@ public:
     void   set_fd(socket_t s) { socket_ = s; }
     size_t get_ready() const;
 
-    unsigned int send(const byte* buf, unsigned int len, int flags = 0) const;
-    unsigned int receive(byte* buf, unsigned int len, int flags = 0) const ;
+    int send(const byte* buf, unsigned int len, int flags = 0) const;
+    int receive(byte* buf, unsigned int len, int flags = 0)    const;
 
     void closeSocket();
     void shutDown(int how = SD_SEND);
@@ -83,5 +86,6 @@ private:
 };
 
 
+} // naemspace
 
 #endif // __yaSSL_socket_wrapper_hpp__

@@ -29,6 +29,8 @@
 #include "handshake.hpp"
 
 
+namespace yaSSL {
+
 
 // convert a 32 bit integer into a 24 bit one
 void c32to24(uint32 u32, uint24& u24)
@@ -244,8 +246,11 @@ void SSL::set_error(const Error& e)
 }
 
 
+// locals
+namespace {
+
 // DeriveKeys and MasterSecret helper sets prefix letters
-static void setPrefix(output_buffer& sha_input, int i)
+void setPrefix(output_buffer& sha_input, int i)
 {
     opaque buffer[8];
 
@@ -276,6 +281,16 @@ static void setPrefix(output_buffer& sha_input, int i)
     }  
     sha_input.write(buffer, i + 1);
 }
+
+
+const char handshake_order[] = "Out of order HandShake Message!";
+
+void order_error()
+{
+    throw Error(handshake_order, out_of_order);
+}
+
+} // namespcae for locals
 
 
 // Create and store the master secret see page 32, 6.1
@@ -427,11 +442,24 @@ void SSL::setKeys()
 }
 
 
+
+// local functors
+namespace {
+
 struct SumData {
     size_t total_;
     SumData() : total_(0) {}
     void operator()(input_buffer* data) { total_ += data->get_remaining(); }
 };
+
+
+struct SumBuffer {
+    size_t total_;
+    SumBuffer() : total_(0) {}
+    void operator()(output_buffer* buffer) { total_ += buffer->get_size(); }
+};
+
+} // namespace for locals
 
 
 size_t SSL::bufferedData()
@@ -449,7 +477,6 @@ inline T min(T a, T b)
 {
     return a < b ? a : b;
 }
-
 
 
 void SSL::fillData(Data& data)
@@ -476,13 +503,6 @@ void SSL::fillData(Data& data)
             break;
     }
 }
-
-
-struct SumBuffer {
-    size_t total_;
-    SumBuffer() : total_(0) {}
-    void operator()(output_buffer* buffer) { total_ += buffer->get_size(); }
-};
 
 
 void SSL::flushBuffer()
@@ -519,14 +539,6 @@ const byte* SSL::get_macSecret(bool verify)
         return connection_.client_write_MAC_secret_;
     else
         return connection_.server_write_MAC_secret_;
-}
-
-
-static const char handshake_order[] = "Out of order HandShake Message!";
-
-static void order_error()
-{
-    throw Error(handshake_order, out_of_order);
 }
 
 
@@ -635,9 +647,10 @@ void SSL::matchSuite(const opaque* peer, size_t length)
                 securityParms_.suite_[0] = 0x00;
                 securityParms_.suite_[1] = peer[j];
                 return;
-        }
+            }
 
     throw Error("No suite match", match_error);
 }
 
 
+} // namespace

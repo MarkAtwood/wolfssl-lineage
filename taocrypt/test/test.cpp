@@ -1,4 +1,5 @@
 // test.cpp
+// test taocrypt functionality
 
 #include <string.h>
 #include <stdio.h>
@@ -40,6 +41,7 @@ using TaoCrypt::FileSource;
 using TaoCrypt::HexDecoder;
 using TaoCrypt::CertDecoder;
 using TaoCrypt::DH;
+
 
 
 struct testVector {
@@ -152,13 +154,13 @@ int sha_test()
         testVector("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
                  "\x84\x98\x3E\x44\x1C\x3B\xD2\x6E\xBA\xAE\x4A\xA1\xF9\x51\x29"
                  "\xE5\xE5\x46\x70\xF1"),
-        testVector("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                 "aaaa", 
+        testVector("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                 "aaaaaa", 
                  "\x00\x98\xBA\x82\x4B\x5C\x16\x42\x7B\xD7\xA1\x12\x2A\x5A\x44"
                  "\x2A\x25\xEC\x64\x4D"),
-        testVector("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        testVector("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
                  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                 "aaaaaaaa",
+                 "aaaaaaaaaa",
                  "\xAD\x5B\x3F\xDB\xCB\x52\x67\x78\xC2\x83\x9D\x2F\x15\x1E\xA7"
                  "\x53\x99\x5E\x26\xA0")  
     };
@@ -192,12 +194,12 @@ int md5_test()
         testVector("abcdefghijklmnopqrstuvwxyz",
                  "\xc3\xfc\xd3\xd7\x61\x92\xe4\x00\x7d\xfb\x49\x6c\xca\x67\xe1"
                  "\x3b"),
-        testVector("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567"
-                 "89",
+        testVector("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345"
+                 "6789",
                  "\xd1\x74\xab\x98\xd2\x77\xd9\xf5\xa5\x61\x1c\x2c\x9f\x41\x9d"
                  "\x9f"),
-        testVector("123456789012345678901234567890123456789012345678901234567890"
-                 "12345678901234567890",
+        testVector("1234567890123456789012345678901234567890123456789012345678"
+                 "9012345678901234567890",
                  "\x57\xed\xf4\xa2\x2b\xe3\xc9\x55\xac\x49\xda\x2e\x21\x07\xb6"
                  "\x7a")
     };
@@ -235,10 +237,10 @@ int hmac_test()
         testVector("what do ya want for nothing?",
                  "\x75\x0c\x78\x3e\x6a\xb0\xb5\x03\xea\xa8\x6e\x31\x0a\x5d\xb7"
                  "\x38"),
-        testVector("\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD"
+        testVector("\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD"
                  "\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD"
                  "\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD"
-                 "\xDD\xDD\xDD\xDD\xDD",
+                 "\xDD\xDD\xDD\xDD\xDD\xDD",
                  "\x56\xbe\x34\x52\x1d\x14\x4c\x88\xdb\xb8\xc7\x33\xf0\xe8\xb3"
                  "\xf6")
     };

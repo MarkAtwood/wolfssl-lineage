@@ -12,8 +12,8 @@ test.o test.o: test.cpp /usr/include/string.h /usr/include/_ansi.h \
   ../include/misc.hpp /usr/include/stdlib.h /usr/include/machine/stdlib.h \
   /usr/include/alloca.h /usr/include/assert.h ../include/md5.hpp \
   ../include/hmac.hpp ../include/arc4.hpp ../include/des.hpp \
-  ../include/modes.hpp ../include/integer.hpp ../include/block.hpp \
-  ../include/random.hpp ../include/file.hpp \
+  ../include/modes.hpp ../include/rsa.hpp ../include/integer.hpp \
+  ../include/block.hpp ../include/random.hpp ../include/file.hpp \
   /usr/include/c++/3.3.1/fstream /usr/include/c++/3.3.1/istream \
   /usr/include/c++/3.3.1/ios /usr/include/c++/3.3.1/iosfwd \
   /usr/include/c++/3.3.1/i686-pc-cygwin/bits/c++config.h \
@@ -82,7 +82,7 @@ test.o test.o: test.cpp /usr/include/string.h /usr/include/_ansi.h \
   /usr/include/c++/3.3.1/typeinfo /usr/include/c++/3.3.1/ostream \
   /usr/include/c++/3.3.1/bits/ostream.tcc \
   /usr/include/c++/3.3.1/i686-pc-cygwin/bits/basic_file.h \
-  /usr/include/c++/3.3.1/bits/fstream.tcc ../include/rsa.hpp \
+  /usr/include/c++/3.3.1/bits/fstream.tcc \
   /usr/include/c++/3.3.1/stdexcept ../include/aes.hpp ../include/asn.hpp \
   ../include/dh.hpp ../include/coding.hpp
 
@@ -145,6 +145,8 @@ test.o test.o: test.cpp /usr/include/string.h /usr/include/_ansi.h \
 ../include/des.hpp:
 
 ../include/modes.hpp:
+
+../include/rsa.hpp:
 
 ../include/integer.hpp:
 
@@ -341,8 +343,6 @@ test.o test.o: test.cpp /usr/include/string.h /usr/include/_ansi.h \
 /usr/include/c++/3.3.1/i686-pc-cygwin/bits/basic_file.h:
 
 /usr/include/c++/3.3.1/bits/fstream.tcc:
-
-../include/rsa.hpp:
 
 /usr/include/c++/3.3.1/stdexcept:
 

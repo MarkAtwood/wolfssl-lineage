@@ -41,6 +41,7 @@
 #include "file.hpp"
 
 
+namespace yaSSL {
 
 
 // MD5 Implementation
@@ -131,8 +132,6 @@ void SHA::update(const byte* in, unsigned int sz)
 struct HMAC_MD5::HMAC_MD5Impl {
     TaoCrypt::HMAC<TaoCrypt::MD5> mac_;
     HMAC_MD5Impl() {}
-    explicit HMAC_MD5Impl(const TaoCrypt::HMAC<TaoCrypt::MD5>& md5) 
-        : mac_(md5) {}
 };
 
 
@@ -144,14 +143,6 @@ HMAC_MD5::HMAC_MD5(const byte* secret, unsigned int len)
 
 HMAC_MD5::~HMAC_MD5() { delete pimpl_; }
 
-HMAC_MD5::HMAC_MD5(const HMAC_MD5& that) : 
-    pimpl_(new HMAC_MD5Impl(that.pimpl_->mac_)) {}
-
-HMAC_MD5& HMAC_MD5::operator=(const HMAC_MD5& that)
-{
-    pimpl_->mac_ = that.pimpl_->mac_;
-    return *this;
-}
 
 // Fill out with MD5 digest from in that is sz bytes, out must be >= digest sz
 void HMAC_MD5::get_digest(byte* out, const byte* in, unsigned int sz)
@@ -178,8 +169,6 @@ void HMAC_MD5::update(const byte* in, unsigned int sz)
 struct HMAC_SHA::HMAC_SHAImpl {
     TaoCrypt::HMAC<TaoCrypt::SHA> mac_;
     HMAC_SHAImpl() {}
-    explicit HMAC_SHAImpl(const TaoCrypt::HMAC<TaoCrypt::SHA>& sha) 
-        : mac_(sha) {}
 };
 
 
@@ -191,14 +180,6 @@ HMAC_SHA::HMAC_SHA(const byte* secret, unsigned int len)
 
 HMAC_SHA::~HMAC_SHA() { delete pimpl_; }
 
-HMAC_SHA::HMAC_SHA(const HMAC_SHA& that) : 
-    pimpl_(new HMAC_SHAImpl(that.pimpl_->mac_)) {}
-
-HMAC_SHA& HMAC_SHA::operator=(const HMAC_SHA& that)
-{
-    pimpl_->mac_ = that.pimpl_->mac_;
-    return *this;
-}
 
 // Fill out with SHA digest from in that is sz bytes, out must be >= digest sz
 void HMAC_SHA::get_digest(byte* out, const byte* in, unsigned int sz)
@@ -683,5 +664,6 @@ x509* PemToDer(const char* file, CertType type)
 }
 
 
+} // namespace
 
 #endif // !USE_CRYPTOPP_LIB

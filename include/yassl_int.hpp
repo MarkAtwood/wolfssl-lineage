@@ -35,6 +35,9 @@
 #include "factory.hpp"
 
 
+namespace yaSSL {
+
+
 
 // State Machine for Record Layer Protocol
 enum RecordLayerState {
@@ -169,9 +172,10 @@ class SSL {
     DiffieHellman*      dh_;                    // server dh parms
     sslFactory          factory_;               // creates new ssl objects
     Socket              socket_;                // socket wrapper
+    Log                 log_;                   // logger
+    Error               error_;                 // last error
     std::list<input_buffer*>  dataList_;        // list of users app data
     std::list<output_buffer*> handShakeList_;   // buffered handshake msgs
-    Error               error_;                 // last error
 public:
     SSL(SSL_CTX* ctx);
     ~SSL();
@@ -214,6 +218,7 @@ public:
     States&				set_states()    { return states_; }
 
     // helpers
+    void   log(const char* msg) { log_.Trace(msg); }
     void   init_dh()      { dh_ = new DiffieHellman("certs/dh1024.p",random_);}
     bool   is_encrypted() { return securityParms_.pending_ == false; }
     bool   isTLS()        { return connection_.version_.major_ >= 3 && 
@@ -263,6 +268,6 @@ void c24toa(const uint24, opaque*);
 void c32toa(uint32 u32, opaque*);
 
 
-
+} // naemspace
 
 #endif // __yaSSL_int_hpp__

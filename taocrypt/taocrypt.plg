@@ -3,12 +3,12 @@
 <pre>
 <h1>Build Log</h1>
 <h3>
---------------------Configuration: taocrypt - Win32 Release--------------------
+--------------------Configuration: taocrypt - Win32 Debug--------------------
 </h3>
 <h3>Command Lines</h3>
-Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSPCC6.tmp" with contents
+Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSPB5.tmp" with contents
 [
-/nologo /ML /W3 /GX /O2 /I "include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /Fp"Release/taocrypt.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c 
+/nologo /MLd /W3 /Gm /GX /ZI /Od /I "include" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /FR"Debug/" /Fp"Debug/taocrypt.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
 "F:\yassl\taocrypt\src\aes.cpp"
 "F:\yassl\taocrypt\src\aestables.cpp"
 "F:\yassl\taocrypt\src\algebra.cpp"
@@ -26,28 +26,28 @@ Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSPCC6.tmp" with contents
 "F:\yassl\taocrypt\src\rsa.cpp"
 "F:\yassl\taocrypt\src\sha.cpp"
 ]
-Creating command line "cl.exe @C:\DOCUME~1\tao\LOCALS~1\Temp\RSPCC6.tmp" 
-Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSPCC7.tmp" with contents
+Creating command line "cl.exe @C:\DOCUME~1\tao\LOCALS~1\Temp\RSPB5.tmp" 
+Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSPB6.tmp" with contents
 [
-/nologo /out:"Release\taocrypt.lib" 
-.\Release\aes.obj
-.\Release\aestables.obj
-.\Release\algebra.obj
-.\Release\arc4.obj
-.\Release\asn.obj
-.\Release\coding.obj
-.\Release\des.obj
-.\Release\dh.obj
-.\Release\file.obj
-.\Release\hash.obj
-.\Release\integer.obj
-.\Release\md5.obj
-.\Release\misc.obj
-.\Release\random.obj
-.\Release\rsa.obj
-.\Release\sha.obj
+/nologo /out:"Debug\taocrypt.lib" 
+.\Debug\aes.obj
+.\Debug\aestables.obj
+.\Debug\algebra.obj
+.\Debug\arc4.obj
+.\Debug\asn.obj
+.\Debug\coding.obj
+.\Debug\des.obj
+.\Debug\dh.obj
+.\Debug\file.obj
+.\Debug\hash.obj
+.\Debug\integer.obj
+.\Debug\md5.obj
+.\Debug\misc.obj
+.\Debug\random.obj
+.\Debug\rsa.obj
+.\Debug\sha.obj
 ]
-Creating command line "link.exe -lib @C:\DOCUME~1\tao\LOCALS~1\Temp\RSPCC7.tmp"
+Creating command line "link.exe -lib @C:\DOCUME~1\tao\LOCALS~1\Temp\RSPB6.tmp"
 <h3>Output Window</h3>
 Compiling...
 aes.cpp
@@ -67,6 +67,28 @@ random.cpp
 rsa.cpp
 sha.cpp
 Creating library...
+Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSPB7.tmp" with contents
+[
+/nologo /o"Debug/taocrypt.bsc" 
+.\Debug\aes.sbr
+.\Debug\aestables.sbr
+.\Debug\algebra.sbr
+.\Debug\arc4.sbr
+.\Debug\asn.sbr
+.\Debug\coding.sbr
+.\Debug\des.sbr
+.\Debug\dh.sbr
+.\Debug\file.sbr
+.\Debug\hash.sbr
+.\Debug\integer.sbr
+.\Debug\md5.sbr
+.\Debug\misc.sbr
+.\Debug\random.sbr
+.\Debug\rsa.sbr
+.\Debug\sha.sbr]
+Creating command line "bscmake.exe @C:\DOCUME~1\tao\LOCALS~1\Temp\RSPB7.tmp"
+Creating browse info file...
+<h3>Output Window</h3>
 
 
 

@@ -27,6 +27,8 @@
 #include "handshake.hpp"
 
 
+namespace yaSSL {
+
 
 // construct key exchange with known ssl parms
 void ClientKeyExchange::createKey(SSL& ssl)
@@ -478,8 +480,8 @@ void Data::Process(input_buffer& input, SSL& ssl)
 
     // verify
     if (dataSz) {
-        int cmp = memcmp(mac, verify, digestSz);
-        assert (cmp == 0);
+        if (memcmp(mac, verify, digestSz))
+            throw Error("Bad Data Verify MAC", verify_error);
     }
     else 
         ssl.get_SEQIncrement(true);  // even though no data, increment verify
@@ -777,8 +779,8 @@ void Finished::Process(input_buffer& input, SSL& ssl)
 
     input.read(hashes_.md5_, finishedSz);
 
-    int    cmp = memcmp(&hashes_, &verify.hashes_, finishedSz);
-    assert(cmp == 0);
+    if (memcmp(&hashes_, &verify.hashes_, finishedSz))
+        throw Error("Bad Finished verify hashes", verify_error);
 
     // read verify mac
     opaque verifyMAC[SHA_LEN];
@@ -803,8 +805,8 @@ void Finished::Process(input_buffer& input, SSL& ssl)
         fill = input[AUTO];
 
     // verify mac
-    cmp = memcmp(mac, verifyMAC, digestSz);
-    assert (cmp == 0);
+    if (memcmp(mac, verifyMAC, digestSz))
+        throw Error("Bad Finished verify MAC", verify_error);
 
     // update states
     ssl.set_states().handshakeLayer_ = handShakeReady;
@@ -842,3 +844,6 @@ ServerKeyBase* CreateFortezzaServerKEA()  { return new Fortezza_Server; }
 ClientKeyBase* CreateRSAClient()      { return new EncryptedPreMasterSecret; }
 ClientKeyBase* CreateDHClient()       { return new ClientDiffieHellmanPublic; }
 ClientKeyBase* CreateFortezzaClient() { return new FortezzaKeys; }
+
+
+} // namespace

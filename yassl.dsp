@@ -141,6 +141,10 @@ SOURCE=.\include\handshake.hpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\include\log.hpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\include\socket_wrapper.hpp
 # End Source File
 # Begin Source File

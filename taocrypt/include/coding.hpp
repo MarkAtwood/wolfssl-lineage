@@ -43,6 +43,9 @@ public:
     explicit HexDecoder(Sink& s) : coded_(s) { Decode(); }
 private:
     void Decode();
+
+    HexDecoder(const HexDecoder&);              // hide copy
+    HexDecoder& operator=(const HexDecoder&);   // and assign
 };
 
 

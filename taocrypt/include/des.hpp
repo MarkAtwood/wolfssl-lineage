@@ -40,9 +40,11 @@ public:
 
     void Process(byte*, const byte*, size_t);
 protected:
-    uint32    k_[KEY_SIZE];
     CipherDir dir_;
     Mode      mode_;
+private:
+    DES_BASE(const DES_BASE&);              // hide copy
+    DES_BASE& operator=(const DES_BASE&);   // and assign
 };
 
 class DES : public DES_BASE {
@@ -52,6 +54,8 @@ public:
     void SetKey(const byte*, size_t, CipherDir dir);
     void RawProcessBlock(uint32&, uint32&) const;
     void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
+private:
+    uint32 k_[KEY_SIZE];
 };
 
 

@@ -66,6 +66,9 @@ private:
 
     void encrypt(const byte*, const byte*, byte*) const;
     void decrypt(const byte*, const byte*, byte*) const;
+
+    AES(const AES&);            // hide copy
+    AES& operator=(const AES&); // and assign
 };
 
 

@@ -38,11 +38,10 @@ public:
     size_t    getDigestSize() const { return DIGEST_SIZE; }
     size_t    getPadSize()    const { return PAD_SIZE; }
 
-    void Init();
-
     MD5(const MD5&);
     MD5& operator= (const MD5&);
 
+    void Init();
     void Swap(MD5&);
 private:
     void Transform();

@@ -26,7 +26,11 @@
 #ifndef yaSSL_error_hpp__
 #define yaSSL_error_hpp__
 
+#include "log.hpp"
 #include <stdexcept>
+
+
+namespace yaSSL {
 
 
 enum ErrorNumber {
@@ -45,10 +49,13 @@ enum ErrorNumber {
     bad_input           = 109,
     match_error         = 110,
     no_key_file         = 111,
+    verify_error        = 112,
+    send_error          = 113,
+    receive_error       = 114,
 };
 
 
-enum Library { yassl = 0, cryptopp, cml };
+enum Library { yaSSL_Lib = 0, CryptoLib, SocketLib };
 
 // Base class for all yaSSL exceptions
 class Error : public std::runtime_error {
@@ -56,10 +63,13 @@ class Error : public std::runtime_error {
     Library     lib_;
 public:
     explicit Error(const char* s = "", ErrorNumber e = no_error,
-                   Library l = yassl) 
+                   Library l = yaSSL_Lib) 
         : std::runtime_error(s), error_(e), lib_(l) {}
 
     ErrorNumber get_number() const { return error_; }
 };
+
+
+} // naemspace
 
 #endif // #define yaSSL_error_hpp__

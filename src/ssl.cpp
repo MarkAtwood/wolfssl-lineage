@@ -31,6 +31,8 @@
 #include <fstream>
 
 
+namespace yaSSL {
+
 
 SSL* SSL_new(SSL_CTX* ctx)
 {
@@ -66,8 +68,8 @@ int SSL_connect(SSL* ssl)
         return SSL_SUCCESS;
     }
     catch (Error& err) {
-       ssl->set_error(err);
-       return SSL_FATAL_ERROR;
+        ssl->set_error(err);
+        return SSL_FATAL_ERROR;
     }
     catch (...) {
         return SSL_UNKNOWN;
@@ -122,7 +124,6 @@ int SSL_accept(SSL* ssl)
         sendChangeCipher(*ssl);
         sendFinished(*ssl, server_end);
         ssl->flushBuffer();
-
         return SSL_SUCCESS;
     }
     catch (Error& err) {
@@ -924,3 +925,5 @@ RSA* RSA_generate_key(int, unsigned long, void(*)(int, int, void*), void*)
     return 0;
 }
 
+
+} // namespace

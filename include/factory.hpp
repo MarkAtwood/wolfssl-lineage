@@ -35,6 +35,9 @@
 #include "yassl_error.hpp"
 
 
+namespace yaSSL {
+
+
 // Factory uses its callback map to create objects by id,
 // returning an abstract base pointer
 template<class    AbstractProduct, 
@@ -70,5 +73,6 @@ private:
 };
 
 
+} // naemspace
 
 #endif // yaSSL_factory_hpp__

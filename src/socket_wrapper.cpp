@@ -48,6 +48,10 @@
     const int SOCKET_EWOULDBLOCK = EWOULDBLOCK;
 #endif // WIN32
 
+
+namespace yaSSL {
+
+
 Socket::~Socket()
 {
     closeSocket();
@@ -72,8 +76,7 @@ size_t Socket::get_ready() const
     unsigned long ready = 0;
 
 #ifdef WIN32
-    if (ioctlsocket(socket_, FIONREAD, &ready) != 0)
-        int err = WSAGetLastError();
+    ioctlsocket(socket_, FIONREAD, &ready);
 #else
     ioctl(socket_, FIONREAD, &ready);
 #endif
@@ -82,17 +85,25 @@ size_t Socket::get_ready() const
 }
 
 
-unsigned int Socket::send(const byte* buf, unsigned int len, int flags) const
+int Socket::send(const byte* buf, unsigned int len, int flags) const
 {
     assert(socket_ != INVALID_SOCKET);
-    return ::send(socket_, (const char *)buf, len, flags);
+    unsigned int sent = ::send(socket_, (const char *)buf, len, flags);
+
+    if (sent != len) throw Error("Bad TCP Send", send_error, SocketLib);
+
+    return sent;
 }
 
 
-unsigned int Socket::receive(byte* buf, unsigned int len, int flags) const
+int Socket::receive(byte* buf, unsigned int len, int flags) const
 {
     assert(socket_ != INVALID_SOCKET);
-    return ::recv(socket_, (char *)buf, len, flags);
+    unsigned int recv = ::recv(socket_, (char *)buf, len, flags);
+
+    if (recv != len) throw Error("Bad TCP Receive", receive_error, SocketLib);
+
+    return recv;
 }
 
 
@@ -123,3 +134,4 @@ void Socket::set_lastError(int errorCode)
 }
 
 
+} // namespace

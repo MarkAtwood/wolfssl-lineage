@@ -71,6 +71,20 @@ public:
     {
         return PK_Lengths(n_).FixedCiphertextLength();
     }
+
+    RSA_PublicKey(const RSA_PublicKey& other) : n_(other.n_), e_(other.e_) {}
+    RSA_PublicKey& operator=(const RSA_PublicKey& that)
+    {
+        RSA_PublicKey tmp(that);
+        Swap(tmp);
+        return *this;
+    }
+
+    void Swap(RSA_PublicKey& other)
+    {
+        n_.swap(other.n_);
+        e_.swap(other.e_);
+    }
 };
 
 
@@ -107,6 +121,9 @@ public:
     void SetModPrime1PrivateExponent(const Integer& dp) {dp_ = dp;}
     void SetModPrime2PrivateExponent(const Integer& dq) {dq_ = dq;}
     void SetMultiplicativeInverseOfPrime2ModPrime1(const Integer& u) {u_ = u;}
+private:
+    RSA_PrivateKey(const RSA_PrivateKey&);              // hide copy
+    RSA_PrivateKey& operator=(const RSA_PrivateKey&);   // and assign
 };
 
 

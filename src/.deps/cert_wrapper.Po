@@ -51,22 +51,19 @@ cert_wrapper.o cert_wrapper.o: cert_wrapper.cpp \
   /usr/include/c++/3.3.1/bits/stl_uninitialized.h \
   /usr/include/c++/3.3.1/bits/stl_raw_storage_iter.h \
   /usr/include/c++/3.3.1/cassert /usr/include/assert.h \
-  ../include/yassl_error.hpp /usr/include/c++/3.3.1/stdexcept \
-  /usr/include/c++/3.3.1/string /usr/include/c++/3.3.1/bits/char_traits.h \
+  ../include/yassl_error.hpp ../include/log.hpp \
+  /usr/include/c++/3.3.1/fstream /usr/include/c++/3.3.1/istream \
+  /usr/include/c++/3.3.1/ios /usr/include/c++/3.3.1/bits/char_traits.h \
+  /usr/include/c++/3.3.1/bits/localefwd.h \
+  /usr/include/c++/3.3.1/bits/ios_base.h \
+  /usr/include/c++/3.3.1/bits/locale_classes.h \
+  /usr/include/c++/3.3.1/string \
   /usr/include/c++/3.3.1/bits/stl_function.h \
   /usr/include/c++/3.3.1/bits/basic_string.h \
   /usr/include/c++/3.3.1/algorithm /usr/include/c++/3.3.1/bits/stl_algo.h \
   /usr/include/c++/3.3.1/bits/stl_heap.h \
   /usr/include/c++/3.3.1/bits/stl_tempbuf.h \
   /usr/include/c++/3.3.1/bits/basic_string.tcc \
-  /usr/include/c++/3.3.1/list /usr/include/c++/3.3.1/bits/stl_list.h \
-  /usr/include/c++/3.3.1/bits/list.tcc ../taocrypt/include/asn.hpp \
-  ../taocrypt/include/misc.hpp ../taocrypt/include/block.hpp \
-  ../taocrypt/include/file.hpp /usr/include/c++/3.3.1/fstream \
-  /usr/include/c++/3.3.1/istream /usr/include/c++/3.3.1/ios \
-  /usr/include/c++/3.3.1/bits/localefwd.h \
-  /usr/include/c++/3.3.1/bits/ios_base.h \
-  /usr/include/c++/3.3.1/bits/locale_classes.h \
   /usr/include/c++/3.3.1/streambuf \
   /usr/include/c++/3.3.1/bits/streambuf.tcc \
   /usr/include/c++/3.3.1/bits/basic_ios.h \
@@ -87,7 +84,12 @@ cert_wrapper.o cert_wrapper.o: cert_wrapper.cpp \
   /usr/include/c++/3.3.1/typeinfo /usr/include/c++/3.3.1/ostream \
   /usr/include/c++/3.3.1/bits/ostream.tcc \
   /usr/include/c++/3.3.1/i686-pc-cygwin/bits/basic_file.h \
-  /usr/include/c++/3.3.1/bits/fstream.tcc
+  /usr/include/c++/3.3.1/bits/fstream.tcc \
+  /usr/include/c++/3.3.1/stdexcept /usr/include/c++/3.3.1/list \
+  /usr/include/c++/3.3.1/bits/stl_list.h \
+  /usr/include/c++/3.3.1/bits/list.tcc ../taocrypt/include/asn.hpp \
+  ../taocrypt/include/misc.hpp ../taocrypt/include/block.hpp \
+  ../taocrypt/include/file.hpp
 
 ../include/cert_wrapper.hpp:
 
@@ -245,11 +247,23 @@ cert_wrapper.o cert_wrapper.o: cert_wrapper.cpp \
 
 ../include/yassl_error.hpp:
 
-/usr/include/c++/3.3.1/stdexcept:
+../include/log.hpp:
 
-/usr/include/c++/3.3.1/string:
+/usr/include/c++/3.3.1/fstream:
+
+/usr/include/c++/3.3.1/istream:
+
+/usr/include/c++/3.3.1/ios:
 
 /usr/include/c++/3.3.1/bits/char_traits.h:
+
+/usr/include/c++/3.3.1/bits/localefwd.h:
+
+/usr/include/c++/3.3.1/bits/ios_base.h:
+
+/usr/include/c++/3.3.1/bits/locale_classes.h:
+
+/usr/include/c++/3.3.1/string:
 
 /usr/include/c++/3.3.1/bits/stl_function.h:
 
@@ -264,32 +278,6 @@ cert_wrapper.o cert_wrapper.o: cert_wrapper.cpp \
 /usr/include/c++/3.3.1/bits/stl_tempbuf.h:
 
 /usr/include/c++/3.3.1/bits/basic_string.tcc:
-
-/usr/include/c++/3.3.1/list:
-
-/usr/include/c++/3.3.1/bits/stl_list.h:
-
-/usr/include/c++/3.3.1/bits/list.tcc:
-
-../taocrypt/include/asn.hpp:
-
-../taocrypt/include/misc.hpp:
-
-../taocrypt/include/block.hpp:
-
-../taocrypt/include/file.hpp:
-
-/usr/include/c++/3.3.1/fstream:
-
-/usr/include/c++/3.3.1/istream:
-
-/usr/include/c++/3.3.1/ios:
-
-/usr/include/c++/3.3.1/bits/localefwd.h:
-
-/usr/include/c++/3.3.1/bits/ios_base.h:
-
-/usr/include/c++/3.3.1/bits/locale_classes.h:
 
 /usr/include/c++/3.3.1/streambuf:
 
@@ -346,3 +334,19 @@ cert_wrapper.o cert_wrapper.o: cert_wrapper.cpp \
 /usr/include/c++/3.3.1/i686-pc-cygwin/bits/basic_file.h:
 
 /usr/include/c++/3.3.1/bits/fstream.tcc:
+
+/usr/include/c++/3.3.1/stdexcept:
+
+/usr/include/c++/3.3.1/list:
+
+/usr/include/c++/3.3.1/bits/stl_list.h:
+
+/usr/include/c++/3.3.1/bits/list.tcc:
+
+../taocrypt/include/asn.hpp:
+
+../taocrypt/include/misc.hpp:
+
+../taocrypt/include/block.hpp:
+
+../taocrypt/include/file.hpp:

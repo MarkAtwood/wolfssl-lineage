@@ -39,6 +39,9 @@
 #include <list>
 
 
+namespace yaSSL {
+
+
 class SSL;  // forward THE ssl type
 
 // Base Class for all handshake messages
@@ -703,5 +706,6 @@ input_buffer&  operator>>(input_buffer&,  HandShakeBase&);
 output_buffer& operator<<(output_buffer&, const HandShakeBase&);
 
 
+} // naemspace
 
 #endif // __yaSSL_imp_hpp__

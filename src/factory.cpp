@@ -30,6 +30,8 @@
 #include "factory.hpp"
 
 
+namespace yaSSL {
+
 
 // Constructor calls this to Register compile time callbacks
 void InitMessageFactory(MessageFactory& mf)
@@ -73,3 +75,6 @@ void InitClientKeyFactory(ClientKeyFactory& ckf)
     ckf.Register(diffie_hellman_kea, CreateDHClient);
     ckf.Register(fortezza_kea, CreateFortezzaClient);
 }
+
+
+} // namespace
