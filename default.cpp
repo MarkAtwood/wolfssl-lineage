@@ -144,8 +144,17 @@ void DefaultDecryptor::FirstPut(const byte *inString)
 
 void DefaultDecryptor::LastPut(const byte *inString, unsigned int length)
 {
-	m_filter->MessageEnd();
-	m_state = WAITING_FOR_KEYCHECK;
+	if (m_filter.get() == NULL)
+	{
+		m_state = KEY_BAD;
+		if (m_throwException)
+			throw KeyBadErr();
+	}
+	else
+	{
+		m_filter->MessageEnd();
+		m_state = WAITING_FOR_KEYCHECK;
+	}
 }
 
 void DefaultDecryptor::CheckKey(const byte *salt, const byte *keyCheck)
