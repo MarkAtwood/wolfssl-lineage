@@ -1,4 +1,12 @@
-yaSSL Release notes, version 0.2.5
+yaSSL Release notes, version 0.2.9
+
+This release of yaSSL contains minor bug fixes and extensions to the crypto
+library.
+
+See the notes at the bottom of this page for build instructions.
+
+
+*******************yaSSL Release notes, version 0.2.5
 
 This release of yaSSL contains minor bug fixes and a beta binary of the yaSSL
 libraries for win32 and linux.
