@@ -1,4 +1,6 @@
-CXXFLAGS = -O2 -w
+CXXFLAGS = -w
+# uncomment the next line to do a release build
+# CXXFLAGS = -w -O2 -DNDEBUG
 ARFLAGS = cr
 RANLIB = ranlib
 UNAME = $(shell uname)
@@ -39,6 +41,9 @@ libcryptopp.a: $(LIBOBJS)
 
 cryptest.exe: libcryptopp.a $(TESTOBJS)
 	$(CXX) -o $@ $(CXXFLAGS) $(TESTOBJS) -L. -lcryptopp $(LDFLAGS) $(LDLIBS)
+
+nolib: $(OBJS)		# makes it faster to test changes
+	$(CXX) -o ct $(CXXFLAGS) $(OBJS) $(LDFLAGS) $(LDLIBS)
 
 .SUFFIXES: .cpp
 

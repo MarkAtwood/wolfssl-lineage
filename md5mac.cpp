@@ -48,8 +48,10 @@ void MD5MAC::Init()
 	digest[3] = key[3];
 }
 
-void MD5MAC::Final (byte *hash)
+void MD5MAC::TruncatedFinal(byte *hash, unsigned int size)
 {
+	assert(size <= DIGESTSIZE);
+
 	PadLastBlock(56);
 	CorrectEndianess(data, data, 56);
 
@@ -66,12 +68,12 @@ void MD5MAC::Final (byte *hash)
 	Transform(digest, data, key+4);
 
 	CorrectEndianess(digest, digest, DIGESTSIZE);
-	memcpy(hash, digest, DIGESTSIZE);
+	memcpy(hash, digest, size);
 
 	Reinit();		// reinit for next use
 }
 
-void MD5MAC::Transform (word32 *digest, const word32 *in, const word32 *key)
+void MD5MAC::Transform(word32 *digest, const word32 *in, const word32 *key)
 {
 #define F1(x, y, z) ((z ^ (x & (y ^ z))) + key[0])
 #define F2(x, y, z) ((y ^ (z & (x ^ y))) + key[1])

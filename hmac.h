@@ -19,7 +19,7 @@ public:
 	// CW50 workaround: can't use DEFAULT_KEYLENGTH here
 	HMAC(const byte *userKey, unsigned int keylength = 16);
 	void Update(const byte *input, unsigned int length);
-	void Final(byte *mac);
+	void TruncatedFinal(byte *mac, unsigned int size);
 	unsigned int DigestSize() const {return DIGESTSIZE;}
 
 private:
@@ -70,13 +70,13 @@ void HMAC<T>::Update(const byte *input, unsigned int length)
 }
 
 template <class T>
-void HMAC<T>::Final(byte *mac)
+void HMAC<T>::TruncatedFinal(byte *mac, unsigned int size)
 {
 	hash.Final(mac);
 
 	hash.Update(k_opad, T::BLOCKSIZE);
 	hash.Update(mac, DIGESTSIZE);
-	hash.Final(mac);
+	hash.TruncatedFinal(mac, size);
 	Init();
 }
 

@@ -495,7 +495,7 @@ void BenchMarkAll(double t)
 	}
 	BenchMarkKeyed<PanamaCipher<false> >("Panama Cipher (little endian)", t);
 	BenchMarkKeyed<PanamaCipher<true> >("Panama Cipher (big endian)", t);
-	BenchMarkKeyed<SapphireEncryption>("Sapphire", t);
+	BenchMarkKeyed<SapphireEncryption>("Sapphire II", t);
 	BenchMarkKeyed<MD5MAC>("MD5-MAC", t);
 	BenchMarkKeyed<XMACC<MD5> >("XMACC/MD5", t);
 	BenchMarkKeyed<HMAC<MD5> >("HMAC/MD5", t);

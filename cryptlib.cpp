@@ -61,6 +61,14 @@ bool HashModule::Verify(const byte *digestIn)
 	return memcmp(digest, digestIn, DigestSize()) == 0;
 }
 
+bool HashModuleWithTruncation::TruncatedVerify(const byte *digestIn, unsigned int digestLength)
+{
+	assert(digestLength <= DigestSize());
+	SecByteBlock digest(digestLength);
+	TruncatedFinal(digest, digestLength);
+	return memcmp(digest, digestIn, digestLength) == 0;
+}
+
 BufferedTransformation::Err::Err(ErrorType errorType, const std::string &s)
 	: Exception(s), m_errorType(errorType)
 {

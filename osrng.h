@@ -30,7 +30,9 @@ public:
 	void GenerateBlock(byte *output, unsigned int size);
 
 protected:
-#ifdef _WIN32
+#if defined(_WIN64)
+	unsigned __int64 m_hProvider;	// type HCRYPTPROV, avoid #include <windows.h>
+#elif defined(_WIN32)
 	unsigned long m_hProvider;
 #else
 	int m_fd;

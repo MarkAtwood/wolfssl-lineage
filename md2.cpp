@@ -79,8 +79,10 @@ void MD2::Update(const byte *input, unsigned int length)
 	}
 }
 
-void MD2::Final(byte *hash)
+void MD2::TruncatedFinal(byte *hash, unsigned int size)
 {
+	assert(size <= 16);
+
 	byte space = 16 - len; // Amount of padding
 
 	// Pad with "space" bytes of value "space"
@@ -93,7 +95,7 @@ void MD2::Final(byte *hash)
 	Transform();
 
 	// Copy hash out
-	memcpy(hash, buf, 16);
+	memcpy(hash, buf, size);
 
 	Init();
 }

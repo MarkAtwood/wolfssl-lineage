@@ -23,7 +23,7 @@ public:
 #endif
 
 	void Update(const byte *input, unsigned int length);
-	void Final(byte *mac);
+	void TruncatedFinal(byte *mac, unsigned int size);
 	unsigned int DigestSize() const {return DIGESTSIZE;}
 
 private:
@@ -70,11 +70,13 @@ void CBC_MAC<T>::Update(const byte *input, unsigned int length)
 }
 
 template <class T>
-void CBC_MAC<T>::Final(byte *mac)
+void CBC_MAC<T>::TruncatedFinal(byte *mac, unsigned int size)
 {
+	assert(size <= T::BLOCKSIZE);
+
 	if (counter)
 		ProcessBuf();
-	memcpy(mac, reg, T::BLOCKSIZE);
+	memcpy(mac, reg, size);
 }
 
 template <class T>

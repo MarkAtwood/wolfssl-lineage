@@ -228,31 +228,34 @@ bool TestOS_RNG()
 		ArraySink *sink;
 		RandomNumberSource test(rng, 100000, false, new Deflator(sink=new ArraySink(NULL,0)));
 		unsigned long total=0, length=0;
-		time_t t;
+		time_t t = time(NULL), t1 = 0;
 
 		// check that it doesn't take too long to generate a reasonable amount of randomness
-		t = time(NULL);
-		test.Pump(16);
-		total += 16;
-		t = time(NULL) - t;
-		if (t > 120)
+		while (total < 16 && (t1 < 10 || total*8 > t1))
+		{
+			test.Pump(1);
+			total += 1;
+			t1 = time(NULL) - t;
+		}
+
+		if (total < 16)
 		{
 			cout << "FAILED:";
 			pass = false;
 		}
 		else
 			cout << "passed:";
-		cout << "  it took " << t << " seconds to generate 16 bytes" << endl;
+		cout << "  it took " << t1 << " seconds to generate " << total << " bytes" << endl;
 
-		if (t < 2)
+		if (t1 < 2)
 		{
 			// that was fast, are we really blocking?
 			// first exhaust the extropy reserve
 			t = time(NULL);
 			while (time(NULL) - t < 2)
 			{
-				test.Pump(8);
-				total += 8;
+				test.Pump(1);
+				total += 1;
 			}
 
 			// if it generates too many bytes in a certain amount of time,
@@ -260,9 +263,9 @@ bool TestOS_RNG()
 			t = time(NULL);
 			while (time(NULL) - t < 2)
 			{
-				test.Pump(8);
-				total += 8;
-				length += 8;
+				test.Pump(1);
+				total += 1;
+				length += 1;
 			}
 			if (length > 1024)
 			{

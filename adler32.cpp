@@ -43,12 +43,21 @@ void Adler32::Update(const byte *input, unsigned int length)
 	m_s2 = (word16)s2;
 }
 
-void Adler32::Final(byte *hash)
+void Adler32::TruncatedFinal(byte *hash, unsigned int size)
 {
-	hash[0] = byte(m_s2 >> 8);
-	hash[1] = byte(m_s2);
-	hash[2] = byte(m_s1 >> 8);
-	hash[3] = byte(m_s1);
+	switch (size)
+	{
+	default:
+		hash[3] = byte(m_s1);
+	case 3:
+		hash[2] = byte(m_s1 >> 8);
+	case 2:
+		hash[1] = byte(m_s2);
+	case 1:
+		hash[0] = byte(m_s2 >> 8);
+	case 0:
+		;
+	}
 
 	Reset();
 }

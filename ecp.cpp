@@ -164,6 +164,12 @@ bool ECP::Equal(const Point &P, const Point &Q) const
 	return (m_field.Equal(P.x,Q.x) && m_field.Equal(P.y,Q.y));
 }
 
+const ECP::Point& ECP::Zero() const
+{
+	static const Point zero;
+	return zero;
+}
+
 const ECP::Point& ECP::Inverse(const Point &P) const
 {
 	if (P.identity)

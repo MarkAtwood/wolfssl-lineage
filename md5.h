@@ -5,8 +5,8 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// <a href="http://www.weidai.com/scan-mirror/md.html#MD5">MD5</a>
-/** 128 Bit Hash */
+//! <a href="http://www.weidai.com/scan-mirror/md.html#MD5">MD5</a>
+/*! 128 Bit Hash */
 class MD5 : public IteratedHash<word32, false, 64>
 {
 public:

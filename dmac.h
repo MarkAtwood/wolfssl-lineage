@@ -21,7 +21,7 @@ public:
 #endif
 
 	void Update(const byte *input, unsigned int length);
-	void Final(byte *mac);
+	void TruncatedFinal(byte *mac, unsigned int size);
 	unsigned int DigestSize() const {return DIGESTSIZE;}
 
 private:
@@ -53,13 +53,13 @@ void DMAC<T>::Update(const byte *input, unsigned int length)
 }
 
 template <class T>
-void DMAC<T>::Final(byte *mac)
+void DMAC<T>::TruncatedFinal(byte *mac, unsigned int size)
 {
 	byte pad[T::BLOCKSIZE];
 	byte padByte = byte(T::BLOCKSIZE-counter);
 	memset(pad, padByte, padByte);
 	mac1.Update(pad, padByte);
-	mac1.Final(mac);
+	mac1.TruncatedFinal(mac, size);
 	f2.ProcessBlock(mac);
 }
 

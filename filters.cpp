@@ -29,6 +29,42 @@ void Filter::Insert(Filter *filter)
 
 // *************************************************************
 
+void MeterFilter::Put(byte inByte)
+{
+	m_currentMessageBytes++;
+	m_totalBytes++;
+	if (m_transparent)
+		AttachedTransformation()->Put(inByte);
+}
+
+void MeterFilter::Put(const byte *inString, unsigned int length)
+{
+	m_currentMessageBytes += length;
+	m_totalBytes += length;
+	if (m_transparent)
+		AttachedTransformation()->Put(inString, length);
+}
+
+void MeterFilter::MessageEnd(int propagation)
+{
+	m_currentMessageBytes = 0;
+	m_currentSeriesMessages++;
+	m_totalMessages++;
+	if (m_transparent)
+		Filter::MessageEnd(propagation);
+}
+
+void MeterFilter::MessageSeriesEnd(int propagation)
+{
+	m_currentMessageBytes = 0;
+	m_currentSeriesMessages = 0;
+	m_totalMessageSeries++;
+	if (m_transparent)
+		Filter::MessageSeriesEnd(propagation);
+}
+
+// *************************************************************
+
 FilterWithBufferedInput::BlockQueue::BlockQueue(unsigned int blockSize, unsigned int maxBlocks)
 	: m_buffer(blockSize * maxBlocks)
 {
@@ -412,6 +448,19 @@ unsigned long RandomNumberStore::TransferTo(BufferedTransformation &target, unsi
 	unsigned long len = RandomNumberStore::CopyTo(target, transferMax);
 	m_count += len;
 	return len;
+}
+
+unsigned long NullStore::CopyTo(BufferedTransformation &target, unsigned long copyMax) const
+{
+	static byte nullBytes[128];
+	for (unsigned long i=0; i<copyMax; i+=STDMIN(copyMax-i, 128UL))
+		target.Put(nullBytes, STDMIN(copyMax-i, 128UL));
+	return copyMax;
+}
+
+unsigned long NullStore::TransferTo(BufferedTransformation &target, unsigned long transferMax)
+{
+	return NullStore::CopyTo(target, transferMax);
 }
 
 RandomNumberSource::RandomNumberSource(RandomNumberGenerator &rng, unsigned int length, bool pumpAll, BufferedTransformation *outQueue)

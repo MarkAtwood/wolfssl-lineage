@@ -5,8 +5,8 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-//! One way hash
-/** Digest Length = 160 bits */
+//! <a href="http://www.weidai.com/scan-mirror/md.html#RIPEMD-160">RIPEMD-160</a>
+/*! Digest Length = 160 bits */
 class RIPEMD160 : public IteratedHash<word32, false, 64>
 {
 public:

@@ -97,16 +97,16 @@ public:
 
 //! Sapphire Hash
 /*! Digest Length = 160 bits */
-class SapphireHash : public HashModule, private SapphireEncryption
+class SapphireHash : public HashModuleWithTruncation, private SapphireEncryption
 {
 public:
 	SapphireHash(unsigned int hashLength=20);
 	void Update(const byte *input, unsigned int length);
-	void Final(byte *hash) {Final(hash, hashLength);}
-	void Final(byte *hash, unsigned int overrideHashLength);
+	void TruncatedFinal(byte *hash, unsigned int size);
 	unsigned int DigestSize() const {return hashLength;}
 
 private:
+	void Init();
 	const unsigned int hashLength;
 };
 

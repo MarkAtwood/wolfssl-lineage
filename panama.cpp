@@ -105,8 +105,10 @@ unsigned int PanamaHash<H>::HashMultipleBlocks(const word32 *input, unsigned int
 }
 
 template <bool H>
-void PanamaHash<H>::Final(byte *hash)
+void PanamaHash<H>::TruncatedFinal(byte *hash, unsigned int size)
 {
+	assert(size <= DIGESTSIZE);
+
 	PadLastBlock(BLOCKSIZE, 0x01);
 	CorrectEndianess(data, data, BLOCKSIZE);
 	
@@ -114,8 +116,8 @@ void PanamaHash<H>::Final(byte *hash)
 
 	Iterate(32);	// pull
 
-	CorrectEndianess(m_state+9, m_state+9, DigestSize());
-	memcpy(hash, m_state+9, DigestSize());
+	CorrectEndianess(m_state+9, m_state+9, DIGESTSIZE);
+	memcpy(hash, m_state+9, size);
 
 	Reinit();		// reinit for next use
 }

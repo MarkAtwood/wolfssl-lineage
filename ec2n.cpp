@@ -155,6 +155,12 @@ bool EC2N::Equal(const Point &P, const Point &Q) const
 	return (m_field->Equal(P.x,Q.x) && m_field->Equal(P.y,Q.y));
 }
 
+const EC2N::Point& EC2N::Zero() const
+{
+	static const Point zero;
+	return zero;
+}
+
 const EC2N::Point& EC2N::Inverse(const Point &P) const
 {
 	if (P.identity)

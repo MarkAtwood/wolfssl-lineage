@@ -53,8 +53,10 @@ inline void HAVAL::vTransform(const word32 *in)
 		HAVAL5::Transform(digest, in);
 }
 
-void HAVAL::Final (byte *hash)
+void HAVAL::TruncatedFinal(byte *hash, unsigned int size)
 {
+	assert(size <= digestSize);
+
 	PadLastBlock(118, 1);	// first byte of padding for HAVAL is 1 instead of 0x80
 	CorrectEndianess(data, data, 120);
 
@@ -66,7 +68,7 @@ void HAVAL::Final (byte *hash)
 	vTransform(data);
 	Tailor(digestSize*8);
 	CorrectEndianess(digest, digest, digestSize);
-	memcpy(hash, digest, digestSize);
+	memcpy(hash, digest, size);
 
 	Reinit();		// reinit for next use
 }

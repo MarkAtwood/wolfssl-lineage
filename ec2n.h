@@ -41,7 +41,7 @@ public:
 	void DEREncode(BufferedTransformation &bt) const;
 
 	bool Equal(const Point &P, const Point &Q) const;
-	const Point& Zero() const {static const Point zero; return zero;}
+	const Point& Zero() const;
 	const Point& Inverse(const Point &P) const;
 	bool InversionIsFast() const {return true;}
 	const Point& Add(const Point &P, const Point &Q) const;

@@ -29,7 +29,7 @@ public:
 	enum {DIGESTSIZE = 32};
 	PanamaHash() : IteratedHash<word32, H, 32>(0) {}
 	unsigned int DigestSize() const {return DIGESTSIZE;}
-	void Final(byte *hash);
+	void TruncatedFinal(byte *hash, unsigned int size);
 
 protected:
 	void Init() {Panama::Reset();}

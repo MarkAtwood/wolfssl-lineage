@@ -23,7 +23,7 @@ unsigned int NonblockingSource::PumpMessages(unsigned int count)
 #ifdef HIGHRES_TIMER_AVAILABLE
 
 NetworkSource::NetworkSource(BufferedTransformation *outQ)
-	: NonblockingSource(outQ), m_buf(1024), m_bufSize(0), m_needReceiveResult(false)
+	: NonblockingSource(outQ), m_buf(1024*4), m_bufSize(0), m_needReceiveResult(false)
 {
 }
 

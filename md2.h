@@ -8,12 +8,12 @@ NAMESPACE_BEGIN(CryptoPP)
 
 /// <a href="http://www.weidai.com/scan-mirror/md.html#MD2">MD2</a>
 /** 128 Bit Hash */
-class MD2 : public HashModule
+class MD2 : public HashModuleWithTruncation
 {
 public:
 	MD2();
 	void Update(const byte *input, unsigned int length);
-	void Final(byte *hash);
+	void TruncatedFinal(byte *hash, unsigned int size);
 	unsigned int DigestSize() const {return DIGESTSIZE;}
 
 	enum {DIGESTSIZE = 16};

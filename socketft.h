@@ -115,15 +115,15 @@ public:
 	bool SendReady(const timeval *timeout);
 	bool ReceiveReady(const timeval *timeout);
 
-	// look up the port number give its name, returns 0 if not found
+	//! look up the port number given its name, returns 0 if not found
 	static unsigned int PortNameToNumber(const char *name, const char *protocol="tcp");
-	// start Windows Sockets 2
+	//! start Windows Sockets 2
 	static void StartSockets();
-	// calls WSACleanup for Windows Sockets
+	//! calls WSACleanup for Windows Sockets
 	static void ShutdownSockets();
-	// returns errno or WSAGetLastError
+	//! returns errno or WSAGetLastError
 	static int GetLastError();
-	// sets errno or calls WSASetLastError
+	//! sets errno or calls WSASetLastError
 	static void SetLastError(int errorCode);
 
 protected:

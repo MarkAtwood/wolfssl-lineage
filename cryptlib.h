@@ -12,7 +12,7 @@
 	Integer, PolynomialMod2, PolynomialOver, RingOfPolynomialsOver,
 	ModularArithmetic, MontgomeryRepresentation, GFP2_ONB,
 	GF2NP, GF256, GF2_32, EC2N, ECP
-<dt>Block Ciphers (in ECB mode)<dd>
+<dt>Block Ciphers<dd>
 	3way.h, blowfish.h, cast.h, des.h, diamond.h, gost.h,
 	idea.h, lubyrack.h, mars.h, mdc.h,
 	rc2.h, rc5.h, rc6.h, rijndael.h, safer.h, serpent.h, shark.h, skipjack.h,
@@ -80,12 +80,7 @@ private:
 };
 
 //! used to specify a direction for a cipher to operate in (encrypt or decrypt)
-enum CipherDir {
-	//!
-	ENCRYPTION,
-	//!
-	DECRYPTION};
-
+enum CipherDir {ENCRYPTION,	DECRYPTION};
 
 //! abstract base class for block ciphers
 
@@ -148,8 +143,7 @@ class RandomAccessStreamCipher : public virtual StreamCipher
 public:
 	//!
 	virtual ~RandomAccessStreamCipher() {}
-	/*/ specify that the next byte to be processed is at absolute position n
-		in the plaintext/ciphertext stream */
+	//! specify that the next byte to be processed is at absolute position n in the plaintext/ciphertext stream
 	virtual void Seek(unsigned long n) =0;
 };
 
@@ -174,7 +168,7 @@ public:
 	virtual word32 GenerateWord32(word32 a=0, word32 b=0xffffffffL);
 
 	//! generate random array of bytes
-	//* Default implementation is to call GenerateByte() size times.
+	/*! Default implementation is to call GenerateByte() size times. */
 	virtual void GenerateBlock(byte *output, unsigned int size);
 
 	//! randomly shuffle the specified array, resulting permutation is uniformly distributed
@@ -209,16 +203,15 @@ public:
 	//! process more input
 	virtual void Update(const byte *input, unsigned int length) =0;
 
-	/*/ calculate hash for the current message (the concatenation of all
-		inputs passed in via Update()), then reinitialize the object */
-	//* Precondition: size of digest == DigestSize().
+	//! compute hash for current message, then reinitialize the object
+	/*!	\pre size of digest == DigestSize(). */
 	virtual void Final(byte *digest) =0;
 
 	//! size of the hash returned by Final()
 	virtual unsigned int DigestSize() const =0;
 
-	//! use this if your input is short and you don't want to call Update() and Final() seperately
-	virtual void CalculateDigest(byte *digest, const byte *input, int length)
+	//! use this if your input is in one piece and you don't want to call Update() and Final() seperately
+	virtual void CalculateDigest(byte *digest, const byte *input, unsigned int length)
 		{Update(input, length); Final(digest);}
 
 	//! verify that digest is a valid digest for the current message, then reinitialize the object
@@ -226,9 +219,35 @@ public:
 		between its output and digest. */
 	virtual bool Verify(const byte *digest);
 
-	//! use this if your input is short and you don't want to call Update() and Verify() seperately
-	virtual bool VerifyDigest(const byte *digest, const byte *input, int length)
+	//! use this if your input is in one piece and you don't want to call Update() and Verify() seperately
+	virtual bool VerifyDigest(const byte *digest, const byte *input, unsigned int length)
 		{Update(input, length); return Verify(digest);}
+};
+
+//! add to HashModule functions that deal with truncated digests
+
+class HashModuleWithTruncation : public HashModule
+{
+public:
+	//! truncated version of Final()
+	virtual void TruncatedFinal(byte *digest, unsigned int digestSize) =0;
+
+	//! truncated version of CalculateDigest()
+	virtual void CalculateTruncatedDigest(byte *digest, unsigned int digestSize, const byte *input, unsigned int length)
+		{Update(input, length); TruncatedFinal(digest, digestSize);}
+
+	//! truncated version of Verify()
+	virtual bool TruncatedVerify(const byte *digest, unsigned int digestLength);
+
+	//! truncated version of VerifyDigest()
+	virtual bool VerifyTruncatedDigest(const byte *digest, unsigned int digestLength, const byte *input, unsigned int length)
+		{Update(input, length); return TruncatedVerify(digest, digestLength);}
+
+	void Final(byte *digest)
+		{TruncatedFinal(digest, DigestSize());}
+
+	bool Verify(const byte *digest)
+		{return TruncatedVerify(digest, DigestSize());}
 };
 
 //! abstract base class for message authentication codes
@@ -239,12 +258,7 @@ public:
 	verifying a MAC may not be simply recalculating it and doing a bitwise
 	comparison.
 */
-class MessageAuthenticationCode : public virtual HashModule
-{
-public:
-	//!
-	virtual ~MessageAuthenticationCode() {}
-};
+typedef HashModuleWithTruncation MessageAuthenticationCode;
 
 //! abstract base class for buffered transformations
 
@@ -464,11 +478,11 @@ public:
 	virtual ~PK_CryptoSystem() {}
 
 	//! maximum length of plaintext for a given ciphertext length
-	//* This function returns 0 if cipherTextLength is not valid (too long or too short).
+	/*! This function returns 0 if cipherTextLength is not valid (too long or too short). */
 	virtual unsigned int MaxPlainTextLength(unsigned int cipherTextLength) const =0;
 
 	//! calculate length of ciphertext given length of plaintext
-	//* This function returns 0 if plainTextLength is not valid (too long).
+	/*! This function returns 0 if plainTextLength is not valid (too long). */
 	virtual unsigned int CipherTextLength(unsigned int plainTextLength) const =0;
 };
 

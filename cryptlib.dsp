@@ -862,6 +862,10 @@ SOURCE=.\tiger.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\trunhash.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\twofish.h
 # End Source File
 # Begin Source File

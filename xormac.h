@@ -8,7 +8,7 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 /// <a href="http://www.weidai.com/scan-mirror/mac.XMAC">XMACC</a>
-template <class T> class XMACC : public IteratedHash<typename T::HashWordType, T::HIGHFIRST, T::BLOCKSIZE>, public MessageAuthenticationCode
+template <class T> class XMACC : public IteratedHash<typename T::HashWordType, T::HIGHFIRST, T::BLOCKSIZE>
 {
 public:
 	enum {KEYLENGTH=T::DIGESTSIZE-4, DIGESTSIZE = 4+T::DIGESTSIZE};
@@ -23,8 +23,8 @@ public:
 
 	word32 CurrentCounter() const {return counter;}
 
-	void Final(byte *mac);
-	bool Verify(const byte *mac);
+	void TruncatedFinal(byte *mac, unsigned int size);
+	bool TruncatedVerify(const byte *mac, unsigned int length);
 	unsigned int DigestSize() const {return DIGESTSIZE;}
 
 private:
@@ -77,8 +77,9 @@ template <class T> void XMACC<T>::vTransform(const HashWordType *input)
 	XorDigest(digest, buffer);
 }
 
-template <class T> void XMACC<T>::Final(byte *mac)
+template <class T> void XMACC<T>::TruncatedFinal(byte *mac, unsigned int size)
 {
+	assert(4 <= size && size <= DIGESTSIZE);
 	assert(counter != 0xffffffff);
 
 	PadLastBlock(BLOCKSIZE - 2*sizeof(HashWordType));
@@ -98,13 +99,15 @@ template <class T> void XMACC<T>::Final(byte *mac)
 
 	WriteWord32(mac, counter);
 	T::CorrectEndianess(digest, digest, T::DIGESTSIZE);
-	memcpy(mac+4, digest, T::DIGESTSIZE);
+	memcpy(mac+4, digest, size-4);
 
 	Reinit();		// reinit for next use
 }
 
-template <class T> bool XMACC<T>::Verify(const byte *mac)
+template <class T> bool XMACC<T>::TruncatedVerify(const byte *mac, unsigned int size)
 {
+	assert(4 <= size && size <= DIGESTSIZE);
+
 	PadLastBlock(BLOCKSIZE - 2*sizeof(HashWordType));
 	CorrectEndianess(data, data, BLOCKSIZE - 2*sizeof(HashWordType));
 	data[data.size-2] = byteReverse(countHi);	// byteReverse for backwards compatibility
@@ -121,7 +124,7 @@ template <class T> bool XMACC<T>::Verify(const byte *mac)
 	XorDigest(digest, buffer);
 
 	T::CorrectEndianess(digest, digest, T::DIGESTSIZE);
-	bool macValid = (memcmp(mac+4, digest, T::DIGESTSIZE) == 0);
+	bool macValid = (memcmp(mac+4, digest, size-4) == 0);
 	Reinit();		// reinit for next use
 	return macValid;
 }

@@ -54,7 +54,7 @@ public:
 	value_ptr<T>& operator=(const value_ptr<T>& rhs);
 	bool operator==(const value_ptr<T>& rhs)
 	{
-		return (!m_p && !rhs.m_p) || (m_p && rhs.m_p && *mp == *rhs.m_p);
+		return (!m_p && !rhs.m_p) || (m_p && rhs.m_p && *m_p == *rhs.m_p);
 	}
 };
 

@@ -29,22 +29,45 @@ private:
 	member_ptr<BufferedTransformation> m_outQueue;
 };
 
-//! .
-class TransparentFilter : public Filter
+//! measure how many byte and messages pass through, also serves as valve
+class MeterFilter : public Filter
 {
 public:
-	TransparentFilter(BufferedTransformation *outQ=NULL) : Filter(outQ) {}
-	void Put(byte inByte) {AttachedTransformation()->Put(inByte);}
-	void Put(const byte *inString, unsigned int length) {AttachedTransformation()->Put(inString, length);}
+	MeterFilter(BufferedTransformation *outQ=NULL, bool transparent=true)
+		: Filter(outQ), m_transparent(transparent) {ResetMeter();}
+
+	void SetTransparent(bool transparent) {m_transparent = transparent;}
+	void ResetMeter() {m_currentMessageBytes = m_totalBytes = m_currentSeriesMessages = m_totalMessages = m_totalMessageSeries = 0;}
+
+	unsigned long GetCurrentMessageBytes() const {return m_currentMessageBytes;}
+	unsigned long GetTotalBytes() {return m_totalBytes;}
+	unsigned int GetCurrentSeriesMessages() {return m_currentSeriesMessages;}
+	unsigned int GetTotalMessages() {return m_totalMessages;}
+	unsigned int GetTotalMessageSeries() {return m_totalMessageSeries;}
+
+	void Put(byte inByte);
+	void Put(const byte *inString, unsigned int length);
+	void MessageEnd(int propagation=-1);
+	void MessageSeriesEnd(int propagation=-1);
+
+private:
+	bool m_transparent;
+	unsigned long m_currentMessageBytes, m_totalBytes;
+	unsigned int m_currentSeriesMessages, m_totalMessages, m_totalMessageSeries;
 };
 
 //! .
-class OpaqueFilter : public Filter
+class TransparentFilter : public MeterFilter
 {
 public:
-	OpaqueFilter(BufferedTransformation *outQ=NULL) : Filter(outQ) {}
-	void Put(byte inByte) {}
-	void Put(const byte *inString, unsigned int length) {}
+	TransparentFilter(BufferedTransformation *outQ=NULL) : MeterFilter(outQ, true) {}
+};
+
+//! .
+class OpaqueFilter : public MeterFilter
+{
+public:
+	OpaqueFilter(BufferedTransformation *outQ=NULL) : MeterFilter(outQ, false) {}
 };
 
 /*! FilterWithBufferedInput divides up the input stream into
@@ -473,6 +496,15 @@ public:
 private:
 	RandomNumberGenerator &m_rng;
 	unsigned long m_length, m_count;
+};
+
+//! .
+class NullStore : public Store
+{
+public:
+	unsigned long MaxRetrievable() const {return ULONG_MAX;}
+	unsigned long TransferTo(BufferedTransformation &target, unsigned long transferMax=ULONG_MAX);
+	unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax=ULONG_MAX) const;
 };
 
 //! A Filter that pumps data into its attachment as input

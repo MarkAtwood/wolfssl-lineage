@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(CryptoPP)
 	IteratedHashBase<word64>	// #ifdef WORD64_AVAILABLE
 */
 template <class T>
-class IteratedHashBase : public virtual HashModule
+class IteratedHashBase : public HashModuleWithTruncation
 {
 public:
 	typedef T HashWordType;
@@ -52,8 +52,10 @@ public:
 			memcpy(out, in, byteCount);
 	}
 
-	void Final(byte *hash)
+	void TruncatedFinal(byte *hash, unsigned int size)
 	{
+		assert(size <= DigestSize());
+
 		PadLastBlock(BLOCKSIZE - 2*sizeof(HashWordType));
 		CorrectEndianess(data, data, BLOCKSIZE - 2*sizeof(HashWordType));
 
@@ -62,7 +64,7 @@ public:
 
 		vTransform(data);
 		CorrectEndianess(digest, digest, DigestSize());
-		memcpy(hash, digest, DigestSize());
+		memcpy(hash, digest, size);
 
 		Reinit();		// reinit for next use
 	}

@@ -125,7 +125,12 @@ void SapphireDecryption::ProcessString(byte *inoutString, unsigned int length)
 }
 
 SapphireHash::SapphireHash(unsigned int hashLength)
-	: SapphireEncryption(), hashLength(hashLength)
+	: hashLength(hashLength)
+{
+	Init();
+}
+
+void SapphireHash::Init()
 {
 	// This function is used to initialize non-keyed hash
 	// computation.
@@ -152,13 +157,15 @@ void SapphireHash::Update(const byte *input, unsigned int length)
 		SapphireEncryption::ProcessByte(*input++);
 }
 
-void SapphireHash::Final(byte *hash, unsigned int overrideHashLength)
+void SapphireHash::TruncatedFinal(byte *hash, unsigned int size)
 {
 	for (int i=255; i>=0; i--)
 		ProcessByte((byte) i);
 
-	for (unsigned int j=0; j<overrideHashLength; j++)
+	for (unsigned int j=0; j<size; j++)
 		hash[j] = ProcessByte(0);
+
+	Init();
 }
 
 NAMESPACE_END

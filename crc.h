@@ -16,13 +16,13 @@ const word32 CRC32_NEGL = 0xffffffffL;
 #endif
 
 //! CRC Checksum Calculation
-class CRC32 : public HashModule
+class CRC32 : public HashModuleWithTruncation
 {
 public:
 	enum {DIGESTSIZE = 4};
 	CRC32();
 	void Update(const byte *input, unsigned int length);
-	void Final(byte *hash);
+	void TruncatedFinal(byte *hash, unsigned int size);
 	unsigned int DigestSize() const {return DIGESTSIZE;}
 
 	void Reset() {m_crc = CRC32_NEGL;}
