@@ -17,11 +17,11 @@ NAMESPACE_BEGIN(CryptoPP)
 
 #define MAKE_DWORD(lowWord, highWord) ((dword(highWord)<<WORD_BITS) | (lowWord))
 
-// CodeWarrior defines _MSC_VER
-#if defined(_MSC_VER) && !defined(__MWERKS__) && defined(_M_IX86) && (_M_IX86<=600)
-
 // Add() and Subtract() are coded in Pentium assembly for a speed increase
 // of about 10-20 percent for a RSA signature
+
+// CodeWarrior defines _MSC_VER
+#if defined(_MSC_VER) && !defined(__MWERKS__) && defined(_M_IX86) && (_M_IX86<=600)
 
 static __declspec(naked) word __fastcall Add(word *C, const word *A, const word *B, unsigned int N)
 {
@@ -35,35 +35,37 @@ static __declspec(naked) word __fastcall Add(word *C, const word *A, const word 
 		mov esi, [esp+24]	; N
 		mov ebx, [esp+20]	; B
 
-		sub ecx, edx
-		xor eax, eax
+		// now: ebx = B, ecx = C, edx = A, esi = N
 
-		sub eax, esi
-		lea ebx, [ebx+4*esi]
+		sub ecx, edx	// hold the distance between C & A so we can add this to A to get C
+		xor eax, eax	// clear eax
 
-		sar eax, 1		// clears the carry flag
-		jz	loopend
+		sub eax, esi	// eax is a negative index from end of B
+		lea ebx, [ebx+4*esi]	// ebx is end of B
+
+		sar eax, 1		// unit of eax is now dwords; this also clears the carry flag
+		jz	loopend		// if no dwords then nothing to do
 
 loopstart:
-		mov    esi,[edx]
-		mov    ebp,[edx+4]
+		mov    esi,[edx]			// load lower word of A
+		mov    ebp,[edx+4]			// load higher word of A
 
-		mov    edi,[ebx+8*eax]
-		lea    edx,[edx+8]
+		mov    edi,[ebx+8*eax]		// load lower word of B
+		lea    edx,[edx+8]			// advance A and C
 
-		adc    esi,edi
-		mov    edi,[ebx+8*eax+4]
+		adc    esi,edi				// add lower words
+		mov    edi,[ebx+8*eax+4]	// load higher word of B
 
-		adc    ebp,edi
-		inc    eax
+		adc    ebp,edi				// add higher words
+		inc    eax					// advance B
 
-		mov    [edx+ecx-8],esi
-		mov    [edx+ecx-4],ebp
+		mov    [edx+ecx-8],esi		// store lower word result
+		mov    [edx+ecx-4],ebp		// store higher word result
 
-		jnz    loopstart
+		jnz    loopstart			// loop until eax overflows and becomes zero
 
 loopend:
-		adc eax, 0
+		adc eax, 0		// store carry into eax (return result register)
 		pop edi
 		pop esi
 		pop ebx
@@ -90,7 +92,7 @@ static __declspec(naked) word __fastcall Subtract(word *C, const word *A, const 
 		sub eax, esi
 		lea ebx, [ebx+4*esi]
 
-		sar eax, 1		// clears the carry flag
+		sar eax, 1
 		jz	loopend
 
 loopstart:
@@ -123,99 +125,78 @@ loopend:
 
 #elif defined(__GNUC__) && defined(__i386__)
 
-static word Add(word *C, const word *A, const word *B, unsigned int N)
+__attribute__((regparm(4))) static word Add(word *C, const word *A, const word *B, unsigned int N)
 {
 	assert (N%2 == 0);
 
-	register word carry;
+	register word carry, temp;
 
-	// Notes and further work (by Alister Lee): 
-	// - get extended asm to accept parameter into ebx. Currently, the parameter
-	//   is accepted into eax and moved to ebx resulting in an extra instruction 
-	//   outside the loop. I think this is a bug in gcc.
-	// - get extended asm to save and restore ebp through the clobbered list.
-	//   I think this is a limitation of gcc.
+	__asm__ __volatile__(
+			"push %%ebp;"
+			"sub %3, %2;"
+			"xor %0, %0;"
+			"sub %4, %0;"
+			"lea (%1,%4,4), %1;"
+			"sar $1, %0;"
+			"jz 1f;"
 
-	// on entry esi = N, edx = A, ecx = C, eax = B through extended asm (see below)
-	__asm__(	
-				"push %%ebp\n\t"					// can't automatically save ebp
-				"mov %%eax, %%ebx\n\t"				// ebx is B (can't automatically accept
-													// parameter into ebx)	
-				"sub %%edx, %%ecx\n\t"				// hold the distance between C & A so 
-													// we can add this to A to get C
-				"xor %%eax, %%eax\n\t"
-				"sub %%esi, %%eax\n\t"				// eax is a negative index from end of B
-			 	"lea (%%ebx,%%esi,4), %%ebx\n\t"	// ebx is end of B
-				"sar $1, %%eax\n\t"					// eax is number of dwords
-													// this also clears the carry flag
-				"jz 1f\n"							// to loopend
-													// if no dwords then nothing to do
-			
-			"0:\n\t"								// loopstart:
-				"mov 0(%%edx), %%esi\n\t"			// load next dword of A into ebp:esi
-				"mov 4(%%edx), %%ebp\n\t"
-				"mov (%%ebx,%%eax,8), %%edi\n\t"	// load next word of B, using eax as index
-				"lea 8(%%edx), %%edx\n\t"			// advance A
-				"adc %%edi, %%esi\n\t"				// add with carry
-				"mov 4(%%ebx,%%eax,8), %%edi\n\t"	// load next word of B, using eax as index
-				"adc %%edi, %%ebp\n\t"				// add with carry
-				"inc %%eax\n\t"						// advance index into B
-													// no more words when zero
-				"mov %%esi, -8(%%edx,%%ecx)\n\t"	// store ebp:esi into next dword of C 
-				"mov %%ebp, -4(%%edx,%%ecx)\n\t"	
-				"jnz 0b\n"							// to loopstart
-													// carry flag feeds into next iteration
-			
-			"1:\n\t"								// loopend:
-				"adc $0, %%eax\n\t"					// capture carry flag
-				"pop %%ebp"								
-							
-			: "=a" (carry)
-			: "S" (N), "d" (A), "c" (C), "a" (B)
-			: "%edi", "%ebx"
-			);
-			 
-	return carry;		 
+		"0:;"
+			"mov 0(%3), %4;"
+			"mov 4(%3), %%ebp;"
+			"mov (%1,%0,8), %5;"
+			"lea 8(%3), %3;"
+			"adc %5, %4;"
+			"mov 4(%1,%0,8), %5;"
+			"adc %5, %%ebp;"
+			"inc %0;"
+			"mov %4, -8(%3, %2);"
+			"mov %%ebp, -4(%3, %2);"
+			"jnz 0b;"
+
+		"1:;"
+			"adc $0, %0;"
+			"pop %%ebp;"
+
+		: "=aSD" (carry), "+r" (B), "+r" (C), "+r" (A), "+r" (N), "=r" (temp)
+		: : "cc", "memory");
+
+	return carry;
 }
 
-static word Subtract(word *C, const word *A, const word *B, unsigned int N)
+__attribute__((regparm(4))) static word Subtract(word *C, const word *A, const word *B, unsigned int N)
 {
 	assert (N%2 == 0);
 
-	register word carry;
+	register word carry, temp;
 
-	// Notes: see notes on Add above
-	
-	__asm__(
-				"push %%ebp\n\t"
-				"mov %%eax, %%ebx\n\t"
-				"sub %%edx, %%ecx\n\t"
-				"xor %%eax, %%eax\n\t"
-				"sub %%esi, %%eax\n\t"
-				"lea (%%ebx,%%esi,4), %%ebx\n\t"
-				"sar $1, %%eax\n\t"		
-				"jz 1f\n"
+	__asm__ __volatile__(
+			"push %%ebp;"
+			"sub %3, %2;"
+			"xor %0, %0;"
+			"sub %4, %0;"
+			"lea (%1,%4,4), %1;"
+			"sar $1, %0;"
+			"jz 1f;"
 
-			"0:\n\t"
-				"mov 0(%%edx), %%esi\n\t"
-				"mov 4(%%edx), %%ebp\n\t"
-				"mov (%%ebx,%%eax,8), %%edi\n\t"
-				"lea 8(%%edx), %%edx\n\t"
-				"sbb %%edi, %%esi\n\t"
-				"mov 4(%%ebx,%%eax,8), %%edi\n\t"
-				"sbb %%edi, %%ebp\n\t"
-				"inc %%eax\n\t"
-				"mov %%esi, -8(%%edx, %%ecx)\n\t"
-				"mov %%ebp, -4(%%edx, %%ecx)\n\t"
-				"jnz 0b\n"
+		"0:;"
+			"mov 0(%3), %4;"
+			"mov 4(%3), %%ebp;"
+			"mov (%1,%0,8), %5;"
+			"lea 8(%3), %3;"
+			"sbb %5, %4;"
+			"mov 4(%1,%0,8), %5;"
+			"sbb %5, %%ebp;"
+			"inc %0;"
+			"mov %4, -8(%3, %2);"
+			"mov %%ebp, -4(%3, %2);"
+			"jnz 0b;"
 
-			"1:\n\t"
-				"adc $0, %%eax\n\t"
-				"pop %%ebp"
-		: "=a" (carry)
-		: "S" (N), "d" (A), "c" (C), "a" (B)
-		: "%edi", "%ebx"
-	);
+		"1:;"
+			"adc $0, %0;"
+			"pop %%ebp;"
+
+		: "=aSD" (carry), "+r" (B), "+r" (C), "+r" (A), "+r" (N), "=r" (temp)
+		: : "cc", "memory");
 
 	return carry;
 }
@@ -226,32 +207,69 @@ static word Add(word *C, const word *A, const word *B, unsigned int N)
 {
 	assert (N%2 == 0);
 
-	word carry=0;
-	for (unsigned i = 0; i < N; i+=2)
+#ifdef IS_LITTLE_ENDIAN
+	if (sizeof(dword) == sizeof(size_t))	// dword is only register size
 	{
-		dword u = (dword) carry + A[i] + B[i];
-		C[i] = LOW_WORD(u);
-		u = (dword) HIGH_WORD(u) + A[i+1] + B[i+1];
-		C[i+1] = LOW_WORD(u);
-		carry = HIGH_WORD(u);
+		dword carry = 0;
+		N >>= 1;
+		for (unsigned int i = 0; i < N; i++)
+		{
+			dword a = ((const dword *)A)[i] + carry;
+			dword c = a + ((const dword *)B)[i];
+			((dword *)C)[i] = c;
+			carry = (a < carry) | (c < a);
+		}
+		return (word)carry;
 	}
-	return carry;
+	else
+#endif
+	{
+		word carry = 0;
+		for (unsigned int i = 0; i < N; i+=2)
+		{
+			dword u = (dword) carry + A[i] + B[i];
+			C[i] = LOW_WORD(u);
+			u = (dword) HIGH_WORD(u) + A[i+1] + B[i+1];
+			C[i+1] = LOW_WORD(u);
+			carry = HIGH_WORD(u);
+		}
+		return carry;
+	}
 }
 
 static word Subtract(word *C, const word *A, const word *B, unsigned int N)
 {
 	assert (N%2 == 0);
 
-	word borrow=0;
-	for (unsigned i = 0; i < N; i+=2)
+#ifdef IS_LITTLE_ENDIAN
+	if (sizeof(dword) == sizeof(size_t))	// dword is only register size
 	{
-		dword u = (dword) A[i] - B[i] - borrow;
-		C[i] = LOW_WORD(u);
-		u = (dword) A[i+1] - B[i+1] - (word)(0-HIGH_WORD(u));
-		C[i+1] = LOW_WORD(u);
-		borrow = 0-HIGH_WORD(u);
+		dword borrow = 0;
+		N >>= 1;
+		for (unsigned int i = 0; i < N; i++)
+		{
+			dword a = ((const dword *)A)[i];
+			dword b = a - borrow;
+			dword c = b - ((const dword *)B)[i];
+			((dword *)C)[i] = c;
+			borrow = (b > a) | (c > b);
+		}
+		return (word)borrow;
 	}
-	return borrow;
+	else
+#endif
+	{
+		word borrow=0;
+		for (unsigned i = 0; i < N; i+=2)
+		{
+			dword u = (dword) A[i] - B[i] - borrow;
+			C[i] = LOW_WORD(u);
+			u = (dword) A[i+1] - B[i+1] - (word)(0-HIGH_WORD(u));
+			C[i+1] = LOW_WORD(u);
+			borrow = 0-HIGH_WORD(u);
+		}
+		return borrow;
+	}
 }
 
 #endif	// defined(_MSC_VER) && !defined(__MWERKS__) && defined(_M_IX86) && (_M_IX86<=600)
@@ -312,7 +330,35 @@ static word LinearMultiply(word *C, const word *A, word B, unsigned int N)
 	return carry;
 }
 
-static void AtomicMultiply(word *C, word A0, word A1, word B0, word B1)
+#if defined(__GNUC__) && defined(__alpha__)
+
+static inline void AtomicMultiply(word *C, const word *A, const word *B)
+{
+	register dword c, a = *(const dword *)A, b = *(const dword *)B;
+	((dword *)C)[0] = a*b;
+	__asm__("umulh %1,%2,%0" : "=r" (c) : "r" (a), "r" (b));
+	((dword *)C)[1] = c;
+}
+
+static inline word AtomicMultiplyAdd(word *C, const word *A, const word *B)
+{
+	register dword c, d, e, a = *(const dword *)A, b = *(const dword *)B;
+	c = ((dword *)C)[0];
+	d = a*b + c;
+	__asm__("umulh %1,%2,%0" : "=r" (e) : "r" (a), "r" (b));
+	((dword *)C)[0] = d;
+	d = (d < c);
+	c = ((dword *)C)[1] + d;
+	d = (c < d);
+	c += e;
+	((dword *)C)[1] = c;
+	d |= (c < e);
+	return d;
+}
+
+#else	// defined(__GNUC__) && defined(__alpha__)
+
+static void AtomicMultiply(word *C, const word *A, const word *B)
 {
 /*
 	word s;
@@ -342,19 +388,19 @@ static void AtomicMultiply(word *C, word A0, word A1, word B0, word B1)
 		}
 */
 	// this segment is the branchless equivalent of above
-	word D[4] = {A1-A0, A0-A1, B0-B1, B1-B0};
-	unsigned int ai = A1 < A0;
-	unsigned int bi = B0 < B1;
+	word D[4] = {A[1]-A[0], A[0]-A[1], B[0]-B[1], B[1]-B[0]};
+	unsigned int ai = A[1] < A[0];
+	unsigned int bi = B[0] < B[1];
 	unsigned int di = ai & bi;
 	dword d = (dword)D[di]*D[di+2];
 	D[1] = D[3] = 0;
 	unsigned int si = ai + !bi;
 	word s = D[si];
 
-	dword A0B0 = (dword)A0*B0;
+	dword A0B0 = (dword)A[0]*B[0];
 	C[0] = LOW_WORD(A0B0);
 
-	dword A1B1 = (dword)A1*B1;
+	dword A1B1 = (dword)A[1]*B[1];
 	dword t = (dword) HIGH_WORD(A0B0) + LOW_WORD(A0B0) + LOW_WORD(d) + LOW_WORD(A1B1);
 	C[1] = LOW_WORD(t);
 
@@ -363,22 +409,22 @@ static void AtomicMultiply(word *C, word A0, word A1, word B0, word B1)
 	C[3] = HIGH_WORD(t);
 }
 
-static word AtomicMultiplyAdd(word *C, word A0, word A1, word B0, word B1)
+static word AtomicMultiplyAdd(word *C, const word *A, const word *B)
 {
-	word D[4] = {A1-A0, A0-A1, B0-B1, B1-B0};
-	unsigned int ai = A1 < A0;
-	unsigned int bi = B0 < B1;
+	word D[4] = {A[1]-A[0], A[0]-A[1], B[0]-B[1], B[1]-B[0]};
+	unsigned int ai = A[1] < A[0];
+	unsigned int bi = B[0] < B[1];
 	unsigned int di = ai & bi;
 	dword d = (dword)D[di]*D[di+2];
 	D[1] = D[3] = 0;
 	unsigned int si = ai + !bi;
 	word s = D[si];
 
-	dword A0B0 = (dword)A0*B0;
+	dword A0B0 = (dword)A[0]*B[0];
 	dword t = A0B0 + C[0];
 	C[0] = LOW_WORD(t);
 
-	dword A1B1 = (dword)A1*B1;
+	dword A1B1 = (dword)A[1]*B[1];
 	t = (dword) HIGH_WORD(t) + LOW_WORD(A0B0) + LOW_WORD(d) + LOW_WORD(A1B1) + C[1];
 	C[1] = LOW_WORD(t);
 
@@ -390,25 +436,23 @@ static word AtomicMultiplyAdd(word *C, word A0, word A1, word B0, word B1)
 	return HIGH_WORD(t);
 }
 
-static inline void AtomicSquare(word *C, word A, word B)
+#endif	// defined(__GNUC__) && defined(__alpha__)
+
+static inline void AtomicMultiplyBottom(word *C, const word *A, const word *B)
 {
-	dword t1 = (dword) A*A;
-	C[0] = LOW_WORD(t1);
-
-	dword t2 = (dword) A*B;
-	t1 = (dword) HIGH_WORD(t1) + LOW_WORD(t2) + LOW_WORD(t2);
-	C[1] = LOW_WORD(t1);
-
-	t1 = (dword) B*B + HIGH_WORD(t1) + HIGH_WORD(t2) + HIGH_WORD(t2);
-	C[2] = LOW_WORD(t1);
-	C[3] = HIGH_WORD(t1);
-}
-
-static inline void AtomicMultiplyBottom(word *C, word A0, word A1, word B0, word B1)
-{
-	dword t = (dword)A0*B0;
-	C[0] = LOW_WORD(t);
-	C[1] = HIGH_WORD(t) + A0*B1 + A1*B0;
+#ifdef IS_LITTLE_ENDIAN
+	if (sizeof(dword) == sizeof(size_t))
+	{
+		dword a = *(const dword *)A, b = *(const dword *)B;
+		((dword *)C)[0] = a*b;
+	}
+	else
+#endif
+	{
+		dword t = (dword)A[0]*B[0];
+		C[0] = LOW_WORD(t);
+		C[1] = HIGH_WORD(t) + A[0]*B[1] + A[1]*B[0];
+	}
 }
 
 #define MulAcc(x, y)								\
@@ -727,11 +771,22 @@ void RecursiveMultiply(word *R, word *T, const word *A, const word *B, unsigned 
 	assert(N>=2 && N%2==0);
 
 	if (N==2)
-		AtomicMultiply(R, A[0], A[1], B[0], B[1]);
+		AtomicMultiply(R, A, B);
+#if defined(__GNUC__) && defined(__alpha__)
+	else if (N==4)
+	{
+		AtomicMultiply(R, A, B);
+		AtomicMultiply(R+4, A+2, B+2);
+		word carry = AtomicMultiplyAdd(R+2, A+0, B+2);
+		carry += AtomicMultiplyAdd(R+2, A+2, B+0);
+		Increment(R+6, 2, carry);
+	}
+#else
 	else if (N==4)
 		CombaMultiply4(R, A, B);
 	else if (N==8)
 		CombaMultiply8(R, A, B);
+#endif
 	else
 	{
 		const unsigned int N2 = N/2;
@@ -796,7 +851,7 @@ void RecursiveSquare(word *R, word *T, const word *A, unsigned int N)
 	assert(N && N%2==0);
 
 	if (N==2)
-		AtomicSquare(R, A[0], A[1]);
+		AtomicMultiply(R, A, A);
 	else if (N==4)
 	{
 		// VC60 workaround: MSVC 6.0 has an optimization bug that makes
@@ -829,7 +884,7 @@ void RecursiveMultiplyBottom(word *R, word *T, const word *A, const word *B, uns
 	assert(N>=2 && N%2==0);
 
 	if (N==2)
-		AtomicMultiplyBottom(R, A[0], A[1], B[0], B[1]);
+		AtomicMultiplyBottom(R, A, B);
 	else if (N==4)
 		CombaMultiplyBottom4(R, A, B);
 	else if (N==8)
@@ -858,17 +913,14 @@ void RecursiveMultiplyTop(word *R, word *T, const word *L, const word *A, const 
 
 	if (N==2)
 	{
-		AtomicMultiply(T, A[0], A[1], B[0], B[1]);
-		R[0] = T[2];
-		R[1] = T[3];
+		AtomicMultiply(T, A, B);
+		((dword *)R)[0] = ((dword *)T)[1];
 	}
 	else if (N==4)
 	{
 		CombaMultiply4(T, A, B);
-		R[0] = T[4];
-		R[1] = T[5];
-		R[2] = T[6];
-		R[3] = T[7];
+		((dword *)R)[0] = ((dword *)T)[2];
+		((dword *)R)[1] = ((dword *)T)[3];
 	}
 	else
 	{
@@ -1137,25 +1189,25 @@ static word SubatomicDivide(word *A, word B0, word B1)
 }
 
 // do a 4 word by 2 word divide, returns 2 word quotient in Q0 and Q1
-static inline void AtomicDivide(word &Q0, word &Q1, const word *A, word B0, word B1)
+static inline void AtomicDivide(word *Q, const word *A, const word *B)
 {
-	if (!B0 && !B1) // if divisor is 0, we assume divisor==2**(2*WORD_BITS)
+	if (!B[0] && !B[1]) // if divisor is 0, we assume divisor==2**(2*WORD_BITS)
 	{
-		Q0 = A[2];
-		Q1 = A[3];
+		Q[0] = A[2];
+		Q[1] = A[3];
 	}
 	else
 	{
 		word T[4];
 		T[0] = A[0]; T[1] = A[1]; T[2] = A[2]; T[3] = A[3];
-		Q1 = SubatomicDivide(T+1, B0, B1);
-		Q0 = SubatomicDivide(T, B0, B1);
+		Q[1] = SubatomicDivide(T+1, B[0], B[1]);
+		Q[0] = SubatomicDivide(T, B[0], B[1]);
 
 #ifndef NDEBUG
 		// multiply quotient and divisor and add remainder, make sure it equals dividend
-		assert(!T[2] && !T[3] && (T[1] < B1 || (T[1]==B1 && T[0]<B0)));
+		assert(!T[2] && !T[3] && (T[1] < B[1] || (T[1]==B[1] && T[0]<B[0])));
 		word P[4];
-		AtomicMultiply(P, Q0, Q1, B0, B1);
+		AtomicMultiply(P, Q, B);
 		Add(P, P, T, 4);
 		assert(memcmp(P, A, 4*WORD_SIZE)==0);
 #endif
@@ -1163,23 +1215,23 @@ static inline void AtomicDivide(word &Q0, word &Q1, const word *A, word B0, word
 }
 
 // for use by Divide(), corrects the underestimated quotient {Q1,Q0}
-static void CorrectQuotientEstimate(word *R, word *T, word &Q0, word &Q1, const word *B, unsigned int N)
+static void CorrectQuotientEstimate(word *R, word *T, word *Q, const word *B, unsigned int N)
 {
 	assert(N && N%2==0);
 
-	if (Q1)
+	if (Q[1])
 	{
 		T[N] = T[N+1] = 0;
 		unsigned i;
 		for (i=0; i<N; i+=4)
-			AtomicMultiply(T+i, Q0, Q1, B[i], B[i+1]);
+			AtomicMultiply(T+i, Q, B+i);
 		for (i=2; i<N; i+=4)
-			if (AtomicMultiplyAdd(T+i, Q0, Q1, B[i], B[i+1]))
+			if (AtomicMultiplyAdd(T+i, Q, B+i))
 				T[i+5] += (++T[i+4]==0);
 	}
 	else
 	{
-		T[N] = LinearMultiply(T, B, Q0, N);
+		T[N] = LinearMultiply(T, B, Q[0], N);
 		T[N+1] = 0;
 	}
 
@@ -1189,8 +1241,8 @@ static void CorrectQuotientEstimate(word *R, word *T, word &Q0, word &Q1, const 
 	while (R[N] || Compare(R, B, N) >= 0)
 	{
 		R[N] -= Subtract(R, R, B, N);
-		Q1 += (++Q0==0);
-		assert(Q0 || Q1); // no overflow
+		Q[1] += (++Q[0]==0);
+		assert(Q[0] || Q[1]); // no overflow
 	}
 }
 
@@ -1239,14 +1291,15 @@ void Divide(word *R, word *Q, word *T, const word *A, unsigned int NA, const wor
 		assert(Compare(TA+NA-NB, TB, NB) < 0);
 	}
 
-	word B0 = TB[NB-2] + 1;
-	word B1 = TB[NB-1] + (B0==0);
+	word BT[2];
+	BT[0] = TB[NB-2] + 1;
+	BT[1] = TB[NB-1] + (BT[0]==0);
 
 	// start reducing TA mod TB, 2 words at a time
 	for (unsigned i=NA-2; i>=NB; i-=2)
 	{
-		AtomicDivide(Q[i-NB], Q[i-NB+1], TA+i-2, B0, B1);
-		CorrectQuotientEstimate(TA+i-NB, TP, Q[i-NB], Q[i-NB+1], TB, NB);
+		AtomicDivide(Q+i-NB, TA+i-2, BT);
+		CorrectQuotientEstimate(TA+i-NB, TP, Q+i-NB, TB, NB);
 	}
 
 	// copy TA into R, and denormalize it
