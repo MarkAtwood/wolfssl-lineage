@@ -44,7 +44,7 @@ typedef opaque byte;
 // all length constants in bytes
 const int ID_LEN            =  32;  // session id length
 const int SUITE_LEN         =   2;  // cipher suite length
-const int SECRET_LEN        =  48;  // pre and master secret length
+const int SECRET_LEN        =  48;  // pre RSA and all master secret length
 const int MASTER_ROUNDS     =   3;  // master secret derivation rounds
 const int RAN_LEN           =  32;  // client and server random length
 const int MAC_BLOCK_SZ      =  64;  // MAC block size, & padding
@@ -52,8 +52,6 @@ const int MD5_LEN           =  16;  // MD5 digest length
 const int SHA_LEN           =  20;  // SHA digest length
 const int PREFIX            =   3;  // up to 3 prefix letters for secret rounds
 const int KEY_PREFIX        =   7;  // up to 7 prefix letters for key rounds
-const int SHA_SECRET_GEN    = PREFIX + SECRET_LEN + 2 * RAN_LEN; //masterSecret
-const int SHA_KEY_GEN       = KEY_PREFIX + SECRET_LEN + 2 * RAN_LEN; // keys
 const int FORTEZZA_MAX      = 128;  // Maximum Fortezza Key length
 const int MAX_SUITE_SZ      =  64;  // 32 max suites * sizeof(suite)
 const int MAX_SUITE_NAME    =  48;  // max length of suite name
@@ -71,7 +69,8 @@ const int LENGTH_SZ         =   2;  // length field for HMAC, data only
 const int VERSION_SZ        = SIZEOF_ENUM * 2;  // SSL/TLS length of version
 const int RSA_MOD           =  64;  // 512 bit RSA modulus length
 const int RSA_EXP           =   3;  // 512 bit RSA exponent length
-const int RSA_KEA_SIG       = 128;  // 512 bit RSA key exchange signature len
+const int RSA_KEA_SIG       =  64;  // 512 bit RSA key exchange signature len
+const int DSA_KEA_SIG       =  48;  // DSA key exchange signature len
 const int DES_KEY_SZ        =   8;  // DES Key length
 const int DES_EDE_KEY_SZ    =  24;  // DES EDE Key length
 const int DES_IV_SZ         =   8;  // Init Vector length for DES
@@ -79,7 +78,7 @@ const int DES_BLOCK         =   8;  // DES is always fixed block size 8
 const int RC4_KEY_SZ        =  16;  // RC4 Key length
 const int MASTER_LABEL_SZ   =  13;  // TLS master secret label size
 const int KEY_LABEL_SZ      =  13;  // TLS key block expansion size
-const int FINISHED_LABEL_SZ =   6;  // TLS finished lable length
+const int FINISHED_LABEL_SZ =  15;  // TLS finished lable length
 const int SEED_LEN          = RAN_LEN * 2; // TLS seed, client + server random
 
 
@@ -274,8 +273,8 @@ const opaque PAD2[PAD_MD5] =  { 0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c, 0x5c,
 const opaque client[SIZEOF_SENDER] = { 0x43, 0x4C, 0x4E, 0x54 };
 const opaque server[SIZEOF_SENDER] = { 0x53, 0x52, 0x56, 0x52 };
 
-const opaque tls_client[FINISHED_LABEL_SZ + 1] = "client";
-const opaque tls_server[FINISHED_LABEL_SZ + 1] = "server";
+const opaque tls_client[FINISHED_LABEL_SZ + 1] = "client finished";
+const opaque tls_server[FINISHED_LABEL_SZ + 1] = "server finished";
 
 const opaque master_label[MASTER_LABEL_SZ + 1] = "master secret";
 const opaque key_label   [KEY_LABEL_SZ + 1]    = "key expansion";

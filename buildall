@@ -1,0 +1,35 @@
+#!/bin/sh
+
+
+echo -e "unzipping support libaries..."
+
+
+gzip -cd esnacc_r16.tgz | tar xvf -
+gzip -cd smp_r23.tgz | tar xvf -
+cd cryptopp51
+unzip crypto51.zip
+cd ..
+
+
+echo -e "building support libraries..."
+
+./build/SNACC
+./build/SMP
+./build/CryptoPP
+
+
+echo -e "copying support libraries into yassl/lib, will attempt to create lib dir first, no problem if it already exists..."
+mkdir lib
+cp SMPDist/lib/* lib/
+cp cryptopp51/lib* lib/
+
+
+echo -e "building yassl..."
+
+make
+
+
+# make link for mysql configure looking for libssl
+cd lib
+ln -s libyassl.a libssl.a
+cd ..

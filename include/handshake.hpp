@@ -56,6 +56,7 @@ void sendClientHello(SSL&);
 void sendServerHello(SSL&, BufferOutput = buffered);
 void sendServerHelloDone(SSL&, BufferOutput = buffered);
 void sendClientKeyExchange(SSL&, BufferOutput = buffered);
+void sendServerKeyExchange(SSL&, BufferOutput = buffered);
 void sendChangeCipher(SSL&, BufferOutput = buffered);
 void sendFinished(SSL&, ConnectionEnd, BufferOutput = buffered);
 void sendCertificate(SSL&, BufferOutput = buffered);

@@ -1,0 +1,3 @@
+#! /bin/sh
+
+./configure '--prefix=/usr/local/mysql' '--with-vio' '--with-openssl' '--with-openssl-includes=/home/touska/yassl/include' '--with-openssl-libs=/home/touska/yassl/lib'

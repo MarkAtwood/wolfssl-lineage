@@ -18,7 +18,7 @@
 
 int main(int argc, char** argv)
 {
-    SSL_METHOD* method = SSLv3_client_method();
+    SSL_METHOD* method = TLSv1_client_method();
     SSL_CTX*    ctx = SSL_CTX_new(method);
 
 #ifdef WIN32

@@ -218,6 +218,9 @@ public:
 
     const opaque* get_random() const { return random_; }
     friend void buildClientHello(SSL&, ClientHello&, CompressionMethod);
+
+    ClientHello() {}
+    explicit ClientHello(ProtocolVersion pv) : client_version_(pv) {}
 };
 
 
@@ -231,6 +234,10 @@ class ServerHello : public HandShakeBase {
     opaque              cipher_suite_[SUITE_LEN];
     CompressionMethod   compression_method_;
 public:
+    explicit ServerHello(ProtocolVersion pv) : server_version_(pv) {}
+    ServerHello() {}
+    
+        
     friend input_buffer&  operator>>(input_buffer&, ServerHello&);
     friend output_buffer& operator<<(output_buffer&, const ServerHello&);
    
@@ -263,7 +270,7 @@ class ServerDHParams {
     int pubSz_;
 public:
     ServerDHParams() : pSz_(0), gSz_(0), pubSz_(0), p_(0), g_(0), Ys_(0) {}
-    ~ServerDHParams() { delete[] Ys_; delete[] g_; delete p_; }
+    ~ServerDHParams() { delete[] Ys_; delete[] g_; delete[] p_; }
 
     int get_pSize()   const { return pSz_; }
     int get_gSize()   const { return gSz_; }
@@ -272,24 +279,6 @@ public:
     const opaque* get_p()   const { return p_; }
     const opaque* get_g()   const { return g_; }
     const opaque* get_pub() const { return Ys_; }
-
-    void set_p(const byte* p, int sz)
-    {
-        p_ = new opaque[pSz_ = sz];
-        memcpy(p_, p, pSz_);
-    }
-
-    void set_g(const byte* g, int sz)
-    {
-        g_ = new opaque[gSz_ = sz];
-        memcpy(g_, g, gSz_);
-    }
-
-    void set_pub(const byte* pub, int sz)
-    {
-        Ys_ = new opaque[pubSz_ = sz];
-        memcpy(Ys_, pub, pubSz_);
-    }
 
     opaque* alloc_p(int sz)
     {
@@ -355,12 +344,13 @@ struct Signature : public SignatureBase {};
 // Server's Diffie-Hellman exchange
 class DH_Server : public ServerKeyBase {
     ServerDHParams  parms_;
-    Signature       signature_;             // usually dsa_sa but could be rsa
+    opaque          signature_[RSA_KEA_SIG];   // signed rsa_sa hashes MAX size
+
     int             length_;                // total length of message
     opaque*         keyMessage_;            // total exchange message
 public:
     DH_Server() : length_(0), keyMessage_(0) {}
-    ~DH_Server() { delete keyMessage_; }
+    ~DH_Server() { delete[] keyMessage_; }
 
     void build(SSL&);
     void read(SSL&, input_buffer&);
@@ -468,9 +458,10 @@ struct FortezzaKeys : public ClientKeyBase {
 // Diffie-Hellman public key from page 40/41
 class  ClientDiffieHellmanPublic : public ClientKeyBase {
     PublicValueEncoding public_value_encoding_;
-    int     length_;
-    opaque* Yc_;       
+    int     length_;    // includes two byte length for message
+    opaque* Yc_;        // length + Yc_
     // dh_Yc only if explicit, otherwise sent in certificate
+    enum { KEY_OFFSET = 2 };
 public:
     ClientDiffieHellmanPublic() : length_(0), Yc_(0) {}
     ~ClientDiffieHellmanPublic() { delete[] Yc_; }
@@ -479,7 +470,9 @@ public:
     void    read(SSL&, input_buffer&);
     int     get_length()    const { return length_; }
     opaque* get_clientKey() const { return Yc_; }
-    void    alloc(int sz) { length_ = sz; Yc_ = new opaque[sz]; }
+    void    alloc(int sz, bool offset = false) 
+                { length_ = sz + (offset ? KEY_OFFSET : 0); 
+                  Yc_ = new opaque[length_]; }
 };
 
 
@@ -545,10 +538,10 @@ struct RecordLayerHeader {
 
 // SSL Connection defined on page 11
 struct Connection {
-    opaque          master_secret_[SECRET_LEN];
+    opaque          *master_secret_;
+    opaque          *pre_master_secret_;
     opaque          client_random_[RAN_LEN];
     opaque          server_random_[RAN_LEN];
-    opaque          pre_master_secret_[SECRET_LEN];   
     opaque          sessionID_[ID_LEN];
     opaque          client_write_MAC_secret_[SHA_LEN]; // sha  is max size
     opaque          server_write_MAC_secret_[SHA_LEN];
@@ -558,10 +551,19 @@ struct Connection {
     opaque          server_write_IV_[DES_IV_SZ];
     uint32          sequence_number_;
     uint32          peer_sequence_number_;
+    uint32          secret_len_;                       // pre master length
+    bool            send_server_key_;                  // server key exchange?
+    bool            dh_init_needed_;                   // server dh init parms
     ProtocolVersion version_;
 
-    Connection(ProtocolVersion v) : sequence_number_(0),
-               peer_sequence_number_(0), version_(v) {}
+    Connection(ProtocolVersion v) : master_secret_(0), pre_master_secret_(0), 
+        sequence_number_(0), peer_sequence_number_(0), secret_len_(0),
+        send_server_key_(false), dh_init_needed_(false), version_(v) {}
+
+    ~Connection() { delete[] pre_master_secret_; delete[] master_secret_; }
+
+    void AllocSecret(size_t sz) { secret_len_ = sz;
+         master_secret_ = new opaque[sz]; pre_master_secret_ = new opaque[sz];}
 };
 
 

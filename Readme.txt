@@ -1,24 +1,35 @@
-yaSSL Release notes, version 0.0.3
+yaSSL Release notes, version 0.2.0
+
+This release of yaSSL contains minor bug fixes and initial alternate crypto
+functionality. 
+
+*** Complete Build ***
+
+See the notes in Readme.txt for build instructions.
+
+*** Update Build ***
+
+If you have already done a complete build of yaSSL as described in the release 0.0.1 - 0.1.0 notes and downloaded the update to 0.2.0, place the update file yassl-update-0.2.0.tar.gz in the yaSSL home directory and issue the command:
+
+gzip -cd yassl-update-0.2.0.tar.gz | tar xvf -
+
+to update the previous release.
+
+Then issue the make command on linux or rebuild the yaSSL project on Windows. 
+
+*******************yaSSL Release notes, version 0.1.0
+
+This release of yaSSL contains minor bug fixes, full client and server TLSv1
+support including full ephemeral Diffie-Hellman support, SSL type RSA and DSS
+signing and verification, and initial stunnel 4.05 build support.
+
+
+
+*********************yaSSL Release notes, version 0.0.3
 
 The third release of yaSSL contains minor bug fixes, client certificate
 enhancements, and initial ephemeral Diffie-Hellman integration:
 
-
-*** Complete Build ***
-
-See the first release notes below for build instructions.
-
-*** Update Build ***
-
-If you have already done a complete build of yaSSL as described in the release
-0.0.1 (or 0.0.2) notes and downloaded the update to 0.0.3, place the update file
-yassl-update-0.0.3.tar.gz in the yaSSL home directory and issue the command:
-
-    gzip -cd yassl-update-0.0.3.tar.gz | tar xvf -
-
-to update the previous release.
-
-Then issue the make command on linux or rebuild the yaSSL project on Windows.
 
 
 *********************
@@ -36,23 +47,6 @@ enhancements, session resumption, and improved TLS support including:
 
 Once ephemeral RSA and DH are added yaSSL will be fully complaint with TLS.
 
-
-*** Complete Build ***
-
-See the first release notes below for build instructions. 
-
-
-*** Update Build ***
-
-If you have already done a complete build of yaSSL as described in the release
-0.0.1 notes and downloaded the update to 0.0.2, place the update file
-yassl-update-0.0.2.tar.gz in the yaSSL home directory and issue the command:
-
-gzip -cd yassl-update-0.0.2.tar.gz | tar xvf -
-
-to update the first release.
-
-Then issue the make command on linux or rebuild the yaSSL project on Windows.
 
 
 **********************

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+echo -e "building CryptoPP"
+
+cd cryptopp51
+make libcryptopp.a
+cd ..
+

@@ -432,7 +432,7 @@ void RSA::RSAImpl::SetPublic(const byte* key, unsigned int sz)
 }
 
 
-// Decode and store the public key
+// Decode and store the private key
 void RSA::RSAImpl::SetPrivate(const byte* key, unsigned int sz)
 {
     CryptoPP::StringSource private_str(key, sz, true);
@@ -467,25 +467,138 @@ unsigned int RSA::get_cipherLength() const
 }
 
 
+class PKCS_SSL_EncryptionPaddingScheme 
+    : public CryptoPP::PK_EncryptionMessageEncodingMethod
+{
+public:
+    static const char* StaticAlgorithmName() {return "SSL-EME-PKCS1-v1_5";}
+
+    unsigned int MaxUnpaddedLength(unsigned int paddedLength) const;
+    void Pad(CryptoPP::RandomNumberGenerator &rng, const byte* raw,
+             unsigned int inputLength, byte* padded,
+             unsigned int paddedLength) const;
+    CryptoPP::DecodingResult Unpad(const byte* padded,
+                                   unsigned int paddedLength, byte* raw) const;
+};
+
+struct PKCS1v15_SSL : public CryptoPP::SignatureStandard,
+                      public CryptoPP::EncryptionStandard
+{
+    typedef PKCS_SSL_EncryptionPaddingScheme EncryptionMessageEncodingMethod;
+    typedef CryptoPP::PKCS1v15_SignatureMessageEncodingMethod 
+                                             SignatureMessageEncodingMethod;
+};
+
+typedef CryptoPP::RSAES<PKCS1v15_SSL>::Encryptor RSAES_PKCS1v15_SSL_Encryptor;
+
+
+
+unsigned int PKCS_SSL_EncryptionPaddingScheme::MaxUnpaddedLength(unsigned int 
+                                               paddedLength) const
+{
+    return CryptoPP::SaturatingSubtract(paddedLength/8, 10U);
+}
+
+void PKCS_SSL_EncryptionPaddingScheme::Pad(CryptoPP::RandomNumberGenerator
+    &rng, const byte* input, unsigned int inputLen, byte* pkcsBlock,
+    unsigned int pkcsBlockLen) const
+{
+    assert (inputLen <= MaxUnpaddedLength(pkcsBlockLen));
+
+    // convert from bit length to byte length
+    if (pkcsBlockLen % 8 != 0)
+    {
+        pkcsBlock[0] = 0;
+        pkcsBlock++;
+    }
+    pkcsBlockLen /= 8;
+
+    pkcsBlock[0] = 1;  // block type 1 for SSL
+
+    // pad with 0xff bytes
+    memset(&pkcsBlock[1], 0xFF, pkcsBlockLen - inputLen - 2);
+
+    pkcsBlock[pkcsBlockLen-inputLen-1] = 0;     // separator
+    memcpy(pkcsBlock+pkcsBlockLen-inputLen, input, inputLen);
+}
+
+CryptoPP::DecodingResult PKCS_SSL_EncryptionPaddingScheme::Unpad(
+          const byte* pkcsBlock, unsigned int pkcsBlockLen, byte* output) const
+{
+    bool invalid = false;
+    unsigned int maxOutputLen = MaxUnpaddedLength(pkcsBlockLen);
+
+    // convert from bit length to byte length
+    if (pkcsBlockLen % 8 != 0)
+    {
+        invalid = (pkcsBlock[0] != 0) || invalid;
+        pkcsBlock++;
+    }
+    pkcsBlockLen /= 8;
+
+    // Require block type 1 for SSL.
+    invalid = (pkcsBlock[0] != 1) || invalid;
+
+    // skip past the padding until we find the separator
+    unsigned i=1;
+    while (i<pkcsBlockLen && pkcsBlock[i++]) { // null body
+		}
+    assert(i==pkcsBlockLen || pkcsBlock[i-1]==0);
+
+    unsigned int outputLen = pkcsBlockLen - i;
+    invalid = (outputLen > maxOutputLen) || invalid;
+
+    if (invalid)
+        return CryptoPP::DecodingResult();
+
+    memcpy (output, pkcsBlock+i, outputLen);
+    return CryptoPP::DecodingResult(outputLen);
+}
+
+
+CryptoPP::DecodingResult pubSSLDecrypt(CryptoPP::RSA::PublicKey& pubKey,
+                                       const byte* cipher, byte* plain)
+{
+    using namespace CryptoPP;
+
+    int paddedBitsBlock = pubKey.PreimageBound().BitCount() - 1;
+    SecByteBlock paddedBlock(BitsToBytes(paddedBitsBlock));
+    CryptoPP::Integer x = pubKey.ApplyFunction(CryptoPP::Integer(cipher, 
+               RSAES_PKCS1v15_SSL_Encryptor(pubKey).FixedCiphertextLength()));
+    if (x.ByteCount() > paddedBlock.size())
+        x = CryptoPP::Integer::Zero();	
+    x.Encode(paddedBlock, paddedBlock.size());
+    return PKCS_SSL_EncryptionPaddingScheme().Unpad(paddedBlock,
+                                                    paddedBitsBlock, plain);
+}
+
+
 // RSA Sign message of length sz into sig
 void RSA::sign(byte* sig,  const byte* message, unsigned int sz,
                const RandomPool& random)
 {
     using namespace CryptoPP;
 
-    RSASSA_PKCS1v15_MD5_Signer signer(pimpl_->privateKey_);
-    signer.SignMessage(random.pimpl_->RNG_, message, sz, sig);
+    CryptoPP::RSA::PublicKey inverse; // inverse public key
+    inverse.Initialize(pimpl_->publicKey_.GetModulus(),
+                       pimpl_->privateKey_.GetPrivateExponent());
+    RSAES_PKCS1v15_SSL_Encryptor enc(inverse);
+    enc.Encrypt(random.pimpl_->RNG_, message, sz, sig);
 }
 
 
-// RSA Verify message of length sz against sig, is it correct?
+// RSA Verify message of length sz against sig
 bool RSA::verify(const byte* message, unsigned int sz, const byte* sig,
                  unsigned int sig_sz)
 {
     using namespace CryptoPP;
 
-    RSASSA_PKCS1v15_MD5_Verifier ver(pimpl_->publicKey_);
-    return ver.VerifyMessage(message, sz, sig, sig_sz);
+    byte plain[64];
+    DecodingResult dr = pubSSLDecrypt(pimpl_->publicKey_, sig, plain);
+
+    if ( (memcmp(plain, message, sz)) == 0)
+        return true;
+    return false;
 }
 
 
@@ -522,7 +635,11 @@ struct DiffieHellman::DHImpl {
     ~DHImpl() {delete[] agreedKey_; delete[] privateKey_; delete[] publicKey_;}
 
     DHImpl(const DHImpl& that) : publicKey_(0), privateKey_(0), agreedKey_(0),
-                                 dh_(that.dh_), ranPool_(that.ranPool_) {}
+                                 dh_(that.dh_), ranPool_(that.ranPool_)
+    {
+        AllocKeys(dh_.PublicKeyLength(), dh_.PrivateKeyLength(),
+                  dh_.AgreedValueLength());
+    }
 
     void AllocKeys(unsigned int pubSz, unsigned int privSz, unsigned int agrSz)
     {
@@ -533,30 +650,54 @@ struct DiffieHellman::DHImpl {
 };
 
 
-// generate pair
+// server Side DH, server's view
+DiffieHellman::DiffieHellman(const char* file, const RandomPool& random)
+    : pimpl_(new DHImpl)
+{
+    using namespace CryptoPP;
+    std::string prime;
+    FileSource f(file, true, new HexDecoder(new StringSink(prime)));
+    
+    byte p[128];
+    for (int i = 0, j = 1; i < 128; i++)
+        p[i] = prime[j++];
+
+    CryptoPP::Integer G = 5;
+    CryptoPP::Integer P(p, 128);
+
+    pimpl_->ranPool_ = random.pimpl_->RNG_;
+    pimpl_->dh_.AccessGroupParameters().Initialize(P, G);
+
+    unsigned int pub   = pimpl_->dh_.PublicKeyLength();
+    unsigned int priv  = pimpl_->dh_.PrivateKeyLength();
+    unsigned int agree = pimpl_->dh_.AgreedValueLength();
+
+    pimpl_->AllocKeys(pub, priv, agree);
+    pimpl_->dh_.GenerateKeyPair(pimpl_->ranPool_, pimpl_->privateKey_,
+                                                  pimpl_->publicKey_);
+}
+
+// server Side DH, client's view
 DiffieHellman::DiffieHellman(const byte* p, unsigned int pSz, const byte* g,
-                             unsigned int gSz, const RandomPool& random)
+                             unsigned int gSz, const byte* pub,
+                             unsigned int pubSz, const RandomPool& random)
     : pimpl_(new DHImpl)
 {
     using CryptoPP::Integer;
     pimpl_->ranPool_ = random.pimpl_->RNG_;
     pimpl_->dh_.AccessGroupParameters().Initialize(Integer(p, pSz),
                                                    Integer(g, gSz));
-    unsigned int pubSz    = pimpl_->dh_.PublicKeyLength();
-    unsigned int privSz   = pimpl_->dh_.PrivateKeyLength();
-    unsigned int agreedSz = pimpl_->dh_.AgreedValueLength();
-    pimpl_->AllocKeys(pubSz, privSz, agreedSz);
-
-    pimpl_->dh_.GenerateKeyPair(pimpl_->ranPool_, pimpl_->privateKey_,
-                                                  pimpl_->publicKey_);
+    pimpl_->publicKey_ = new opaque[pubSz];
+    memcpy(pimpl_->publicKey_, pub, pubSz);
 }
 
 DiffieHellman::~DiffieHellman() { delete pimpl_; }
 
 
+// Client side and view, use server that for p and g
 DiffieHellman::DiffieHellman(const DiffieHellman& that) 
     : pimpl_(new DHImpl(*that.pimpl_))
-{
+{   
     pimpl_->dh_.GenerateKeyPair(pimpl_->ranPool_, pimpl_->privateKey_,
                                                   pimpl_->publicKey_);
 }
@@ -573,9 +714,9 @@ DiffieHellman& DiffieHellman::operator=(const DiffieHellman& that)
 }
 
 
-void DiffieHellman::makeAgreement(const byte* otherPub)
+void DiffieHellman::makeAgreement(const byte* other)
 {
-    pimpl_->dh_.Agree(pimpl_->agreedKey_, pimpl_->privateKey_, otherPub);
+    pimpl_->dh_.Agree(pimpl_->agreedKey_, pimpl_->privateKey_, other, false); // add false???
 }
 
 

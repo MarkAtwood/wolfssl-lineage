@@ -144,67 +144,83 @@ void hashHandShake(SSL& ssl, const input_buffer& input, unsigned int sz)
 // calculate MD5 hash for finished
 static void buildMD5(SSL& ssl, Finished& fin, const opaque* sender)
 {
+    //size_t secretLen = ssl.get_connection().secret_len_; // NEWTAO master alway 48
+    size_t secretLen = SECRET_LEN;
     MD5&   md5 = ssl.use_MD5();
-    opaque md5_inner[SIZEOF_SENDER + SECRET_LEN + PAD_MD5];
-    opaque md5_outer[SECRET_LEN + PAD_MD5 + MD5_LEN];
     opaque md5_result[MD5_LEN];
+
+    output_buffer md5_inner(SIZEOF_SENDER + secretLen + PAD_MD5);
+    output_buffer md5_outer(secretLen + PAD_MD5 + MD5_LEN);
+
 
     const opaque* master_secret = ssl.get_connection().master_secret_;
 
     // make md5 inner
-    memcpy(md5_inner, sender, SIZEOF_SENDER);
-    memcpy(&md5_inner[SIZEOF_SENDER], master_secret, SECRET_LEN);
-    memcpy(&md5_inner[SIZEOF_SENDER + SECRET_LEN], PAD1, PAD_MD5);
+    md5_inner.write(sender, SIZEOF_SENDER);
+    md5_inner.write(master_secret, secretLen);
+    md5_inner.write(PAD1, PAD_MD5);
 
-    md5.get_digest(md5_result, md5_inner, sizeof(md5_inner));
+    md5.get_digest(md5_result, md5_inner.get_buffer(), md5_inner.get_size());
 
     // make md5 outer
-    memcpy(md5_outer, master_secret, SECRET_LEN);
-    memcpy(&md5_outer[SECRET_LEN], PAD2, PAD_MD5);
-    memcpy(&md5_outer[SECRET_LEN + PAD_MD5], md5_result, MD5_LEN);
+    md5_outer.write(master_secret, secretLen);
+    md5_outer.write(PAD2, PAD_MD5);
+    md5_outer.write(md5_result, MD5_LEN);
 
-    md5.get_digest(fin.set_md5(), md5_outer, sizeof(md5_outer));
+    md5.get_digest(fin.set_md5(), md5_outer.get_buffer(),md5_outer.get_size());
 }
 
 
 // calculate SHA hash for finished
 static void buildSHA(SSL& ssl, Finished& fin, const opaque* sender)
 {
+    //size_t secretLen = ssl.get_connection().secret_len_; // NEWTAO master always 48
+    size_t secretLen = SECRET_LEN;
     SHA&   sha = ssl.use_SHA();
-    opaque sha_inner[SIZEOF_SENDER + SECRET_LEN + PAD_SHA];
-    opaque sha_outer[SECRET_LEN + PAD_SHA + SHA_LEN];
     opaque sha_result[SHA_LEN];
+
+    output_buffer sha_inner(SIZEOF_SENDER + secretLen + PAD_SHA);
+    output_buffer sha_outer(secretLen + PAD_SHA + SHA_LEN);
 
     const opaque* master_secret = ssl.get_connection().master_secret_;
 
     // make sha inner
-    memcpy(sha_inner, sender, SIZEOF_SENDER);
-    memcpy(&sha_inner[SIZEOF_SENDER], master_secret, SECRET_LEN);
-    memcpy(&sha_inner[SIZEOF_SENDER + SECRET_LEN], PAD1, PAD_SHA);
+    sha_inner.write(sender, SIZEOF_SENDER);
+    sha_inner.write(master_secret, secretLen);
+    sha_inner.write(PAD1, PAD_SHA);
 
-    sha.get_digest(sha_result, sha_inner, sizeof(sha_inner));
+    sha.get_digest(sha_result, sha_inner.get_buffer(), sha_inner.get_size());
 
     // make sha outer
-    memcpy(sha_outer, master_secret, SECRET_LEN);
-    memcpy(&sha_outer[SECRET_LEN], PAD2, PAD_SHA);
-    memcpy(&sha_outer[SECRET_LEN + PAD_SHA], sha_result, SHA_LEN);
+    sha_outer.write(master_secret, secretLen);
+    sha_outer.write(PAD2, PAD_SHA);
+    sha_outer.write(sha_result, SHA_LEN);
 
-    sha.get_digest(fin.set_sha(), sha_outer, sizeof(sha_outer));
+    sha.get_digest(fin.set_sha(), sha_outer.get_buffer(), sha_outer.get_size());
 }
 
 
-void buildFinishedTLS(SSL& ssl, Finished& fin) 
+void buildFinishedTLS(SSL& ssl, Finished& fin, const opaque* sender) 
 {
     opaque handshake_hash[FINISHED_SZ];
     MD5&   md5 = ssl.use_MD5();
     SHA&   sha = ssl.use_SHA();
+    //size_t secretLen = ssl.get_connection().secret_len_; // NEWTAO master always 48
+    size_t secretLen = SECRET_LEN;
 
     md5.get_digest(handshake_hash);
     sha.get_digest(&handshake_hash[MD5_LEN]);
 
-    PRF(fin.set_sha(), TLS_FINISHED_SZ, ssl.get_connection().master_secret_,
-        SECRET_LEN, ssl.get_security().entity_ == server_end ? tls_server : 
-        tls_client, FINISHED_LABEL_SZ, handshake_hash, FINISHED_SZ);
+    const opaque* side;
+    if ( strncmp((const char*)sender, (const char*)client, SIZEOF_SENDER) == 0)
+        side = tls_client;
+    else
+        side = tls_server;
+
+    PRF(fin.set_md5(), TLS_FINISHED_SZ, ssl.get_connection().master_secret_,
+        secretLen, side, FINISHED_LABEL_SZ, handshake_hash, FINISHED_SZ);
+
+    fin.set_length(TLS_FINISHED_SZ);  // shorter length for TLS
 }
 
 
@@ -216,7 +232,7 @@ void buildFinished(SSL& ssl, Finished& fin, const opaque* sender)
     SHA sha(ssl.get_SHA());
 
     if (ssl.isTLS())
-        buildFinishedTLS(ssl, fin);
+        buildFinishedTLS(ssl, fin, sender);
     else {
         buildMD5(ssl, fin, sender);
         buildSHA(ssl, fin, sender);
@@ -271,7 +287,7 @@ void hmac(SSL& ssl, byte* digest, const byte* buffer, size_t sz,
 void TLS_hmac(SSL& ssl, byte* digest, const byte* buffer, size_t sz,
               ContentType content, bool verify)
 {
-    MAC&   mac = ssl.use_mac();
+    std::auto_ptr<MAC> hmac;
     opaque seq[SEQ_SZ] = { 0x00, 0x00, 0x00, 0x00 };
     opaque length[LENGTH_SZ];
     opaque inner[SIZEOF_ENUM + VERSION_SZ + LENGTH_SZ]; // type + version + len
@@ -279,13 +295,19 @@ void TLS_hmac(SSL& ssl, byte* digest, const byte* buffer, size_t sz,
     c16toa(sz, length);
     c32toa(ssl.get_SEQIncrement(verify), &seq[sizeof(uint32)]);
 
-    mac.update(seq, SEQ_SZ);        // seq_num
-    inner[0] = content;             // type
+    if (ssl.get_security().mac_algorithm_ == sha)
+        hmac = std::auto_ptr<MAC>(new HMAC_SHA(ssl.get_macSecret(verify),
+                                  SHA_LEN));
+    else
+        hmac = std::auto_ptr<MAC>(new HMAC_MD5(ssl.get_macSecret(verify),
+                                  MD5_LEN));
+    hmac->update(seq, SEQ_SZ);                                       // seq_num
+    inner[0] = content;                                              // type
     inner[SIZEOF_ENUM] = ssl.get_connection().version_.major_;       // version
     inner[SIZEOF_ENUM + SIZEOF_ENUM] = ssl.get_connection().version_.minor_;
     memcpy(&inner[SIZEOF_ENUM + VERSION_SZ], length, LENGTH_SZ);     // length
-    mac.update(inner, sizeof(inner));
-    mac.get_digest(digest, buffer, sz);                              // content
+    hmac->update(inner, sizeof(inner));
+    hmac->get_digest(digest, buffer, sz);                            // content
 }
 
 
@@ -375,8 +397,8 @@ void buildData(SSL& ssl, output_buffer& output, const Data& data)
 
 
 // compute p_hash for MD5 or SHA-1 for TLSv1 PRF
-void p_hash(input_buffer& result, const input_buffer& secret,
-            const input_buffer& seed, MACAlgorithm hash)
+void p_hash(output_buffer& result, const output_buffer& secret,
+            const output_buffer& seed, MACAlgorithm hash)
 {
     size_t   len = hash == md5 ? MD5_LEN : SHA_LEN;
     size_t   times = result.get_capacity() / len;
@@ -393,26 +415,28 @@ void p_hash(input_buffer& result, const input_buffer& secret,
     else
         hmac = std::auto_ptr<MAC>(new HMAC_SHA(secret.get_buffer(),
                                                secret.get_size()));
-
-    hmac->get_digest(previous, seed.get_buffer(), seed.get_size());
+                                                                   // A0 = seed
+    hmac->get_digest(previous, seed.get_buffer(), seed.get_size());// A1
     size_t lastTime = times - 1;
 
     for (size_t i = 0; i < times; i++) {
-        hmac->update(previous, len);
+        hmac->update(previous, len);  
         hmac->get_digest(current, seed.get_buffer(), seed.get_size());
 
         if (lastLen && (i == lastTime))
-            result.assign(current, lastLen);
+            result.write(current, lastLen);
         else {
-            result.assign(current, len);
-            memcpy(previous, current, len);
+            result.write(current, len);
+            //memcpy(previous, current, len);
+            hmac->get_digest(previous, previous, len);
         }
     }
 }
 
 
 // calculate XOR for TLSv1 PRF
-void get_xor(byte *digest, size_t digLen, input_buffer& md5, input_buffer& sha)
+void get_xor(byte *digest, size_t digLen, output_buffer& md5,
+             output_buffer& sha)
 {
     for (size_t i = 0; i < digLen; i++) 
         digest[i] = md5[AUTO] ^ sha[AUTO];
@@ -423,23 +447,25 @@ void get_xor(byte *digest, size_t digLen, input_buffer& md5, input_buffer& sha)
 void PRF(byte* digest, size_t digLen, const byte* secret, size_t secLen,
          const byte* label, size_t labLen, const byte* seed, size_t seedLen)
 {
-    size_t half = digLen / 2 + digLen % 2;
+    size_t half = secLen / 2 + secLen % 2;
 
-    input_buffer md5_half(half);
-    input_buffer sha_half(half);
-    input_buffer labelSeed(labLen + seedLen);
+    output_buffer md5_half(half);
+    output_buffer sha_half(half);
+    output_buffer labelSeed(labLen + seedLen);
 
-    md5_half.assign(secret, half);
-    sha_half.assign(secret + half - digLen % 2, half);
-    labelSeed.assign(label, labLen);
-    labelSeed.assign(seed, seedLen);
+    md5_half.write(secret, half);
+    sha_half.write(secret + half - secLen % 2, half);
+    labelSeed.write(label, labLen);
+    labelSeed.write(seed, seedLen);
 
-    input_buffer md5_result(digLen + digLen % MD5_LEN);
-    input_buffer sha_result(digLen + digLen % SHA_LEN);
+    output_buffer md5_result(digLen);
+    output_buffer sha_result(digLen);
 
     p_hash(md5_result, md5_half, labelSeed, md5);
     p_hash(sha_result, sha_half, labelSeed, sha);
 
+    md5_result.set_current(0);
+    sha_result.set_current(0);
     get_xor(digest, digLen, md5_result, sha_result);
 }
 
@@ -457,7 +483,7 @@ void processData(SSL& ssl, input_buffer& cipher, unsigned int cipherSz,
 
 void sendClientHello(SSL& ssl)
 {
-    ClientHello       ch;
+    ClientHello       ch(ssl.get_connection().version_);
     RecordLayerHeader rlHeader;
     HandShakeHeader   hsHeader;
     output_buffer     out;
@@ -534,6 +560,25 @@ void sendClientKeyExchange(SSL& ssl, BufferOutput buffer)
 }
 
 
+void sendServerKeyExchange(SSL& ssl, BufferOutput buffer)
+{
+    ServerKeyExchange sk(ssl);
+    sk.build(ssl);
+
+    RecordLayerHeader rlHeader;
+    HandShakeHeader   hsHeader;
+    std::auto_ptr<output_buffer> out(new output_buffer);
+    buildHeaders(ssl, hsHeader, rlHeader, sk);
+    buildOutput(*out.get(), rlHeader, hsHeader, sk);
+    hashHandShake(ssl, *out.get());
+
+    if (buffer == buffered)
+        ssl.addBuffer(out.release());
+    else
+        ssl.get_socket().send(out->get_buffer(), out->get_size());
+}
+
+
 void sendChangeCipher(SSL& ssl, BufferOutput buffer)
 {
     ChangeCipherSpec ccs;
@@ -587,7 +632,7 @@ int receiveData(SSL& ssl, Data& data)
 
 void sendServerHello(SSL& ssl, BufferOutput buffer)
 {
-    ServerHello       sh;
+    ServerHello       sh(ssl.get_connection().version_);
     RecordLayerHeader rlHeader;
     HandShakeHeader   hsHeader;
     std::auto_ptr<output_buffer> out(new output_buffer);

@@ -1,0 +1,14 @@
+#!/bin/sh
+
+cd smp
+./configure --with-snaccdirexec=$(pwd)/../SMPDist/bin --with-snaccincdir=$(pwd)/../SMPDist/include/esnacc --with-snacclibdir=$(pwd)/../SMPDist/lib
+
+#remove ldap because it brings in openssl
+cd cml/cmapi/src
+sed 's/-lldap//g' Makefile > Makefile.tmp
+mv Makefile.tmp Makefile
+cd ../../..
+
+make
+cd ..
+

@@ -52,12 +52,20 @@ void EncryptedPreMasterSecret::build(SSL& ssl)
     ProtocolVersion pv = ssl.get_connection().version_;
     tmp[0] = pv.major_;
     tmp[1] = pv.minor_;
-    ssl.set_preMaster(tmp);
+    ssl.set_preMaster(tmp, SECRET_LEN);
 
     const CertManager& cert = ssl.get_certManager();
     RSA rsa(cert.get_Key(), cert.get_KeyLength());
-    alloc(rsa.get_cipherLength());
-    rsa.encrypt(secret_, tmp, SECRET_LEN, ssl.get_random());
+    bool tls = ssl.isTLS();     // if TLS, put length for encrypted data
+    alloc(rsa.get_cipherLength() + (tls ? 2 : 0));
+    byte* holder = secret_;
+    if (tls) {
+        byte len[2];
+        c16toa(rsa.get_cipherLength(), len);
+        memcpy(secret_, len, sizeof(len));
+        holder += 2;
+    }
+    rsa.encrypt(holder, tmp, SECRET_LEN, ssl.get_random());
 }
 
 
@@ -67,11 +75,14 @@ void ClientDiffieHellmanPublic::build(SSL& ssl)
     DiffieHellman& dhServer = ssl.use_dh();
     DiffieHellman  dhClient(dhServer);
 
-    alloc(dhClient.get_agreedKeyLength());
-    memcpy(Yc_, dhClient.get_agreedKey(), length_);
+    size_t keyLength = dhClient.get_agreedKeyLength(); // pub and agree same
 
+    alloc(keyLength, true);
     dhClient.makeAgreement(dhServer.get_publicKey());
-    ssl.set_preMaster(dhClient.get_agreedKey());
+    c16toa(keyLength, Yc_);
+    memcpy(Yc_ + KEY_OFFSET, dhClient.get_publicKey(), keyLength);
+
+    ssl.set_preMaster(dhClient.get_agreedKey(), keyLength);
 }
 
 
@@ -84,6 +95,57 @@ void DH_Server::build(SSL& ssl)
     dhServer.set_sizes(pSz, gSz, pubSz);
     dhServer.get_parms(parms_.alloc_p(pSz), parms_.alloc_g(gSz),
                        parms_.alloc_pub(pubSz));
+
+    length_ = 8; // pLen + gLen + YsLen + SigLen
+    length_ += pSz + gSz + pubSz + RSA_KEA_SIG;  // TODO: fix 3X for DSA
+
+    output_buffer tmp(length_);
+    byte len[2];
+    // P
+    c16toa(pSz, len);
+    tmp.write(len, sizeof(len));
+    tmp.write(parms_.get_p(), pSz);
+    // G
+    c16toa(gSz, len);
+    tmp.write(len, sizeof(len));
+    tmp.write(parms_.get_g(), gSz);
+    // Ys
+    c16toa(pubSz, len);
+    tmp.write(len, sizeof(len));
+    tmp.write(parms_.get_pub(), pubSz);
+
+    // Sig
+    byte sig[RSA_KEA_SIG];
+    byte hash[FINISHED_SZ];
+    MD5  md5;
+    SHA  sha;
+
+    // md5
+    md5.update(ssl.get_connection().client_random_, RAN_LEN);
+    md5.update(ssl.get_connection().server_random_, RAN_LEN);
+    md5.update(tmp.get_buffer(), tmp.get_size());
+    md5.get_digest(hash);
+
+    // sha
+    sha.update(ssl.get_connection().client_random_, RAN_LEN);
+    sha.update(ssl.get_connection().server_random_, RAN_LEN);
+    sha.update(tmp.get_buffer(), tmp.get_size());
+    sha.get_digest(&hash[MD5_LEN]);
+
+    const CertManager& cert = ssl.get_certManager();
+    RSA   rsa(cert.get_privateKey(), cert.get_privateKeyLength(), false);
+
+    rsa.sign(sig, hash, sizeof(hash), ssl.get_random());
+
+    rsa.verify(hash, sizeof(hash), sig, 64);
+
+    c16toa(RSA_KEA_SIG, len);
+    tmp.write(len, sizeof(len));
+    tmp.write(sig, sizeof(sig));
+
+    // key message
+    keyMessage_ = new opaque[length_];
+    memcpy(keyMessage_, tmp.get_buffer(), tmp.get_size());
 }
 
 
@@ -92,13 +154,19 @@ void EncryptedPreMasterSecret::read(SSL& ssl, input_buffer& input)
 {
     const CertManager& cert = ssl.get_certManager();
     RSA rsa(cert.get_privateKey(), cert.get_privateKeyLength(), false);
-    alloc(rsa.get_cipherLength());
+    uint16 cipherLen = rsa.get_cipherLength();
+    if (ssl.isTLS()) {
+        byte len[2];
+        input.read(len, sizeof(len));
+        ato16(len, cipherLen);
+    }
+    alloc(cipherLen);
     input.read(secret_, length_);
 
     opaque preMasterSecret[SECRET_LEN];
     rsa.decrypt(preMasterSecret, secret_, length_, ssl.get_random());
 
-    ssl.set_preMaster(preMasterSecret);
+    ssl.set_preMaster(preMasterSecret, SECRET_LEN);
     ssl.makeMasterSecret();
 }
 
@@ -118,21 +186,22 @@ void ClientDiffieHellmanPublic::read(SSL& ssl, input_buffer& input)
     input.read(Yc_, length_);
     dh.makeAgreement(Yc_);
 
-    ssl.set_preMaster(dh.get_agreedKey());
+    ssl.set_preMaster(dh.get_agreedKey(), keyLength);
     ssl.makeMasterSecret();
 }
 
 
-// read server's p, g, and public key, client side
+// read server's p, g, public key and sig, client side
 void DH_Server::read(SSL& ssl, input_buffer& input)
 {
-    uint16 length;
+    uint16 length, messageTotal = 6; // pSz + gSz + pubSz
     byte tmp[2];
 
     // p
     tmp[0] = input[AUTO];
     tmp[1] = input[AUTO];
     ato16(tmp, length);
+    messageTotal += length;
 
     input.read(parms_.alloc_p(length), length);
 
@@ -140,6 +209,7 @@ void DH_Server::read(SSL& ssl, input_buffer& input)
     tmp[0] = input[AUTO];
     tmp[1] = input[AUTO];
     ato16(tmp, length);
+    messageTotal += length;
 
     input.read(parms_.alloc_g(length), length);
 
@@ -147,10 +217,52 @@ void DH_Server::read(SSL& ssl, input_buffer& input)
     tmp[0] = input[AUTO];
     tmp[1] = input[AUTO];
     ato16(tmp, length);
+    messageTotal += length;
 
     input.read(parms_.alloc_pub(length), length);
+
+    // save message for hash verify
+    input_buffer message(messageTotal);
+    input.set_current(input.get_current() - messageTotal);
+    input.read(message.get_buffer(), messageTotal);
+    message.add_size(messageTotal);
+
+    // signature  assume rsa for now TODO: switch type
+    tmp[0] = input[AUTO];
+    tmp[1] = input[AUTO];
+    ato16(tmp, length);
+
+    input.read(signature_, length);
+
+    // verify signature
+    byte hash[FINISHED_SZ];
+    MD5  md5;
+    SHA  sha;
+
+    // md5
+    md5.update(ssl.get_connection().client_random_, RAN_LEN);
+    md5.update(ssl.get_connection().server_random_, RAN_LEN);
+    md5.update(message.get_buffer(), message.get_size());
+    md5.get_digest(hash);
+
+    // sha
+    sha.update(ssl.get_connection().client_random_, RAN_LEN);
+    sha.update(ssl.get_connection().server_random_, RAN_LEN);
+    sha.update(message.get_buffer(), message.get_size());
+    sha.get_digest(&hash[MD5_LEN]);
+
+    const CertManager& cert = ssl.get_certManager();
+    RSA   rsa(cert.get_Key(), cert.get_KeyLength());
+
+     rsa.verify(hash, sizeof(hash), signature_, length);
+
+    // save input
+    ssl.set_dh(new DiffieHellman(parms_.get_p(), parms_.get_pSize(),
+               parms_.get_g(), parms_.get_gSize(), parms_.get_pub(),
+               parms_.get_pubSize(), ssl.get_random()));
 }
 
+//#define FORCE_DIFFIE   // test diffie-hellman
 
 SecurityParameters::SecurityParameters(ConnectionEnd ce) : entity_(ce)
 {
@@ -158,6 +270,13 @@ SecurityParameters::SecurityParameters(ConnectionEnd ce) : entity_(ce)
 
     int i = 0;
     // available suites, best first
+
+    // Force Diffie test
+#ifdef FORCE_DIFFIE
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_DHE_RSA_WITH_DES_CBC_SHA;  
+    // Normal 
+#else
     suites_[i++] = 0x00;
     suites_[i++] = SSL_RSA_WITH_3DES_EDE_CBC_SHA;  // TODO: add all
     suites_[i++] = 0x00;
@@ -170,6 +289,8 @@ SecurityParameters::SecurityParameters(ConnectionEnd ce) : entity_(ce)
     suites_[i++] = SSL_RSA_WITH_RC4_128_SHA;  
     suites_[i++] = 0x00;
     suites_[i++] = SSL_RSA_WITH_RC4_128_MD5;
+#endif
+   
     suites_size_ = i;
 }
 
@@ -578,6 +699,10 @@ void ClientHello::Process(input_buffer& input, SSL& ssl)
     ssl.set_random(random_, client_end);
     ssl.set_pending(ssl.get_security().suite_[1]);
 
+    // process
+    if (ssl.get_connection().dh_init_needed_)
+        ssl.init_dh();
+
     ssl.set_states().serverState_ = clientHelloComplete;
 }
 
@@ -621,8 +746,10 @@ void ClientKeyExchange::Process(input_buffer& input, SSL& ssl)
 // input operator for Finished
 input_buffer& operator>>(input_buffer& input, Finished& fin)
 {
+    /*  do in process
     input.read(fin.hashes_.md5_, MD5_LEN);
     input.read(fin.hashes_.sha_, SHA_LEN);
+    */
 
     return input; 
 }
@@ -630,8 +757,12 @@ input_buffer& operator>>(input_buffer& input, Finished& fin)
 // output operator for Finished
 output_buffer& operator<<(output_buffer& output, const Finished& fin)
 {
-    output.write(fin.hashes_.md5_, MD5_LEN);
-    output.write(fin.hashes_.sha_, SHA_LEN);
+    if (fin.get_length() == FINISHED_SZ) {
+        output.write(fin.hashes_.md5_, MD5_LEN);
+        output.write(fin.hashes_.sha_, SHA_LEN);
+    }
+    else    // TLS_FINISHED_SZ
+        output.write(fin.hashes_.md5_, TLS_FINISHED_SZ);
 
     return output;
 }
@@ -643,6 +774,9 @@ void Finished::Process(input_buffer& input, SSL& ssl)
     // verify hashes
     const  Finished& verify = ssl.get_verify();
     size_t finishedSz = ssl.isTLS() ? TLS_FINISHED_SZ : FINISHED_SZ;
+
+    input.read(hashes_.md5_, finishedSz);
+
     int    cmp = memcmp(&hashes_, &verify.hashes_, finishedSz);
     assert(cmp == 0);
 

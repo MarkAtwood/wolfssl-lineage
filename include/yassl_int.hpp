@@ -133,8 +133,9 @@ struct SSL_METHOD {
     ConnectionEnd   side_;
     bool            rollback_;
 
-    SSL_METHOD() : version_(), side_(client_end), rollback_(false) {}
-    SSL_METHOD(ConnectionEnd ce) : version_(), side_(ce), rollback_(false) {}
+    //SSL_METHOD() : version_(), side_(client_end), rollback_(false) {}
+    explicit SSL_METHOD(ConnectionEnd ce, ProtocolVersion pv) 
+        : version_(pv), side_(ce), rollback_(false) {}
 };
 
 
@@ -203,8 +204,9 @@ public:
     void set_pending(Cipher suite);
     void set_random(const opaque*, ConnectionEnd);
     void set_sessionID(const opaque*);
-    void set_preMaster(const opaque*);
+    void set_preMaster(const opaque*, size_t);
     void set_error(const Error& e);
+    void set_dh(DiffieHellman* dh) { dh_ = dh; }
 
     SecurityParameters& set_security()  { return securityParms_; }
     Finished&           set_verify()    { return verify_; }
@@ -212,9 +214,10 @@ public:
     States&				set_states()    { return states_; }
 
     // helpers
-    bool   is_encrypted()     { return securityParms_.pending_ == false; }
-    bool   isTLS()            { return connection_.version_.major_ >= 3 && 
-                                       connection_.version_.minor_ >= 1; }
+    void   init_dh()      { dh_ = new DiffieHellman("certs/dh1024.p",random_);}
+    bool   is_encrypted() { return securityParms_.pending_ == false; }
+    bool   isTLS()        { return connection_.version_.major_ >= 3 && 
+                                   connection_.version_.minor_ >= 1; }
     size_t get_SEQIncrement(bool);
     const  byte*  get_macSecret(bool);
     void   makeMasterSecret();

@@ -19,7 +19,7 @@
 
 int main(int argc, char** argv)
 {
-    SSL_METHOD* method = SSLv3_server_method();
+    SSL_METHOD* method = TLSv1_server_method();
     SSL_CTX*    ctx = SSL_CTX_new(method);
 
     SSL_CTX_use_certificate_file(ctx, "certs/cert.pem", SSL_FILETYPE_PEM);

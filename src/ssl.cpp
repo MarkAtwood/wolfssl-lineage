@@ -112,6 +112,8 @@ int SSL_accept(SSL* ssl)
         processReply(*ssl);
         sendServerHello(*ssl);
         sendCertificate(*ssl);
+        if (ssl->get_connection().send_server_key_)
+            sendServerKeyExchange(*ssl);
         sendServerHelloDone(*ssl);
         ssl->flushBuffer();
 
@@ -219,6 +221,12 @@ const char* SSL_get_version(SSL*)
     return version;
 }
 
+const char* SSLeay_version(int)
+{
+    static const char* version = "SSLeay yassl compatibility";
+    return version;
+}
+
 
 int SSL_get_error(SSL* ssl, int previous)
 {
@@ -280,40 +288,96 @@ X509_NAME* X509_get_subject_name(X509*)
 }
 
 
-void SSL_load_error_strings(void)   // compatibility only 
+int X509_LOOKUP_add_dir(X509_LOOKUP*, const char*, long)
+{
+    // TODO:
+    return SSL_SUCCESS;
+}
+
+
+int X509_LOOKUP_load_file(X509_LOOKUP*, const char*, long)
+{
+    // TODO:
+    return SSL_SUCCESS;
+}
+
+
+X509_LOOKUP_METHOD* X509_LOOKUP_hash_dir(void)
+{
+    // TODO:
+    return 0;
+}
+
+
+X509_LOOKUP_METHOD* X509_LOOKUP_file(void)
+{
+    // TODO:
+    return 0;
+}
+
+
+X509_LOOKUP* X509_STORE_add_lookup(X509_STORE*, X509_LOOKUP_METHOD*)
+{
+    // TODO:
+    return 0;
+}
+
+
+X509_STORE* X509_STORE_new(void)
+{
+    // TODO:
+    return 0;
+}
+
+
+int X509_STORE_get_by_subject(X509_STORE_CTX*, int, X509_NAME*, X509_OBJECT*)
+{
+    // TODO:
+    return SSL_SUCCESS;
+}
+
+
+void SSL_load_error_strings()   // compatibility only 
 {
 }
 
 
-SSL_METHOD *SSLv3_method(void)
+SSL_METHOD* SSLv3_method()
 {
-    return new SSL_METHOD;
+    return SSLv3_client_method();
 }
 
 
-SSL_METHOD *SSLv3_server_method(void)
+SSL_METHOD* SSLv3_server_method()
 {
-    return new SSL_METHOD(server_end);
+    return new SSL_METHOD(server_end, ProtocolVersion(3,0));
 }
 
 
-SSL_METHOD *SSLv3_client_method(void)
+SSL_METHOD* SSLv3_client_method()
 {
-    return new SSL_METHOD;
+    return new SSL_METHOD(client_end, ProtocolVersion(3,0));
 }
 
 
-SSL_METHOD *TLSv1_server_method(void)
+SSL_METHOD* TLSv1_server_method()
 {
     // TODO: undo rollback support
-    return new SSL_METHOD(server_end);
+    return new SSL_METHOD(server_end, ProtocolVersion(3,1));
 }
 
 
-SSL_METHOD *TLSv1_client_method(void)
+SSL_METHOD* TLSv1_client_method()
 {
     // TODO: undo rollback support
-    return new SSL_METHOD;
+    return new SSL_METHOD(client_end, ProtocolVersion(3,1));
+}
+
+
+SSL_METHOD* SSLv23_server_method()
+{
+    // compatibility only, no version 2 support
+    return SSLv3_server_method();
 }
 
 
@@ -364,6 +428,27 @@ long SSL_CTX_set_tmp_dh(SSL_CTX*, DH*)
 {
     // not implemented yet TODO:
     return SSL_NOT_IMPLEMENTED;
+}
+
+
+char* SSL_alert_type_string_long(int)
+{
+    // TODO:
+    return 0;
+}
+
+
+char* SSL_alert_desc_string_long(int)
+{
+    // TODO:
+    return 0;
+}
+
+
+char* SSL_state_string_long(SSL*)
+{
+    // TODO:
+    return 0;
 }
 
 
@@ -549,7 +634,114 @@ int SSL_get_verify_depth(SSL*)
 }
 
 
-void OpenSSL_add_all_algorithms(void)  // compatibility only
+void SSL_CTX_set_tmp_rsa_callback(SSL_CTX*, RSA*(*)(SSL*, int, int))
+{
+    // TDOD:
+}
+
+
+long SSL_CTX_set_options(SSL_CTX*, long)
+{
+    // TDOD:
+    return SSL_SUCCESS;
+}
+
+
+long SSL_CTX_set_session_cache_mode(SSL_CTX*, long)
+{
+    // TDOD:
+    return SSL_SUCCESS;
+}
+
+
+long SSL_CTX_set_timeout(SSL_CTX*, long)
+{
+    // TDOD:
+    return SSL_SUCCESS;
+}
+
+
+int SSL_CTX_use_certificate_chain_file(SSL_CTX*, const char*)
+{
+    // TDOD:
+    return SSL_SUCCESS;
+}
+
+
+void SSL_CTX_set_default_passwd_cb(SSL_CTX*, pem_password_cb)
+{
+    // TDOD:
+}
+
+
+int SSL_CTX_use_RSAPrivateKey_file(SSL_CTX*, const char*, int)
+{
+    // TDOD:
+    return SSL_SUCCESS;
+}
+
+
+void SSL_CTX_set_info_callback(SSL_CTX*, void (*)())
+{
+    // TDOD:
+}
+
+
+int SSL_set_rfd(SSL*, int)
+{
+    return SSL_SUCCESS; // TODO:
+}
+
+
+int SSL_set_wfd(SSL*, int)
+{
+    return SSL_SUCCESS; // TODO:
+}
+
+
+int SSL_pending(SSL*)
+{
+    return SSL_SUCCESS; // TODO:
+}
+
+
+int SSL_want_read(SSL*)
+{
+    return 0; // TODO:
+}
+
+
+int SSL_want_write(SSL*)
+{
+    return 0; // TODO:
+}
+
+
+void SSL_set_shutdown(SSL*, int)
+{
+    // TODO:
+}
+
+
+SSL_CIPHER* SSL_get_current_cipher(SSL*)
+{
+    // TODO:
+    return 0;
+}
+
+
+char* SSL_CIPHER_description(SSL_CIPHER*, char*, int)
+{
+    // TODO:
+    return 0;
+}
+
+
+void OpenSSL_add_all_algorithms()  // compatibility only
+{
+}
+
+void SSLeay_add_ssl_algorithms()  // compatibility only
 {
 }
 
@@ -617,6 +809,33 @@ char* ERR_error_string(unsigned long err, char* buffer)
     return msg;
 }
 
+void ERR_remove_state(unsigned long)
+{
+    // TODO:
+}
+
+
+int ERR_GET_REASON(int l)
+{
+    return l & 0xfff;
+}
+
+
+unsigned long ERR_peek_error()
+{
+    return 0;  // TODO:
+}
+
+
+unsigned long ERR_get_error()
+{
+    return ERR_peek_error();
+}
+
+
+
+
+
 
 const char* X509_verify_cert_error_string(long /* error */)
 {
@@ -663,3 +882,44 @@ void DES_ede3_cbc_encrypt(const byte* input, byte* output, long length,
 {
     // TODO: cipher input into output with keys and IV
 }
+
+
+void RAND_screen()
+{
+    // TODO:
+}
+
+
+const char* RAND_file_name(char*, size_t)
+{
+    // TODO:
+    return 0;
+}
+
+
+int RAND_write_file(const char*)
+{
+    // TODO:
+    return 0;
+}
+
+
+int RAND_load_file(const char*, long)
+{
+    // TODO:
+    return 0;
+}
+
+
+void RSA_free(RSA*)
+{
+    // TODO:
+}
+
+
+RSA* RSA_generate_key(int, unsigned long, void(*)(int, int, void*), void*)
+{
+    //  TODO:
+    return 0;
+}
+

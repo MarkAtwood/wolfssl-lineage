@@ -292,7 +292,8 @@ private:
 class DiffieHellman  {
 public:
     DiffieHellman(const byte*, unsigned int, const byte*, unsigned int,
-                  const RandomPool& random);
+                  const byte*, unsigned int, const RandomPool& random);
+    DiffieHellman(const char*, const RandomPool&);
     ~DiffieHellman();
 
     DiffieHellman(const DiffieHellman&);  

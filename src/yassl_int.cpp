@@ -198,9 +198,11 @@ void SSL::set_pending(Cipher suite)
         securityParms_.key_size_  = DES_KEY_SZ;
         securityParms_.iv_size_   = DES_IV_SZ;
         securityParms_.cipher_type_ = block;
+        connection_.send_server_key_ = true;    // ephemeral setting
+        connection_.dh_init_needed_  = true;    // read dh parms
         mac_ = new SHA;
         cipher_ = new DES;
-        strncpy(securityParms_.cipher_name_, "DES-CBC-SHA",
+        strncpy(securityParms_.cipher_name_, "EDH-RSA-DES-CBC-SHA",
                 MAX_SUITE_NAME);
         break;
 
@@ -221,9 +223,10 @@ void SSL::set_random(const opaque* random, ConnectionEnd sender)
 
 
 // store client pre master secret
-void SSL::set_preMaster(const opaque* pre)
+void SSL::set_preMaster(const opaque* pre, size_t sz)
 {
-    memcpy(connection_.pre_master_secret_, pre, SECRET_LEN);
+    connection_.AllocSecret(sz);
+    memcpy(connection_.pre_master_secret_, pre, sz);
 }
 
 // store server issued id
@@ -242,33 +245,36 @@ void SSL::set_error(const Error& e)
 
 
 // DeriveKeys and MasterSecret helper sets prefix letters
-static void setPrefix(opaque* sha_input, int i)
+static void setPrefix(output_buffer& sha_input, int i)
 {
+    opaque buffer[8];
+
     switch (i) {
     case 0:
-        memcpy(sha_input, "A", 1);
+        memcpy(buffer, "A", 1);
         break;
     case 1:
-        memcpy(sha_input, "BB", 2);
+        memcpy(buffer, "BB", 2);
         break;
     case 2:
-        memcpy(sha_input, "CCC", 3);
+        memcpy(buffer, "CCC", 3);
         break;
     case 3:
-        memcpy(sha_input, "DDDD", 4);
+        memcpy(buffer, "DDDD", 4);
         break;
     case 4:
-        memcpy(sha_input, "EEEEE", 5);
+        memcpy(buffer, "EEEEE", 5);
         break;
     case 5:
-        memcpy(sha_input, "FFFFFF", 6);
+        memcpy(buffer, "FFFFFF", 6);
         break;
     case 6:
-        memcpy(sha_input, "GGGGGGG", 7);
+        memcpy(buffer, "GGGGGGG", 7);
         break;
     default:
         throw Error("Bad prefix index", prefix_error);
-    }   
+    }  
+    sha_input.write(buffer, i + 1);
 }
 
 
@@ -278,29 +284,30 @@ void SSL::makeMasterSecret()
     if (isTLS())
         makeTLSMasterSecret();
     else {
-        opaque md5_input[SECRET_LEN + SHA_LEN];
-        opaque sha_input[SHA_SECRET_GEN];
         opaque sha_output[SHA_LEN];
+
+        size_t        secretLen = connection_.secret_len_;
+        output_buffer md5_input(secretLen + SHA_LEN);
+        output_buffer sha_input(PREFIX + secretLen + 2 * RAN_LEN);
 
         MD5 md5;
         SHA sha;
 
-        memcpy(md5_input, connection_.pre_master_secret_, SECRET_LEN);
+        md5_input.write(connection_.pre_master_secret_, secretLen);
 
         for (int i = 0; i < MASTER_ROUNDS; ++i) {
+            sha_input.set_current(0);
             setPrefix(sha_input, i);
-            memcpy(&sha_input[i + 1], connection_.pre_master_secret_,
-                   SECRET_LEN);
-            memcpy(&sha_input[SECRET_LEN + i+1], connection_.client_random_,
-                   RAN_LEN);
-            memcpy(&sha_input[SECRET_LEN + RAN_LEN + i+1], 
-                   connection_.server_random_, RAN_LEN);
-            sha.get_digest(sha_output, sha_input,
-                           SHA_SECRET_GEN - PREFIX + i + 1);
+            sha_input.write(connection_.pre_master_secret_, secretLen);
+            sha_input.write(connection_.client_random_, RAN_LEN);
+            sha_input.write(connection_.server_random_, RAN_LEN);
+            sha.get_digest(sha_output, sha_input.get_buffer(),
+                           sha_input.get_size());
 
-            memcpy(&md5_input[SECRET_LEN], sha_output, SHA_LEN);
-            md5.get_digest(&connection_.master_secret_[i * MD5_LEN], md5_input,
-                           sizeof(md5_input));
+            md5_input.set_current(secretLen);
+            md5_input.write(sha_output, SHA_LEN);
+            md5.get_digest(&connection_.master_secret_[i * MD5_LEN],
+                           md5_input.get_buffer(), md5_input.get_size());
         }
         deriveKeys();
     }
@@ -309,13 +316,14 @@ void SSL::makeMasterSecret()
 
 void SSL::makeTLSMasterSecret()
 {
-    opaque seed[SEED_LEN]; 
+    opaque seed[SEED_LEN];
+    size_t secretLen = connection_.secret_len_;
     
     memcpy(seed, connection_.client_random_, RAN_LEN);
     memcpy(&seed[RAN_LEN], connection_.server_random_, RAN_LEN);
 
     PRF(connection_.master_secret_, SECRET_LEN, connection_.pre_master_secret_,
-        SECRET_LEN, master_label, MASTER_LABEL_SZ, seed, SEED_LEN);
+        secretLen, master_label, MASTER_LABEL_SZ, seed, SEED_LEN);
 
     deriveTLSKeys();
 }
@@ -330,28 +338,31 @@ void SSL::deriveKeys()
     int rounds = length / MD5_LEN + ((length % MD5_LEN) ? 1 : 0);
     input_buffer key_data(rounds * MD5_LEN);
 
-    opaque md5_input[SECRET_LEN + SHA_LEN];
-    opaque sha_input[SHA_KEY_GEN];
     opaque sha_output[SHA_LEN];
+
+    //size_t        secretLen = connection_.secret_len_; // NEWTAO master always 48
+    size_t        secretLen = SECRET_LEN;
+    output_buffer md5_input(secretLen + SHA_LEN);
+    output_buffer sha_input(KEY_PREFIX + secretLen + 2 * RAN_LEN);
   
     MD5 md5;
     SHA sha;
 
-    memcpy(md5_input, connection_.master_secret_, SECRET_LEN);
+    md5_input.write(connection_.master_secret_, secretLen);
 
     for (int i = 0; i < rounds; ++i) {
+        sha_input.set_current(0);
         setPrefix(sha_input, i);
-        memcpy(&sha_input[i + 1], connection_.master_secret_,
-               SECRET_LEN);
-        memcpy(&sha_input[SECRET_LEN + i+1], connection_.server_random_,
-               RAN_LEN);
-        memcpy(&sha_input[SECRET_LEN + RAN_LEN + i+1], 
-               connection_.client_random_, RAN_LEN);
-        sha.get_digest(sha_output, sha_input, SHA_KEY_GEN - KEY_PREFIX + i+1);
+        sha_input.write(connection_.master_secret_, secretLen);
+        sha_input.write(connection_.server_random_, RAN_LEN);
+        sha_input.write(connection_.client_random_, RAN_LEN);
+        sha.get_digest(sha_output, sha_input.get_buffer(),
+                       sha_input.get_size());
 
-        memcpy(&md5_input[SECRET_LEN], sha_output, SHA_LEN);
-        md5.get_digest(key_data.get_buffer() + i * MD5_LEN, md5_input,
-                       sizeof(md5_input));
+        md5_input.set_current(secretLen);
+        md5_input.write(sha_output, SHA_LEN);
+        md5.get_digest(key_data.get_buffer() + i * MD5_LEN,
+                       md5_input.get_buffer(), md5_input.get_size());
     }
     storeKeys(key_data.get_buffer());
 }
@@ -359,15 +370,17 @@ void SSL::deriveKeys()
 
 void SSL::deriveTLSKeys()
 {
-    int          length = 0;
+    int length = 2 * securityParms_.hash_size_ + 
+                 2 * securityParms_.key_size_  +
+                 2 * securityParms_.iv_size_;
     opaque       seed[SEED_LEN];
     input_buffer key_data(length);
 
     memcpy(seed, connection_.server_random_, RAN_LEN);
     memcpy(&seed[RAN_LEN], connection_.client_random_, RAN_LEN);
 
-    PRF(key_data.get_buffer(), length, connection_.master_secret_, SECRET_LEN,
-        key_label, KEY_LABEL_SZ, seed, SEED_LEN);
+    PRF(key_data.get_buffer(), length, connection_.master_secret_,
+        SECRET_LEN, key_label, KEY_LABEL_SZ, seed, SEED_LEN);
 
     storeKeys(key_data.get_buffer());
 }
@@ -543,15 +556,20 @@ void SSL::verifyClientState(HandShakeType hsType)
     switch(hsType) {
     case server_hello :
         if (states_.clientState_ != serverNull)
-        order_error();
+            order_error();
         break;
     case certificate :
         if (states_.clientState_ != serverHelloComplete)
-        order_error();
+            order_error();
+        break;
+    case server_key_exchange :
+        if (states_.clientState_ != serverCertComplete)
+            order_error();
         break;
     case server_hello_done :
-        if (states_.clientState_ != serverCertComplete)
-        order_error();
+        if (states_.clientState_ != serverCertComplete &&
+            states_.clientState_ != serverKeyExchangeComplete)
+            order_error();
         break;
     case finished :
         if (states_.clientState_ != serverHelloDoneComplete || 
@@ -603,3 +621,5 @@ void SSL::matchSuite(const opaque* peer, size_t length)
 
     throw Error("No suite match", match_error);
 }
+
+
