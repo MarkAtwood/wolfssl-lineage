@@ -344,7 +344,7 @@ SOURCE=.\bench.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\Makefile
+SOURCE=.\GNUmakefile
 # End Source File
 # Begin Source File
 

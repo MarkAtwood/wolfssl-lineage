@@ -38,7 +38,7 @@ private:
 };
 
 template <class T> XMACC<T>::XMACC(const byte *userKey, word32 counter)
-	: IteratedHash<T::HashWordType, T::HIGHFIRST, T::BLOCKSIZE>(T::DIGESTSIZE)
+	: IteratedHash<HashWordType, T::HIGHFIRST, T::BLOCKSIZE>(T::DIGESTSIZE)
 	, key(KEYLENGTH)
 	, buffer(T::DIGESTSIZE/sizeof(HashWordType))
 	, counter(counter)

@@ -474,10 +474,6 @@ SOURCE=.\xtrcrypt.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\zbits.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\zdeflate.cpp
 # End Source File
 # Begin Source File
@@ -487,10 +483,6 @@ SOURCE=.\zinflate.cpp
 # Begin Source File
 
 SOURCE=.\zlib.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\ztrees.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -898,10 +890,6 @@ SOURCE=.\xtrcrypt.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\zbits.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\zdeflate.h
 # End Source File
 # Begin Source File
@@ -911,10 +899,6 @@ SOURCE=.\zinflate.h
 # Begin Source File
 
 SOURCE=.\zlib.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\ztrees.h
 # End Source File
 # End Group
 # End Target

@@ -172,18 +172,18 @@ protected:
 template <class H>
 class LUCELG_Signer : public SignerTemplate<LUCELG_DigestSigner, H>
 {
-	typedef SignerTemplate<LUCELG_DigestSigner, H> Base;
+	typedef LUCELG_DigestSigner Base;
 public:
 	LUCELG_Signer(const Integer &p, const Integer &q, const Integer &g, const Integer &y, const Integer &x)
-		: Base(LUCELG_DigestSigner(p, q, g, y, x)) {}
+		: Base(p, q, g, y, x) {}
 
 	// generate a random private key
 	LUCELG_Signer(RandomNumberGenerator &rng, unsigned int keybits)
-		: Base(LUCELG_DigestSigner(rng, keybits)) {}
+		: Base(rng, keybits) {}
 
 	// generate a random private key, given p, q, and g
 	LUCELG_Signer(RandomNumberGenerator &rng, const Integer &p, const Integer &q, const Integer &g)
-		: Base(LUCELG_DigestSigner(rng, p, q, g)) {}
+		: Base(rng, p, q, g) {}
 
 	// load a previously generated key
 	LUCELG_Signer(BufferedTransformation &storedKey)
@@ -193,10 +193,10 @@ public:
 template <class H>
 class LUCELG_Verifier : public VerifierTemplate<LUCELG_DigestVerifier, H>
 {
-	typedef VerifierTemplate<LUCELG_DigestVerifier, H> Base;
+	typedef LUCELG_DigestVerifier Base;
 public:
 	LUCELG_Verifier(const Integer &p, const Integer &q, const Integer &g, const Integer &y)
-		: Base(LUCELG_DigestVerifier(p, q, g, y)) {}
+		: Base(p, q, g, y) {}
 
 	// create a matching public key from a private key
 	LUCELG_Verifier(const LUCELG_Signer<H> &priv)

@@ -6,41 +6,36 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 Gzip::Gzip(BufferedTransformation *bt, unsigned int deflateLevel, unsigned int log2WindowSize)
-	: Deflator(bt, deflateLevel, log2WindowSize),
-	  m_totalLen(0)
+	: Deflator(bt, deflateLevel, log2WindowSize)
+	, m_totalLen(0)
+{
+}
+
+void Gzip::WritePrestreamHeader()
 {
 	AttachedTransformation()->Put(MAGIC1);
 	AttachedTransformation()->Put(MAGIC2);
 	AttachedTransformation()->Put(DEFLATED);
 	AttachedTransformation()->Put(0);		// general flag
 	AttachedTransformation()->PutWord32(0);	// time stamp
-	byte extra = (deflateLevel == 1) ? FAST : ((deflateLevel == 9) ? SLOW : 0);
+	byte extra = (GetDeflateLevel() == 1) ? FAST : ((GetDeflateLevel() == 9) ? SLOW : 0);
 	AttachedTransformation()->Put(extra);
 	AttachedTransformation()->Put(GZIP_OS_CODE);
 }
 
-void Gzip::Put(byte inByte)
+void Gzip::ProcessUncompressedData(const byte *inString, unsigned int length)
 {
-	Deflator::Put(inByte);
-	m_crc.Update(&inByte, 1);
-	++m_totalLen;
-}
-
-void Gzip::Put(const byte *inString, unsigned int length)
-{
-	Deflator::Put(inString, length);
 	m_crc.Update(inString, length);
 	m_totalLen += length;
 }
 
-void Gzip::MessageEnd(int propagation)
+void Gzip::WritePoststreamTail()
 {
-	Deflator::MessageEnd(0);
 	SecByteBlock crc(4);
 	m_crc.Final(crc);
 	AttachedTransformation()->Put(crc, 4);
 	AttachedTransformation()->PutWord32(m_totalLen, false);
-	Filter::MessageEnd(propagation);
+	m_totalLen = 0;
 }
 
 // *************************************************************

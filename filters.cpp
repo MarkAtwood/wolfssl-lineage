@@ -7,6 +7,8 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+BitBucket g_bitBucket;
+
 Filter::Filter(BufferedTransformation *outQ)
 	: m_outQueue(outQ ? outQ : new MessageQueue)
 {
@@ -359,7 +361,8 @@ StringSource::StringSource(const byte *string, unsigned int length, bool pumpAll
 		PumpAll();
 }
 
-StringSource::StringSource(const std::string &string, bool pumpAll, BufferedTransformation *outQueue)
+template <class T>
+StringSource::StringSource(const T &string, bool pumpAll, BufferedTransformation *outQueue)
 	: Source(outQueue), m_store(string)
 {
 	if (pumpAll)

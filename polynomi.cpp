@@ -6,9 +6,8 @@
 #include "pch.h"
 #include "polynomi.h"
 
-#include <iostream>
 #include <strstream>
-#include <vector>
+#include <iostream>
 
 NAMESPACE_BEGIN(CryptoPP)
 

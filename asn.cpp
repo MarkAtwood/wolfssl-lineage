@@ -3,7 +3,6 @@
 #include "pch.h"
 #include "asn.h"
 
-#include <strstream>
 #include <iomanip>
 #include <time.h>
 
@@ -313,7 +312,12 @@ void BERGeneralDecoder::CheckByte(byte check)
 void BERGeneralDecoder::MessageEnd(int)
 {
 	m_finished = true;
-	if (!m_definiteLength)
+	if (m_definiteLength)
+	{
+		if (m_length != 0)
+			BERDecodeError();
+	}
+	else
 	{	// remove end-of-content octets
 		word16 i;
 		if (m_inQueue.GetWord16(i) != 2 || i != 0)
@@ -335,7 +339,8 @@ unsigned int BERGeneralDecoder::ReduceLength(unsigned int delta)
 {
 	if (m_definiteLength)
 	{
-		assert(m_length >= delta);
+		if (m_length < delta)
+			BERDecodeError();
 		m_length -= delta;
 	}
 	return delta;

@@ -16,7 +16,7 @@ struct ECPPoint
 	bool operator==(const ECPPoint &t) const
 		{return (identity && t.identity) || (!identity && !t.identity && x==t.x && y==t.y);}
 	bool operator< (const ECPPoint &t) const
-		{return identity ? !t.identity : (t.identity && (x<t.x || (x<=t.x && y<t.y)));}
+		{return identity ? !t.identity : (!t.identity && (x<t.x || (x==t.x && y<t.y)));}
 
 	bool identity;
 	Integer x, y;
@@ -27,15 +27,14 @@ class ECP : public AbstractGroup<ECPPoint>
 public:
 	typedef ModularArithmetic Field;
 	typedef Integer FieldElement;
-
 	typedef ECPPoint Point;
 
 	ECP(const ECP &ecp)
-		: fieldPtr(new Field(ecp.field.GetModulus())), field(*fieldPtr), a(ecp.a), b(ecp.b) {}
+		: m_fieldPtr(new Field(ecp.m_field.GetModulus())), m_field(*m_fieldPtr), m_a(ecp.m_a), m_b(ecp.m_b) {}
 	ECP(const Integer &modulus, const FieldElement &a, const FieldElement &b)
-		: fieldPtr(new Field(modulus)), field(*fieldPtr), a(a.IsNegative() ? modulus+a : a), b(b) {}
+		: m_fieldPtr(new Field(modulus)), m_field(*m_fieldPtr), m_a(a.IsNegative() ? modulus+a : a), m_b(b) {}
 	ECP(const MontgomeryRepresentation &mr, const FieldElement &a, const FieldElement &b)
-		: field(mr), a(a), b(b) {}
+		: m_field(mr), m_a(a), m_b(b) {}
 	// construct from BER encoded parameters
 	// this constructor will decode and extract the the fields fieldID and curve of the sequence ECParameters
 	ECP(BufferedTransformation &bt);
@@ -46,34 +45,41 @@ public:
 	bool Equal(const Point &P, const Point &Q) const;
 	const Point& Zero() const {static const Point zero; return zero;}
 	const Point& Inverse(const Point &P) const;
+	bool InversionIsFast() const {return true;}
 	const Point& Add(const Point &P, const Point &Q) const;
 	const Point& Double(const Point &P) const;
 	Point ScalarMultiply(const Point &P, const Integer &k) const;
-	Point Multiply(const Integer &k, const Point &P) const;
-	Point CascadeMultiply(const Integer &k1, const Point &P, const Integer &k2, const Point &Q) const;
+	Point CascadeScalarMultiply(const Point &P, const Integer &k1, const Point &Q, const Integer &k2) const;
+	void SimultaneousMultiply(Point *results, const Point &base, const Integer *exponents, unsigned int exponentsCount) const;
+
+	Point Multiply(const Integer &k, const Point &P) const
+		{return ScalarMultiply(P, k);}
+	Point CascadeMultiply(const Integer &k1, const Point &P, const Integer &k2, const Point &Q) const
+		{return CascadeScalarMultiply(P, k1, Q, k2);}
 
 	bool ValidateParameters(RandomNumberGenerator &rng) const;
 	bool VerifyPoint(const Point &P) const;
 
 	unsigned int EncodedPointSize(bool compressed = false) const
-		{return 1 + (compressed?1:2)*field.MaxElementByteLength();}
+		{return 1 + (compressed?1:2)*m_field.MaxElementByteLength();}
 	// returns false if point is compressed and not valid (doesn't check if uncompressed)
+	bool DecodePoint(Point &P, BufferedTransformation &bt, unsigned int len) const;
 	bool DecodePoint(Point &P, const byte *encodedPoint, unsigned int len) const;
 	void EncodePoint(byte *encodedPoint, const Point &P, bool compressed = false) const;
 
-	Point BERDecodePoint(BufferedTransformation &bt);
+	Point BERDecodePoint(BufferedTransformation &bt) const;
 	void DEREncodePoint(BufferedTransformation &bt, const Point &P, bool compressed = false) const;
 
-	Integer FieldSize() const {return field.GetModulus();}
-	const Field & GetField() const {return field;}
-	const FieldElement & GetA() const {return a;}
-	const FieldElement & GetB() const {return b;}
+	Integer FieldSize() const {return m_field.GetModulus();}
+	const Field & GetField() const {return m_field;}
+	const FieldElement & GetA() const {return m_a;}
+	const FieldElement & GetB() const {return m_b;}
 
 private:
-	member_ptr<Field> fieldPtr;
-	const Field &field;
-	FieldElement a, b;
-	mutable Point R;
+	member_ptr<Field> m_fieldPtr;
+	const Field &m_field;
+	FieldElement m_a, m_b;
+	mutable Point m_R;
 };
 
 template <class T> class EcPrecomputation;

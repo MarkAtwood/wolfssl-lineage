@@ -69,17 +69,18 @@ public:
 	const Integer& Square(const Integer &a) const
 		{return result1 = a.Squared()%modulus;}
 
-	virtual bool IsUnit(const Integer &a) const
+	bool IsUnit(const Integer &a) const
 		{return Integer::Gcd(a, modulus).IsUnit();}
 
-	const Integer& MultiplicativeInverse(const Integer &a) const;
+	const Integer& MultiplicativeInverse(const Integer &a) const
+		{return result1 = a.InverseMod(modulus);}
 
 	const Integer& Divide(const Integer &a, const Integer &b) const
 		{return Multiply(a, MultiplicativeInverse(b));}
 
-	virtual Integer Exponentiate(const Integer &a, const Integer &e) const;
+	Integer CascadeExponentiate(const Integer &x, const Integer &e1, const Integer &y, const Integer &e2) const;
 
-	virtual Integer CascadeExponentiate(const Integer &x, const Integer &e1, const Integer &y, const Integer &e2) const;
+	void SimultaneousExponentiate(Element *results, const Element &base, const Integer *exponents, unsigned int exponentsCount) const;
 
 	unsigned int MaxElementBitLength() const
 		{return (modulus-1).BitCount();}
@@ -123,11 +124,11 @@ public:
 
 	const Integer& MultiplicativeInverse(const Integer &a) const;
 
-	Integer Exponentiate(const Integer &a, const Integer &e) const
-		{return AbstractRing<Integer>::Exponentiate(a, e);}
-
 	Integer CascadeExponentiate(const Integer &x, const Integer &e1, const Integer &y, const Integer &e2) const
 		{return AbstractRing<Integer>::CascadeExponentiate(x, e1, y, e2);}
+
+	void SimultaneousExponentiate(Element *results, const Element &base, const Integer *exponents, unsigned int exponentsCount) const
+		{AbstractRing<Integer>::SimultaneousExponentiate(results, base, exponents, exponentsCount);}
 
 private:
 	Integer u;

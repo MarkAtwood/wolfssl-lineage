@@ -59,6 +59,9 @@ public:
 		: PublicKeyBaseTemplate<InvertibleRSAFunction>(
 			InvertibleRSAFunction(rng, keybits, eStart)) {}
 
+	RSAPrivateKeyTemplate(const InvertibleRSAFunction &priv)
+		: PublicKeyBaseTemplate<InvertibleRSAFunction>(priv) {}
+
 	RSAPrivateKeyTemplate(BufferedTransformation &bt)
 		: PublicKeyBaseTemplate<InvertibleRSAFunction>(bt) {}
 };
@@ -72,6 +75,9 @@ public:
 
 	RSAPublicKeyTemplate(const V &priv)
 		: PublicKeyBaseTemplate<RSAFunction>(priv.GetTrapdoorFunction()) {}
+
+	RSAPublicKeyTemplate(const RSAFunction &pub)
+		: PublicKeyBaseTemplate<RSAFunction>(pub) {}
 
 	RSAPublicKeyTemplate(BufferedTransformation &bt)
 		: PublicKeyBaseTemplate<RSAFunction>(bt) {}

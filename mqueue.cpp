@@ -35,4 +35,10 @@ unsigned int MessageQueue::CopyMessagesTo(BufferedTransformation &target, unsign
 	return i;
 }
 
+void MessageQueue::swap(MessageQueue &rhs)
+{
+	m_queue.swap(rhs.m_queue);
+	m_lengths.swap(rhs.m_lengths);
+}
+
 NAMESPACE_END

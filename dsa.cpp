@@ -215,27 +215,58 @@ GDSADigestSigner::GDSADigestSigner(RandomNumberGenerator &rng, const Integer &pI
 
 GDSADigestSigner::GDSADigestSigner(BufferedTransformation &bt)
 {
-	BERSequenceDecoder seq(bt);
-	m_p.BERDecode(seq);
-	m_q.BERDecode(seq);
-	m_g.BERDecode(seq);
-	m_y.BERDecode(seq);
-	m_x.BERDecode(seq);
-	seq.MessageEnd();
+	BERSequenceDecoder privateKeyInfo(bt);
+		m_p.BERDecode(privateKeyInfo);
+		if (m_p != Integer::Zero())
+		{
+			// for backwards compatibility
+			m_q.BERDecode(privateKeyInfo);
+			m_g.BERDecode(privateKeyInfo);
+			m_y.BERDecode(privateKeyInfo);
+			m_x.BERDecode(privateKeyInfo);
+		}
+		else
+		{
+			BERSequenceDecoder algorithm(privateKeyInfo);
+				ASN1::id_dsa().BERDecodeAndCheck(algorithm);
+				BERSequenceDecoder parameters(algorithm);
+					m_p.BERDecode(parameters);
+					m_q.BERDecode(parameters);
+					m_g.BERDecode(parameters);
+				parameters.MessageEnd();
+			algorithm.MessageEnd();
+
+			BERGeneralDecoder octetString(privateKeyInfo, OCTET_STRING);
+				m_x.BERDecode(octetString);
+			octetString.MessageEnd();
+		}
+	privateKeyInfo.MessageEnd();
 
 	m_gpc.SetModulusAndBase(m_p, m_g);
+	m_y = m_gpc.Exponentiate(m_x);
 	m_ypc.SetModulusAndBase(m_p, m_y);
 }
 
 void GDSADigestSigner::DEREncode(BufferedTransformation &bt) const
 {
-	DERSequenceEncoder seq(bt);
-	m_p.DEREncode(seq);
-	m_q.DEREncode(seq);
-	m_g.DEREncode(seq);
-	m_y.DEREncode(seq);
-	m_x.DEREncode(seq);
-	seq.MessageEnd();
+	DERSequenceEncoder privateKeyInfo(bt);
+
+		DEREncodeUnsigned<word32>(privateKeyInfo, 0);	// version
+
+		DERSequenceEncoder algorithm(privateKeyInfo);
+			ASN1::id_dsa().DEREncode(algorithm);
+			DERSequenceEncoder parameters(algorithm);
+				m_p.DEREncode(parameters);
+				m_q.DEREncode(parameters);
+				m_g.DEREncode(parameters);
+			parameters.MessageEnd();
+		algorithm.MessageEnd();
+
+		DERGeneralEncoder octetString(privateKeyInfo, OCTET_STRING);
+			m_x.DEREncode(octetString);
+		octetString.MessageEnd();
+
+	privateKeyInfo.MessageEnd();
 }
 
 void GDSADigestSigner::SignDigest(RandomNumberGenerator &rng, const byte *digest, unsigned int digestLen, byte *signature) const

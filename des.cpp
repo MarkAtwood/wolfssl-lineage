@@ -1,4 +1,5 @@
-// des.cpp - modified by Wei Dai from:
+// des.cpp - modified by Wei Dai from Phil Karn's des.c
+// The original code and all modifications are in the public domain.
 
 /*
  * This is a major rewrite of my old public domain DES code written
@@ -18,6 +19,27 @@
 #include "des.h"
 
 NAMESPACE_BEGIN(CryptoPP)
+
+static inline bool CheckParity(byte b)
+{
+	unsigned int a = b ^ (b >> 4);
+	return ((a ^ (a>>1) ^ (a>>2) ^ (a>>3)) & 1) == 1;
+}
+
+bool DES_CheckKeyParityBits(const byte *key)
+{
+	for (unsigned int i=0; i<8; i++)
+		if (!CheckParity(key[i]))
+			return false;
+	return true;
+}
+
+void DES_CorrectKeyParityBits(byte *key)
+{
+	for (unsigned int i=0; i<8; i++)
+		if (!CheckParity(key[i]))
+			key[i] ^= 1;
+}
 
 /* Tables defined in the Data Encryption Standard documents
  * Three of these tables, the initial permutation, the final

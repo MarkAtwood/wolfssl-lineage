@@ -1,11 +1,13 @@
 CXXFLAGS = -O2 -w -pipe
-ARFLAGS = crs
+ARFLAGS = cr
+RANLIB = ranlib
+UNAME = $(shell uname)
 
-ifeq ($(OSTYPE),)	# for DJGPP, where OSTYPE doesn't exist
+ifeq ($(UNAME),)	# for DJGPP, where uname doesn't exist
 CXXFLAGS := $(CXXFLAGS) -mbnu210
 endif
 
-ifeq ($(OSTYPE),solaris)
+ifeq ($(UNAME),SunOS)
 LDLIBS = -lnsl -lsocket
 endif
 
@@ -27,15 +29,16 @@ LIBOBJS = $(filter-out $(TESTOBJS),$(OBJS))
 all: cryptest.exe
 
 clean:
-	$(RM) cryptest.exe libcrypt.a $(LIBOBJS) $(TESTOBJS)
+	$(RM) cryptest.exe libcryptopp.a $(LIBOBJS) $(TESTOBJS)
 
-libcrypt.a: $(LIBOBJS)
+libcryptopp.a: $(LIBOBJS)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJS)
+	$(RANLIB) $@
 
-cryptest.exe: libcrypt.a $(TESTOBJS)
-	$(CXX) -o $@ $(CXXFLAGS) $(TESTOBJS) -L. -lcrypt $(LDFLAGS) $(LDLIBS)
+cryptest.exe: libcryptopp.a $(TESTOBJS)
+	$(CXX) -o $@ $(CXXFLAGS) $(TESTOBJS) -L. -lcryptopp $(LDFLAGS) $(LDLIBS)
 
 .SUFFIXES: .cpp
 
 .cpp.o:
-	$(CXX) -fpermissive $(CXXFLAGS) -c $<
+	$(CXX) $(CXXFLAGS) -c $<

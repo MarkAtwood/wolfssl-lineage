@@ -15,7 +15,9 @@ template <class T> const T& AbstractGroup<T>::Double(const Element &a) const
 
 template <class T> const T& AbstractGroup<T>::Subtract(const Element &a, const Element &b) const
 {
-	return Add(a, Inverse(b));
+	// make copy of a in case Inverse() overwrites it
+	Element a1(a);
+	return Add(a1, Inverse(b));
 }
 
 template <class T> T& AbstractGroup<T>::Accumulate(Element &a, const Element &b) const
@@ -35,7 +37,9 @@ template <class T> const T& AbstractRing<T>::Square(const Element &a) const
 
 template <class T> const T& AbstractRing<T>::Divide(const Element &a, const Element &b) const
 {
-	return Multiply(a, MultiplicativeInverse(b));
+	// make copy of a in case MultiplicativeInverse() overwrites it
+	Element a1(a);
+	return Multiply(a1, MultiplicativeInverse(b));
 }
 
 template <class T> const T& AbstractEuclideanDomain<T>::Mod(const Element &a, const Element &b) const
@@ -89,7 +93,7 @@ template <class T> const QuotientRing<T>::Element& QuotientRing<T>::Multiplicati
 template <class T> T AbstractGroup<T>::ScalarMultiply(const Element &base, const Integer &exponent) const
 {
 	Element result;
-	SimultaneousMultiplication(&result, *this, base, &exponent, &exponent+1);
+	SimultaneousMultiply(&result, base, &exponent, 1);
 	return result;
 }
 
@@ -171,123 +175,141 @@ template <class T> T AbstractGroup<T>::CascadeScalarMultiply(const Element &x, c
 template <class Element, class Iterator> Element GeneralCascadeMultiplication(const AbstractGroup<Element> &group, Iterator begin, Iterator end)
 {
 	if (end-begin == 1)
-		return group.ScalarMultiply((*begin).base, (*begin).exponent);
+		return group.ScalarMultiply(begin->base, begin->exponent);
 	else if (end-begin == 2)
-		return group.CascadeScalarMultiply((*begin).base, (*begin).exponent, (*(begin+1)).base, (*(begin+1)).exponent);
+		return group.CascadeScalarMultiply(begin->base, begin->exponent, (begin+1)->base, (begin+1)->exponent);
 	else
 	{
-		Integer q, r;
+		Integer q, t;
 		Iterator last = end;
 		--last;
 
 		std::make_heap(begin, end);
 		std::pop_heap(begin, end);
 
-		while (!!(*begin).exponent)
+		while (!!begin->exponent)
 		{
-			// (*last).exponent is largest exponent, (*begin).exponent is next largest
-			Integer::Divide(r, q, (*last).exponent, (*begin).exponent);
+			// last->exponent is largest exponent, begin->exponent is next largest
+			t = last->exponent;
+			Integer::Divide(last->exponent, q, t, begin->exponent);
 
 			if (q == Integer::One())
-				group.Accumulate((*begin).base, (*last).base);	// avoid overhead of GeneralizedMultiplication()
+				group.Accumulate(begin->base, last->base);	// avoid overhead of ScalarMultiply()
 			else
-				group.Accumulate((*begin).base, group.ScalarMultiply((*last).base, q));
-
-			(*last).exponent = r;
+				group.Accumulate(begin->base, group.ScalarMultiply(last->base, q));
 
 			std::push_heap(begin, end);
 			std::pop_heap(begin, end);
 		}
 
-		return group.ScalarMultiply((*last).base, (*last).exponent);
+		return group.ScalarMultiply(last->base, last->exponent);
 	}
 }
 
-template <class Element>
 struct WindowSlider
 {
-	bool FindFirstWindow(const AbstractGroup<Element> &group, const Integer &expIn)
+	WindowSlider(const Integer &exp, bool fastNegate, unsigned int windowSizeIn=0)
+		: exp(exp), windowModulus(Integer::One()), windowSize(windowSizeIn), windowBegin(0), fastNegate(fastNegate), firstTime(true), finished(false)
 	{
-		exp = &expIn;
-		expLen = expIn.BitCount();
-		windowSize = expLen <= 17 ? 1 : (expLen <= 24 ? 2 : (expLen <= 70 ? 3 : (expLen <= 197 ? 4 : (expLen <= 539 ? 5 : (expLen <= 1434 ? 6 : 7)))));
-		buckets.resize(1<<(windowSize-1), group.Zero());
-		windowEnd = 0;
-		return FindNextWindow();
-	}
-	bool FindNextWindow()
-	{
-		windowBegin = windowEnd;
-		if (windowBegin >= expLen)
-			return false;
-		const Integer &e = *exp;
-		while (!e.GetBit(windowBegin))
-			windowBegin++;
-		windowEnd = windowBegin+windowSize;
-		nextBucket = 0;
-		for (unsigned int i=windowBegin+1; i<windowEnd; i++)
-			nextBucket |= e.GetBit(i) << (i-windowBegin-1);
-		assert(nextBucket < buckets.size());
-		return true;
+		if (windowSize == 0)
+		{
+			unsigned int expLen = exp.BitCount();
+			windowSize = expLen <= 17 ? 1 : (expLen <= 24 ? 2 : (expLen <= 70 ? 3 : (expLen <= 197 ? 4 : (expLen <= 539 ? 5 : (expLen <= 1434 ? 6 : 7)))));
+		}
+		windowModulus <<= windowSize;
 	}
 
-	std::vector<Element> buckets;
-	const Integer *exp;
-	unsigned int expLen, windowSize, windowBegin, windowEnd, nextBucket;
+	void FindNextWindow()
+	{
+		unsigned int expLen = exp.WordCount() * WORD_BITS;
+		unsigned int skipCount = firstTime ? 0 : windowSize;
+		firstTime = false;
+		while (!exp.GetBit(skipCount))
+		{
+			if (skipCount >= expLen)
+			{
+				finished = true;
+				return;
+			}
+			skipCount++;
+		}
+
+		exp >>= skipCount;
+		windowBegin += skipCount;
+		expWindow = exp % (1 << windowSize);
+
+		if (fastNegate && exp.GetBit(windowSize))
+		{
+			negateNext = true;
+			expWindow = (1 << windowSize) - expWindow;
+			exp += windowModulus;
+		}
+		else
+			negateNext = false;
+	}
+
+	Integer exp, windowModulus;
+	unsigned int windowSize, windowBegin, expWindow;
+	bool fastNegate, negateNext, firstTime, finished;
 };
 
-template <class Element, class Iterator, class ConstIterator>
-void SimultaneousMultiplication(Iterator result, const AbstractGroup<Element> &group, const Element &base, ConstIterator expBegin, ConstIterator expEnd)
+template <class T>
+void AbstractGroup<T>::SimultaneousMultiply(T *results, const T &base, const Integer *expBegin, unsigned int expCount) const
 {
-	unsigned int expCount = std::distance(expBegin, expEnd);
-
-	std::vector<WindowSlider<Element> > exponents(expCount);
+	std::vector<std::vector<Element> > buckets(expCount);
+	std::vector<WindowSlider> exponents;
+	exponents.reserve(expCount);
 	unsigned int i;
 
-	bool notDone = false;
 	for (i=0; i<expCount; i++)
 	{
 		assert(expBegin->NotNegative());
-		notDone = exponents[i].FindFirstWindow(group, *expBegin++) || notDone;
+		exponents.push_back(WindowSlider(*expBegin++, InversionIsFast(), 0));
+		exponents[i].FindNextWindow();
+		buckets[i].resize(1<<(exponents[i].windowSize-1), Zero());
 	}
 
 	unsigned int expBitPosition = 0;
 	Element g = base;
+	bool notDone = true;
+
 	while (notDone)
 	{
 		notDone = false;
 		for (i=0; i<expCount; i++)
 		{
-			if (expBitPosition < exponents[i].expLen && expBitPosition == exponents[i].windowBegin)
+			if (!exponents[i].finished && expBitPosition == exponents[i].windowBegin)
 			{
-				Element &bucket = exponents[i].buckets[exponents[i].nextBucket];
-				group.Accumulate(bucket, g);
+				Element &bucket = buckets[i][exponents[i].expWindow/2];
+				if (exponents[i].negateNext)
+					Accumulate(bucket, Inverse(g));
+				else
+					Accumulate(bucket, g);
 				exponents[i].FindNextWindow();
 			}
-			notDone = notDone || exponents[i].windowBegin < exponents[i].expLen;
+			notDone = notDone || !exponents[i].finished;
 		}
 
 		if (notDone)
 		{
-			g = group.Double(g);
+			g = Double(g);
 			expBitPosition++;
 		}
 	}
 
 	for (i=0; i<expCount; i++)
 	{
-		Element &r = *result++;
-		std::vector<Element> &buckets = exponents[i].buckets;
-		r = buckets[buckets.size()-1];
-		if (buckets.size() > 1)
+		Element &r = *results++;
+		r = buckets[i][buckets[i].size()-1];
+		if (buckets[i].size() > 1)
 		{
-			for (int j = buckets.size()-2; j >= 1; j--)
+			for (int j = buckets[i].size()-2; j >= 1; j--)
 			{
-				group.Accumulate(buckets[j], buckets[j+1]);
-				group.Accumulate(r, buckets[j]);
+				Accumulate(buckets[i][j], buckets[i][j+1]);
+				Accumulate(r, buckets[i][j]);
 			}
-			group.Accumulate(buckets[0], buckets[1]);
-			r = group.Add(group.Double(r), buckets[0]);
+			Accumulate(buckets[i][0], buckets[i][1]);
+			r = Add(Double(r), buckets[i][0]);
 		}
 	}
 }
@@ -295,13 +317,13 @@ void SimultaneousMultiplication(Iterator result, const AbstractGroup<Element> &g
 template <class T> T AbstractRing<T>::Exponentiate(const Element &base, const Integer &exponent) const
 {
 	Element result;
-	SimultaneousMultiplication(&result, MultiplicativeGroup(), base, &exponent, &exponent+1);
+	SimultaneousExponentiate(&result, base, &exponent, 1);
 	return result;
 }
 
 template <class T> T AbstractRing<T>::CascadeExponentiate(const Element &x, const Integer &e1, const Element &y, const Integer &e2) const
 {
-	return MultiplicativeGroup().CascadeScalarMultiply(x, e1, y, e2);
+	return MultiplicativeGroup().AbstractGroup<T>::CascadeScalarMultiply(x, e1, y, e2);
 }
 
 template <class Element, class Iterator> Element GeneralCascadeExponentiation(const AbstractRing<Element> &ring, Iterator begin, Iterator end)
@@ -309,10 +331,10 @@ template <class Element, class Iterator> Element GeneralCascadeExponentiation(co
 	return GeneralCascadeMultiplication<Element>(ring.MultiplicativeGroup(), begin, end);
 }
 
-template <class Element, class Iterator, class ConstIterator>
-void SimultaneousExponentiation(Iterator result, const AbstractRing<Element> &ring, const Element &base, ConstIterator expBegin, ConstIterator expEnd)
+template <class T>
+void AbstractRing<T>::SimultaneousExponentiate(T *results, const T &base, const Integer *exponents, unsigned int expCount) const
 {
-	SimultaneousMultiplication<Element>(result, ring.MultiplicativeGroup(), base, expBegin, expEnd);
+	MultiplicativeGroup().AbstractGroup<T>::SimultaneousMultiply(results, base, exponents, expCount);
 }
 
 NAMESPACE_END

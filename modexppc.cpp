@@ -34,6 +34,7 @@ void ModExpPrecomputation::Load(BufferedTransformation &bt)
 	word32 version;
 	BERDecodeUnsigned<word32>(seq, version, INTEGER, 1, 1);
 	m_ep.m_exponentBase.BERDecode(seq);
+	m_ep.m_windowSize = m_ep.m_exponentBase.BitCount() - 1;
 	m_ep.m_bases.clear();
 	while (!seq.EndReached())
 		m_ep.m_bases.push_back(Integer(seq));

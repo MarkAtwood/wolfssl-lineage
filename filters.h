@@ -229,6 +229,8 @@ public:
 	void Put(const byte *, unsigned int) {}
 };
 
+extern BitBucket g_bitBucket;
+
 class Redirector : public Sink
 {
 public:
@@ -317,19 +319,25 @@ protected:
 	OutputProxy *m_proxy;
 };
 
-class StringSink : public Sink
+template <class T>
+class StringSinkTemplate : public Sink
 {
 public:
-	StringSink(std::string &output)
-		: m_output(output) {}
+	// VC60 workaround: no T::char_type
+	typedef typename T::traits_type::char_type char_type;
+
+	StringSinkTemplate(T &output)
+		: m_output(output) {assert(sizeof(output[0])==1);}
 	void Put(byte b)
-		{m_output += b;}
+		{m_output += (char_type)b;}
 	void Put(const byte *str, unsigned int bc)
-		{m_output.append((const char *)str, bc);}
+		{m_output.append((const char_type *)str, bc);}
 
 private:	
-	std::string &m_output;
+	T &m_output;
 };
+
+typedef StringSinkTemplate<std::string> StringSink;
 
 class ArraySink : public Sink
 {
@@ -422,8 +430,8 @@ public:
 		: m_store((const byte *)string), m_length(strlen(string)), m_count(0) {}
 	StringStore(const byte *string, unsigned int length)
 		: m_store(string), m_length(length), m_count(0) {}
-	StringStore(const std::string &string)
-		: m_store((const byte *)string.data()), m_length(string.length()), m_count(0) {}
+	template <class T> StringStore(const T &string)
+		: m_store((const byte *)string.data()), m_length(string.length()), m_count(0) {assert(sizeof(string[0])==1);}
 
 	unsigned long TransferTo(BufferedTransformation &target, unsigned long transferMax=ULONG_MAX);
 	unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax=ULONG_MAX) const;
@@ -488,7 +496,7 @@ class StringSource : public Source
 public:
 	StringSource(const char *string, bool pumpAll, BufferedTransformation *outQueue = NULL);
 	StringSource(const byte *string, unsigned int length, bool pumpAll, BufferedTransformation *outQueue = NULL);
-	StringSource(const std::string &string, bool pumpAll, BufferedTransformation *outQueue = NULL);
+	template <class T> StringSource(const T &string, bool pumpAll, BufferedTransformation *outQueue = NULL);
 
 	unsigned long Pump(unsigned long pumpMax=ULONG_MAX)
 		{return m_store.TransferTo(*AttachedTransformation(), pumpMax);}

@@ -4,6 +4,7 @@
 #define CRYPTOPP_QUEUE_H
 
 #include "cryptlib.h"
+#include <algorithm>
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -117,7 +118,7 @@ private:
 NAMESPACE_END
 
 NAMESPACE_BEGIN(std)
-inline void swap(CryptoPP::ByteQueue &a, CryptoPP::ByteQueue &b)
+template<> inline void swap(CryptoPP::ByteQueue &a, CryptoPP::ByteQueue &b)
 {
 	a.swap(b);
 }

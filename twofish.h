@@ -12,19 +12,18 @@ public:
 	enum {KEYLENGTH=16, BLOCKSIZE=16};
 	unsigned int BlockSize() const {return BLOCKSIZE;}
 	static unsigned int KeyLength(unsigned int keylength)
-		{return keylength <= 16 ? 16 : (keylength <= 24 ? 24 : 32);}
+		{return STDMIN(keylength, 32U);}
 
 protected:
 	Twofish(const byte *userKey, unsigned int keylength);
-	word32 h_fun(const word32 x, const word32 key[]);
-	void gen_mk_tab(word32 key[]);
+	static word32 h0(word32 x, const word32 *key, unsigned int kLen);
+	static word32 h(word32 x, const word32 *key, unsigned int kLen);
 
-	static const byte q_tab[2][256];
-	static const word32 m_tab[4][256];
+	static const byte q[2][256];
+	static const word32 mds[4][256];
 
-	unsigned int k_len;
-	SecBlock<word32> l_key;
-	SecBlock<word32[256]> mk_tab;
+	SecBlock<word32> m_k;
+	SecBlock<word32[256]> m_s;
 };
 
 class TwofishEncryption : public Twofish

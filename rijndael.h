@@ -17,14 +17,22 @@ public:
 protected:
 	Rijndael(const byte *userKey, unsigned int keylength);
 
-	static const byte sbx_tab[256];
-	static const byte isb_tab[256];
-	static const word32 rco_tab[10];
-	static const word32 ft_tab[4][256];
-	static const word32 it_tab[4][256];
+	static const word32 Te0[256];
+	static const word32 Te1[256];
+	static const word32 Te2[256];
+	static const word32 Te3[256];
+	static const word32 Te4[256];
 
-	word32 k_len;
-	SecBlock<word32> key;
+	static const word32 Td0[256];
+	static const word32 Td1[256];
+	static const word32 Td2[256];
+	static const word32 Td3[256];
+	static const word32 Td4[256];
+
+	static const word32 rcon[];
+
+	unsigned int m_rounds;
+	SecBlock<word32> m_key;
 };
 
 class RijndaelEncryption : public Rijndael

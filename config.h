@@ -4,7 +4,7 @@
 // ***************** Important Settings ********************
 
 // define this if running on a big-endian CPU
-#if defined(__sparc__) || defined(__hppa__) || defined(__ppc__) || (defined(__MWERKS__) && !defined(__INTEL__))
+#if defined(__sparc__) || defined(__hppa__) || defined(__ppc__) || defined(__mips__) || (defined(__MWERKS__) && !defined(__INTEL__))
 #define IS_BIG_ENDIAN
 #endif
 
@@ -19,7 +19,7 @@
 // #define NO_OS_DEPENDENCE
 
 // Define this to use features provided by Microsoft's CryptoAPI.
-// Current the only feature used is random number generation.
+// Currently the only feature used is random number generation.
 // This macro will be ignored if NO_OS_DEPENDENCE is defined.
 #define USE_MS_CRYPTOAPI
 
@@ -46,12 +46,6 @@
 #define SECALLOC_DEFAULT
 
 #define GZIP_OS_CODE 0
-
-// how much memory to use for deflation (compression)
-// note 16 bit compilers don't work with BIG_MEM (pointer wraps around segment boundary)
-// #define SMALL_MEM
-#define MEDIUM_MEM
-// #define BIG_MEM
 
 // Try this if your CPU has 256K internal cache or a slow multiply instruction
 // and you want a (possibly) faster IDEA implementation using log tables

@@ -1,5 +1,5 @@
-// md5.cpp - modified by Wei Dai from Eric Young's md5_dgst.c
-// Copyright 1995 by Eric Young <eay@cryptsoft.com>.  Distributed with permission.
+// md5.cpp - modified by Wei Dai from Colin Plumb's public domain md5.c
+// any modifications are placed in the public domain
 
 #include "pch.h"
 #include "md5.h"
@@ -14,103 +14,96 @@ void MD5::Init()
 	digest[3] = 0x10325476L;
 }
 
-void MD5::Transform (word32 *digest, const word32 *X)
+void MD5::Transform (word32 *digest, const word32 *in)
 {
-// #define	F(x,y,z)	((x & y)  |  (~x & z))
-#define F(x,y,z)    (z ^ (x & (y^z)))
-// #define	G(x,y,z)	((x & z)  |  (y & ~z))
-#define G(x,y,z)    (y ^ (z & (x^y)))
-#define	H(x,y,z)	(x ^ y ^ z)
-#define	I(x,y,z)	(y  ^  (x | ~z))
+// #define F1(x, y, z) (x & y | ~x & z)
+#define F1(x, y, z) (z ^ (x & (y ^ z)))
+#define F2(x, y, z) F1(z, x, y)
+#define F3(x, y, z) (x ^ y ^ z)
+#define F4(x, y, z) (y ^ (x | ~z))
 
+#define MD5STEP(f, w, x, y, z, data, s) \
+	w = rotlFixed(w + f(x, y, z) + data, s) + x
 
-#define Subround(f,a,b,c,d,k,s,t)			\
-{											\
-	a += (k + t + f(b,c,d));				\
-	a = rotlFixed(word32(a), (unsigned int)(s));	\
-	a += b;									\
-}
+    word32 a, b, c, d;
 
-	unsigned long A,B,C,D;
+	a=digest[0];
+	b=digest[1];
+	c=digest[2];
+	d=digest[3];
 
-	A=digest[0];
-	B=digest[1];
-	C=digest[2];
-	D=digest[3];
+    MD5STEP(F1, a, b, c, d, in[0] + 0xd76aa478, 7);
+    MD5STEP(F1, d, a, b, c, in[1] + 0xe8c7b756, 12);
+    MD5STEP(F1, c, d, a, b, in[2] + 0x242070db, 17);
+    MD5STEP(F1, b, c, d, a, in[3] + 0xc1bdceee, 22);
+    MD5STEP(F1, a, b, c, d, in[4] + 0xf57c0faf, 7);
+    MD5STEP(F1, d, a, b, c, in[5] + 0x4787c62a, 12);
+    MD5STEP(F1, c, d, a, b, in[6] + 0xa8304613, 17);
+    MD5STEP(F1, b, c, d, a, in[7] + 0xfd469501, 22);
+    MD5STEP(F1, a, b, c, d, in[8] + 0x698098d8, 7);
+    MD5STEP(F1, d, a, b, c, in[9] + 0x8b44f7af, 12);
+    MD5STEP(F1, c, d, a, b, in[10] + 0xffff5bb1, 17);
+    MD5STEP(F1, b, c, d, a, in[11] + 0x895cd7be, 22);
+    MD5STEP(F1, a, b, c, d, in[12] + 0x6b901122, 7);
+    MD5STEP(F1, d, a, b, c, in[13] + 0xfd987193, 12);
+    MD5STEP(F1, c, d, a, b, in[14] + 0xa679438e, 17);
+    MD5STEP(F1, b, c, d, a, in[15] + 0x49b40821, 22);
 
-	/* Round 0 */
-	Subround(F,A,B,C,D,X[ 0], 7,0xd76aa478);
-	Subround(F,D,A,B,C,X[ 1],12,0xe8c7b756);
-	Subround(F,C,D,A,B,X[ 2],17,0x242070db);
-	Subround(F,B,C,D,A,X[ 3],22,0xc1bdceee);
-	Subround(F,A,B,C,D,X[ 4], 7,0xf57c0faf);
-	Subround(F,D,A,B,C,X[ 5],12,0x4787c62a);
-	Subround(F,C,D,A,B,X[ 6],17,0xa8304613);
-	Subround(F,B,C,D,A,X[ 7],22,0xfd469501);
-	Subround(F,A,B,C,D,X[ 8], 7,0x698098d8);
-	Subround(F,D,A,B,C,X[ 9],12,0x8b44f7af);
-	Subround(F,C,D,A,B,X[10],17,0xffff5bb1);
-	Subround(F,B,C,D,A,X[11],22,0x895cd7be);
-	Subround(F,A,B,C,D,X[12], 7,0x6b901122);
-	Subround(F,D,A,B,C,X[13],12,0xfd987193);
-	Subround(F,C,D,A,B,X[14],17,0xa679438e);
-	Subround(F,B,C,D,A,X[15],22,0x49b40821);
-	/* Round 1 */
-	Subround(G,A,B,C,D,X[ 1], 5,0xf61e2562);
-	Subround(G,D,A,B,C,X[ 6], 9,0xc040b340);
-	Subround(G,C,D,A,B,X[11],14,0x265e5a51);
-	Subround(G,B,C,D,A,X[ 0],20,0xe9b6c7aa);
-	Subround(G,A,B,C,D,X[ 5], 5,0xd62f105d);
-	Subround(G,D,A,B,C,X[10], 9,0x02441453);
-	Subround(G,C,D,A,B,X[15],14,0xd8a1e681);
-	Subround(G,B,C,D,A,X[ 4],20,0xe7d3fbc8);
-	Subround(G,A,B,C,D,X[ 9], 5,0x21e1cde6);
-	Subround(G,D,A,B,C,X[14], 9,0xc33707d6);
-	Subround(G,C,D,A,B,X[ 3],14,0xf4d50d87);
-	Subround(G,B,C,D,A,X[ 8],20,0x455a14ed);
-	Subround(G,A,B,C,D,X[13], 5,0xa9e3e905);
-	Subround(G,D,A,B,C,X[ 2], 9,0xfcefa3f8);
-	Subround(G,C,D,A,B,X[ 7],14,0x676f02d9);
-	Subround(G,B,C,D,A,X[12],20,0x8d2a4c8a);
-	/* Round 2 */
-	Subround(H,A,B,C,D,X[ 5], 4,0xfffa3942);
-	Subround(H,D,A,B,C,X[ 8],11,0x8771f681);
-	Subround(H,C,D,A,B,X[11],16,0x6d9d6122);
-	Subround(H,B,C,D,A,X[14],23,0xfde5380c);
-	Subround(H,A,B,C,D,X[ 1], 4,0xa4beea44);
-	Subround(H,D,A,B,C,X[ 4],11,0x4bdecfa9);
-	Subround(H,C,D,A,B,X[ 7],16,0xf6bb4b60);
-	Subround(H,B,C,D,A,X[10],23,0xbebfbc70);
-	Subround(H,A,B,C,D,X[13], 4,0x289b7ec6);
-	Subround(H,D,A,B,C,X[ 0],11,0xeaa127fa);
-	Subround(H,C,D,A,B,X[ 3],16,0xd4ef3085);
-	Subround(H,B,C,D,A,X[ 6],23,0x04881d05);
-	Subround(H,A,B,C,D,X[ 9], 4,0xd9d4d039);
-	Subround(H,D,A,B,C,X[12],11,0xe6db99e5);
-	Subround(H,C,D,A,B,X[15],16,0x1fa27cf8);
-	Subround(H,B,C,D,A,X[ 2],23,0xc4ac5665);
-	/* Round 3 */
-	Subround(I,A,B,C,D,X[ 0], 6,0xf4292244);
-	Subround(I,D,A,B,C,X[ 7],10,0x432aff97);
-	Subround(I,C,D,A,B,X[14],15,0xab9423a7);
-	Subround(I,B,C,D,A,X[ 5],21,0xfc93a039);
-	Subround(I,A,B,C,D,X[12], 6,0x655b59c3);
-	Subround(I,D,A,B,C,X[ 3],10,0x8f0ccc92);
-	Subround(I,C,D,A,B,X[10],15,0xffeff47d);
-	Subround(I,B,C,D,A,X[ 1],21,0x85845dd1);
-	Subround(I,A,B,C,D,X[ 8], 6,0x6fa87e4f);
-	Subround(I,D,A,B,C,X[15],10,0xfe2ce6e0);
-	Subround(I,C,D,A,B,X[ 6],15,0xa3014314);
-	Subround(I,B,C,D,A,X[13],21,0x4e0811a1);
-	Subround(I,A,B,C,D,X[ 4], 6,0xf7537e82);
-	Subround(I,D,A,B,C,X[11],10,0xbd3af235);
-	Subround(I,C,D,A,B,X[ 2],15,0x2ad7d2bb);
-	Subround(I,B,C,D,A,X[ 9],21,0xeb86d391);
+    MD5STEP(F2, a, b, c, d, in[1] + 0xf61e2562, 5);
+    MD5STEP(F2, d, a, b, c, in[6] + 0xc040b340, 9);
+    MD5STEP(F2, c, d, a, b, in[11] + 0x265e5a51, 14);
+    MD5STEP(F2, b, c, d, a, in[0] + 0xe9b6c7aa, 20);
+    MD5STEP(F2, a, b, c, d, in[5] + 0xd62f105d, 5);
+    MD5STEP(F2, d, a, b, c, in[10] + 0x02441453, 9);
+    MD5STEP(F2, c, d, a, b, in[15] + 0xd8a1e681, 14);
+    MD5STEP(F2, b, c, d, a, in[4] + 0xe7d3fbc8, 20);
+    MD5STEP(F2, a, b, c, d, in[9] + 0x21e1cde6, 5);
+    MD5STEP(F2, d, a, b, c, in[14] + 0xc33707d6, 9);
+    MD5STEP(F2, c, d, a, b, in[3] + 0xf4d50d87, 14);
+    MD5STEP(F2, b, c, d, a, in[8] + 0x455a14ed, 20);
+    MD5STEP(F2, a, b, c, d, in[13] + 0xa9e3e905, 5);
+    MD5STEP(F2, d, a, b, c, in[2] + 0xfcefa3f8, 9);
+    MD5STEP(F2, c, d, a, b, in[7] + 0x676f02d9, 14);
+    MD5STEP(F2, b, c, d, a, in[12] + 0x8d2a4c8a, 20);
 
-	digest[0]+=A;
-	digest[1]+=B;
-	digest[2]+=C;
-	digest[3]+=D;
+    MD5STEP(F3, a, b, c, d, in[5] + 0xfffa3942, 4);
+    MD5STEP(F3, d, a, b, c, in[8] + 0x8771f681, 11);
+    MD5STEP(F3, c, d, a, b, in[11] + 0x6d9d6122, 16);
+    MD5STEP(F3, b, c, d, a, in[14] + 0xfde5380c, 23);
+    MD5STEP(F3, a, b, c, d, in[1] + 0xa4beea44, 4);
+    MD5STEP(F3, d, a, b, c, in[4] + 0x4bdecfa9, 11);
+    MD5STEP(F3, c, d, a, b, in[7] + 0xf6bb4b60, 16);
+    MD5STEP(F3, b, c, d, a, in[10] + 0xbebfbc70, 23);
+    MD5STEP(F3, a, b, c, d, in[13] + 0x289b7ec6, 4);
+    MD5STEP(F3, d, a, b, c, in[0] + 0xeaa127fa, 11);
+    MD5STEP(F3, c, d, a, b, in[3] + 0xd4ef3085, 16);
+    MD5STEP(F3, b, c, d, a, in[6] + 0x04881d05, 23);
+    MD5STEP(F3, a, b, c, d, in[9] + 0xd9d4d039, 4);
+    MD5STEP(F3, d, a, b, c, in[12] + 0xe6db99e5, 11);
+    MD5STEP(F3, c, d, a, b, in[15] + 0x1fa27cf8, 16);
+    MD5STEP(F3, b, c, d, a, in[2] + 0xc4ac5665, 23);
+
+    MD5STEP(F4, a, b, c, d, in[0] + 0xf4292244, 6);
+    MD5STEP(F4, d, a, b, c, in[7] + 0x432aff97, 10);
+    MD5STEP(F4, c, d, a, b, in[14] + 0xab9423a7, 15);
+    MD5STEP(F4, b, c, d, a, in[5] + 0xfc93a039, 21);
+    MD5STEP(F4, a, b, c, d, in[12] + 0x655b59c3, 6);
+    MD5STEP(F4, d, a, b, c, in[3] + 0x8f0ccc92, 10);
+    MD5STEP(F4, c, d, a, b, in[10] + 0xffeff47d, 15);
+    MD5STEP(F4, b, c, d, a, in[1] + 0x85845dd1, 21);
+    MD5STEP(F4, a, b, c, d, in[8] + 0x6fa87e4f, 6);
+    MD5STEP(F4, d, a, b, c, in[15] + 0xfe2ce6e0, 10);
+    MD5STEP(F4, c, d, a, b, in[6] + 0xa3014314, 15);
+    MD5STEP(F4, b, c, d, a, in[13] + 0x4e0811a1, 21);
+    MD5STEP(F4, a, b, c, d, in[4] + 0xf7537e82, 6);
+    MD5STEP(F4, d, a, b, c, in[11] + 0xbd3af235, 10);
+    MD5STEP(F4, c, d, a, b, in[2] + 0x2ad7d2bb, 15);
+    MD5STEP(F4, b, c, d, a, in[9] + 0xeb86d391, 21);
+
+	digest[0]+=a;
+	digest[1]+=b;
+	digest[2]+=c;
+	digest[3]+=d;
 }
 
 NAMESPACE_END

@@ -6,6 +6,13 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+/* The DES implementation in Crypto++ ignores the parity bits
+   (the least significant bits of each byte) in the key. However
+   you can use these two functions to check or correct the parity
+   bits if you wish. */
+bool DES_CheckKeyParityBits(const byte *key);
+void DES_CorrectKeyParityBits(byte *key);
+
 class DES : public BlockTransformation
 {
 public:

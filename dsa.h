@@ -79,18 +79,18 @@ protected:
 template <class H>
 class GDSASigner : public SignerTemplate<GDSADigestSigner, H>, public PK_WithPrecomputation<PK_Signer>
 {
-	typedef SignerTemplate<GDSADigestSigner, H> Base;
+	typedef GDSADigestSigner Base;
 public:
 	GDSASigner(const Integer &p, const Integer &q, const Integer &g, const Integer &y, const Integer &x)
-		: Base(GDSADigestSigner(p, q, g, y, x)) {}
+		: Base(p, q, g, y, x) {}
 
 	// generate a random private key
 	GDSASigner(RandomNumberGenerator &rng, unsigned int keybits)
-		: Base(GDSADigestSigner(rng, keybits)) {}
+		: Base(rng, keybits) {}
 
 	// generate a random private key, given p, q, and g
 	GDSASigner(RandomNumberGenerator &rng, const Integer &p, const Integer &q, const Integer &g)
-		: Base(GDSADigestSigner(rng, p, q, g)) {}
+		: Base(rng, p, q, g) {}
 
 	// load a previously generated key
 	GDSASigner(BufferedTransformation &storedKey)
@@ -103,10 +103,10 @@ protected:
 template <class H>
 class GDSAVerifier : public VerifierTemplate<GDSADigestVerifier, H>, public PK_WithPrecomputation<PK_Verifier>
 {
-	typedef VerifierTemplate<GDSADigestVerifier, H> Base;
+	typedef GDSADigestVerifier Base;
 public:
 	GDSAVerifier(const Integer &p, const Integer &q, const Integer &g, const Integer &y)
-		: Base(GDSADigestVerifier(p, q, g, y)) {}
+		: Base(p, q, g, y) {}
 
 	// create a matching public key from a private key
 	GDSAVerifier(const GDSASigner<H> &priv)
@@ -133,7 +133,7 @@ class DSAPrivateKey : public GDSASigner<SHA>
 {
 public:
 	DSAPrivateKey(const Integer &p, const Integer &q, const Integer &g, const Integer &y, const Integer &x)
-		: GDSASigner<SHA>(p, q, g, y, x) {}
+		: GDSADigestSigner(p, q, g, y, x) {}
 
 	// generate a random private key
 	// keybits must be between 512 and 1024, and divisible by 64
@@ -141,11 +141,11 @@ public:
 
 	// generate a random private key, given p, q, and g
 	DSAPrivateKey(RandomNumberGenerator &rng, const Integer &p, const Integer &q, const Integer &g)
-		: GDSASigner<SHA>(rng, p, q, g) {}
+		: GDSADigestSigner(rng, p, q, g) {}
 
 	// load a previously generated key
 	DSAPrivateKey(BufferedTransformation &storedKey)
-		: GDSASigner<SHA>(storedKey) {}
+		: GDSADigestSigner(storedKey) {}
 };
 
 typedef GDSAVerifier<SHA> DSAPublicKey;

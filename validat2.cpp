@@ -22,6 +22,7 @@
 #include "rng.h"
 #include "files.h"
 #include "hex.h"
+#include "oids.h"
 
 #include <iostream>
 #include <iomanip>
@@ -448,7 +449,6 @@ bool DSAValidate()
 	}
 	FileSource fs1("dsa1024.dat", true, new HexDecoder());
 	DSAPrivateKey priv(fs1);
-	priv.LoadPrecomputation(fs1);
 	FileSource fs2("dsa1024b.dat", true, new HexDecoder());
 	DSAPublicKey pub(fs2);
 	pass = SignatureValidate(priv, pub) && pass;
@@ -540,25 +540,17 @@ bool ECPValidate()
 {
 	cout << "\nECP validation suite running...\n\n";
 
-	Integer modulus("199999999999999999999999980586675243082581144187569");
-	Integer a("659942,b7261b,249174,c86bd5,e2a65b,45fe07,37d110h");
-	Integer b("3ece7d,09473d,666000,5baef5,d4e00e,30159d,2df49ah");
-	Integer x("25dd61,4c0667,81abc0,fe6c84,fefaa3,858ca6,96d0e8h");
-	Integer y("4e2477,05aab0,b3497f,d62b5e,78a531,446729,6c3fach");
-	Integer r("100000000000000000000000000000000000000000000000151");
-	Integer k(2);
-	Integer d("76572944925670636209790912427415155085360939712345");
-
-	ECP ec(modulus, a, b);
-	ECP::Point P(x, y);
-	P = ec.Multiply(k, P);
-	ECP::Point Q(ec.Multiply(d, P));
-	ECDecryptor<ECP> cpriv(ec, P, r, Q, d);
+	LC_RNG rng(5665);
+	ECDecryptor<ECP> cpriv(rng, ASN1::secp192r1());
 	ECEncryptor<ECP> cpub(cpriv);
-	ECSigner<ECP, SHA> spriv(cpriv);
-	ECVerifier<ECP, SHA> spub(spriv);
-	ECDHC<ECP> ecdhc(ec, P, r, k);
-	ECMQVC<ECP> ecmqvc(ec, P, r, k);
+	ByteQueue bq;
+	cpriv.DEREncode(bq);
+	cpub.SetEncodeAsOID(true);
+	cpub.DEREncode(bq);
+	ECSigner<ECP, SHA> spriv(bq);
+	ECVerifier<ECP, SHA> spub(bq);
+	ECDHC<ECP> ecdhc(ASN1::secp192r1());
+	ECMQVC<ECP> ecmqvc(ASN1::secp192r1());
 
 	spriv.Precompute();
 	ByteQueue queue;
@@ -578,6 +570,16 @@ bool ECPValidate()
 	pass = CryptoSystemValidate(cpriv, cpub) && pass;
 	pass = SimpleKeyAgreementValidate(ecdhc) && pass;
 	pass = AuthenticatedKeyAgreementValidate(ecmqvc) && pass;
+
+	cout << "Testing SEC 2 recommended curves..." << endl;
+	OID oid;
+	while (!(oid = ECParameters<ECP>::GetNextRecommendedParametersOID(oid)).m_values.empty())
+	{
+		ECParameters<ECP> params(oid);
+		bool fail = !params.ValidateParameters(rng);
+		cout << (fail ? "FAILED" : "passed") << "    " << dec << params.GetCurve().GetField().MaxElementBitLength() << " bits" << endl;
+		pass = pass && !fail;
+	}
 
 	return pass;
 }
@@ -586,22 +588,17 @@ bool EC2NValidate()
 {
 	cout << "\nEC2N validation suite running...\n\n";
 
-	Integer r("3805993847215893016155463826195386266397436443");
-	Integer k(12);
-	Integer d("2065729449256706362097909124274151550853609397");
-
-	GF2NT gf2n(155, 62, 0);
-	byte b[]={0x7, 0x33, 0x8f};
-	EC2N ec(gf2n, PolynomialMod2::Zero(), PolynomialMod2(b,3));
-	EC2N::Point P(0x7B, 0x1C8);
-	P = ec.Multiply(k, P);
-	EC2N::Point Q(ec.Multiply(d, P));
-	ECDecryptor<EC2N> cpriv(ec, P, r, Q, d);
+	LC_RNG rng(5667);
+	ECDecryptor<EC2N> cpriv(rng, ASN1::sect193r1());
 	ECEncryptor<EC2N> cpub(cpriv);
-	ECSigner<EC2N, SHA> spriv(cpriv);
-	ECVerifier<EC2N, SHA> spub(spriv);
-	ECDHC<EC2N> ecdhc(ec, P, r, k);
-	ECMQVC<EC2N> ecmqvc(ec, P, r, k);
+	ByteQueue bq;
+	cpriv.DEREncode(bq);
+	cpub.SetEncodeAsOID(true);
+	cpub.DEREncode(bq);
+	ECSigner<EC2N, SHA> spriv(bq);
+	ECVerifier<EC2N, SHA> spub(bq);
+	ECDHC<EC2N> ecdhc(ASN1::sect193r1());
+	ECMQVC<EC2N> ecmqvc(ASN1::sect193r1());
 
 	spriv.Precompute();
 	ByteQueue queue;
@@ -621,6 +618,18 @@ bool EC2NValidate()
 	pass = CryptoSystemValidate(cpriv, cpub) && pass;
 	pass = SimpleKeyAgreementValidate(ecdhc) && pass;
 	pass = AuthenticatedKeyAgreementValidate(ecmqvc) && pass;
+
+#if 0	// TODO: turn this back on when I make EC2N faster for pentanomial basis
+	cout << "Testing SEC 2 recommended curves..." << endl;
+	OID oid;
+	while (!(oid = ECParameters<EC2N>::GetNextRecommendedParametersOID(oid)).m_values.empty())
+	{
+		ECParameters<EC2N> params(oid);
+		bool fail = !params.ValidateParameters(rng);
+		cout << (fail ? "FAILED" : "passed") << "    " << params.GetCurve().GetField().MaxElementBitLength() << " bits" << endl;
+		pass = pass && !fail;
+	}
+#endif
 
 	return pass;
 }

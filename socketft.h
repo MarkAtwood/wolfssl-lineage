@@ -94,6 +94,7 @@ public:
 	bool Connect(const char *addr, unsigned int port);
 	bool Connect(const sockaddr* psa, int saLen);
 	bool Accept(Socket& s, sockaddr *psa=NULL, int *psaLen=NULL);
+	void GetSockName(sockaddr *psa, int *psaLen);
 	unsigned int Send(const byte* buf, unsigned int bufLen, int flags=0);
 	unsigned int Receive(byte* buf, unsigned int bufLen, int flags=0);
 	void ShutDown(int how = SD_SEND);
@@ -106,6 +107,8 @@ public:
 	static unsigned int PortNameToNumber(const char *name, const char *protocol="tcp");
 	// start Windows Sockets 2
 	static void StartSockets();
+	// calls WSACleanup for Windows Sockets
+	static void ShutdownSockets();
 	// returns errno or WSAGetLastError
 	static int GetLastError();
 	// sets errno or calls WSASetLastError
@@ -120,6 +123,14 @@ protected:
 
 	socket_t m_s;
 	bool m_own;
+};
+
+// contributed by Denis Bider
+class SocketsInitializer
+{
+public:
+	SocketsInitializer() {Socket::StartSockets();}
+	~SocketsInitializer() {try {Socket::ShutdownSockets();} catch (...) {}}
 };
 
 class SocketSource : public Socket, public NetworkSource

@@ -271,7 +271,8 @@ unsigned int ByteQueue::Get(byte &outByte)
 
 unsigned int ByteQueue::Get(byte *outString, unsigned int getMax)
 {
-	return TransferTo(ArraySink(outString, getMax), getMax);
+	ArraySink sink(outString, getMax);
+	return TransferTo(sink, getMax);
 }
 
 unsigned int ByteQueue::Peek(byte &outByte) const
@@ -289,12 +290,13 @@ unsigned int ByteQueue::Peek(byte &outByte) const
 
 unsigned int ByteQueue::Peek(byte *outString, unsigned int peekMax) const
 {
-	return CopyTo(ArraySink(outString, peekMax), peekMax);
+	ArraySink sink(outString, peekMax);
+	return CopyTo(sink, peekMax);
 }
 
 unsigned long ByteQueue::Skip(unsigned long skipMax)
 {
-	return TransferTo(BitBucket(), skipMax);
+	return TransferTo(g_bitBucket, skipMax);
 }
 
 unsigned long ByteQueue::TransferTo(BufferedTransformation &target, unsigned long transferMax)
@@ -487,7 +489,7 @@ unsigned long ByteQueue::Walker::TransferTo(BufferedTransformation &target, unsi
 
 unsigned long ByteQueue::Walker::Skip(unsigned long skipMax)
 {
-	return TransferTo(BitBucket(), skipMax);
+	return TransferTo(g_bitBucket, skipMax);
 }
 
 unsigned long ByteQueue::Walker::CopyTo(BufferedTransformation &target, unsigned long copyMax) const

@@ -18,10 +18,11 @@ const word32 CRC32_NEGL = 0xffffffffL;
 class CRC32 : public HashModule
 {
 public:
+	enum {DIGESTSIZE = 4};
 	CRC32();
 	void Update(const byte *input, unsigned int length);
 	void Final(byte *hash);
-	unsigned int DigestSize() const {return 4;}
+	unsigned int DigestSize() const {return DIGESTSIZE;}
 
 	void Reset() {m_crc = CRC32_NEGL;}
 	void UpdateByte(byte b) {m_crc = m_tab[CRC32_INDEX(m_crc) ^ b] ^ CRC32_SHIFTED(m_crc);}

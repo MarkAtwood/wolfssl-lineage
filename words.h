@@ -78,21 +78,23 @@ inline word ShiftWordsRightByBits(word *r, unsigned int n, unsigned int shiftBit
 
 inline void ShiftWordsLeftByWords(word *r, unsigned int n, unsigned int shiftWords)
 {
-	if (n && shiftWords)
+	shiftWords = STDMIN(shiftWords, n);
+	if (shiftWords)
 	{
-		for (unsigned i=n-1; i>=shiftWords; i--)
+		for (unsigned int i=n-1; i>=shiftWords; i--)
 			r[i] = r[i-shiftWords];
-		SetWords(r, 0, STDMIN(n, shiftWords));
+		SetWords(r, 0, shiftWords);
 	}
 }
 
 inline void ShiftWordsRightByWords(word *r, unsigned int n, unsigned int shiftWords)
 {
-	if (n && shiftWords)
+	shiftWords = STDMIN(shiftWords, n);
+	if (shiftWords)
 	{
-		for (unsigned i=0; i<n-shiftWords; i++)
+		for (unsigned int i=0; i+shiftWords<n; i++)
 			r[i] = r[i+shiftWords];
-		SetWords(r+n-shiftWords, 0, STDMIN(n, shiftWords));
+		SetWords(r+n-shiftWords, 0, shiftWords);
 	}
 }
 

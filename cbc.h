@@ -63,17 +63,24 @@ protected:
 
 /** Compatible with RFC 2040.
 	Ciphertext stealing requires at least cipher.BlockSize()+1 bytes of plaintext.
-	Shorter plaintext will be padded with '\0's.
+	Shorter plaintext will be padded with '\0's unless IV stealing is specified.
 */
 class CBC_CTS_Encryptor : protected CipherMode, public FilterWithBufferedInput
 {
 public:
+	// If stealIV == true and length of plaintext < cipher.BlockSize()+1,
+	// IV will be modified, and the modified IV must be used for decryption.
+	// If stealIV == false or using the second constructor,
+	// shorter plaintexts will be padded with '\0's.
+	CBC_CTS_Encryptor(const BlockTransformation &cipher, byte *IV, BufferedTransformation *outQueue, bool stealIV);
 	CBC_CTS_Encryptor(const BlockTransformation &cipher, const byte *IV, BufferedTransformation *outQueue = NULL);
 
 protected:
 	void FirstPut(const byte *inString);
 	void NextPut(const byte *inString, unsigned int length);
 	void LastPut(const byte *inString, unsigned int length);
+
+	byte *m_iv;
 };
 
 class CBC_CTS_Decryptor : protected CipherMode, public FilterWithBufferedInput

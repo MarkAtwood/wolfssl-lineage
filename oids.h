@@ -1,7 +1,7 @@
 #ifndef CRYPTOPP_OIDS_H
 #define CRYPTOPP_OIDS_H
 
-// common ASN.1 object identifiers
+// crypto-related ASN.1 object identifiers
 
 #include "asn.h"
 
@@ -26,10 +26,49 @@ DEFINE_OID(1, iso)
 							DEFINE_OID(id_characteristic_two_basis()+3, ppBasis)
 				DEFINE_OID(ansi_x9_62()+2, id_publicKeyType)
 					DEFINE_OID(id_publicKeyType()+1, id_ecPublicKey)
+				DEFINE_OID(ansi_x9_62()+3, ansi_x9_62_curves)
+					DEFINE_OID(ansi_x9_62_curves()+1, ansi_x9_62_curves_prime)
+						DEFINE_OID(ansi_x9_62_curves_prime()+1, secp192r1)
+						DEFINE_OID(ansi_x9_62_curves_prime()+7, secp256r1)
 			DEFINE_OID(iso_us()+113549, rsadsi)
 				DEFINE_OID(rsadsi()+1, pkcs)
 					DEFINE_OID(pkcs()+1, pkcs_1)
 						DEFINE_OID(pkcs_1()+1, rsaEncryption);
+	DEFINE_OID(iso()+3, identified_organization);
+		DEFINE_OID(identified_organization()+132, certicom);
+			DEFINE_OID(certicom()+0, certicom_ellipticCurve);
+				// these are sorted by curve type and then by OID
+				DEFINE_OID(certicom_ellipticCurve()+6, secp112r1);
+				DEFINE_OID(certicom_ellipticCurve()+7, secp112r2);
+				DEFINE_OID(certicom_ellipticCurve()+8, secp160r1);
+				DEFINE_OID(certicom_ellipticCurve()+9, secp160k1);
+				DEFINE_OID(certicom_ellipticCurve()+10, secp256k1);
+				DEFINE_OID(certicom_ellipticCurve()+28, secp128r1);
+				DEFINE_OID(certicom_ellipticCurve()+29, secp128r2);
+				DEFINE_OID(certicom_ellipticCurve()+30, secp160r2);
+				DEFINE_OID(certicom_ellipticCurve()+31, secp192k1);
+				DEFINE_OID(certicom_ellipticCurve()+32, secp224k1);
+				DEFINE_OID(certicom_ellipticCurve()+33, secp224r1);
+				DEFINE_OID(certicom_ellipticCurve()+34, secp384r1);
+				DEFINE_OID(certicom_ellipticCurve()+35, secp521r1);
+				DEFINE_OID(certicom_ellipticCurve()+1, sect163k1);
+				DEFINE_OID(certicom_ellipticCurve()+2, sect163r1);
+				DEFINE_OID(certicom_ellipticCurve()+3, sect239k1);
+				DEFINE_OID(certicom_ellipticCurve()+4, sect113r1);
+				DEFINE_OID(certicom_ellipticCurve()+5, sect113r2);
+				DEFINE_OID(certicom_ellipticCurve()+15, sect163r2);
+				DEFINE_OID(certicom_ellipticCurve()+16, sect283k1);
+				DEFINE_OID(certicom_ellipticCurve()+17, sect283r1);
+				DEFINE_OID(certicom_ellipticCurve()+22, sect131r1);
+				DEFINE_OID(certicom_ellipticCurve()+23, sect131r2);
+				DEFINE_OID(certicom_ellipticCurve()+24, sect193r1);
+				DEFINE_OID(certicom_ellipticCurve()+25, sect193r2);
+				DEFINE_OID(certicom_ellipticCurve()+26, sect233k1);
+				DEFINE_OID(certicom_ellipticCurve()+27, sect233r1);
+				DEFINE_OID(certicom_ellipticCurve()+36, sect409k1);
+				DEFINE_OID(certicom_ellipticCurve()+37, sect409r1);
+				DEFINE_OID(certicom_ellipticCurve()+38, sect571k1);
+				DEFINE_OID(certicom_ellipticCurve()+39, sect571r1);
 DEFINE_OID(2, joint_iso_ccitt)
 	DEFINE_OID(joint_iso_ccitt()+16, country)
 		DEFINE_OID(country()+840, joint_iso_ccitt_us)

@@ -211,16 +211,14 @@ protected:
 // ********************************************************
 
 template <class S, class H>
-class SignatureSystemBaseTemplate : virtual public PK_SignatureSystem, public S
+class SignatureSystemBaseTemplate : virtual public PK_SignatureSystem, virtual public S
 {
 public:
 	unsigned int SignatureLength() const {return DigestSignatureLength();}
 	HashModule * NewMessageAccumulator() const {return new H;}
 
 protected:
-	SignatureSystemBaseTemplate(const S &s) : S(s) {}
-	SignatureSystemBaseTemplate(BufferedTransformation &bt) : S(bt) {}
-	SignatureSystemBaseTemplate() {}
+	SignatureSystemBaseTemplate() : S(*(S*)0) {}
 };
 
 template <class S, class H>
@@ -231,9 +229,7 @@ public:
 	void Sign(RandomNumberGenerator &rng, HashModule *messageAccumulator, byte *signature) const;
 
 protected:
-	SignerTemplate(const S &s) : SignatureSystemBaseTemplate<S, H>(s) {}
-	SignerTemplate(BufferedTransformation &bt) : SignatureSystemBaseTemplate<S, H>(bt) {}
-	SignerTemplate() {}
+	SignerTemplate() : S(*(S*)0) {}
 };
 
 template <class S, class H>
@@ -244,9 +240,7 @@ public:
 	bool Verify(HashModule *messageAccumulator, const byte *sig) const;
 
 protected:
-	VerifierTemplate(const S &s) : SignatureSystemBaseTemplate<S, H>(s) {}
-	VerifierTemplate(BufferedTransformation &bt) : SignatureSystemBaseTemplate<S, H>(bt) {}
-	VerifierTemplate() {}
+	VerifierTemplate() : S(*(S*)0) {}
 };
 
 template <class S, class H>

@@ -44,8 +44,8 @@ public:
 	typedef FileStore::OpenErr OpenErr;
 	typedef FileStore::ReadErr ReadErr;
 
-	FileSource(std::istream &in, bool pumpAll=false, BufferedTransformation *outQueue = NULL);
-	FileSource(const char *filename, bool pumpAll=false, BufferedTransformation *outQueue = NULL);
+	FileSource(std::istream &in, bool pumpAll, BufferedTransformation *outQueue = NULL);
+	FileSource(const char *filename, bool pumpAll, BufferedTransformation *outQueue = NULL);
 
 	std::istream& GetStream() {return m_store.GetStream();}
 

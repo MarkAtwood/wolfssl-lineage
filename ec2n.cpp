@@ -11,32 +11,39 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 EC2N::EC2N(BufferedTransformation &bt)
-	: field(BERDecodeGF2NP(bt))
+	: m_field(BERDecodeGF2NP(bt))
 {
 	BERSequenceDecoder seq(bt);
-	field->BERDecodeElement(seq, a);
-	field->BERDecodeElement(seq, b);
+	m_field->BERDecodeElement(seq, m_a);
+	m_field->BERDecodeElement(seq, m_b);
 	// skip optional seed
 	if (!seq.EndReached())
-		BERDecodeOctetString(seq, BitBucket());
+		BERDecodeOctetString(seq, g_bitBucket);
 	seq.MessageEnd();
 }
 
 void EC2N::DEREncode(BufferedTransformation &bt) const
 {
-	field->DEREncode(bt);
+	m_field->DEREncode(bt);
 	DERSequenceEncoder seq(bt);
-	field->DEREncodeElement(seq, a);
-	field->DEREncodeElement(seq, b);
+	m_field->DEREncodeElement(seq, m_a);
+	m_field->DEREncodeElement(seq, m_b);
 	seq.MessageEnd();
 }
 
 bool EC2N::DecodePoint(EC2N::Point &P, const byte *encodedPoint, unsigned int encodedPointLen) const
 {
-	if (encodedPointLen < 1)
+	StringStore store(encodedPoint, encodedPointLen);
+	return DecodePoint(P, store, encodedPointLen);
+}
+
+bool EC2N::DecodePoint(EC2N::Point &P, BufferedTransformation &bt, unsigned int encodedPointLen) const
+{
+	byte type;
+	if (encodedPointLen < 1 || !bt.Get(type))
 		return false;
 
-	switch (encodedPoint[0])
+	switch (type)
 	{
 	case 0:
 		P.identity = true;
@@ -48,20 +55,23 @@ bool EC2N::DecodePoint(EC2N::Point &P, const byte *encodedPoint, unsigned int en
 			return false;
 
 		P.identity = false;
-		P.x.Decode(encodedPoint+1, field->MaxElementByteLength()); 
+		P.x.Decode(bt, m_field->MaxElementByteLength()); 
 
 		if (P.x.IsZero())
 		{
-			P.y = field->SquareRoot(P.x);
+			P.y = m_field->SquareRoot(m_b);
 			return true;
 		}
 
-		P.y = field->Square(P.x);
-		FieldElement z = field->Divide(field->Add(field->Multiply(P.y, field->Add(P.x, a)), b), P.y);
-		z = field->SolveQuadraticEquation(z);
-		z.SetCoefficient(0, encodedPoint[0] & 1);
+		FieldElement z = m_field->Square(P.x);
+		assert(P.x == m_field->SquareRoot(z));
+		P.y = m_field->Divide(m_field->Add(m_field->Multiply(z, m_field->Add(P.x, m_a)), m_b), z);
+		assert(P.x == m_field->Subtract(m_field->Divide(m_field->Subtract(m_field->Multiply(P.y, z), m_b), z), m_a));
+		z = m_field->SolveQuadraticEquation(P.y);
+		assert(m_field->Add(m_field->Square(z), z) == P.y);
+		z.SetCoefficient(0, type & 1);
 
-		P.y = field->Multiply(z, P.x);
+		P.y = m_field->Multiply(z, P.x);
 		return true;
 	}
 	case 4:
@@ -69,10 +79,10 @@ bool EC2N::DecodePoint(EC2N::Point &P, const byte *encodedPoint, unsigned int en
 		if (encodedPointLen != EncodedPointSize(false))
 			return false;
 
-		unsigned int len = field->MaxElementByteLength();
+		unsigned int len = m_field->MaxElementByteLength();
 		P.identity = false;
-		P.x.Decode(encodedPoint+1, len);
-		P.y.Decode(encodedPoint+1+len, len);
+		P.x.Decode(bt, len);
+		P.y.Decode(bt, len);
 		return true;
 	}
 	default:
@@ -86,12 +96,12 @@ void EC2N::EncodePoint(byte *encodedPoint, const Point &P, bool compressed) cons
 		memset(encodedPoint, 0, EncodedPointSize(compressed));
 	else if (compressed)
 	{
-		encodedPoint[0] = 2 + (!P.x ? 0 : field->Divide(P.y, P.x).GetBit(0));
-		P.x.Encode(encodedPoint+1, field->MaxElementByteLength());
+		encodedPoint[0] = 2 + (!P.x ? 0 : m_field->Divide(P.y, P.x).GetBit(0));
+		P.x.Encode(encodedPoint+1, m_field->MaxElementByteLength());
 	}
 	else
 	{
-		unsigned int len = field->MaxElementByteLength();
+		unsigned int len = m_field->MaxElementByteLength();
 		encodedPoint[0] = 4;	// uncompressed
 		P.x.Encode(encodedPoint+1, len);
 		P.y.Encode(encodedPoint+1+len, len);
@@ -117,18 +127,18 @@ void EC2N::DEREncodePoint(BufferedTransformation &bt, const Point &P, bool compr
 
 bool EC2N::ValidateParameters(RandomNumberGenerator &rng) const
 {
-	return field->GetModulus().IsIrreducible()
-		&& a.CoefficientCount() <= field->MaxElementBitLength()
-		&& b.CoefficientCount() <= field->MaxElementBitLength() && !!b;
+	return m_field->GetModulus().IsIrreducible()
+		&& m_a.CoefficientCount() <= m_field->MaxElementBitLength()
+		&& m_b.CoefficientCount() <= m_field->MaxElementBitLength() && !!m_b;
 }
 
 bool EC2N::VerifyPoint(const Point &P) const
 {
 	const FieldElement &x = P.x, &y = P.y;
 	return P.identity || 
-		(x.CoefficientCount() <= field->MaxElementBitLength()
-		&& y.CoefficientCount() <= field->MaxElementBitLength()
-		&& !(((x+a)*x*x+b-(x+y)*y)%field->GetModulus()));
+		(x.CoefficientCount() <= m_field->MaxElementBitLength()
+		&& y.CoefficientCount() <= m_field->MaxElementBitLength()
+		&& !(((x+m_a)*x*x+m_b-(x+y)*y)%m_field->GetModulus()));
 }
 
 bool EC2N::Equal(const Point &P, const Point &Q) const
@@ -142,7 +152,7 @@ bool EC2N::Equal(const Point &P, const Point &Q) const
 	if (!P.identity && Q.identity)
 		return false;
 
-	return (field->Equal(P.x,Q.x) && field->Equal(P.y,Q.y));
+	return (m_field->Equal(P.x,Q.x) && m_field->Equal(P.y,Q.y));
 }
 
 const EC2N::Point& EC2N::Inverse(const Point &P) const
@@ -151,10 +161,10 @@ const EC2N::Point& EC2N::Inverse(const Point &P) const
 		return P;
 	else
 	{
-		R.identity = false;
-		R.y = field->Add(P.x, P.y);
-		R.x = P.x;
-		return R;
+		m_R.identity = false;
+		m_R.y = m_field->Add(P.x, P.y);
+		m_R.x = P.x;
+		return m_R;
 	}
 }
 
@@ -163,39 +173,39 @@ const EC2N::Point& EC2N::Add(const Point &P, const Point &Q) const
 	if (P.identity) return Q;
 	if (Q.identity) return P;
 	if (Equal(P, Q)) return Double(P);
-	if (field->Equal(P.x, Q.x) && field->Equal(P.y, field->Add(Q.x, Q.y))) return Zero();
+	if (m_field->Equal(P.x, Q.x) && m_field->Equal(P.y, m_field->Add(Q.x, Q.y))) return Zero();
 
-	FieldElement t = field->Add(P.y, Q.y);
-	t = field->Divide(t, field->Add(P.x, Q.x));
-	FieldElement x = field->Square(t);
-	field->Accumulate(x, t);
-	field->Accumulate(x, Q.x);
-	field->Accumulate(x, a);
-	R.y = field->Add(P.y, field->Multiply(t, x));
-	field->Accumulate(x, P.x);
-	field->Accumulate(R.y, x);
+	FieldElement t = m_field->Add(P.y, Q.y);
+	t = m_field->Divide(t, m_field->Add(P.x, Q.x));
+	FieldElement x = m_field->Square(t);
+	m_field->Accumulate(x, t);
+	m_field->Accumulate(x, Q.x);
+	m_field->Accumulate(x, m_a);
+	m_R.y = m_field->Add(P.y, m_field->Multiply(t, x));
+	m_field->Accumulate(x, P.x);
+	m_field->Accumulate(m_R.y, x);
 
-	R.x.swap(x);
-	R.identity = false;
-	return R;
+	m_R.x.swap(x);
+	m_R.identity = false;
+	return m_R;
 }
 
 const EC2N::Point& EC2N::Double(const Point &P) const
 {
 	if (P.identity) return P;
-	if (!field->IsUnit(P.x)) return Zero();
+	if (!m_field->IsUnit(P.x)) return Zero();
 
-	FieldElement t = field->Divide(P.y, P.x);
-	field->Accumulate(t, P.x);
-	R.y = field->Square(P.x);
-	R.x = field->Square(t);
-	field->Accumulate(R.x, t);
-	field->Accumulate(R.x, a);
-	field->Accumulate(R.y, field->Multiply(t, R.x));
-	field->Accumulate(R.y, R.x);
+	FieldElement t = m_field->Divide(P.y, P.x);
+	m_field->Accumulate(t, P.x);
+	m_R.y = m_field->Square(P.x);
+	m_R.x = m_field->Square(t);
+	m_field->Accumulate(m_R.x, t);
+	m_field->Accumulate(m_R.x, m_a);
+	m_field->Accumulate(m_R.y, m_field->Multiply(t, m_R.x));
+	m_field->Accumulate(m_R.y, m_R.x);
 
-	R.identity = false;
-	return R;
+	m_R.identity = false;
+	return m_R;
 }
 
 // ********************************************************
@@ -225,6 +235,7 @@ void EcPrecomputation<EC2N>::Load(BufferedTransformation &bt)
 	word32 version;
 	BERDecodeUnsigned<word32>(seq, version, INTEGER, 1, 1);
 	m_ep.m_exponentBase.BERDecode(seq);
+	m_ep.m_windowSize = m_ep.m_exponentBase.BitCount() - 1;
 	m_ep.m_bases.clear();
 	while (!seq.EndReached())
 		m_ep.m_bases.push_back(m_ec->BERDecodePoint(seq));

@@ -1,25 +1,33 @@
-// arc2.cpp - this code comes from an anonymous Usenet post
-// any modifications are placed in the public domain by Wei Dai
+// arc4.cpp - written and placed in the public domain by Wei Dai
+
+// The ARC4 algorithm was first revealed in an anonymous email to the
+// cypherpunks mailing list. This file originally contained some
+// code copied from this email. The code has since been rewritten in order
+// to clarify the copyright status of this file. It should now be
+// completely in the public domain.
 
 #include "pch.h"
 #include "arc4.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-ARC4::ARC4(const byte *key_data_ptr, unsigned int key_data_len)
+ARC4::ARC4(const byte *key, unsigned int keyLen)
 	: m_state(256), m_x(0), m_y(0)
 {
-	unsigned int counter;
-	for (counter = 0; counter < 256; counter++)
-		m_state[counter] = (byte) counter;
+	unsigned int i;
+	for (i=0; i<256; i++)
+		m_state[i] = i;
 
-	byte index1 = 0;
-	byte index2 = 0;
-	for (counter = 0; counter < 256; counter++)
+	unsigned int keyIndex = 0, stateIndex = 0;
+	for (i=0; i<256; i++)
 	{
-		index2 = (key_data_ptr[index1++] + m_state[counter] + index2);
-		std::swap(m_state[counter], m_state[index2]);
-		if (index1 >= key_data_len) index1 = 0;
+		unsigned int a = m_state[i];
+		stateIndex += key[keyIndex] + a;
+		stateIndex &= 0xff;
+		m_state[i] = m_state[stateIndex];
+		m_state[stateIndex] = a;
+		if (++keyIndex >= keyLen)
+			keyIndex = 0;
 	}
 }
 
@@ -31,18 +39,18 @@ ARC4::~ARC4()
 
 byte ARC4::GenerateByte()
 {
-	m_x++;
-	m_y += m_state[m_x];
-	std::swap(m_state[m_x], m_state[m_y]);
-	return (m_state[(m_state[m_x] + m_state[m_y]) & 255]);
+	m_x = (m_x+1) & 0xff;
+	unsigned int a = m_state[m_x];
+	m_y = (m_y+a) & 0xff;
+	unsigned int b = m_state[m_y];
+	m_state[m_x] = b;
+	m_state[m_y] = a;
+	return m_state[(a+b) & 0xff];
 }
 
 byte ARC4::ProcessByte(byte input)
 {
-	m_x++;
-	m_y += m_state[m_x];
-	std::swap(m_state[m_x], m_state[m_y]);
-	return input ^ (m_state[(m_state[m_x] + m_state[m_y]) & 255]);
+	return input ^ ARC4::GenerateByte();
 }
 
 void ARC4::ProcessString(byte *outString, const byte *inString, unsigned int length)

@@ -5,16 +5,8 @@
 #ifdef _WIN32
 
 #include "winpipes.h"
-#include <strstream>	// GCC workaround: 2.95.2 doesn't have <sstream>
 
 NAMESPACE_BEGIN(CryptoPP)
-
-static std::string IntToString(int i)
-{
-	std::ostrstream result;
-	result << i << '\x0';
-	return result.str();
-}
 
 WindowsHandle::WindowsHandle(HANDLE h, bool own)
 	: m_h(h), m_own(own)
@@ -35,7 +27,7 @@ WindowsHandle::~WindowsHandle()
 	}
 }
 
-bool WindowsHandle::HandleValid()
+bool WindowsHandle::HandleValid() const
 {
 	return m_h && m_h != INVALID_HANDLE_VALUE;
 }

@@ -438,11 +438,11 @@ inline CryptoPP::PolynomialOverFixedRing<T, instance> operator%(const CryptoPP::
 	{return CryptoPP::PolynomialOverFixedRing<T, instance>(a.Modulo(b, fixedRing));}
 
 NAMESPACE_BEGIN(std)
-template<class T> void swap(CryptoPP::PolynomialOver<T> &a, CryptoPP::PolynomialOver<T> &b)
+template<class T> inline void swap(CryptoPP::PolynomialOver<T> &a, CryptoPP::PolynomialOver<T> &b)
 {
 	a.swap(b);
 }
-template<class T, int i> void swap(CryptoPP::PolynomialOverFixedRing<T,i> &a, CryptoPP::PolynomialOverFixedRing<T,i> &b)
+template<class T, int i> inline void swap(CryptoPP::PolynomialOverFixedRing<T,i> &a, CryptoPP::PolynomialOverFixedRing<T,i> &b)
 {
 	a.swap(b);
 }

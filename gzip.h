@@ -12,13 +12,13 @@ class Gzip : public Deflator
 public:
 	Gzip(BufferedTransformation *outQ=NULL, unsigned int deflateLevel=DEFAULT_DEFLATE_LEVEL, unsigned int log2WindowSize=DEFAULT_LOG2_WINDOW_SIZE);
 
-	void Put(byte inByte);
-	void Put(const byte *inString, unsigned int length);
-	void MessageEnd(int propagate=-1);
-
 protected:
 	enum {MAGIC1=0x1f, MAGIC2=0x8b,   // flags for the header
 		  DEFLATED=8, FAST=4, SLOW=2};
+
+	void WritePrestreamHeader();
+	void ProcessUncompressedData(const byte *string, unsigned int length);
+	void WritePoststreamTail();
 
 	unsigned long m_totalLen;
 	CRC32 m_crc;

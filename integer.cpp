@@ -1348,6 +1348,11 @@ signed long Integer::ConvertToLong() const
 	return sign==POSITIVE ? value : -(signed long)value;
 }
 
+Integer::Integer(BufferedTransformation &encodedInteger, unsigned int byteCount, Signedness s)
+{
+	Decode(encodedInteger, byteCount, s);
+}
+
 Integer::Integer(const byte *encodedInteger, unsigned int byteCount, Signedness s)
 {
 	Decode(encodedInteger, byteCount, s);
@@ -1444,7 +1449,7 @@ void Integer::SetByte(unsigned int n, byte value)
 unsigned long Integer::GetBits(unsigned int i, unsigned int n) const
 {
 	assert(n <= sizeof(unsigned long)*8);
-	unsigned long v;
+	unsigned long v = 0;
 	for (unsigned int j=0; j<n; j++)
 		v |= GetBit(i+j) << j;
 	return v;
@@ -1559,7 +1564,8 @@ unsigned int Integer::BitCount() const
 
 void Integer::Decode(const byte *input, unsigned int inputLen, Signedness s)
 {
-	Decode(StringStore(input, inputLen), inputLen, s);
+	StringStore store(input, inputLen);
+	Decode(store, inputLen, s);
 }
 
 void Integer::Decode(BufferedTransformation &bt, unsigned int inputLen, Signedness s)
@@ -1607,7 +1613,8 @@ unsigned int Integer::MinEncodedSize(Signedness signedness) const
 
 unsigned int Integer::Encode(byte *output, unsigned int outputLen, Signedness signedness) const
 {
-	return Encode(ArraySink(output, outputLen), outputLen);
+	ArraySink sink(output, outputLen);
+	return Encode(sink, outputLen);
 }
 
 unsigned int Integer::Encode(BufferedTransformation &bt, unsigned int outputLen, Signedness signedness) const
@@ -1636,13 +1643,14 @@ void Integer::DEREncode(BufferedTransformation &bt) const
 
 void Integer::BERDecode(const byte *input, unsigned int len)
 {
-	BERDecode(StringStore(input, len));
+	StringStore store(input, len);
+	BERDecode(store);
 }
 
 void Integer::BERDecode(BufferedTransformation &bt)
 {
 	BERGeneralDecoder dec(bt, INTEGER);
-	if (!dec.IsDefiniteLength())
+	if (!dec.IsDefiniteLength() || dec.MaxRetrievable() < dec.RemainingLength())
 		BERDecodeError();
 	Decode(dec, dec.RemainingLength(), SIGNED);
 	dec.MessageEnd();
@@ -1666,7 +1674,8 @@ void Integer::BERDecodeAsOctetString(BufferedTransformation &bt, unsigned int le
 
 unsigned int Integer::OpenPGPEncode(byte *output, unsigned int len) const
 {
-	return OpenPGPEncode(ArraySink(output, len));
+	ArraySink sink(output, len);
+	return OpenPGPEncode(sink);
 }
 
 unsigned int Integer::OpenPGPEncode(BufferedTransformation &bt) const
@@ -1678,7 +1687,8 @@ unsigned int Integer::OpenPGPEncode(BufferedTransformation &bt) const
 
 void Integer::OpenPGPDecode(const byte *input, unsigned int len)
 {
-	OpenPGPDecode(StringStore(input, len));
+	StringStore store(input, len);
+	OpenPGPDecode(store);
 }
 
 void Integer::OpenPGPDecode(BufferedTransformation &bt)
@@ -1831,7 +1841,9 @@ std::ostream& operator<<(std::ostream& out, const Integer &a)
 
 	while (!!temp1)
 	{
-		s[i++]=vec[Integer::ShortDivide(temp2, temp1, base)];
+		word digit;
+		Integer::Divide(digit, temp2, temp1, base);
+		s[i++]=vec[digit];
 		temp1=temp2;
 	}
 
@@ -2149,7 +2161,7 @@ void Integer::Divide(Integer &remainder, Integer &quotient, const Integer &divid
 	if (dividend.IsNegative())
 	{
 		quotient.Negate();
-		if (!!remainder)
+		if (remainder.NotZero())
 		{
 			--quotient;
 			remainder = divisor.AbsoluteValue() - remainder;
@@ -2158,6 +2170,34 @@ void Integer::Divide(Integer &remainder, Integer &quotient, const Integer &divid
 
 	if (divisor.IsNegative())
 		quotient.Negate();
+}
+
+void Integer::DivideByPowerOf2(Integer &r, Integer &q, const Integer &a, unsigned int n)
+{
+	q = a;
+	q >>= n;
+
+	const unsigned int wordCount = bitsToWords(n);
+	if (wordCount <= a.WordCount())
+	{
+		r.reg.Resize(RoundupSize(wordCount));
+		CopyWords(r.reg, a.reg, wordCount);
+		SetWords(r.reg+wordCount, 0, r.reg.size-wordCount);
+		if (n % WORD_BITS != 0)
+			r.reg[wordCount-1] %= (1 << (n % WORD_BITS));
+	}
+	else
+	{
+		r.reg.Resize(RoundupSize(a.WordCount()));
+		CopyWords(r.reg, a.reg, r.reg.size);
+	}
+	r.sign = POSITIVE;
+
+	if (a.IsNegative() && r.NotZero())
+	{
+		--q;
+		r = Power2(n) - r;
+	}
 }
 
 Integer Integer::DividedBy(const Integer &b) const
@@ -2174,7 +2214,7 @@ Integer Integer::Modulo(const Integer &b) const
 	return remainder;
 }
 
-word Integer::ShortDivide(Integer &quotient, const Integer &dividend, word divisor)
+void Integer::Divide(word &remainder, Integer &quotient, const Integer &dividend, word divisor)
 {
 	if (!divisor)
 		throw Integer::DivideByZero();
@@ -2184,12 +2224,13 @@ word Integer::ShortDivide(Integer &quotient, const Integer &dividend, word divis
 	if ((divisor & (divisor-1)) == 0)	// divisor is a power of 2
 	{
 		quotient = dividend >> (BitPrecision(divisor)-1);
-		return dividend.reg[0] & (divisor-1);
+		remainder = dividend.reg[0] & (divisor-1);
+		return;
 	}
 
 	unsigned int i = dividend.WordCount();
 	quotient.reg.CleanNew(RoundupSize(i));
-	word remainder = 0;
+	remainder = 0;
 	while (i--)
 	{
 		quotient.reg[i] = word(MAKE_DWORD(dividend.reg[i], remainder) / divisor);
@@ -2207,14 +2248,13 @@ word Integer::ShortDivide(Integer &quotient, const Integer &dividend, word divis
 			remainder = divisor - remainder;
 		}
 	}
-
-	return remainder;
 }
 
 Integer Integer::DividedBy(word b) const
 {
+	word remainder;
 	Integer quotient;
-	Integer::ShortDivide(quotient, *this, b);
+	Integer::Divide(remainder, quotient, *this, b);
 	return quotient;
 }
 
@@ -2329,16 +2369,8 @@ Integer a_times_b_mod_c(const Integer &x, const Integer& y, const Integer& m)
 
 Integer a_exp_b_mod_c(const Integer &x, const Integer& e, const Integer& m)
 {
-	if (m.IsEven())
-	{
-		ModularArithmetic mr(m);
-		return mr.ConvertOut(mr.Exponentiate(mr.ConvertIn(x), e));
-	}
-	else
-	{
-		MontgomeryRepresentation mr(m);
-		return mr.ConvertOut(mr.Exponentiate(mr.ConvertIn(x), e));
-	}
+	ModularArithmetic mr(m);
+	return mr.Exponentiate(x, e);
 }
 
 Integer Integer::Gcd(const Integer &a, const Integer &b)
@@ -2524,22 +2556,6 @@ const Integer& ModularArithmetic::Inverse(const Integer &a) const
 	return result;
 }
 
-const Integer& ModularArithmetic::MultiplicativeInverse(const Integer &a) const
-{
-	return result1 = a.InverseMod(modulus);
-}
-
-Integer ModularArithmetic::Exponentiate(const Integer &a, const Integer &e) const
-{
-	if (modulus.IsOdd())
-	{
-		MontgomeryRepresentation dr(modulus);
-		return dr.ConvertOut(dr.Exponentiate(dr.ConvertIn(a), e));
-	}
-	else
-		return AbstractRing<Integer>::Exponentiate(a, e);
-}
-
 Integer ModularArithmetic::CascadeExponentiate(const Integer &x, const Integer &e1, const Integer &y, const Integer &e2) const
 {
 	if (modulus.IsOdd())
@@ -2549,6 +2565,19 @@ Integer ModularArithmetic::CascadeExponentiate(const Integer &x, const Integer &
 	}
 	else
 		return AbstractRing<Integer>::CascadeExponentiate(x, e1, y, e2);
+}
+
+void ModularArithmetic::SimultaneousExponentiate(Integer *results, const Integer &base, const Integer *exponents, unsigned int exponentsCount) const
+{
+	if (modulus.IsOdd())
+	{
+		MontgomeryRepresentation dr(modulus);
+		dr.SimultaneousExponentiate(results, dr.ConvertIn(base), exponents, exponentsCount);
+		for (unsigned int i=0; i<exponentsCount; i++)
+			results[i] = dr.ConvertOut(results[i]);
+	}
+	else
+		AbstractRing<Integer>::SimultaneousExponentiate(results, base, exponents, exponentsCount);
 }
 
 MontgomeryRepresentation::MontgomeryRepresentation(const Integer &m)	// modulus must be odd

@@ -1,620 +1,684 @@
-// zdeflate.cpp - modified by Wei Dai from:
-// Distributed with Jean-loup Gailly's permission.
+// zdeflate.cpp - written and placed in the public domain by Wei Dai
 
-/*
- The following sorce code is derived from Info-Zip 'zip' 2.01
- distribution copyrighted by Mark Adler, Richard B. Wales,
- Jean-loup Gailly, Kai Uwe Rommel, Igor Mandrichenko and John Bush.
-*/
-
-/*
- *  deflate.c by Jean-loup Gailly.
- *
- *  PURPOSE
- *
- *      Identify new text as repetitions of old text within a fixed-
- *      length sliding window trailing behind the new text.
- *
- *  DISCUSSION
- *
- *      The "deflation" process depends on being able to identify portions
- *      of the input text which are identical to earlier input (within a
- *      sliding window trailing behind the input currently being processed).
- *
- *      The most straightforward technique turns out to be the fastest for
- *      most input files: try all possible matches and select the longest.
- *      The key feature of this algorithm is that insertions into the string
- *      dictionary are very simple and thus fast, and deletions are avoided
- *      completely. Insertions are performed at each input character, whereas
- *      string matches are performed only when the previous match ends. So it
- *      is preferable to spend more time in matches to allow very fast string
- *      insertions and avoid deletions. The matching algorithm for small
- *      strings is inspired from that of Rabin & Karp. A brute force approach
- *      is used to find longer strings when a small match has been found.
- *      A similar algorithm is used in comic (by Jan-Mark Wams) and freeze
- *      (by Leonid Broukhis).
- *         A previous version of this file used a more sophisticated algorithm
- *      (by Fiala and Greene) which is guaranteed to run in linear amortized
- *      time, but has a larger average cost, uses more memory and is patented.
- *      However the F&G algorithm may be faster for some highly redundant
- *      files if the parameter max_chain_length (described below) is too large.
- *
- *  ACKNOWLEDGEMENTS
- *
- *      The idea of lazy evaluation of matches is due to Jan-Mark Wams, and
- *      I found it in 'freeze' written by Leonid Broukhis.
- *      Thanks to many info-zippers for bug reports and testing.
- *
- *  REFERENCES
- *
- *      APPNOTE.TXT documentation file in PKZIP 1.93a distribution.
- *
- *      A description of the Rabin and Karp algorithm is given in the book
- *         "Algorithms" by R. Sedgewick, Addison-Wesley, p252.
- *
- *      Fiala,E.R., and Greene,D.H.
- *         Data Compression with Finite Windows, Comm.ACM, 32,4 (1989) 490-595
- */
+// Many of the algorithms and tables used here came from the deflate implementation
+// by Jean-loup Gailly, which was included in Crypto++ 4.0 and earlier. I completely
+// rewrote it in order to fix a bug that I could not figure out. This code
+// is less clever, but hopefully more understandable and maintainable.
 
 #include "pch.h"
 #include "zdeflate.h"
-#include <stddef.h>     // for NULL
+#include <functional>
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/* Define this symbol if your target allows access to unaligned data.
- * This is not mandatory, just a speed optimization. The compressed
- * output is strictly identical.
- */
-#ifndef UNALIGNED_OK
-#  ifdef MSDOS
-#   ifndef WIN32
-#    define UNALIGNED_OK
-#   endif
-#  endif
-#  ifdef i386
-#    define UNALIGNED_OK
-#  endif
-#  ifdef mc68020
-#    define UNALIGNED_OK
-#  endif
-#  ifdef vax
-#    define UNALIGNED_OK
-#  endif
-#endif
+using namespace std;
 
-/* Compile with MEDIUM_MEM to reduce the memory requirements or
- * with SMALL_MEM to use as little memory as possible. Use BIG_MEM if the
- * entire input file can be held in memory (not possible on 16 bit systems).
- * Warning: defining these symbols affects HASH_BITS (see below) and thus
- * affects the compression ratio. The compressed output
- * is still correct, and might even be smaller in some cases.
- */
-
-#define H_SHIFT  ((HASH_BITS+MIN_MATCH-1)/MIN_MATCH)
-/* Number of bits by which ins_h and del_h must be shifted at each
- * input step. It must be such that after MIN_MATCH steps, the oldest
- * byte no longer takes part in the hash key, that is:
- *   H_SHIFT * MIN_MATCH >= HASH_BITS */
-
-#define max_insert_length  max_lazy_match
-/* Insert new strings in the hash table only if the match length
- * is not greater than this length. This saves time but degrades compression.
- * max_insert_length is used only for compression levels <= 3. */
-
-/* Values for max_lazy_match, good_match and max_chain_length, depending on
- * the desired pack level (0..9). The values given below have been tuned to
- * exclude worst case performance for pathological files. Better values may
- * be found for specific files. */
-
-const Deflator::config Deflator::configuration_table[10] = {
-/*      good lazy nice chain */
-/* 0 */ {0,    0,  0,    0},  /* store only */
-/* 1 */ {4,    4,  8,    4},  /* maximum speed, no lazy matches */
-/* 2 */ {4,    5, 16,    8},
-/* 3 */ {4,    6, 32,   32},
-
-/* 4 */ {4,    4, 16,   16},  /* lazy matches */
-/* 5 */ {8,   16, 32,   32},
-/* 6 */ {8,   16, 128, 128},
-/* 7 */ {8,   32, 128, 256},
-/* 8 */ {32, 128, 258, 1024},
-/* 9 */ {32, 258, 258, 4096}}; /* maximum compression */
-
-/* Note: the deflate() code requires max_lazy >= MIN_MATCH and max_chain >= 4
- * For deflate_fast() (levels <= 3) good is ignored and lazy has a different
- * meaning. */
-
-/* Update a hash value with the given input byte
- * IN  assertion: all calls to to UPDATE_HASH are made with consecutive
- *    input characters, so that a running hash key can be computed from the
- *    previous key instead of complete recalculation each time. */
-#define UPDATE_HASH(h,c) (h = (((h)<<H_SHIFT) ^ (c)) & HASH_MASK)
-
-/* Insert string s in the dictionary and set match_head to the previous head
- * of the hash chain (the most recent string with same hash key). Return
- * the previous length of the hash chain.
- * IN  assertion: all calls to to INSERT_STRING are made with consecutive
- *    input characters and the first MIN_MATCH bytes of s are valid
- *    (except for the last MIN_MATCH-1 bytes of the input file). */
-#define INSERT_STRING(s, match_head) \
-   (UPDATE_HASH(ins_h, window[(s) + MIN_MATCH-1]), \
-	prev[(s) & WMASK] = match_head = head[ins_h], \
-	head[ins_h] = (s))
-
-void Deflator::init_hash()
+LowFirstBitWriter::LowFirstBitWriter(BufferedTransformation *outQ)
+	: Filter(outQ), m_counting(false), m_buffer(0), m_bitsBuffered(0)
+	, m_bytesBuffered(0), m_outputBuffer(256)
 {
-   register unsigned j;
-
-   for (ins_h=0, j=0; j<MIN_MATCH-1; j++) UPDATE_HASH(ins_h, window[j]);
-   /* If lookahead < MIN_MATCH, ins_h is garbage, but this is
-	  not important since only literal bytes will be emitted. */
 }
 
-/* Initialize the "longest match" routines for a new file */
-Deflator::Deflator(BufferedTransformation *outQ, unsigned int deflateLevel, unsigned int log2WindowSize)
-	: CodeTree(outQ, deflateLevel, log2WindowSize)
-	, HASH_BITS(log2WindowSize), HASH_SIZE(1<<HASH_BITS), HASH_MASK(HASH_SIZE-1)
-	, WINDOW_SIZE(2*WSIZE), WMASK(WSIZE-1)
-	, window(WINDOW_SIZE), prev(WSIZE), head(HASH_SIZE), m_eof(false)
+void LowFirstBitWriter::StartCounting()
 {
-   match_available = 0;
-   match_length = MIN_MATCH-1;
-   /* Initialize the hash table (avoiding 64K overflow for 16 bit systems).
-	* prev[] will be initialized on the fly. */
-	memset(head, NIL, HASH_SIZE*sizeof(*head.ptr));
-   /* Set the default configuration parameters: */
-   max_lazy_match   = configuration_table[deflate_level].max_lazy;
-   good_match       = configuration_table[deflate_level].good_length;
-   nice_match       = configuration_table[deflate_level].nice_length;
-   max_chain_length = configuration_table[deflate_level].max_chain;
-
-   strstart = 0;
-   block_start = 0L;
-   lookahead = 0;
-   uptodate  = 0;
-   minlookahead = MIN_LOOKAHEAD-1;
-   match_available = 0;
-   prev_length = MIN_MATCH-1;
+	assert(!m_counting);
+	m_counting = true;
+	m_bitCount = 0;
 }
 
-void Deflator::Put(const byte *inString, unsigned int length)
+unsigned long LowFirstBitWriter::FinishCounting()
 {
-	if (deflate_level <= 3)
-		fast_deflate(inString, length);
+	assert(m_counting);
+	m_counting = false;
+	return m_bitCount;
+}
+
+void LowFirstBitWriter::PutBits(unsigned long value, unsigned int length)
+{
+	if (m_counting)
+		m_bitCount += length;
 	else
-		lazy_deflate(inString, length);
+	{
+		m_buffer |= value << m_bitsBuffered;
+		m_bitsBuffered += length;
+		assert(m_bitsBuffered <= sizeof(unsigned long)*8);
+		while (m_bitsBuffered >= 8)
+		{
+			m_outputBuffer[m_bytesBuffered++] = (byte)m_buffer;
+			if (m_bytesBuffered == m_outputBuffer.size)
+			{
+				AttachedTransformation()->Put(m_outputBuffer, m_bytesBuffered);
+				m_bytesBuffered = 0;
+			}
+			m_buffer >>= 8;
+			m_bitsBuffered -= 8;
+		}
+	}
+}
+
+void LowFirstBitWriter::FlushBitBuffer()
+{
+	if (m_counting)
+		m_bitCount += 8*(m_bitsBuffered > 0);
+	else
+	{
+		if (m_bytesBuffered > 0)
+		{
+			AttachedTransformation()->Put(m_outputBuffer, m_bytesBuffered);
+			m_bytesBuffered = 0;
+		}
+		if (m_bitsBuffered > 0)
+		{
+			AttachedTransformation()->Put((byte)m_buffer);
+			m_buffer = 0;
+			m_bitsBuffered = 0;
+		}
+	}
+}
+
+HuffmanEncoder::HuffmanEncoder(const unsigned int *codeBits, unsigned int nCodes)
+{
+	Initialize(codeBits, nCodes);
+}
+
+struct HuffmanNode
+{
+	inline bool operator<(const HuffmanNode &rhs) const {return freq < rhs.freq;}
+	unsigned int symbol;
+	union {unsigned int parent, depth, freq;};
+};
+
+inline bool operator<(unsigned int i, const HuffmanNode &rhs) {return i < rhs.freq;}
+
+void HuffmanEncoder::GenerateCodeLengths(unsigned int *codeBits, unsigned int maxCodeBits, const unsigned int *codeCounts, unsigned int nCodes)
+{
+	assert(nCodes > 0);
+	assert(nCodes <= (1 << maxCodeBits));
+
+	unsigned int i;
+	SecBlock<HuffmanNode> tree(nCodes);
+	for (i=0; i<nCodes; i++)
+	{
+		tree[i].symbol = i;
+		tree[i].freq = codeCounts[i];
+	}
+	sort(tree.Begin(), tree.End());
+	unsigned int treeBegin = upper_bound(tree.Begin(), tree.End(), 0) - tree.Begin();
+	if (treeBegin == nCodes)
+	{	// special case for no codes
+		fill(codeBits, codeBits+nCodes, 0);
+		return;
+	}
+	tree.Resize(nCodes + nCodes - treeBegin - 1);
+
+	unsigned int leastLeaf = treeBegin, leastInterior = nCodes;
+	for (i=nCodes; i<tree.size; i++)
+	{
+		unsigned int least;
+		least = (leastLeaf == nCodes || (leastInterior < i && tree[leastInterior].freq < tree[leastLeaf].freq)) ? leastInterior++ : leastLeaf++;
+		tree[i].freq = tree[least].freq;
+		tree[least].parent = i;
+		least = (leastLeaf == nCodes || (leastInterior < i && tree[leastInterior].freq < tree[leastLeaf].freq)) ? leastInterior++ : leastLeaf++;
+		tree[i].freq += tree[least].freq;
+		tree[least].parent = i;
+	}
+
+	tree[tree.size-1].depth = 0;
+	if (tree.size >= 2)
+		for (i=tree.size-2; i>=nCodes; i--)
+			tree[i].depth = tree[tree[i].parent].depth + 1;
+	unsigned int sum = 0;
+	SecBlock<unsigned int> blCount(maxCodeBits+1);
+	fill(blCount.Begin(), blCount.End(), 0);
+	for (i=treeBegin; i<nCodes; i++)
+	{
+		unsigned int depth = STDMIN(maxCodeBits, tree[tree[i].parent].depth + 1);
+		blCount[depth]++;
+		sum += 1 << (maxCodeBits - depth);
+	}
+
+	unsigned int overflow = sum > (1 << maxCodeBits) ? sum - (1 << maxCodeBits) : 0;
+
+	while (overflow--)
+	{
+		unsigned int bits = maxCodeBits-1;
+		while (blCount[bits] == 0)
+			bits--;
+		blCount[bits]--;
+		blCount[bits+1] += 2;
+		assert(blCount[maxCodeBits] > 0);
+		blCount[maxCodeBits]--;
+	}
+
+	for (i=0; i<treeBegin; i++)
+		codeBits[tree[i].symbol] = 0;
+	unsigned int bits = maxCodeBits;
+	for (i=treeBegin; i<nCodes; i++)
+	{
+		while (blCount[bits] == 0)
+			bits--;
+		codeBits[tree[i].symbol] = bits;
+		blCount[bits]--;
+	}
+	assert(blCount[bits] == 0);
+}
+
+void HuffmanEncoder::Initialize(const unsigned int *codeBits, unsigned int nCodes)
+{
+	assert(nCodes > 0);
+	unsigned int maxCodeBits = *max_element(codeBits, codeBits+nCodes);
+	if (maxCodeBits == 0)
+		return;		// assume this object won't be used
+
+	SecBlock<unsigned int> blCount(maxCodeBits+1);
+	fill(blCount.Begin(), blCount.End(), 0);
+	unsigned int i;
+	for (i=0; i<nCodes; i++)
+		blCount[codeBits[i]]++;
+
+	code_t code = 0;
+	SecBlock<code_t> nextCode(maxCodeBits+1);
+	nextCode[1] = 0;
+	for (i=2; i<=maxCodeBits; i++)
+	{
+		code = (code + blCount[i-1]) << 1;
+		nextCode[i] = code;
+	}
+	assert(maxCodeBits == 1 || code == (1 << maxCodeBits) - blCount[maxCodeBits]);
+
+	m_valueToCode.Resize(nCodes);
+	for (i=0; i<nCodes; i++)
+	{
+		unsigned int len = m_valueToCode[i].len = codeBits[i];
+		if (len != 0)
+			m_valueToCode[i].code = bitReverse(nextCode[len]++) >> (8*sizeof(code_t)-len);
+	}
+}
+
+inline void HuffmanEncoder::Encode(LowFirstBitWriter &writer, value_t value) const
+{
+	assert(m_valueToCode[value].len > 0);
+	writer.PutBits(m_valueToCode[value].code, m_valueToCode[value].len);
+}
+
+Deflator::Deflator(BufferedTransformation *outQ, unsigned int deflateLevel, unsigned int log2WindowSize)
+	: LowFirstBitWriter(outQ)
+	, m_log2WindowSize(log2WindowSize)
+	, m_literalCounts(286), m_distanceCounts(30)
+	, DSIZE(1<<log2WindowSize), DMASK(DSIZE-1), HSIZE(1<<log2WindowSize), HMASK(HSIZE-1)
+	, m_head(HSIZE), m_prev(DSIZE)
+	, m_byteBuffer(2*DSIZE), m_matchBuffer(DSIZE/2)
+{
+	assert(0 <= deflateLevel && deflateLevel <= 9);
+	assert(9 <= log2WindowSize && log2WindowSize <= 15);
+
+	unsigned int codeLengths[288];
+	fill(codeLengths + 0, codeLengths + 144, 8);
+	fill(codeLengths + 144, codeLengths + 256, 9);
+	fill(codeLengths + 256, codeLengths + 280, 7);
+	fill(codeLengths + 280, codeLengths + 288, 8);
+	m_staticLiteralEncoder.Initialize(codeLengths, 288);
+	fill(codeLengths + 0, codeLengths + 32, 5);
+	m_staticDistanceEncoder.Initialize(codeLengths, 32);
+
+	SetDeflateLevel(deflateLevel);
+	Reset();
+}
+
+void Deflator::Reset()
+{
+	assert(m_bitsBuffered == 0);
+
+	m_headerWritten = false;
+	m_matchAvailable = false;
+	m_dictionaryEnd = 0;
+	m_stringStart = 0;
+	m_lookahead = 0;
+	m_minLookahead = MAX_MATCH;
+	m_previousMatch = 0;
+	m_previousLength = 0;
+	m_matchBufferEnd = 0;
+	m_blockStart = 0;
+	m_blockLength = 0;
+
+	// m_prev will be initialized automaticly in InsertString
+	fill(m_head.Begin(), m_head.End(), 0);
+
+	fill(m_literalCounts.Begin(), m_literalCounts.End(), 0);
+	fill(m_distanceCounts.Begin(), m_distanceCounts.End(), 0);
+}
+
+void Deflator::SetDeflateLevel(unsigned int deflateLevel)
+{
+	unsigned int configurationTable[10][4] = {
+		/*      good lazy nice chain */
+		/* 0 */ {0,    0,  0,    0},  /* store only */
+		/* 1 */ {4,    3,  8,    4},  /* maximum speed, no lazy matches */
+		/* 2 */ {4,    3, 16,    8},
+		/* 3 */ {4,    3, 32,   32},
+		/* 4 */ {4,    4, 16,   16},  /* lazy matches */
+		/* 5 */ {8,   16, 32,   32},
+		/* 6 */ {8,   16, 128, 128},
+		/* 7 */ {8,   32, 128, 256},
+		/* 8 */ {32, 128, 258, 1024},
+		/* 9 */ {32, 258, 258, 4096}}; /* maximum compression */
+
+	GOOD_MATCH = configurationTable[deflateLevel][0];
+	MAX_LAZYLENGTH = configurationTable[deflateLevel][1];
+	MAX_CHAIN_LENGTH = configurationTable[deflateLevel][3];
+
+	m_deflateLevel = deflateLevel;
+}
+
+unsigned int Deflator::FillWindow(const byte *str, unsigned int length)
+{
+	unsigned int accepted = STDMIN(length, 2*DSIZE-(m_stringStart+m_lookahead));
+
+	if (m_stringStart >= 2*DSIZE - MAX_MATCH)
+	{
+		if (m_blockStart < DSIZE)
+			EndBlock(false);
+
+		memcpy(m_byteBuffer, m_byteBuffer + DSIZE, DSIZE);
+
+		m_dictionaryEnd = m_dictionaryEnd < DSIZE ? 0 : m_dictionaryEnd-DSIZE;
+		assert(m_stringStart >= DSIZE);
+		m_stringStart -= DSIZE;
+		assert(m_previousMatch >= DSIZE || m_previousLength < MIN_MATCH);
+		m_previousMatch -= DSIZE;
+		assert(m_blockStart >= DSIZE);
+		m_blockStart -= DSIZE;
+
+		unsigned int i, j;
+
+		for (i=0; i<HSIZE; i++)
+			m_head[i] = (j=m_head[i]) < DSIZE ? 0 : j-DSIZE;
+
+		for (i=0; i<DSIZE; i++)
+			m_prev[i] = (j=m_prev[i]) < DSIZE ? 0 : j-DSIZE;
+
+		accepted = STDMIN(accepted + DSIZE, length);
+	}
+	assert(accepted > 0);
+
+	memcpy(m_byteBuffer + m_stringStart + m_lookahead, str, accepted);
+	m_lookahead += accepted;
+	return accepted;
+}
+
+inline unsigned int Deflator::ComputeHash(const byte *str) const
+{
+	assert(str+3 <= m_byteBuffer + m_stringStart + m_lookahead);
+	return ((str[0] << 10) ^ (str[1] << 5) ^ str[2]) & HMASK;
+}
+
+unsigned int Deflator::LongestMatch(unsigned int &bestMatch) const
+{
+	assert(m_previousLength < MAX_MATCH);
+
+	bestMatch = 0;
+	unsigned int bestLength = STDMAX(m_previousLength, (unsigned int)MIN_MATCH-1);
+	if (m_lookahead <= bestLength)
+		return 0;
+
+	const byte *scan = m_byteBuffer + m_stringStart, *scanEnd = scan + STDMIN((unsigned int)MAX_MATCH, m_lookahead);
+	unsigned int limit = m_stringStart > (DSIZE-MAX_MATCH) ? m_stringStart - (DSIZE-MAX_MATCH) : 0;
+	unsigned int current = m_head[ComputeHash(scan)];
+
+	unsigned int chainLength = MAX_CHAIN_LENGTH;
+	if (m_previousLength >= GOOD_MATCH)
+		chainLength >>= 2;
+
+	while (current > limit && --chainLength > 0)
+	{
+		const byte *match = m_byteBuffer + current;
+		assert(scan + bestLength < m_byteBuffer + m_stringStart + m_lookahead);
+		if (scan[bestLength-1] == match[bestLength-1] && scan[bestLength] == match[bestLength] && scan[0] == match[0] && scan[1] == match[1])
+		{
+			assert(scan[2] == match[2]);
+			unsigned int len = std::mismatch(scan+3, scanEnd, match+3).first - scan;
+			assert(len != bestLength);
+			if (len > bestLength)
+			{
+				bestLength = len;
+				bestMatch = current;
+				if (len == (scanEnd - scan))
+					break;
+			}
+		}
+		current = m_prev[current & DMASK];
+	}
+	return (bestMatch > 0) ? bestLength : 0;
+}
+
+inline void Deflator::InsertString(unsigned int start)
+{
+	unsigned int hash = ComputeHash(m_byteBuffer + start);
+	m_prev[start & DMASK] = m_head[hash];
+	m_head[hash] = start;
+}
+
+void Deflator::ProcessBuffer()
+{
+	if (!m_headerWritten)
+	{
+		WritePrestreamHeader();
+		m_headerWritten = true;
+	}
+
+	if (m_deflateLevel == 0)
+	{
+		while (m_lookahead > 0)
+		{
+			LiteralByte(m_byteBuffer[m_stringStart++]);
+			m_lookahead--;
+		}
+		return;
+	}
+
+	while (m_lookahead > m_minLookahead)
+	{
+		while (m_dictionaryEnd < m_stringStart && m_dictionaryEnd+3 <= m_stringStart+m_lookahead)
+			InsertString(m_dictionaryEnd++);
+
+		if (m_matchAvailable)
+		{
+			unsigned int matchPosition, matchLength;
+			bool usePreviousMatch;
+			if (m_previousLength >= MAX_LAZYLENGTH)
+				usePreviousMatch = true;
+			else
+			{
+				matchLength = LongestMatch(matchPosition);
+				usePreviousMatch = (m_previousLength > 0 && matchLength == 0);
+			}
+			if (usePreviousMatch)
+			{
+				MatchFound(m_stringStart-1-m_previousMatch, m_previousLength);
+				m_stringStart += m_previousLength-1;
+				m_lookahead -= m_previousLength-1;
+				m_matchAvailable = false;
+				m_previousLength = 0;
+			}
+			else
+			{
+				m_previousLength = matchLength;
+				m_previousMatch = matchPosition;
+				LiteralByte(m_byteBuffer[m_stringStart-1]);
+				m_stringStart++;
+				m_lookahead--;
+			}
+		}
+		else
+		{
+			m_previousLength = LongestMatch(m_previousMatch);
+			m_matchAvailable = true;
+			m_stringStart++;
+			m_lookahead--;
+		}
+	}
+	assert(m_stringStart - (m_blockStart+m_blockLength) <= 1);
+	if (m_minLookahead == 0 && m_matchAvailable)
+	{
+		LiteralByte(m_byteBuffer[m_stringStart-1]);
+		m_matchAvailable = false;
+	}
+}
+
+void Deflator::Put(const byte *str, unsigned int length)
+{
+	ProcessUncompressedData(str, length);
+
+	unsigned int accepted = 0;
+	while (accepted < length)
+	{
+		accepted += FillWindow(str+accepted, length-accepted);
+		ProcessBuffer();
+	}
 }
 
 void Deflator::Flush(bool completeFlush, int propagation)
 {
-	minlookahead = 0;
-	Put(NULL, 0);
-	// send empty store block
-	send_bits(STORED_BLOCK<<1, 3);
-	copy_block(NULL, 0, 1);
-	minlookahead = MIN_LOOKAHEAD-1;
+	m_minLookahead = 0;
+	ProcessBuffer();
+	m_minLookahead = MAX_MATCH;
+	EndBlock(false);
+	EncodeBlock(false, STORED);
 	Filter::Flush(completeFlush, propagation);
 }
 
 void Deflator::MessageEnd(int propagation)
 {
-	minlookahead = 0;
-	m_eof = true;
-	Put(NULL, 0);
-	minlookahead = MIN_LOOKAHEAD-1;
-	m_eof = false;
+	m_minLookahead = 0;
+	ProcessBuffer();
+	EndBlock(true);
+	FlushBitBuffer();
+	WritePoststreamTail();
 	Filter::MessageEnd(propagation);
+	Reset();
 }
 
-/* Set match_start to the longest match starting at the given string and
- * return its length. Matches shorter or equal to prev_length are discarded,
- * in which case the result is equal to prev_length and match_start is
- * garbage.
- * IN assertions: cur_match is the head of the hash chain for the current
- *   string (strstart) and its distance is <= MAX_DIST, and prev_length >= 1
- */
-#ifndef ASMV
-/* For MSDOS, OS/2 and 386 Unix, an optimized version is in match.asm or
- * match.s. The code is functionally equivalent, so you can use the C version
- * if desired.  A 68000 version is in amiga/match_68.a -- this could be used
- * with other 68000 based systems such as Macintosh with a little effort.
- */
-int Deflator::longest_match(IPos cur_match)
+void Deflator::LiteralByte(byte b)
 {
-   unsigned chain_length = max_chain_length;   /* max hash chain length */
-   register byte *scan = window + strstart;     /* current string */
-   register byte *match;                        /* matched string */
-   register int len;                           /* length of current match */
-   int best_len = prev_length;                 /* best match length so far */
-   IPos limit = strstart > (IPos)MAX_DIST ? strstart - (IPos)MAX_DIST : NIL;
-   /* Stop when cur_match becomes <= limit. To simplify the code,
-	  we prevent matches with the string of window index 0. */
+	m_matchBuffer[m_matchBufferEnd++].literalCode = b;
+	m_literalCounts[b]++;
 
-/* The code is optimized for HASH_BITS >= 8 and MAX_MATCH-2 multiple of 16.
- * It is easy to get rid of this optimization if necessary. */
-/*
-#if HASH_BITS < 8 || MAX_MATCH != 258
-   #error Code too clever
-#endif
-*/
-#ifdef UNALIGNED_OK
-   /* Compare two bytes at a time. Note: this is not always beneficial.
-	  Try with and without -DUNALIGNED_OK to check. */
-   register byte *strend = window + strstart + MAX_MATCH - 1;
-   register word16 scan_start = *(word16*)scan;
-   register word16 scan_end   = *(word16*)(scan+best_len-1);
+	if (m_blockStart+(++m_blockLength) == m_byteBuffer.size || m_matchBufferEnd == m_matchBuffer.size)
+		EndBlock(false);
+}
+
+void Deflator::MatchFound(unsigned int distance, unsigned int length)
+{
+	static const unsigned int lengthCodes[] = {
+		257, 258, 259, 260, 261, 262, 263, 264, 265, 265, 266, 266, 267, 267, 268, 268,
+		269, 269, 269, 269, 270, 270, 270, 270, 271, 271, 271, 271, 272, 272, 272, 272,
+		273, 273, 273, 273, 273, 273, 273, 273, 274, 274, 274, 274, 274, 274, 274, 274,
+		275, 275, 275, 275, 275, 275, 275, 275, 276, 276, 276, 276, 276, 276, 276, 276,
+		277, 277, 277, 277, 277, 277, 277, 277, 277, 277, 277, 277, 277, 277, 277, 277,
+		278, 278, 278, 278, 278, 278, 278, 278, 278, 278, 278, 278, 278, 278, 278, 278,
+		279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279, 279,
+		280, 280, 280, 280, 280, 280, 280, 280, 280, 280, 280, 280, 280, 280, 280, 280,
+		281, 281, 281, 281, 281, 281, 281, 281, 281, 281, 281, 281, 281, 281, 281, 281,
+		281, 281, 281, 281, 281, 281, 281, 281, 281, 281, 281, 281, 281, 281, 281, 281,
+		282, 282, 282, 282, 282, 282, 282, 282, 282, 282, 282, 282, 282, 282, 282, 282,
+		282, 282, 282, 282, 282, 282, 282, 282, 282, 282, 282, 282, 282, 282, 282, 282,
+		283, 283, 283, 283, 283, 283, 283, 283, 283, 283, 283, 283, 283, 283, 283, 283,
+		283, 283, 283, 283, 283, 283, 283, 283, 283, 283, 283, 283, 283, 283, 283, 283,
+		284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284,
+		284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 285};
+	static const unsigned int lengthBases[] = {3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258};
+	static const unsigned int distanceBases[30] = 
+		{1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577};
+
+	EncodedMatch &m = m_matchBuffer[m_matchBufferEnd++];
+	unsigned int lengthCode = lengthCodes[length-3];
+	m.literalCode = lengthCode;
+	m.literalExtra = length - lengthBases[lengthCode-257];
+	unsigned int distanceCode = upper_bound(distanceBases, distanceBases+30, distance) - distanceBases - 1;
+	m.distanceCode = distanceCode;
+	m.distanceExtra = distance - distanceBases[distanceCode];
+
+	m_literalCounts[lengthCode]++;
+	m_distanceCounts[distanceCode]++;
+
+	if (m_blockStart+(m_blockLength+=length) == m_byteBuffer.size || m_matchBufferEnd == m_matchBuffer.size)
+		EndBlock(false);
+}
+
+inline unsigned int CodeLengthEncode(const unsigned int *begin, 
+									 const unsigned int *end, 
+									 const unsigned int *& p, 
+									 unsigned int &extraBits, 
+									 unsigned int &extraBitsLength)
+{
+	unsigned int v = *p;
+	if ((end-p) >= 3)
+	{
+		const unsigned int *oldp = p;
+		if (v==0 && p[1]==0 && p[2]==0)
+		{
+			for (p=p+3; *p==0 && p!=end && p!=oldp+138; p++) {}
+			unsigned int repeat = p - oldp;
+			if (repeat <= 10)
+			{
+				extraBits = repeat-3;
+				extraBitsLength = 3;
+				return 17;
+			}
+			else
+			{
+				extraBits = repeat-11;
+				extraBitsLength = 7;
+				return 18;
+			}
+		}
+		else if (p!=begin && v==p[-1] && v==p[1] && v==p[2])
+		{
+			for (p=p+3; *p==v && p!=end && p!=oldp+6; p++) {}
+			unsigned int repeat = p - oldp;
+			extraBits = repeat-3;
+			extraBitsLength = 2;
+			return 16;
+		}
+	}
+	p++;
+	extraBits = 0;
+	extraBitsLength = 0;
+	return v;
+}
+
+void Deflator::EncodeBlock(bool eof, unsigned int blockType)
+{
+	PutBits(eof, 1);
+	PutBits(blockType, 2);
+
+	if (blockType == STORED)
+	{
+		assert(m_blockStart + m_blockLength <= m_byteBuffer.size);
+		FlushBitBuffer();
+		AttachedTransformation()->PutWord16(m_blockLength, false);
+		AttachedTransformation()->PutWord16(~m_blockLength, false);
+		AttachedTransformation()->Put(m_byteBuffer + m_blockStart, m_blockLength);
+	}
+	else
+	{
+		if (blockType == DYNAMIC)
+		{
+			SecBlock<unsigned int> literalCodeLengths(286), distanceCodeLengths(30);
+#ifdef _MSC_VER		// VC60 workaround
+			typedef reverse_iterator<unsigned int *, unsigned int> RevIt;
 #else
-   register byte *strend = window + strstart + MAX_MATCH;
-   register byte scan_end1 = scan[best_len-1];
-   register byte scan_end  = scan[best_len];
+			typedef reverse_iterator<unsigned int *> RevIt;
 #endif
 
-   /* Do not waste too much time if we already have a good match: */
-   if (prev_length >= good_match) {
-	   chain_length >>= 2;
-   }
-//   assert(strstart <= (unsigned)WINDOW_SIZE-MIN_LOOKAHEAD);
+			m_literalCounts[256] = 1;
+			HuffmanEncoder::GenerateCodeLengths(literalCodeLengths, 15, m_literalCounts, 286);
+			m_dynamicLiteralEncoder.Initialize(literalCodeLengths, 286);
+			unsigned int hlit = find_if(RevIt(literalCodeLengths.End()), RevIt(literalCodeLengths.Begin()+257), bind2nd(not_equal_to<unsigned int>(), 0)).base() - (literalCodeLengths.Begin()+257);
 
-   do {
-	   assert(cur_match < strstart);
-	   match = window + cur_match;
+			HuffmanEncoder::GenerateCodeLengths(distanceCodeLengths, 15, m_distanceCounts, 30);
+			m_dynamicDistanceEncoder.Initialize(distanceCodeLengths, 30);
+			unsigned int hdist = find_if(RevIt(distanceCodeLengths.End()), RevIt(distanceCodeLengths.Begin()+1), bind2nd(not_equal_to<unsigned int>(), 0)).base() - (distanceCodeLengths.Begin()+1);
 
-	   /* Skip to next match if the match length cannot increase
-		* or if the match length is less than 2:
-		*/
-#ifdef UNALIGNED_OK
-	   /* This code assumes sizeof(unsigned short) == 2. Do not use
-		* UNALIGNED_OK if your compiler uses a different size.
-		*/
-	   if (*(word16*)(match+best_len-1) != scan_end ||
-		   *(word16*)match != scan_start) continue;
+			SecBlock<unsigned int> combinedLengths(hlit+257+hdist+1);
+			memcpy(combinedLengths, literalCodeLengths, (hlit+257)*sizeof(unsigned int));
+			memcpy(combinedLengths+hlit+257, distanceCodeLengths, (hdist+1)*sizeof(unsigned int));
 
-	   /* It is not necessary to compare scan[2] and match[2] since they are
-		* always equal when the other bytes match, given that the hash keys
-		* are equal and that HASH_BITS >= 8. Compare 2 bytes at a time at
-		* strstart+3, +5, ... up to strstart+257. We check for insufficient
-		* lookahead only every 4th comparison; the 128th check will be made
-		* at strstart+257. If MAX_MATCH-2 is not a multiple of 8, it is
-		* necessary to put more guard bytes at the end of the window, or
-		* to check more often for insufficient lookahead.
-		*/
-	   scan++, match++;
-	   do {
-	   } while (*(word16*)(scan+=2) == *(word16*)(match+=2) &&
-				*(word16*)(scan+=2) == *(word16*)(match+=2) &&
-				*(word16*)(scan+=2) == *(word16*)(match+=2) &&
-				*(word16*)(scan+=2) == *(word16*)(match+=2) &&
-				scan < strend);
-	   /* The funny "do {}" generates better code on most compilers */
+			SecBlock<unsigned int> codeLengthCodeCounts(19), codeLengthCodeLengths(19);
+			fill(codeLengthCodeCounts.Begin(), codeLengthCodeCounts.End(), 0);
+			const unsigned int *p = combinedLengths.Begin(), *begin = combinedLengths.Begin(), *end = combinedLengths.End();
+			while (p != end)
+			{
+				unsigned int code, extraBits, extraBitsLength;
+				code = CodeLengthEncode(begin, end, p, extraBits, extraBitsLength);
+				codeLengthCodeCounts[code]++;
+			}
+			HuffmanEncoder::GenerateCodeLengths(codeLengthCodeLengths, 7, codeLengthCodeCounts, 19);
+			HuffmanEncoder codeLengthEncoder(codeLengthCodeLengths, 19);
+			static const unsigned int border[] = {    // Order of the bit length code lengths
+				16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
+			unsigned int hclen = 19;
+			while (hclen > 4 && codeLengthCodeLengths[border[hclen-1]] == 0)
+				hclen--;
+			hclen -= 4;
 
-	   /* Here, scan <= window+strstart+257 */
-	   assert(scan <= window+(unsigned)(WINDOW_SIZE-1));
-	   if (*scan == *match) scan++;
+			PutBits(hlit, 5);
+			PutBits(hdist, 5);
+			PutBits(hclen, 4);
 
-	   len = (MAX_MATCH - 1) - (int)(strend-scan);
-	   scan = strend - (MAX_MATCH-1);
+			for (unsigned int i=0; i<hclen+4; i++)
+				PutBits(codeLengthCodeLengths[border[i]], 3);
 
-#else /* UNALIGNED_OK */
+			p = combinedLengths.Begin();
+			while (p != end)
+			{
+				unsigned int code, extraBits, extraBitsLength;
+				code = CodeLengthEncode(begin, end, p, extraBits, extraBitsLength);
+				codeLengthEncoder.Encode(*this, code);
+				PutBits(extraBits, extraBitsLength);
+			}
+		}
 
-	   if (match[best_len]   != scan_end  ||
-		   match[best_len-1] != scan_end1 ||
-		   *match            != *scan     ||
-		   *++match          != scan[1])      continue;
+		static const unsigned int lengthExtraBits[] = {
+			0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
+			3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0};
+		static const unsigned int distanceExtraBits[] = {
+			0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,
+			7, 7, 8, 8, 9, 9, 10, 10, 11, 11,
+			12, 12, 13, 13};
 
-	   /* The check at best_len-1 can be removed because it will be made
-		* again later. (This heuristic is not always a win.)
-		* It is not necessary to compare scan[2] and match[2] since they
-		* are always equal when the other bytes match, given that
-		* the hash keys are equal and that HASH_BITS >= 8.
-		*/
-	   scan += 2, match++;
+		const HuffmanEncoder &literalEncoder = (blockType == STATIC) ? m_staticLiteralEncoder : m_dynamicLiteralEncoder;
+		const HuffmanEncoder &distanceEncoder = (blockType == STATIC) ? m_staticDistanceEncoder : m_dynamicDistanceEncoder;
 
-	   /* We check for insufficient lookahead only every 8th comparison;
-		* the 256th check will be made at strstart+258.
-		*/
-	   do {
-	   } while (*++scan == *++match && *++scan == *++match &&
-				*++scan == *++match && *++scan == *++match &&
-				*++scan == *++match && *++scan == *++match &&
-				*++scan == *++match && *++scan == *++match &&
-				scan < strend);
-
-	   len = MAX_MATCH - (int)(strend - scan);
-	   scan = strend - MAX_MATCH;
-
-#endif /* UNALIGNED_OK */
-
-	   if (len > best_len) {
-		   match_start = cur_match;
-		   best_len = len;
-		   if (len >= nice_match) break;
-#ifdef UNALIGNED_OK
-		   scan_end = *(word16*)(scan+best_len-1);
-#else
-		   scan_end1  = scan[best_len-1];
-		   scan_end   = scan[best_len];
-#endif
-	   }
-   } while ((cur_match = prev[cur_match & WMASK]) > limit
-			&& --chain_length != 0);
-
-   return best_len;
-}
-#endif /* ASMV */
-
-#ifdef DEBUG
-/* Check that the match at match_start is indeed a match. */
-static void check_match(start, match, length)
-IPos start, match;
-int length;
-{
-   if (memcmp((char*)window + match, (char*)window + start, length) != 0)
-   {
-	  fprintf(stderr, " start %d, match %d, length %d\n",
-		 start, match, length);
-	  error("invalid match");
-   }
-   if (verbose > 1) {
-	  fprintf(stderr,"\\[%d,%d]", start-match, length);
-	  do { putc(window[start++], stderr); } while (--length != 0);
-   }
-}
-#else
-#  define check_match(start, match, length)
-#endif
-
-/* Add a block of data into the window. Updates strstart and lookahead.
- * IN assertion: lookahead < MIN_LOOKAHEAD.
- * Note: call with either lookahead == 0 or length == 0 is valid
- */
-unsigned Deflator::fill_window(const byte *buffer, unsigned int length)
-{
-   register unsigned n, m;
-   unsigned more = length;
-
-   /* Amount of free space at the end of the window. */
-   if (WINDOW_SIZE - lookahead - strstart < more) {
-	  more = (unsigned)(WINDOW_SIZE - lookahead - strstart);
-   }
-   /* If the window is almost full and there is insufficient lookahead,
-	* move the upper half to the lower one to make room in the upper half.
-	*/
-   if (strstart >= (unsigned)WSIZE+MAX_DIST) {
-	  memcpy(window, window+WSIZE, WSIZE);
-	  match_start -= WSIZE;
-	  strstart    -= WSIZE; /* we now have strstart >= MAX_DIST: */
-
-	  block_start -= (long) WSIZE;
-
-	  for (n = 0; n < (unsigned)HASH_SIZE; n++) {
-		 m = head[n];
-		 head[n] = (Pos)(m >= (unsigned)WSIZE ? m-WSIZE : NIL);
-	  }
-	  for (n = 0; n < (unsigned)WSIZE; n++) {
-		 m = prev[n];
-		 prev[n] = (Pos)(m >= (unsigned)WSIZE ? m-WSIZE : NIL);
-		 /* If n is not on any hash chain, prev[n] is garbage but
-			its value will never be used. */
-	  }
-	  if ((more += WSIZE) > length) more = length;
-   }
-   if (more) {
-	  memcpy((byte*)window+strstart+lookahead, buffer, more);
-	  lookahead += more;
-   }
-   return more;
+		for (unsigned int i=0; i<m_matchBufferEnd; i++)
+		{
+			unsigned int literalCode = m_matchBuffer[i].literalCode;
+			literalEncoder.Encode(*this, literalCode);
+			if (literalCode >= 257)
+			{
+				assert(literalCode <= 285);
+				PutBits(m_matchBuffer[i].literalExtra, lengthExtraBits[literalCode-257]);
+				unsigned int distanceCode = m_matchBuffer[i].distanceCode;
+				distanceEncoder.Encode(*this, distanceCode);
+				PutBits(m_matchBuffer[i].distanceExtra, distanceExtraBits[distanceCode]);
+			}
+		}
+		literalEncoder.Encode(*this, 256);	// end of block
+	}
 }
 
-/* Flush the current block, with given end-of-file flag.
-   IN assertion: strstart is set to the end of the current match. */
-#define FLUSH_BLOCK(eof) flush_block(block_start >= 0L ?\
-		window+block_start : \
-		(byte *)0, (long)strstart - block_start, (eof))
-
-/* Processes a new input block.
- * This function does not perform lazy evaluationof matches and inserts
- * new strings in the dictionary only for unmatched strings or for short
- * matches. It is used only for the fast compression options. */
-int Deflator::fast_deflate(const byte *buffer, unsigned int length)
+void Deflator::EndBlock(bool eof)
 {
-   IPos hash_head; /* head of the hash chain */
-   int flush;      /* set if current block must be flushed */
-   unsigned accepted = 0;
+	if (m_matchBufferEnd == 0 && !eof)
+		return;
 
-   do {
-	  /* Make sure that we always have enough lookahead, except
-	   * at the end of the input file. We need MAX_MATCH bytes
-	   * for the next match, plus MIN_MATCH bytes to insert the
-	   * string following the next match. */
-	  accepted += fill_window(buffer+accepted, length-accepted);
-	  if (lookahead <= minlookahead) break;
-	  if (!uptodate) {
-		 match_length = 0; init_hash(); uptodate = 1;
-	  }
-	  while (lookahead > minlookahead) {
-		 /* Insert the string window[strstart .. strstart+2] in the
-		  * dictionary, and set hash_head to the head of the hash chain:
-		  */
-		 INSERT_STRING(strstart, hash_head);
+	if (m_deflateLevel == 0)
+		EncodeBlock(eof, STORED);
+	else if (m_blockLength < 128)
+		EncodeBlock(eof, STATIC);
+	else
+	{
+		unsigned int storedLen = 8*(m_blockLength+4) + RoundUpToMultipleOf(m_bitsBuffered+3, 8)-m_bitsBuffered;
+		StartCounting();
+		EncodeBlock(eof, STATIC);
+		unsigned int staticLen = FinishCounting();
+		StartCounting();
+		EncodeBlock(eof, DYNAMIC);
+		unsigned int dynamicLen = FinishCounting();
 
-		 /* Find the longest match, discarding those <= prev_length.
-		  * At this point we have always match_length < MIN_MATCH */
-		 if (hash_head != NIL && strstart - hash_head <= MAX_DIST) {
-			/* To simplify the code, we prevent matches with the string
-			 * of window index 0 (in particular we have to avoid a match
-			 * of the string with itself at the start of the input file).
-			 */
-			match_length = longest_match(hash_head);
-			/* longest_match() sets match_start */
-			if (match_length > lookahead) match_length = lookahead;
-		 }
-		 if (match_length >= MIN_MATCH) {
-			check_match(strstart, match_start, match_length);
+		if (storedLen <= staticLen && storedLen <= dynamicLen)
+			EncodeBlock(eof, STORED);
+		else if (staticLen <= dynamicLen)
+			EncodeBlock(eof, STATIC);
+		else
+			EncodeBlock(eof, DYNAMIC);
+	}
 
-			flush = ct_tally(strstart-match_start, match_length - MIN_MATCH);
-
-			lookahead -= match_length;
-
-			/* Insert new strings in the hash table only if the match length
-			 * is not too large. This saves time but degrades compression.
-			 */
-			if (match_length <= max_insert_length) {
-				match_length--; /* string at strstart already in hash table */
-				do {
-					strstart++;
-					INSERT_STRING(strstart, hash_head);
-					/* strstart never exceeds WSIZE-MAX_MATCH, so there are
-					 * always MIN_MATCH bytes ahead. If lookahead < MIN_MATCH
-					 * these bytes are garbage, but it does not matter since
-					 * the next lookahead bytes will be emitted as literals.
-					 */
-				} while (--match_length != 0);
-				strstart++;
-			} else {
-				strstart += match_length;
-				match_length = 0;
-				ins_h = window[strstart];
-				UPDATE_HASH(ins_h, window[strstart+1]);
-/*
-#if MIN_MATCH != 3
-				Call UPDATE_HASH() MIN_MATCH-3 more times
-#endif
-*/
-			}
-		 } else {
-			/* No match, output a literal byte */
-//            Tracevv((stderr,"%c",window[strstart]));
-			flush = ct_tally (0, window[strstart]);
-			lookahead--;
-			strstart++;
-		 }
-		 if (flush) {
-			FLUSH_BLOCK(0);
-			block_start = strstart;
-		 }
-	  }
-   } while (accepted < length);
-   if (!minlookahead) {/* eof achieved */
-		FLUSH_BLOCK(m_eof);
-		block_start = strstart;
-   }
-   return accepted;
-}
-
-/* Same as above, but achieves better compression. We use a lazy
- * evaluation for matches: a match is finally adopted only if there is
- * no better match at the next window position.  */
-int Deflator::lazy_deflate(const byte *buffer, unsigned int length)
-{
-   IPos hash_head;          /* head of hash chain */
-   IPos prev_match;         /* previous match */
-   int flush;               /* set if current block must be flushed */
-   register unsigned ml = match_length; /* length of best match */
-#ifdef DEBUG
-   extern word32 isize;        /* byte length of input file, for debug only */
-#endif
-   unsigned accepted = 0;
-
-   /* Process the input block. */
-   do {
-	  /* Make sure that we always have enough lookahead, except
-	   * at the end of the input file. We need MAX_MATCH bytes
-	   * for the next match, plus MIN_MATCH bytes to insert the
-	   * string following the next match. */
-	  accepted += fill_window(buffer+accepted, length-accepted);
-	  if (lookahead <= minlookahead) break;
-	  if (!uptodate) {
-		 ml = MIN_MATCH-1; /* length of best match */
-		 init_hash();
-		 uptodate = 1;
-	  }
-	  while (lookahead > minlookahead) {
-		 INSERT_STRING(strstart, hash_head);
-
-		 /* Find the longest match, discarding those <= prev_length. */
-		 prev_length = ml, prev_match = match_start;
-		 ml = MIN_MATCH-1;
-
-		 if (hash_head != NIL && prev_length < max_lazy_match &&
-			 strstart - hash_head <= MAX_DIST) {
-			/* To simplify the code, we prevent matches with the string
-			 * of window index 0 (in particular we have to avoid a match
-			 * of the string with itself at the start of the input file).
-			 */
-			ml = longest_match (hash_head);
-			/* longest_match() sets match_start */
-			if (ml > lookahead) ml = lookahead;
-
-			/* Ignore a length 3 match if it is too distant: */
-			if (ml == MIN_MATCH && strstart-match_start > TOO_FAR){
-			   /* If prev_match is also MIN_MATCH, match_start is garbage
-				  but we will ignore the current match anyway. */
-			   ml--;
-			}
-		 }
-		 /* If there was a match at the previous step and the current
-			match is not better, output the previous match: */
-		 if (prev_length >= MIN_MATCH && ml <= prev_length) {
-
-			check_match(strstart-1, prev_match, prev_length);
-
-			flush = ct_tally(strstart-1-prev_match, prev_length - MIN_MATCH);
-
-			/* Insert in hash table all strings up to the end of the match.
-			 * strstart-1 and strstart are already inserted.
-			 */
-			lookahead -= prev_length-1;
-			prev_length -= 2;
-			do {
-			   strstart++;
-			   INSERT_STRING(strstart, hash_head);
-			   /* strstart never exceeds WSIZE-MAX_MATCH, so there are
-				* always MIN_MATCH bytes ahead. If lookahead < MIN_MATCH
-				* these bytes are garbage, but it does not matter since the
-				* next lookahead bytes will always be emitted as literals.
-				*/
-			} while (--prev_length != 0);
-			match_available = 0;
-			ml = MIN_MATCH-1;
-			strstart++;
-			if (flush) {
-			   FLUSH_BLOCK(0);
-			   block_start = strstart;
-			}
-
-		 } else if (match_available) {
-			/* If there was no match at the previous position, output a
-			 * single literal. If there was a match but the current match
-			 * is longer, truncate the previous match to a single literal.
-			 */
-//            Tracevv((stderr,"%c",window[strstart-1]));
-			if (ct_tally (0, window[strstart-1])) {
-				FLUSH_BLOCK(0), block_start = strstart;
-			}
-			strstart++;
-			lookahead--;
-		 } else {
-			/* There is no previous match to compare with,
-			   wait for the next step to decide. */
-			match_available = 1;
-			strstart++;
-			lookahead--;
-		 }
-//         assert(strstart <= isize && lookahead <= isize);
-	  }
-   } while (accepted < length);
-   if (!minlookahead) {/* eof achieved */
-	  if (match_available)
-	  {
-		  ct_tally (0, window[strstart-1]);
-		  match_available = false;
-	  }
-	  FLUSH_BLOCK(m_eof);
-      block_start = strstart;
-   }
-   match_length = ml;
-   return accepted;
+	m_matchBufferEnd = 0;
+	m_blockStart += m_blockLength;
+	m_blockLength = 0;
+	fill(m_literalCounts.Begin(), m_literalCounts.End(), 0);
+	fill(m_distanceCounts.Begin(), m_distanceCounts.End(), 0);
 }
 
 NAMESPACE_END

@@ -45,7 +45,7 @@ inline HuffmanDecoder::code_t HuffmanDecoder::NormalizeCode(HuffmanDecoder::code
 	return code << (MAX_CODE_BITS - codeBits);
 }
 
-void HuffmanDecoder::Initialize(unsigned int *codeBits, unsigned int nCodes)
+void HuffmanDecoder::Initialize(const unsigned int *codeBits, unsigned int nCodes)
 {
 	if (nCodes == 0)
 		throw Err("null code");
@@ -78,7 +78,7 @@ void HuffmanDecoder::Initialize(unsigned int *codeBits, unsigned int nCodes)
 
 	if (code > (1 << m_maxCodeBits) - blCount[m_maxCodeBits])
 		throw Err("codes oversubscribed");
-	else if (code < (1 << m_maxCodeBits) - blCount[m_maxCodeBits])
+	else if (m_maxCodeBits != 1 && code < (1 << m_maxCodeBits) - blCount[m_maxCodeBits])
 		throw Err("codes incomplete");
 
 	m_codeToValue.Resize(nCodes - blCount[0]);
@@ -265,9 +265,8 @@ void Inflator::ProcessInput(bool flush)
 			break;
 			}
 		case DECODING_BODY:
-			if (m_inQueue.IsEmpty())
+			if (!DecodeBody())
 				return;
-			DecodeBody();
 			break;
 		case POST_STREAM:
 			if (!flush && m_inQueue.CurrentSize() < MaxPoststreamTailSize())
@@ -377,7 +376,13 @@ void Inflator::DecodeHeader()
 				i += count;
 			}
 			m_literalDecoder.Initialize(codeLengths, hlit+257);
-			m_distanceDecoder.Initialize(codeLengths+hlit+257, hdist+1);
+			if (hdist == 0 && codeLengths[hlit+257] == 0)
+			{
+				if (hlit != 0)	// a single zero distance code length means all literals
+					throw BadBlockErr();
+			}
+			else
+				m_distanceDecoder.Initialize(codeLengths+hlit+257, hdist+1);
 			m_nextDecode = LITERAL;
 		}
 		catch (HuffmanDecoder::Err &)
@@ -392,7 +397,7 @@ void Inflator::DecodeHeader()
 	m_state = DECODING_BODY;
 }
 
-void Inflator::DecodeBody()
+bool Inflator::DecodeBody()
 {
 	bool blockEnd = false;
 	switch (m_blockType)
@@ -405,6 +410,7 @@ void Inflator::DecodeBody()
 			const byte *block = m_inQueue.Spy(size);
 			size = STDMIN(size, (unsigned int)m_storedLen);
 			OutputString(block, size);
+			m_inQueue.Skip(size);
 			m_storedLen -= size;
 			if (m_storedLen == 0)
 				blockEnd = true;
@@ -495,6 +501,7 @@ void Inflator::DecodeBody()
 		else
 			m_state = WAIT_HEADER;
 	}
+	return blockEnd;
 }
 
 void Inflator::FlushOutput()

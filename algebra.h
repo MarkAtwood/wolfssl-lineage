@@ -26,6 +26,7 @@ public:
 	virtual const Element& Zero() const =0;
 	virtual const Element& Add(const Element &a, const Element &b) const =0;
 	virtual const Element& Inverse(const Element &a) const =0;
+	virtual bool InversionIsFast() const {return false;}
 
 	virtual const Element& Double(const Element &a) const;
 	virtual const Element& Subtract(const Element &a, const Element &b) const;
@@ -34,6 +35,8 @@ public:
 
 	virtual Element ScalarMultiply(const Element &a, const Integer &e) const;
 	virtual Element CascadeScalarMultiply(const Element &x, const Integer &e1, const Element &y, const Integer &e2) const;
+
+	virtual void SimultaneousMultiply(Element *results, const Element &base, const Integer *exponents, unsigned int exponentsCount) const;
 };
 
 template <class T> class AbstractRing : public AbstractGroup<T>
@@ -42,7 +45,7 @@ public:
 	typedef T Element;
 
 	AbstractRing() {m_mg.m_pRing = this;}
-	AbstractRing(const AbstractRing &source) {}
+	AbstractRing(const AbstractRing &source) {m_mg.m_pRing = this;}
 	AbstractRing& operator=(const AbstractRing &source) {}
 
 	virtual bool IsUnit(const Element &a) const =0;
@@ -55,6 +58,8 @@ public:
 
 	virtual Element Exponentiate(const Element &a, const Integer &e) const;
 	virtual Element CascadeExponentiate(const Element &x, const Integer &e1, const Element &y, const Integer &e2) const;
+
+	virtual void SimultaneousExponentiate(Element *results, const Element &base, const Integer *exponents, unsigned int exponentsCount) const;
 
 	virtual const AbstractGroup<T>& MultiplicativeGroup() const
 		{return m_mg;}
@@ -90,6 +95,15 @@ private:
 		const Element& Double(const Element &a) const
 			{return GetRing().Square(a);}
 
+		Element ScalarMultiply(const Element &a, const Integer &e) const
+			{return GetRing().Exponentiate(a, e);}
+
+		Element CascadeScalarMultiply(const Element &x, const Integer &e1, const Element &y, const Integer &e2) const
+			{return GetRing().CascadeExponentiate(x, e1, y, e2);}
+
+		void SimultaneousMultiply(Element *results, const Element &base, const Integer *exponents, unsigned int exponentsCount) const
+			{GetRing().SimultaneousExponentiate(results, base, exponents, exponentsCount);}
+
 		const AbstractRing<T> *m_pRing;
 	};
 
@@ -102,7 +116,9 @@ template <class T, class E = Integer>
 struct BaseAndExponent
 {
 public:
-	bool operator<(const BaseAndExponent<T> &rhs) const {return exponent < rhs.exponent;}
+	BaseAndExponent() {}
+	BaseAndExponent(const T &base, const E &exponent) : base(base), exponent(exponent) {}
+	bool operator<(const BaseAndExponent<T, E> &rhs) const {return exponent < rhs.exponent;}
 	T base;
 	E exponent;
 };
@@ -110,12 +126,8 @@ public:
 // VC60 workaround: incomplete member template support
 template <class Element, class Iterator>
 	Element GeneralCascadeMultiplication(const AbstractGroup<Element> &group, Iterator begin, Iterator end);
-template <class Element, class Iterator, class ConstIterator>
-	void SimultaneousMultiplication(Iterator result, const AbstractGroup<Element> &group, const Element &base, ConstIterator expBegin, ConstIterator expEnd);
 template <class Element, class Iterator>
 	Element GeneralCascadeExponentiation(const AbstractRing<Element> &ring, Iterator begin, Iterator end);
-template <class Element, class Iterator, class ConstIterator>
-	void SimultaneousExponentiation(Iterator result, const AbstractRing<Element> &ring, const Element &base, ConstIterator expBegin, ConstIterator expEnd);
 
 // ********************************************************
 

@@ -25,10 +25,12 @@ public:
 
 	void SetGroupAndBase(const Group &group, const Element &base);
 	void Precompute(unsigned int maxExpBits, unsigned int storage);
+	void PrepareCascade(std::vector<BaseAndExponent<Element> > &eb, const Integer &exponent) const;
 	Element Exponentiate(const Integer &exponent) const;
 	Element CascadeExponentiate(const Integer &exponent, const ExponentiationPrecomputation<T> &pc2, const Integer &exponent2) const;
 
 	const Group *m_group;
+	unsigned int m_windowSize;
 	Integer m_exponentBase;			// what base to represent the exponent in
 	std::vector<Element> m_bases;	// precalculated bases
 };

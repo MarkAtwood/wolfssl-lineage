@@ -41,6 +41,10 @@ public:
 		PolynomialMod2(const byte *encodedPoly, unsigned int byteCount)
 			{Decode(encodedPoly, byteCount);}
 
+		/// convert from big-endian form stored in a BufferedTransformation
+		PolynomialMod2(BufferedTransformation &encodedPoly, unsigned int byteCount)
+			{Decode(encodedPoly, byteCount);}
+
 		/// create a random polynomial uniformly distributed over all polynomials with degree less than bitcount
 		PolynomialMod2(RandomNumberGenerator &rng, unsigned int bitcount)
 			{Randomize(rng, bitcount);}
@@ -343,7 +347,7 @@ inline CryptoPP::PolynomialMod2 operator/(const CryptoPP::PolynomialMod2 &a, con
 inline CryptoPP::PolynomialMod2 operator%(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b) {return a.Modulo(b);}
 
 NAMESPACE_BEGIN(std)
-inline void swap(CryptoPP::PolynomialMod2 &a, CryptoPP::PolynomialMod2 &b)
+template<> inline void swap(CryptoPP::PolynomialMod2 &a, CryptoPP::PolynomialMod2 &b)
 {
 	a.swap(b);
 }

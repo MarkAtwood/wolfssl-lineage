@@ -194,7 +194,8 @@ void RawIDA::ProcessInputQueues()
 		for (i=0; i<m_threshold; i++)
 		{
 			inputQueues[i].RetrieveNextMessage();
-			inputQueues[i].TransferAllTo(ChannelSwitch(*this, WordToString(inputChannelIds[i])));
+			ChannelSwitch channelSwitch(*this, WordToString(inputChannelIds[i]));
+			inputQueues[i].TransferAllTo(channelSwitch);
 		}
 	}
 }
@@ -272,7 +273,10 @@ void SecretRecovery::FlushOutputQueues()
 void SecretRecovery::OutputMessageEnds()
 {
 	if (m_pad)
-		m_outputQueues[0].TransferAllTo(PaddingRemover(new Redirector(*AttachedTransformation())));
+	{
+		PaddingRemover paddingRemover(new Redirector(*AttachedTransformation()));
+		m_outputQueues[0].TransferAllTo(paddingRemover);
+	}
 
 	if (GetAutoSignalPropagation() != 0)
 		AttachedTransformation()->MessageEnd(GetAutoSignalPropagation()-1);
@@ -332,7 +336,10 @@ void InformationRecovery::FlushOutputQueues()
 void InformationRecovery::OutputMessageEnds()
 {
 	if (m_pad)
-		m_queue.TransferAllTo(PaddingRemover(new Redirector(*AttachedTransformation())));
+	{
+		PaddingRemover paddingRemover(new Redirector(*AttachedTransformation()));
+		m_queue.TransferAllTo(paddingRemover);
+	}
 
 	if (GetAutoSignalPropagation() != 0)
 		AttachedTransformation()->MessageEnd(GetAutoSignalPropagation()-1);

@@ -7,7 +7,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-// NOTE: these tags and flags are NOT COMPLETE!
+// these tags and flags are not complete
 enum ASNTag
 {
 	BOOLEAN 			= 0x01,
@@ -55,6 +55,13 @@ public:
 	BERDecodeErr(const char *err) : Exception(err) {}
 };
 
+class UnknownOID : public BERDecodeErr
+{
+public:
+	UnknownOID() : BERDecodeErr("BER decode error: unknown object identifier") {}
+	UnknownOID(const char *err) : BERDecodeErr(err) {}
+};
+
 // unsigned int DERLengthEncode(unsigned int length, byte *output=0);
 unsigned int DERLengthEncode(BufferedTransformation &out, unsigned int length);
 // returns false if indefinite length
@@ -85,9 +92,10 @@ public:
 
 	bool operator==(const OID &rhs) const {return m_values == rhs.m_values;}
 	bool operator!=(const OID &rhs) const {return !operator==(rhs);}
+	bool operator<(const OID &rhs) const {return std::lexicographical_compare(m_values.begin(), m_values.end(), rhs.m_values.begin(), rhs.m_values.end());}
 
-	OID & operator+=(unsigned long rhs) {m_values.push_back(rhs); return *this;}
-	OID operator+(unsigned long rhs) const {return OID(*this)+=rhs;}
+	inline OID & operator+=(unsigned long rhs) {m_values.push_back(rhs); return *this;}
+	inline OID operator+(unsigned long rhs) const {return OID(*this)+=rhs;}
 
 	void DEREncode(BufferedTransformation &bt) const;
 	void BERDecode(BufferedTransformation &bt);

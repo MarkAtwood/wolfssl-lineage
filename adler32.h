@@ -8,10 +8,11 @@ NAMESPACE_BEGIN(CryptoPP)
 class Adler32 : public HashModule
 {
 public:
+	enum {DIGESTSIZE = 4};
 	Adler32() {Reset();}
 	void Update(const byte *input, unsigned int length);
 	void Final(byte *hash);
-	unsigned int DigestSize() const {return 4;}
+	unsigned int DigestSize() const {return DIGESTSIZE;}
 
 	void Reset() {m_s1 = 1; m_s2 = 0;}
 

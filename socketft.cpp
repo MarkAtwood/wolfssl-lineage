@@ -5,12 +5,13 @@
 
 #ifdef SOCKETS_AVAILABLE
 
-#include <strstream>	// GCC workaround: 2.95.2 doesn't have <sstream>
-
 #ifdef USE_BERKELEY_STYLE_SOCKETS
 #include <errno.h>
 #include <netdb.h>
+#include <unistd.h>
+#include <arpa/inet.h>
 #include <netinet/in.h>
+#include <sys/ioctl.h>
 #endif
 
 NAMESPACE_BEGIN(CryptoPP)
@@ -23,13 +24,6 @@ const int SOCKET_ERROR = -1;
 const int SOCKET_EINVAL = EINVAL;
 const int SOCKET_EWOULDBLOCK = EWOULDBLOCK;
 #endif
-
-static std::string IntToString(int i)
-{
-	std::ostrstream result;
-	result << i << '\x0';
-	return result.str();
-}
 
 Socket::Err::Err(socket_t s, const std::string& operation, int error)
 	: Exception("Socket: error " + IntToString(error) + " during operation " + operation)
@@ -119,7 +113,8 @@ void Socket::Bind(unsigned int port, const char *addr)
 void Socket::Bind(const sockaddr *psa, unsigned int saLen)
 {
 	assert(m_s != INVALID_SOCKET);
-	CheckAndHandleError("bind", bind(m_s, psa, saLen));
+	// cygwin workaround: needs const_cast
+	CheckAndHandleError("bind", bind(m_s, const_cast<sockaddr *>(psa), saLen));
 }
 
 void Socket::Listen(int backlog)
@@ -175,6 +170,12 @@ bool Socket::Accept(Socket& target, sockaddr *psa, int *psaLen)
 	return true;
 }
 
+void Socket::GetSockName(sockaddr *psa, int *psaLen)
+{
+	assert(m_s != INVALID_SOCKET);
+	CheckAndHandleError("getsockname", getsockname(m_s, psa, psaLen));
+}
+
 unsigned int Socket::Send(const byte* buf, unsigned int bufLen, int flags)
 {
 	assert(m_s != INVALID_SOCKET);
@@ -213,7 +214,8 @@ bool Socket::SendReady(const timeval *timeout)
 	fd_set fds;
 	FD_ZERO(&fds);
 	FD_SET(m_s, &fds);
-	int ready = select(m_s+1, NULL, &fds, NULL, timeout);
+	// cygwin workaround: needs const_cast
+	int ready = select(m_s+1, NULL, &fds, NULL, const_cast<timeval *>(timeout));
 	CheckAndHandleError("select", ready);
 	return ready > 0;
 }
@@ -223,7 +225,8 @@ bool Socket::ReceiveReady(const timeval *timeout)
 	fd_set fds;
 	FD_ZERO(&fds);
 	FD_SET(m_s, &fds);
-	int ready = select(m_s+1, &fds, NULL, NULL, timeout);
+	// cygwin workaround: needs const_cast
+	int ready = select(m_s+1, &fds, NULL, NULL, const_cast<timeval *>(timeout));
 	CheckAndHandleError("select", ready);
 	return ready > 0;
 }
@@ -247,6 +250,15 @@ void Socket::StartSockets()
 	int result = WSAStartup(0x0002, &wsd);
 	if (result != 0)
 		throw Err(INVALID_SOCKET, "WSAStartup", result);
+#endif
+}
+
+void Socket::ShutdownSockets()
+{
+#ifdef USE_WINDOWS_STYLE_SOCKETS
+	int result = WSACleanup();
+	if (result != 0)
+		throw Err(INVALID_SOCKET, "WSACleanup", result);
 #endif
 }
 

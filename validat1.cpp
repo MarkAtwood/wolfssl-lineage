@@ -371,12 +371,12 @@ bool BlockTransformationTest(const CipherFactory &cg, BufferedTransformation &va
 		valdata.Get(plain, cg.BlockSize());
 		valdata.Get(cipher, cg.BlockSize());
 
-		apbt trans = cg.NewEncryption(key);
-		trans->ProcessBlock(plain, out);
+		apbt transE = cg.NewEncryption(key);
+		transE->ProcessBlock(plain, out);
 		fail = memcmp(out, cipher, cg.BlockSize()) != 0;
 
-		trans = (apbt&) cg.NewDecryption(key);
-		trans->ProcessBlock(out, outplain);
+		apbt transD = cg.NewDecryption(key);
+		transD->ProcessBlock(out, outplain);
 		fail=fail || memcmp(outplain, plain, cg.BlockSize());
 
 		pass = pass && !fail;
@@ -526,18 +526,39 @@ bool CipherModesValidate()
 		cout << (fail ? "FAILED   " : "passed   ") << "CBC decryption with ciphertext stealing (CTS)" << endl;
 	}
 	{
+		// generated with Crypto++
+		const byte decryptionIV[] = {0x4D, 0xD0, 0xAC, 0x8F, 0x47, 0xCF, 0x79, 0xCE};
+		const byte encrypted[] = {0x12, 0x34, 0x56};
+
+		byte mutableIV[8];
+		memcpy(mutableIV, iv, 8);
+
+		CBC_CTS_Encryptor cbcE(desE, mutableIV, NULL, true);
+		fail = !TestFilter(cbcE, plain, 3, encrypted, sizeof(encrypted));
+		fail = memcmp(mutableIV, decryptionIV, 8) != 0 || fail;
+		pass = pass && !fail;
+		cout << (fail ? "FAILED   " : "passed   ") << "CBC encryption with ciphertext and IV stealing" << endl;
+		
+		CBC_CTS_Decryptor cbcD(desD, mutableIV);
+		fail = !TestFilter(cbcD, encrypted, sizeof(encrypted), plain, 3);
+		pass = pass && !fail;
+		cout << (fail ? "FAILED   " : "passed   ") << "CBC decryption with ciphertext and IV stealing" << endl;
+	}
+	{
 		const byte encrypted[] = {	// from FIPS 81
 			0xF3,0x09,0x62,0x49,0xC7,0xF4,0x6E,0x51,
 			0xA6,0x9E,0x83,0x9B,0x1A,0x92,0xF7,0x84,
 			0x03,0x46,0x71,0x33,0x89,0x8E,0xA6,0x22};
 
 		CFBEncryption cfbE(desE, iv);
-		fail = !TestFilter(StreamCipherFilter(cfbE), plain, sizeof(plain), encrypted, sizeof(encrypted));
+		StreamCipherFilter eFilter(cfbE);
+		fail = !TestFilter(eFilter, plain, sizeof(plain), encrypted, sizeof(encrypted));
 		pass = pass && !fail;
 		cout << (fail ? "FAILED   " : "passed   ") << "CFB encryption" << endl;
 
 		CFBDecryption cfbD(desE, iv);
-		fail = !TestFilter(StreamCipherFilter(cfbD), encrypted, sizeof(encrypted), plain, sizeof(plain));
+		StreamCipherFilter dFilter(cfbD);
+		fail = !TestFilter(dFilter, encrypted, sizeof(encrypted), plain, sizeof(plain));
 		pass = pass && !fail;
 		cout << (fail ? "FAILED   " : "passed   ") << "CFB decryption" << endl;
 	}
@@ -548,7 +569,8 @@ bool CipherModesValidate()
 			0x3d,0x6d,0x5b,0xe3,0x25,0x5a,0xf8,0xc3};
 
 		OFB ofb(desE, iv);
-		fail = !TestFilter(StreamCipherFilter(ofb), plain, sizeof(plain), encrypted, sizeof(encrypted));
+		StreamCipherFilter filter(ofb);
+		fail = !TestFilter(filter, plain, sizeof(plain), encrypted, sizeof(encrypted));
 		pass = pass && !fail;
 		cout << (fail ? "FAILED   " : "passed   ") << "OFB" << endl;
 	}
@@ -559,7 +581,8 @@ bool CipherModesValidate()
 			0xFA, 0x2F, 0x80, 0xF4, 0x80, 0xB8, 0x6F, 0x75};
 
 		CounterMode cm(desE, iv);
-		fail = !TestFilter(StreamCipherFilter(cm), plain, sizeof(plain), encrypted, sizeof(encrypted));
+		StreamCipherFilter filter(cm);
+		fail = !TestFilter(filter, plain, sizeof(plain), encrypted, sizeof(encrypted));
 		pass = pass && !fail;
 		cout << (fail ? "FAILED   " : "passed   ") << "Counter Mode" << endl;
 	}
@@ -575,12 +598,14 @@ bool CipherModesValidate()
 			0x35, 0x80, 0xC5, 0xC4, 0x6B, 0x81, 0x24, 0xE2};
 
 		CBC_MAC<DESEncryption> cbcmac(key);
-		fail = !TestFilter(HashFilter(cbcmac), plain, sizeof(plain), mac1, sizeof(mac1));
+		HashFilter cbcmacFilter(cbcmac);
+		fail = !TestFilter(cbcmacFilter, plain, sizeof(plain), mac1, sizeof(mac1));
 		pass = pass && !fail;
 		cout << (fail ? "FAILED   " : "passed   ") << "CBC MAC" << endl;
 
 		DMAC<DESEncryption> dmac(key);
-		fail = !TestFilter(HashFilter(dmac), plain, sizeof(plain), mac2, sizeof(mac2));
+		HashFilter dmacFilter(dmac);
+		fail = !TestFilter(dmacFilter, plain, sizeof(plain), mac2, sizeof(mac2));
 		pass = pass && !fail;
 		cout << (fail ? "FAILED   " : "passed   ") << "DMAC" << endl;
 	}
@@ -629,12 +654,12 @@ bool RC2Validate()
 		valdata.Get(plain, RC2Encryption::BLOCKSIZE);
 		valdata.Get(cipher, RC2Encryption::BLOCKSIZE);
 
-		apbt trans(new RC2Encryption(key, keyLen, effectiveLen));
-		trans->ProcessBlock(plain, out);
+		apbt transE(new RC2Encryption(key, keyLen, effectiveLen));
+		transE->ProcessBlock(plain, out);
 		fail = memcmp(out, cipher, RC2Encryption::BLOCKSIZE) != 0;
 
-		trans = (apbt&) apbt(new RC2Decryption(key, keyLen, effectiveLen));
-		trans->ProcessBlock(out, outplain);
+		apbt transD(new RC2Decryption(key, keyLen, effectiveLen));
+		transD->ProcessBlock(out, outplain);
 		fail=fail || memcmp(outplain, plain, RC2Encryption::BLOCKSIZE);
 
 		pass = pass && !fail;
@@ -930,7 +955,7 @@ bool Diamond2Validate()
 	byte key[32], plain[16], cipher[16], out[16], outplain[16];
 	byte blocksize, rounds, keysize;
 	bool pass=true, fail;
-	apbt diamond;
+	member_ptr<BlockTransformation> diamond;	// VC60 workaround: auto_ptr lacks reset
 
 	while (valdata.MaxRetrievable() >= 1)
 	{
@@ -942,17 +967,17 @@ bool Diamond2Validate()
 		valdata.Get(cipher, blocksize);
 
 		if (blocksize==16)
-			diamond = (apbt&) apbt(new Diamond2Encryption(key, keysize, rounds));
+			diamond.reset(new Diamond2Encryption(key, keysize, rounds));
 		else
-			diamond = (apbt&) apbt(new Diamond2LiteEncryption(key, keysize, rounds));
+			diamond.reset(new Diamond2LiteEncryption(key, keysize, rounds));
 
 		diamond->ProcessBlock(plain, out);
 		fail=memcmp(out, cipher, blocksize) != 0;
 
 		if (blocksize==16)
-			diamond = (apbt&) apbt(new Diamond2Decryption(key, keysize, rounds));
+			diamond.reset(new Diamond2Decryption(key, keysize, rounds));
 		else
-			diamond = (apbt&) apbt(new Diamond2LiteDecryption(key, keysize, rounds));
+			diamond.reset(new Diamond2LiteDecryption(key, keysize, rounds));
 
 		diamond->ProcessBlock(out, outplain);
 		fail=fail || memcmp(outplain, plain, blocksize);

@@ -34,9 +34,9 @@ public:
 	class Err : public Exception {public: Err(const std::string &what) : Exception("HuffmanDecoder: " + what) {}};
 
 	HuffmanDecoder() {}
-	HuffmanDecoder(unsigned int *codeBits, unsigned int nCodes)	{Initialize(codeBits, nCodes);}
+	HuffmanDecoder(const unsigned int *codeBits, unsigned int nCodes)	{Initialize(codeBits, nCodes);}
 
-	void Initialize(unsigned int *codeBits, unsigned int nCodes);
+	void Initialize(const unsigned int *codeBits, unsigned int nCodes);
 	unsigned int Decode(code_t code, /* out */ value_t &value) const;
 	bool Decode(LowFirstBitReader &reader, value_t &value) const;
 
@@ -73,7 +73,7 @@ private:
 	SecBlock<LookupEntry> m_cache;
 };
 
-// decompressor for the DEFLATE algorithm, as defined in RFC 1591
+// DEFLATE (RFC 1951) decompressor
 
 class Inflator : public Filter, public BufferedTransformationWithAutoSignal
 {
@@ -94,8 +94,12 @@ public:
 	void Flush(bool completeFlush, int propagation=-1);
 	void MessageEnd(int propagation=-1);
 
-protected:
 	virtual unsigned int GetLog2WindowSize() const {return 15;}
+
+protected:
+	ByteQueue m_inQueue;
+
+private:
 	virtual unsigned int MaxPrestreamHeaderSize() const {return 0;}
 	virtual void ProcessPrestreamHeader() {}
 	virtual void ProcessDecompressedData(const byte *string, unsigned int length)
@@ -103,12 +107,9 @@ protected:
 	virtual unsigned int MaxPoststreamTailSize() const {return 0;}
 	virtual void ProcessPoststreamTail() {}
 
-	ByteQueue m_inQueue;
-
-private:
 	void ProcessInput(bool flush);
 	void DecodeHeader();
-	void DecodeBody();
+	bool DecodeBody();
 	void FlushOutput();
 	void OutputByte(byte b);
 	void OutputString(const byte *string, unsigned int length);

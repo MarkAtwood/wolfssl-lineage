@@ -17,6 +17,7 @@ class DefaultEncryptor : public ProxyFilter
 {
 public:
 	DefaultEncryptor(const char *passphrase, BufferedTransformation *outQueue = NULL);
+	DefaultEncryptor(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQueue = NULL);
 
 protected:
 	void FirstPut(const byte *);
@@ -31,6 +32,7 @@ class DefaultDecryptor : public ProxyFilter
 {
 public:
 	DefaultDecryptor(const char *passphrase, BufferedTransformation *outQueue = NULL, bool throwException=true);
+	DefaultDecryptor(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQueue = NULL, bool throwException=true);
 
 	class Err : public BufferedTransformation::Err
 	{
@@ -62,6 +64,7 @@ class DefaultEncryptorWithMAC : public ProxyFilter
 {
 public:
 	DefaultEncryptorWithMAC(const char *passphrase, BufferedTransformation *outQueue = NULL);
+	DefaultEncryptorWithMAC(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQueue = NULL);
 
 protected:
 	void FirstPut(const byte *inString) {}
@@ -77,6 +80,7 @@ public:
 	class MACBadErr : public DefaultDecryptor::Err {public: MACBadErr() : DefaultDecryptor::Err("DefaultDecryptorWithMAC: MAC check failed") {}};
 
 	DefaultDecryptorWithMAC(const char *passphrase, BufferedTransformation *outQueue = NULL, bool throwException=true);
+	DefaultDecryptorWithMAC(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQueue = NULL, bool throwException=true);
 
 	DefaultDecryptor::State CurrentState() const;
 	bool CheckLastMAC() const;

@@ -6,8 +6,6 @@
 #include "nbtheory.h"
 #include "modarith.h"
 
-#include "algebra.cpp"
-
 NAMESPACE_BEGIN(CryptoPP)
 
 MQV::MQV(const Integer &p, const Integer &q, const Integer &g)
@@ -93,18 +91,18 @@ bool MQV::Agree(byte *agreedValue, const byte *staticPrivateKey, const byte *eph
 	Integer v(ephemeralPrivateKey+q.ByteCount(), p.ByteCount());
 
 	Integer h2 = Integer::Power2((q.BitCount()+1)/2);
-	MontgomeryRepresentation mr(p);
-	Integer b = mr.Exponentiate(mr.ConvertIn(ww), h2+vv%h2);
-	b = mr.Multiply(b, mr.ConvertIn(vv));
+	ModularArithmetic mr(p);
+	Integer b = mr.Exponentiate(ww, h2+vv%h2);
+	b = mr.Multiply(b, vv);
 
 	const Integer e[2] = {q, ((h2+v%h2)*s+u) % q};
 	Integer r[2];
-	SimultaneousExponentiation(r, mr, b, e, e+2);
+	mr.SimultaneousExponentiate(r, b, e, 2);
 
 	if (r[0] != mr.One() || r[1] == mr.One())
 		return false;
 
-	mr.ConvertOut(r[1]).Encode(agreedValue, AgreedValueLength());
+	r[1].Encode(agreedValue, AgreedValueLength());
 	return true;
 }
 

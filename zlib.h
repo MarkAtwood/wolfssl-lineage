@@ -12,13 +12,13 @@ class ZlibCompressor : public Deflator
 public:
 	ZlibCompressor(BufferedTransformation *outQ=NULL, unsigned int deflateLevel=DEFAULT_DEFLATE_LEVEL, unsigned int log2WindowSize=DEFAULT_LOG2_WINDOW_SIZE);
 
-	void Put(byte inByte);
-	void Put(const byte *inString, unsigned int length);
-	void MessageEnd(int propagate=-1);
-
 	unsigned int GetCompressionLevel() const;
 
 private:
+	void WritePrestreamHeader();
+	void ProcessUncompressedData(const byte *string, unsigned int length);
+	void WritePoststreamTail();
+
 	Adler32 m_adler32;
 };
 
@@ -32,9 +32,9 @@ public:
 	class UnsupportedPresetDictionary : public Err {public: UnsupportedPresetDictionary() : Err(INVALID_DATA_FORMAT, "ZlibDecompressor: unsupported preset dictionary") {}};
 
 	ZlibDecompressor(BufferedTransformation *outQueue = NULL, bool repeat = false);
-
-protected:
 	unsigned int GetLog2WindowSize() const {return m_log2WindowSize;}
+
+private:
 	unsigned int MaxPrestreamHeaderSize() const {return 2;}
 	void ProcessPrestreamHeader();
 	void ProcessDecompressedData(const byte *string, unsigned int length);

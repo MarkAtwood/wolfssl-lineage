@@ -19,7 +19,7 @@ public:
 
 	operator HANDLE() {return m_h;}
 	HANDLE GetHandle() {return m_h;}
-	bool HandleValid();
+	bool HandleValid() const;
 	void AttachHandle(HANDLE h, bool own=false);
 	HANDLE DetachHandle();
 	void CloseHandle();

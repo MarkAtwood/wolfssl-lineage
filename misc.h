@@ -67,6 +67,28 @@ inline bool CheckEndianess(bool highFirst)
 #endif
 }
 
+template <class T>		// can't use <sstream> because GCC 2.95.2 doesn't have it
+std::string IntToString(T a)
+{
+	if (a == 0)
+		return "0";
+	bool negate = false;
+	if (a < 0)
+	{
+		negate = true;
+		a = -a;
+	}
+	std::string result;
+	while (a > 0)
+	{
+		result = char('0' + a % 10) + result;
+		a = a / 10;
+	}
+	if (negate)
+		result = "-" + result;
+	return result;
+}
+
 // ************** rotate functions ***************
 
 template <class T> inline T rotlFixed(T x, unsigned int y)
@@ -500,6 +522,8 @@ template <class T> struct SecBlock
 		{return ptr+size;}
 	T* End()
 		{return ptr+size;}
+
+	unsigned int Size() const {return size;}
 
 	void Assign(const T *t, unsigned int len)
 	{

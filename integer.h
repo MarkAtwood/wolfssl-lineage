@@ -73,6 +73,9 @@ public:
 		/// convert from big-endian byte array
 		Integer(const byte *encodedInteger, unsigned int byteCount, Signedness s=UNSIGNED);
 
+		/// convert from big-endian form stored in a BufferedTransformation
+		Integer(BufferedTransformation &bt, unsigned int byteCount, Signedness s=UNSIGNED);
+
 		/// convert from BER encoded byte array stored in a BufferedTransformation object
 		Integer(BufferedTransformation &bt);
 
@@ -318,7 +321,10 @@ public:
 		/// calculate r and q such that (a == d*q + r) && (0 <= r < abs(d))
 		static void Divide(Integer &r, Integer &q, const Integer &a, const Integer &d);
 		/// use a faster division algorithm when divisor is short
-		static word ShortDivide(Integer &q, const Integer &a, word d);
+		static void Divide(word &r, Integer &q, const Integer &a, word d);
+
+		/// returns same result as Divide(r, q, a, Power2(n)), but faster
+		static void DivideByPowerOf2(Integer &r, Integer &q, const Integer &a, unsigned int n);
 
 		/// greatest common divisor
 		static Integer Gcd(const Integer &a, const Integer &n);
@@ -388,7 +394,7 @@ inline CryptoPP::Integer operator/(const CryptoPP::Integer &a, CryptoPP::word b)
 inline CryptoPP::word    operator%(const CryptoPP::Integer &a, CryptoPP::word b) {return a.Modulo(b);}
 
 NAMESPACE_BEGIN(std)
-inline void swap(CryptoPP::Integer &a, CryptoPP::Integer &b)
+template<> inline void swap(CryptoPP::Integer &a, CryptoPP::Integer &b)
 {
 	a.swap(b);
 }

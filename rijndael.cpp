@@ -1,230 +1,365 @@
-// rijndael.cpp - modified by Wei Dai from Brian Gladman's rijndael.c
+// rijndael.cpp - modified by Chris Morgan <cmorgan@wpi.edu>
+// and Wei Dai from Paulo Baretto's Rijndael implementation
+// The original code and all modifications are in the public domain.
 
-/* This is an independent implementation of the encryption algorithm:	*/
-/*																		*/
-/*		   RIJNDAEL by Joan Daemen and Vincent Rijmen					*/
-/*																		*/
-/* which is a candidate algorithm in the Advanced Encryption Standard	*/
-/* programme of the US National Institute of Standards and Technology.	*/
-/*																		*/
-/* Copyright in this implementation is held by Dr B R Gladman but I 	*/
-/* hereby give permission for its free direct or derivative use subject */
-/* to acknowledgment of its origin and compliance with any conditions	*/
-/* that the originators of the algorithm place on its exploitation. 	*/
-/*																		*/
-/* Dr Brian Gladman (gladman@seven77.demon.co.uk) 14th January 1999 	*/
+// This is the original introductory comment:
+
+/**
+ * version 3.0 (December 2000)
+ *
+ * Optimised ANSI C code for the Rijndael cipher (now AES)
+ *
+ * author Vincent Rijmen <vincent.rijmen@esat.kuleuven.ac.be>
+ * author Antoon Bosselaers <antoon.bosselaers@esat.kuleuven.ac.be>
+ * author Paulo Barreto <paulo.barreto@terra.com.br>
+ *
+ * This code is hereby placed in the public domain.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHORS ''AS IS'' AND ANY EXPRESS
+ * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #include "pch.h"
 #include "rijndael.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/* initialise the key schedule from the user supplied key	*/
-
-#define ls_box(x)							 \
-	((word32)sbx_tab[GETBYTE(x, 0)] <<	0) ^	\
-	((word32)sbx_tab[GETBYTE(x, 1)] <<	8) ^	\
-	((word32)sbx_tab[GETBYTE(x, 2)] << 16) ^	\
-	((word32)sbx_tab[GETBYTE(x, 3)] << 24)
-
 Rijndael::Rijndael(const byte *userKey, unsigned int keylen)
-	: k_len(keylen/4), key(k_len*5 + 24)
+	: m_rounds(keylen/4 + 6), m_key(4*(m_rounds+1))
 {
 	assert(keylen == KeyLength(keylen));
 
-	word32 t;
-	int i;
+	word32 temp, *rk = m_key;
+	unsigned int i=0;
 
-	GetUserKeyLittleEndian(key.ptr, k_len, userKey, keylen);
+	GetUserKeyBigEndian(rk, keylen/4, userKey, keylen);
 
-	switch(k_len)
+	switch(keylen)
 	{
-		case 4: t = key[3];
-				for(i = 0; i < 10; ++i)
-				{
-					t = rotrFixed(t, 8);
-					t = ls_box(t) ^ rco_tab[i];
-					key[4 * i + 4] = t ^= key[4 * i];
-					key[4 * i + 5] = t ^= key[4 * i + 1];
-					key[4 * i + 6] = t ^= key[4 * i + 2];
-					key[4 * i + 7] = t ^= key[4 * i + 3];
-				}
-				break;
+	case 16:
+		for (;;)
+		{
+			temp  = rk[3];
+			rk[4] = rk[0] ^
+				(Te4[(temp >> 16) & 0xff] & 0xff000000) ^
+				(Te4[(temp >>  8) & 0xff] & 0x00ff0000) ^
+				(Te4[(temp      ) & 0xff] & 0x0000ff00) ^
+				(Te4[(temp >> 24)       ] & 0x000000ff) ^
+				rcon[i];
+			rk[5] = rk[1] ^ rk[4];
+			rk[6] = rk[2] ^ rk[5];
+			rk[7] = rk[3] ^ rk[6];
+			if (++i == 10)
+				return;
+			rk += 4;
+		}
 
-		case 6: t = key[5];
-				for(i = 0; i < 8; ++i)
-				{
-					t = rotrFixed(t,  8);
-					t = ls_box(t) ^ rco_tab[i];
-					key[6 * i + 6] = t ^= key[6 * i];
-					key[6 * i + 7] = t ^= key[6 * i + 1];
-					key[6 * i + 8] = t ^= key[6 * i + 2];
-					key[6 * i + 9] = t ^= key[6 * i + 3];
-					key[6 * i + 10] = t ^= key[6 * i + 4];
-					key[6 * i + 11] = t ^= key[6 * i + 5];
-				}
-				break;
+	case 24:
+		for (;;) {
+			temp = rk[ 5];
+			rk[ 6] = rk[ 0] ^
+				(Te4[(temp >> 16) & 0xff] & 0xff000000) ^
+				(Te4[(temp >>  8) & 0xff] & 0x00ff0000) ^
+				(Te4[(temp      ) & 0xff] & 0x0000ff00) ^
+				(Te4[(temp >> 24)       ] & 0x000000ff) ^
+				rcon[i];
+			rk[ 7] = rk[ 1] ^ rk[ 6];
+			rk[ 8] = rk[ 2] ^ rk[ 7];
+			rk[ 9] = rk[ 3] ^ rk[ 8];
+			if (++i == 8)
+				return;
+			rk[10] = rk[ 4] ^ rk[ 9];
+			rk[11] = rk[ 5] ^ rk[10];
+			rk += 6;
+		}
 
-		case 8: t = key[7];
-				for(i = 0; i < 7; ++i)
-				{
-					t = rotrFixed(t,  8);
-					t = ls_box(t) ^ rco_tab[i];
-					key[8 * i + 8] = t ^= key[8 * i];
-					key[8 * i + 9] = t ^= key[8 * i + 1];
-					key[8 * i + 10] = t ^= key[8 * i + 2];
-					key[8 * i + 11] = t ^= key[8 * i + 3];
-					key[8 * i + 12] = t = key[8 * i + 4] ^ ls_box(t);				\
-					key[8 * i + 13] = t ^= key[8 * i + 5];
-					key[8 * i + 14] = t ^= key[8 * i + 6];
-					key[8 * i + 15] = t ^= key[8 * i + 7];
-				}
-				break;
+	case 32:
+        for (;;) {
+        	temp = rk[ 7];
+        	rk[ 8] = rk[ 0] ^
+        		(Te4[(temp >> 16) & 0xff] & 0xff000000) ^
+        		(Te4[(temp >>  8) & 0xff] & 0x00ff0000) ^
+        		(Te4[(temp      ) & 0xff] & 0x0000ff00) ^
+        		(Te4[(temp >> 24)       ] & 0x000000ff) ^
+        		rcon[i];
+        	rk[ 9] = rk[ 1] ^ rk[ 8];
+        	rk[10] = rk[ 2] ^ rk[ 9];
+        	rk[11] = rk[ 3] ^ rk[10];
+			if (++i == 7)
+				return;
+        	temp = rk[11];
+        	rk[12] = rk[ 4] ^
+        		(Te4[(temp >> 24)       ] & 0xff000000) ^
+        		(Te4[(temp >> 16) & 0xff] & 0x00ff0000) ^
+        		(Te4[(temp >>  8) & 0xff] & 0x0000ff00) ^
+        		(Te4[(temp      ) & 0xff] & 0x000000ff);
+        	rk[13] = rk[ 5] ^ rk[12];
+        	rk[14] = rk[ 6] ^ rk[13];
+        	rk[15] = rk[ 7] ^ rk[14];
+
+			rk += 8;
+        }
 	}
 }
-
-/* encrypt a block of text	*/
-
-#define f_rn(bo, bi, n, k)							\
-	bo[n] =  ft_tab[0][GETBYTE(bi[n],0)] ^			   \
-			 ft_tab[1][GETBYTE(bi[(n + 1) & 3],1)] ^   \
-			 ft_tab[2][GETBYTE(bi[(n + 2) & 3],2)] ^   \
-			 ft_tab[3][GETBYTE(bi[(n + 3) & 3],3)] ^ *(k + n)
-
-#define f_rl(bo, bi, n, k)										\
-	bo[n] = (word32)sbx_tab[GETBYTE(bi[n],0)] ^ 				   \
-		rotlFixed(((word32)sbx_tab[GETBYTE(bi[(n + 1) & 3],1)]),  8) ^	\
-		rotlFixed(((word32)sbx_tab[GETBYTE(bi[(n + 2) & 3],2)]), 16) ^	\
-		rotlFixed(((word32)sbx_tab[GETBYTE(bi[(n + 3) & 3],3)]), 24) ^ *(k + n)
-
-#define f_nround(bo, bi, k) \
-	f_rn(bo, bi, 0, k); 	\
-	f_rn(bo, bi, 1, k); 	\
-	f_rn(bo, bi, 2, k); 	\
-	f_rn(bo, bi, 3, k); 	\
-	k += 4
-
-#define f_lround(bo, bi, k) \
-	f_rl(bo, bi, 0, k); 	\
-	f_rl(bo, bi, 1, k); 	\
-	f_rl(bo, bi, 2, k); 	\
-	f_rl(bo, bi, 3, k)
 
 void RijndaelEncryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
 {
-	word32 b0[4], b1[4];
+	word32 s0, s1, s2, s3, t0, t1, t2, t3;
+	const word32 *rk = m_key;
 
-	GetBlockLittleEndian(inBlock, b0[0], b0[1], b0[2], b0[3]);
+    /*
+	 * map byte array block to cipher state
+	 * and add initial round key:
+	 */
+	GetBlockBigEndian(inBlock, s0, s1, s2, s3);
+	s0 ^= rk[0];
+	s1 ^= rk[1];
+	s2 ^= rk[2];
+	s3 ^= rk[3];
+    /*
+	 * Nr - 1 full rounds:
+	 */
+    unsigned int r = m_rounds >> 1;
+    for (;;) {
+        t0 =
+            Te0[(s0 >> 24)       ] ^
+            Te1[(s1 >> 16) & 0xff] ^
+            Te2[(s2 >>  8) & 0xff] ^
+            Te3[(s3      ) & 0xff] ^
+            rk[4];
+        t1 =
+            Te0[(s1 >> 24)       ] ^
+            Te1[(s2 >> 16) & 0xff] ^
+            Te2[(s3 >>  8) & 0xff] ^
+            Te3[(s0      ) & 0xff] ^
+            rk[5];
+        t2 =
+            Te0[(s2 >> 24)       ] ^
+            Te1[(s3 >> 16) & 0xff] ^
+            Te2[(s0 >>  8) & 0xff] ^
+            Te3[(s1      ) & 0xff] ^
+            rk[6];
+        t3 =
+            Te0[(s3 >> 24)       ] ^
+            Te1[(s0 >> 16) & 0xff] ^
+            Te2[(s1 >>  8) & 0xff] ^
+            Te3[(s2      ) & 0xff] ^
+            rk[7];
 
-	b0[0] ^= key[0];
-	b0[1] ^= key[1];
-	b0[2] ^= key[2];
-	b0[3] ^= key[3];
+        rk += 8;
+        if (--r == 0) {
+            break;
+        }
 
-	const word32 *kp = key + 4;
+        s0 =
+            Te0[(t0 >> 24)       ] ^
+            Te1[(t1 >> 16) & 0xff] ^
+            Te2[(t2 >>  8) & 0xff] ^
+            Te3[(t3      ) & 0xff] ^
+            rk[0];
+        s1 =
+            Te0[(t1 >> 24)       ] ^
+            Te1[(t2 >> 16) & 0xff] ^
+            Te2[(t3 >>  8) & 0xff] ^
+            Te3[(t0      ) & 0xff] ^
+            rk[1];
+        s2 =
+            Te0[(t2 >> 24)       ] ^
+            Te1[(t3 >> 16) & 0xff] ^
+            Te2[(t0 >>  8) & 0xff] ^
+            Te3[(t1      ) & 0xff] ^
+            rk[2];
+        s3 =
+            Te0[(t3 >> 24)       ] ^
+            Te1[(t0 >> 16) & 0xff] ^
+            Te2[(t1 >>  8) & 0xff] ^
+            Te3[(t2      ) & 0xff] ^
+            rk[3];
+    }
+    /*
+	 * apply last round and
+	 * map cipher state to byte array block:
+	 */
+	s0 =
+		(Te4[(t0 >> 24)       ] & 0xff000000) ^
+		(Te4[(t1 >> 16) & 0xff] & 0x00ff0000) ^
+		(Te4[(t2 >>  8) & 0xff] & 0x0000ff00) ^
+		(Te4[(t3      ) & 0xff] & 0x000000ff) ^
+		rk[0];
+	s1 =
+		(Te4[(t1 >> 24)       ] & 0xff000000) ^
+		(Te4[(t2 >> 16) & 0xff] & 0x00ff0000) ^
+		(Te4[(t3 >>  8) & 0xff] & 0x0000ff00) ^
+		(Te4[(t0      ) & 0xff] & 0x000000ff) ^
+		rk[1];
+	s2 =
+		(Te4[(t2 >> 24)       ] & 0xff000000) ^
+		(Te4[(t3 >> 16) & 0xff] & 0x00ff0000) ^
+		(Te4[(t0 >>  8) & 0xff] & 0x0000ff00) ^
+		(Te4[(t1      ) & 0xff] & 0x000000ff) ^
+		rk[2];
+	s3 =
+		(Te4[(t3 >> 24)       ] & 0xff000000) ^
+		(Te4[(t0 >> 16) & 0xff] & 0x00ff0000) ^
+		(Te4[(t1 >>  8) & 0xff] & 0x0000ff00) ^
+		(Te4[(t2      ) & 0xff] & 0x000000ff) ^
+		rk[3];
 
-	if(k_len > 6)
-	{
-		f_nround(b1, b0, kp); f_nround(b0, b1, kp);
-	}
-
-	if(k_len > 4)
-	{
-		f_nround(b1, b0, kp); f_nround(b0, b1, kp);
-	}
-
-	f_nround(b1, b0, kp); f_nround(b0, b1, kp);
-	f_nround(b1, b0, kp); f_nround(b0, b1, kp);
-	f_nround(b1, b0, kp); f_nround(b0, b1, kp);
-	f_nround(b1, b0, kp); f_nround(b0, b1, kp);
-	f_nround(b1, b0, kp); f_lround(b0, b1, kp);
-
-	PutBlockLittleEndian(outBlock, b0[0], b0[1], b0[2], b0[3]);
+	PutBlockBigEndian(outBlock, s0, s1, s2, s3);
 }
-
-// convert encryption key schedule to decryption key schedule
-
-#define star_x(x) (((x) & 0x7f7f7f7f) << 1) ^ ((((x) & 0x80808080) >> 7) * 0x1b)
-
-#define imix_col(y,x)		\
-	u	= star_x(x);		\
-	v	= star_x(u);		\
-	w	= star_x(v);		\
-	t	= w ^ (x);			\
-   (y)	= u ^ v ^ w;		\
-   (y) ^= rotrFixed(u ^ t,	8) ^ \
-		  rotrFixed(v ^ t, 16) ^ \
-		  rotrFixed(t,24)
 
 RijndaelDecryption::RijndaelDecryption(const byte *userKey, unsigned int keylength)
 	: Rijndael(userKey, keylength)
 {
-	word32 t, u, v, w;
+	unsigned int i, j;
+	word32 temp, *rk = m_key;
 
-	int i;
-	for(i = 4; i < 4 * k_len + 24; ++i)
-	{
-		imix_col(key[i], key[i]);
+	/* invert the order of the round keys: */
+	for (i = 0, j = 4*m_rounds; i < j; i += 4, j -= 4) {
+		temp = rk[i    ]; rk[i    ] = rk[j    ]; rk[j    ] = temp;
+		temp = rk[i + 1]; rk[i + 1] = rk[j + 1]; rk[j + 1] = temp;
+		temp = rk[i + 2]; rk[i + 2] = rk[j + 2]; rk[j + 2] = temp;
+		temp = rk[i + 3]; rk[i + 3] = rk[j + 3]; rk[j + 3] = temp;
+	}
+	/* apply the inverse MixColumn transform to all round keys but the first and the last: */
+	for (i = 1; i < m_rounds; i++) {
+		rk += 4;
+		rk[0] =
+			Td0[Te4[(rk[0] >> 24)       ] & 0xff] ^
+			Td1[Te4[(rk[0] >> 16) & 0xff] & 0xff] ^
+			Td2[Te4[(rk[0] >>  8) & 0xff] & 0xff] ^
+			Td3[Te4[(rk[0]      ) & 0xff] & 0xff];
+		rk[1] =
+			Td0[Te4[(rk[1] >> 24)       ] & 0xff] ^
+			Td1[Te4[(rk[1] >> 16) & 0xff] & 0xff] ^
+			Td2[Te4[(rk[1] >>  8) & 0xff] & 0xff] ^
+			Td3[Te4[(rk[1]      ) & 0xff] & 0xff];
+		rk[2] =
+			Td0[Te4[(rk[2] >> 24)       ] & 0xff] ^
+			Td1[Te4[(rk[2] >> 16) & 0xff] & 0xff] ^
+			Td2[Te4[(rk[2] >>  8) & 0xff] & 0xff] ^
+			Td3[Te4[(rk[2]      ) & 0xff] & 0xff];
+		rk[3] =
+			Td0[Te4[(rk[3] >> 24)       ] & 0xff] ^
+			Td1[Te4[(rk[3] >> 16) & 0xff] & 0xff] ^
+			Td2[Te4[(rk[3] >>  8) & 0xff] & 0xff] ^
+			Td3[Te4[(rk[3]      ) & 0xff] & 0xff];
 	}
 }
 
-/* decrypt a block of text	*/
-
-#define i_rn(bo, bi, n, k)							\
-	bo[n] =  it_tab[0][GETBYTE(bi[n],0)] ^			   \
-			 it_tab[1][GETBYTE(bi[(n + 3) & 3],1)] ^   \
-			 it_tab[2][GETBYTE(bi[(n + 2) & 3],2)] ^   \
-			 it_tab[3][GETBYTE(bi[(n + 1) & 3],3)] ^ *(k + n)
-
-#define i_rl(bo, bi, n, k)										\
-	bo[n] = (word32)isb_tab[GETBYTE(bi[n],0)] ^ 				   \
-		rotlFixed(((word32)isb_tab[GETBYTE(bi[(n + 3) & 3],1)]),  8) ^	\
-		rotlFixed(((word32)isb_tab[GETBYTE(bi[(n + 2) & 3],2)]), 16) ^	\
-		rotlFixed(((word32)isb_tab[GETBYTE(bi[(n + 1) & 3],3)]), 24) ^ *(k + n)
-
-#define i_nround(bo, bi, k) \
-	i_rn(bo, bi, 0, k); 	\
-	i_rn(bo, bi, 1, k); 	\
-	i_rn(bo, bi, 2, k); 	\
-	i_rn(bo, bi, 3, k); 	\
-	k -= 4
-
-#define i_lround(bo, bi, k) \
-	i_rl(bo, bi, 0, k); 	\
-	i_rl(bo, bi, 1, k); 	\
-	i_rl(bo, bi, 2, k); 	\
-	i_rl(bo, bi, 3, k)
-
 void RijndaelDecryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
 {
-	word32	b0[4], b1[4];
+	word32 s0, s1, s2, s3, t0, t1, t2, t3;
+    const word32 *rk = m_key;
 
-	GetBlockLittleEndian(inBlock, b0[0], b0[1], b0[2], b0[3]);
+    /*
+	 * map byte array block to cipher state
+	 * and add initial round key:
+	 */
+	GetBlockBigEndian(inBlock, s0, s1, s2, s3);
+	s0 ^= rk[0];
+	s1 ^= rk[1];
+	s2 ^= rk[2];
+	s3 ^= rk[3];
+    /*
+     * Nr - 1 full rounds:
+     */
+    unsigned int r = m_rounds >> 1;
+    for (;;) {
+        t0 =
+            Td0[(s0 >> 24)       ] ^
+            Td1[(s3 >> 16) & 0xff] ^
+            Td2[(s2 >>  8) & 0xff] ^
+            Td3[(s1      ) & 0xff] ^
+            rk[4];
+        t1 =
+            Td0[(s1 >> 24)       ] ^
+            Td1[(s0 >> 16) & 0xff] ^
+            Td2[(s3 >>  8) & 0xff] ^
+            Td3[(s2      ) & 0xff] ^
+            rk[5];
+        t2 =
+            Td0[(s2 >> 24)       ] ^
+            Td1[(s1 >> 16) & 0xff] ^
+            Td2[(s0 >>  8) & 0xff] ^
+            Td3[(s3      ) & 0xff] ^
+            rk[6];
+        t3 =
+            Td0[(s3 >> 24)       ] ^
+            Td1[(s2 >> 16) & 0xff] ^
+            Td2[(s1 >>  8) & 0xff] ^
+            Td3[(s0      ) & 0xff] ^
+            rk[7];
 
-	b0[0] ^= key[4 * k_len + 24];
-	b0[1] ^= key[4 * k_len + 25];
-	b0[2] ^= key[4 * k_len + 26];
-	b0[3] ^= key[4 * k_len + 27];
+        rk += 8;
+        if (--r == 0) {
+            break;
+        }
 
-	const word32 *kp = key + 4 * (k_len + 5);
+        s0 =
+            Td0[(t0 >> 24)       ] ^
+            Td1[(t3 >> 16) & 0xff] ^
+            Td2[(t2 >>  8) & 0xff] ^
+            Td3[(t1      ) & 0xff] ^
+            rk[0];
+        s1 =
+            Td0[(t1 >> 24)       ] ^
+            Td1[(t0 >> 16) & 0xff] ^
+            Td2[(t3 >>  8) & 0xff] ^
+            Td3[(t2      ) & 0xff] ^
+            rk[1];
+        s2 =
+            Td0[(t2 >> 24)       ] ^
+            Td1[(t1 >> 16) & 0xff] ^
+            Td2[(t0 >>  8) & 0xff] ^
+            Td3[(t3      ) & 0xff] ^
+            rk[2];
+        s3 =
+            Td0[(t3 >> 24)       ] ^
+            Td1[(t2 >> 16) & 0xff] ^
+            Td2[(t1 >>  8) & 0xff] ^
+            Td3[(t0      ) & 0xff] ^
+            rk[3];
+    }
+    /*
+	 * apply last round and
+	 * map cipher state to byte array block:
+	 */
+   	s0 =
+   		(Td4[(t0 >> 24)       ] & 0xff000000) ^
+   		(Td4[(t3 >> 16) & 0xff] & 0x00ff0000) ^
+   		(Td4[(t2 >>  8) & 0xff] & 0x0000ff00) ^
+   		(Td4[(t1      ) & 0xff] & 0x000000ff) ^
+   		rk[0];
+   	s1 =
+   		(Td4[(t1 >> 24)       ] & 0xff000000) ^
+   		(Td4[(t0 >> 16) & 0xff] & 0x00ff0000) ^
+   		(Td4[(t3 >>  8) & 0xff] & 0x0000ff00) ^
+   		(Td4[(t2      ) & 0xff] & 0x000000ff) ^
+   		rk[1];
+   	s2 =
+   		(Td4[(t2 >> 24)       ] & 0xff000000) ^
+   		(Td4[(t1 >> 16) & 0xff] & 0x00ff0000) ^
+   		(Td4[(t0 >>  8) & 0xff] & 0x0000ff00) ^
+   		(Td4[(t3      ) & 0xff] & 0x000000ff) ^
+   		rk[2];
+   	s3 =
+   		(Td4[(t3 >> 24)       ] & 0xff000000) ^
+   		(Td4[(t2 >> 16) & 0xff] & 0x00ff0000) ^
+   		(Td4[(t1 >>  8) & 0xff] & 0x0000ff00) ^
+   		(Td4[(t0      ) & 0xff] & 0x000000ff) ^
+   		rk[3];
 
-	if(k_len > 6)
-	{
-		i_nround(b1, b0, kp); i_nround(b0, b1, kp);
-	}
-
-	if(k_len > 4)
-	{
-		i_nround(b1, b0, kp); i_nround(b0, b1, kp);
-	}
-
-	i_nround(b1, b0, kp); i_nround(b0, b1, kp);
-	i_nround(b1, b0, kp); i_nround(b0, b1, kp);
-	i_nround(b1, b0, kp); i_nround(b0, b1, kp);
-	i_nround(b1, b0, kp); i_nround(b0, b1, kp);
-	i_nround(b1, b0, kp); i_lround(b0, b1, kp);
-
-	PutBlockLittleEndian(outBlock, b0[0], b0[1], b0[2], b0[3]);
+	PutBlockBigEndian(outBlock, s0, s1, s2, s3);
 }
 
 NAMESPACE_END

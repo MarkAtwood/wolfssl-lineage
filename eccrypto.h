@@ -11,18 +11,24 @@ NAMESPACE_BEGIN(CryptoPP)
 
 /* The following classes are explicitly instantiated in eccrypto.cpp
 
-ECPublicKey<EC2N, ECDSA>;
-ECPublicKey<ECP, ECDSA>;
-ECPrivateKey<EC2N, ECDSA>;
-ECPrivateKey<ECP, ECDSA>;
-ECPublicKey<EC2N, ECNR>;
-ECPublicKey<ECP, ECNR>;
-ECPrivateKey<EC2N, ECNR>;
-ECPrivateKey<ECP, ECNR>;
-ECDHC<EC2N>;
-ECDHC<ECP>;
-ECMQVC<EC2N>;
-ECMQVC<ECP>;
+template class ECParameters<EC2N>;
+template class ECParameters<ECP>;
+template class ECPublicKey<EC2N>;
+template class ECPublicKey<ECP>;
+template class ECPrivateKey<EC2N>;
+template class ECPrivateKey<ECP>;
+template class ECDigestVerifier<EC2N, ECDSA>;
+template class ECDigestVerifier<ECP, ECDSA>;
+template class ECDigestSigner<EC2N, ECDSA>;
+template class ECDigestSigner<ECP, ECDSA>;
+template class ECDigestVerifier<EC2N, ECNR>;
+template class ECDigestVerifier<ECP, ECNR>;
+template class ECDigestSigner<EC2N, ECNR>;
+template class ECDigestSigner<ECP, ECNR>;
+template class ECDHC<EC2N>;
+template class ECDHC<ECP>;
+template class ECMQVC<EC2N>;
+template class ECMQVC<ECP>;
 */
 
 // The ECDSA signature format used by Crypto++ is as defined by IEEE P1363.
@@ -40,13 +46,19 @@ class ECParameters : virtual public PK_Precomputation
 public:
 	typedef typename EC::Point Point;
 
-	ECParameters() : m_compress(false) {}
+	ECParameters() : m_compress(false), m_encodeAsOID(false) {}
+	ECParameters(const OID &oid)
+		: m_compress(false), m_encodeAsOID(false) {LoadRecommendedParameters(oid);}
 	ECParameters(const EC &ec, const Point &G, const Integer &n)
-		: m_ec(ec), m_G(G), m_Gpc(*m_ec, G), m_n(n), m_cofactorPresent(false), m_compress(false) {}
+		: m_ec(ec), m_G(G), m_Gpc(*m_ec, G), m_n(n), m_cofactorPresent(false), m_compress(false), m_encodeAsOID(false) {}
 	ECParameters(const EC &ec, const Point &G, const Integer &n, const Integer &k)
-		: m_ec(ec), m_G(G), m_Gpc(*m_ec, G), m_n(n), m_cofactorPresent(true), m_compress(false), m_k(k) {}
+		: m_ec(ec), m_G(G), m_Gpc(*m_ec, G), m_n(n), m_cofactorPresent(true), m_compress(false), m_encodeAsOID(false), m_k(k) {}
 	ECParameters(BufferedTransformation &bt)
-		: m_compress(false) {BERDecode(bt);}
+		: m_compress(false), m_encodeAsOID(false) {BERDecode(bt);}
+
+	// enumerate OIDs for recommended parameters, use OID() to get first one
+	static OID GetNextRecommendedParametersOID(const OID &oid);
+	void LoadRecommendedParameters(const OID &oid);
 
 	void BERDecode(BufferedTransformation &bt);
 	void DEREncode(BufferedTransformation &bt) const;
@@ -59,6 +71,9 @@ public:
 
 	void SetPointCompression(bool compress) {m_compress = compress;}
 	bool GetPointCompression() const {return m_compress;}
+
+	void SetEncodeAsOID(bool encodeAsOID) {m_encodeAsOID = encodeAsOID;}
+	bool GetEncodeAsOID() const {return m_encodeAsOID;}
 
 	const EC& GetCurve() const {return *m_ec;}
 	const Point& GetBasePoint() const {return m_G;}
@@ -73,12 +88,67 @@ protected:
 	unsigned int ExponentLength() const {return m_n.ByteCount();}
 	unsigned int ExponentBitLength() const {return m_n.BitCount();}
 
+	OID m_oid;			// set if parameters loaded from a recommended curve
 	value_ptr<EC> m_ec;	// field and curve
 	Point m_G;			// base
 	EcPrecomputation<EC> m_Gpc;	// precomputed table for base
-	Integer m_n;		// order
-	bool m_cofactorPresent, m_compress;
+	Integer m_n;		// order of base point
+	bool m_cofactorPresent, m_compress, m_encodeAsOID;
 	Integer m_k;		// cofactor
+};
+
+#define EC_PARAMETERS_CONSTRUCTORS(Self, Base)								\
+	Self(const ECParameters<EC> &params)									\
+		: Base(params) {}													\
+	Self(const EC &ec, const Point &G, const Integer &n, const Integer &k)	\
+		: Base(ec, G, n, k) {}												\
+	Self(BufferedTransformation &bt)										\
+		: Base(bt) {}
+
+// Elliptic Curve Diffie-Hellman with Cofactor Multiplication
+template <class EC>
+class ECDHC : public ECParameters<EC>, public PK_WithPrecomputation<PK_SimpleKeyAgreementDomain>
+{
+public:
+	typedef typename EC::Point Point;
+
+	EC_PARAMETERS_CONSTRUCTORS(ECDHC, ECParameters<EC>)
+
+	bool ValidateDomainParameters(RandomNumberGenerator &rng) const
+		{return ValidateParameters(rng);}
+	unsigned int AgreedValueLength() const {return FieldElementLength();}
+	unsigned int PrivateKeyLength() const {return ExponentLength();}
+	unsigned int PublicKeyLength() const {return EncodedPointSize();}
+
+	void GenerateKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const;
+	bool Agree(byte *agreedValue, const byte *privateKey, const byte *otherPublicKey, bool validateOtherPublicKey=true) const;
+};
+
+// Elliptic Curve Menezes-Qu-Vanstone with Cofactor Multiplication
+template <class EC>
+class ECMQVC : public ECParameters<EC>, public PK_WithPrecomputation<PK_AuthenticatedKeyAgreementDomain>
+{
+public:
+	typedef typename EC::Point Point;
+	
+	EC_PARAMETERS_CONSTRUCTORS(ECMQVC, ECParameters<EC>)
+
+	bool ValidateDomainParameters(RandomNumberGenerator &rng) const
+		{return ValidateParameters(rng);}
+	unsigned int AgreedValueLength() const {return FieldElementLength();}
+
+	unsigned int StaticPrivateKeyLength() const {return ExponentLength();}
+	unsigned int StaticPublicKeyLength() const {return EncodedPointSize();}
+	void GenerateStaticKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const;
+
+	unsigned int EphemeralPrivateKeyLength() const {return ExponentLength()+EncodedPointSize();}
+	unsigned int EphemeralPublicKeyLength() const {return EncodedPointSize();}
+	void GenerateEphemeralKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const;
+
+	bool Agree(byte *agreedValue,
+		const byte *staticPrivateKey, const byte *ephemeralPrivateKey, 
+		const byte *staticOtherPublicKey, const byte *ephemeralOtherPublicKey,
+		bool validateStaticOtherPublicKey=true) const;
 };
 
 template <class EC>
@@ -87,6 +157,10 @@ class ECPublicKey : public ECParameters<EC>, virtual public PK_Precomputation
 public:
 	typedef typename EC::Point Point;
 	
+	ECPublicKey(const ECParameters<EC> &params, const Point &Q)
+		: ECParameters<EC>(params), m_Q(Q), m_Qpc(GetCurve(), m_Q) {}
+	ECPublicKey(const OID &oidParams, const Point &Q)
+		: ECParameters<EC>(oidParams), m_Q(Q), m_Qpc(GetCurve(), m_Q) {}
 	ECPublicKey(const EC &ec, const Point &G, const Integer &n, const Point &Q)
 		: ECParameters<EC>(ec, G, n), m_Q(Q), m_Qpc(ec, m_Q) {}
 	// construct from a SubjectPublicKeyInfo sequence
@@ -109,17 +183,32 @@ protected:
 	EcPrecomputation<EC> m_Qpc;
 };
 
+#define EC_PUBLIC_KEY_CONSTRUCTORS(Self, Base)								\
+	Self(const ECPublicKey<EC> &key)										\
+		: Base(key) {}														\
+	Self(const ECParameters<EC> &params, const Point &Q)					\
+		: Base(params, Q) {}												\
+	Self(const EC &ec, const Point &G, const Integer &n, const Point &Q)	\
+		: Base(ec, G, n, Q) {}												\
+	Self(BufferedTransformation &bt)										\
+		: Base(bt) {}
+
 template <class EC>
 class ECPrivateKey : public ECPublicKey<EC>
 {
 public:
 	typedef typename EC::Point Point;
 
+	ECPrivateKey(const ECParameters<EC> &params, const Point &Q, const Integer &d)
+		: ECPublicKey<EC>(params, Q), m_d(d) {}
 	ECPrivateKey(const EC &ec, const Point &G, const Integer &n, const Point &Q, const Integer &d)
 		: ECPublicKey<EC>(ec, G, n, Q), m_d(d) {}
 	// generate a random private key
+	ECPrivateKey(RandomNumberGenerator &rng, const ECParameters<EC> &params)
+		: ECPublicKey<EC>(params, Point()) {Randomize(rng);}
 	ECPrivateKey(RandomNumberGenerator &rng, const EC &ec, const Point &G, const Integer &n)
 		: ECPublicKey<EC>(ec, G, n, Point()) {Randomize(rng);}
+	// decode private key
 	ECPrivateKey(BufferedTransformation &bt);
 
 	void DEREncode(BufferedTransformation &bt) const;
@@ -129,23 +218,33 @@ public:
 protected:
 	typedef typename EC::FieldElement FieldElement;
 	void Randomize(RandomNumberGenerator &rng);
+	void RawDecode(BERSequenceDecoder &bt, bool needParameters);
 
 	Integer m_d;
 };
+
+#define EC_PRIVATE_KEY_CONSTRUCTORS(Self, Base)								\
+	Self(const ECPrivateKey<EC> &key)										\
+		: Base(key) {}														\
+	Self(const ECParameters<EC> &params, const Point &Q, const Integer &d)	\
+		: Base(params, Q, d) {}												\
+	Self(const EC &ec, const Point &G, const Integer &n, const Point &Q, const Integer &d)	\
+		: Base(ec, G, n, Q, d) {}											\
+	Self(RandomNumberGenerator &rng, const ECParameters<EC> &params)		\
+		: Base(rng, params) {}												\
+	Self(RandomNumberGenerator &rng, const EC &ec, const Point &G, const Integer &n)	\
+		: Base(rng, ec, G, n) {}											\
+	Self(BufferedTransformation &bt)										\
+		: Base(bt) {}
 
 template <class EC, ECSignatureScheme SS = ECNR>
 class ECDigestVerifier : public ECPublicKey<EC>, public PK_WithPrecomputation<DigestVerifier>
 {
 public:
 	typedef typename EC::Point Point;
-	
-	ECDigestVerifier(const ECPublicKey<EC> &key)
-		: ECPublicKey<EC>(key) {}
-	ECDigestVerifier(const EC &ec, const Point &G, const Integer &n, const Point &Q)
-		: ECPublicKey<EC>(ec, G, n, Q) {}
-	ECDigestVerifier(BufferedTransformation &bt)
-		: ECPublicKey<EC>(bt) {}
 
+	EC_PUBLIC_KEY_CONSTRUCTORS(ECDigestVerifier, ECPublicKey<EC>)
+	
 	bool VerifyDigest(const byte *digest, unsigned int digestLen, const byte *signature) const;
 
 	unsigned int MaxDigestLength() const {return 0xffff;}
@@ -160,14 +259,8 @@ class ECDigestSigner : public ECPrivateKey<EC>, public PK_WithPrecomputation<Dig
 {
 public:
 	typedef typename EC::Point Point;
-	
-	ECDigestSigner(const ECPrivateKey<EC> &key)
-		: ECPrivateKey<EC>(key) {}
-	ECDigestSigner(const EC &ec, const Point &G, const Integer &n, const Point &Q, const Integer &d)
-		: ECPrivateKey<EC>(ec, G, n, Q, d) {}
-	// generate a random private key
-	ECDigestSigner(RandomNumberGenerator &rng, const EC &ec, const Point &G, const Integer &n)
-		: ECPrivateKey<EC>(rng, ec, G, n) {}
+
+	EC_PRIVATE_KEY_CONSTRUCTORS(ECDigestSigner, ECPrivateKey<EC>)
 
 	void SignDigest(RandomNumberGenerator &, const byte *digest, unsigned int digestLen, byte *signature) const;
 
@@ -181,32 +274,21 @@ public:
 template <class EC, class H, ECSignatureScheme SS = ECNR>
 class ECSigner : public SignerTemplate<ECDigestSigner<EC, SS>, H>, public PK_WithPrecomputation<PK_Signer>
 {
-	typedef SignerTemplate<ECDigestSigner<EC, SS>, H> Base;
+	typedef ECDigestSigner<EC, SS> Base;
 public:
 	typedef typename EC::Point Point;
-	
-	ECSigner(const ECPrivateKey<EC> &key)
-		: Base(ECDigestSigner<EC, SS>(key)) {}
-	ECSigner(const EC &ec, const Point &G, const Integer &n, const Point &Q, const Integer &d)
-		: Base(ECDigestSigner<EC, SS>(ec, G, n, Q, d)) {}
-	// generate a random private key
-	ECSigner(RandomNumberGenerator &rng, const EC &ec, const Point &G, const Integer &n, const Point &Q, const Integer &d)
-		: Base(ECDigestSigner<EC, SS>(rng, ec, G, n, Q)) {}
+
+	EC_PRIVATE_KEY_CONSTRUCTORS(ECSigner, Base)
 };
 
 template <class EC, class H, ECSignatureScheme SS = ECNR>
 class ECVerifier : public VerifierTemplate<ECDigestVerifier<EC, SS>, H>, public PK_WithPrecomputation<PK_Verifier>
 {
-	typedef VerifierTemplate<ECDigestVerifier<EC, SS>, H> Base;
+	typedef ECDigestVerifier<EC, SS> Base;
 public:
 	typedef typename EC::Point Point;
 	
-	ECVerifier(const ECPublicKey<EC> &key)
-		: Base(ECDigestVerifier<EC, SS>(key)) {}
-	ECVerifier(const EC &ec, const Point &G, const Integer &n, const Point &Q)
-		: Base(ECDigestVerifier<EC, SS>(ec, G, n, Q)) {}
-	ECVerifier(BufferedTransformation &bt)
-		: Base(ECDigestVerifier<EC, SS>(bt)) {}
+	EC_PUBLIC_KEY_CONSTRUCTORS(ECVerifier, Base)
 };
 
 template <class EC, class MAC = HMAC<SHA>, class KDF = P1363_KDF2<SHA> >
@@ -215,12 +297,7 @@ class ECEncryptor : public ECPublicKey<EC>, public PK_WithPrecomputation<PK_Encr
 public:
 	typedef typename EC::Point Point;
 	
-	ECEncryptor(const ECPublicKey<EC> &key)
-		: ECPublicKey<EC>(key) {}
-	ECEncryptor(const EC &ec, const Point &G, const Integer &n, const Point &Q)
-		: ECPublicKey<EC>(ec, G, n, Q) {}
-	ECEncryptor(BufferedTransformation &bt)
-		: ECPublicKey<EC>(bt) {}
+	EC_PUBLIC_KEY_CONSTRUCTORS(ECEncryptor, ECPublicKey<EC>)
 
 	unsigned int MaxPlainTextLength(unsigned int cipherTextLength) const
 		{return cipherTextLength < CipherTextLength(0) ? 0 : cipherTextLength - CipherTextLength(0);}
@@ -249,18 +326,12 @@ public:
 };
 
 template <class EC, class MAC = HMAC<SHA>, class KDF = P1363_KDF2<SHA> >
-class ECDecryptor : public ECPrivateKey<EC>, public PK_WithPrecomputation<PK_Decryptor>
+class ECDecryptor : public ECPrivateKey<EC>, public PK_Decryptor
 {
 public:
 	typedef typename EC::Point Point;
 	
-	ECDecryptor(const ECPrivateKey<EC> &key)
-		: ECPrivateKey<EC>(key) {}
-	ECDecryptor(const EC &ec, const Point &G, const Integer &n, const Point &Q, const Integer &d)
-		: ECPrivateKey<EC>(ec, G, n, Q, d) {}
-	// generate a random private key
-	ECDecryptor(RandomNumberGenerator &rng, const EC &ec, const Point &G, const Integer &n)
-		: ECPrivateKey<EC>(rng, ec, G, n) {}
+	EC_PRIVATE_KEY_CONSTRUCTORS(ECDecryptor, ECPrivateKey<EC>)
 
 	unsigned int MaxPlainTextLength(unsigned int cipherTextLength) const
 		{return cipherTextLength < CipherTextLength(0) ? 0 : cipherTextLength - CipherTextLength(0);}
@@ -276,9 +347,9 @@ public:
 
 		const Integer e[2] = {m_n, m_d};
 		Point R[2];
-		SimultaneousMultiplication(R, GetCurve(), Q, e, e+2);
+		GetCurve().SimultaneousMultiply(R, Q, e, 2);
 
-		if (!R[0].identity)
+		if (!R[0].identity || R[1].identity)
 			return 0;
 
 		SecByteBlock agreedSecret(FieldElementLength());
@@ -295,56 +366,6 @@ public:
 		xorbuf(plainText, cipherText, derivedKey, plainTextLength);
 		return plainTextLength;
 	}
-};
-
-// Elliptic Curve Diffie-Hellman with Cofactor Multiplication
-template <class EC>
-class ECDHC : public ECParameters<EC>, public PK_WithPrecomputation<PK_SimpleKeyAgreementDomain>
-{
-public:
-	typedef typename EC::Point Point;
-	
-	// G is a point of prime order n, k is order of ec divided by n
-	ECDHC(const EC &ec, const Point &G, const Integer &n, const Integer &k)
-		: ECParameters<EC>(ec, G, n, k) {}
-
-	bool ValidateDomainParameters(RandomNumberGenerator &rng) const
-		{return ValidateParameters(rng);}
-	unsigned int AgreedValueLength() const {return FieldElementLength();}
-	unsigned int PrivateKeyLength() const {return ExponentLength();}
-	unsigned int PublicKeyLength() const {return EncodedPointSize();}
-
-	void GenerateKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const;
-	bool Agree(byte *agreedValue, const byte *privateKey, const byte *otherPublicKey, bool validateOtherPublicKey=true) const;
-};
-
-// Elliptic Curve Menezes-Qu-Vanstone with Cofactor Multiplication
-template <class EC>
-class ECMQVC : public ECParameters<EC>, public PK_WithPrecomputation<PK_AuthenticatedKeyAgreementDomain>
-{
-public:
-	typedef typename EC::Point Point;
-	
-	// G is a point of prime order n, k is order of ec divided by n
-	ECMQVC(const EC &ec, const Point &G, const Integer &n, const Integer &k)
-		: ECParameters<EC>(ec, G, n, k) {}
-
-	bool ValidateDomainParameters(RandomNumberGenerator &rng) const
-		{return ValidateParameters(rng);}
-	unsigned int AgreedValueLength() const {return FieldElementLength();}
-
-	unsigned int StaticPrivateKeyLength() const {return ExponentLength();}
-	unsigned int StaticPublicKeyLength() const {return EncodedPointSize();}
-	void GenerateStaticKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const;
-
-	unsigned int EphemeralPrivateKeyLength() const {return ExponentLength()+EncodedPointSize();}
-	unsigned int EphemeralPublicKeyLength() const {return EncodedPointSize();}
-	void GenerateEphemeralKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const;
-
-	bool Agree(byte *agreedValue,
-		const byte *staticPrivateKey, const byte *ephemeralPrivateKey, 
-		const byte *staticOtherPublicKey, const byte *ephemeralOtherPublicKey,
-		bool validateStaticOtherPublicKey=true) const;
 };
 
 NAMESPACE_END

@@ -75,6 +75,11 @@ DefaultEncryptor::DefaultEncryptor(const char *passphrase, BufferedTransformatio
 {
 }
 
+DefaultEncryptor::DefaultEncryptor(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQ)
+	: ProxyFilter(NULL, 0, 0, outQ), m_passphrase(passphrase, passphraseLength)
+{
+}
+
 void DefaultEncryptor::FirstPut(const byte *)
 {
 	assert(SALTLENGTH <= DefaultHashModule::DIGESTSIZE);
@@ -119,7 +124,15 @@ void DefaultEncryptor::LastPut(const byte *inString, unsigned int length)
 DefaultDecryptor::DefaultDecryptor(const char *p, BufferedTransformation *outQ, bool throwException)
 	: ProxyFilter(NULL, SALTLENGTH+BLOCKSIZE, 0, outQ)
 	, m_state(WAITING_FOR_KEYCHECK)
-	, m_passphrase((byte *)p, strlen(p))
+	, m_passphrase((const byte *)p, strlen(p))
+	, m_throwException(throwException)
+{
+}
+
+DefaultDecryptor::DefaultDecryptor(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQ, bool throwException)
+	: ProxyFilter(NULL, SALTLENGTH+BLOCKSIZE, 0, outQ)
+	, m_state(WAITING_FOR_KEYCHECK)
+	, m_passphrase(passphrase, passphraseLength)
 	, m_throwException(throwException)
 {
 }
@@ -169,20 +182,27 @@ void DefaultDecryptor::CheckKey(const byte *salt, const byte *keyCheck)
 
 // ********************************************************
 
-static DefaultMAC * NewDefaultEncryptorMAC(const char *passphrase)
+static DefaultMAC * NewDefaultEncryptorMAC(const byte *passphrase, unsigned int passphraseLength)
 {
 	unsigned int macKeyLength = DefaultMAC::KeyLength(16);
 	SecByteBlock macKey(macKeyLength);
 	// since the MAC is encrypted there is no reason to mash the passphrase for many iterations
-	Mash((const byte *)passphrase, strlen(passphrase), macKey, macKeyLength, 1);
+	Mash(passphrase, passphraseLength, macKey, macKeyLength, 1);
 	return new DefaultMAC(macKey, macKeyLength);
 }
 
 DefaultEncryptorWithMAC::DefaultEncryptorWithMAC(const char *passphrase, BufferedTransformation *outQueue)
 	: ProxyFilter(NULL, 0, 0, outQueue)
-	, m_mac(NewDefaultEncryptorMAC(passphrase))
+	, m_mac(NewDefaultEncryptorMAC((const byte *)passphrase, strlen(passphrase)))
 {
 	SetFilter(new HashFilter(*m_mac, new DefaultEncryptor(passphrase), true));
+}
+
+DefaultEncryptorWithMAC::DefaultEncryptorWithMAC(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQueue)
+	: ProxyFilter(NULL, 0, 0, outQueue)
+	, m_mac(NewDefaultEncryptorMAC(passphrase, passphraseLength))
+{
+	SetFilter(new HashFilter(*m_mac, new DefaultEncryptor(passphrase, passphraseLength), true));
 }
 
 void DefaultEncryptorWithMAC::LastPut(const byte *inString, unsigned int length)
@@ -194,10 +214,18 @@ void DefaultEncryptorWithMAC::LastPut(const byte *inString, unsigned int length)
 
 DefaultDecryptorWithMAC::DefaultDecryptorWithMAC(const char *passphrase, BufferedTransformation *outQueue, bool throwException)
 	: ProxyFilter(NULL, 0, 0, outQueue)
-	, m_mac(NewDefaultEncryptorMAC(passphrase))
+	, m_mac(NewDefaultEncryptorMAC((const byte *)passphrase, strlen(passphrase)))
 	, m_throwException(throwException)
 {
 	SetFilter(new DefaultDecryptor(passphrase, m_hashVerifier=new HashVerifier(*m_mac, NULL, HashVerifier::PUT_MESSAGE), throwException));
+}
+
+DefaultDecryptorWithMAC::DefaultDecryptorWithMAC(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQueue, bool throwException)
+	: ProxyFilter(NULL, 0, 0, outQueue)
+	, m_mac(NewDefaultEncryptorMAC(passphrase, passphraseLength))
+	, m_throwException(throwException)
+{
+	SetFilter(new DefaultDecryptor(passphrase, passphraseLength, m_hashVerifier=new HashVerifier(*m_mac, NULL, HashVerifier::PUT_MESSAGE), throwException));
 }
 
 DefaultDecryptor::State DefaultDecryptorWithMAC::CurrentState() const

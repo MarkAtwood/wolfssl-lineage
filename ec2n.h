@@ -16,7 +16,7 @@ struct EC2NPoint
 	bool operator==(const EC2NPoint &t) const
 		{return (identity && t.identity) || (!identity && !t.identity && x==t.x && y==t.y);}
 	bool operator< (const EC2NPoint &t) const
-		{return identity ? !t.identity : (t.identity && (x<t.x || (x<=t.x && y<t.y)));}
+		{return identity ? !t.identity : (!t.identity && (x<t.x || (x==t.x && y<t.y)));}
 
 	bool identity;
 	PolynomialMod2 x, y;
@@ -30,7 +30,7 @@ public:
 	typedef EC2NPoint Point;
 
 	EC2N(const Field &field, const Field::Element &a, const Field::Element &b)
-		: field(field), a(a), b(b) {}
+		: m_field(field), m_a(a), m_b(b) {}
 	// construct from BER encoded parameters
 	// this constructor will decode and extract the the fields fieldID and curve of the sequence ECParameters
 	EC2N(BufferedTransformation &bt);
@@ -41,6 +41,7 @@ public:
 	bool Equal(const Point &P, const Point &Q) const;
 	const Point& Zero() const {static const Point zero; return zero;}
 	const Point& Inverse(const Point &P) const;
+	bool InversionIsFast() const {return true;}
 	const Point& Add(const Point &P, const Point &Q) const;
 	const Point& Double(const Point &P) const;
 
@@ -53,23 +54,24 @@ public:
 	bool VerifyPoint(const Point &P) const;
 
 	unsigned int EncodedPointSize(bool compressed = false) const
-		{return 1 + (compressed?1:2)*field->MaxElementByteLength();}
+		{return 1 + (compressed?1:2)*m_field->MaxElementByteLength();}
 	// returns false if point is compressed and not valid (doesn't check if uncompressed)
+	bool DecodePoint(Point &P, BufferedTransformation &bt, unsigned int len) const;
 	bool DecodePoint(Point &P, const byte *encodedPoint, unsigned int len) const;
 	void EncodePoint(byte *encodedPoint, const Point &P, bool compressed = false) const;
 
 	Point BERDecodePoint(BufferedTransformation &bt) const;
 	void DEREncodePoint(BufferedTransformation &bt, const Point &P, bool compressed = false) const;
 
-	Integer FieldSize() const {return Integer::Power2(field->MaxElementBitLength());}
-	const Field & GetField() const {return *field;}
-	const FieldElement & GetA() const {return a;}
-	const FieldElement & GetB() const {return b;}
+	Integer FieldSize() const {return Integer::Power2(m_field->MaxElementBitLength());}
+	const Field & GetField() const {return *m_field;}
+	const FieldElement & GetA() const {return m_a;}
+	const FieldElement & GetB() const {return m_b;}
 
 private:
-	clonable_ptr<Field> field;
-	FieldElement a, b;
-	mutable Point R;
+	clonable_ptr<Field> m_field;
+	FieldElement m_a, m_b;
+	mutable Point m_R;
 };
 
 template <class T> class EcPrecomputation;

@@ -38,6 +38,8 @@ public:
 
 	unsigned int CopyMessagesTo(BufferedTransformation &target, unsigned int count=UINT_MAX) const;
 
+	void swap(MessageQueue &rhs);
+
 private:
 	unsigned long Got(unsigned long length)
 		{assert(m_lengths.front() >= length); m_lengths.front() -= length; return length;}
@@ -46,6 +48,13 @@ private:
 	std::deque<unsigned long> m_lengths;
 };
 
+NAMESPACE_END
+
+NAMESPACE_BEGIN(std)
+template<> inline void swap(CryptoPP::MessageQueue &a, CryptoPP::MessageQueue &b)
+{
+	a.swap(b);
+}
 NAMESPACE_END
 
 #endif

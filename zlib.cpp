@@ -15,31 +15,25 @@ static const byte FDICT_FLAG = 1 << 5;
 ZlibCompressor::ZlibCompressor(BufferedTransformation *outQ, unsigned int deflateLevel, unsigned int log2WindowSize)
 	: Deflator(outQ, deflateLevel, log2WindowSize)
 {
+}
+
+void ZlibCompressor::WritePrestreamHeader()
+{
 	byte cmf = DEFLATE_METHOD | ((GetLog2WindowSize()-8) << 4);
 	byte flags = GetCompressionLevel() << 6;
-
 	AttachedTransformation()->PutWord16(RoundUpToMultipleOf(cmf*256+flags, 31));
 }
 
-void ZlibCompressor::Put(byte inByte)
+void ZlibCompressor::ProcessUncompressedData(const byte *inString, unsigned int length)
 {
-	Deflator::Put(inByte);
-	m_adler32.Update(&inByte, 1);
-}
-
-void ZlibCompressor::Put(const byte *inString, unsigned int length)
-{
-	Deflator::Put(inString, length);
 	m_adler32.Update(inString, length);
 }
 
-void ZlibCompressor::MessageEnd(int propagation)
+void ZlibCompressor::WritePoststreamTail()
 {
-	Deflator::MessageEnd(0);
 	SecByteBlock adler32(4);
 	m_adler32.Final(adler32);
 	AttachedTransformation()->Put(adler32, 4);
-	Filter::MessageEnd(propagation);
 }
 
 unsigned int ZlibCompressor::GetCompressionLevel() const

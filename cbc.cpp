@@ -96,8 +96,13 @@ void CBCPaddedDecryptor::LastPut(const byte *inString, unsigned int length)
 
 // ********************************************************
 
+CBC_CTS_Encryptor::CBC_CTS_Encryptor(const BlockTransformation &cipher, byte *IV, BufferedTransformation *outQueue, bool stealIV)
+	: CipherMode(cipher, IV), FilterWithBufferedInput(S, S, 1, outQueue), m_iv(stealIV ? IV : NULL)
+{
+}
+
 CBC_CTS_Encryptor::CBC_CTS_Encryptor(const BlockTransformation &cipher, const byte *IV, BufferedTransformation *outQueue)
-	: CipherMode(cipher, IV), FilterWithBufferedInput(S, S, 1, outQueue)
+	: CipherMode(cipher, IV), FilterWithBufferedInput(S, S, 1, outQueue), m_iv(NULL)
 {
 }
 
@@ -117,7 +122,10 @@ void CBC_CTS_Encryptor::NextPut(const byte *inString, unsigned int)
 void CBC_CTS_Encryptor::LastPut(const byte *inString, unsigned int length)
 {
 	assert(length <= S);
-	if (!DidFirstPut())
+	if (length == 0)
+		return;
+
+	if (!DidFirstPut() && !m_iv)
 	{
 		xorbuf(reg, inString, length);
 		cipher.ProcessBlock(reg);
@@ -125,12 +133,15 @@ void CBC_CTS_Encryptor::LastPut(const byte *inString, unsigned int length)
 	}
 
 	// output last full ciphertext block first
-	buffer = reg;
+	memcpy(buffer, reg, S);
 	xorbuf(reg, inString, length);
 	cipher.ProcessBlock(reg);
-	AttachedTransformation()->Put(reg, S);
+	if (!DidFirstPut() && m_iv)
+		memcpy(m_iv, reg, S);
+	else
+		AttachedTransformation()->Put(reg, S);
 	// steal ciphertext from next to last block
-	AttachedTransformation()->Put(buffer, STDMAX(length, 1U));
+	AttachedTransformation()->Put(buffer, STDMAX(1U, length));
 }
 
 CBC_CTS_Decryptor::CBC_CTS_Decryptor(const BlockTransformation &cipher, const byte *IV, BufferedTransformation *outQueue)
@@ -149,24 +160,42 @@ void CBC_CTS_Decryptor::NextPut(const byte *inString, unsigned int)
 void CBC_CTS_Decryptor::LastPut(const byte *inString, unsigned int length)
 {
 	assert(length <= 2*S);
-	if (length >= S+1)
+	if (length == 0)
+		return;
+
+	const byte *pn, *pn1;
+	bool stealIV;
+
+	if (length < S+1)
 	{
-		length -= S;
-		SecByteBlock temp(S);
-
-		// decrypt last partial plaintext block
-		cipher.ProcessBlock(inString, temp);
-		xorbuf(temp, inString+S, length);
-
-		// decrypt next to last plaintext block
-		memcpy(buffer, inString+S, length);
-		memcpy(buffer+length, temp+length, S-length);
-		cipher.ProcessBlock(buffer);
-		xorbuf(buffer, reg, S);
-
-		AttachedTransformation()->Put(buffer, S);
-		AttachedTransformation()->Put(temp, length);
+		pn = inString;
+		pn1 = reg;
+		stealIV = true;
 	}
+	else
+	{
+		pn = inString + S;
+		pn1 = inString;
+		length -= S;
+		stealIV = false;
+	}
+
+	SecByteBlock temp(S);
+
+	// decrypt last partial plaintext block
+	cipher.ProcessBlock(pn1, temp);
+	xorbuf(temp, pn, length);
+
+	// decrypt next to last plaintext block
+	memcpy(buffer, pn, length);
+	memcpy(buffer+length, temp+length, S-length);
+	cipher.ProcessBlock(buffer);
+	xorbuf(buffer, reg, S);
+
+	if (!stealIV)
+		AttachedTransformation()->Put(buffer, S);
+
+	AttachedTransformation()->Put(temp, length);
 }
 
 NAMESPACE_END

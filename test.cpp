@@ -348,14 +348,15 @@ void DigestFile(const char *filename)
 	channelSwitch->AddDefaultRoute(sha256Filter);
 	file.PumpAll();
 
+	FileSink sink(cout);
 	cout << "\nMD5: ";
-	md5Filter.TransferTo(FileSink(cout));
+	md5Filter.TransferTo(sink);
 	cout << "\nSHA-1: ";
-	shaFilter.TransferTo(FileSink(cout));
+	shaFilter.TransferTo(sink);
 	cout << "\nRIPEMD-160: ";
-	ripemdFilter.TransferTo(FileSink(cout));
+	ripemdFilter.TransferTo(sink);
 	cout << "\nSHA-256: ";
-	sha256Filter.TransferTo(FileSink(cout));
+	sha256Filter.TransferTo(sink);
 }
 
 string EncryptString(const char *instr, const char *passPhrase)
@@ -506,7 +507,7 @@ void GunzipFile(const char *in, const char *out)
 void ForwardTcpPort(const char *sourcePortName, const char *destinationHost, const char *destinationPortName)
 {
 #ifdef SOCKETS_AVAILABLE
-	Socket::StartSockets();
+	SocketsInitializer sockInit;
 
 	Socket sockListen, sockSource, sockDestination;
 

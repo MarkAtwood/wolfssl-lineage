@@ -61,18 +61,18 @@ protected:
 template <class H>
 class NRSigner : public SignerTemplate<NRDigestSigner, H>, public PK_WithPrecomputation<PK_Signer>
 {
-	typedef SignerTemplate<NRDigestSigner, H> Base;
+	typedef NRDigestSigner Base;
 public:
 	NRSigner(const Integer &p, const Integer &q, const Integer &g, const Integer &y, const Integer &x)
-		: Base(NRDigestSigner(p, q, g, y, x)) {}
+		: Base(p, q, g, y, x) {}
 
 	// generate a random private key
 	NRSigner(RandomNumberGenerator &rng, unsigned int keybits)
-		: Base(NRDigestSigner(rng, keybits)) {}
+		: Base(rng, keybits) {}
 
 	// generate a random private key, given p, q, and g
 	NRSigner(RandomNumberGenerator &rng, const Integer &p, const Integer &q, const Integer &g)
-		: Base(NRDigestSigner(rng, p, q, g)) {}
+		: Base(rng, p, q, g) {}
 
 	// load a previously generated key
 	NRSigner(BufferedTransformation &storedKey)
@@ -82,10 +82,10 @@ public:
 template <class H>
 class NRVerifier : public VerifierTemplate<NRDigestVerifier, H>, public PK_WithPrecomputation<PK_Verifier>
 {
-	typedef VerifierTemplate<NRDigestVerifier, H> Base;
+	typedef NRDigestVerifier Base;
 public:
 	NRVerifier(const Integer &p, const Integer &q, const Integer &g, const Integer &y)
-		: Base(NRDigestVerifier(p, q, g, y)) {}
+		: Base(p, q, g, y) {}
 
 	// create a matching public key from a private key
 	NRVerifier(const NRSigner<H> &priv)

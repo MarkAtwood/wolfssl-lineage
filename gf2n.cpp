@@ -124,12 +124,14 @@ const PolynomialMod2 &PolynomialMod2::One()
 
 void PolynomialMod2::Decode(const byte *input, unsigned int inputLen)
 {
-	Decode(StringStore(input, inputLen), inputLen);
+	StringStore store(input, inputLen);
+	Decode(store, inputLen);
 }
 
 unsigned int PolynomialMod2::Encode(byte *output, unsigned int outputLen) const
 {
-	return Encode(ArraySink(output, outputLen), outputLen);
+	ArraySink sink(output, outputLen);
+	return Encode(sink, outputLen);
 }
 
 void PolynomialMod2::Decode(BufferedTransformation &bt, unsigned int inputLen)
@@ -523,8 +525,8 @@ GF2NP::GF2NP(const PolynomialMod2 &modulus)
 
 GF2NP::Element GF2NP::SquareRoot(const Element &a) const
 {
-	Element r;
-	for (unsigned int i=1; i<=m-1; i++)
+	Element r = a;
+	for (unsigned int i=1; i<m; i++)
 		r = Square(r);
 	return r;
 }

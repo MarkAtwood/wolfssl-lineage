@@ -166,7 +166,7 @@ unsigned long BufferedTransformation::MaxRetrievable() const
 	if (AttachedTransformation())
 		return AttachedTransformation()->MaxRetrievable();
 	else
-		return CopyTo(BitBucket());
+		return CopyTo(g_bitBucket);
 }
 
 bool BufferedTransformation::AnyRetrievable() const
@@ -193,7 +193,10 @@ unsigned int BufferedTransformation::Get(byte *outString, unsigned int getMax)
 	if (AttachedTransformation())
 		return AttachedTransformation()->Get(outString, getMax);
 	else
-		return TransferTo(ArraySink(outString, getMax), getMax);
+	{
+		ArraySink arraySink(outString, getMax);
+		return TransferTo(arraySink, getMax);
+	}
 }
 
 unsigned int BufferedTransformation::Peek(byte &outByte) const
@@ -209,7 +212,10 @@ unsigned int BufferedTransformation::Peek(byte *outString, unsigned int peekMax)
 	if (AttachedTransformation())
 		return AttachedTransformation()->Peek(outString, peekMax);
 	else
-		return CopyTo(ArraySink(outString, peekMax), peekMax);
+	{
+		ArraySink arraySink(outString, peekMax);
+		return CopyTo(arraySink, peekMax);
+	}
 }
 
 unsigned long BufferedTransformation::Skip(unsigned long skipMax)
@@ -217,7 +223,7 @@ unsigned long BufferedTransformation::Skip(unsigned long skipMax)
 	if (AttachedTransformation())
 		return AttachedTransformation()->Skip(skipMax);
 	else
-		return TransferTo(BitBucket(), skipMax);
+		return TransferTo(g_bitBucket, skipMax);
 }
 
 unsigned long BufferedTransformation::CopyTo(BufferedTransformation &target, unsigned long copyMax) const
@@ -249,7 +255,7 @@ unsigned int BufferedTransformation::NumberOfMessages() const
 	if (AttachedTransformation())
 		return AttachedTransformation()->NumberOfMessages();
 	else
-		return CopyMessagesTo(BitBucket());
+		return CopyMessagesTo(g_bitBucket);
 }
 
 bool BufferedTransformation::AnyMessages() const
@@ -273,7 +279,7 @@ unsigned int BufferedTransformation::SkipMessages(unsigned int count)
 	if (AttachedTransformation())
 		return AttachedTransformation()->SkipMessages(count);
 	else
-		return TransferMessagesTo(BitBucket(), count);
+		return TransferMessagesTo(g_bitBucket, count);
 }
 
 unsigned int BufferedTransformation::TransferMessagesTo(BufferedTransformation &target, unsigned int count)

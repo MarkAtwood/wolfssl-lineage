@@ -39,12 +39,12 @@ unsigned long Timer::ConvertTo(word64 t, Unit unit)
 	switch (unit)
 	{
 	case SECONDS:
-		return t / (TicksPerMillisecond() * 1000);
+		return (unsigned long)(t / (TicksPerMillisecond() * 1000));
 	case MILLISECONDS:
-		return t / TicksPerMillisecond();
+		return (unsigned long)(t / TicksPerMillisecond());
 	case MICROSECONDS:
 		assert(TicksPerMillisecond() % 1000 == 0);
-		return t / (TicksPerMillisecond() / 1000);
+		return (unsigned long)(t / (TicksPerMillisecond() / 1000));
 	}
 	assert(false);
 	return 0;

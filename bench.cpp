@@ -218,6 +218,13 @@ void BenchMarkEncryption(const char *name, PK_WithPrecomputation<PK_FixedLengthE
 	BenchMarkEncryption(name, dynamic_cast<PK_Encryptor &>(key), timeTotal, true);
 }
 
+void BenchMarkEncryption(const char *name, PK_WithPrecomputation<PK_Encryptor> &key, double timeTotal)
+{
+	BenchMarkEncryption(name, dynamic_cast<PK_Encryptor &>(key), timeTotal);
+	key.Precompute(16);
+	BenchMarkEncryption(name, dynamic_cast<PK_Encryptor &>(key), timeTotal, true);
+}
+
 void BenchMarkDecryption(const char *name, PK_Decryptor &priv, PK_Encryptor &pub, double timeTotal)
 {
 	unsigned int len = 16;
@@ -482,8 +489,8 @@ void BenchMarkAll(double t)
 	BenchMarkKeyed<MD5MAC>("MD5-MAC", t);
 	BenchMarkKeyed<XMACC<MD5> >("XMACC/MD5", t);
 	BenchMarkKeyed<HMAC<MD5> >("HMAC/MD5", t);
-	BenchMarkKeyed<CBC_MAC<RC6Encryption> >("CBC-MAC/RC6", t);
-	BenchMarkKeyed<DMAC<RC6Encryption> >("DMAC/RC6", t);
+	BenchMarkKeyed<CBC_MAC<RijndaelEncryption> >("CBC-MAC/Rijndael", t);
+	BenchMarkKeyed<DMAC<RijndaelEncryption> >("DMAC/Rijndael", t);
 
 	{
 		Integer p("CB6C,B8CE,6351,164F,5D0C,0C9E,9E31,E231,CF4E,D551,CBD0,E671,5D6A,7B06,D8DF,C4A7h");
@@ -610,14 +617,14 @@ void BenchMarkAll(double t)
 		ECDHC<ECP> ecdhc(ec, P, r, k);
 		ECMQVC<ECP> ecmqvc(ec, P, r, k);
 
-		BenchMarkEncryption("EC over GF(p) 168", cpub, t);
-		BenchMarkDecryption("EC over GF(p) 168", cpriv, cpub, t);
-		BenchMarkSigning("EC over GF(p) 168 NR", spriv, t);
-		BenchMarkVerification("EC over GF(p) 168 NR", spriv, spub, t);
-		BenchMarkKeyGen("EC over GF(p) 168 DHC", ecdhc, t);
-		BenchMarkAgreement("EC over GF(p) 168 DHC", ecdhc, t);
-		BenchMarkKeyGen("EC over GF(p) 168 MQVC", ecmqvc, t);
-		BenchMarkAgreement("EC over GF(p) 168 MQVC", ecmqvc, t);
+		BenchMarkEncryption("ECIES over GF(p) 168", cpub, t);
+		BenchMarkDecryption("ECIES over GF(p) 168", cpriv, cpub, t);
+		BenchMarkSigning("ECNR over GF(p) 168", spriv, t);
+		BenchMarkVerification("ECNR over GF(p) 168", spriv, spub, t);
+		BenchMarkKeyGen("ECDHC over GF(p) 168", ecdhc, t);
+		BenchMarkAgreement("ECDHC over GF(p) 168", ecdhc, t);
+		BenchMarkKeyGen("ECMQVC over GF(p) 168", ecmqvc, t);
+		BenchMarkAgreement("ECMQVC over GF(p) 168", ecmqvc, t);
 	}
 
 	cout << "<TBODY style=\"background: yellow\">" << endl;
@@ -639,14 +646,14 @@ void BenchMarkAll(double t)
 		ECDHC<EC2N> ecdhc(ec, P, r, k);
 		ECMQVC<EC2N> ecmqvc(ec, P, r, k);
 
-		BenchMarkEncryption("EC over GF(2^n) 155", cpub, t);
-		BenchMarkDecryption("EC over GF(2^n) 155", cpriv, cpub, t);
-		BenchMarkSigning("EC over GF(2^n) 155", spriv, t);
-		BenchMarkVerification("EC over GF(2^n) 155", spriv, spub, t);
-		BenchMarkKeyGen("EC over GF(2^n) 155 DHC", ecdhc, t);
-		BenchMarkAgreement("EC over GF(2^n) 155 DHC", ecdhc, t);
-		BenchMarkKeyGen("EC over GF(2^n) 155 MQVC", ecmqvc, t);
-		BenchMarkAgreement("EC over GF(2^n) 155 MQVC", ecmqvc, t);
+		BenchMarkEncryption("ECIES over GF(2^n) 155", cpub, t);
+		BenchMarkDecryption("ECIES over GF(2^n) 155", cpriv, cpub, t);
+		BenchMarkSigning("ECNR over GF(2^n) 155", spriv, t);
+		BenchMarkVerification("ECNR over GF(2^n) 155", spriv, spub, t);
+		BenchMarkKeyGen("ECDHC over GF(2^n) 155", ecdhc, t);
+		BenchMarkAgreement("ECDHC over GF(2^n) 155", ecdhc, t);
+		BenchMarkKeyGen("ECMQVC over GF(2^n) 155", ecmqvc, t);
+		BenchMarkAgreement("ECMQVC over GF(2^n) 155", ecmqvc, t);
 	}
 	cout << "</TABLE>" << endl;
 

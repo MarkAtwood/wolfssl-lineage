@@ -115,33 +115,71 @@ InvertibleRSAFunction::InvertibleRSAFunction(RandomNumberGenerator &rng, unsigne
 
 InvertibleRSAFunction::InvertibleRSAFunction(BufferedTransformation &bt)
 {
-	BERSequenceDecoder seq(bt);
+	BERSequenceDecoder privateKeyInfo(bt);
 	word32 version;
-	BERDecodeUnsigned<word32>(seq, version, INTEGER, 0, 0);	// check version
-	n.BERDecode(seq);
-	e.BERDecode(seq);
-	d.BERDecode(seq);
-	p.BERDecode(seq);
-	q.BERDecode(seq);
-	dp.BERDecode(seq);
-	dq.BERDecode(seq);
-	u.BERDecode(seq);
-	seq.MessageEnd();
+	BERDecodeUnsigned<word32>(privateKeyInfo, version, INTEGER, 0, 0);	// check version
+
+	if (privateKeyInfo.PeekByte() == INTEGER)
+	{
+		// for backwards compatibility
+		n.BERDecode(privateKeyInfo);
+		e.BERDecode(privateKeyInfo);
+		d.BERDecode(privateKeyInfo);
+		p.BERDecode(privateKeyInfo);
+		q.BERDecode(privateKeyInfo);
+		dp.BERDecode(privateKeyInfo);
+		dq.BERDecode(privateKeyInfo);
+		u.BERDecode(privateKeyInfo);
+	}
+	else
+	{
+		BERSequenceDecoder algorithm(privateKeyInfo);
+			ASN1::rsaEncryption().BERDecodeAndCheck(algorithm);
+			BERDecodeNull(algorithm);
+		algorithm.MessageEnd();
+
+		BERGeneralDecoder octetString(privateKeyInfo, OCTET_STRING);
+			BERSequenceDecoder privateKey(octetString);
+				BERDecodeUnsigned<word32>(privateKey, version, INTEGER, 0, 0);	// check version
+				n.BERDecode(privateKey);
+				e.BERDecode(privateKey);
+				d.BERDecode(privateKey);
+				p.BERDecode(privateKey);
+				q.BERDecode(privateKey);
+				dp.BERDecode(privateKey);
+				dq.BERDecode(privateKey);
+				u.BERDecode(privateKey);
+			privateKey.MessageEnd();
+		octetString.MessageEnd();
+	}
+	privateKeyInfo.MessageEnd();
 }
 
 void InvertibleRSAFunction::DEREncode(BufferedTransformation &bt) const
 {
-	DERSequenceEncoder seq(bt);
-	DEREncodeUnsigned<word32>(seq, 0);	// version
-	n.DEREncode(seq);
-	e.DEREncode(seq);
-	d.DEREncode(seq);
-	p.DEREncode(seq);
-	q.DEREncode(seq);
-	dp.DEREncode(seq);
-	dq.DEREncode(seq);
-	u.DEREncode(seq);
-	seq.MessageEnd();
+	DERSequenceEncoder privateKeyInfo(bt);
+		DEREncodeUnsigned<word32>(privateKeyInfo, 0);	// version
+
+		DERSequenceEncoder algorithm(privateKeyInfo);
+			ASN1::rsaEncryption().DEREncode(algorithm);
+			DEREncodeNull(algorithm);
+		algorithm.MessageEnd();
+
+		DERGeneralEncoder octetString(privateKeyInfo, OCTET_STRING);
+			DERSequenceEncoder privateKey(octetString);
+				DEREncodeUnsigned<word32>(privateKey, 0);	// version
+				n.DEREncode(privateKey);
+				e.DEREncode(privateKey);
+				d.DEREncode(privateKey);
+				p.DEREncode(privateKey);
+				q.DEREncode(privateKey);
+				dp.DEREncode(privateKey);
+				dq.DEREncode(privateKey);
+				u.DEREncode(privateKey);
+			privateKey.MessageEnd();
+		octetString.MessageEnd();
+
+	privateKeyInfo.MessageEnd();
 }
 
 Integer InvertibleRSAFunction::CalculateInverse(const Integer &x) const 
