@@ -29,7 +29,8 @@ RSAFunction::RSAFunction(BufferedTransformation &bt)
 	{
 		BERSequenceDecoder algorithm(subjectPublicKeyInfo);
 			ASN1::rsaEncryption().BERDecodeAndCheck(algorithm);
-			BERDecodeNull(algorithm);
+			if (!algorithm.EndReached())
+				BERDecodeNull(algorithm);
 		algorithm.MessageEnd();
 
 		BERSequenceDecoder subjectPublicKey(subjectPublicKeyInfo, BIT_STRING);
