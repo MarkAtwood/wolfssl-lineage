@@ -89,6 +89,10 @@ SOURCE=.\3way.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\adler32.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\algebra.cpp
 # End Source File
 # Begin Source File
@@ -125,11 +129,15 @@ SOURCE=.\cast.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\cast128s.cpp
+SOURCE=.\casts.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\cbc.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\channels.cpp
 # End Source File
 # Begin Source File
 
@@ -201,10 +209,6 @@ SOURCE=.\filters.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\forkjoin.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\gf256.cpp
 # End Source File
 # Begin Source File
@@ -230,6 +234,14 @@ SOURCE=.\haval.cpp
 # Begin Source File
 
 SOURCE=.\hex.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\hrtimer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ida.cpp
 # End Source File
 # Begin Source File
 
@@ -290,6 +302,10 @@ SOURCE=.\mqv.cpp
 # Begin Source File
 
 SOURCE=.\nbtheory.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\network.cpp
 # End Source File
 # Begin Source File
 
@@ -382,15 +398,18 @@ SOURCE=.\secshare.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\secsplit.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\serpent.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\sha.cpp
+
+!IF  "$(CFG)" == "cryptlib - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "cryptlib - Win32 Debug"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -442,6 +461,10 @@ SOURCE=.\wake.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\winpipes.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\xtr.cpp
 # End Source File
 # Begin Source File
@@ -462,6 +485,10 @@ SOURCE=.\zinflate.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\zlib.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ztrees.cpp
 # End Source File
 # End Group
@@ -471,6 +498,14 @@ SOURCE=.\ztrees.cpp
 # Begin Source File
 
 SOURCE=.\3way.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\adler32.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\aes.h
 # End Source File
 # Begin Source File
 
@@ -511,6 +546,10 @@ SOURCE=.\cbc.h
 # Begin Source File
 
 SOURCE=.\cbcmac.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\channels.h
 # End Source File
 # Begin Source File
 
@@ -582,10 +621,6 @@ SOURCE=.\filters.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\forkjoin.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\gf256.h
 # End Source File
 # Begin Source File
@@ -615,6 +650,14 @@ SOURCE=.\hex.h
 # Begin Source File
 
 SOURCE=.\hmac.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\hrtimer.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ida.h
 # End Source File
 # Begin Source File
 
@@ -686,11 +729,19 @@ SOURCE=.\nbtheory.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\network.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\nr.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\oaep.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\oids.h
 # End Source File
 # Begin Source File
 
@@ -774,10 +825,6 @@ SOURCE=.\secshare.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\secsplit.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\serpent.h
 # End Source File
 # Begin Source File
@@ -822,6 +869,10 @@ SOURCE=.\wake.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\winpipes.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\words.h
 # End Source File
 # Begin Source File
@@ -847,6 +898,10 @@ SOURCE=.\zdeflate.h
 # Begin Source File
 
 SOURCE=.\zinflate.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\zlib.h
 # End Source File
 # Begin Source File
 
