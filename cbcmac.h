@@ -77,6 +77,7 @@ void CBC_MAC<T>::TruncatedFinal(byte *mac, unsigned int size)
 	if (counter)
 		ProcessBuf();
 	memcpy(mac, reg, size);
+	memset(reg, 0, T::BLOCKSIZE);
 }
 
 template <class T>

@@ -215,5 +215,6 @@ History
       and MSVC 7.0
     - changed MD2 to use public domain code
     - fixed a bug with decompressing multiple messages with the same object
+    - fixed a bug in CBC-MAC with MACing multiple messages with the same object
     - fixed a bug in RC5 and RC6 with zero-length keys
     - fixed a bug in Adler32 where incorrect checksum may be generated
