@@ -58,7 +58,7 @@ void Log::Trace(const char* msg)
 }
 
 
-#ifdef WIN32
+#if defined(WIN32) || defined(__MACH__) || defined(__hpux__)
 typedef int socklen_t;
 #endif
 

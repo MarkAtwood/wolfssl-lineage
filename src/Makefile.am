@@ -2,5 +2,6 @@ INCLUDES = -I../include -I../taocrypt/include
 
 lib_LIBRARIES = libyassl.a
 libyassl_a_SOURCES = buffer.cpp cert_wrapper.cpp crypto_wrapper.cpp \
-	handshake.cpp log.cpp socket_wrapper.cpp ssl.cpp yassl_imp.cpp \
-	yassl_int.cpp
+	handshake.cpp lock.cpp log.cpp socket_wrapper.cpp ssl.cpp \
+	timer.cpp yassl_imp.cpp yassl_error.cpp yassl_int.cpp
+EXTRA_DIST = ../include

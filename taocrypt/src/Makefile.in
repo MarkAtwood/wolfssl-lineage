@@ -110,6 +110,7 @@ libtaocrypt_a_SOURCES = aes.cpp aestables.cpp algebra.cpp arc4.cpp asn.cpp \
 	coding.cpp dh.cpp des.cpp file.cpp hash.cpp integer.cpp md5.cpp \
 	misc.cpp random.cpp rsa.cpp sha.cpp
 
+EXTRA_DIST = ../include ../test/memory.cpp
 subdir = taocrypt/src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -296,6 +297,7 @@ top_distdir = ../..
 distdir = $(top_distdir)/$(PACKAGE)-$(VERSION)
 
 distdir: $(DISTFILES)
+	$(mkinstalldirs) $(distdir)/.. $(distdir)/../test
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \

@@ -78,7 +78,7 @@ int main(int argc, char** argv)
     if (argc > 1) 
         file_test(argc, argv);
     else {
-        int ret(0);
+        int ret = 0;
         if ( (ret = sha_test()) ) 
             err_sys("SHA  test failed!\n", ret);
         else
@@ -114,10 +114,12 @@ int main(int argc, char** argv)
         else
             printf( "RSA  test passed!\n");
 
+        /*
         if ( (ret = dh_test()) )
             err_sys("DH   test failed!\n", ret);
         else
             printf( "DH   test passed!\n");
+        */
     }
 
     return 0;

@@ -66,7 +66,13 @@ void HASH::Final(byte* hash)
     while (buffLen_ < padSz) buffer_[buffLen_++] = 0;
 
     ByteReverseIf(buffer_, buffer_, blockSz, order);
-    write64Order(prePadLen, &buffer_[padSz], order);
+    //write64Order(prePadLen, &buffer_[padSz], order);
+
+    uint32 hiSize = 0;  // if using 64 bit length TODO: fix
+    memcpy(&buffer_[padSz],   order ? &hiSize : &prePadLen, sizeof(prePadLen));
+    memcpy(&buffer_[padSz+4], order ? &prePadLen : &hiSize, sizeof(prePadLen));
+
+
     Transform();
     ByteReverseIf(digest_, digest_, digestSz, order);
     memcpy(hash, digest_, digestSz);

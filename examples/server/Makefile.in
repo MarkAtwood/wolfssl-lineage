@@ -108,6 +108,7 @@ bin_PROGRAMS = server
 server_SOURCES = server.cpp
 server_LDFLAGS = -L../../src/ -L../../taocrypt/src
 server_LDADD = -lyassl -ltaocrypt
+EXTRA_DIST = server.dsp
 subdir = examples/server
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs

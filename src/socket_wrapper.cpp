@@ -40,6 +40,10 @@
     #include <string.h>
 #endif // WIN32
 
+#ifdef __solaris__
+    #include <sys/filio.h>
+#endif
+
 #ifdef WIN32
     const int SOCKET_EINVAL = WSAEINVAL;
     const int SOCKET_EWOULDBLOCK = WSAEWOULDBLOCK;

@@ -29,6 +29,19 @@
 
 namespace TaoCrypt {
 
+
+// define this if running on a big-endian CPU
+#if !defined(LITTLE_ENDIAN_ORDER) && (defined(__BIG_ENDIAN__) || \
+   defined(__sparc)  || defined(__sparc__) || defined(__hppa__) || \
+   defined(__mips__) || (defined(__MWERKS__) && !defined(__INTEL__)))
+#	define BIG_ENDIAN_ORDER
+#endif
+
+#ifndef BIG_ENDIAN_ORDER
+#	define LITTLE_ENDIAN_ORDER
+#endif
+
+
 typedef unsigned short uint16;
 typedef unsigned int   uint32;  // == word32 cryptopp
 typedef unsigned char  byte;
@@ -167,7 +180,7 @@ inline T RoundUpToMultipleOf(T n, T m)
 }
 
 template <class T>
-inline unsigned int GetAlignment(T *dummy=NULL)	// VC60 workaround
+inline unsigned int GetAlignment(T* dummy=NULL)	// VC60 workaround
 {
 #if (_MSC_VER >= 1300)
     return __alignof(T);
@@ -178,14 +191,14 @@ inline unsigned int GetAlignment(T *dummy=NULL)	// VC60 workaround
 #endif
 }
 
-inline bool IsAlignedOn(const void *p, unsigned int alignment)
+inline bool IsAlignedOn(const void* p, unsigned int alignment)
 {
-    return IsPowerOf2(alignment) ? ModPowerOf2((unsigned int)p, alignment) == 0
-        : (unsigned int)p % alignment == 0;
+    return IsPowerOf2(alignment) ? ModPowerOf2((size_t)p, alignment) == 0
+        : (size_t)p % alignment == 0;
 }
 
 template <class T>
-inline bool IsAligned(const void *p, T *dummy=NULL)	// VC60 workaround
+inline bool IsAligned(const void* p, T* dummy=NULL)	// VC60 workaround
 {
     return IsAlignedOn(p, GetAlignment<T>());
 }
@@ -237,23 +250,6 @@ inline uint32 ByteReverse(uint32 value)
            (rotlFixed(value, 8U) & 0x00ff00ff);
 }
 
-/*
-inline void ByteReverse(uint32* out, const uint32* in, uint32 byteCount)
-{
-    assert(byteCount % sizeof(uint32) == 0);
-    uint32 count = byteCount/sizeof(uint32);
-    for (uint32 i=0; i<count; i++)
-        out[i] = ByteReverse(in[i]);
-}
-
-inline void ByteReverse(word* out, const word* in, uint32 byteCount)
-{
-    assert(byteCount % sizeof(word) == 0);
-    uint32 count = byteCount/sizeof(word);
-    for (uint32 i=0; i<count; i++)
-        out[i] = ByteReverse(in[i]);
-}
-*/
 
 template <typename T>
 inline void ByteReverse(T* out, const T* in, uint32 byteCount)
@@ -305,51 +301,6 @@ inline void GetUserKey(ByteOrder order, T* out, uint32 outlen, const byte* in,
     // disable conversion warning
     #pragma warning(disable:4244)
 #endif
-
-
-// convert 32 bit integer to byte
-inline void write32(uint32 u32, byte* c)
-{
-    c[0] = (u32 >> 24) & 0xff;
-    c[1] = (u32 >> 16) & 0xff;
-    c[2] = (u32 >>  8) & 0xff;
-    c[3] =  u32 & 0xff;
-}
-
-// convert 64 bit integer to High byte  TODO: make 64
-inline void write64(uint32 u32, byte* c)
-{
-    c[0] = 0;
-    c[1] = 0;
-    c[2] = 0;
-    c[3] = 0;
-    c[4] =  u32 & 0xff;
-    c[5] = (u32 >>  8)  & 0xff;
-    c[6] = (u32 >>  16) & 0xff;
-    c[7] = (u32 >>  24) & 0xff; 
-}
-
-// convert 64 bit integer to Low byte  TODO: make 64
-inline void write64L(uint32 u32, byte* c)
-{
-    c[0] =  u32 & 0xff;
-    c[1] = (u32 >>  8)  & 0xff;
-    c[2] = (u32 >>  16) & 0xff;
-    c[3] = (u32 >>  24) & 0xff; 
-    c[4] = 0;
-    c[5] = 0;
-    c[6] = 0;
-    c[7] = 0;
-}
-
-inline void write64Order(uint32 u32, byte* c, ByteOrder order)
-{
-    if (order == LittleEndianOrder)
-        write64L(u32, c);
-    else
-        write64(u32, c);
-}
-
 
 
 inline byte UnalignedGetWordNonTemplate(ByteOrder order, const byte *block,

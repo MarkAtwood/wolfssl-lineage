@@ -58,7 +58,7 @@ namespace yaSSL {
     timer_d timer()
     {
         struct timeval tv;
-        gettimeofday(&tv, NULL);
+        gettimeofday(&tv, 0);
 
         return static_cast<double>(tv.tv_sec) 
              + static_cast<double>(tv.tv_usec) / 1000000;
@@ -68,7 +68,7 @@ namespace yaSSL {
     uint lowResTimer()
     {
         struct timeval tv;
-        gettimeofday(&tv, NULL);
+        gettimeofday(&tv, 0);
 
         return tv.tv_sec; 
     }

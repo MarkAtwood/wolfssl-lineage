@@ -108,6 +108,7 @@ bin_PROGRAMS = echoclient
 echoclient_SOURCES = echoclient.cpp
 echoclient_LDFLAGS = -L../../src/ -L../../taocrypt/src
 echoclient_LDADD = -lyassl -ltaocrypt
+EXTRA_DIST = echoclient.dsp
 subdir = examples/echoclient
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs

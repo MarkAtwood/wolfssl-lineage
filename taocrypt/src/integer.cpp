@@ -33,11 +33,11 @@
 #endif
 
 #include "integer.hpp"
-#include "algebra.cpp"
 #include "modarith.hpp"
 #include "asn.hpp"
 #include <stdexcept>
 
+#include "algebra.cpp"
 
 namespace TaoCrypt {
 

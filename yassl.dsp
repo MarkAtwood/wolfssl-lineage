@@ -101,6 +101,10 @@ SOURCE=.\src\handshake.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\lock.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\log.cpp
 # End Source File
 # Begin Source File
@@ -110,6 +114,14 @@ SOURCE=.\src\socket_wrapper.cpp
 # Begin Source File
 
 SOURCE=.\src\ssl.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\timer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\yassl_error.cpp
 # End Source File
 # Begin Source File
 

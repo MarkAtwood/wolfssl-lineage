@@ -71,14 +71,14 @@ int main(int argc, char** argv)
     printf("Server response: %s\n", reply);
 
     // if resume test, comment the next three lines out
-    /*
+    ///*
     SSL_shutdown(ssl);
     SSL_CTX_free(ctx);
     SSL_free(ssl);
-    */
+    //*/
     
     // start reusme
-    ///*
+    /*
     SSL_SESSION* session   = SSL_get_session(ssl);
     SSL*         sslResume = SSL_new(ctx);
 
@@ -102,7 +102,7 @@ int main(int argc, char** argv)
 
     SSL_free(sslResume);
     // end reusme
-    //*/
+    */
 
     return 0;
 }

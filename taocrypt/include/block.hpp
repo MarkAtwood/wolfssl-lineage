@@ -23,6 +23,7 @@
 #ifndef TAO_CRYPT_BLOCK_HPP
 #define TAO_CRYPT_BLOCK_HPP
 
+#include <algorithm>        // std::swap
 #include <string.h>
 #include "misc.hpp"
 
