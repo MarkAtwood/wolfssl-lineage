@@ -388,6 +388,14 @@ void BenchMarkKeyed(const char *name, double timeTotal, T *x=NULL)
 
 //VC60 workaround: compiler bug triggered without the extra dummy parameters
 template <class T>
+void BenchMarkKeyedVariable(const char *name, double timeTotal, unsigned int keyLength, T *x=NULL)
+{
+	T c(key, keyLength);
+	BenchMark(name, c, timeTotal);
+}
+
+//VC60 workaround: compiler bug triggered without the extra dummy parameters
+template <class T>
 void BenchMarkKeyless(const char *name, double timeTotal, T *x=NULL)
 {
 	T c;
@@ -474,7 +482,9 @@ void BenchMarkAll(double t)
 	BenchMarkKeyed<SKIPJACKEncryption>("SKIPJACK", t);
 	BenchMarkKeyed<RC6Encryption>("RC6", t);
 	BenchMarkKeyed<MARSEncryption>("MARS", t);
-	BenchMarkKeyed<RijndaelEncryption>("Rijndael", t);
+	BenchMarkKeyedVariable<RijndaelEncryption>("Rijndael (128-bit key)", t, 16);
+	BenchMarkKeyedVariable<RijndaelEncryption>("Rijndael (192-bit key)", t, 24);
+	BenchMarkKeyedVariable<RijndaelEncryption>("Rijndael (256-bit key)", t, 32);
 	BenchMarkKeyed<TwofishEncryption>("Twofish", t);
 	BenchMarkKeyed<SerpentEncryption>("Serpent", t);
 	BenchMarkKeyed<ARC4>("ARC4", t);

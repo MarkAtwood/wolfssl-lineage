@@ -4,7 +4,7 @@
 	classes that provide a uniform interface to this library.
 */
 
-/*!	\mainpage Crypto++ Reference Index
+/*!	\mainpage <a href="http://www.cryptopp.com">Crypto++</a> Reference Manual
 <dl>
 <dt>Abstract Base Classes<dd>
 	cryptlib.h
@@ -48,7 +48,8 @@
 	Timer, Socket, WindowsHandle, WindowsReadPipe, WindowsWritePipe
 </dl>
 
-<p>More information on this library can be found at: <a href="http://www.cryptopp.com/> www.cryptopp.com </a>.
+<p>This reference manual is very much a work in progress. Many classes are still lacking detailed descriptions.
+<p>Click <a href="CryptoPPRef.zip">here</a> to download a zip archive containing this manual.
 <p>Thanks to Ryan Phillips for providing the Doxygen configuration file
 and getting me started with this manual.
 */

@@ -1,18 +1,8 @@
 #ifndef CRYPTOPP_ECCRYPTO_H
 #define CRYPTOPP_ECCRTPTO_H
 
-/** \file
-*/
-
-#include "pubkey.h"
-#include "integer.h"
-#include "asn.h"
-#include "hmac.h"
-#include "sha.h"
-
-NAMESPACE_BEGIN(CryptoPP)
-
-/** The following classes are explicitly instantiated in eccrypto.cpp
+/*! \file
+The following classes are explicitly instantiated in eccrypto.cpp
 
 template class ECParameters<EC2N>;
 template class ECParameters<ECP>;
@@ -33,6 +23,14 @@ template class ECDHC<ECP>;
 template class ECMQVC<EC2N>;
 template class ECMQVC<ECP>;
 */
+
+#include "pubkey.h"
+#include "integer.h"
+#include "asn.h"
+#include "hmac.h"
+#include "sha.h"
+
+NAMESPACE_BEGIN(CryptoPP)
 
 /*! The ECDSA signature format used by Crypto++ is as defined by IEEE P1363.
 	To convert to or from other signature formats, see dsa.h.

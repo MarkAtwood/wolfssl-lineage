@@ -1,5 +1,5 @@
 Crypto++: a C++ Class Library of Cryptographic Primitives
-Version 4.1  1/10/2000
+Version 4.1  1/13/2000
 
 This library includes:
 
@@ -62,12 +62,20 @@ you are using GNU Make and GNU ld. The make process will produce two files,
 libcryptopp.a and cryptest.exe. Run "cryptest.exe v" for the validation
 suite.
 
-Right now there is very little documentation for Crypto++.  If you are
+Crypto++ is documented mostly in the header files.  If you are
 not familiar with cryptography, I suggest that you read an introductory
 text (such as Bruce Schneier's _Applied Cryptography_) before attempting
 to use this library.  Then, you should start by looking at
 cryptlib.h, which contains the main abstract base classes and their
-descriptions, and test.cpp, which contains sample/test code.  
+descriptions, and test.cpp, which contains sample/test code.  There
+should also be a link on http://www.cryptopp.com to an HTML reference
+manual generated from the inline documentation.
+
+If you run into any problems, please try the Crypto++ mailing list.
+The subscription information and the list archive are available on
+http://www.cryptopp.com. You can also email me directly at
+weidai@eskimo.com, but you will probably get a faster response through
+the mailing list.
 
 Finally, a couple of usage notes to keep in mind: 
 
@@ -80,12 +88,6 @@ A no longer needs it.
 2. Crypto++ is thread safe at the class level. This means you can use
 Crypto++ safely in a multithreaded application, but you must provide
 synchronization when multiple threads access a common Crypto++ object.
-
-If you run into any problems, please try the Crypto++ mailing list.
-The subscription information and the list archive are available at
-http://www.cryptopp.com. You can also email me directly at
-weidai@eskimo.com, but you will probably get a faster response through
-the mailing list.
 
 Wei Dai
 
@@ -193,7 +195,7 @@ History
     - optmized multi-precision integer code for better performance
 
 4.1 - added more support for the recommended elliptic curve parameters in SEC 2
-    - added Panama MAC
+    - added Panama MAC, MARC4
     - added IV stealing feature to CTS mode
     - added support for PKCS #8 private key format for RSA, DSA, and elliptic
       curve schemes
@@ -202,6 +204,6 @@ History
     - fixed a bug with decompressing stored blocks
     - fixed a bug with EC point decompression using non-trinomial basis
     - fixed a bug in NetworkSource::GeneralPump()
-    - fixed performance issue with EC over GF(p) decryption
+    - fixed a performance issue with EC over GF(p) decryption
     - fixed syntax to allow GCC to compile without -fpermissive
     - relaxed some restrictions in the license

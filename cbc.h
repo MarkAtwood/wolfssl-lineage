@@ -67,7 +67,7 @@ protected:
 	void LastPut(const byte *inString, unsigned int length);
 };
 
-//! <a href="http://www.weidai.com/scan-mirror/cs.html#mode_CBC">CBC mode</a> with <a href="http://www.weidai.com/scan-mirror/cs.html#pad_CTS">ciphertext stealing</a>
+//! <a href="http://www.weidai.com/scan-mirror/cs.html#pad_CTS">CBC/CTS mode</a> with <a href="http://www.weidai.com/scan-mirror/cs.html#pad_CTS">ciphertext stealing</a>
 /*! Compatible with RFC 2040.
 	Ciphertext stealing requires at least cipher.BlockSize()+1 bytes of plaintext.
 	Shorter plaintext will be padded with '\0's unless IV stealing is specified.
@@ -75,10 +75,10 @@ protected:
 class CBC_CTS_Encryptor : protected CipherMode, public FilterWithBufferedInput
 {
 public:
-	// If stealIV == true and length of plaintext < cipher.BlockSize()+1,
-	// IV will be modified, and the modified IV must be used for decryption.
-	// If stealIV == false or using the second constructor,
-	// shorter plaintexts will be padded with '\0's.
+	/*! If stealIV == true and length of plaintext < cipher.BlockSize()+1,
+		IV will be modified, and the modified IV must be used for decryption.
+		If stealIV == false or using the second constructor,
+		shorter plaintexts will be padded with '\0's. */
 	CBC_CTS_Encryptor(const BlockTransformation &cipher, byte *IV, BufferedTransformation *outQueue, bool stealIV);
 	CBC_CTS_Encryptor(const BlockTransformation &cipher, const byte *IV, BufferedTransformation *outQueue = NULL);
 
@@ -90,7 +90,7 @@ protected:
 	byte *m_iv;
 };
 
-//! <a href="http://www.weidai.com/scan-mirror/cs.html#mode_CBC">CBC mode</a> with <a href="http://www.weidai.com/scan-mirror/cs.html#pad_CTS">ciphertext stealing</a>
+//! <a href="http://www.weidai.com/scan-mirror/cs.html#pad_CTS">CBC/CTS mode</a> with <a href="http://www.weidai.com/scan-mirror/cs.html#pad_CTS">ciphertext stealing</a>
 /*! Compatible with RFC 2040.
 	Ciphertext stealing requires at least cipher.BlockSize()+1 bytes of plaintext.
 	Shorter plaintext will be padded with '\0's unless IV stealing is specified.

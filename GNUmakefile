@@ -1,10 +1,12 @@
-CXXFLAGS = -O2 -w -pipe
+CXXFLAGS = -O2 -w
 ARFLAGS = cr
 RANLIB = ranlib
 UNAME = $(shell uname)
 
 ifeq ($(UNAME),)	# for DJGPP, where uname doesn't exist
 CXXFLAGS := $(CXXFLAGS) -mbnu210
+else
+CXXFLAGS := $(CXXFLAGS) -pipe
 endif
 
 ifeq ($(UNAME),SunOS)

@@ -62,11 +62,13 @@ protected:
 
 #define AUTO_SEEDED_RANDOM_POOL_AVAILABLE
 
-//! Automatic Seeded Random Pool
+//! Automaticly Seeded Randomness Pool
+/*! This class seeds itself using an
+operating system provided RNG. */
 class AutoSeededRandomPool : public RandomPool
 {
 public:
-	// blocking will be ignored if the prefered RNG isn't available
+	//! blocking will be ignored if the prefered RNG isn't available
 	explicit AutoSeededRandomPool(bool blocking = false, unsigned int seedSize = 16)
 		{Reseed(blocking, seedSize);}
 	void Reseed(bool blocking = false, unsigned int seedSize = 16);

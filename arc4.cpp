@@ -95,4 +95,11 @@ void ARC4::ProcessString(byte *inoutString, unsigned int length)
 	m_y = y;
 }
 
+MARC4::MARC4(const byte *userKey, unsigned int keyLength, unsigned int discardBytes)
+	: ARC4(userKey, keyLength)
+{
+	while (discardBytes--)
+		MARC4::GenerateByte();
+}
+
 NAMESPACE_END

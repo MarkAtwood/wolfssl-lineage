@@ -545,8 +545,8 @@ void ECPrivateKey<EC>::RawDecode(BERSequenceDecoder &seq, bool needParameters)
 		BERDecodeError();
 	m_d.Decode(dec, dec.RemainingLength());
 	dec.MessageEnd();
-	if (needParameters)
-		seq.CheckByte(CONTEXT_SPECIFIC | CONSTRUCTED | 0);
+	if (needParameters && seq.PeekByte() != (CONTEXT_SPECIFIC | CONSTRUCTED | 0))
+		BERDecodeError();
 	if (!seq.EndReached() && seq.PeekByte() == (CONTEXT_SPECIFIC | CONSTRUCTED | 0))
 	{
 		BERGeneralDecoder parameters(seq, CONTEXT_SPECIFIC | CONSTRUCTED | 0);

@@ -477,7 +477,7 @@ public:
 	static unsigned int KeyLength(unsigned int) {return KEYLENGTH;}
 };
 
-/// support query of variable key length, parameters are default, min, max, multiple (default multiple 1)
+/// support query of variable key length, template parameters are default, min, max, multiple (default multiple 1)
 template <unsigned int D, unsigned int N, unsigned int M, unsigned int Q=1>
 class VariableKeyLength
 {
