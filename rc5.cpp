@@ -14,7 +14,7 @@ RC5Base::RC5Base(const byte *k, unsigned int keylen, unsigned int rounds)
 	static const RC5_WORD MAGIC_Q = 0x9e3779b9L;    // magic constant Q for wordsize
 	static const int U=sizeof(RC5_WORD);
 
-	const unsigned int c=(keylen+U-1)/U;
+	const unsigned int c = STDMAX((keylen+U-1)/U, 1U);	// RC6 paper says c=1 if keylen==0
 	SecBlock<RC5_WORD> l(c);
 
 	GetUserKeyLittleEndian(l.ptr, c, k, keylen);
