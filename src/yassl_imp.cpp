@@ -22,12 +22,15 @@
 /*  yaSSL source implements all SSL.v3 secification structures.
  */
 
-#include "yassl_imp.hpp"
+
 #include "yassl_int.hpp"
 #include "handshake.hpp"
 
 
 namespace yaSSL {
+
+
+void hashHandShake(SSL&, const input_buffer&, uint);
 
 
 // construct key exchange with known ssl parms
@@ -946,6 +949,50 @@ ServerKeyBase* CreateFortezzaServerKEA()  { return new Fortezza_Server; }
 ClientKeyBase* CreateRSAClient()      { return new EncryptedPreMasterSecret; }
 ClientKeyBase* CreateDHClient()       { return new ClientDiffieHellmanPublic; }
 ClientKeyBase* CreateFortezzaClient() { return new FortezzaKeys; }
+
+
+// Constructor calls this to Register compile time callbacks
+void InitMessageFactory(MessageFactory& mf)
+{
+    mf.Register(alert, CreateAlert);
+    mf.Register(change_cipher_spec, CreateCipherSpec);
+    mf.Register(handshake, CreateHandShake);
+    mf.Register(application_data, CreateData);
+}
+
+
+// Constructor calls this to Register compile time callbacks
+void InitHandShakeFactory(HandShakeFactory& hsf)
+{
+    hsf.Register(hello_request, CreateHelloRequest);
+    hsf.Register(client_hello, CreateClientHello);
+    hsf.Register(server_hello, CreateServerHello);
+    hsf.Register(certificate, CreateCertificate);
+    hsf.Register(server_key_exchange, CreateServerKeyExchange);
+    hsf.Register(certificate_request, CreateCertificateRequest);
+    hsf.Register(server_hello_done, CreateServerHelloDone);
+    hsf.Register(certificate_verify, CreateCertificateVerify);
+    hsf.Register(client_key_exchange, CreateClientKeyExchange);
+    hsf.Register(finished, CreateFinished);
+}
+
+
+// Constructor calls this to Register compile time callbacks
+void InitServerKeyFactory(ServerKeyFactory& skf)
+{
+    skf.Register(rsa_kea, CreateRSAServerKEA);
+    skf.Register(diffie_hellman_kea, CreateDHServerKEA);
+    skf.Register(fortezza_kea, CreateFortezzaServerKEA);
+}
+
+
+// Constructor calls this to Register compile time callbacks
+void InitClientKeyFactory(ClientKeyFactory& ckf)
+{
+    ckf.Register(rsa_kea, CreateRSAClient);
+    ckf.Register(diffie_hellman_kea, CreateDHClient);
+    ckf.Register(fortezza_kea, CreateFortezzaClient);
+}
 
 
 } // namespace

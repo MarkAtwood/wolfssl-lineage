@@ -37,7 +37,6 @@ public:
     enum { BLOCK_SIZE = AES_BLOCK_SIZE };
 
     AES(CipherDir DIR, Mode MODE) : dir_(DIR), mode_(MODE) {}
-    virtual ~AES() {}
 
     void Process(byte*, const byte*, uint32);
     void SetKey(const byte* iv, uint32 sz, CipherDir fake = ENCRYPTION);

@@ -26,7 +26,6 @@
 #ifndef yaSSL_ERROR_HPP
 #define yaSSL_ERROR_HPP
 
-#include "log.hpp"
 #include <stdexcept>
 
 

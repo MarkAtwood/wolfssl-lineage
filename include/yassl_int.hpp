@@ -29,11 +29,10 @@
 #define yaSSL_INT_HPP
 
 #include "yassl_imp.hpp"
-#include "socket_wrapper.hpp"
 #include "crypto_wrapper.hpp"
 #include "cert_wrapper.hpp"
-#include "factory.hpp"
 #include "lock.hpp"
+#include "log.hpp"
 
 
 namespace yaSSL {

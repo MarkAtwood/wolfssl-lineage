@@ -22,20 +22,51 @@
 /*  Debug logging functions
  */
 
+#ifndef NDEBUG
 
+#include <ctime>
 #include <sstream>
 #include "log.hpp"
 
 
 namespace yaSSL {
 
-#ifndef NDEBUG
+
+Log::Log(const char* str) : log_(str)
+{
+    Trace("********** Logger Attached **********");
+}
+
+
+Log::~Log()
+{
+    Trace("********** Logger Detached **********");
+}
+
+
+void Log::Trace(const char* msg)
+{   
+    time_t clicks = time(0);
+    char   timeStr[32];
+
+    // get rid of newline
+    strncpy(timeStr, ctime(&clicks), sizeof(timeStr));
+    unsigned int len = strlen(timeStr);
+    timeStr[len - 1] = 0;
+
+    log_ << timeStr << ": " << msg << '\n';
+}
+
+
+#ifdef WIN32
+typedef int socklen_t;
+#endif
 
 
 void Log::ShowTCP(socket_t fd, bool ended)
 {
     sockaddr_in peeraddr;
-    int         len = sizeof(peeraddr);
+    socklen_t   len = sizeof(peeraddr);
     getpeername(fd, (sockaddr*)&peeraddr, &len);
 
     const char* p = reinterpret_cast<const char*>(&peeraddr.sin_addr);
@@ -70,5 +101,5 @@ void Log::ShowData(uint bytes, bool sent)
 
 
 
-#endif // NDEBUG
 } // namespace
+#endif // NDEBUG

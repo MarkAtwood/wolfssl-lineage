@@ -51,8 +51,10 @@ void ARC4::SetKey(const byte* key, uint32 length)
 }
 
 
-template <class T>
-static inline unsigned int MakeByte(T& x, T& y, byte* s)
+// local
+namespace {
+
+inline unsigned int MakeByte(uint32& x, uint32& y, byte* s)
 {
     uint32 a = s[x];
     y = (y+a) & 0xff;
@@ -64,6 +66,8 @@ static inline unsigned int MakeByte(T& x, T& y, byte* s)
 
     return s[(a+b) & 0xff];
 }
+
+} // namespace
 
 
 void ARC4::Process(byte* out, const byte* in, uint32 length)

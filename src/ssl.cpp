@@ -28,7 +28,9 @@
 
 #include "openssl/ssl.h"
 #include "handshake.hpp"
+#include "yassl_int.hpp"
 #include <fstream>
+
 
 
 namespace yaSSL {

@@ -84,6 +84,7 @@ protected:
     Sink& sink_;
 public:
     explicit BER_Decoder(Sink& s) : sink_(s) {}
+    virtual ~BER_Decoder() {}
 
     Integer& GetInteger(Integer&);
     uint32   GetSequence();
@@ -92,6 +93,7 @@ public:
 private:
     virtual void ReadHeader() = 0;
 };
+
 
 class RSA_Private_Decoder : public BER_Decoder {
 public:

@@ -73,7 +73,7 @@ PACKAGE_VERSION =
 PATH_SEPARATOR = :
 RANLIB = ranlib
 SET_MAKE = 
-SHELL = /bin/sh
+SHELL = /bin/bash
 STRIP = 
 VERSION = 0.3.0
 ac_ct_CXX = g++
@@ -106,7 +106,7 @@ target_alias =
 INCLUDES = -I../include -I../taocrypt/include
 
 lib_LIBRARIES = libyassl.a
-libyassl_a_SOURCES = cert_wrapper.cpp crypto_wrapper.cpp factory.cpp \
+libyassl_a_SOURCES = buffer.cpp cert_wrapper.cpp crypto_wrapper.cpp \
 	handshake.cpp log.cpp socket_wrapper.cpp ssl.cpp yassl_imp.cpp \
 	yassl_int.cpp
 
@@ -118,8 +118,8 @@ LIBRARIES = $(lib_LIBRARIES)
 
 libyassl_a_AR = $(AR) cru
 libyassl_a_LIBADD =
-am_libyassl_a_OBJECTS = cert_wrapper.$(OBJEXT) crypto_wrapper.$(OBJEXT) \
-	factory.$(OBJEXT) handshake.$(OBJEXT) log.$(OBJEXT) \
+am_libyassl_a_OBJECTS = buffer.$(OBJEXT) cert_wrapper.$(OBJEXT) \
+	crypto_wrapper.$(OBJEXT) handshake.$(OBJEXT) log.$(OBJEXT) \
 	socket_wrapper.$(OBJEXT) ssl.$(OBJEXT) yassl_imp.$(OBJEXT) \
 	yassl_int.$(OBJEXT)
 libyassl_a_OBJECTS = $(am_libyassl_a_OBJECTS)
@@ -127,12 +127,12 @@ libyassl_a_OBJECTS = $(am_libyassl_a_OBJECTS)
 DEFAULT_INCLUDES =  -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
-DEP_FILES = ./$(DEPDIR)/cert_wrapper.Po \
+DEP_FILES = ./$(DEPDIR)/buffer.Po \
+	./$(DEPDIR)/cert_wrapper.Po \
 	./$(DEPDIR)/crypto_wrapper.Po \
-	./$(DEPDIR)/factory.Po ./$(DEPDIR)/handshake.Po \
-	./$(DEPDIR)/log.Po ./$(DEPDIR)/socket_wrapper.Po \
-	./$(DEPDIR)/ssl.Po ./$(DEPDIR)/yassl_imp.Po \
-	./$(DEPDIR)/yassl_int.Po
+	./$(DEPDIR)/handshake.Po ./$(DEPDIR)/log.Po \
+	./$(DEPDIR)/socket_wrapper.Po ./$(DEPDIR)/ssl.Po \
+	./$(DEPDIR)/yassl_imp.Po ./$(DEPDIR)/yassl_int.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -194,9 +194,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+include ./$(DEPDIR)/buffer.Po
 include ./$(DEPDIR)/cert_wrapper.Po
 include ./$(DEPDIR)/crypto_wrapper.Po
-include ./$(DEPDIR)/factory.Po
 include ./$(DEPDIR)/handshake.Po
 include ./$(DEPDIR)/log.Po
 include ./$(DEPDIR)/socket_wrapper.Po

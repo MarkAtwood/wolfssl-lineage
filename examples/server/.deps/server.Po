@@ -89,7 +89,8 @@ server.o server.o: server.cpp ../../include/openssl/ssl.h \
   /usr/include/c++/3.3.1/typeinfo /usr/include/c++/3.3.1/ostream \
   /usr/include/c++/3.3.1/bits/ostream.tcc \
   /usr/include/c++/3.3.1/i686-pc-cygwin/bits/basic_file.h \
-  /usr/include/c++/3.3.1/bits/fstream.tcc /usr/include/c++/3.3.1/cassert \
+  /usr/include/c++/3.3.1/bits/fstream.tcc /usr/include/c++/3.3.1/sstream \
+  /usr/include/c++/3.3.1/bits/sstream.tcc /usr/include/c++/3.3.1/cassert \
   /usr/include/assert.h /usr/include/c++/3.3.1/iomanip \
   /usr/include/c++/3.3.1/functional
 
@@ -360,6 +361,10 @@ server.o server.o: server.cpp ../../include/openssl/ssl.h \
 /usr/include/c++/3.3.1/i686-pc-cygwin/bits/basic_file.h:
 
 /usr/include/c++/3.3.1/bits/fstream.tcc:
+
+/usr/include/c++/3.3.1/sstream:
+
+/usr/include/c++/3.3.1/bits/sstream.tcc:
 
 /usr/include/c++/3.3.1/cassert:
 

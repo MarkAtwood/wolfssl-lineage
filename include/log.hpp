@@ -27,10 +27,11 @@
 #ifndef yaSSL_LOG_HPP
 #define yaSSL_LOG_HPP
 
-#include <fstream>
-#include <ctime>
 #include "socket_wrapper.hpp"
 
+#ifndef NDEBUG
+#include <fstream>
+#endif
 
 namespace yaSSL {
 
@@ -42,6 +43,7 @@ class Log {
 public:
     Log() {}
     explicit Log(const char*) {}
+
     void Trace(const char*) {}
     void ShowTCP(socket_t, bool ended = false) {}
     void ShowData(uint, bool sent = false) {}
@@ -54,29 +56,10 @@ public:
 class Log {
     std::ofstream log_;
 public:
-    explicit Log(const char* str = "yaSSL.log") : log_(str)
-    {
-        Trace("********** Logger Attached **********");
-    }
+    explicit Log(const char* str = "yaSSL.log");
+    ~Log();
 
-    ~Log()
-    {
-        Trace("********** Logger Detached **********");
-    }
-
-    void Trace(const char* msg)
-    {   
-        time_t clicks = time(0);
-        char   timeStr[32];
-
-        // get rid of newline
-        strncpy(timeStr, ctime(&clicks), sizeof(timeStr));
-        unsigned int len = strlen(timeStr);
-        timeStr[len - 1] = 0;
-
-        log_ << timeStr << ": " << msg << '\n';
-    }
-
+    void Trace(const char*);
     void ShowTCP(socket_t, bool ended = false);
     void ShowData(uint, bool sent = false);
 };

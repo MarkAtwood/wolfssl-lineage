@@ -3,9 +3,44 @@
 <pre>
 <h1>Build Log</h1>
 <h3>
---------------------Configuration: taocrypt - Win32 Debug--------------------
+--------------------Configuration: taocrypt - Win32 Release--------------------
 </h3>
 <h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSPD2.tmp" with contents
+[
+/nologo /ML /W3 /GX /O2 /I "include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /Fp"Release/taocrypt.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c 
+"F:\yassl\taocrypt\src\des.cpp"
+"F:\yassl\taocrypt\src\integer.cpp"
+"F:\yassl\taocrypt\src\rsa.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\tao\LOCALS~1\Temp\RSPD2.tmp" 
+Creating temporary file "C:\DOCUME~1\tao\LOCALS~1\Temp\RSPD3.tmp" with contents
+[
+/nologo /out:"Release\taocrypt.lib" 
+.\Release\aes.obj
+.\Release\aestables.obj
+.\Release\algebra.obj
+.\Release\arc4.obj
+.\Release\asn.obj
+.\Release\coding.obj
+.\Release\des.obj
+.\Release\dh.obj
+.\Release\file.obj
+.\Release\hash.obj
+.\Release\integer.obj
+.\Release\md5.obj
+.\Release\misc.obj
+.\Release\random.obj
+.\Release\rsa.obj
+.\Release\sha.obj
+]
+Creating command line "link.exe -lib @C:\DOCUME~1\tao\LOCALS~1\Temp\RSPD3.tmp"
+<h3>Output Window</h3>
+Compiling...
+des.cpp
+integer.cpp
+rsa.cpp
+Creating library...
 
 
 

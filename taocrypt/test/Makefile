@@ -46,7 +46,7 @@ AWK = gawk
 CPPFLAGS = 
 CXX = g++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -g -Wall
+CXXFLAGS = -g -O2
 CYGPATH_W = cygpath -w
 DEFS = -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE=\"yassl\" -DVERSION=\"0.3.0\" 
 DEPDIR = .deps
@@ -73,7 +73,7 @@ PACKAGE_VERSION =
 PATH_SEPARATOR = :
 RANLIB = ranlib
 SET_MAKE = 
-SHELL = /bin/sh
+SHELL = /bin/bash
 STRIP = 
 VERSION = 0.3.0
 ac_ct_CXX = g++
@@ -105,7 +105,7 @@ sysconfdir = ${prefix}/etc
 target_alias = 
 INCLUDES = -I../include
 bin_PROGRAMS = test
-test_SOURCES = test.cpp memory.cpp
+test_SOURCES = test.cpp
 test_LDFLAGS = -L../src
 test_LDADD = -ltaocrypt
 subdir = taocrypt/test

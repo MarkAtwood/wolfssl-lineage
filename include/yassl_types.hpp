@@ -203,25 +203,6 @@ enum MACAlgorithm {
 enum CertType { Cert = 0, PrivateKey };
 
 
-// an x509 version 3 certificate
-class x509 {
-    uint    length_;
-    opaque* buffer_;
-public:
-    explicit x509(uint sz) : length_(sz), buffer_(new opaque[sz]) {}
-    ~x509() { delete [] buffer_; }
-
-    uint          get_length() const { return length_; }
-    const opaque* get_buffer() const { return buffer_; }
-    opaque*       set_buffer()       { return buffer_; }
-
-    x509(const x509&);
-    x509& operator=(const x509&);
-    void Swap(x509&);
-};
-
-
-
 // all Cipher Suites from pages 41/42
 const Cipher SSL_NULL_WITH_NULL_NULL                =  0; // { 0x00, 0x00 }
 const Cipher SSL_RSA_WITH_NULL_MD5                  =  1; // { 0x00, 0x01 }

@@ -749,24 +749,10 @@ namespace { // locals
 
 typedef std::list<SSL_SESSION*>::iterator iterator;
 
-iterator get_iter(std::list<SSL_SESSION*>& list, const opaque* id)
-{
-    // precondition: list locked
-    iterator find  =  list.begin();
-    iterator end   =  list.end();
-
-    while (find != end) { 
-        if ( memcmp((*find)->getID(), id, ID_LEN) == 0)
-            break;
-        ++find;
-    }
-    return find;
-}
-
-
 struct sess_match {
     const opaque* id_;
     explicit sess_match(const opaque* p) : id_(p) {}
+
     bool operator()(SSL_SESSION* sess)
     {
         if ( memcmp(sess->getID(), id_, ID_LEN) == 0)
@@ -787,7 +773,7 @@ SSL_SESSION* Sessions::lookup(const opaque* id, SSL_SESSION* copy)
     if (find != list_.end()) {
         uint current = lowResTimer();
         if ( ((*find)->getBornOn() + (*find)->getTimeOut()) < current) {
-            delete *find;
+            del_ptr_zero()(*find);
             list_.erase(find);
             return 0;
         }
@@ -805,7 +791,7 @@ void Sessions::remove(const opaque* id)
     iterator find = std::find_if(list_.begin(), list_.end(), sess_match(id));
 
     if (find != list_.end()) {
-        delete *find;
+        del_ptr_zero()(*find);
         list_.erase(find);
     }
 }

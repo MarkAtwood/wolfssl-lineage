@@ -33,13 +33,34 @@
     #pragma warning(disable:4786)
 #endif
 
-#include "yassl_types.hpp"  // x509
+
 #include "buffer.hpp"       // input_buffer
 #include <list>             // std::list
 #include <algorithm>        // std::for_each
 
 
 namespace yaSSL {
+   
+typedef unsigned char opaque;
+
+
+// an x509 version 3 certificate
+class x509 {
+    uint    length_;
+    opaque* buffer_;
+public:
+    explicit x509(uint sz) : length_(sz), buffer_(new opaque[sz]) {}
+    ~x509() { delete [] buffer_; }
+
+    uint          get_length() const { return length_; }
+    const opaque* get_buffer() const { return buffer_; }
+    opaque*       set_buffer()       { return buffer_; }
+
+    x509(const x509&);
+    x509& operator=(const x509&);
+private:
+    void Swap(x509&);
+};
 
 
 // Certificate Manager keeps a list of thhe cert chain and public key

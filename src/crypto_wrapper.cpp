@@ -28,6 +28,7 @@
 #if !defined(USE_CRYPTOPP_LIB)
 
 #include "crypto_wrapper.hpp"
+#include "cert_wrapper.hpp"
 
 #include "md5.hpp"
 #include "sha.hpp"

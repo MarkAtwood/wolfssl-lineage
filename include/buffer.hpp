@@ -28,8 +28,13 @@
 #define yaSSL_BUFFER_HPP
 
 #include <cassert>              // assert
-#include <functional>           // unary_function
 #include "yassl_error.hpp"      // Error
+
+
+#ifdef _MSC_VER
+    // disable truncated debug symbols
+    #pragma warning(disable:4786)
+#endif
 
 
 namespace yaSSL {
@@ -42,15 +47,15 @@ const uint AUTO = 0xFEEDBEEF;
 // Checking Policy should implement a check function that tests whether the
 // index is within the size limit of the array
 struct Check {
-    void check(uint i, uint limit) 
-        { if (i >= limit) throw Error("Buffer Out of Range", range_error); }
+    void check(uint i, uint limit);
 };
+
 
 struct NoCheck {
-    void check(uint, uint) {}
+    void check(uint, uint);
 };
 
-/* in_buffer operates like a smart c style array with a checking option, 
+/* input_buffer operates like a smart c style array with a checking option, 
  * meant to be read from through [] with AUTO index or read().
  * Should only write to at/near construction with assign() or raw (e.g., recv)
  * followed by add_size with the number of elements added by raw write.
@@ -58,80 +63,62 @@ struct NoCheck {
  * Not using vector because need checked []access, offset, and the ability to
  * write to the buffer bulk wise and have the correct size
  */
-template<typename T,
-         class CheckingPolicy = Check
-        >
-class in_buffer : public CheckingPolicy {
+
+class input_buffer : public Check {
     uint   size_;                // number of elements in buffer
     uint   current_;             // current offset position in buffer
-    T*     buffer_;              // storage for buffer
-    T*     end_;                 // end of storage marker
+    byte*  buffer_;              // storage for buffer
+    byte*  end_;                 // end of storage marker
 public:
-    in_buffer() : size_(0), current_(0), buffer_(0), end_(0) {}
+    input_buffer();
 
-    explicit in_buffer(uint s) : size_(0), current_(0),
-                          buffer_(new T[s]), end_(buffer_ + s) {}
+    explicit input_buffer(uint s);
+                          
     // with assign
-    in_buffer(uint s, const T* t, uint len) : size_(0), current_(0),
-              buffer_(new T[s]), end_(buffer_ + s) { assign(t, len); }
+    input_buffer(uint s, const byte* t, uint len);
     
-    ~in_buffer() { delete [] buffer_; }
+    ~input_buffer();
 
     // users can pass defualt zero length buffer and then allocate
-    void allocate(uint s) { if (buffer_) 
-                                  throw Error("Buffer ReAlloc", realloc_error);
-                            buffer_ = new T[s]; end_ = buffer_ + s; }
+    void allocate(uint s);
 
     // for passing to raw writing functions at beginning, then use add_size
-    T* get_buffer() const { return buffer_; }
+    byte* get_buffer() const;
 
     // after a raw write user can set new size
     // if you know the size before the write use assign()
-    void add_size(uint i) { check(size_ + i-1, get_capacity()); size_ += i; }
+    void add_size(uint i);
 
-    uint get_capacity()  const { return end_ - buffer_; }
+    uint get_capacity()  const;
 
-    uint get_current()   const { return current_; }
+    uint get_current()   const;
 
-    uint get_size()      const { return size_; }
+    uint get_size()      const;
 
-    uint get_remaining() const { return size_ - current_; }
+    uint get_remaining() const;
 
-    void set_current(uint i) { check(i - 1, size_); current_ = i; }
+    void set_current(uint i);
 
     // read only access through [], advance current
     // user passes in AUTO index for ease of use
-    const T& operator[](uint i) 
-    {
-        assert (i == AUTO);
-        check(current_, size_);
-        return buffer_[current_++];
-    }
+    const byte& operator[](uint i);
+    
     // end of input test
-    bool eof() { return current_ >= size_; }
+    bool eof();
 
     // write function, should use at/near construction
-    void assign(const T* t, uint s)
-    {
-        check(current_, get_capacity());
-        add_size(s);
-        memcpy(&buffer_[current_], t, s);
-    }
-
+    void assign(const byte* t, uint s);
+    
     // use read to query input, adjusts current
-    void read(T* dst, uint length)
-    {
-        check(current_ + length - 1, size_);
-        memcpy(dst, &buffer_[current_], length);
-        current_ += length;
-    }
+    void read(byte* dst, uint length);
+
 private:
-    in_buffer(const in_buffer&);              // hide copy
-    in_buffer& operator=(const in_buffer&);   // and assign
+    input_buffer(const input_buffer&);              // hide copy
+    input_buffer& operator=(const input_buffer&);   // and assign
 };
 
 
-/* out_buffer operates like a smart c style array with a checking option.
+/* output_buffer operates like a smart c style array with a checking option.
  * Meant to be written to through [] with AUTO index or write().
  * Size (current) counter increases when written to. Can be constructed with 
  * zero length buffer but be sure to allocate before first use. 
@@ -140,70 +127,48 @@ private:
  * Not using vector because need checked []access and the ability to
  * write to the buffer bulk wise and retain correct size
  */
-template<typename T,
-         class CheckingPolicy = Check
-        >
-class out_buffer : public CheckingPolicy {
-    uint   current_;                // current offset and elements in buffer
-    T*     buffer_;                 // storage for buffer
-    T*     end_;                    // end of storage marker
+class output_buffer : public Check {
+    uint    current_;                // current offset and elements in buffer
+    byte*   buffer_;                 // storage for buffer
+    byte*   end_;                    // end of storage marker
 public:
     // default
-    out_buffer() : current_(0), buffer_(0), end_(0) {}
+    output_buffer();
 
     // with allocate
-    explicit out_buffer(uint s) : current_(0), buffer_(new T[s]), 
-                           end_(buffer_ + s) {}
+    explicit output_buffer(uint s);
+
     // with assign
-    out_buffer(uint s, const T* t, uint len) : current_(0),
-                  buffer_(new T[s]), end_(buffer_+ s) { add(t, len); }
+    output_buffer(uint s, const byte* t, uint len);
 
-    ~out_buffer() { delete [] buffer_; }
+    ~output_buffer();
 
-    uint get_size() const { return current_; }
+    uint get_size() const;
 
-    uint get_capacity() const { return end_ - buffer_; }
+    uint get_capacity() const;
 
-    void   set_current(uint c) { check(c, get_capacity()); current_ = c; }
+    void set_current(uint c);
 
     // users can pass defualt zero length buffer and then allocate
-    void allocate(uint s) { if (buffer_) 
-                                  throw Error("Buffer ReAlloc", realloc_error);
-                              buffer_ = new T[s]; end_ = buffer_ + s; }
+    void allocate(uint s);
 
     // for passing to reading functions when finished
-    const T* get_buffer() const { return buffer_; }
+    const byte* get_buffer() const;
 
     // allow write access through [], update current
     // user passes in AUTO as index for ease of use
-    T& operator[](uint i) 
-    {
-        assert(i == AUTO);
-        check(current_, get_capacity());
-        return buffer_[current_++];
-    }
-
+    byte& operator[](uint i);
+    
     // end of output test
-    bool eof() { return current_ >= get_capacity(); }
+    bool eof();
 
-    void write(const T* t, uint s)
-    {
-        check(current_ + s - 1, get_capacity()); 
-        memcpy(&buffer_[current_], t, s);
-        current_ += s;
-    }
+    void write(const byte* t, uint s);
+
 private:
-    out_buffer(const out_buffer&);              // hide copy
-    out_buffer& operator=(const out_buffer&);   // and assign
+    output_buffer(const output_buffer&);              // hide copy
+    output_buffer& operator=(const output_buffer&);   // and assign
 };
 
-
-
-// Checked input_bufer
-typedef in_buffer<byte, Check> input_buffer;
-
-// Checked output_buffer
-typedef out_buffer<byte, Check> output_buffer;
 
 
 

@@ -106,7 +106,7 @@ target_alias = @target_alias@
 INCLUDES = -I../include -I../taocrypt/include
 
 lib_LIBRARIES = libyassl.a
-libyassl_a_SOURCES = cert_wrapper.cpp crypto_wrapper.cpp factory.cpp \
+libyassl_a_SOURCES = buffer.cpp cert_wrapper.cpp crypto_wrapper.cpp \
 	handshake.cpp log.cpp socket_wrapper.cpp ssl.cpp yassl_imp.cpp \
 	yassl_int.cpp
 
@@ -118,8 +118,8 @@ LIBRARIES = $(lib_LIBRARIES)
 
 libyassl_a_AR = $(AR) cru
 libyassl_a_LIBADD =
-am_libyassl_a_OBJECTS = cert_wrapper.$(OBJEXT) crypto_wrapper.$(OBJEXT) \
-	factory.$(OBJEXT) handshake.$(OBJEXT) log.$(OBJEXT) \
+am_libyassl_a_OBJECTS = buffer.$(OBJEXT) cert_wrapper.$(OBJEXT) \
+	crypto_wrapper.$(OBJEXT) handshake.$(OBJEXT) log.$(OBJEXT) \
 	socket_wrapper.$(OBJEXT) ssl.$(OBJEXT) yassl_imp.$(OBJEXT) \
 	yassl_int.$(OBJEXT)
 libyassl_a_OBJECTS = $(am_libyassl_a_OBJECTS)
@@ -127,12 +127,12 @@ libyassl_a_OBJECTS = $(am_libyassl_a_OBJECTS)
 DEFAULT_INCLUDES =  -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/cert_wrapper.Po \
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/buffer.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/cert_wrapper.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/crypto_wrapper.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/factory.Po ./$(DEPDIR)/handshake.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/log.Po ./$(DEPDIR)/socket_wrapper.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/ssl.Po ./$(DEPDIR)/yassl_imp.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/yassl_int.Po
+@AMDEP_TRUE@	./$(DEPDIR)/handshake.Po ./$(DEPDIR)/log.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/socket_wrapper.Po ./$(DEPDIR)/ssl.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/yassl_imp.Po ./$(DEPDIR)/yassl_int.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -194,9 +194,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/buffer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cert_wrapper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/crypto_wrapper.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/factory.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/handshake.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/socket_wrapper.Po@am__quote@

@@ -1,6 +1,7 @@
-Sun Oct 24 11:02:36 2004: ********** Logger Attached **********
-Sun Oct 24 11:02:36 2004: yaSSL conn BEGUN w/ peer 127.0.0.1 port 11111
-Sun Oct 24 11:02:36 2004: Sent     13 bytes of application data
-Sun Oct 24 11:02:36 2004: Received 13 bytes of application data
-Sun Oct 24 11:02:36 2004: yaSSL conn DONE  w/ peer 127.0.0.1 port 11111
-Sun Oct 24 11:02:36 2004: ********** Logger Detached **********
+Sun Oct 31 12:01:02 2004: ********** Logger Attached **********
+Sun Oct 31 12:01:02 2004: yaSSL conn BEGUN w/ peer 127.0.0.1 port 11111
+Sun Oct 31 12:01:02 2004: Sent     13 bytes of application data
+Sun Oct 31 12:01:04 2004: Received 13 bytes of application data
+Sun Oct 31 12:01:04 2004: ********** Logger Detached **********
+ 11111
+Sun Oct 31 12:01:02 2004: ********** Logger Detached **********

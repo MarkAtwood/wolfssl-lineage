@@ -66,51 +66,58 @@ int  dh_test();
 
 TaoCrypt::RandomNumberGenerator rng;
 
+void err_sys(const char* msg, int es)
+{
+    printf("%s", msg);
+    exit(es);    
+}
+
 
 int main(int argc, char** argv)
 {
     if (argc > 1) 
         file_test(argc, argv);
     else {
-        if (sha_test()) 
-            printf("SHA  test failed!\n");
+        int ret(0);
+        if ( (ret = sha_test()) ) 
+            err_sys("SHA  test failed!\n", ret);
         else
-            printf("SHA  test passed!\n");
+            printf( "SHA  test passed!\n");
 
-        if (md5_test()) 
-            printf("MD5  test failed!\n");
+        if ( (ret = md5_test()) ) 
+            err_sys("MD5  test failed!\n", ret);
         else
-            printf("MD5  test passed!\n");
+            printf( "MD5  test passed!\n");
 
-        if (hmac_test())
-            printf("HMAC test failed!\n");
+        if ( ( ret = hmac_test()) )
+            err_sys("HMAC test failed!\n", ret);
         else
-            printf("HMAC test passed!\n");
+            printf( "HMAC test passed!\n");
 
-        if (arc4_test())
-            printf("ARC4 test failed!\n");
+        if ( (ret = arc4_test()) )
+            err_sys("ARC4 test failed!\n", ret);
         else
-            printf("ARC4 test passed!\n");
+            printf( "ARC4 test passed!\n");
 
-        if (des_test())
-            printf("DES  test failed!\n");
+        if ( (ret = des_test()) )
+            err_sys("DES  test failed!\n", ret);
         else
-            printf("DES  test passed!\n");
+            printf( "DES  test passed!\n");
 
-        if (aes_test())
-            printf("AES  test failed!\n");
+        if ( (ret = aes_test()) )
+            err_sys("AES  test failed!\n", ret);
         else
-            printf("AES  test passed!\n");
+            printf( "AES  test passed!\n");
 
-        if (rsa_test())
-            printf("RSA  test failed!\n");
+        if ( (ret = rsa_test()) )
+            err_sys("RSA  test failed!\n", ret);
         else
-            printf("RSA  test passed!\n");
+            printf( "RSA  test passed!\n");
 
-        if (dh_test())
-            printf("DH   test failed!\n");
+        if ( (ret = dh_test()) )
+            err_sys("DH   test failed!\n", ret);
         else
-            printf("DH   test passed!\n");
+            printf( "DH   test passed!\n");
     }
 
     return 0;

@@ -55,6 +55,7 @@ template<int BLOCK_SIZE>
 class Mode_BASE {
 public:
     Mode_BASE() {}
+    virtual ~Mode_BASE() {}
 
     virtual void ProcessAndXorBlock(const byte*, const byte*, byte*) const = 0;
 

@@ -36,10 +36,10 @@
 #define yaSSL_CRYPTO_WRAPPER_HPP
 
 #include "yassl_types.hpp"
-#include <memory>
 
 
 namespace yaSSL {
+
 
 // MAC policy should implement a get_digest, update, and get sizes for pad and 
 // digest

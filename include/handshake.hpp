@@ -28,18 +28,18 @@
 #ifndef yaSSL_HANDSHAKE_HPP
 #define yaSSL_HANDSHAKE_HPP
 
-#include "yassl_imp.hpp"
-#include "yassl_int.hpp"
-#include "buffer.hpp"
+#include "yassl_types.hpp"
 
 
 namespace yaSSL {
 
+// forward decls
+class SSL;
+class Finished;
+class Data;
+class Alert;
 
 enum BufferOutput { buffered, unbuffered };
-
-void buildFinished(SSL&, Finished&, const opaque*);
-void hashHandShake(SSL&, const input_buffer&, unsigned int);
 
 void sendClientHello(SSL&);
 void sendServerHello(SSL&, BufferOutput = buffered);
@@ -54,6 +54,8 @@ int  sendAlert(SSL& ssl, const Alert& alert);
 
 int  receiveData(SSL&, Data&); 
 void processReply(SSL&);
+
+void buildFinished(SSL&, Finished&, const opaque*);
 
 void hmac(SSL&, byte*, const byte*, uint, ContentType, bool verify = false);
 void TLS_hmac(SSL&, byte*, const byte*, uint, ContentType,

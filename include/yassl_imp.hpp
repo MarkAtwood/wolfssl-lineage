@@ -34,7 +34,6 @@
 #endif
 
 #include "yassl_types.hpp"
-#include "buffer.hpp"
 #include "factory.hpp"
 #include <list>
 
@@ -42,7 +41,9 @@
 namespace yaSSL {
 
 
-class SSL;  // forward THE ssl type
+class SSL;              // forward decls
+class input_buffer;
+class output_buffer;
 
 
 struct ProtocolVersion {
@@ -666,6 +667,16 @@ private:
 };
 
 
+input_buffer&  operator>>(input_buffer&,  RecordLayerHeader&);
+output_buffer& operator<<(output_buffer&, const RecordLayerHeader&);
+
+input_buffer&  operator>>(input_buffer&,  Message&);
+output_buffer& operator<<(output_buffer&, const Message&);
+
+input_buffer&  operator>>(input_buffer&,  HandShakeBase&);
+output_buffer& operator<<(output_buffer&, const HandShakeBase&);
+
+
 // Message Factory definition
 // uses the ContentType enumeration for unique id
 typedef Factory<Message> MessageFactory;
@@ -717,16 +728,6 @@ ClientKeyBase* CreateRSAClient();
 ClientKeyBase* CreateDHClient();
 ClientKeyBase* CreateFortezzaClient();
 
-
-
-input_buffer&  operator>>(input_buffer&,  RecordLayerHeader&);
-output_buffer& operator<<(output_buffer&, const RecordLayerHeader&);
-
-input_buffer&  operator>>(input_buffer&,  Message&);
-output_buffer& operator<<(output_buffer&, const Message&);
-
-input_buffer&  operator>>(input_buffer&,  HandShakeBase&);
-output_buffer& operator<<(output_buffer&, const HandShakeBase&);
 
 
 } // naemspace
