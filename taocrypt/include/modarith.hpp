@@ -33,6 +33,7 @@
 namespace TaoCrypt {
 
 
+//! ModularArithmetic
 class ModularArithmetic : public AbstractRing<Integer>
 {
 public:
@@ -44,7 +45,8 @@ public:
         : modulus(modulus), result((word)0, modulus.reg_.size()) {}
 
     ModularArithmetic(const ModularArithmetic &ma)
-        : modulus(ma.modulus), result((word)0, modulus.reg_.size()) {}
+        : AbstractRing<Integer>(),
+        modulus(ma.modulus), result((word)0, modulus.reg_.size()) {}
 
     const Integer& GetModulus() const {return modulus;}
     void SetModulus(const Integer &newModulus) 

@@ -19,6 +19,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* based on Wei Dai's integer.h from CryptoPP */
+
 
 #ifndef TAO_CRYPT_INTEGER_HPP
 #define TAO_CRYPT_INTEGER_HPP
@@ -63,6 +65,7 @@ namespace TaoCrypt {
 
 #if defined(SSE2_INTRINSICS_AVAILABLE)
 
+    // Allocator handling proper alignment
     template <class T>
     class AlignedAllocator : public AllocatorBase<T>
     {
@@ -95,12 +98,15 @@ namespace TaoCrypt {
 #endif
 
 
+// general MIN
 template<typename T> inline
 const T& min(const T& a, const T& b)
 {
     return a < b ? a : b;
 }
 
+
+// general MAX
 template<typename T> inline
 const T& max(const T& a, const T& b)
 {
@@ -108,6 +114,7 @@ const T& max(const T& a, const T& b)
 }
 
 
+// Large Integer class
 class Integer {
 public:
         enum Sign {POSITIVE = 0, NEGATIVE = 1 };

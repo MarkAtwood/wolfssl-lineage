@@ -19,6 +19,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* arc4.hpp defines ARC4
+*/
+
 
 #ifndef TAO_CRYPT_ARC4_HPP
 #define TAO_CRYPT_ARC4_HPP
@@ -27,6 +30,8 @@
 
 namespace TaoCrypt {
 
+
+// ARC4 encryption and decryption
 class ARC4 {
 public:
     enum { STATE_SIZE = 256 };

@@ -80,9 +80,13 @@ const int RSA_KEA_SIG       =  64;  // 512 bit RSA key exchange signature len
 const int DSA_KEA_SIG       =  48;  // DSA key exchange signature len
 const int DES_KEY_SZ        =   8;  // DES Key length
 const int DES_EDE_KEY_SZ    =  24;  // DES EDE Key length
-const int DES_IV_SZ         =   8;  // Init Vector length for DES
 const int DES_BLOCK         =   8;  // DES is always fixed block size 8
+const int DES_IV_SZ         = DES_BLOCK;    // Init Vector length for DES
 const int RC4_KEY_SZ        =  16;  // RC4 Key length
+const int AES_128_KEY_SZ    =  16;  // AES 128bit Key length
+const int AES_256_KEY_SZ    =  32;  // AES 256bit Key length
+const int AES_BLOCK_SZ      =  16;  // AES 128bit block size, rfc 3268
+const int AES_IV_SZ         = AES_BLOCK_SZ; // AES Init Vector length  
 const int MASTER_LABEL_SZ   =  13;  // TLS master secret label size
 const int KEY_LABEL_SZ      =  13;  // TLS key block expansion size
 const int FINISHED_LABEL_SZ =  15;  // TLS finished lable length
@@ -193,7 +197,8 @@ enum BulkCipherAlgorithm {
     des,
     triple_des,             // leading 3 (3des) not valid identifier
     des40,
-    idea
+    idea,
+    aes
 };
 
 
@@ -206,7 +211,7 @@ enum MACAlgorithm {
 
 
 // Certificate file Type
-enum CertType { Cert = 0, PrivateKey };
+enum CertType { Cert = 0, PrivateKey, CA };
 
 
 // all Cipher Suites from pages 41/42
@@ -241,6 +246,24 @@ const Cipher SSL_DH_anon_WITH_3DES_EDE_CBC_SHA      = 27; // { 0x00, 0x1B }
 const Cipher SSL_FORTEZZA_KEA_WITH_NULL_SHA         = 28; // { 0x00, 0x1C }
 const Cipher SSL_FORTEZZA_KEA_WITH_FORTEZZA_CBC_SHA = 29; // { 0x00, 0x1D }
 const Cipher SSL_FORTEZZA_KEA_WITH_RC4_128_SHA      = 30; // { 0x00, 0x1E }
+
+// .. to 0x2B uses Kerberos Authentication
+
+
+// TLS AES extensions
+const Cipher TLS_RSA_WITH_AES_128_CBC_SHA      = 47; // { 0x00, 0x2F }
+const Cipher TLS_DH_DSS_WITH_AES_128_CBC_SHA   = 48; // { 0x00, 0x30 }
+const Cipher TLS_DH_RSA_WITH_AES_128_CBC_SHA   = 49; // { 0x00, 0x31 }
+const Cipher TLS_DHE_DSS_WITH_AES_128_CBC_SHA  = 50; // { 0x00, 0x32 }
+const Cipher TLS_DHE_RSA_WITH_AES_128_CBC_SHA  = 51; // { 0x00, 0x33 }
+const Cipher TLS_DH_anon_WITH_AES_128_CBC_SHA  = 52; // { 0x00, 0x34 }
+
+const Cipher TLS_RSA_WITH_AES_256_CBC_SHA      = 53; // { 0x00, 0x35 }
+const Cipher TLS_DH_DSS_WITH_AES_256_CBC_SHA   = 54; // { 0x00, 0x36 }
+const Cipher TLS_DH_RSA_WITH_AES_256_CBC_SHA   = 55; // { 0x00, 0x37 }
+const Cipher TLS_DHE_DSS_WITH_AES_256_CBC_SHA  = 56; // { 0x00, 0x38 }
+const Cipher TLS_DHE_RSA_WITH_AES_256_CBC_SHA  = 57; // { 0x00, 0x39 }
+const Cipher TLS_DH_anon_WITH_AES_256_CBC_SHA  = 58; // { 0x00, 0x3A }
 
 
 // fill with MD5 pad size since biggest required

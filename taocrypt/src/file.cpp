@@ -19,7 +19,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-
+/* file.cpp implements File Sources and Sinks
+   and a general pupose Sink also usuable as a Source
+*/
 
 #include "file.hpp"
 
@@ -27,6 +29,7 @@ namespace TaoCrypt {
 
 
 
+// return size of source from beginning or current position
 word32 FileSource::size(bool use_current)
 {
     using std::streampos;
@@ -52,6 +55,7 @@ word32 FileSource::size_left()
 }
 
 
+// fill file source from sink
 word32 FileSource::get(Sink& sink)
 {
     word32 sz(size());
@@ -64,12 +68,14 @@ word32 FileSource::get(Sink& sink)
 }
 
 
+// fill file sink from input (sink which is a source, maybe change naming??)
 void FileSink::put(Sink& sink)
 {
     file_.write(reinterpret_cast<const char*>(sink.get_buffer()), sink.size());
 }
 
 
+// swap with other and reset to beginning
 void Sink::reset(ByteBlock& otherBlock)
 {
     buffer_.swap(otherBlock);   

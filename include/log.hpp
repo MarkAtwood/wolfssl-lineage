@@ -37,24 +37,12 @@ namespace yaSSL {
 
 typedef unsigned int uint;
 
-#ifdef NDEBUG
 
+// Debug logger
 class Log {
-public:
-    Log() {}
-    explicit Log(const char*) {}
-
-    void Trace(const char*) {}
-    void ShowTCP(socket_t, bool ended = false) {}
-    void ShowData(uint, bool sent = false) {}
-};
-
-
-#else // NDEBUG
-
-
-class Log {
+#ifndef NDEBUG
     std::ofstream log_;
+#endif
 public:
     explicit Log(const char* str = "yaSSL.log");
     ~Log();
@@ -63,9 +51,6 @@ public:
     void ShowTCP(socket_t, bool ended = false);
     void ShowData(uint, bool sent = false);
 };
-
-
-#endif // NDEBUG
 
 
 } // naemspace

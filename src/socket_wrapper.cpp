@@ -131,7 +131,7 @@ int Socket::receive(byte* buf, unsigned int len, int flags) const
 void Socket::wait() const
 {
     byte b;
-    unsigned int recvd = receive(&b, 1, MSG_PEEK);
+    receive(&b, 1, MSG_PEEK);
 }
 
 

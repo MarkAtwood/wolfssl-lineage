@@ -87,8 +87,6 @@ struct func_args {
 
 void taocrypt_test(void* args)
 {
-    int    argc = ((func_args*)args)->argc;
-    char** argv = ((func_args*)args)->argv;
     ((func_args*)args)->return_code = -1; // error state
     
 
@@ -495,13 +493,13 @@ int aes_test()
 
 int rsa_test()
 {
-    std::string name = "../../certs/key.der";
+    std::string name = "../../certs/client-key.der";
 	Sink sink;
     FileSource(name, sink);
     if (sink.size() == 0) {
-        FileSource("../certs/key.der", sink);  // for testsuite
+        FileSource("../certs/client-key.der", sink);  // for testsuite
         if (sink.size() == 0) {
-            FileSource("../../../certs/key.der", sink); // for win32 Debug dir
+            FileSource("../../../certs/client-key.der", sink); // Debug dir
             if (sink.size() == 0)
                 err_sys("where's your certs dir?", -79);
         }
@@ -527,13 +525,13 @@ int rsa_test()
 
 
     // test decode   
-    name = "../../certs/cert.der";
+    name = "../../certs/client-cert.der";
     Sink sink2;
     FileSource(name, sink2);
     if (sink2.size() == 0) {
-        FileSource("../certs/cert.der", sink2);  // for testsuite
+        FileSource("../certs/client-cert.der", sink2);  // for testsuite
         if (sink2.size() == 0) {
-            FileSource("../../../certs/cert.der", sink2); // win32 Debug dir
+            FileSource("../../../certs/client-cert.der", sink2); // Debug dir
             if (sink2.size() == 0)
                 err_sys("where's your certs dir?", -79);
         }
@@ -560,25 +558,6 @@ int dh_test()
         }
     }
     HexDecoder hDec(sink);
-
-
-    /*
-    Sink der;
-    FileSource("cert.der.bak", der);
-    Base64Encoder b64Enc(der);
-    FileSink("cert.pem", der);
-
-    Sink pem;
-    FileSource("cert.pem.bak", pem);
-    Base64Decoder b64Dec(pem);
-    FileSink("cert.der", pem);
-
-    Sink f1, f2;
-    FileSource("cert.der", f1);
-    FileSource("cert.der.bak", f2);
-    int cmp = memcmp(f1.get_buffer(), f2.get_buffer(), 560);
-    */
-    
 
     DH dh(sink);
 

@@ -19,6 +19,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* timer.hpp provides a high res and low res timers
+ *
+*/
+
+
 #ifndef yaSSL_TIMER_HPP
 #define yaSSL_TIMER_HPP
 

@@ -19,6 +19,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* hash.cpp implements a base for digest types
+*/
 
 
 #include <string.h>
@@ -27,6 +29,8 @@
 
 namespace TaoCrypt {
 
+
+// Update digest with data of size len, do in blocks
 void HASH::Update(const byte* data, word32 len)
 {
     // do block size increments
@@ -47,6 +51,7 @@ void HASH::Update(const byte* data, word32 len)
 }
 
 
+// Final process, place digest in hash
 void HASH::Final(byte* hash)
 {
     word32    blockSz   = getBlockSize();
@@ -66,9 +71,8 @@ void HASH::Final(byte* hash)
     while (buffLen_ < padSz) buffer_[buffLen_++] = 0;
 
     ByteReverseIf(buffer_, buffer_, blockSz, order);
-    //write64Order(prePadLen, &buffer_[padSz], order);
-
-    word32 hiSize = 0;  // if using 64 bit length TODO: fix
+    
+    word32 hiSize = 0;  // for future 64 bit length TODO:
     memcpy(&buffer_[padSz],   order ? &hiSize : &prePadLen, sizeof(prePadLen));
     memcpy(&buffer_[padSz+4], order ? &prePadLen : &hiSize, sizeof(prePadLen));
 

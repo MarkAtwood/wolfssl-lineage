@@ -19,6 +19,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* aes.hpp defines AES
+*/
+
 
 #ifndef TAO_CRYPT_AES_HPP
 #define TAO_CRYPT_AES_HPP
@@ -32,6 +35,8 @@ namespace TaoCrypt {
 
 enum { AES_BLOCK_SIZE = 16 };
 
+
+// AES encryption and decryption, see FIPS-197
 class AES : public Mode_BASE<AES_BLOCK_SIZE> {
 public:
     enum { BLOCK_SIZE = AES_BLOCK_SIZE };

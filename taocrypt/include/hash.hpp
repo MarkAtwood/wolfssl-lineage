@@ -19,6 +19,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* hash.hpp provides a base for digest types
+*/
 
 
 #ifndef TAO_CRYPT_HASH_HPP
@@ -28,6 +30,8 @@
 
 namespace TaoCrypt {
 
+
+// HASH
 class HASH {
 public:
     HASH(word32 digSz, word32 buffSz) 

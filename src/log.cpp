@@ -22,84 +22,101 @@
 /*  Debug logging functions
  */
 
-#ifndef NDEBUG
 
-#include <ctime>
-#include <sstream>
 #include "log.hpp"
+
+#ifndef NDEBUG
+    #include <ctime>
+    #include <sstream>
+#endif
+
 
 
 namespace yaSSL {
 
 
-Log::Log(const char* str) : log_(str)
-{
-    Trace("********** Logger Attached **********");
-}
+#ifndef NDEBUG
 
-
-Log::~Log()
-{
-    Trace("********** Logger Detached **********");
-}
-
-
-void Log::Trace(const char* msg)
-{   
-    time_t clicks = time(0);
-    char   timeStr[32];
-
-    // get rid of newline
-    strncpy(timeStr, ctime(&clicks), sizeof(timeStr));
-    unsigned int len = strlen(timeStr);
-    timeStr[len - 1] = 0;
-
-    log_ << timeStr << ": " << msg << '\n';
-}
-
-
-#if defined(WIN32) || defined(__MACH__) || defined(__hpux__)
-typedef int socklen_t;
-#endif
-
-
-void Log::ShowTCP(socket_t fd, bool ended)
-{
-    sockaddr_in peeraddr;
-    socklen_t   len = sizeof(peeraddr);
-    getpeername(fd, (sockaddr*)&peeraddr, &len);
-
-    const char* p = reinterpret_cast<const char*>(&peeraddr.sin_addr);
-    std::stringstream msg;
-    
-    if (ended)
-        msg << "yaSSL conn DONE  w/ peer ";
-    else
-        msg << "yaSSL conn BEGUN w/ peer ";
-    for (int i = 0; i < 4; ++i) {
-        msg << static_cast<unsigned short>(p[i]);
-        if (i < 3) msg << ".";
+    Log::Log(const char* str) : log_(str)
+    {
+        Trace("********** Logger Attached **********");
     }
-    msg << " port " << htons(peeraddr.sin_port);
-
-    Trace(msg.str().c_str());
-}
 
 
-void Log::ShowData(uint bytes, bool sent)
-{
-    std::stringstream msg;
-
-    if (sent)
-        msg << "Sent     ";
-    else
-        msg << "Received ";
-    msg << bytes << " bytes of application data";
-
-    Trace(msg.str().c_str());
-}
+    Log::~Log()
+    {
+        Trace("********** Logger Detached **********");
+    }
 
 
+    // Trace a message
+    void Log::Trace(const char* msg)
+    {   
+        time_t clicks = time(0);
+        char   timeStr[32];
 
-} // namespace
+        // get rid of newline
+        strncpy(timeStr, ctime(&clicks), sizeof(timeStr));
+        unsigned int len = strlen(timeStr);
+        timeStr[len - 1] = 0;
+
+        log_ << timeStr << ": " << msg << '\n';
+    }
+
+
+    #if defined(WIN32) || defined(__MACH__) || defined(__hpux__)
+    typedef int socklen_t;
+    #endif
+
+
+    // write tcp address
+    void Log::ShowTCP(socket_t fd, bool ended)
+    {
+        sockaddr_in peeraddr;
+        socklen_t   len = sizeof(peeraddr);
+        getpeername(fd, (sockaddr*)&peeraddr, &len);
+
+        const char* p = reinterpret_cast<const char*>(&peeraddr.sin_addr);
+        std::stringstream msg;
+    
+        if (ended)
+            msg << "yaSSL conn DONE  w/ peer ";
+        else
+            msg << "yaSSL conn BEGUN w/ peer ";
+        for (int i = 0; i < 4; ++i) {
+            msg << static_cast<unsigned short>(p[i]);
+            if (i < 3) msg << ".";
+        }
+        msg << " port " << htons(peeraddr.sin_port);
+
+        Trace(msg.str().c_str());
+    }
+
+
+    // log processed data
+    void Log::ShowData(uint bytes, bool sent)
+    {
+        std::stringstream msg;
+
+        if (sent)
+            msg << "Sent     ";
+        else
+            msg << "Received ";
+        msg << bytes << " bytes of application data";
+
+        Trace(msg.str().c_str());
+    }
+
+
+#else // NDEBUG
+
+
+    Log::Log(const char*) {}
+    Log::~Log() {}
+    void Log::Trace(const char*) {}
+    void Log::ShowTCP(socket_t, bool) {}
+    void Log::ShowData(uint, bool) {}
+
+
 #endif // NDEBUG
+} // namespace

@@ -182,13 +182,13 @@ public:
     void    set_length(int);
 
     // for building buffer's type field
-    virtual HandShakeType get_type() const;                  // TODO: make pure
+    virtual HandShakeType get_type() const =0;                
 
     // handles dispactch of proper >>
-    virtual input_buffer&  set(input_buffer& in);            // TODO: make pure
-    virtual output_buffer& get(output_buffer& out) const;    // TODO: make pure
+    virtual input_buffer&  set(input_buffer& in) =0;
+    virtual output_buffer& get(output_buffer& out) const =0;
 
-    virtual void Process(input_buffer&, SSL&);               // TODO: make pure
+    virtual void Process(input_buffer&, SSL&) =0;
 
     virtual ~HandShakeBase() {}
 };
@@ -330,8 +330,8 @@ struct ServerKeyBase {
     virtual ~ServerKeyBase() {}
     virtual void build(SSL&) {}
     virtual void read(SSL&, input_buffer&) {}
-    virtual int  get_length() const;            // TODO: make pure
-    virtual opaque* get_serverKey() const;      // TODO: make pure
+    virtual int  get_length() const;     
+    virtual opaque* get_serverKey() const;
 };
 
 
@@ -613,10 +613,10 @@ struct Connection {
     opaque          sessionID_[ID_LEN];
     opaque          client_write_MAC_secret_[SHA_LEN]; // sha  is max size
     opaque          server_write_MAC_secret_[SHA_LEN];
-    opaque          client_write_key_[DES_EDE_KEY_SZ]; // 3des is max size
-    opaque          server_write_key_[DES_EDE_KEY_SZ];
-    opaque          client_write_IV_[DES_IV_SZ];       //  des is max size
-    opaque          server_write_IV_[DES_IV_SZ];
+    opaque          client_write_key_[AES_256_KEY_SZ]; // aes 256bit is max sz
+    opaque          server_write_key_[AES_256_KEY_SZ];
+    opaque          client_write_IV_[AES_IV_SZ];       // aes is max size
+    opaque          server_write_IV_[AES_IV_SZ];
     uint32          sequence_number_;
     uint32          peer_sequence_number_;
     uint32          pre_secret_len_;                   // pre master length

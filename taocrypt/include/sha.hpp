@@ -19,6 +19,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* sha.hpp provides SHA-1 digests, see RFC 3174
+*/
 
 #ifndef TAO_CRYPT_SHA_HPP
 #define TAO_CRYPT_SHA_HPP
@@ -27,6 +29,8 @@
 
 namespace TaoCrypt {
 
+
+// SHA-1 digest
 class SHA : public HASH {
 public:
     enum { BLOCK_SIZE = 64, DIGEST_SIZE = 20, PAD_SIZE = 56,

@@ -19,6 +19,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* rsa.hpp provides RSA ES encrypt/decrypt, SSL (block type 1) sign and verify
+*/
 
 #ifndef TAO_CRYPT_RSA_HPP
 #define TAO_CRYPT_RSA_HPP
@@ -33,6 +35,7 @@ namespace TaoCrypt {
 class Sink;
 
 
+// Public Key Length helper
 class PK_Lengths {
     const Integer& image_;
 public:
@@ -48,6 +51,7 @@ public:
 };
 
 
+// RSA Public Key
 class RSA_PublicKey {
 protected:
     Integer n_;
@@ -88,6 +92,7 @@ public:
 };
 
 
+// RSA Private Key
 class RSA_PrivateKey : public RSA_PublicKey {
     Integer d_;
     Integer p_;
@@ -127,6 +132,7 @@ private:
 };
 
 
+// block type 2 padding
 class RSA_BlockType2  {
 public:
     void   Pad(const byte*, word32, byte*, word32,
@@ -135,6 +141,7 @@ public:
 };
 
 
+// block type 1 padding
 class RSA_BlockType1  {
 public:
     void   Pad(const byte*, word32, byte*, word32, 
@@ -143,6 +150,7 @@ public:
 };
 
 
+// RSA Encryptor, can use any padding
 template<class Pad = RSA_BlockType2>
 class RSA_Encryptor {
     RSA_PublicKey& key_;
@@ -155,6 +163,7 @@ public:
 };
 
 
+// RSA Decryptor, can use any padding
 template<class Pad = RSA_BlockType2>
 class RSA_Decryptor {
     RSA_PrivateKey& key_;
@@ -167,6 +176,7 @@ public:
 };
 
 
+// Public Encrypt
 template<class Pad>
 void RSA_Encryptor<Pad>::Encrypt(const byte* plain, word32 sz, byte* cipher,
                                  RandomNumberGenerator& rng)
@@ -185,6 +195,7 @@ void RSA_Encryptor<Pad>::Encrypt(const byte* plain, word32 sz, byte* cipher,
 }
 
 
+// Private Decrypt
 template<class Pad>
 word32 RSA_Decryptor<Pad>::Decrypt(const byte* cipher, word32 sz, byte* plain,
                                    RandomNumberGenerator& rng)
@@ -205,6 +216,7 @@ word32 RSA_Decryptor<Pad>::Decrypt(const byte* cipher, word32 sz, byte* plain,
 }
 
 
+// Public SSL type (block 1) Encrypt
 template<class Pad>
 void RSA_Decryptor<Pad>::SSL_Sign(const byte* message, word32 sz, byte* sig,
                                   RandomNumberGenerator& rng)
@@ -216,21 +228,21 @@ void RSA_Decryptor<Pad>::SSL_Sign(const byte* message, word32 sz, byte* sig,
 }
 
 
-void SSL_Decrypt(RSA_PublicKey& key, const byte* sig, word32 sz, byte* plain);
+word32 SSL_Decrypt(RSA_PublicKey& key, const byte* sig, byte* plain);
 
 
+// Private SSL type (block 1) Decrypt
 template<class Pad>
 bool RSA_Encryptor<Pad>::SSL_Verify(const byte* message, word32 sz,
                                     const byte* sig)
 {
     ByteBlock plain(PK_Lengths(key_.GetModulus()).FixedMaxPlaintextLength());
-    SSL_Decrypt(key_, sig, sz, plain.get_buffer());
+    SSL_Decrypt(key_, sig, plain.get_buffer());
 
     if ( (memcmp(plain.get_buffer(), message, sz)) == 0)
         return true;
     return false;
 }
-
 
 
 typedef RSA_Encryptor<> RSAES_Encryptor;

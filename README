@@ -1,5 +1,22 @@
 
-yaSSL Release notes, version 0.8.0
+yaSSL Release notes, version 0.9.2
+
+This release of yaSSL contains minor bug fixes, expanded certificate
+verification and chaining, and improved documentation.
+
+Please see build instructions in release notes 0.3.0.
+
+
+
+******************yaSSL Release notes, version 0.9.0
+
+This release of yaSSL contains minor bug fixes, client verification handling,
+hex and base64 encoing/decoding, and an improved test suite.
+
+Please see build instructions in release notes 0.3.0.
+
+
+******************yaSSL Release notes, version 0.8.0
 
 This release of yaSSL contains minor bug fixes, and initial porting effort to
 64bit, BigEndian, and more UNIX systems.

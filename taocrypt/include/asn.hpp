@@ -19,6 +19,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* asn.hpp provides ASN1 BER, PublicKey, and x509v3 decoding 
+*/
+
 
 #ifndef TAO_CRYPT_ASN_HPP
 #define TAO_CRYPT_ASN_HPP
@@ -26,6 +29,7 @@
 
 #include "misc.hpp"
 #include "block.hpp"
+#include <list>
 
 
 
@@ -72,6 +76,19 @@ enum ASNIdFlag
 };
 
 
+enum DNTags
+{
+    COMMON_NAME         = 0x03,
+};
+
+
+enum Constants
+{
+    MIN_DATE_SZ = 13,
+    MAX_DATE_SZ = 15,
+};
+
+
 class Sink;
 class RSA_PublicKey;
 class RSA_PrivateKey;
@@ -79,6 +96,7 @@ class Integer;
 class DH;
 
 
+// General BER decoding
 class BER_Decoder {
 protected:
     Sink& sink_;
@@ -88,13 +106,18 @@ public:
 
     Integer& GetInteger(Integer&);
     word32   GetSequence();
+    word32   GetSet();
     word32   GetVersion();
     word32   GetExplicitVersion();
 private:
     virtual void ReadHeader() = 0;
+
+    BER_Decoder(const BER_Decoder&);            // hide copy
+    BER_Decoder& operator=(const BER_Decoder&); // and assign
 };
 
 
+// RSA Private Key BER Decoder
 class RSA_Private_Decoder : public BER_Decoder {
 public:
     explicit RSA_Private_Decoder(Sink& s) : BER_Decoder(s) {}
@@ -104,7 +127,7 @@ private:
 };
 
 
-
+// RSA Public Key BER Decoder
 class RSA_Public_Decoder : public BER_Decoder {
 public:
     explicit RSA_Public_Decoder(Sink& s) : BER_Decoder(s) {}
@@ -114,7 +137,7 @@ private:
 };
 
 
-
+// DH Key BER Decoder
 class DH_Decoder : public BER_Decoder {
 public:
     explicit DH_Decoder(Sink& s) : BER_Decoder(s) {}
@@ -124,37 +147,92 @@ private:
 };
 
 
+// General PublicKey
 class PublicKey {
-    const byte* key_;
-    word32      sz_;
+    byte*  key_;
+    word32 sz_;
 public:
-    PublicKey(const byte* k, word32 s) : key_(k), sz_(s) {}
-    PublicKey() : key_(0), sz_(0) {}
+    explicit PublicKey(const byte* k = 0, word32 s = 0);
+    ~PublicKey() { delete[] key_; }
 
     const byte* GetKey() const { return key_; }
     word32      size()   const { return sz_; }
 
-    void SetKey(const byte* k) { key_ = k; }
-    void SetSize(word32 s) { sz_ = s; }
+    void SetKey(const byte*);
+    void SetSize(word32 s);
+private:
+    PublicKey(const PublicKey&);            // hide copy
+    PublicKey& operator=(const PublicKey&); // and assign
 };
 
 
+enum { SHA_SIZE = 20 };
+
+
+// A Signing Authority
+class Signer {
+    PublicKey key_;
+    char*     name_;
+    byte      hash_[SHA_SIZE];
+public:
+    Signer(const byte* k, word32 kSz, const char* n, const byte* h);
+    ~Signer();
+
+    const PublicKey& GetPublicKey()  const { return key_; }
+    const char*      GetCommonName() const { return name_; }
+    const byte*      GetHash()       const { return hash_; }
+
+private:
+    Signer(const Signer&);              // hide copy
+    Signer& operator=(const Signer&);   // and assign
+};
+
+
+typedef std::list<Signer*> SignerList;
+
+
+// an x509v Certificate BER Decoder
 class CertDecoder : public BER_Decoder {
 public:
-    explicit CertDecoder(Sink& s) : BER_Decoder(s) { Decode(); }
-    PublicKey& GetPublicKey() { return key_; }
+    explicit CertDecoder(Sink&, bool decode = true, SignerList* = 0);
+    ~CertDecoder();
+
+    const PublicKey& GetPublicKey()  const { return key_; }
+    const char*      GetCommonName() const { return subject_; }
+    const byte*      GetHash()       const { return subjectHash_; }
+
+    enum DateType { BEFORE, AFTER };   
+    enum NameType { ISSUER, SUBJECT };
+    enum SigType  { MD5wRSA = 648, SHAwRSA = 649 }; // sum of algo OID
 private:
     PublicKey key_;
+    word32    certBegin_;               // offset to start of cert
+    word32    sigIndex_;                // offset to start of signature
+    word32    signatureOID_;            // sum of algorithm object id
+    byte      subjectHash_[SHA_SIZE];   // hash of all Names
+    byte      issuerHash_[SHA_SIZE];    // hash of all Names
+    byte*     signature_;
+    char*     issuer_;                  // CommonName
+    char*     subject_;                 // CommonName
 
-    void ReadHeader();
-    void Decode();
-    void SetPublicKey();
-    void StoreSequence();
-    void GetAlgoId();
-    void GetName();
-    void GetValidity();
+    void   ReadHeader();
+    void   Decode(SignerList*);
+    void   StoreKey();
+    void   ValidateSelfSignature();
+    void   ValidateSignature(SignerList*);
+    void   ConfirmSignature(Sink&);
+    void   GetKey();
+    void   GetName(NameType);
+    void   GetValidity();
+    void   GetDate(DateType);
+    void   GetCompareHash(const byte*, word32, byte*, word32);
+    word32 GetAlgoId();
+    word32 GetSignature();
 };
 
+
+
+word32 GetLength(Sink&);
 
 
 } // namespace

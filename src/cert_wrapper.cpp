@@ -97,6 +97,8 @@ CertManager::CertManager()
 
 CertManager::~CertManager()
 {
+    std::for_each(signers_.begin(), signers_.end(), del_ptr_zero()) ;
+
     std::for_each(peerList_.begin(), peerList_.end(), del_ptr_zero()) ;
 
     std::for_each(list_.begin(), list_.end(), del_ptr_zero()) ;
@@ -145,10 +147,22 @@ void CertManager::AddPeerCert(x509* x)
 }
 
 
-void CertManager::CopyCert(const x509* x)
+void CertManager::CopySelfCert(const x509* x)
 {
     if (x)
         list_.push_back(new x509(*x));
+}
+
+
+// add to signers
+void CertManager::CopyCaCert(const x509* x)
+{
+    TaoCrypt::Sink sink(x->get_buffer(), x->get_length());
+    TaoCrypt::CertDecoder cert(sink, true, &signers_);
+
+    const TaoCrypt::PublicKey& key = cert.GetPublicKey();
+    signers_.push_back(new TaoCrypt::Signer(key.GetKey(), key.size(),
+                                        cert.GetCommonName(), cert.GetHash()));
 }
 
 
@@ -182,12 +196,32 @@ uint CertManager::get_privateKeyLength() const
 }
 
 
-// Validate the peer's certificate list
-bool CertManager::Validate() const
+// Validate the peer's certificate list, from root to peer (last to first)
+void CertManager::Validate()
 {
-    bool valid = false;
+    CertList::reverse_iterator last  = peerList_.rbegin();
+    int count = peerList_.size();
 
-    return valid;
+    while ( count > 1 ) {
+        TaoCrypt::Sink sink((*last)->get_buffer(), (*last)->get_length());
+        TaoCrypt::CertDecoder cert(sink, true, &signers_);
+
+        const TaoCrypt::PublicKey& key = cert.GetPublicKey();
+        signers_.push_back(new TaoCrypt::Signer(key.GetKey(), key.size(),
+                                        cert.GetCommonName(), cert.GetHash()));
+        --last;
+        --count;
+    }
+
+    if (count) {
+        // peer's is at the front
+        TaoCrypt::Sink sink((*last)->get_buffer(), (*last)->get_length());
+        TaoCrypt::CertDecoder cert(sink, true, &signers_);
+
+        uint sz = cert.GetPublicKey().size();
+        peerPublicKey_.allocate(sz);
+        peerPublicKey_.assign(cert.GetPublicKey().GetKey(), sz);
+    }
 }
 
 
@@ -221,20 +255,6 @@ void CertManager::SetPeerKey()
     peerPublicKey_.assign(key_buffer, sz);
 }
 
-#else // USE_CML_LIB
-
-// Get the peer's certificate, extract and save public key
-void CertManager::SetPeerKey()
-{
-    // first cert is the peer's
-    x509* main = peerList_.front();
-    TaoCrypt::Sink sink(main->get_buffer(), main->get_length());
-    TaoCrypt::CertDecoder cert(sink);
-
-    uint sz = cert.GetPublicKey().size();
-    peerPublicKey_.allocate(sz);
-    peerPublicKey_.assign(cert.GetPublicKey().GetKey(), sz);
-}
 
 #endif // USE_CML_LIB
 

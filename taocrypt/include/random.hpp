@@ -19,6 +19,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* random.hpp provides a crypto secure Random Number Generator using an OS
+   specific seed
+*/
 
 
 #ifndef TAO_CRYPT_RANDOM_HPP
@@ -29,34 +32,7 @@
 namespace TaoCrypt {
 
 
-#if defined(WIN32)
-
-// Windows
-class OS_Seed  {
-public:
-    OS_Seed();
-    ~OS_Seed();
-
-    void GenerateSeed(byte*, word32 sz);
-
-#if defined(_WIN64)
-    typedef unsigned __int64 ProviderHandle;
-    // type HCRYPTPROV, avoid #include <windows.h>
-#else
-    typedef unsigned long ProviderHandle;
-#endif
-
-private:
-    ProviderHandle handle_;
-
-    OS_Seed(const OS_Seed&);            // hide copy
-    OS_Seed& operator=(const OS_Seed&); // hide assign
-};
-
-
-#else // WIN32
-
-// UNIX
+// OS specific seeder
 class OS_Seed {
 public:
     OS_Seed();
@@ -64,15 +40,24 @@ public:
 
     void GenerateSeed(byte*, word32 sz);
 private:
+#if defined(WIN32)
+    #if defined(_WIN64)
+        typedef unsigned __int64 ProviderHandle;
+        // type HCRYPTPROV, avoid #include <windows.h>
+    #else
+        typedef unsigned long ProviderHandle;
+    #endif
+    ProviderHandle handle_;
+#else
     int fd_;
+#endif
 
     OS_Seed(const OS_Seed&);              // hide copy
     OS_Seed& operator=(const OS_Seed&);   // hide assign
 };
 
-#endif // WIN32
 
-
+// secure Random Nnumber Generator
 class RandomNumberGenerator {
 public:
     RandomNumberGenerator();

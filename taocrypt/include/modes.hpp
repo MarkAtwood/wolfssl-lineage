@@ -19,6 +19,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* modes.hpp provides ECB and CBC modes for block cipher encryption/decryption
+*/
 
 
 #ifndef TAO_CRYPT_MODES_HPP
@@ -32,6 +34,8 @@ namespace TaoCrypt {
 
 enum Mode { ECB, CBC };
 
+
+// BlockCipher abstraction
 template<CipherDir DIR, class T, Mode MODE>
 class BlockCipher {
 public:
@@ -51,6 +55,7 @@ private:
 };
 
 
+// Mode Base for block ciphers, static size
 template<int BLOCK_SIZE>
 class Mode_BASE {
 public:
@@ -73,6 +78,7 @@ private:
 };
 
 
+// ECB Process blocks
 template<int BLOCK_SIZE>
 void Mode_BASE<BLOCK_SIZE>::ECB_Process(byte* out, const byte* in, word32 sz)
 {
@@ -86,6 +92,7 @@ void Mode_BASE<BLOCK_SIZE>::ECB_Process(byte* out, const byte* in, word32 sz)
 }
 
 
+// CBC Encrypt
 template<int BLOCK_SIZE>
 void Mode_BASE<BLOCK_SIZE>::CBC_Encrypt(byte* out, const byte* in, word32 sz)
 {
@@ -101,6 +108,7 @@ void Mode_BASE<BLOCK_SIZE>::CBC_Encrypt(byte* out, const byte* in, word32 sz)
 }
 
 
+// CBC Decrypt
 template<int BLOCK_SIZE>
 void Mode_BASE<BLOCK_SIZE>::CBC_Decrypt(byte* out, const byte* in, word32 sz)
 {

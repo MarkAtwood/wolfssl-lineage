@@ -20,7 +20,8 @@
  */
 
 
-
+/* dh.cpp implements Diffie-Hellman support
+*/
 
 #include "dh.hpp"
 #include "asn.hpp"
@@ -29,13 +30,15 @@
 namespace TaoCrypt {
 
 
+// Generate a DH Key Pair
 void DH::GenerateKeyPair(RandomNumberGenerator& rng, byte* priv, byte* pub)
 {
     GeneratePrivate(rng, priv);
-    GeneratePublic(rng, priv, pub);
+    GeneratePublic(priv, pub);
 }
 
 
+// Generate private value
 void DH::GeneratePrivate(RandomNumberGenerator& rng, byte* priv)
 {
     Integer x(rng, Integer::One(), p_ - 1);
@@ -43,8 +46,8 @@ void DH::GeneratePrivate(RandomNumberGenerator& rng, byte* priv)
 }
 
 
-void DH::GeneratePublic(RandomNumberGenerator& rng, const byte* priv,
-                        byte* pub)
+// Generate public value
+void DH::GeneratePublic(const byte* priv, byte* pub)
 {
     const word32 bc(p_.ByteCount());
     Integer x(priv, bc);
@@ -53,6 +56,7 @@ void DH::GeneratePublic(RandomNumberGenerator& rng, const byte* priv,
 }
 
 
+// Generate Agreement
 void DH::Agree(byte* agree, const byte* priv, const byte* otherPub)
 {
     const word32 bc(p_.ByteCount());

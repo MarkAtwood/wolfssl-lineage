@@ -51,6 +51,7 @@ enum ErrorNumber {
     verify_error        = 112,
     send_error          = 113,
     receive_error       = 114,
+    certificate_error   = 115,
 };
 
 

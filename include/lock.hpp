@@ -19,6 +19,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* lock.hpp provides an os specific Lock, locks mutex on entry and unlocks
+ * automatically upon exit, no-ops provided for Single Threaded
+*/
+
 #ifndef yaSSL_LOCK_HPP
 #define yaSSL_LOCK_HPP
 

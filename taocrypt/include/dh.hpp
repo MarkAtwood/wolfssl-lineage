@@ -19,6 +19,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* dh.hpp provides Diffie-Hellman support
+*/
+
 
 #ifndef TAO_CRYPT_DH_HPP
 #define TAO_CRYPT_DH_HPP
@@ -32,6 +35,7 @@ namespace TaoCrypt {
 class Sink;
 
 
+// Diffie-Hellman
 class DH {
 public:
     DH() {}
@@ -76,7 +80,7 @@ private:
     Integer g_;
 
     void GeneratePrivate(RandomNumberGenerator&, byte*);
-    void GeneratePublic(RandomNumberGenerator&, const byte*, byte*);    
+    void GeneratePublic(const byte*, byte*);    
 };
 
 

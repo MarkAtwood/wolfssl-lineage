@@ -60,25 +60,32 @@ const short yasslPort = 11111;
 
 
 // client
-const char* const cert = "../../certs/cert.der";
-const char* const key  = "../../certs/key.der";
+const char* const cert = "../../certs/client-cert.pem";
+const char* const key  = "../../certs/client-key.pem";
 
-const char* const certSuite = "../certs/cert.der";
-const char* const keySuite  = "../certs/key.der";
+const char* const certSuite = "../certs/client-cert.pem";
+const char* const keySuite  = "../certs/client-key.pem";
 
-const char* const certDebug = "../../../certs/cert.der";
-const char* const keyDebug  = "../../../certs/key.der";
+const char* const certDebug = "../../../certs/client-cert.pem";
+const char* const keyDebug  = "../../../certs/client-key.pem";
 
 
 // server
 const char* const svrCert = "../../certs/server-cert.pem";
-const char* const svrKey  = "../../certs/server-key.der";
+const char* const svrKey  = "../../certs/server-key.pem";
 
 const char* const svrCert2 = "../certs/server-cert.pem";
-const char* const svrKey2  = "../certs/server-key.der";
+const char* const svrKey2  = "../certs/server-key.pem";
 
 const char* const svrCert3 = "../../../certs/server-cert.pem";
-const char* const svrKey3  = "../../../certs/server-key.der";
+const char* const svrKey3  = "../../../certs/server-key.pem";
+
+
+// CA 
+const char* const caCert  = "../../certs/ca-cert.pem";
+const char* const caCert2 = "../certs/ca-cert.pem";
+const char* const caCert3 = "../../../certs/ca-cert.pem";
+
 
 using namespace yaSSL;
 
@@ -90,32 +97,46 @@ inline void err_sys(const char* msg)
 }
 
 
+inline void store_ca(SSL_CTX* ctx)
+{
+    // To allow testing from serveral dirs
+    if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
+        if (SSL_CTX_load_verify_locations(ctx, caCert2, 0) != SSL_SUCCESS)
+            if (SSL_CTX_load_verify_locations(ctx, caCert3, 0) != SSL_SUCCESS)
+                err_sys("failed to use certificate: certs/cacert.pem");
+}
+
+
 // client
 inline void set_certs(SSL_CTX* ctx)
 {
+    store_ca(ctx);
+
     // To allow testing from serveral dirs
-    if (SSL_CTX_use_certificate_file(ctx, cert, SSL_FILETYPE_ASN1)
+    if (SSL_CTX_use_certificate_file(ctx, cert, SSL_FILETYPE_PEM)
         != SSL_SUCCESS)
-        if (SSL_CTX_use_certificate_file(ctx, certSuite, SSL_FILETYPE_ASN1)
+        if (SSL_CTX_use_certificate_file(ctx, certSuite, SSL_FILETYPE_PEM)
             != SSL_SUCCESS)
-            if (SSL_CTX_use_certificate_file(ctx, certDebug, SSL_FILETYPE_ASN1)
+            if (SSL_CTX_use_certificate_file(ctx, certDebug, SSL_FILETYPE_PEM)
                 != SSL_SUCCESS)
-                err_sys("failed to use certificate: certs/cert.der");
+                err_sys("failed to use certificate: certs/client-cert.pem");
     
     // To allow testing from several dirs
-    if (SSL_CTX_use_PrivateKey_file(ctx, key, SSL_FILETYPE_ASN1)
+    if (SSL_CTX_use_PrivateKey_file(ctx, key, SSL_FILETYPE_PEM)
          != SSL_SUCCESS) 
-         if (SSL_CTX_use_PrivateKey_file(ctx, keySuite, SSL_FILETYPE_ASN1)
+         if (SSL_CTX_use_PrivateKey_file(ctx, keySuite, SSL_FILETYPE_PEM)
             != SSL_SUCCESS) 
-                if (SSL_CTX_use_PrivateKey_file(ctx,keyDebug,SSL_FILETYPE_ASN1)
+                if (SSL_CTX_use_PrivateKey_file(ctx,keyDebug,SSL_FILETYPE_PEM)
                     != SSL_SUCCESS) 
-                    err_sys("failed to use key file: certs/key.der");
+                    err_sys("failed to use key file: certs/client-key.pem");
 }
 
 
 // server
 inline void set_serverCerts(SSL_CTX* ctx)
 {
+    store_ca(ctx);
+
     // To allow testing from serveral dirs
     if (SSL_CTX_use_certificate_file(ctx, svrCert, SSL_FILETYPE_PEM)
         != SSL_SUCCESS)
@@ -123,16 +144,16 @@ inline void set_serverCerts(SSL_CTX* ctx)
             != SSL_SUCCESS)
             if (SSL_CTX_use_certificate_file(ctx, svrCert3, SSL_FILETYPE_PEM)
                 != SSL_SUCCESS)
-                err_sys("failed to use certificate: certs/server-cert.der");
+                err_sys("failed to use certificate: certs/server-cert.pem");
     
     // To allow testing from several dirs
-    if (SSL_CTX_use_PrivateKey_file(ctx, svrKey, SSL_FILETYPE_ASN1)
+    if (SSL_CTX_use_PrivateKey_file(ctx, svrKey, SSL_FILETYPE_PEM)
          != SSL_SUCCESS) 
-         if (SSL_CTX_use_PrivateKey_file(ctx, svrKey2, SSL_FILETYPE_ASN1)
+         if (SSL_CTX_use_PrivateKey_file(ctx, svrKey2, SSL_FILETYPE_PEM)
             != SSL_SUCCESS) 
-                if (SSL_CTX_use_PrivateKey_file(ctx, svrKey3,SSL_FILETYPE_ASN1)
+                if (SSL_CTX_use_PrivateKey_file(ctx, svrKey3,SSL_FILETYPE_PEM)
                     != SSL_SUCCESS) 
-                    err_sys("failed to use key file: certs/server-key.der");
+                    err_sys("failed to use key file: certs/server-key.pem");
 }
 
 

@@ -213,6 +213,7 @@ void buildSHA(SSL& ssl, Finished& fin, const opaque* sender)
 }
 
 
+// decrypt input message in place, store size in case needed later
 void decrypt_message(SSL& ssl, input_buffer& input, uint sz)
 {
     input_buffer plain(sz);
@@ -227,7 +228,7 @@ void decrypt_message(SSL& ssl, input_buffer& input, uint sz)
 // write headers, handshake hash, mac, pad, and encrypt
 void cipherFinished(SSL& ssl, Finished& fin, output_buffer& output)
 {
-    uint digestSz = ssl.getCrypto().get_mac().get_digestSize();
+    uint digestSz = ssl.getCrypto().get_digest().get_digestSize();
     uint finishedSz = ssl.isTLS() ? TLS_FINISHED_SZ : FINISHED_SZ;
     uint sz  = RECORD_HEADER + HANDSHAKE_HEADER + finishedSz + digestSz;
     uint pad = 0;
@@ -271,7 +272,7 @@ void cipherFinished(SSL& ssl, Finished& fin, output_buffer& output)
 // build an encrypted data or alert message for output
 void buildMessage(SSL& ssl, output_buffer& output, const Message& msg)
 {
-    uint digestSz = ssl.getCrypto().get_mac().get_digestSize();
+    uint digestSz = ssl.getCrypto().get_digest().get_digestSize();
     uint sz  = RECORD_HEADER + msg.get_length() + digestSz;                
     uint pad = 0;
     if (ssl.getSecurity().get_parms().cipher_type_ == block) {
@@ -309,6 +310,7 @@ void buildMessage(SSL& ssl, output_buffer& output, const Message& msg)
 }
 
 
+// build alert message
 void buildAlert(SSL& ssl, output_buffer& output, const Alert& alert)
 {
     if (ssl.getSecurity().get_parms().pending_ == false) // encrypted
@@ -321,6 +323,7 @@ void buildAlert(SSL& ssl, output_buffer& output, const Alert& alert)
 }
 
 
+// build TLS finished message
 void buildFinishedTLS(SSL& ssl, Finished& fin, const opaque* sender) 
 {
     opaque handshake_hash[FINISHED_SZ];
@@ -352,15 +355,15 @@ void p_hash(output_buffer& result, const output_buffer& secret,
     uint   lastLen = result.get_capacity() % len;
     opaque previous[SHA_LEN];  // max size
     opaque current[SHA_LEN];   // max size
-    std::auto_ptr<MAC> hmac;
+    std::auto_ptr<Digest> hmac;
 
     if (lastLen) times += 1;
 
     if (hash == md5)
-        hmac = std::auto_ptr<MAC>(new HMAC_MD5(secret.get_buffer(),
+        hmac = std::auto_ptr<Digest>(new HMAC_MD5(secret.get_buffer(),
                                                secret.get_size()));
     else
-        hmac = std::auto_ptr<MAC>(new HMAC_SHA(secret.get_buffer(),
+        hmac = std::auto_ptr<Digest>(new HMAC_SHA(secret.get_buffer(),
                                                secret.get_size()));
                                                                    // A0 = seed
     hmac->get_digest(previous, seed.get_buffer(), seed.get_size());// A1
@@ -390,6 +393,7 @@ void get_xor(byte *digest, uint digLen, output_buffer& md5,
 }
 
 
+// build MD5 part of certificate verify
 void buildMD5_CertVerify(SSL& ssl, byte* digest)
 {
     opaque md5_result[MD5_LEN];
@@ -415,6 +419,7 @@ void buildMD5_CertVerify(SSL& ssl, byte* digest)
 }
 
 
+// build SHA part of certificate verify
 void buildSHA_CertVerify(SSL& ssl, byte* digest)
 {
     opaque sha_result[SHA_LEN];
@@ -470,7 +475,7 @@ void buildFinished(SSL& ssl, Finished& fin, const opaque* sender)
 void hmac(SSL& ssl, byte* digest, const byte* buffer, uint sz,
           ContentType content, bool verify)
 {
-    MAC& mac = ssl.useCrypto().use_mac();
+    Digest& mac = ssl.useCrypto().use_digest();
     opaque inner[SHA_LEN + PAD_MD5 + SEQ_SZ + SIZEOF_ENUM + LENGTH_SZ];
     opaque outer[SHA_LEN + PAD_MD5 + SHA_LEN]; 
     opaque result[SHA_LEN];                              // max possible sizes
@@ -505,10 +510,11 @@ void hmac(SSL& ssl, byte* digest, const byte* buffer, uint sz,
 }
 
 
+// TLS type HAMC
 void TLS_hmac(SSL& ssl, byte* digest, const byte* buffer, uint sz,
               ContentType content, bool verify)
 {
-    std::auto_ptr<MAC> hmac;
+    std::auto_ptr<Digest> hmac;
     opaque seq[SEQ_SZ] = { 0x00, 0x00, 0x00, 0x00 };
     opaque length[LENGTH_SZ];
     opaque inner[SIZEOF_ENUM + VERSION_SZ + LENGTH_SZ]; // type + version + len
@@ -517,10 +523,10 @@ void TLS_hmac(SSL& ssl, byte* digest, const byte* buffer, uint sz,
     c32toa(ssl.get_SEQIncrement(verify), &seq[sizeof(uint32)]);
 
     if (ssl.getSecurity().get_parms().mac_algorithm_ == sha)
-        hmac = std::auto_ptr<MAC>(new HMAC_SHA(ssl.get_macSecret(verify),
+        hmac = std::auto_ptr<Digest>(new HMAC_SHA(ssl.get_macSecret(verify),
                                   SHA_LEN));
     else
-        hmac = std::auto_ptr<MAC>(new HMAC_MD5(ssl.get_macSecret(verify),
+        hmac = std::auto_ptr<Digest>(new HMAC_MD5(ssl.get_macSecret(verify),
                                   MD5_LEN));
     hmac->update(seq, SEQ_SZ);                                       // seq_num
     inner[0] = content;                                              // type
@@ -560,6 +566,7 @@ void PRF(byte* digest, uint digLen, const byte* secret, uint secLen,
 }
 
 
+// build certificate hashes
 void build_certHashes(SSL& ssl, Hashes& hashes)
 {
     // store current states, building requires get_digest which resets state
@@ -581,6 +588,7 @@ void build_certHashes(SSL& ssl, Hashes& hashes)
 }
 
 
+// process input requests
 void processReply(SSL& ssl)
 {
     ssl.getSocket().wait();                  // wait for input
@@ -613,6 +621,7 @@ void processReply(SSL& ssl)
 }
 
 
+// send client_hello, no buffering
 void sendClientHello(SSL& ssl)
 {
     ssl.verifyState(serverNull);
@@ -632,6 +641,7 @@ void sendClientHello(SSL& ssl)
 }
 
 
+// send client key exchange
 void sendClientKeyExchange(SSL& ssl, BufferOutput buffer)
 {
     ssl.verifyState(serverHelloDoneComplete);
@@ -654,6 +664,7 @@ void sendClientKeyExchange(SSL& ssl, BufferOutput buffer)
 }
 
 
+// send server key exchange
 void sendServerKeyExchange(SSL& ssl, BufferOutput buffer)
 {
     ServerKeyExchange sk(ssl);
@@ -673,6 +684,7 @@ void sendServerKeyExchange(SSL& ssl, BufferOutput buffer)
 }
 
 
+// send change cipher
 void sendChangeCipher(SSL& ssl, BufferOutput buffer)
 {
     if (ssl.getSecurity().get_parms().entity_ == server_end)
@@ -694,6 +706,7 @@ void sendChangeCipher(SSL& ssl, BufferOutput buffer)
 }
 
 
+// send finished
 void sendFinished(SSL& ssl, ConnectionEnd side, BufferOutput buffer)
 {
     Finished fin;
@@ -719,6 +732,7 @@ void sendFinished(SSL& ssl, ConnectionEnd side, BufferOutput buffer)
 }
 
 
+// send data
 int sendData(SSL& ssl, const Data& data)
 {
     ssl.verfiyHandShakeComplete();
@@ -732,6 +746,7 @@ int sendData(SSL& ssl, const Data& data)
 }
 
 
+// send alert
 int sendAlert(SSL& ssl, const Alert& alert)
 {
     output_buffer out;
@@ -742,6 +757,7 @@ int sendAlert(SSL& ssl, const Alert& alert)
 }
 
 
+// process input data
 int receiveData(SSL& ssl, Data& data)
 {
     ssl.verfiyHandShakeComplete();
@@ -755,6 +771,7 @@ int receiveData(SSL& ssl, Data& data)
 }
 
 
+// send server hello
 void sendServerHello(SSL& ssl, BufferOutput buffer)
 {
     if (ssl.getSecurity().get_resuming())
@@ -780,6 +797,7 @@ void sendServerHello(SSL& ssl, BufferOutput buffer)
 }
 
 
+// send server hello done
 void sendServerHelloDone(SSL& ssl, BufferOutput buffer)
 {
     ServerHelloDone   shd;
@@ -798,6 +816,7 @@ void sendServerHelloDone(SSL& ssl, BufferOutput buffer)
 }
 
 
+// send certificate
 void sendCertificate(SSL& ssl, BufferOutput buffer)
 {
     Certificate       cert(ssl.getCrypto().get_certManager().get_cert());
@@ -816,6 +835,7 @@ void sendCertificate(SSL& ssl, BufferOutput buffer)
 }
 
 
+// send certificate request
 void sendCertificateRequest(SSL& ssl, BufferOutput buffer)
 {
     CertificateRequest request;
@@ -835,6 +855,7 @@ void sendCertificateRequest(SSL& ssl, BufferOutput buffer)
 }
 
 
+// send certificate verify
 void sendCertificateVerify(SSL& ssl, BufferOutput buffer)
 {
     CertificateVerify  verify;

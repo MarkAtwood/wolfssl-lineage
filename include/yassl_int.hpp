@@ -74,6 +74,7 @@ enum ServerState {
 };
 
 
+// combines all states
 class States {
     RecordLayerState recordLayer_;
     HandShakeState   handshakeLayer_;
@@ -103,13 +104,14 @@ private:
 };
 
 
+// holds all factories
 class sslFactory {
     MessageFactory      messageFactory_;        // creates new messages by type
     HandShakeFactory    handShakeFactory_;      // creates new handshake types
     ServerKeyFactory    serverKeyFactory_;      // creates new server key types
     ClientKeyFactory    clientKeyFactory_;      // creates new client key types
 
-    sslFactory();
+    sslFactory();                               // only GetSSL_Factory creates
 public:
     const MessageFactory&   getMessage()   const;
     const HandShakeFactory& getHandShake() const;
@@ -167,6 +169,7 @@ private:
 };
 
 
+// holds all sessions
 class Sessions {
     std::list<SSL_SESSION*> list_;
     RandomPool random_;                 // for session cleaning
@@ -217,10 +220,15 @@ private:
 };
 
 
+// the SSL context
 class SSL_CTX {
+public:
+    typedef std::list<x509*> CertList;
+private:
     SSL_METHOD* method_;
     x509*       certificate_;
     x509*       privateKey_;
+    CertList    caList_;
 public:
     explicit SSL_CTX(SSL_METHOD* meth);
     ~SSL_CTX();
@@ -232,6 +240,9 @@ public:
     void setVerifyPeer();
     void setFailNoCert();
 
+    void            AddCA(x509* ca);
+    const CertList& GetCA_List() const;
+
     friend int read_file(SSL_CTX*, const char*, int, CertType);
 private:
     SSL_CTX(const SSL_CTX&);            // hide copy
@@ -239,8 +250,9 @@ private:
 };
 
 
+// holds all cryptographic types
 class Crypto {
-    MAC*                mac_;                   // agreed upon mac
+    Digest*             digest_;                // agreed upon digest
     BulkCipher*         cipher_;                // agreed upon cipher
     DiffieHellman*      dh_;                    // server dh parms
     RandomPool          random_;                // random number generator
@@ -249,27 +261,28 @@ public:
     Crypto();
     ~Crypto();
 
-    const MAC&           get_mac()         const;
+    const Digest&        get_digest()      const;
     const BulkCipher&    get_cipher()      const;
     const DiffieHellman& get_dh()          const;
     const RandomPool&    get_random()      const;
     const CertManager&   get_certManager() const;
           
-    MAC&           use_mac();
+    Digest&        use_digest();
     BulkCipher&    use_cipher();
     DiffieHellman& use_dh();
     RandomPool&    use_random();
     CertManager&   use_certManager();
 
-    void setDH(DiffieHellman* dh);
-    void setMAC(MAC* mac);
-    void setCipher(BulkCipher* c);
+    void setDH(DiffieHellman*);
+    void setDigest(Digest*);
+    void setCipher(BulkCipher*);
 private:
     Crypto(const Crypto&);              // hide copy
     Crypto& operator=(const Crypto&);   // and assign
 };
 
 
+// holds all handshake and verify hashes
 class sslHashes {
     MD5       md5HandShake_;          // md5 handshake hash
     SHA       shaHandShake_;          // sha handshake hash
@@ -293,6 +306,7 @@ private:
 };
 
 
+// holds input and output buffers
 class Buffers {
     typedef std::list<input_buffer*>  inputList;
     typedef std::list<output_buffer*> outputList;
@@ -314,6 +328,7 @@ private:
 };
 
 
+// wraps security parameters
 class Security {
     Connection    conn_;                          // connection information
     Parameters    parms_;                         // may be pending

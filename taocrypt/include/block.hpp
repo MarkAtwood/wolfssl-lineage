@@ -20,6 +20,10 @@
  */
 
 
+/* block.hpp provides word and byte blocks with configurable allocators
+*/
+
+
 #ifndef TAO_CRYPT_BLOCK_HPP
 #define TAO_CRYPT_BLOCK_HPP
 
@@ -38,6 +42,7 @@
 namespace TaoCrypt {
 
 
+// a Base class for Allocators
 template<class T>
 class AllocatorBase
 {
@@ -70,6 +75,7 @@ protected:
 };
 
 
+// General purpose realloc
 template<typename T, class A>
 typename A::pointer StdReallocate(A& a, T* p, typename A::size_type oldSize,
                                   typename A::size_type newSize, bool preserve)
@@ -78,7 +84,7 @@ typename A::pointer StdReallocate(A& a, T* p, typename A::size_type oldSize,
         return p;
 
     if (preserve) {
-        A b;
+        A b = A();
         typename A::pointer newPointer = b.allocate(newSize, 0);
         memcpy(newPointer, p, sizeof(T) * min(oldSize, newSize));
         a.deallocate(p, oldSize);
@@ -92,6 +98,7 @@ typename A::pointer StdReallocate(A& a, T* p, typename A::size_type oldSize,
 }
 
 
+// Allocator that zeros out memory on deletion
 template <class T>
 class AllocatorWithCleanup : public AllocatorBase<T>
 {
@@ -125,6 +132,7 @@ public:
 };
 
 
+// Block class template
 template<typename T, class A = AllocatorWithCleanup<T> >
 class Block {
 public:

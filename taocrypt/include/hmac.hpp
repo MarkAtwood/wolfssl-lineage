@@ -19,6 +19,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* hamc.hpp implements HMAC, see RFC 2104
+*/
+
 
 #ifndef TAO_CRYPT_HMAC_HPP
 #define TAO_CRYPT_HMAC_HPP
@@ -27,6 +30,8 @@
 
 namespace TaoCrypt {
 
+
+// HMAC class template
 template <class T>
 class HMAC {
 public:
@@ -52,6 +57,7 @@ private:
 };
 
 
+// Setup
 template <class T>
 void HMAC<T>::Init()
 {
@@ -60,6 +66,7 @@ void HMAC<T>::Init()
 }
 
 
+// Key generation
 template <class T>
 void HMAC<T>::SetKey(const byte* key, word32 length)
 {
@@ -81,6 +88,7 @@ void HMAC<T>::SetKey(const byte* key, word32 length)
 }
 
 
+// Inner Key Hash
 template <class T>
 void HMAC<T>::KeyInnerHash()
 {
@@ -89,6 +97,7 @@ void HMAC<T>::KeyInnerHash()
 }
 
 
+// Update
 template <class T>
 void HMAC<T>::Update(const byte* msg, word32 length)
 {
@@ -98,6 +107,7 @@ void HMAC<T>::Update(const byte* msg, word32 length)
 }
 
 
+// Final
 template <class T>
 void HMAC<T>::Final(byte* hash)
 {

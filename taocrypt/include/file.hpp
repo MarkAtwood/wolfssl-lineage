@@ -19,6 +19,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* file.hpp provies File Sources and Sinks
+   and a general pupose Sink also usuable as a Source
+*/
+
 
 #ifndef TAO_CRYPT_FILE_HPP
 #define TAO_CRYPT_FILE_HPP
@@ -43,6 +47,8 @@ public:
    
     const byte*  get_buffer()  const { return buffer_.get_buffer(); }
     const byte*  get_current() const { return &buffer_[current_]; }
+    word32       get_index()   const { return current_; }
+    void         set_index(word32 i) { current_ = i; }
 
     byte operator[] (word32 i) { current_ = i; return next(); }
     byte next() { return buffer_[current_++]; }
@@ -70,6 +76,7 @@ private:
 };
 
 
+// File Source
 class FileSource {
     std::ifstream file_;
 public:
@@ -87,6 +94,7 @@ private:
 };
 
 
+// File Sink
 class FileSink {
     std::ofstream file_;
 public:

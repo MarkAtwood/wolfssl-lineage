@@ -19,6 +19,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* coding.hpp defines hex and base64 encoding/decoing
+*/
 
 #ifndef TAO_CRYPT_CODING_HPP
 #define TAO_CRYPT_CODING_HPP
@@ -30,6 +32,8 @@ namespace TaoCrypt {
 
 class Sink;
 
+
+// Hex Encoding, see RFC 3548
 class HexEncoder {
     ByteBlock encoded_;
     Sink&     plain_;
@@ -43,6 +47,7 @@ private:
 };
 
 
+// Hex Decoding, see RFC 3548
 class HexDecoder {
     ByteBlock decoded_;
     Sink&     coded_;
@@ -56,6 +61,7 @@ private:
 };
 
 
+// Base 64 encoding, see RFC 3548
 class Base64Encoder {
     ByteBlock encoded_;
     Sink&     plain_;
@@ -69,6 +75,7 @@ private:
 };
 
 
+// Base 64 decoding, see RFC 3548
 class Base64Decoder {
     ByteBlock decoded_;
     Sink&     coded_;

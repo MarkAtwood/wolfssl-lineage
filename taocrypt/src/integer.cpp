@@ -57,8 +57,9 @@
     #pragma message("You do not seem to have the Visual C++ Processor Pack ")
     #pragma message("installed, so use of SSE2 intrinsics will be disabled.")
 #elif defined(__GNUC__) && defined(__i386__)
-    #warning "You do not have GCC 3.3 or later, or did not specify -msse2" \
-             "compiler option, so use of SSE2 intrinsics will be disabled."
+/*  #warning You do not have GCC 3.3 or later, or did not specify the -msse2 \
+             compiler option. Use of SSE2 intrinsics will be disabled.
+*/
 #endif
 
 
@@ -340,9 +341,10 @@ private:
 };
 
 
+// dummy is VC60 compiler bug workaround
 // do a 3 word by 2 word divide, returns quotient and leaves remainder in A
 template <class S, class D>
-S DivideThreeWordsByTwo(S* A, S B0, S B1, D* dummy = 0)
+S DivideThreeWordsByTwo(S* A, S B0, S B1, D* dummy_VC6_WorkAround = 0)
 {
     // assert {A[2],A[1]} < {B1,B0}, so quotient can fit in a S
     assert(A[2] < B1 || (A[2]==B1 && A[1] < B0));
@@ -1344,6 +1346,11 @@ TAOCRYPT_NAKED word PentiumOptimized::Add(word *C, const word *A,
     AS2(    adc eax, 0)     // store carry into eax (return result register)
 
     AddEpilogue
+
+#ifdef __GNUC__
+#warning Assembler return issues non-void return warning by GCC, no way to \
+         disable for -Wall.  (For Add and Subtract)
+#endif
 }
 
 TAOCRYPT_NAKED word PentiumOptimized::Subtract(word *C, const word *A,
@@ -2765,6 +2772,7 @@ void Integer::Decode(Sink& sink)
     if (b != INTEGER)  
         throw BadBER();
 
+    /*
     unsigned int length(0);
     b = sink.next();
 
@@ -2778,6 +2786,8 @@ void Integer::Decode(Sink& sink)
     }
     else
         length = b;
+    */
+    word32 length = GetLength(sink);
 
     if ( (b = sink.next()) == 0x00)
         length--;

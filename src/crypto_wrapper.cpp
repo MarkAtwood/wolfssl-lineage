@@ -36,6 +36,7 @@
 #include "modes.hpp"
 #include "des.hpp"
 #include "arc4.hpp"
+#include "aes.hpp"
 #include "rsa.hpp"
 #include "dh.hpp"
 #include "random.hpp"
@@ -60,7 +61,7 @@ MD5::MD5() : pimpl_(new MD5Impl) {}
 MD5::~MD5() { delete pimpl_; }
 
 
-MD5::MD5(const MD5& that) : pimpl_(new MD5Impl(that.pimpl_->md5_)) {}
+MD5::MD5(const MD5& that) : Digest(), pimpl_(new MD5Impl(that.pimpl_->md5_)) {}
 
 
 MD5& MD5::operator=(const MD5& that)
@@ -117,7 +118,7 @@ SHA::SHA() : pimpl_(new SHAImpl) {}
 SHA::~SHA() { delete pimpl_; }
 
 
-SHA::SHA(const SHA& that) : pimpl_(new SHAImpl(that.pimpl_->sha_)) {}
+SHA::SHA(const SHA& that) : Digest(), pimpl_(new SHAImpl(that.pimpl_->sha_)) {}
 
 
 SHA& SHA::operator=(const SHA& that)
@@ -346,13 +347,13 @@ RC4::RC4() : pimpl_(new RC4Impl) {}
 RC4::~RC4() { delete pimpl_; }
 
 
-void RC4::set_encryptKey(const byte* k, const byte* iv)
+void RC4::set_encryptKey(const byte* k, const byte*)
 {
     pimpl_->encryption.SetKey(k, RC4_KEY_SZ);
 }
 
 
-void RC4::set_decryptKey(const byte* k, const byte* iv)
+void RC4::set_decryptKey(const byte* k, const byte*)
 {
     pimpl_->decryption.SetKey(k, RC4_KEY_SZ);
 }
@@ -367,6 +368,48 @@ void RC4::encrypt(byte* cipher, const byte* plain, unsigned int sz)
 
 // RC4 decrypt cipher of length sz into plain
 void RC4::decrypt(byte* plain, const byte* cipher, unsigned int sz)
+{
+    pimpl_->decryption.Process(plain, cipher, sz);
+}
+
+
+
+// Implementation of AES
+struct AES::AESImpl {
+    TaoCrypt::AES_CBC_Encryption encryption;
+    TaoCrypt::AES_CBC_Decryption decryption;
+    unsigned int keySz_;
+
+    AESImpl(unsigned int ks) : keySz_(ks) {}
+};
+
+
+AES::AES(unsigned int ks) : pimpl_(new AESImpl(ks)) {}
+
+AES::~AES() { delete pimpl_; }
+
+
+void AES::set_encryptKey(const byte* k, const byte* iv)
+{
+    pimpl_->encryption.SetKey(k, pimpl_->keySz_, iv);
+}
+
+
+void AES::set_decryptKey(const byte* k, const byte* iv)
+{
+    pimpl_->decryption.SetKey(k, pimpl_->keySz_, iv);
+}
+
+
+// AES encrypt plain of length sz into cipher
+void AES::encrypt(byte* cipher, const byte* plain, unsigned int sz)
+{
+    pimpl_->encryption.Process(cipher, plain, sz);
+}
+
+
+// AES decrypt cipher of length sz into plain
+void AES::decrypt(byte* plain, const byte* cipher, unsigned int sz)
 {
     pimpl_->decryption.Process(plain, cipher, sz);
 }
@@ -514,7 +557,7 @@ void RSA::sign(byte* sig,  const byte* message, unsigned int sz,
 
 // RSA Verify message of length sz against sig
 bool RSA::verify(const byte* message, unsigned int sz, const byte* sig,
-                 unsigned int sig_sz)
+                 unsigned int)
 {
     TaoCrypt::RSAES_Encryptor enc(pimpl_->publicKey_);
     return enc.SSL_Verify(message, sz, sig);
@@ -682,6 +725,7 @@ void Integer::assign(const byte* num, unsigned int sz)
 }
 
 
+// convert PEM file to DER x509 type
 x509* PemToDer(const char* file, CertType type)
 {
     using namespace TaoCrypt;
@@ -707,7 +751,7 @@ x509* PemToDer(const char* file, CertType type)
         footer.replace(footer.find("\r\n"), 2, "\n");
 
         if (pem.find(header) == std::string::npos)
-            return 0;                   // bad format
+            throw Error("bad cert header", certificate_error);
     }
     pem.erase(0, pem.find(header) + header.length());
     pem.erase(pem.find(footer), footer.length());

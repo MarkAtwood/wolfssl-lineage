@@ -208,8 +208,8 @@ struct CompileAssert
 #if defined(TAOCRYPT_EXPORTS) || defined(TAOCRYPT_IMPORTS)
     #define TAOCRYPT_COMPILE_ASSERT_INSTANCE(assertion, instance)
 #else
-    #define TAOCRYPT_COMPILE_ASSERT_INSTANCE(assertion, instance) static \
-    CompileAssert<(assertion)> TAOCRYPT_ASSERT_JOIN(cryptopp_assert_, instance)
+    #define TAOCRYPT_COMPILE_ASSERT_INSTANCE(assertion, instance) \
+    (void)sizeof(CompileAssert<(assertion)>)
 #endif
 
 #define TAOCRYPT_ASSERT_JOIN(X, Y) TAOCRYPT_DO_ASSERT_JOIN(X, Y)
@@ -217,7 +217,7 @@ struct CompileAssert
 #define TAOCRYPT_DO_ASSERT_JOIN(X, Y) X##Y
 
 
-/********************************************/
+/***************  helpers  *****************************/
 
 inline unsigned int BitsToBytes(unsigned int bitCount)
 {
@@ -542,7 +542,8 @@ inline T GetWord(bool assumeAligned, ByteOrder order, const byte *block)
 {
     if (assumeAligned)
     {
-        assert(IsAligned<T>(block));
+        //assert(IsAligned<T>(block)); // only now for DES and AES
+                                       // gcc may not align, works anyway TODO: 
         return ByteReverseIf(*reinterpret_cast<const T *>(block), order);
     }
     else

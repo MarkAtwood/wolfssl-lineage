@@ -35,14 +35,15 @@
 
 
 #include "buffer.hpp"       // input_buffer
+#include "asn.hpp"          // SignerList
 #include <list>             // std::list
 #include <algorithm>        // std::for_each
-
 
 namespace yaSSL {
    
 typedef unsigned char opaque;
 
+using TaoCrypt::SignerList;
 
 // an x509 version 3 certificate
 class x509 {
@@ -63,27 +64,31 @@ private:
 };
 
 
-// Certificate Manager keeps a list of thhe cert chain and public key
+// Certificate Manager keeps a list of the cert chain and public key
 class CertManager {
-    std::list<x509*> list_;
-    input_buffer     publicKey_;        
-    input_buffer     privateKey_;
+    typedef std::list<x509*> CertList;
 
-    std::list<x509*> peerList_;
-    input_buffer     peerPublicKey_;
+    CertList     list_;             // self
+    input_buffer publicKey_;        
+    input_buffer privateKey_;
 
-    bool             verifyPeer_;
-    bool             failNoCert_;
-    bool             sendVerify_;
+    CertList     peerList_;         // peer
+    input_buffer peerPublicKey_;
+
+    SignerList   signers_;          // decoded CA keys and names
+                                    //    plus verified chained certs
+    bool verifyPeer_;
+    bool failNoCert_;
+    bool sendVerify_;
 public:
     CertManager();
     ~CertManager();
 
     void AddPeerCert(x509* x);      // take ownership
-    void CopyCert(const x509* x);   
-    bool Validate() const;
+    void CopySelfCert(const x509* x);
+    void CopyCaCert(const x509* x);
+    void Validate();
 
-    void SetPeerKey();
     void SetPrivateKey(const x509&);
 
     const x509*   get_cert()       const;

@@ -19,6 +19,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* coding.cpp implements hex and base64 encoding/decoing
+*/
+
 
 #include "coding.hpp"
 #include "file.hpp"
@@ -29,7 +32,7 @@ namespace TaoCrypt {
 
 namespace { // locals
 
-const byte bad = 0xFF;
+const byte bad = 0xFF;  // invalid encoding
 
 const byte hexEncode[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
                            'A', 'B', 'C', 'D', 'E', 'F'
@@ -69,6 +72,7 @@ const int pemLineSz = 64;
 }  // local namespace
 
 
+// Hex Encode
 void HexEncoder::Encode()
 {
     word32 bytes = plain_.size();
@@ -90,9 +94,11 @@ void HexEncoder::Encode()
 }
 
 
+// Hex Decode
 void HexDecoder::Decode()
 {
     word32 bytes = coded_.size();
+    assert((bytes % 2) == 0);
     decoded_.New(bytes / 2);
 
     word32 i(0);
@@ -117,6 +123,7 @@ void HexDecoder::Decode()
 }
 
 
+// Base 64 Encode
 void Base64Encoder::Encode()
 {
     word32 bytes = plain_.size();
@@ -176,11 +183,12 @@ void Base64Encoder::Encode()
 }
 
 
+// Base 64 Decode
 void Base64Decoder::Decode()
 {
     word32 bytes = coded_.size();
-    word32 plainSz = bytes - (bytes / pemLineSz + ( (bytes % pemLineSz) ? 1 : 0));
-
+    word32 plainSz = bytes - (bytes / pemLineSz + ( (bytes % pemLineSz) ? 
+                                                                      1 : 0));
     plainSz = plainSz * 3 / 4 + (( (plainSz * 3) % 4) ? 1 : 0);
     decoded_.New(plainSz);
 

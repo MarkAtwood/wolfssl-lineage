@@ -22,8 +22,11 @@
 /*  SSL source implements all openssl compatibility API functions
  *
  *  TODO: notes are mostly api additions to allow compilation with mysql
- *  they don't affect normal RSA mode but need to be completed
+ *  they don't affect normal modes but should be provided for completeness
  */
+
+
+/*  see man pages for function descriptions */
 
 
 #include "openssl/ssl.h"
@@ -176,7 +179,6 @@ void SSL_free(SSL* ssl)
 
 int SSL_clear(SSL* ssl)
 {
-    // TODO: reset
     ssl->useSocket().closeSocket();
     return SSL_SUCCESS;
 }
@@ -184,11 +186,20 @@ int SSL_clear(SSL* ssl)
 
 int SSL_shutdown(SSL* ssl)
 {
-    sendAlert(*ssl, Alert(warning, close_notify));
-    ssl->useLog().ShowTCP(ssl->getSocket().get_fd(), true);
-    ssl->useSocket().closeSocket();
+    try {
+        sendAlert(*ssl, Alert(warning, close_notify));
+        ssl->useLog().ShowTCP(ssl->getSocket().get_fd(), true);
+        ssl->useSocket().closeSocket();
 
-    return SSL_SUCCESS;
+        return SSL_SUCCESS;
+    }
+    catch (Error& err) {
+        ssl->set_error(err);
+        return SSL_FATAL_ERROR;
+    }
+    catch (...) {
+        return SSL_UNKNOWN;
+    }
 }
 
 
@@ -208,7 +219,7 @@ int SSL_set_session(SSL* ssl, SSL_SESSION* session)
 
 long SSL_SESSION_set_timeout(SSL_SESSION*, long)
 {
-    return SSL_NOT_IMPLEMENTED;  // TODO:
+    return SSL_NOT_IMPLEMENTED;  // TODO
 }
 
 
@@ -218,9 +229,9 @@ long SSL_CTX_get_session_cache_mode(SSL_CTX*)
 }
 
 
-long SSL_get_default_timeout(SSL* ssl)
+long SSL_get_default_timeout(SSL* /*ssl*/)
 {
-    return SSL_NOT_IMPLEMENTED;  // TODO:
+    return DEFAULT_TIMEOUT;
 }
 
 
@@ -236,7 +247,7 @@ const char* SSL_get_cipher(SSL* ssl)
 }
 
 
-char* SSL_get_shared_ciphers(SSL* ssl, char* buf, int len)
+char* SSL_get_shared_ciphers(SSL* /*ssl*/, char* buf, int len)
 {
     return strncpy(buf, "Not Implemented, SSLv2 only", len);
 }
@@ -262,15 +273,16 @@ const char* SSLeay_version(int)
 }
 
 
-int SSL_get_error(SSL* ssl, int previous)
+int SSL_get_error(SSL* ssl, int /*previous*/)
 {
     return ssl->getStates().getNumber();
 }
 
 
-X509* SSL_get_peer_certificate(SSL* ssl)
+X509* SSL_get_peer_certificate(SSL* /*ssl*/)
 {
     // TODO: return peer cert from manager in X509
+    //ssl->getCrypto().get_certManager().getPeerCert in X509
     return 0;
 }
 
@@ -293,14 +305,14 @@ int X509_STORE_CTX_get_error(X509_STORE_CTX* ctx)
 }
 
 
-int X509_STORE_CTX_get_error_depth(X509_STORE_CTX* ctx)
+int X509_STORE_CTX_get_error_depth(X509_STORE_CTX* /*ctx*/)
 {
     // TODO: add depth
     return 0;
 }
 
 
-char* X509_NAME_oneline(X509_NAME* name, char* buffer, int sz)
+char* X509_NAME_oneline(X509_NAME* /*name*/, char* buffer, int /*sz*/)
 {
     // TODO: return first line in buffer of size sz, may need to creat
     // !!!  malloc or new, caller responsible for freeing???
@@ -396,14 +408,12 @@ SSL_METHOD* SSLv3_client_method()
 
 SSL_METHOD* TLSv1_server_method()
 {
-    // TODO: undo rollback support
     return new SSL_METHOD(server_end, ProtocolVersion(3,1));
 }
 
 
 SSL_METHOD* TLSv1_client_method()
 {
-    // TODO: undo rollback support
     return new SSL_METHOD(client_end, ProtocolVersion(3,1));
 }
 
@@ -435,7 +445,7 @@ long SSL_get_verify_result(SSL*)
 
 int SSL_session_reused(SSL*)
 {
-    return 0;  // no re-use for now TODO:
+    return 0;  // TODO:
 }
 
 
@@ -451,16 +461,16 @@ void SSL_CTX_free(SSL_CTX* ctx)
 }
 
 
-long SSL_CTX_sess_set_cache_size(SSL_CTX* ctx, long sz)
+long SSL_CTX_sess_set_cache_size(SSL_CTX* /*ctx*/, long /*sz*/)
 {
-    // not implemented yet TODO:
+    // TODO:
     return SSL_NOT_IMPLEMENTED;
 }
 
 
 long SSL_CTX_set_tmp_dh(SSL_CTX*, DH*)
 {
-    // not implemented yet TODO:
+    // TODO:
     return SSL_NOT_IMPLEMENTED;
 }
 
@@ -495,18 +505,31 @@ int read_file(SSL_CTX* ctx, const char* file, int format, CertType type)
     if (!input.is_open())
         return SSL_BAD_FILE;
 
-    x509*& x = (type == Cert) ? ctx->certificate_ : ctx->privateKey_;
-    
-    if (format == SSL_FILETYPE_ASN1) {
-        uint sz = input.tellg();
-        input.seekg(0, std::ios::beg);    
-        x = new x509(sz);  // takes ownership
-        input.read(reinterpret_cast<char*>(x->use_buffer()), sz);
-    }
-    else
-        x = PemToDer(file, type);
+    try {
+        if (type == CA)
+            ctx->AddCA(PemToDer(file, Cert));  // takes ownership
+        else {
+            x509*& x = (type == Cert) ? ctx->certificate_ : ctx->privateKey_;
 
-    return SSL_SUCCESS;
+            if (format == SSL_FILETYPE_ASN1) {
+                uint sz = input.tellg();
+                input.seekg(0, std::ios::beg);    
+                x = new x509(sz);  // takes ownership
+                input.read(reinterpret_cast<char*>(x->use_buffer()), sz);
+            }
+            else
+                x = PemToDer(file, type);
+        }
+        return SSL_SUCCESS;
+    }
+    catch (Error& /*err*/) {
+        //ssl->set_error(err);
+        return SSL_FATAL_ERROR;
+    }
+    catch (...) {
+        return SSL_UNKNOWN;
+    }
+
 }
 
 
@@ -522,13 +545,13 @@ int SSL_CTX_use_PrivateKey_file(SSL_CTX* ctx, const char* file, int format)
 }
 
 
-int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
+int SSL_CTX_set_cipher_list(SSL_CTX* /*ctx*/, const char* /*list*/)
 {
     return SSL_SUCCESS; 
 }
 
 
-void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback verify_callback)
+void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback /*vc*/)
 {
     if (mode & SSL_VERIFY_PEER)
         ctx->setVerifyPeer();
@@ -539,14 +562,13 @@ void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback verify_callback)
 
 
 int SSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file,
-                                  const char* path)
+                                  const char* /*path*/)
 {
-    // TODO: load CA file from path, PEM base64, could be chain
-    return SSL_NOT_IMPLEMENTED;
+    return read_file(ctx, file, SSL_FILETYPE_PEM, CA);
 }
 
 
-int SSL_CTX_set_default_verify_paths(SSL_CTX* ctx)
+int SSL_CTX_set_default_verify_paths(SSL_CTX* /*ctx*/)
 {
     // TODO: figure out?, implement
     return SSL_NOT_IMPLEMENTED;
@@ -561,7 +583,7 @@ int SSL_CTX_set_session_id_context(SSL_CTX*, const unsigned char*,
 }
 
 
-int SSL_CTX_check_private_key(SSL_CTX* ctx)
+int SSL_CTX_check_private_key(SSL_CTX* /*ctx*/)
 {
     // TODO: check private against public for RSA match
     return SSL_NOT_IMPLEMENTED;
@@ -830,14 +852,14 @@ unsigned long ERR_get_error_line_data(const char**, int*, const char**, int *)
 }
 
 
-void ERR_print_errors_fp(FILE* fp)
+void ERR_print_errors_fp(FILE* /*fp*/)
 {
     // need ssl access to implement TODO:
     //fprintf(fp, "%s", ssl.get_states().errorString_.c_str());
 }
 
 
-char* ERR_error_string(unsigned long err, char* buffer)
+char* ERR_error_string(unsigned long /*err*/, char* buffer)
 {
     // TODO:
     static char* msg = "Not Implemented";
@@ -899,8 +921,9 @@ const EVP_CIPHER* EVP_des_ede3_cbc(void)
 }
 
 
-int EVP_BytesToKey(const EVP_CIPHER* type, const EVP_MD* md, const byte* salt,
-                   const byte* data, int sz, int count, byte* key, byte* iv)
+int EVP_BytesToKey(const EVP_CIPHER* /*type*/, const EVP_MD* /*md*/,
+                   const byte* /*salt*/, const byte* /*data*/, int /*sz*/,
+                   int /*count*/, byte* /*key*/, byte* /*iv*/)
 {
     // TODO: create key and iv from possible salt, and data using type and md
     return SSL_NOT_IMPLEMENTED;
@@ -908,15 +931,17 @@ int EVP_BytesToKey(const EVP_CIPHER* type, const EVP_MD* md, const byte* salt,
 
 
 
-void DES_set_key_unchecked(const_DES_cblock* key, DES_key_schedule* schedule)
+void DES_set_key_unchecked(const_DES_cblock* /*key*/,
+                           DES_key_schedule* /*schedule*/)
 {
     // TODO: create schedule from key without checking strength
 }
 
 
-void DES_ede3_cbc_encrypt(const byte* input, byte* output, long length,
-                          DES_key_schedule* ks1, DES_key_schedule* ks2,
-                          DES_key_schedule* ks3, DES_cblock* ivec, int enc)
+void DES_ede3_cbc_encrypt(const byte* /*input*/, byte* /*output*/, long /*sz*/,
+                          DES_key_schedule* /*ks1*/, DES_key_schedule* /*ks2*/,
+                          DES_key_schedule* /*ks3*/, DES_cblock* /*ivec*/, 
+                          int /*enc*/)
 {
     // TODO: cipher input into output with keys and IV
 }

@@ -97,6 +97,7 @@ void ClientDiffieHellmanPublic::build(SSL& ssl)
 
 
 // build server exhange, server side
+// RSA auth now, future add TODO: DSA
 void DH_Server::build(SSL& ssl)
 {
     DiffieHellman& dhServer = ssl.useCrypto().use_dh();
@@ -107,7 +108,7 @@ void DH_Server::build(SSL& ssl)
                        parms_.alloc_pub(pubSz));
 
     length_ = 8; // pLen + gLen + YsLen + SigLen
-    length_ += pSz + gSz + pubSz + RSA_KEA_SIG;  // TODO: fix 3X for DSA
+    length_ += pSz + gSz + pubSz + RSA_KEA_SIG;  // fix 3X for DSA
 
     output_buffer tmp(length_);
     byte len[2];
@@ -264,6 +265,7 @@ void ClientDiffieHellmanPublic::alloc(int sz, bool offset)
 
 
 // read server's p, g, public key and sig, client side
+// RSA auth for now, future add TODO: DSA
 void DH_Server::read(SSL& ssl, input_buffer& input)
 {
     uint16 length, messageTotal = 6; // pSz + gSz + pubSz
@@ -299,7 +301,7 @@ void DH_Server::read(SSL& ssl, input_buffer& input)
     input.read(message.get_buffer(), messageTotal);
     message.add_size(messageTotal);
 
-    // signature  assume rsa for now TODO: switch type
+    // signature  fix for DSA
     tmp[0] = input[AUTO];
     tmp[1] = input[AUTO];
     ato16(tmp, length);
@@ -359,8 +361,7 @@ opaque* DH_Server::get_serverKey() const
 }
 
 
-//#define FORCE_DIFFIE   // test diffie-hellman
-
+// set available suites
 Parameters::Parameters(ConnectionEnd ce) : entity_(ce)
 {
     pending_ = true;	// suite not set yet
@@ -368,25 +369,25 @@ Parameters::Parameters(ConnectionEnd ce) : entity_(ce)
     int i = 0;
     // available suites, best first
 
-    // Force Diffie test
-#ifdef FORCE_DIFFIE
     suites_[i++] = 0x00;
-    suites_[i++] = SSL_DHE_RSA_WITH_DES_CBC_SHA;  
-    // Normal 
-#else
+    suites_[i++] = TLS_RSA_WITH_AES_256_CBC_SHA;
     suites_[i++] = 0x00;
-    suites_[i++] = SSL_RSA_WITH_3DES_EDE_CBC_SHA;  // TODO: add all
+    suites_[i++] = TLS_RSA_WITH_AES_128_CBC_SHA;
+
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_RSA_WITH_3DES_EDE_CBC_SHA;
     suites_[i++] = 0x00;
     suites_[i++] = SSL_RSA_WITH_DES_CBC_SHA;
     suites_[i++] = 0x00;
+
     suites_[i++] = SSL_DHE_RSA_WITH_DES_CBC_SHA;  
     suites_[i++] = 0x00;
     suites_[i++] = SSL_DHE_DSS_WITH_DES_CBC_SHA;  
     suites_[i++] = 0x00;
+
     suites_[i++] = SSL_RSA_WITH_RC4_128_SHA;  
     suites_[i++] = 0x00;
     suites_[i++] = SSL_RSA_WITH_RC4_128_MD5;
-#endif
    
     suites_size_ = i;
 }
@@ -619,7 +620,7 @@ uint16 ChangeCipherSpec::get_length() const
 
 
 // CipherSpec processing handler
-void ChangeCipherSpec::Process(input_buffer& input, SSL& ssl)
+void ChangeCipherSpec::Process(input_buffer&, SSL& ssl)
 {
     ssl.useSecurity().use_parms().pending_ = false;
     if (ssl.getSecurity().get_resuming()) {
@@ -693,7 +694,7 @@ void Alert::Process(input_buffer& input, SSL& ssl)
             hmac(ssl, verify, data, aSz, alert, true);
 
         // read mac and fill
-        int    digestSz = ssl.getCrypto().get_mac().get_digestSize();
+        int    digestSz = ssl.getCrypto().get_digest().get_digestSize();
         opaque mac[SHA_LEN];
         input.read(mac, digestSz);
 
@@ -787,7 +788,7 @@ void Data::Process(input_buffer& input, SSL& ssl)
         pad = *(input.get_buffer() + input.get_current() + msgSz - 1);
         padByte = 1;
     }
-    int digestSz = ssl.getCrypto().get_mac().get_digestSize();
+    int digestSz = ssl.getCrypto().get_digest().get_digestSize();
     int dataSz = msgSz - digestSz - pad - padByte;   
     opaque verify[SHA_LEN];
 
@@ -894,12 +895,10 @@ void Certificate::Process(input_buffer& input, SSL& ssl)
 
         list_sz -= cert_sz + CERT_HEADER;
     }
-    cm.SetPeerKey();
     cm.Validate();
 
     if (ssl.getSecurity().get_parms().entity_ == client_end)
         ssl.useStates().useClient() = serverCertComplete;
-    // TODO add server input certificate state and validate
 }
 
 
@@ -1059,7 +1058,7 @@ output_buffer& operator<<(output_buffer& output, const ServerHello& hello)
 
 
 // Server Hello processing handler
-void ServerHello::Process(input_buffer& input, SSL& ssl)
+void ServerHello::Process(input_buffer&, SSL& ssl)
 {
     ssl.set_pending(cipher_suite_[1]);
     ssl.set_random(random_, server_end);
@@ -1114,7 +1113,7 @@ const opaque* ServerHello::get_random() const
 
 
 // Server Hello Done processing handler
-void ServerHelloDone::Process(input_buffer& input, SSL& ssl)
+void ServerHelloDone::Process(input_buffer&, SSL& ssl)
 {
     ssl.useStates().useClient() = serverHelloDoneComplete;
 }
@@ -1215,7 +1214,7 @@ output_buffer& operator<<(output_buffer& output, const ClientHello& hello)
 
 
 // Client Hello processing handler
-void ClientHello::Process(input_buffer& input, SSL& ssl)
+void ClientHello::Process(input_buffer&, SSL& ssl)
 {
     ssl.set_random(random_, client_end);
 
@@ -1482,7 +1481,7 @@ output_buffer& operator<<(output_buffer& output,
 
 
 // CertificateRequest processing handler
-void CertificateRequest::Process(input_buffer& input, SSL& ssl)
+void CertificateRequest::Process(input_buffer&, SSL& ssl)
 {
     ssl.useCrypto().use_certManager().setSendVerify();
 }
@@ -1567,7 +1566,7 @@ output_buffer& operator<<(output_buffer& output,
 
 
 // CertificateVerify processing handler
-void CertificateVerify::Process(input_buffer& input, SSL& ssl)
+void CertificateVerify::Process(input_buffer&, SSL& ssl)
 {
     const CertManager& cert = ssl.getCrypto().get_certManager();
     RSA   rsa(cert.get_peerKey(), cert.get_peerKeyLength());
@@ -1660,12 +1659,9 @@ HandShakeType ClientKeyExchange::get_type() const
 
 
 // input operator for Finished
-input_buffer& operator>>(input_buffer& input, Finished& fin)
+input_buffer& operator>>(input_buffer& input, Finished&)
 {
-    /*  do in process
-    input.read(fin.hashes_.md5_, MD5_LEN);
-    input.read(fin.hashes_.sha_, SHA_LEN);
-    */
+    /*  do in process */
 
     return input; 
 }
@@ -1709,7 +1705,7 @@ void Finished::Process(input_buffer& input, SSL& ssl)
 
     // read mac and fill
     opaque mac[SHA_LEN];   // max size
-    int    digestSz = ssl.getCrypto().get_mac().get_digestSize();
+    int    digestSz = ssl.getCrypto().get_digest().get_digestSize();
     input.read(mac, digestSz);
 
     opaque fill;
@@ -1802,6 +1798,7 @@ void Connection::AllocPreSecret(uint sz)
 }
 
 
+// wipeout master secret
 void Connection::CleanMaster()
 {
     if (!master_clean_) {
@@ -1812,6 +1809,7 @@ void Connection::CleanMaster()
 }
 
 
+// wipeout pre master secret
 void Connection::CleanPreMaster()
 {
     if (pre_master_secret_) {

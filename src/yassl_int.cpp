@@ -215,31 +215,69 @@ const ClientKeyFactory& sslFactory::getClientKey() const
 }
 
 
+// extract context parameters and store
 SSL::SSL(SSL_CTX* ctx) 
     : secure_(ctx->getMethod()->getVersion(), crypto_.use_random(),
               ctx->getMethod()->getSide())
 {
-    crypto_.use_certManager().CopyCert(ctx->getCert());
+    CertManager& cm = crypto_.use_certManager();
+    cm.CopySelfCert(ctx->getCert());
 
     if (ctx->getKey())
-        crypto_.use_certManager().SetPrivateKey(*ctx->getKey());
+        cm.SetPrivateKey(*ctx->getKey());
     else if (secure_.use_parms().entity_ == server_end)
         throw Error("No Server Key File", no_key_file);
 
     if (ctx->getMethod()->verifyPeer())
-        crypto_.use_certManager().setVerifyPeer();
+        cm.setVerifyPeer();
     if (ctx->getMethod()->failNoCert())
-        crypto_.use_certManager().setFailNoCert();
+        cm.setFailNoCert();
+
+    const SSL_CTX::CertList& ca = ctx->GetCA_List();
+    SSL_CTX::CertList::const_iterator first(ca.begin());
+    SSL_CTX::CertList::const_iterator last(ca.end());
+
+    while (first != last) {
+        cm.CopyCaCert(*first);
+        ++first;
+    }
 }
 
 
 // store pending security parameters from Server Hello
 void SSL::set_pending(Cipher suite)
 {
-    // TODO: add all suites
     Parameters& parms = secure_.use_parms();
 
     switch (suite) {
+
+    case TLS_RSA_WITH_AES_256_CBC_SHA:
+        parms.bulk_cipher_algorithm_ = aes;
+        parms.mac_algorithm_         = sha;
+        parms.kea_                   = rsa_kea;
+        parms.hash_size_ = SHA_LEN;
+        parms.key_size_  = AES_256_KEY_SZ;
+        parms.iv_size_   = AES_BLOCK_SZ;
+        parms.cipher_type_ = block;
+        crypto_.setDigest(new SHA);
+        crypto_.setCipher(new AES(AES_256_KEY_SZ));
+        strncpy(parms.cipher_name_, "AES-256-CBC-SHA",
+                MAX_SUITE_NAME);
+        break;
+
+    case TLS_RSA_WITH_AES_128_CBC_SHA:
+        parms.bulk_cipher_algorithm_ = aes;
+        parms.mac_algorithm_         = sha;
+        parms.kea_                   = rsa_kea;
+        parms.hash_size_ = SHA_LEN;
+        parms.key_size_  = AES_128_KEY_SZ;
+        parms.iv_size_   = AES_BLOCK_SZ;
+        parms.cipher_type_ = block;
+        crypto_.setDigest(new SHA);
+        crypto_.setCipher(new AES);
+        strncpy(parms.cipher_name_, "AES-128-CBC-SHA",
+                MAX_SUITE_NAME);
+        break;
 
     case SSL_RSA_WITH_3DES_EDE_CBC_SHA:
         parms.bulk_cipher_algorithm_ = triple_des;
@@ -249,7 +287,7 @@ void SSL::set_pending(Cipher suite)
         parms.key_size_  = DES_EDE_KEY_SZ;
         parms.iv_size_   = DES_IV_SZ;
         parms.cipher_type_ = block;
-        crypto_.setMAC(new SHA);
+        crypto_.setDigest(new SHA);
         crypto_.setCipher(new DES_EDE);
         strncpy(parms.cipher_name_, "DES-CBC3-SHA",
                 MAX_SUITE_NAME);
@@ -263,7 +301,7 @@ void SSL::set_pending(Cipher suite)
         parms.key_size_  = DES_KEY_SZ;
         parms.iv_size_   = DES_IV_SZ;
         parms.cipher_type_ = block;
-        crypto_.setMAC(new SHA);
+        crypto_.setDigest(new SHA);
         crypto_.setCipher(new DES);
         strncpy(parms.cipher_name_, "DES-CBC-SHA",
                 MAX_SUITE_NAME);
@@ -277,7 +315,7 @@ void SSL::set_pending(Cipher suite)
         parms.key_size_  = RC4_KEY_SZ;
         parms.iv_size_   = 0;
         parms.cipher_type_ = stream;
-        crypto_.setMAC(new SHA);
+        crypto_.setDigest(new SHA);
         crypto_.setCipher(new RC4);
         strncpy(parms.cipher_name_, "RC4-SHA",
                 MAX_SUITE_NAME);
@@ -291,7 +329,7 @@ void SSL::set_pending(Cipher suite)
         parms.key_size_  = RC4_KEY_SZ;
         parms.iv_size_   = 0;
         parms.cipher_type_ = stream;
-        crypto_.setMAC(new MD5);
+        crypto_.setDigest(new MD5);
         crypto_.setCipher(new RC4);
         strncpy(parms.cipher_name_, "RC4-MD5",
                 MAX_SUITE_NAME);
@@ -307,7 +345,7 @@ void SSL::set_pending(Cipher suite)
         parms.cipher_type_ = block;
         secure_.use_connection().send_server_key_ = true; // eph
         secure_.use_connection().dh_init_needed_  = true; 
-        crypto_.setMAC(new SHA);
+        crypto_.setDigest(new SHA);
         crypto_.setCipher(new DES);
         strncpy(parms.cipher_name_, "EDH-RSA-DES-CBC-SHA",
                 MAX_SUITE_NAME);
@@ -452,6 +490,7 @@ void SSL::makeMasterSecret()
 }
 
 
+// create TLSv1 master secret
 void SSL::makeTLSMasterSecret()
 {
     opaque seed[SEED_LEN];
@@ -508,6 +547,7 @@ void SSL::deriveKeys()
 }
 
 
+// derive mac, write, and iv keys for server and client
 void SSL::deriveTLSKeys()
 {
     int length = 2 * secure_.get_parms().hash_size_ + 
@@ -550,6 +590,7 @@ void SSL::storeKeys(const opaque* key_data)
 }
 
 
+// set encrypt/decrypt keys and ivs
 void SSL::setKeys()
 {
     Connection& conn = secure_.use_connection();
@@ -607,6 +648,7 @@ inline T min(T a, T b)
 }
 
 
+// use input buffer to fill data
 void SSL::fillData(Data& data)
 {   
     uint dataSz   = data.get_length();        // input, data size to fill
@@ -633,6 +675,7 @@ void SSL::fillData(Data& data)
 }
 
 
+// flush output buffer
 void SSL::flushBuffer()
 {
     uint sz = std::for_each(buffers_.getHandShake().begin(),
@@ -652,6 +695,7 @@ void SSL::flushBuffer()
 }
 
 
+// get sequence number, if verify get peer's
 uint SSL::get_SEQIncrement(bool verify) 
 { 
     if (verify)
@@ -775,6 +819,7 @@ void SSL::verifyServerState(HandShakeType hsType)
 }
 
 
+// try to find a suite match
 void SSL::matchSuite(const opaque* peer, uint length)
 {
     if (length == 0 || (length % 2) != 0)
@@ -891,6 +936,7 @@ void SSL::addBuffer(output_buffer* b)
 }
 
 
+// store connection parameters
 SSL_SESSION::SSL_SESSION(const SSL& ssl, RandomPool& ran) 
     : timeout_(DEFAULT_TIMEOUT), random_(ran)
 {
@@ -959,6 +1005,8 @@ uint  SSL_SESSION::getTimeOut() const
 
 extern void clean(volatile opaque*, uint, RandomPool&);
 
+
+// clean up secret data
 SSL_SESSION::~SSL_SESSION()
 {
     volatile opaque* p = master_secret_;
@@ -1022,6 +1070,7 @@ struct sess_match {
 } // local namespace
 
 
+// lookup session by id, return a copy if space provided
 SSL_SESSION* Sessions::lookup(const opaque* id, SSL_SESSION* copy)
 {
     Lock guard(mutex_);
@@ -1042,6 +1091,7 @@ SSL_SESSION* Sessions::lookup(const opaque* id, SSL_SESSION* copy)
 }
 
 
+// remove a session by id
 void Sessions::remove(const opaque* id)
 {
     Lock guard(mutex_);
@@ -1105,6 +1155,21 @@ SSL_CTX::~SSL_CTX()
     delete method_;
     delete certificate_;
     delete privateKey_;
+
+    std::for_each(caList_.begin(), caList_.end(), del_ptr_zero());
+}
+
+
+void SSL_CTX::AddCA(x509* ca)
+{
+    caList_.push_back(ca);
+}
+
+
+const SSL_CTX::CertList& 
+SSL_CTX::GetCA_List() const
+{
+    return caList_;
 }
 
 
@@ -1139,7 +1204,7 @@ void SSL_CTX::setFailNoCert()
 
 
 Crypto::Crypto() 
-    : mac_(0), cipher_(0), dh_(0) 
+    : digest_(0), cipher_(0), dh_(0) 
 {}
 
 
@@ -1147,13 +1212,13 @@ Crypto::~Crypto()
 {
     delete dh_;
     delete cipher_;
-    delete mac_;
+    delete digest_;
 }
 
 
-const MAC& Crypto::get_mac() const
+const Digest& Crypto::get_digest() const
 {
-    return *mac_;
+    return *digest_;
 }
 
 
@@ -1182,9 +1247,9 @@ const CertManager& Crypto::get_certManager() const
 
 
       
-MAC& Crypto::use_mac()
+Digest& Crypto::use_digest()
 {
-    return *mac_;
+    return *digest_;
 }
 
 
@@ -1219,9 +1284,9 @@ void Crypto::setDH(DiffieHellman* dh)
 }
 
 
-void Crypto::setMAC(MAC* mac)
+void Crypto::setDigest(Digest* digest)
 {
-    mac_ = mac;
+    digest_ = digest;
 }
 
 

@@ -177,7 +177,7 @@ template <typename T>
 inline void checked_delete(T* p)
 {
     typedef char complete_type[sizeof(T) ? 1 : -1];
-    sizeof(complete_type);
+    (void)sizeof(complete_type);
     delete p;
 }
 

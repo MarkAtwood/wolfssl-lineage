@@ -19,6 +19,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* des.hpp defines DES, DES_EDE2, and DES_EDE3
+   see FIPS 46-2 and FIPS 81
+*/
+
 
 #ifndef TAO_CRYPT_DES_HPP
 #define TAO_CRYPT_DES_HPP
@@ -31,6 +35,7 @@ namespace TaoCrypt {
 
 enum { DES_BLOCK_SIZE = 8 };
 
+// Base for all DES types
 class DES_BASE : public Mode_BASE<DES_BLOCK_SIZE> {
 public:
     enum { BLOCK_SIZE = DES_BLOCK_SIZE, KEY_SIZE = 32, BOXES = 8,
@@ -47,6 +52,8 @@ private:
     DES_BASE& operator=(const DES_BASE&);   // and assign
 };
 
+
+// DES 
 class DES : public DES_BASE {
 public:
     DES(CipherDir DIR, Mode MODE) : DES_BASE(DIR, MODE) {}
@@ -59,6 +66,7 @@ private:
 };
 
 
+// DES_EDE2
 class DES_EDE2 : public DES_BASE {
 public:
     DES_EDE2(CipherDir DIR, Mode MODE) 
@@ -72,6 +80,7 @@ private:
 };
 
 
+// DES_EDE3
 class DES_EDE3 : public DES_BASE {
 public:
     DES_EDE3(CipherDir DIR, Mode MODE) 

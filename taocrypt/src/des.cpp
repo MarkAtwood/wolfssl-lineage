@@ -68,7 +68,7 @@ static const int bytebit[] = {
 };
 
 
-void DES::SetKey(const byte* key, word32 length, CipherDir dir)
+void DES::SetKey(const byte* key, word32 /*length*/, CipherDir dir)
 {
     byte buffer[56+56+8];
     byte *const pc1m = buffer;                 /* place to modify pc1 into */

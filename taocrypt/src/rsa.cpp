@@ -191,18 +191,18 @@ word32 RSA_BlockType1::UnPad(const byte* pkcsBlock, word32 pkcsBlockLen,
 }
 
 
-void SSL_Decrypt(RSA_PublicKey& key, const byte* sig, word32 sz, byte* plain)
+word32 SSL_Decrypt(RSA_PublicKey& key, const byte* sig, byte* plain)
 {
     PK_Lengths lengths(key.GetModulus());
    
     ByteBlock paddedBlock(BitsToBytes(lengths.PaddedBlockBitLength()));
-    Integer x = key.ApplyFunction(Integer(sig, lengths.FixedCiphertextLength()));
-
+    Integer x = key.ApplyFunction(Integer(sig,
+                                          lengths.FixedCiphertextLength()));
     if (x.ByteCount() > paddedBlock.size())
         x = Integer::Zero();	
     x.Encode(paddedBlock.get_buffer(), paddedBlock.size());
-    RSA_BlockType1().UnPad(paddedBlock.get_buffer(),
-                           lengths.PaddedBlockBitLength(), plain);
+    return RSA_BlockType1().UnPad(paddedBlock.get_buffer(),
+                                  lengths.PaddedBlockBitLength(), plain);
 }
 
 

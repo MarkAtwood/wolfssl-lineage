@@ -41,20 +41,20 @@
 namespace yaSSL {
 
 
-// MAC policy should implement a get_digest, update, and get sizes for pad and 
+// Digest policy should implement a get_digest, update, and get sizes for pad and 
 // digest
-struct MAC {
+struct Digest {
     virtual void   get_digest(byte*) = 0;
     virtual void   get_digest(byte*, const byte*, unsigned int) = 0;
     virtual void   update(const byte*, unsigned int) = 0;
     virtual uint   get_digestSize() const = 0;
     virtual uint   get_padSize() const = 0;
-    virtual ~MAC() {}
+    virtual ~Digest() {}
 };
 
 
-// For use with NULL MACs
-struct NO_MAC : public MAC {
+// For use with NULL Digests
+struct NO_MAC : public Digest {
     void   get_digest(byte*);
     void   get_digest(byte*, const byte*, unsigned int);
     void   update(const byte*, unsigned int);
@@ -64,7 +64,7 @@ struct NO_MAC : public MAC {
 
 
 // MD5 Digest
-class MD5 : public MAC {
+class MD5 : public Digest {
 public:
     void   get_digest(byte*);
     void   get_digest(byte*, const byte*, unsigned int);
@@ -82,7 +82,7 @@ private:
 
 
 // SHA-1 Digest
-class SHA : public MAC {
+class SHA : public Digest {
 public:
     void   get_digest(byte*);
     void   get_digest(byte*, const byte*, unsigned int);
@@ -100,8 +100,8 @@ private:
 };
 
 
-// HMAC_MD5 
-class HMAC_MD5 : public MAC {
+// HMAC_MD5
+class HMAC_MD5 : public Digest {
 public:
     void   get_digest(byte*);
     void   get_digest(byte*, const byte*, unsigned int);
@@ -120,7 +120,7 @@ private:
 
 
 // HMAC_SHA-1
-class HMAC_SHA : public MAC {
+class HMAC_SHA : public Digest {
 public:
     void   get_digest(byte*);
     void   get_digest(byte*, const byte*, unsigned int);
@@ -217,6 +217,25 @@ private:
 };
 
 
+// AES
+class AES : public BulkCipher {
+public:
+    void encrypt(byte*, const byte*, unsigned int);
+    void decrypt(byte*, const byte*, unsigned int);
+    void set_encryptKey(const byte*, const byte*);
+    void set_decryptKey(const byte*, const byte*);
+    uint get_blockSize() const { return AES_BLOCK_SZ; }
+    explicit AES(unsigned int = AES_128_KEY_SZ);
+    ~AES();
+private:
+    struct AESImpl;
+    AESImpl* pimpl_;
+
+    AES(const AES&);             // hide copy
+    AES& operator=(const AES&);  // & assign
+};
+
+
 // Random number generator
 class RandomPool {
 public:
@@ -288,8 +307,8 @@ private:
 };
 
 
-// hide for now TODO: figure out a way to give access to C clients p and g args
 // Diffie-Hellman agreement
+// hide for now TODO: figure out a way to give access to C clients p and g args
 class DiffieHellman  {
 public:
     DiffieHellman(const byte*, unsigned int, const byte*, unsigned int,

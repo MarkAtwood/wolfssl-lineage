@@ -41,7 +41,7 @@ void AES::Process(byte* out, const byte* in, word32 sz)
 
 
 
-void AES::SetKey(const byte* userKey, word32 keylen, CipherDir fake)
+void AES::SetKey(const byte* userKey, word32 keylen, CipherDir /*dummy*/)
 {
     if ( (keylen != 16) && (keylen != 24) && (keylen != 32) )
         throw std::runtime_error("bad AES key size");

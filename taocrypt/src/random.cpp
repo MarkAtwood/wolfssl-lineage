@@ -20,6 +20,11 @@
  */
 
 
+/* random.cpp implements a crypto secure Random Number Generator using an OS
+   specific seed, switch to /dev/random for more security but may block
+*/
+
+
 #include "random.hpp"
 #include <stdexcept>
 
@@ -36,6 +41,7 @@
 namespace TaoCrypt {
 
 
+// Get seed and key cipher
 RandomNumberGenerator::RandomNumberGenerator()
 {
     byte key[32];
@@ -44,6 +50,7 @@ RandomNumberGenerator::RandomNumberGenerator()
 }
 
 
+// place a generated block in output
 void RandomNumberGenerator::GenerateBlock(byte* output, word32 sz)
 {
     cipher_.Process(output, output, sz);
@@ -87,9 +94,9 @@ void OS_Seed::GenerateSeed(byte* output, word32 sz)
 
 OS_Seed::OS_Seed() 
 {
-    fd_ = open("/dev/random",O_RDONLY);
+    fd_ = open("/dev/urandom",O_RDONLY);
     if (fd_ == -1)
-        throw std::runtime_error("open /dev/random error");
+        throw std::runtime_error("open /dev/urandom error");
 }
 
 
@@ -99,17 +106,19 @@ OS_Seed::~OS_Seed()
 }
 
 
+// may block
 void OS_Seed::GenerateSeed(byte* output, word32 sz)
 {
     while (sz) {
         int len = read(fd_, output, sz);
         if (len == -1)
-            throw std::runtime_error("read /dev/random error");
+            throw std::runtime_error("read /dev/urandom error");
 
         sz     -= len;
         output += len;
 
-        if (sz) sleep(1);
+        if (sz)
+            sleep(1);
     }
 }
 

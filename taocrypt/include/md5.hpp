@@ -19,6 +19,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+/* md5.hpp provides MD5 digest support, see RFC 1321
+*/
 
 #ifndef TAO_CRYPT_MD5_HPP
 #define TAO_CRYPT_MD5_HPP
@@ -27,6 +29,8 @@
 
 namespace TaoCrypt {
 
+
+// MD5 digest
 class MD5 : public HASH {
 public:
     enum { BLOCK_SIZE = 64, DIGEST_SIZE = 16, PAD_SIZE = 56,
