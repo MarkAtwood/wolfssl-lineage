@@ -125,9 +125,9 @@ loopend:
 	}
 }
 
-#elif defined(__GNUC__) && defined(__i386__)
+#elif defined(__GNUC__) && defined(__i386__) && !defined(__pic__)
 
-__attribute__((regparm(4))) static word Add(word *C, const word *A, const word *B, unsigned int N)
+__attribute__((regparm(3))) static word Add(word *C, const word *A, const word *B, unsigned int N)
 {
 	assert (N%2 == 0);
 
@@ -165,7 +165,7 @@ __attribute__((regparm(4))) static word Add(word *C, const word *A, const word *
 	return carry;
 }
 
-__attribute__((regparm(4))) static word Subtract(word *C, const word *A, const word *B, unsigned int N)
+__attribute__((regparm(3))) static word Subtract(word *C, const word *A, const word *B, unsigned int N)
 {
 	assert (N%2 == 0);
 

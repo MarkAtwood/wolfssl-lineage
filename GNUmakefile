@@ -1,5 +1,4 @@
-# can't use -fno-rtti yet because it causes problems with exception
-# handling in GCC 2.95.2
+# can't use -fno-rtti yet because it causes problems with exception handling in GCC 2.95.2
 CXXFLAGS = -g
 # uncomment the next two lines to do a release build
 # CXXFLAGS = -O2 -DNDEBUG -ffunction-sections -fdata-sections
@@ -9,13 +8,20 @@ RANLIB = ranlib
 UNAME = $(shell uname)
 
 ifeq ($(UNAME),)	# for DJGPP, where uname doesn't exist
-CXXFLAGS := $(CXXFLAGS) -mbnu210
+CXXFLAGS += -mbnu210
 else
-CXXFLAGS := $(CXXFLAGS) -pipe
+CXXFLAGS += -pipe
+endif
+
+ifeq ($(UNAME),Darwin)
+CXX = c++
+CXXFLAGS += -D__pic__ -fno-coalesce-templates -fno-coalesce-static-vtables
+LDLIBS += -lstdc++
+LDFLAGS += -flat_namespace -undefined suppress -m
 endif
 
 ifeq ($(UNAME),SunOS)
-LDLIBS = -lnsl -lsocket
+LDLIBS += -lnsl -lsocket
 endif
 
 ifeq ($(CXX),gcc)	# for some reason CXX is gcc on cygwin 1.1.4
@@ -24,7 +30,7 @@ endif
 
 SRCS = $(wildcard *.cpp)
 
-ifeq ($(SRCS),)		# workaround wildcard function bug in GNU Make 3.77
+ifeq ($(SRCS),)				# workaround wildcard function bug in GNU Make 3.77
 SRCS = $(shell ls *.cpp)
 endif
 
