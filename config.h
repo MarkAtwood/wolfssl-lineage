@@ -154,10 +154,11 @@ inline const _Tp& STDMAX(const _Tp& __a, const _Tp& __b) {
 #ifdef _MSC_VER
 // 4250: dominance
 // 4660: explicitly instantiating a class that's already implicitly instantiated
+// 4661: no suitable definition provided for explicit template instantiation request
 // 4786: identifer was truncated in debug information
 // 4355: 'this' : used in base member initializer list
 // 4800: converting int to bool
-#pragma warning(disable: 4250 4660 4786 4355 4800)
+#pragma warning(disable: 4250 4660 4661 4786 4355 4800)
 #endif
 
 NAMESPACE_END
