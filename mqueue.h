@@ -35,7 +35,7 @@ public:
 		{return m_queue.MaxRetrievable();}
 	unsigned int NumberOfMessages() const
 		{return m_lengths.size()-1;}
-	bool RetrieveNextMessage();
+	bool GetNextMessage();
 
 	unsigned int CopyMessagesTo(BufferedTransformation &target, unsigned int count=UINT_MAX) const;
 

@@ -10,7 +10,7 @@ MessageQueue::MessageQueue(unsigned int nodeSize)
 {
 }
 
-bool MessageQueue::RetrieveNextMessage()
+bool MessageQueue::GetNextMessage()
 {
 	if (NumberOfMessages() > 0 && !AnyRetrievable())
 	{

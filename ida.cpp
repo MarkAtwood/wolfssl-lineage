@@ -193,7 +193,7 @@ void RawIDA::ProcessInputQueues()
 
 		for (i=0; i<m_threshold; i++)
 		{
-			inputQueues[i].RetrieveNextMessage();
+			inputQueues[i].GetNextMessage();
 			ChannelSwitch channelSwitch(*this, WordToString(inputChannelIds[i]));
 			inputQueues[i].TransferAllTo(channelSwitch);
 		}
