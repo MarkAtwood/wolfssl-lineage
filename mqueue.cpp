@@ -6,7 +6,7 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 MessageQueue::MessageQueue(unsigned int nodeSize)
-	: m_queue(nodeSize), m_lengths(1, 0)
+	: m_queue(nodeSize), m_lengths(1, 0U)
 {
 }
 
