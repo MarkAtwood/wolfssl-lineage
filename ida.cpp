@@ -386,8 +386,8 @@ void PaddingRemover::Put(const byte *begin, unsigned int length)
 		PaddingRemover::Put(*begin++);
 	}
 
-#if defined(_MSC_VER) && !defined(__MWERKS__)
-	typedef reverse_iterator<const byte *, const byte> rit;
+#if defined(_MSC_VER) && !defined(__MWERKS__)		// VC60 workaround
+	typedef reverse_bidirectional_iterator<const byte *, const byte> rit;
 #else
 	typedef reverse_iterator<const byte *> rit;
 #endif

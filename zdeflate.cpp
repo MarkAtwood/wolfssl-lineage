@@ -569,7 +569,7 @@ void Deflator::EncodeBlock(bool eof, unsigned int blockType)
 		{
 			SecBlock<unsigned int> literalCodeLengths(286), distanceCodeLengths(30);
 #if defined(_MSC_VER) && !defined(__MWERKS__)		// VC60 workaround
-			typedef reverse_iterator<unsigned int *, unsigned int> RevIt;
+			typedef reverse_bidirectional_iterator<unsigned int *, unsigned int> RevIt;
 #else
 			typedef reverse_iterator<unsigned int *> RevIt;
 #endif
