@@ -5,6 +5,7 @@
 
 #include "pch.h"
 #include "polynomi.h"
+#include "secblock.h"
 
 #include <strstream>
 #include <iostream>
@@ -31,7 +32,7 @@ void PolynomialOver<T>::FromStr(const char *str, const Ring &ring)
 	{
 		std::ws(in);
 		if (in.peek() == 'x')
-			coef = ring.One();
+			coef = ring.MultiplicativeIdentity();
 		else
 			in >> coef;
 
@@ -75,7 +76,7 @@ template <class T>
 unsigned int PolynomialOver<T>::CoefficientCount(const Ring &ring) const
 {
 	unsigned count = m_coefficients.size();
-	while (count && ring.Equal(m_coefficients[count-1], ring.Zero()))
+	while (count && ring.Equal(m_coefficients[count-1], ring.Identity()))
 		count--;
 	const_cast<std::vector<CoefficientType> &>(m_coefficients).resize(count);
 	return count;
@@ -84,7 +85,7 @@ unsigned int PolynomialOver<T>::CoefficientCount(const Ring &ring) const
 template <class T>
 typename PolynomialOver<T>::CoefficientType PolynomialOver<T>::GetCoefficient(unsigned int i, const Ring &ring) const 
 {
-	return (i < m_coefficients.size()) ? m_coefficients[i] : ring.Zero();
+	return (i < m_coefficients.size()) ? m_coefficients[i] : ring.Identity();
 }
 
 template <class T>
@@ -105,7 +106,7 @@ PolynomialOver<T>& PolynomialOver<T>::Accumulate(const PolynomialOver<T>& t, con
 	unsigned int count = t.CoefficientCount(ring);
 
 	if (count > CoefficientCount(ring))
-		m_coefficients.resize(count, ring.Zero());
+		m_coefficients.resize(count, ring.Identity());
 
 	for (unsigned int i=0; i<count; i++)
 		ring.Accumulate(m_coefficients[i], t.GetCoefficient(i, ring));
@@ -119,7 +120,7 @@ PolynomialOver<T>& PolynomialOver<T>::Reduce(const PolynomialOver<T>& t, const R
 	unsigned int count = t.CoefficientCount(ring);
 
 	if (count > CoefficientCount(ring))
-		m_coefficients.resize(count, ring.Zero());
+		m_coefficients.resize(count, ring.Identity());
 
 	for (unsigned int i=0; i<count; i++)
 		ring.Reduce(m_coefficients[i], t.GetCoefficient(i, ring));
@@ -133,7 +134,7 @@ typename PolynomialOver<T>::CoefficientType PolynomialOver<T>::EvaluateAt(const 
 	int degree = Degree(ring);
 
 	if (degree < 0)
-		return ring.Zero();
+		return ring.Identity();
 
 	CoefficientType result = m_coefficients[degree];
 	for (int j=degree-1; j>=0; j--)
@@ -148,7 +149,7 @@ template <class T>
 PolynomialOver<T>& PolynomialOver<T>::ShiftLeft(unsigned int n, const Ring &ring)
 {
 	unsigned int i = CoefficientCount(ring) + n;
-	m_coefficients.resize(i, ring.Zero());
+	m_coefficients.resize(i, ring.Identity());
 	while (i > n)
 	{
 		i--;
@@ -157,7 +158,7 @@ PolynomialOver<T>& PolynomialOver<T>::ShiftLeft(unsigned int n, const Ring &ring
 	while (i)
 	{
 		i--;
-		m_coefficients[i] = ring.Zero();
+		m_coefficients[i] = ring.Identity();
 	}
 	return *this;
 }
@@ -170,10 +171,10 @@ PolynomialOver<T>& PolynomialOver<T>::ShiftRight(unsigned int n, const Ring &rin
 	{
 		for (unsigned int i=0; i<count-n; i++)
 			m_coefficients[i] = m_coefficients[i+n];
-		m_coefficients.resize(count-n, ring.Zero());
+		m_coefficients.resize(count-n, ring.Identity());
 	}
 	else
-		m_coefficients.resize(0, ring.Zero());
+		m_coefficients.resize(0, ring.Identity());
 	return *this;
 }
 
@@ -181,7 +182,7 @@ template <class T>
 void PolynomialOver<T>::SetCoefficient(unsigned int i, const CoefficientType &value, const Ring &ring)
 {
 	if (i >= m_coefficients.size())
-		m_coefficients.resize(i+1, ring.Zero());
+		m_coefficients.resize(i+1, ring.Identity());
 	m_coefficients[i] = value;
 }
 
@@ -323,7 +324,7 @@ PolynomialOver<T> PolynomialOver<T>::Modulo(const PolynomialOver<T>& t, const Ri
 template <class T>
 PolynomialOver<T> PolynomialOver<T>::MultiplicativeInverse(const Ring &ring) const
 {
-	return Degree(ring)==0 ? ring.MultiplicativeInverse(m_coefficients[0]) : ring.Zero();
+	return Degree(ring)==0 ? ring.MultiplicativeInverse(m_coefficients[0]) : ring.Identity();
 }
 
 template <class T>
@@ -352,7 +353,7 @@ std::istream& PolynomialOver<T>::Input(std::istream &in, const Ring &ring)
 	{
 		in.read(&c, 1);
 		str[length++] = c;
-		if (length >= str.size)
+		if (length >= str.size())
 			str.Grow(length + 16);
 	}
 	// if we started with a left paren, then read until we find a right paren,
@@ -375,12 +376,12 @@ std::ostream& PolynomialOver<T>::Output(std::ostream &out, const Ring &ring) con
 
 		while (i--)
 		{
-			if (m_coefficients[i] != ring.Zero())
+			if (m_coefficients[i] != ring.Identity())
 			{
 				if (firstTerm)
 				{
 					firstTerm = false;
-					if (!i || !ring.Equal(m_coefficients[i], ring.One()))
+					if (!i || !ring.Equal(m_coefficients[i], ring.MultiplicativeIdentity()))
 						out << m_coefficients[i];
 				}
 				else
@@ -394,13 +395,13 @@ std::ostream& PolynomialOver<T>::Output(std::ostream &out, const Ring &ring) con
 					if (pstr.pcount() <= nstr.pcount())
 					{
 						out << " + "; 
-						if (!i || !ring.Equal(m_coefficients[i], ring.One()))
+						if (!i || !ring.Equal(m_coefficients[i], ring.MultiplicativeIdentity()))
 							out << m_coefficients[i];
 					}
 					else
 					{
 						out << " - "; 
-						if (!i || !ring.Equal(inverse, ring.One()))
+						if (!i || !ring.Equal(inverse, ring.MultiplicativeIdentity()))
 							out << inverse;
 					}
 				}
@@ -420,7 +421,7 @@ std::ostream& PolynomialOver<T>::Output(std::ostream &out, const Ring &ring) con
 	}
 	else
 	{
-		out << ring.Zero();
+		out << ring.Identity();
 	}
 	return out;
 }
@@ -472,14 +473,14 @@ void RingOfPolynomialsOver<T>::CalculateAlpha(std::vector<CoefficientType> &alph
 }
 
 template <class T>
-typename RingOfPolynomialsOver<T>::Element RingOfPolynomialsOver<T>::Interpolate(const CoefficientType x[], const CoefficientType y[], unsigned int n) const
+RingOfPolynomialsOver<T>::Element RingOfPolynomialsOver<T>::Interpolate(const CoefficientType x[], const CoefficientType y[], unsigned int n) const
 {
 	assert(n > 0);
 
 	std::vector<CoefficientType> alpha(n);
 	CalculateAlpha(alpha, x, y, n);
 
-	std::vector<CoefficientType> coefficients((size_t)n, m_ring.Zero());
+	std::vector<CoefficientType> coefficients((size_t)n, m_ring.Identity());
 	coefficients[0] = alpha[n-1];
 
 	for (int j=n-2; j>=0; --j)
@@ -515,7 +516,7 @@ void PrepareBulkPolynomialInterpolation(const Ring &ring, Element *w, const Elem
 {
 	for (unsigned int i=0; i<n; i++)
 	{
-		Element t = ring.One();
+		Element t = ring.MultiplicativeIdentity();
 		for (unsigned int j=0; j<n; j++)
 			if (i != j)
 				t = ring.Multiply(t, ring.Subtract(x[i], x[j]));
@@ -537,7 +538,7 @@ void PrepareBulkPolynomialInterpolationAt(const Ring &ring, Element *v, const El
 	for (i=n-1; i>1; i--)
 		a[i-1] = ring.Multiply(a[2*i], a[2*i-1]);
 
-	a[0] = ring.One();
+	a[0] = ring.MultiplicativeIdentity();
 
 	for (i=0; i<n-1; i++)
 	{
@@ -553,7 +554,7 @@ void PrepareBulkPolynomialInterpolationAt(const Ring &ring, Element *v, const El
 template <class Ring, class Element>
 Element BulkPolynomialInterpolateAt(const Ring &ring, const Element y[], const Element v[], unsigned int n)
 {
-	Element result = ring.Zero();
+	Element result = ring.Identity();
 	for (unsigned int i=0; i<n; i++)
 		ring.Accumulate(result, ring.Multiply(y[i], v[i]));
 	return result;
@@ -571,7 +572,7 @@ const PolynomialOverFixedRing<T, instance> &PolynomialOverFixedRing<T, instance>
 template <class T, int instance>
 const PolynomialOverFixedRing<T, instance> &PolynomialOverFixedRing<T, instance>::One()
 {
-	static const PolynomialOverFixedRing<T, instance> one = fixedRing.One();
+	static const PolynomialOverFixedRing<T, instance> one = fixedRing.MultiplicativeIdentity();
 	return one;
 }
 

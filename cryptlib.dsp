@@ -4,7 +4,7 @@
 
 # TARGTYPE "Win32 (x86) Static Library" 0x0104
 
-CFG=cryptlib - Win32 Debug
+CFG=cryptlib - Win32 FIPS 140 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
@@ -13,12 +13,14 @@ CFG=cryptlib - Win32 Debug
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "cryptlib.mak" CFG="cryptlib - Win32 Debug"
+!MESSAGE NMAKE /f "cryptlib.mak" CFG="cryptlib - Win32 FIPS 140 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
 !MESSAGE "cryptlib - Win32 Release" (based on "Win32 (x86) Static Library")
 !MESSAGE "cryptlib - Win32 Debug" (based on "Win32 (x86) Static Library")
+!MESSAGE "cryptlib - Win32 FIPS 140 Release" (based on "Win32 (x86) Static Library")
+!MESSAGE "cryptlib - Win32 FIPS 140 Debug" (based on "Win32 (x86) Static Library")
 !MESSAGE 
 
 # Begin Project
@@ -41,7 +43,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_PRECOMPILED_HEADERS" /Yu"pch.h" /FD /c
+# ADD CPP /nologo /GB /Gd /MT /W3 /GX /Zi /O2 /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_PRECOMPILED_HEADERS" /Yu"pch.h" /FD /c
 # ADD BASE RSC /l 0x409
 # ADD RSC /l 0x409
 BSC32=bscmake.exe
@@ -74,12 +76,60 @@ LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo
 
+!ELSEIF  "$(CFG)" == "cryptlib - Win32 FIPS 140 Release"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "cryptlib___Win32_FIPS_140_Release"
+# PROP BASE Intermediate_Dir "cryptlib___Win32_FIPS_140_Release"
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "FIPS_140_Release"
+# PROP Intermediate_Dir "FIPS_140_Release"
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /G5 /Gz /MT /W3 /GX /Zi /O2 /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_PRECOMPILED_HEADERS" /Yu"pch.h" /FD /c
+# ADD CPP /nologo /G5 /Gz /MT /W3 /GX /Zi /O2 /D "NDEBUG" /D "_WINDOWS" /D "USE_PRECOMPILED_HEADERS" /D "WIN32" /D CRYPTOPP_ENABLE_COMPLIANCE_WITH_FIPS_140_2=1 /Yu"pch.h" /Fd"FIPS_140_Release/cryptopp" /FD /c
+# ADD BASE RSC /l 0x409
+# ADD RSC /l 0x409
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LIB32=link.exe -lib
+# ADD BASE LIB32 /nologo
+# ADD LIB32 /nologo /out:"FIPS_140_Release\cryptopp.lib"
+
+!ELSEIF  "$(CFG)" == "cryptlib - Win32 FIPS 140 Debug"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 1
+# PROP BASE Output_Dir "cryptlib___Win32_FIPS_140_Debug"
+# PROP BASE Intermediate_Dir "cryptlib___Win32_FIPS_140_Debug"
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 1
+# PROP Output_Dir "FIPS_140_Debug"
+# PROP Intermediate_Dir "FIPS_140_Debug"
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /MTd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_PRECOMPILED_HEADERS" /Yu"pch.h" /FD /c
+# ADD CPP /nologo /G5 /Gz /MTd /W3 /GX /ZI /Od /D "_DEBUG" /D "_WINDOWS" /D "USE_PRECOMPILED_HEADERS" /D "WIN32" /D CRYPTOPP_ENABLE_COMPLIANCE_WITH_FIPS_140_2=1 /Yu"pch.h" /Fd"FIPS_140_Debug/cryptopp" /FD /c
+# ADD BASE RSC /l 0x409
+# ADD RSC /l 0x409
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LIB32=link.exe -lib
+# ADD BASE LIB32 /nologo
+# ADD LIB32 /nologo /out:"FIPS_140_Debug\cryptopp.lib"
+
 !ENDIF 
 
 # Begin Target
 
 # Name "cryptlib - Win32 Release"
 # Name "cryptlib - Win32 Debug"
+# Name "cryptlib - Win32 FIPS 140 Release"
+# Name "cryptlib - Win32 FIPS 140 Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter ".cpp"
@@ -97,6 +147,10 @@ SOURCE=.\algebra.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\algparam.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\arc4.cpp
 # End Source File
 # Begin Source File
@@ -109,15 +163,15 @@ SOURCE=.\base64.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\basecode.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\bfinit.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\blowfish.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\blumgold.cpp
 # End Source File
 # Begin Source File
 
@@ -130,10 +184,6 @@ SOURCE=.\cast.cpp
 # Begin Source File
 
 SOURCE=.\casts.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\cbc.cpp
 # End Source File
 # Begin Source File
 
@@ -201,11 +251,23 @@ SOURCE=.\eprecomp.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\esign.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\files.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\filters.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\fips140.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\fipstest.cpp
 # End Source File
 # Begin Source File
 
@@ -218,6 +280,10 @@ SOURCE=.\gf2_32.cpp
 # Begin Source File
 
 SOURCE=.\gf2n.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\gfpcrypt.cpp
 # End Source File
 # Begin Source File
 
@@ -273,6 +339,10 @@ SOURCE=.\md2.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\md4.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\md5.cpp
 # End Source File
 # Begin Source File
@@ -306,10 +376,6 @@ SOURCE=.\nbtheory.cpp
 # Begin Source File
 
 SOURCE=.\network.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\nr.cpp
 # End Source File
 # Begin Source File
 
@@ -402,10 +468,6 @@ SOURCE=.\seal.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\secshare.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\serpent.cpp
 # End Source File
 # Begin Source File
@@ -419,6 +481,10 @@ SOURCE=.\shark.cpp
 # Begin Source File
 
 SOURCE=.\sharkbox.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\simple.cpp
 # End Source File
 # Begin Source File
 
@@ -438,6 +504,10 @@ SOURCE=.\squaretb.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\strciphr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\tea.cpp
 # End Source File
 # Begin Source File
@@ -454,7 +524,15 @@ SOURCE=.\tigertab.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\trdlocal.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\twofish.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\wait.cpp
 # End Source File
 # Begin Source File
 
@@ -506,7 +584,15 @@ SOURCE=.\algebra.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\algparam.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\arc4.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\argnames.h
 # End Source File
 # Begin Source File
 
@@ -518,11 +604,11 @@ SOURCE=.\base64.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\blowfish.h
+SOURCE=.\basecode.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\blumgold.h
+SOURCE=.\blowfish.h
 # End Source File
 # Begin Source File
 
@@ -531,10 +617,6 @@ SOURCE=.\blumshub.h
 # Begin Source File
 
 SOURCE=.\cast.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\cbc.h
 # End Source File
 # Begin Source File
 
@@ -606,11 +688,23 @@ SOURCE=.\eprecomp.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\esign.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\files.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\filters.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\fips140.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\fltrimpl.h
 # End Source File
 # Begin Source File
 
@@ -623,6 +717,10 @@ SOURCE=.\gf2_32.h
 # Begin Source File
 
 SOURCE=.\gf2n.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\gfpcrypt.h
 # End Source File
 # Begin Source File
 
@@ -679,6 +777,10 @@ SOURCE=.\mars.h
 # Begin Source File
 
 SOURCE=.\md2.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\md4.h
 # End Source File
 # Begin Source File
 
@@ -766,6 +868,10 @@ SOURCE=.\pubkey.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\pwdbased.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\queue.h
 # End Source File
 # Begin Source File
@@ -822,7 +928,11 @@ SOURCE=.\seal.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\secshare.h
+SOURCE=.\secblock.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\seckey.h
 # End Source File
 # Begin Source File
 
@@ -835,6 +945,10 @@ SOURCE=.\sha.h
 # Begin Source File
 
 SOURCE=.\shark.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\simple.h
 # End Source File
 # Begin Source File
 
@@ -854,6 +968,10 @@ SOURCE=.\square.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\strciphr.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\tea.h
 # End Source File
 # Begin Source File
@@ -862,11 +980,19 @@ SOURCE=.\tiger.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\trdlocal.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\trunhash.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\twofish.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\wait.h
 # End Source File
 # Begin Source File
 
@@ -903,6 +1029,26 @@ SOURCE=.\zinflate.h
 # Begin Source File
 
 SOURCE=.\zlib.h
+# End Source File
+# End Group
+# Begin Group "Miscellaneous"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\Doxyfile
+# End Source File
+# Begin Source File
+
+SOURCE=.\GNUmakefile
+# End Source File
+# Begin Source File
+
+SOURCE=.\license.txt
+# End Source File
+# Begin Source File
+
+SOURCE=.\readme.txt
 # End Source File
 # End Group
 # End Target

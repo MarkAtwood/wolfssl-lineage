@@ -4,6 +4,7 @@
 #include "modarith.h"
 #include "eprecomp.h"
 #include "smartptr.h"
+#include "pubkey.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -31,12 +32,10 @@ public:
 	typedef Integer FieldElement;
 	typedef ECPPoint Point;
 
-	ECP(const ECP &ecp)
-		: m_fieldPtr(new Field(ecp.m_field.GetModulus())), m_field(*m_fieldPtr), m_a(ecp.m_a), m_b(ecp.m_b) {}
+	ECP() {}
+	ECP(const ECP &ecp, bool convertToMontgomeryRepresentation = false);
 	ECP(const Integer &modulus, const FieldElement &a, const FieldElement &b)
-		: m_fieldPtr(new Field(modulus)), m_field(*m_fieldPtr), m_a(a.IsNegative() ? modulus+a : a), m_b(b) {}
-	ECP(const MontgomeryRepresentation &mr, const FieldElement &a, const FieldElement &b)
-		: m_field(mr), m_a(a), m_b(b) {}
+		: m_fieldPtr(new Field(modulus)), m_a(a.IsNegative() ? modulus+a : a), m_b(b) {}
 	// construct from BER encoded parameters
 	// this constructor will decode and extract the the fields fieldID and curve of the sequence ECParameters
 	ECP(BufferedTransformation &bt);
@@ -45,7 +44,7 @@ public:
 	void DEREncode(BufferedTransformation &bt) const;
 
 	bool Equal(const Point &P, const Point &Q) const;
-	const Point& Zero() const;
+	const Point& Identity() const;
 	const Point& Inverse(const Point &P) const;
 	bool InversionIsFast() const {return true;}
 	const Point& Add(const Point &P, const Point &Q) const;
@@ -59,27 +58,27 @@ public:
 	Point CascadeMultiply(const Integer &k1, const Point &P, const Integer &k2, const Point &Q) const
 		{return CascadeScalarMultiply(P, k1, Q, k2);}
 
-	bool ValidateParameters(RandomNumberGenerator &rng) const;
+	bool ValidateParameters(RandomNumberGenerator &rng, unsigned int level=3) const;
 	bool VerifyPoint(const Point &P) const;
 
 	unsigned int EncodedPointSize(bool compressed = false) const
-		{return 1 + (compressed?1:2)*m_field.MaxElementByteLength();}
+		{return 1 + (compressed?1:2)*GetField().MaxElementByteLength();}
 	// returns false if point is compressed and not valid (doesn't check if uncompressed)
 	bool DecodePoint(Point &P, BufferedTransformation &bt, unsigned int len) const;
 	bool DecodePoint(Point &P, const byte *encodedPoint, unsigned int len) const;
-	void EncodePoint(byte *encodedPoint, const Point &P, bool compressed = false) const;
+	void EncodePoint(byte *encodedPoint, const Point &P, bool compressed) const;
+	void EncodePoint(BufferedTransformation &bt, const Point &P, bool compressed) const;
 
 	Point BERDecodePoint(BufferedTransformation &bt) const;
-	void DEREncodePoint(BufferedTransformation &bt, const Point &P, bool compressed = false) const;
+	void DEREncodePoint(BufferedTransformation &bt, const Point &P, bool compressed) const;
 
-	Integer FieldSize() const {return m_field.GetModulus();}
-	const Field & GetField() const {return m_field;}
+	Integer FieldSize() const {return GetField().GetModulus();}
+	const Field & GetField() const {return *m_fieldPtr;}
 	const FieldElement & GetA() const {return m_a;}
 	const FieldElement & GetB() const {return m_b;}
 
 private:
-	member_ptr<Field> m_fieldPtr;
-	const Field &m_field;
+	clonable_ptr<Field> m_fieldPtr;
 	FieldElement m_a, m_b;
 	mutable Point m_R;
 };
@@ -87,29 +86,27 @@ private:
 template <class T> class EcPrecomputation;
 
 //! .
-template<> class EcPrecomputation<ECP>
+template<> class EcPrecomputation<ECP> : public DL_GroupPrecomputation<ECP::Point>
 {
 public:
-	EcPrecomputation() {}
-	EcPrecomputation(const EcPrecomputation &a)
-		{operator=(a);}
-	EcPrecomputation(const ECP &ec, const ECP::Point &base)
-		{SetCurveAndBase(ec, base);}
+	typedef ECP EllipticCurve;
+	
+	// DL_GroupPrecomputation
+	bool NeedConversions() const {return true;}
+	Element ConvertIn(const Element &P) const
+		{return P.identity ? P : ECP::Point(m_ec->GetField().ConvertIn(P.x), m_ec->GetField().ConvertIn(P.y));};
+	Element ConvertOut(const Element &P) const
+		{return P.identity ? P : ECP::Point(m_ec->GetField().ConvertOut(P.x), m_ec->GetField().ConvertOut(P.y));}
+	const AbstractGroup<Element> & GetGroup() const {return *m_ec;}
+	Element BERDecodeElement(BufferedTransformation &bt) const {return m_ec->BERDecodePoint(bt);}
+	void DEREncodeElement(BufferedTransformation &bt, const Element &v) const {m_ec->DEREncodePoint(bt, v, false);}
 
-	EcPrecomputation& operator=(const EcPrecomputation &rhs);
-
-	void SetCurveAndBase(const ECP &ec, const ECP::Point &base);
-	void Precompute(unsigned int maxExpBits, unsigned int storage);
-	void Load(BufferedTransformation &storedPrecomputation);
-	void Save(BufferedTransformation &storedPrecomputation) const;
-
-	ECP::Point Multiply(const Integer &exponent) const;
-	ECP::Point CascadeMultiply(const Integer &exponent, const EcPrecomputation<ECP> &pc2, const Integer &exponent2) const;
+	// non-inherited
+	void SetCurve(const ECP &ec);
+	const ECP & GetCurve() const {return *m_ecOriginal;}
 
 private:
-	value_ptr<MontgomeryRepresentation> m_mr;
-	value_ptr<ECP> m_ec;
-	ExponentiationPrecomputation<ECP::Point> m_ep;
+	value_ptr<ECP> m_ec, m_ecOriginal;
 };
 
 NAMESPACE_END

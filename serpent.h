@@ -4,43 +4,47 @@
 /** \file
 */
 
-#include "cryptlib.h"
-#include "misc.h"
+#include "seckey.h"
+#include "secblock.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// base class, do not use directly
-class Serpent : public FixedBlockSize<16>, public VariableKeyLength<16, 1, 32>
+struct Serpent_Info : public FixedBlockSize<16>, public VariableKeyLength<16, 1, 32>, public FixedRounds<32>
 {
-protected:
-	Serpent(const byte *userKey, unsigned int keylength);
-
-	SecBlock<word32> l_key;
+	static const char *StaticAlgorithmName() {return "Serpent";}
 };
 
 /// <a href="http://www.weidai.com/scan-mirror/cs.html#Serpent">Serpent</a>
-class SerpentEncryption : public Serpent
+class Serpent : public Serpent_Info, public BlockCipherDocumentation
 {
-public:
-	SerpentEncryption(const byte *userKey, unsigned int keylength=DEFAULT_KEYLENGTH)
-		: Serpent(userKey, keylength) {}
+	class Base : public BlockCipherBaseTemplate<Serpent_Info>
+	{
+	public:
+		void UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length);
 
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-	void ProcessBlock(byte * inoutBlock) const
-		{SerpentEncryption::ProcessBlock(inoutBlock, inoutBlock);}
+	protected:
+		FixedSizeSecBlock<word32, 140> m_key;
+	};
+
+	class Enc : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+	class Dec : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+public:
+	typedef BlockCipherTemplate<ENCRYPTION, Enc> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Dec> Decryption;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#Serpent">Serpent</a>
-class SerpentDecryption : public Serpent
-{
-public:
-	SerpentDecryption(const byte *userKey, unsigned int keylength=DEFAULT_KEYLENGTH)
-		: Serpent(userKey, keylength) {}
-
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-	void ProcessBlock(byte * inoutBlock) const
-		{SerpentDecryption::ProcessBlock(inoutBlock, inoutBlock);}
-};
+typedef Serpent::Encryption SerpentEncryption;
+typedef Serpent::Decryption SerpentDecryption;
 
 NAMESPACE_END
 

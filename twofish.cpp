@@ -3,6 +3,7 @@
 
 #include "pch.h"
 #include "twofish.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -28,7 +29,7 @@ static word32 ReedSolomon(word32 high, word32 low)
 	return high;
 }
 
-inline word32 Twofish::h0(word32 x, const word32 *key, unsigned int kLen)
+inline word32 Twofish::Base::h0(word32 x, const word32 *key, unsigned int kLen)
 {
 	x = x | (x<<8) | (x<<16) | (x<<24);
 	switch(kLen)
@@ -42,20 +43,19 @@ inline word32 Twofish::h0(word32 x, const word32 *key, unsigned int kLen)
 	return x;
 }
 
-inline word32 Twofish::h(word32 x, const word32 *key, unsigned int kLen)
+inline word32 Twofish::Base::h(word32 x, const word32 *key, unsigned int kLen)
 {
 	x = h0(x, key, kLen);
 	return mds[0][GETBYTE(x,0)] ^ mds[1][GETBYTE(x,1)] ^ mds[2][GETBYTE(x,2)] ^ mds[3][GETBYTE(x,3)];
 }
 
-Twofish::Twofish(const byte *userKey, unsigned int keylength)
-	: m_k(40), m_s(4)
+void Twofish::Base::UncheckedSetKey(CipherDir dir, const byte *userKey, unsigned int keylength)
 {
-	assert(keylength == KeyLength(keylength));
+	AssertValidKeyLength(keylength);
 
 	unsigned int len = (keylength <= 16 ? 2 : (keylength <= 24 ? 3 : 4));
 	SecBlock<word32> key(len*2);
-	GetUserKeyLittleEndian(key.ptr, len*2, userKey, keylength);
+	GetUserKey(LITTLE_ENDIAN_ORDER, key.begin(), len*2, userKey, keylength);
 
 	unsigned int i;
 	for (i=0; i<40; i+=2)
@@ -105,11 +105,13 @@ Twofish::Twofish(const byte *userKey, unsigned int keylength)
 	DECROUND (2 * (n) + 1, c, d, a, b); \
 	DECROUND (2 * (n), a, b, c, d)
 
-void TwofishEncryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
+typedef BlockGetAndPut<word32, LittleEndian> Block;
+
+void Twofish::Enc::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 x, y, a, b, c, d;
 
-	GetBlockLittleEndian(inBlock, a, b, c, d);
+	Block::Get(inBlock)(a)(b)(c)(d);
 
 	a ^= m_k[0];
 	b ^= m_k[1];
@@ -131,14 +133,14 @@ void TwofishEncryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
 	a ^= m_k[6];
 	b ^= m_k[7]; 
 
-	PutBlockLittleEndian(outBlock, c, d, a, b);
+	Block::Put(xorBlock, outBlock)(c)(d)(a)(b);
 }
 
-void TwofishDecryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
+void Twofish::Dec::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 x, y, a, b, c, d;
 
-	GetBlockLittleEndian(inBlock, c, d, a, b);
+	Block::Get(inBlock)(c)(d)(a)(b);
 
 	c ^= m_k[4];
 	d ^= m_k[5];
@@ -160,7 +162,7 @@ void TwofishDecryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
 	c ^= m_k[2];
 	d ^= m_k[3];
 
-	PutBlockLittleEndian(outBlock, a, b, c, d);
+	Block::Put(xorBlock, outBlock)(a)(b)(c)(d);
 }
 
 NAMESPACE_END

@@ -14,7 +14,6 @@
 #include "xtrcrypt.h"
 #include "rabin.h"
 #include "rw.h"
-#include "blumgold.h"
 #include "eccrypto.h"
 #include "ecp.h"
 #include "ec2n.h"
@@ -23,6 +22,8 @@
 #include "files.h"
 #include "hex.h"
 #include "oids.h"
+#include "esign.h"
+#include "osrng.h"
 
 #include <iostream>
 #include <iomanip>
@@ -48,7 +49,7 @@ private:
 	BufferedTransformation &m_source;
 };
 
-bool BBSValidate()
+bool ValidateBBS()
 {
 	cout << "\nBlumBlumShub validation suite running...\n\n";
 
@@ -68,7 +69,7 @@ bool BBSValidate()
 
 	byte buf[20];
 
-	bbs.GetBlock(buf, 20);
+	bbs.GenerateBlock(buf, 20);
 	fail = memcmp(output1, buf, 20) != 0;
 	pass = pass && !fail;
 
@@ -78,7 +79,7 @@ bool BBSValidate()
 	cout << endl;
 
 	bbs.Seek(10);
-	bbs.GetBlock(buf, 10);
+	bbs.GenerateBlock(buf, 10);
 	fail = memcmp(output1+10, buf, 10) != 0;
 	pass = pass && !fail;
 
@@ -88,7 +89,7 @@ bool BBSValidate()
 	cout << endl;
 
 	bbs.Seek(1234567);
-	bbs.GetBlock(buf, 20);
+	bbs.GenerateBlock(buf, 20);
 	fail = memcmp(output2, buf, 20) != 0;
 	pass = pass && !fail;
 
@@ -100,16 +101,22 @@ bool BBSValidate()
 	return pass;
 }
 
-bool SignatureValidate(PK_Signer &priv, PK_Verifier &pub)
+bool SignatureValidate(PK_Signer &priv, PK_Verifier &pub, bool thorough = false)
 {
-	LC_RNG rng(9374);
+	bool pass = true, fail;
+
+	fail = !pub.GetMaterial().Validate(GlobalRNG(), thorough ? 3 : 2) || !priv.GetMaterial().Validate(GlobalRNG(), thorough ? 3 : 2);
+	pass = pass && !fail;
+
+	cout << (fail ? "FAILED    " : "passed    ");
+	cout << "signature key validation\n";
+
 	const byte *message = (byte *)"test message";
 	const int messageLen = 12;
 	byte buffer[512];
-	bool pass = true, fail;
 
 	memset(buffer, 0, sizeof(buffer));
-	priv.SignMessage(rng, message, messageLen, buffer);
+	priv.SignMessage(GlobalRNG(), message, messageLen, buffer);
 	fail = !pub.VerifyMessage(message, messageLen, buffer);
 	pass = pass && !fail;
 
@@ -126,17 +133,23 @@ bool SignatureValidate(PK_Signer &priv, PK_Verifier &pub)
 	return pass;
 }
 
-bool CryptoSystemValidate(PK_Decryptor &priv, PK_Encryptor &pub)
+bool CryptoSystemValidate(PK_Decryptor &priv, PK_Encryptor &pub, bool thorough = false)
 {
-	LC_RNG rng(9375);
-	const byte *message = (byte *)"test message";
-	const int messageLen = 12;
-	SecByteBlock ciphertext(priv.CipherTextLength(messageLen));
-	SecByteBlock plaintext(priv.MaxPlainTextLength(ciphertext.size));
 	bool pass = true, fail;
 
-	pub.Encrypt(rng, message, messageLen, ciphertext);
-	fail = (messageLen!=priv.Decrypt(ciphertext, priv.CipherTextLength(messageLen), plaintext));
+	fail = !pub.GetMaterial().Validate(GlobalRNG(), thorough ? 3 : 2) || !priv.GetMaterial().Validate(GlobalRNG(), thorough ? 3 : 2);
+	pass = pass && !fail;
+
+	cout << (fail ? "FAILED    " : "passed    ");
+	cout << "cryptosystem key validation\n";
+
+	const byte *message = (byte *)"test message";
+	const int messageLen = 12;
+	SecByteBlock ciphertext(priv.CiphertextLength(messageLen));
+	SecByteBlock plaintext(priv.MaxPlaintextLength(ciphertext.size()));
+
+	pub.Encrypt(GlobalRNG(), message, messageLen, ciphertext);
+	fail = priv.Decrypt(ciphertext, priv.CiphertextLength(messageLen), plaintext) != DecodingResult(messageLen);
 	fail = fail || memcmp(message, plaintext, messageLen);
 	pass = pass && !fail;
 
@@ -146,10 +159,9 @@ bool CryptoSystemValidate(PK_Decryptor &priv, PK_Encryptor &pub)
 	return pass;
 }
 
-bool SimpleKeyAgreementValidate(PK_SimpleKeyAgreementDomain &d)
+bool SimpleKeyAgreementValidate(SimpleKeyAgreementDomain &d)
 {
-	LC_RNG rng(5234);
-	if (d.ValidateDomainParameters(rng))
+	if (d.GetCryptoParameters().Validate(GlobalRNG(), 3))
 		cout << "passed    simple key agreement domain parameters validation" << endl;
 	else
 	{
@@ -161,11 +173,11 @@ bool SimpleKeyAgreementValidate(PK_SimpleKeyAgreementDomain &d)
 	SecByteBlock pub1(d.PublicKeyLength()), pub2(d.PublicKeyLength());
 	SecByteBlock val1(d.AgreedValueLength()), val2(d.AgreedValueLength());
 
-	d.GenerateKeyPair(rng, priv1, pub1);
-	d.GenerateKeyPair(rng, priv2, pub2);
+	d.GenerateKeyPair(GlobalRNG(), priv1, pub1);
+	d.GenerateKeyPair(GlobalRNG(), priv2, pub2);
 
-	memset(val1.ptr, 0x10, val1.size);
-	memset(val2.ptr, 0x11, val2.size);
+	memset(val1.begin(), 0x10, val1.size());
+	memset(val2.begin(), 0x11, val2.size());
 
 	if (!(d.Agree(val1, priv1, pub2) && d.Agree(val2, priv2, pub1)))
 	{
@@ -173,7 +185,7 @@ bool SimpleKeyAgreementValidate(PK_SimpleKeyAgreementDomain &d)
 		return false;
 	}
 
-	if (memcmp(val1.ptr, val2.ptr, d.AgreedValueLength()))
+	if (memcmp(val1.begin(), val2.begin(), d.AgreedValueLength()))
 	{
 		cout << "FAILED    simple agreed values not equal" << endl;
 		return false;
@@ -183,10 +195,9 @@ bool SimpleKeyAgreementValidate(PK_SimpleKeyAgreementDomain &d)
 	return true;
 }
 
-bool AuthenticatedKeyAgreementValidate(PK_AuthenticatedKeyAgreementDomain &d)
+bool AuthenticatedKeyAgreementValidate(AuthenticatedKeyAgreementDomain &d)
 {
-	LC_RNG rng(5235);
-	if (d.ValidateDomainParameters(rng))
+	if (d.GetCryptoParameters().Validate(GlobalRNG(), 3))
 		cout << "passed    authenticated key agreement domain parameters validation" << endl;
 	else
 	{
@@ -200,13 +211,13 @@ bool AuthenticatedKeyAgreementValidate(PK_AuthenticatedKeyAgreementDomain &d)
 	SecByteBlock epub1(d.EphemeralPublicKeyLength()), epub2(d.EphemeralPublicKeyLength());
 	SecByteBlock val1(d.AgreedValueLength()), val2(d.AgreedValueLength());
 
-	d.GenerateStaticKeyPair(rng, spriv1, spub1);
-	d.GenerateStaticKeyPair(rng, spriv2, spub2);
-	d.GenerateEphemeralKeyPair(rng, epriv1, epub1);
-	d.GenerateEphemeralKeyPair(rng, epriv2, epub2);
+	d.GenerateStaticKeyPair(GlobalRNG(), spriv1, spub1);
+	d.GenerateStaticKeyPair(GlobalRNG(), spriv2, spub2);
+	d.GenerateEphemeralKeyPair(GlobalRNG(), epriv1, epub1);
+	d.GenerateEphemeralKeyPair(GlobalRNG(), epriv2, epub2);
 
-	memset(val1.ptr, 0x10, val1.size);
-	memset(val2.ptr, 0x11, val2.size);
+	memset(val1.begin(), 0x10, val1.size());
+	memset(val2.begin(), 0x11, val2.size());
 
 	if (!(d.Agree(val1, spriv1, epriv1, spub2, epub2) && d.Agree(val2, spriv2, epriv2, spub1, epub1)))
 	{
@@ -214,7 +225,7 @@ bool AuthenticatedKeyAgreementValidate(PK_AuthenticatedKeyAgreementDomain &d)
 		return false;
 	}
 
-	if (memcmp(val1.ptr, val2.ptr, d.AgreedValueLength()))
+	if (memcmp(val1.begin(), val2.begin(), d.AgreedValueLength()))
 	{
 		cout << "FAILED    authenticated agreed values not equal" << endl;
 		return false;
@@ -224,124 +235,115 @@ bool AuthenticatedKeyAgreementValidate(PK_AuthenticatedKeyAgreementDomain &d)
 	return true;
 }
 
-bool RSAValidate()
+bool ValidateRSA()
 {
 	cout << "\nRSA validation suite running...\n\n";
 
 	byte out[100], outPlain[100];
-	unsigned int outLen;
 	bool pass = true, fail;
 
-	try
 	{
-		{
-			char *plain = "Everyone gets Friday off.";
-			byte *signature = (byte *)
-				"\x05\xfa\x6a\x81\x2f\xc7\xdf\x8b\xf4\xf2\x54\x25\x09\xe0\x3e\x84"
-				"\x6e\x11\xb9\xc6\x20\xbe\x20\x09\xef\xb4\x40\xef\xbc\xc6\x69\x21"
-				"\x69\x94\xac\x04\xf3\x41\xb5\x7d\x05\x20\x2d\x42\x8f\xb2\xa2\x7b"
-				"\x5c\x77\xdf\xd9\xb1\x5b\xfc\x3d\x55\x93\x53\x50\x34\x10\xc1\xe1";
-			LC_RNG rng(765);
+		char *plain = "Everyone gets Friday off.";
+		byte *signature = (byte *)
+			"\x05\xfa\x6a\x81\x2f\xc7\xdf\x8b\xf4\xf2\x54\x25\x09\xe0\x3e\x84"
+			"\x6e\x11\xb9\xc6\x20\xbe\x20\x09\xef\xb4\x40\xef\xbc\xc6\x69\x21"
+			"\x69\x94\xac\x04\xf3\x41\xb5\x7d\x05\x20\x2d\x42\x8f\xb2\xa2\x7b"
+			"\x5c\x77\xdf\xd9\xb1\x5b\xfc\x3d\x55\x93\x53\x50\x34\x10\xc1\xe1";
 
-			FileSource keys("rsa512a.dat", true, new HexDecoder);
-			RSASSA_PKCS1v15_MD2_Signer rsaPriv(keys);
-			RSASSA_PKCS1v15_MD2_Verifier rsaPub(rsaPriv);
+		FileSource keys("rsa512a.dat", true, new HexDecoder);
+		RSASSA_PKCS1v15_MD2_Signer rsaPriv(keys);
+		RSASSA_PKCS1v15_MD2_Verifier rsaPub(rsaPriv);
 
-			rsaPriv.SignMessage(rng, (byte *)plain, strlen(plain), out);
-			fail = memcmp(signature, out, 64) != 0;
-			pass = pass && !fail;
+		rsaPriv.SignMessage(GlobalRNG(), (byte *)plain, strlen(plain), out);
+		fail = memcmp(signature, out, 64) != 0;
+		pass = pass && !fail;
 
-			cout << (fail ? "FAILED    " : "passed    ");
-			cout << "signature check against test vector\n";
+		cout << (fail ? "FAILED    " : "passed    ");
+		cout << "signature check against test vector\n";
 
-			fail = !rsaPub.VerifyMessage((byte *)plain, strlen(plain), out);
-			pass = pass && !fail;
+		fail = !rsaPub.VerifyMessage((byte *)plain, strlen(plain), out);
+		pass = pass && !fail;
 
-			cout << (fail ? "FAILED    " : "passed    ");
-			cout << "verification check against test vector\n";
+		cout << (fail ? "FAILED    " : "passed    ");
+		cout << "verification check against test vector\n";
 
-			out[10]++;
-			fail = rsaPub.VerifyMessage((byte *)plain, strlen(plain), out);
-			pass = pass && !fail;
+		out[10]++;
+		fail = rsaPub.VerifyMessage((byte *)plain, strlen(plain), out);
+		pass = pass && !fail;
 
-			cout << (fail ? "FAILED    " : "passed    ");
-			cout << "invalid signature verification\n";
-		}
-		{
-			FileSource keys("rsa512.dat", true, new HexDecoder);
-			RSAES_PKCS1v15_Decryptor rsaPriv(keys);
-			RSAES_PKCS1v15_Encryptor rsaPub(rsaPriv);
-
-			pass = CryptoSystemValidate(rsaPriv, rsaPub) && pass;
-		}
-		{
-			byte *plain = (byte *)
-				"\x54\x85\x9b\x34\x2c\x49\xea\x2a";
-			byte *encrypted = (byte *)
-				"\x14\xbd\xdd\x28\xc9\x83\x35\x19\x23\x80\xe8\xe5\x49\xb1\x58\x2a"
-				"\x8b\x40\xb4\x48\x6d\x03\xa6\xa5\x31\x1f\x1f\xd5\xf0\xa1\x80\xe4"
-				"\x17\x53\x03\x29\xa9\x34\x90\x74\xb1\x52\x13\x54\x29\x08\x24\x52"
-				"\x62\x51";
-			byte *oaepSeed = (byte *)
-				"\xaa\xfd\x12\xf6\x59\xca\xe6\x34\x89\xb4\x79\xe5\x07\x6d\xde\xc2"
-				"\xf0\x6c\xb5\x8f";
-			ByteQueue bq;
-			bq.Put(oaepSeed, 20);
-			FixedRNG rng(bq);
-
-			FileSource privFile("rsa400pv.dat", true, new HexDecoder);
-			FileSource pubFile("rsa400pb.dat", true, new HexDecoder);
-			RSAES_OAEP_SHA_Decryptor rsaPriv(privFile);
-			RSAES_OAEP_SHA_Encryptor rsaPub(pubFile);
-
-			memset(out, 0, 50);
-			memset(outPlain, 0, 8);
-			rsaPub.Encrypt(rng, plain, 8, out);
-			outLen = rsaPriv.Decrypt(encrypted, outPlain);
-			fail = (outLen!=8) || memcmp(out, encrypted, 50) || memcmp(plain, outPlain, 8);
-			pass = pass && !fail;
-
-			cout << (fail ? "FAILED    " : "passed    ");
-			cout << "PKCS 2.0 encryption and decryption\n";
-		}
+		cout << (fail ? "FAILED    " : "passed    ");
+		cout << "invalid signature verification\n";
 	}
-	catch (BERDecodeErr)
 	{
-		cout << "FAILED    Error decoding RSA key\n";
-		pass = false;
+		FileSource keys("rsa1024.dat", true, new HexDecoder);
+		RSAES_PKCS1v15_Decryptor rsaPriv(keys);
+		RSAES_PKCS1v15_Encryptor rsaPub(rsaPriv);
+
+		pass = CryptoSystemValidate(rsaPriv, rsaPub) && pass;
+	}
+	{
+		byte *plain = (byte *)
+			"\x54\x85\x9b\x34\x2c\x49\xea\x2a";
+		byte *encrypted = (byte *)
+			"\x14\xbd\xdd\x28\xc9\x83\x35\x19\x23\x80\xe8\xe5\x49\xb1\x58\x2a"
+			"\x8b\x40\xb4\x48\x6d\x03\xa6\xa5\x31\x1f\x1f\xd5\xf0\xa1\x80\xe4"
+			"\x17\x53\x03\x29\xa9\x34\x90\x74\xb1\x52\x13\x54\x29\x08\x24\x52"
+			"\x62\x51";
+		byte *oaepSeed = (byte *)
+			"\xaa\xfd\x12\xf6\x59\xca\xe6\x34\x89\xb4\x79\xe5\x07\x6d\xde\xc2"
+			"\xf0\x6c\xb5\x8f";
+		ByteQueue bq;
+		bq.Put(oaepSeed, 20);
+		FixedRNG rng(bq);
+
+		FileSource privFile("rsa400pv.dat", true, new HexDecoder);
+		FileSource pubFile("rsa400pb.dat", true, new HexDecoder);
+		RSAES_OAEP_SHA_Decryptor rsaPriv;
+		rsaPriv.AccessKey().BERDecodeKey(privFile);
+		RSAES_OAEP_SHA_Encryptor rsaPub(pubFile);
+
+		memset(out, 0, 50);
+		memset(outPlain, 0, 8);
+		rsaPub.Encrypt(rng, plain, 8, out);
+		DecodingResult result = rsaPriv.FixedLengthDecrypt(encrypted, outPlain);
+		fail = !result.isValidCoding || (result.messageLength!=8) || memcmp(out, encrypted, 50) || memcmp(plain, outPlain, 8);
+		pass = pass && !fail;
+
+		cout << (fail ? "FAILED    " : "passed    ");
+		cout << "PKCS 2.0 encryption and decryption\n";
 	}
 
 	return pass;
 }
 
-bool DHValidate()
+bool ValidateDH()
 {
 	cout << "\nDH validation suite running...\n\n";
 
-	FileSource f("dh512.dat", true, new HexDecoder());
+	FileSource f("dh1024.dat", true, new HexDecoder());
 	DH dh(f);
 	return SimpleKeyAgreementValidate(dh);
 }
 
-bool MQVValidate()
+bool ValidateMQV()
 {
 	cout << "\nMQV validation suite running...\n\n";
 
-	FileSource f("mqv512.dat", true, new HexDecoder());
+	FileSource f("mqv1024.dat", true, new HexDecoder());
 	MQV mqv(f);
 	return AuthenticatedKeyAgreementValidate(mqv);
 }
 
-bool LUCDIFValidate()
+bool ValidateLUC_DH()
 {
-	cout << "\nLUCDIF validation suite running...\n\n";
+	cout << "\nLUC-DH validation suite running...\n\n";
 
 	FileSource f("lucd512.dat", true, new HexDecoder());
-	LUCDIF dh(f);
+	LUC_DH dh(f);
 	return SimpleKeyAgreementValidate(dh);
 }
 
-bool XTRDHValidate()
+bool ValidateXTR_DH()
 {
 	cout << "\nXTR-DH validation suite running...\n\n";
 
@@ -350,65 +352,79 @@ bool XTRDHValidate()
 	return SimpleKeyAgreementValidate(dh);
 }
 
-bool ElGamalValidate()
+bool ValidateElGamal()
 {
 	cout << "\nElGamal validation suite running...\n\n";
 	bool pass = true;
 	{
-		FileSource fc("elgc2048.dat", true, new HexDecoder);
+		FileSource fc("elgc1024.dat", true, new HexDecoder);
 		ElGamalDecryptor privC(fc);
 		ElGamalEncryptor pubC(privC);
-		privC.Precompute();
+		privC.AccessKey().Precompute();
 		ByteQueue queue;
-		privC.SavePrecomputation(queue);
-		pubC.LoadPrecomputation(queue);
-
-		pass = CryptoSystemValidate(privC, pubC) && pass;
-	}
-	{
-		LC_RNG rng(4780);
-		cout << "Generating new encryption key..." << endl;
-		ElGamalDecryptor privC(rng, 128);
-		ElGamalEncryptor pubC(privC);
+		privC.AccessKey().SavePrecomputation(queue);
+		privC.AccessKey().LoadPrecomputation(queue);
 
 		pass = CryptoSystemValidate(privC, pubC) && pass;
 	}
 	return pass;
 }
 
-bool NRValidate()
+bool ValidateDLIES()
+{
+	cout << "\nDLIES validation suite running...\n\n";
+	bool pass = true;
+	{
+		FileSource fc("dlie1024.dat", true, new HexDecoder);
+		DLIES<>::Decryptor privC(fc);
+		DLIES<>::Encryptor pubC(privC);
+		pass = CryptoSystemValidate(privC, pubC) && pass;
+	}
+	{
+		cout << "Generating new encryption key..." << endl;
+		DLIES<>::GroupParameters gp;
+		gp.GenerateRandomWithKeySize(GlobalRNG(), 128);
+		DLIES<>::Decryptor decryptor;
+		decryptor.AccessKey().GenerateRandom(GlobalRNG(), gp);
+		DLIES<>::Encryptor encryptor(decryptor);
+
+		pass = CryptoSystemValidate(decryptor, encryptor) && pass;
+	}
+	return pass;
+}
+
+bool ValidateNR()
 {
 	cout << "\nNR validation suite running...\n\n";
 	bool pass = true;
 	{
 		FileSource f("nr2048.dat", true, new HexDecoder);
-		NRSigner<SHA> privS(f);
-		privS.Precompute();
-		NRVerifier<SHA> pubS(privS);
+		NR<SHA>::Signer privS(f);
+		privS.AccessKey().Precompute();
+		NR<SHA>::Verifier pubS(privS);
 
 		pass = SignatureValidate(privS, pubS) && pass;
 	}
 	{
-		LC_RNG rng(4781);
 		cout << "Generating new signature key..." << endl;
-		NRSigner<SHA> privS(rng, 256);
-		NRVerifier<SHA> pubS(privS);
+		NR<SHA>::Signer privS(GlobalRNG(), 256);
+		NR<SHA>::Verifier pubS(privS);
 
 		pass = SignatureValidate(privS, pubS) && pass;
 	}
 	return pass;
 }
 
-bool DSAValidate()
+bool ValidateDSA(bool thorough)
 {
 	cout << "\nDSA validation suite running...\n\n";
 
 	bool pass = true, fail;
 	{
 	FileSource fs("dsa512.dat", true, new HexDecoder());
-	DSAPrivateKey priv(fs);
-	priv.Precompute(16);
-	DSAPublicKey pub(priv);
+	GDSA<SHA>::Signer priv(fs);
+	priv.AccessKey().Precompute(16);
+	GDSA<SHA>::Verifier pub(priv);
 
 	byte seed[]={0xd5, 0x01, 0x4e, 0x4b, 0x60, 0xef, 0x2b, 0xa8, 0xb6, 0x21, 
 				 0x1b, 0x40, 0x62, 0xba, 0x32, 0x24, 0xe0, 0x42, 0x7d, 0xd3};
@@ -424,14 +440,14 @@ bool DSAValidate()
 	Integer pGen, qGen, rOut, sOut;
 	int c;
 
-	fail = !GenerateDSAPrimes(seed, 160, c, pGen, 512, qGen);
-	fail = fail || (pGen != pub.GetModulus()) || (qGen != pub.GetSubgroupSize());
+	fail = !DSA::GeneratePrimes(seed, 160, c, pGen, 512, qGen);
+	fail = fail || (pGen != pub.GetKey().GetGroupParameters().GetModulus()) || (qGen != pub.GetKey().GetGroupParameters().GetSubgroupOrder());
 	pass = pass && !fail;
 
 	cout << (fail ? "FAILED    " : "passed    ");
 	cout << "prime generation test\n";
 
-	priv.RawSign(k, h, rOut, sOut);
+	priv.GetDigestSignatureScheme().RawSign(k, h, rOut, sOut);
 	fail = (rOut != r) || (sOut != s);
 	pass = pass && !fail;
 
@@ -448,84 +464,85 @@ bool DSAValidate()
 	pass = pass && !fail;
 	}
 	FileSource fs1("dsa1024.dat", true, new HexDecoder());
-	DSAPrivateKey priv(fs1);
+	DSA::Signer priv(fs1);
+	DSA::Verifier pub(priv);
 	FileSource fs2("dsa1024b.dat", true, new HexDecoder());
-	DSAPublicKey pub(fs2);
-	pass = SignatureValidate(priv, pub) && pass;
+	DSA::Verifier pub1(fs2);
+	assert(pub.GetKey() == pub1.GetKey());
+	pass = SignatureValidate(priv, pub, thorough) && pass;
 	return pass;
 }
 
-bool LUCValidate()
+bool ValidateLUC()
 {
 	cout << "\nLUC validation suite running...\n\n";
 	bool pass=true;
 
 	{
-		FileSource f("luc512.dat", true, new HexDecoder);
+		FileSource f("luc1024.dat", true, new HexDecoder);
 		LUCSSA_PKCS1v15_SHA_Signer priv(f);
 		LUCSSA_PKCS1v15_SHA_Verifier pub(priv);
 		pass = SignatureValidate(priv, pub) && pass;
 	}
 	{
-		FileSource f("luc512.dat", true, new HexDecoder);
-		LUCES_OAEP_SHA_Decryptor priv(f);
+		LUCES_OAEP_SHA_Decryptor priv(GlobalRNG(), 512);
 		LUCES_OAEP_SHA_Encryptor pub(priv);
 		pass = CryptoSystemValidate(priv, pub) && pass;
 	}
 	return pass;
 }
 
-bool LUCELGValidate()
+bool ValidateLUC_DL()
 {
-	cout << "\nLUCELG validation suite running...\n\n";
+	cout << "\nLUC-HMP validation suite running...\n\n";
 
 	FileSource f("lucs512.dat", true, new HexDecoder);
-	LUCELG_Signer<SHA> privS(f);
-	LUCELG_Verifier<SHA> pubS(privS);
-
+	LUC_HMP<SHA>::Signer privS(f);
+	LUC_HMP<SHA>::Verifier pubS(privS);
 	bool pass = SignatureValidate(privS, pubS);
 
-	FileSource fc("lucc512.dat", true, new HexDecoder);
-	LUCELG_Decryptor privC(fc);
-	LUCELG_Encryptor pubC(privC);
+	cout << "\nLUC-IES validation suite running...\n\n";
 
+	FileSource fc("lucc512.dat", true, new HexDecoder);
+	LUC_IES<>::Decryptor privC(fc);
+	LUC_IES<>::Encryptor pubC(privC);
 	pass = CryptoSystemValidate(privC, pubC) && pass;
 
 	return pass;
 }
 
-bool RabinValidate()
+bool ValidateRabin()
 {
 	cout << "\nRabin validation suite running...\n\n";
 	bool pass=true;
 
 	{
-		FileSource f("rabi512.dat", true, new HexDecoder);
-		RabinSignerWith(SHA) priv(f);
-		RabinVerifierWith(SHA) pub(priv);
+		FileSource f("rabi1024.dat", true, new HexDecoder);
+		RabinPSSR<SHA>::Signer priv(f);
+		RabinPSSR<SHA>::Verifier pub(priv);
 		pass = SignatureValidate(priv, pub) && pass;
 	}
 	{
-		FileSource f("rabi512.dat", true, new HexDecoder);
-		RabinDecryptor priv(f);
-		RabinEncryptor pub(priv);
+		RabinES<OAEP<SHA> >::Decryptor priv(GlobalRNG(), 512);
+		RabinES<OAEP<SHA> >::Encryptor pub(priv);
 		pass = CryptoSystemValidate(priv, pub) && pass;
 	}
 	return pass;
 }
 
-bool RWValidate()
+bool ValidateRW()
 {
 	cout << "\nRW validation suite running...\n\n";
 
-	FileSource f("rw512.dat", true, new HexDecoder);
-	RWSigner<SHA> priv(f);
-	RWVerifier<SHA> pub(priv);
+	FileSource f("rw1024.dat", true, new HexDecoder);
+	RWSSA<SHA>::Signer priv(f);
+	RWSSA<SHA>::Verifier pub(priv);
 
 	return SignatureValidate(priv, pub);
 }
 
-bool BlumGoldwasserValidate()
+/*
+bool ValidateBlumGoldwasser()
 {
 	cout << "\nBlumGoldwasser validation suite running...\n\n";
 
@@ -535,48 +552,50 @@ bool BlumGoldwasserValidate()
 
 	return CryptoSystemValidate(priv, pub);
 }
+*/
 
-bool ECPValidate()
+bool ValidateECP()
 {
 	cout << "\nECP validation suite running...\n\n";
 
-	LC_RNG rng(5665);
-	ECDecryptor<ECP> cpriv(rng, ASN1::secp192r1());
-	ECEncryptor<ECP> cpub(cpriv);
+	ECIES<ECP>::Decryptor cpriv(GlobalRNG(), ASN1::secp192r1());
+	ECIES<ECP>::Encryptor cpub(cpriv);
 	ByteQueue bq;
-	cpriv.DEREncode(bq);
-	cpub.SetEncodeAsOID(true);
-	cpub.DEREncode(bq);
-	ECSigner<ECP, SHA> spriv(bq);
-	ECVerifier<ECP, SHA> spub(bq);
-	ECDHC<ECP> ecdhc(ASN1::secp192r1());
-	ECMQVC<ECP> ecmqvc(ASN1::secp192r1());
+	cpriv.GetKey().DEREncode(bq);
+	cpub.AccessKey().AccessGroupParameters().SetEncodeAsOID(true);
+	cpub.GetKey().DEREncode(bq);
+	ECDSA<ECP, SHA>::Signer spriv(bq);
+	ECDSA<ECP, SHA>::Verifier spub(bq);
+	ECDH<ECP>::Domain ecdhc(ASN1::secp192r1());
+	ECMQV<ECP>::Domain ecmqvc(ASN1::secp192r1());
 
-	spriv.Precompute();
+	spriv.AccessKey().Precompute();
 	ByteQueue queue;
-	spriv.SavePrecomputation(queue);
-	spub.LoadPrecomputation(queue);
+	spriv.AccessKey().SavePrecomputation(queue);
+	spriv.AccessKey().LoadPrecomputation(queue);
 
 	bool pass = SignatureValidate(spriv, spub);
+	cpub.AccessKey().Precompute();
+	cpriv.AccessKey().Precompute();
 	pass = CryptoSystemValidate(cpriv, cpub) && pass;
 	pass = SimpleKeyAgreementValidate(ecdhc) && pass;
 	pass = AuthenticatedKeyAgreementValidate(ecmqvc) && pass;
 
 	cout << "Turning on point compression..." << endl;
-	cpriv.SetPointCompression(true);
-	cpub.SetPointCompression(true);
-	ecdhc.SetPointCompression(true);
-	ecmqvc.SetPointCompression(true);
+	cpriv.AccessKey().AccessGroupParameters().SetPointCompression(true);
+	cpub.AccessKey().AccessGroupParameters().SetPointCompression(true);
+	ecdhc.AccessGroupParameters().SetPointCompression(true);
+	ecmqvc.AccessGroupParameters().SetPointCompression(true);
 	pass = CryptoSystemValidate(cpriv, cpub) && pass;
 	pass = SimpleKeyAgreementValidate(ecdhc) && pass;
 	pass = AuthenticatedKeyAgreementValidate(ecmqvc) && pass;
 
 	cout << "Testing SEC 2 recommended curves..." << endl;
 	OID oid;
-	while (!(oid = ECParameters<ECP>::GetNextRecommendedParametersOID(oid)).m_values.empty())
+	while (!(oid = DL_GroupParameters_EC<ECP>::GetNextRecommendedParametersOID(oid)).m_values.empty())
 	{
-		ECParameters<ECP> params(oid);
-		bool fail = !params.ValidateParameters(rng);
+		DL_GroupParameters_EC<ECP> params(oid);
+		bool fail = !params.Validate(GlobalRNG(), 2);
 		cout << (fail ? "FAILED" : "passed") << "    " << dec << params.GetCurve().GetField().MaxElementBitLength() << " bits" << endl;
 		pass = pass && !fail;
 	}
@@ -584,26 +603,25 @@ bool ECPValidate()
 	return pass;
 }
 
-bool EC2NValidate()
+bool ValidateEC2N()
 {
 	cout << "\nEC2N validation suite running...\n\n";
 
-	LC_RNG rng(5667);
-	ECDecryptor<EC2N> cpriv(rng, ASN1::sect193r1());
-	ECEncryptor<EC2N> cpub(cpriv);
+	ECIES<EC2N>::Decryptor cpriv(GlobalRNG(), ASN1::sect193r1());
+	ECIES<EC2N>::Encryptor cpub(cpriv);
 	ByteQueue bq;
 	cpriv.DEREncode(bq);
-	cpub.SetEncodeAsOID(true);
+	cpub.AccessKey().AccessGroupParameters().SetEncodeAsOID(true);
 	cpub.DEREncode(bq);
-	ECSigner<EC2N, SHA> spriv(bq);
-	ECVerifier<EC2N, SHA> spub(bq);
-	ECDHC<EC2N> ecdhc(ASN1::sect193r1());
-	ECMQVC<EC2N> ecmqvc(ASN1::sect193r1());
+	ECDSA<EC2N, SHA>::Signer spriv(bq);
+	ECDSA<EC2N, SHA>::Verifier spub(bq);
+	ECDH<EC2N>::Domain ecdhc(ASN1::sect193r1());
+	ECMQV<EC2N>::Domain ecmqvc(ASN1::sect193r1());
 
-	spriv.Precompute();
+	spriv.AccessKey().Precompute();
 	ByteQueue queue;
-	spriv.SavePrecomputation(queue);
-	spub.LoadPrecomputation(queue);
+	spriv.AccessKey().SavePrecomputation(queue);
+	spriv.AccessKey().LoadPrecomputation(queue);
 
 	bool pass = SignatureValidate(spriv, spub);
 	pass = CryptoSystemValidate(cpriv, cpub) && pass;
@@ -611,10 +629,10 @@ bool EC2NValidate()
 	pass = AuthenticatedKeyAgreementValidate(ecmqvc) && pass;
 
 	cout << "Turning on point compression..." << endl;
-	cpriv.SetPointCompression(true);
-	cpub.SetPointCompression(true);
-	ecdhc.SetPointCompression(true);
-	ecmqvc.SetPointCompression(true);
+	cpriv.AccessKey().AccessGroupParameters().SetPointCompression(true);
+	cpub.AccessKey().AccessGroupParameters().SetPointCompression(true);
+	ecdhc.AccessGroupParameters().SetPointCompression(true);
+	ecmqvc.AccessGroupParameters().SetPointCompression(true);
 	pass = CryptoSystemValidate(cpriv, cpub) && pass;
 	pass = SimpleKeyAgreementValidate(ecdhc) && pass;
 	pass = AuthenticatedKeyAgreementValidate(ecmqvc) && pass;
@@ -625,7 +643,7 @@ bool EC2NValidate()
 	while (!(oid = ECParameters<EC2N>::GetNextRecommendedParametersOID(oid)).m_values.empty())
 	{
 		ECParameters<EC2N> params(oid);
-		bool fail = !params.ValidateParameters(rng);
+		bool fail = !params.ValidateParameters(GlobalRNG());
 		cout << (fail ? "FAILED" : "passed") << "    " << params.GetCurve().GetField().MaxElementBitLength() << " bits" << endl;
 		pass = pass && !fail;
 	}
@@ -634,7 +652,7 @@ bool EC2NValidate()
 	return pass;
 }
 
-bool ECDSAValidate()
+bool ValidateECDSA()
 {
 	cout << "\nECDSA validation suite running...\n\n";
 
@@ -650,8 +668,8 @@ bool ECDSAValidate()
 	Integer n("40000000000000000000000004a20e90c39067c893bbb9a5H");
 	Integer d("340562e1dda332f9d2aec168249b5696ee39d0ed4d03760fH");
 	EC2N::Point Q(ec.Multiply(d, P));
-	ECSigner<EC2N, SHA, ECDSA> priv(ec, P, n, Q, d);
-	ECVerifier<EC2N, SHA, ECDSA> pub(priv);
+	ECDSA<EC2N, SHA>::Signer priv(ec, P, n, d);
+	ECDSA<EC2N, SHA>::Verifier pub(priv);
 
 	Integer h("A9993E364706816ABA3E25717850C26C9CD0D89DH");
 	Integer k("3eeace72b4919d991738d521879f787cb590aff8189d2b69H");
@@ -663,7 +681,7 @@ bool ECDSAValidate()
 	Integer rOut, sOut;
 	bool fail, pass=true;
 
-	priv.RawSign(k, h, rOut, sOut);
+	priv.GetDigestSignatureScheme().RawSign(k, h, rOut, sOut);
 	fail = (rOut != r) || (sOut != s);
 	pass = pass && !fail;
 
@@ -680,6 +698,43 @@ bool ECDSAValidate()
 	pass = pass && !fail;
 
 	pass = SignatureValidate(priv, pub) && pass;
+
+	return pass;
+}
+
+bool ValidateESIGN()
+{
+	cout << "\nESIGN validation suite running...\n\n";
+
+	bool pass = true, fail;
+
+	const char *plain = "test";
+	const byte *signature = (byte *)
+		"\xA3\xE3\x20\x65\xDE\xDA\xE7\xEC\x05\xC1\xBF\xCD\x25\x79\x7D\x99\xCD\xD5\x73\x9D\x9D\xF3\xA4\xAA\x9A\xA4\x5A\xC8\x23\x3D\x0D\x37\xFE\xBC\x76\x3F\xF1\x84\xF6\x59"
+		"\x14\x91\x4F\x0C\x34\x1B\xAE\x9A\x5C\x2E\x2E\x38\x08\x78\x77\xCB\xDC\x3C\x7E\xA0\x34\x44\x5B\x0F\x67\xD9\x35\x2A\x79\x47\x1A\x52\x37\x71\xDB\x12\x67\xC1\xB6\xC6"
+		"\x66\x73\xB3\x40\x2E\xD6\xF2\x1A\x84\x0A\xB6\x7B\x0F\xEB\x8B\x88\xAB\x33\xDD\xE4\x83\x21\x90\x63\x2D\x51\x2A\xB1\x6F\xAB\xA7\x5C\xFD\x77\x99\xF2\xE1\xEF\x67\x1A"
+		"\x74\x02\x37\x0E\xED\x0A\x06\xAD\xF4\x15\x65\xB8\xE1\xD1\x45\xAE\x39\x19\xB4\xFF\x5D\xF1\x45\x7B\xE0\xFE\x72\xED\x11\x92\x8F\x61\x41\x4F\x02\x00\xF2\x76\x6F\x7C"
+		"\x79\xA2\xE5\x52\x20\x5D\x97\x5E\xFE\x39\xAE\x21\x10\xFB\x35\xF4\x80\x81\x41\x13\xDD\xE8\x5F\xCA\x1E\x4F\xF8\x9B\xB2\x68\xFB\x28";
+
+	FileSource keys("esig1536.dat", true, new HexDecoder);
+	ESIGN<SHA>::Signer signer(keys);
+	ESIGN<SHA>::Verifier verifier(signer);
+
+	fail = !SignatureValidate(signer, verifier);
+	pass = pass && !fail;
+
+	fail = !verifier.VerifyMessage((byte *)plain, strlen(plain), signature);
+	pass = pass && !fail;
+
+	cout << (fail ? "FAILED    " : "passed    ");
+	cout << "verification check against test vector\n";
+
+	cout << "Generating signature key from seed..." << endl;
+	InvertibleESIGNFunction priv;
+	priv.GenerateRandom(GlobalRNG(), MakeParameters("Seed", ConstByteArrayParameter((const byte *)"test", 4))("KeySize", 3*512));
+
+	fail = !SignatureValidate(signer, verifier);
+	pass = pass && !fail;
 
 	return pass;
 }

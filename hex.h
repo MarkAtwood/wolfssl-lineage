@@ -1,68 +1,34 @@
 #ifndef CRYPTOPP_HEX_H
 #define CRYPTOPP_HEX_H
 
-#include "cryptlib.h"
-#include "filters.h"
+#include "basecode.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
 //! Converts given data to base 16
-class HexEncoder : public Filter
+class HexEncoder : public SimpleProxyFilter
 {
 public:
-	HexEncoder(BufferedTransformation *outQueue = NULL, bool uppercase = true);
-
-	void Put(byte inByte)
+	HexEncoder(BufferedTransformation *attachment = NULL, bool uppercase = true, int outputGroupSize = 0, const std::string &seperator = ":", const std::string &terminator = "")
+		: SimpleProxyFilter(new BaseN_Encoder(new Grouper), attachment)
 	{
-		AttachedTransformation()->Put(m_vec[inByte >> 4]);
-		AttachedTransformation()->Put(m_vec[inByte & 0x0F]);
+		IsolatedInitialize(MakeParameters("Uppercase", uppercase)("GroupSize", outputGroupSize)("Seperator", ConstByteArrayParameter(seperator)));
 	}
 
-	void Put(const byte *inString, unsigned int length);
-
-private:
-	const byte *m_vec;
+	void IsolatedInitialize(const NameValuePairs &parameters);
 };
 
 //! Decode 16 bit data back to bytes
-class HexDecoder : public Filter
+class HexDecoder : public BaseN_Decoder
 {
 public:
-	HexDecoder(BufferedTransformation *outQueue = NULL)
-		: Filter(outQueue) {last = -1;}
+	HexDecoder(BufferedTransformation *attachment = NULL)
+		: BaseN_Decoder(GetDecodingLookupArray(), 4, attachment) {}
 
-	void Put(byte inByte)
-	{
-		int i=ConvToNumber(inByte);
-		if (i >= 0)
-		{
-			if (last >= 0)
-			{
-				AttachedTransformation()->Put((last << 4) | i);
-				last = -1;
-			}
-			else
-				last = i;
-		}
-	}
-
-	void Put(const byte *inString, unsigned int length);
-
-	void MessageEnd(int propagate=-1);
+	void IsolatedInitialize(const NameValuePairs &parameters) {}
 
 private:
-	static int ConvToNumber(byte inByte)
-	{
-		if (inByte >= '0' && inByte <= '9')
-			return inByte - '0';
-		if (inByte >= 'A' && inByte <= 'F')
-			return inByte - 'A' + 10;
-		if (inByte >= 'a' && inByte <= 'f')
-			return inByte - 'a' + 10;
-		return -1;
-	}
-
-	int last;
+	static const int *GetDecodingLookupArray();
 };
 
 NAMESPACE_END

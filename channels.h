@@ -1,15 +1,51 @@
 #ifndef CRYPTOPP_CHANNELS_H
 #define CRYPTOPP_CHANNELS_H
 
-#include "cryptlib.h"
+#include "simple.h"
 #include "smartptr.h"
 #include <map>
 #include <list>
 
 NAMESPACE_BEGIN(CryptoPP)
 
-//! .
-class ChannelSwitch : public BufferedTransformation
+#if 0
+//! Route input on default channel to different and/or multiple channels based on message sequence number
+class MessageSwitch : public Sink
+{
+public:
+	void AddDefaultRoute(BufferedTransformation &destination, const std::string &channel);
+	void AddRoute(unsigned int begin, unsigned int end, BufferedTransformation &destination, const std::string &channel);
+
+	void Put(byte inByte);
+	void Put(const byte *inString, unsigned int length);
+
+	void Flush(bool completeFlush, int propagation=-1);
+	void MessageEnd(int propagation=-1);
+	void PutMessageEnd(const byte *inString, unsigned int length, int propagation=-1);
+	void MessageSeriesEnd(int propagation=-1);
+
+private:
+	typedef std::pair<BufferedTransformation *, std::string> Route;
+	struct RangeRoute
+	{
+		RangeRoute(unsigned int begin, unsigned int end, const Route &route)
+			: begin(begin), end(end), route(route) {}
+		bool operator<(const RangeRoute &rhs) const {return begin < rhs.begin;}
+		unsigned int begin, end;
+		Route route;
+	};
+
+	typedef std::list<RangeRoute> RouteList;
+	typedef std::list<Route> DefaultRouteList;
+
+	RouteList m_routes;
+	DefaultRouteList m_defaultRoutes;
+	unsigned int m_nCurrentMessage;
+};
+#endif
+
+//! Route input to different and/or multiple channels based on channel ID
+class ChannelSwitch : public Multichannel<Sink>
 {
 public:
 	ChannelSwitch() {}
@@ -22,22 +58,15 @@ public:
 		AddDefaultRoute(destination, outChannel);
 	}
 
-	void Put(byte inByte);
-	void Put(const byte *inString, unsigned int length);
+	unsigned int ChannelPut2(const std::string &channel, const byte *begin, unsigned int length, int messageEnd, bool blocking);
+	unsigned int ChannelPutModifiable2(const std::string &channel, byte *begin, unsigned int length, int messageEnd, bool blocking);
 
-	void Flush(bool completeFlush, int propagation=-1);
-	void MessageEnd(int propagation=-1);
-	void PutMessageEnd(const byte *inString, unsigned int length, int propagation=-1);
-	void MessageSeriesEnd(int propagation=-1);
+	void ChannelInitialize(const std::string &channel, const NameValuePairs &parameters=g_nullNameValuePairs, int propagation=-1);
+	bool ChannelFlush(const std::string &channel, bool completeFlush, int propagation=-1, bool blocking=true);
+	bool ChannelMessageSeriesEnd(const std::string &channel, int propagation=-1, bool blocking=true);
 
-	void ChannelPut(const std::string &channel, byte inByte);
-	void ChannelPut(const std::string &channel, const byte *inString, unsigned int length);
-
-	void ChannelFlush(const std::string &channel, bool completeFlush, int propagation=-1);
-	void ChannelMessageEnd(const std::string &channel, int propagation=-1);
-	void ChannelPutMessageEnd(const std::string &channel, const byte *inString, unsigned int length, int propagation=-1);
-	void ChannelMessageSeriesEnd(const std::string &channel, int propagation=-1);
-
+	byte * ChannelCreatePutSpace(const std::string &channel, unsigned int &size);
+	
 	void AddDefaultRoute(BufferedTransformation &destination);
 	void RemoveDefaultRoute(BufferedTransformation &destination);
 	void AddDefaultRoute(BufferedTransformation &destination, const std::string &outChannel);
@@ -54,7 +83,7 @@ private:
 	typedef std::list<DefaultRoute> DefaultRouteList;
 	DefaultRouteList m_defaultRoutes;
 
-	friend class RouteIterator;
+	friend class ChannelRouteIterator;
 };
 
 NAMESPACE_END

@@ -8,27 +8,25 @@ NAMESPACE_BEGIN(CryptoPP)
 static const byte s_vecUpper[] = "0123456789ABCDEF";
 static const byte s_vecLower[] = "0123456789abcdef";
 
-HexEncoder::HexEncoder(BufferedTransformation *outQueue, bool uppercase)
-	: Filter(outQueue), m_vec(uppercase ? s_vecUpper : s_vecLower)
+void HexEncoder::IsolatedInitialize(const NameValuePairs &parameters)
 {
+	bool uppercase = parameters.GetValueWithDefault("Uppercase", true);
+	m_filter->Initialize(CombinedNameValuePairs(
+		parameters,
+		MakeParameters("EncodingLookupArray", uppercase ? &s_vecUpper[0] : &s_vecLower[0])("Log2Base", 4)));
 }
 
-void HexEncoder::Put(const byte *inString, unsigned int length)
+const int *HexDecoder::GetDecodingLookupArray()
 {
-	while (length--)
-		HexEncoder::Put(*inString++);
-}
+	static bool s_initialized = false;
+	static int s_array[256];
 
-void HexDecoder::Put(const byte *inString, unsigned int length)
-{
-	while (length--)
-		HexDecoder::Put(*inString++);
-}
-
-void HexDecoder::MessageEnd(int propagate)
-{
-	last = -1;
-	Filter::MessageEnd(propagate);
+	if (!s_initialized)
+	{
+		InitializeDecodingLookupArray(s_array, s_vecUpper, 16, true);
+		s_initialized = true;
+	}
+	return s_array;
 }
 
 NAMESPACE_END

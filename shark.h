@@ -8,56 +8,59 @@
 
 #ifdef WORD64_AVAILABLE
 
-#include "cryptlib.h"
-#include "misc.h"
+#include "seckey.h"
+#include "secblock.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// base class, do not use directly
-class SHARKBase : public FixedBlockSize<8>, public VariableKeyLength<16, 1, 16>
+struct SHARK_Info : public FixedBlockSize<8>, public VariableKeyLength<16, 1, 16>, public VariableRounds<6, 2>
 {
-public:
-	enum {DEFAULT_ROUNDS=6};
-
-protected:
-	static void InitEncryptionRoundKeys(const byte *key, unsigned int keyLen, unsigned int rounds, word64 *roundkeys);
-	SHARKBase(unsigned int rounds) : rounds(rounds), roundkeys(rounds+1) {}
-
-	unsigned int rounds;
-	SecBlock<word64> roundkeys;
+	static const char *StaticAlgorithmName() {return "SHARK-E";}
 };
 
 /// <a href="http://www.weidai.com/scan-mirror/cs.html#SHARK-E">SHARK-E</a>
-class SHARKEncryption : public SHARKBase
+class SHARK : public SHARK_Info, public BlockCipherDocumentation
 {
+	class Base : public BlockCipherBaseTemplate<SHARK_Info>
+	{
+	public:
+		void UncheckedSetKey(CipherDir dir, const byte *key, unsigned int length, unsigned int rounds);
+
+	protected:
+		unsigned int m_rounds;
+		SecBlock<word64> m_roundKeys;
+	};
+
+	class Enc : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+
+		// used by Base to do key setup
+		void InitForKeySetup();
+
+	private:
+		static const byte sbox[256];
+		static const word64 cbox[8][256];
+	};
+
+	class Dec : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+
+	private:
+		static const byte sbox[256];
+		static const word64 cbox[8][256];
+	};
+
 public:
-	SHARKEncryption(const byte *key, unsigned int keyLen=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS);
-
-	void ProcessBlock(byte * inoutBlock) const
-		{SHARKEncryption::ProcessBlock(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-
-private:
-	friend class SHARKBase;
-	SHARKEncryption();
-	static const byte sbox[256];
-	static const word64 cbox[8][256];
+	typedef BlockCipherTemplate<ENCRYPTION, Enc> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Dec> Decryption;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#SHARK-E">SHARK-E</a>
-class SHARKDecryption : public SHARKBase
-{
-public:
-	SHARKDecryption(const byte *key, unsigned int keyLen=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS);
-
-	void ProcessBlock(byte * inoutBlock) const
-		{SHARKDecryption::ProcessBlock(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-
-private:
-	static const byte sbox[256];
-	static const word64 cbox[8][256];
-};
+typedef SHARK::Encryption SHARKEncryption;
+typedef SHARK::Decryption SHARKDecryption;
 
 NAMESPACE_END
 

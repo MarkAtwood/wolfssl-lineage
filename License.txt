@@ -1,12 +1,10 @@
-Compilation Copyright (c) 1995-2001 by Wei Dai.  All rights reserved.
-This copyright applies only to this particular software distribution 
-package, and does not imply a copyright on any particular file in 
-the package.
+Compilation Copyright (c) 1995-2002 by Wei Dai.  All rights reserved.
+This copyright applies only to this software distribution package 
+as a compilation, and does not imply a copyright on any particular 
+file in the package.
 
 The following files are copyrighted by their respective original authors:
 
-haval.cpp - Copyright 1992 Yuliang Zheng.
-idea.cpp - Copyright 1992 Colin Plumb.
 mars.cpp - Copyright 1998 Brian Gladman.
 serpent.cpp - Copyright 1998, 1999 Brian Gladman and Sam Simpson.
 
@@ -23,6 +21,7 @@ Phil Karn - des.cpp
 Michael Paul Johnson - diamond.cpp, sapphire.cpp
 Andrew M. Kuchling - md2.cpp, md4.cpp
 Colin Plumb - md5.cpp, md5mac.cpp
+Seal Woods - rc6.cpp
 Chris Morgan - rijndael.cpp
 Paulo Baretto - rijndael.cpp, skipjack.cpp, square.cpp
 Richard De Moliner - safer.cpp

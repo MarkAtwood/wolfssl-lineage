@@ -11,35 +11,47 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 ANONYMOUS_NAMESPACE_BEGIN
-static inline ECP::Point ToMontgomery(const MontgomeryRepresentation &mr, const ECP::Point &P)
+static inline ECP::Point ToMontgomery(const ModularArithmetic &mr, const ECP::Point &P)
 {
 	return P.identity ? P : ECP::Point(mr.ConvertIn(P.x), mr.ConvertIn(P.y));
 }
 
-static inline ECP::Point FromMontgomery(const MontgomeryRepresentation &mr, const ECP::Point &P)
+static inline ECP::Point FromMontgomery(const ModularArithmetic &mr, const ECP::Point &P)
 {
 	return P.identity ? P : ECP::Point(mr.ConvertOut(P.x), mr.ConvertOut(P.y));
 }
 NAMESPACE_END
 
+ECP::ECP(const ECP &ecp, bool convertToMontgomeryRepresentation)
+{
+	if (convertToMontgomeryRepresentation && !ecp.GetField().IsMontgomeryRepresentation())
+	{
+		m_fieldPtr.reset(new MontgomeryRepresentation(ecp.GetField().GetModulus()));
+		m_a = GetField().ConvertIn(ecp.m_a);
+		m_b = GetField().ConvertIn(ecp.m_b);
+	}
+	else
+		operator=(ecp);
+}
+
 ECP::ECP(BufferedTransformation &bt)
-	: m_fieldPtr(new Field(bt)), m_field(*m_fieldPtr)
+	: m_fieldPtr(new Field(bt))
 {
 	BERSequenceDecoder seq(bt);
-	m_field.BERDecodeElement(seq, m_a);
-	m_field.BERDecodeElement(seq, m_b);
+	GetField().BERDecodeElement(seq, m_a);
+	GetField().BERDecodeElement(seq, m_b);
 	// skip optional seed
 	if (!seq.EndReached())
-		BERDecodeOctetString(seq, g_bitBucket);
+		BERDecodeOctetString(seq, TheBitBucket());
 	seq.MessageEnd();
 }
 
 void ECP::DEREncode(BufferedTransformation &bt) const
 {
-	m_field.DEREncode(bt);
+	GetField().DEREncode(bt);
 	DERSequenceEncoder seq(bt);
-	m_field.DEREncodeElement(seq, m_a);
-	m_field.DEREncodeElement(seq, m_b);
+	GetField().DEREncodeElement(seq, m_a);
+	GetField().DEREncodeElement(seq, m_b);
 	seq.MessageEnd();
 }
 
@@ -69,7 +81,7 @@ bool ECP::DecodePoint(ECP::Point &P, BufferedTransformation &bt, unsigned int en
 		Integer p = FieldSize();
 
 		P.identity = false;
-		P.x.Decode(bt, m_field.MaxElementByteLength()); 
+		P.x.Decode(bt, GetField().MaxElementByteLength()); 
 		P.y = ((P.x*P.x+m_a)*P.x+m_b) % p;
 
 		if (Jacobi(P.y, p) !=1)
@@ -87,7 +99,7 @@ bool ECP::DecodePoint(ECP::Point &P, BufferedTransformation &bt, unsigned int en
 		if (encodedPointLen != EncodedPointSize(false))
 			return false;
 
-		unsigned int len = m_field.MaxElementByteLength();
+		unsigned int len = GetField().MaxElementByteLength();
 		P.identity = false;
 		P.x.Decode(bt, len);
 		P.y.Decode(bt, len);
@@ -98,22 +110,29 @@ bool ECP::DecodePoint(ECP::Point &P, BufferedTransformation &bt, unsigned int en
 	}
 }
 
-void ECP::EncodePoint(byte *encodedPoint, const Point &P, bool compressed) const
+void ECP::EncodePoint(BufferedTransformation &bt, const Point &P, bool compressed) const
 {
 	if (P.identity)
-		memset(encodedPoint, 0, EncodedPointSize(compressed));
+		NullStore().TransferTo(bt, EncodedPointSize(compressed));
 	else if (compressed)
 	{
-		encodedPoint[0] = 2 + P.y.GetBit(0);
-		P.x.Encode(encodedPoint+1, m_field.MaxElementByteLength());
+		bt.Put(2 + P.y.GetBit(0));
+		P.x.Encode(bt, GetField().MaxElementByteLength());
 	}
 	else
 	{
-		unsigned int len = m_field.MaxElementByteLength();
-		encodedPoint[0] = 4;	// uncompressed
-		P.x.Encode(encodedPoint+1, len);
-		P.y.Encode(encodedPoint+1+len, len);
+		unsigned int len = GetField().MaxElementByteLength();
+		bt.Put(4);	// uncompressed
+		P.x.Encode(bt, len);
+		P.y.Encode(bt, len);
 	}
+}
+
+void ECP::EncodePoint(byte *encodedPoint, const Point &P, bool compressed) const
+{
+	ArraySink sink(encodedPoint, EncodedPointSize(compressed));
+	EncodePoint(sink, P, compressed);
+	assert(sink.TotalPutLength() == EncodedPointSize(compressed));
 }
 
 ECP::Point ECP::BERDecodePoint(BufferedTransformation &bt) const
@@ -121,7 +140,7 @@ ECP::Point ECP::BERDecodePoint(BufferedTransformation &bt) const
 	SecByteBlock str;
 	BERDecodeOctetString(bt, str);
 	Point P;
-	if (!DecodePoint(P, str, str.size))
+	if (!DecodePoint(P, str, str.size()))
 		BERDecodeError();
 	return P;
 }
@@ -133,12 +152,20 @@ void ECP::DEREncodePoint(BufferedTransformation &bt, const Point &P, bool compre
 	DEREncodeOctetString(bt, str);
 }
 
-bool ECP::ValidateParameters(RandomNumberGenerator &rng) const
+bool ECP::ValidateParameters(RandomNumberGenerator &rng, unsigned int level) const
 {
 	Integer p = FieldSize();
-	return p.IsOdd() && VerifyPrime(rng, p)
-		&& !m_a.IsNegative() && m_a<p && !m_b.IsNegative() && m_b<p
-		&& ((4*m_a*m_a*m_a+27*m_b*m_b)%p).IsPositive();
+
+	bool pass = p.IsOdd();
+	pass = pass && !m_a.IsNegative() && m_a<p && !m_b.IsNegative() && m_b<p;
+
+	if (level >= 1)
+		pass = pass && ((4*m_a*m_a*m_a+27*m_b*m_b)%p).IsPositive();
+
+	if (level >= 2)
+		pass = pass && VerifyPrime(rng, p);
+
+	return pass;
 }
 
 bool ECP::VerifyPoint(const Point &P) const
@@ -161,10 +188,10 @@ bool ECP::Equal(const Point &P, const Point &Q) const
 	if (!P.identity && Q.identity)
 		return false;
 
-	return (m_field.Equal(P.x,Q.x) && m_field.Equal(P.y,Q.y));
+	return (GetField().Equal(P.x,Q.x) && GetField().Equal(P.y,Q.y));
 }
 
-const ECP::Point& ECP::Zero() const
+const ECP::Point& ECP::Identity() const
 {
 	static const Point zero;
 	return zero;
@@ -178,7 +205,7 @@ const ECP::Point& ECP::Inverse(const Point &P) const
 	{
 		m_R.identity = false;
 		m_R.x = P.x;
-		m_R.y = m_field.Inverse(P.y);
+		m_R.y = GetField().Inverse(P.y);
 		return m_R;
 	}
 }
@@ -187,13 +214,13 @@ const ECP::Point& ECP::Add(const Point &P, const Point &Q) const
 {
 	if (P.identity) return Q;
 	if (Q.identity) return P;
-	if (m_field.Equal(P.x, Q.x))
-		return m_field.Equal(P.y, Q.y) ? Double(P) : Zero();
+	if (GetField().Equal(P.x, Q.x))
+		return GetField().Equal(P.y, Q.y) ? Double(P) : Identity();
 
-	FieldElement t = m_field.Subtract(Q.y, P.y);
-	t = m_field.Divide(t, m_field.Subtract(Q.x, P.x));
-	FieldElement x = m_field.Subtract(m_field.Subtract(m_field.Square(t), P.x), Q.x);
-	m_R.y = m_field.Subtract(m_field.Multiply(t, m_field.Subtract(P.x, x)), P.y);
+	FieldElement t = GetField().Subtract(Q.y, P.y);
+	t = GetField().Divide(t, GetField().Subtract(Q.x, P.x));
+	FieldElement x = GetField().Subtract(GetField().Subtract(GetField().Square(t), P.x), Q.x);
+	m_R.y = GetField().Subtract(GetField().Multiply(t, GetField().Subtract(P.x, x)), P.y);
 
 	m_R.x.swap(x);
 	m_R.identity = false;
@@ -202,13 +229,13 @@ const ECP::Point& ECP::Add(const Point &P, const Point &Q) const
 
 const ECP::Point& ECP::Double(const Point &P) const
 {
-	if (P.identity || P.y==m_field.Zero()) return Zero();
+	if (P.identity || P.y==GetField().Identity()) return Identity();
 
-	FieldElement t = m_field.Square(P.x);
-	t = m_field.Add(m_field.Add(m_field.Double(t), t), m_a);
-	t = m_field.Divide(t, m_field.Double(P.y));
-	FieldElement x = m_field.Subtract(m_field.Subtract(m_field.Square(t), P.x), P.x);
-	m_R.y = m_field.Subtract(m_field.Multiply(t, m_field.Subtract(P.x, x)), P.y);
+	FieldElement t = GetField().Square(P.x);
+	t = GetField().Add(GetField().Add(GetField().Double(t), t), m_a);
+	t = GetField().Divide(t, GetField().Double(P.y));
+	FieldElement x = GetField().Subtract(GetField().Subtract(GetField().Square(t), P.x), P.x);
+	m_R.y = GetField().Subtract(GetField().Multiply(t, GetField().Subtract(P.x, x)), P.y);
 
 	m_R.x.swap(x);
 	m_R.identity = false;
@@ -269,14 +296,14 @@ public:
 	{
 		if (Q.identity)
 		{
-			sixteenY4 = P.x = P.y = mr.One();
-			aZ4 = P.z = mr.Zero();
+			sixteenY4 = P.x = P.y = mr.MultiplicativeIdentity();
+			aZ4 = P.z = mr.Identity();
 		}
 		else
 		{
 			P.x = Q.x;
 			P.y = Q.y;
-			sixteenY4 = P.z = mr.One();
+			sixteenY4 = P.z = mr.MultiplicativeIdentity();
 			aZ4 = m_a;
 		}
 	}
@@ -328,17 +355,17 @@ ECP::Point ECP::ScalarMultiply(const Point &P, const Integer &k) const
 
 void ECP::SimultaneousMultiply(ECP::Point *results, const ECP::Point &P, const Integer *expBegin, unsigned int expCount) const
 {
-	if (m_fieldPtr.get())
+	if (!GetField().IsMontgomeryRepresentation())
 	{
-		MontgomeryRepresentation mr(m_field.GetModulus());
-		ECP ecpmr(mr, mr.ConvertIn(m_a), mr.ConvertIn(m_b));
+		ECP ecpmr(*this, true);
+		const ModularArithmetic &mr = ecpmr.GetField();
 		ecpmr.SimultaneousMultiply(results, ToMontgomery(mr, P), expBegin, expCount);
 		for (unsigned int i=0; i<expCount; i++)
 			results[i] = FromMontgomery(mr, results[i]);
 		return;
 	}
 
-	ProjectiveDoubling rd(m_field, m_a, m_b, P);
+	ProjectiveDoubling rd(GetField(), m_a, m_b, P);
 	std::vector<ProjectivePoint> bases;
 	std::vector<WindowSlider> exponents;
 	exponents.reserve(expCount);
@@ -388,15 +415,15 @@ void ECP::SimultaneousMultiply(ECP::Point *results, const ECP::Point &P, const I
 	}
 
 	// convert from projective to affine coordinates
-	ParallelInvert(m_field, ZIterator(bases.begin()), ZIterator(bases.end()));
+	ParallelInvert(GetField(), ZIterator(bases.begin()), ZIterator(bases.end()));
 	for (i=0; i<bases.size(); i++)
 	{
 		if (bases[i].z.NotZero())
 		{
-			bases[i].y = m_field.Multiply(bases[i].y, bases[i].z);
-			bases[i].z = m_field.Square(bases[i].z);
-			bases[i].x = m_field.Multiply(bases[i].x, bases[i].z);
-			bases[i].y = m_field.Multiply(bases[i].y, bases[i].z);
+			bases[i].y = GetField().Multiply(bases[i].y, bases[i].z);
+			bases[i].z = GetField().Square(bases[i].z);
+			bases[i].x = GetField().Multiply(bases[i].x, bases[i].z);
+			bases[i].y = GetField().Multiply(bases[i].y, bases[i].z);
 		}
 	}
 
@@ -414,7 +441,7 @@ void ECP::SimultaneousMultiply(ECP::Point *results, const ECP::Point &P, const I
 				finalCascade[j].base.identity = false;
 				finalCascade[j].base.x = base.x;
 				if (negateBase[i][j])
-					finalCascade[j].base.y = m_field.Inverse(base.y);
+					finalCascade[j].base.y = GetField().Inverse(base.y);
 				else
 					finalCascade[j].base.y = base.y;
 			}
@@ -426,10 +453,10 @@ void ECP::SimultaneousMultiply(ECP::Point *results, const ECP::Point &P, const I
 
 ECP::Point ECP::CascadeScalarMultiply(const Point &P, const Integer &k1, const Point &Q, const Integer &k2) const
 {
-	if (m_fieldPtr.get())
+	if (!GetField().IsMontgomeryRepresentation())
 	{
-		MontgomeryRepresentation mr(m_field.GetModulus());
-		ECP ecpmr(mr, mr.ConvertIn(m_a), mr.ConvertIn(m_b));
+		ECP ecpmr(*this, true);
+		const ModularArithmetic &mr = ecpmr.GetField();
 		return FromMontgomery(mr, ecpmr.CascadeScalarMultiply(ToMontgomery(mr, P), k1, ToMontgomery(mr, Q), k2));
 	}
 	else
@@ -438,60 +465,13 @@ ECP::Point ECP::CascadeScalarMultiply(const Point &P, const Integer &k1, const P
 
 // ********************************************************
 
-EcPrecomputation<ECP>& EcPrecomputation<ECP>::operator=(const EcPrecomputation<ECP> &rhs)
+void EcPrecomputation<ECP>::SetCurve(const ECP &ec)
 {
-	m_mr = rhs.m_mr;
-	m_ec.reset(new ECP(*m_mr, rhs.m_ec->GetA(), rhs.m_ec->GetB()));
-	m_ep = rhs.m_ep;
-	m_ep.m_group = m_ec.get();
-	return *this;
-}
-
-void EcPrecomputation<ECP>::SetCurveAndBase(const ECP &ec, const ECP::Point &base)
-{
-	m_mr.reset(new MontgomeryRepresentation(ec.GetField().GetModulus()));
-	m_ec.reset(new ECP(*m_mr, m_mr->ConvertIn(ec.GetA()), m_mr->ConvertIn(ec.GetB())));
-	m_ep.SetGroupAndBase(*m_ec, ToMontgomery(*m_mr, base));
-}
-
-void EcPrecomputation<ECP>::Precompute(unsigned int maxExpBits, unsigned int storage)
-{
-	m_ep.Precompute(maxExpBits, storage);
-}
-
-void EcPrecomputation<ECP>::Load(BufferedTransformation &bt)
-{
-	BERSequenceDecoder seq(bt);
-	word32 version;
-	BERDecodeUnsigned<word32>(seq, version, INTEGER, 1, 1);
-	m_ep.m_exponentBase.BERDecode(seq);
-	m_ep.m_windowSize = m_ep.m_exponentBase.BitCount() - 1;
-	m_ep.m_bases.clear();
-	while (!seq.EndReached())
-		m_ep.m_bases.push_back(m_ec->BERDecodePoint(seq));
-	seq.MessageEnd();
-}
-
-void EcPrecomputation<ECP>::Save(BufferedTransformation &bt) const
-{
-	DERSequenceEncoder seq(bt);
-	DEREncodeUnsigned<word32>(seq, 1);	// version
-	m_ep.m_exponentBase.DEREncode(seq);
-	for (unsigned i=0; i<m_ep.m_bases.size(); i++)
-		m_ec->DEREncodePoint(seq, m_ep.m_bases[i]);
-	seq.MessageEnd();
-}
-
-ECP::Point EcPrecomputation<ECP>::Multiply(const Integer &exponent) const
-{
-	return FromMontgomery(*m_mr, m_ep.Exponentiate(exponent));
-}
-
-ECP::Point EcPrecomputation<ECP>::CascadeMultiply(const Integer &exponent, const EcPrecomputation<ECP> &pc2, const Integer &exponent2) const
-{
-	return FromMontgomery(*m_mr, m_ep.CascadeExponentiate(exponent, pc2.m_ep, exponent2));
+	m_ec.reset(new ECP(ec, true));
+	m_ecOriginal = ec;
 }
 
 template class AbstractGroup<ECP::Point>;
+template class DL_FixedBasePrecomputationImpl<ECP::Point>;
 
 NAMESPACE_END

@@ -24,7 +24,7 @@ public:
 	virtual ~AbstractGroup() {}
 
 	virtual bool Equal(const Element &a, const Element &b) const =0;
-	virtual const Element& Zero() const =0;
+	virtual const Element& Identity() const =0;
 	virtual const Element& Add(const Element &a, const Element &b) const =0;
 	virtual const Element& Inverse(const Element &a) const =0;
 	virtual bool InversionIsFast() const {return false;}
@@ -51,7 +51,7 @@ public:
 	AbstractRing& operator=(const AbstractRing &source) {return *this;}
 
 	virtual bool IsUnit(const Element &a) const =0;
-	virtual const Element& One() const =0;
+	virtual const Element& MultiplicativeIdentity() const =0;
 	virtual const Element& Multiply(const Element &a, const Element &b) const =0;
 	virtual const Element& MultiplicativeInverse(const Element &a) const =0;
 
@@ -76,8 +76,8 @@ private:
 		bool Equal(const Element &a, const Element &b) const
 			{return GetRing().Equal(a, b);}
 
-		const Element& Zero() const
-			{return GetRing().One();}
+		const Element& Identity() const
+			{return GetRing().MultiplicativeIdentity();}
 
 		const Element& Add(const Element &a, const Element &b) const
 			{return GetRing().Multiply(a, b);}
@@ -162,7 +162,7 @@ public:
 	bool Equal(const Element &a, const Element &b) const
 		{return a==b;}
 
-	const Element& Zero() const
+	const Element& Identity() const
 		{return Element::Zero();}
 
 	const Element& Add(const Element &a, const Element &b) const
@@ -183,7 +183,7 @@ public:
 	const Element& Double(const Element &a) const
 		{return result = a.Doubled();}
 
-	const Element& One() const
+	const Element& MultiplicativeIdentity() const
 		{return Element::One();}
 
 	const Element& Multiply(const Element &a, const Element &b) const
@@ -228,10 +228,10 @@ public:
 		{return m_modulus;}
 
 	bool Equal(const Element &a, const Element &b) const
-		{return m_domain.Equal(m_domain.Mod(m_domain.Subtract(a, b), m_modulus), m_domain.Zero());}
+		{return m_domain.Equal(m_domain.Mod(m_domain.Subtract(a, b), m_modulus), m_domain.Identity());}
 
-	const Element& Zero() const
-		{return m_domain.Zero();}
+	const Element& Identity() const
+		{return m_domain.Identity();}
 
 	const Element& Add(const Element &a, const Element &b) const
 		{return m_domain.Add(a, b);}
@@ -254,8 +254,8 @@ public:
 	bool IsUnit(const Element &a) const
 		{return m_domain.IsUnit(m_domain.Gcd(a, m_modulus));}
 
-	const Element& One() const
-		{return m_domain.One();}
+	const Element& MultiplicativeIdentity() const
+		{return m_domain.MultiplicativeIdentity();}
 
 	const Element& Multiply(const Element &a, const Element &b) const
 		{return m_domain.Mod(m_domain.Multiply(a, b), m_modulus);}

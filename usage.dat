@@ -1,4 +1,4 @@
-Test Driver for Crypto++, a C++ Class Library of Cryptographic Primitives
+Test Driver for Crypto++(TM) Library, a C++ Class Library of Cryptographic Schemes
 
 - To generate an RSA key
 	cryptest g
@@ -41,8 +41,23 @@ Test Driver for Crypto++, a C++ Class Library of Cryptographic Primitives
 - To gunzip a file
 	cryptest u input output
 
+- To base64 encode a file
+	cryptest e64 input output
+
+- To base64 decode a file
+	cryptest d64 input output
+
+- To hex encode a file
+	cryptest e16 input output
+
+- To hex decode a file
+	cryptest d16 input output
+
 - To forward a TCP connection
 	cryptest ft source-port destination-host destination-port
+
+- To run the FIPS-140-2 sample application
+	cryptest fips
 
 - To run validation tests
 	cryptest v

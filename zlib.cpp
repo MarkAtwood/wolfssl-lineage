@@ -17,13 +17,9 @@ static const byte FDICT_FLAG = 1 << 5;
 
 // *************************************************************
 
-ZlibCompressor::ZlibCompressor(BufferedTransformation *outQ, unsigned int deflateLevel, unsigned int log2WindowSize)
-	: Deflator(outQ, deflateLevel, log2WindowSize)
-{
-}
-
 void ZlibCompressor::WritePrestreamHeader()
 {
+	m_adler32.Restart();
 	byte cmf = DEFLATE_METHOD | ((GetLog2WindowSize()-8) << 4);
 	byte flags = GetCompressionLevel() << 6;
 	AttachedTransformation()->PutWord16(RoundUpToMultipleOf(cmf*256+flags, 31));
@@ -36,7 +32,7 @@ void ZlibCompressor::ProcessUncompressedData(const byte *inString, unsigned int 
 
 void ZlibCompressor::WritePoststreamTail()
 {
-	SecByteBlock adler32(4);
+	FixedSizeSecBlock<byte, 4> adler32;
 	m_adler32.Final(adler32);
 	AttachedTransformation()->Put(adler32, 4);
 }
@@ -49,13 +45,15 @@ unsigned int ZlibCompressor::GetCompressionLevel() const
 
 // *************************************************************
 
-ZlibDecompressor::ZlibDecompressor(BufferedTransformation *outQueue, bool repeat, int propagation)
-	: Inflator(outQueue, repeat, propagation)
+ZlibDecompressor::ZlibDecompressor(BufferedTransformation *attachment, bool repeat, int propagation)
+	: Inflator(attachment, repeat, propagation)
 {
 }
 
 void ZlibDecompressor::ProcessPrestreamHeader()
 {
+	m_adler32.Restart();
+
 	byte cmf;
 	byte flags;
 
@@ -63,7 +61,7 @@ void ZlibDecompressor::ProcessPrestreamHeader()
 		throw HeaderErr();
 
 	if ((cmf*256+flags) % 31 != 0)
-		throw HeaderErr();
+		throw HeaderErr();	// if you hit this exception, you're probably trying to decompress invalid data
 
 	if ((cmf & 0xf) != DEFLATE_METHOD)
 		throw UnsupportedAlgorithm();
@@ -82,7 +80,7 @@ void ZlibDecompressor::ProcessDecompressedData(const byte *inString, unsigned in
 
 void ZlibDecompressor::ProcessPoststreamTail()
 {
-	SecByteBlock adler32(4);
+	FixedSizeSecBlock<byte, 4> adler32;
 	if (m_inQueue.Get(adler32, 4) != 4)
 		throw Adler32Err();
 	if (!m_adler32.Verify(adler32))

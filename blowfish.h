@@ -3,46 +3,42 @@
 
 /** \file */
 
-#include "cryptlib.h"
-#include "misc.h"
+#include "seckey.h"
+#include "secblock.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// base class, do not use directly
-class Blowfish : public FixedBlockSize<8>, public VariableKeyLength<16, 1, 72>
+struct Blowfish_Info : public FixedBlockSize<8>, public VariableKeyLength<16, 1, 56>, public FixedRounds<16>
 {
-public:
-	Blowfish(const byte *key_string, unsigned int keylength, CipherDir direction);
-
-	void ProcessBlock(byte * inoutBlock) const
-		{Blowfish::ProcessBlock(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte *outBlock) const;
-
-	enum {ROUNDS=16};
-
-private:
-	void crypt_block(const word32 in[2], word32 out[2]) const;
-
-	static const word32 p_init[ROUNDS+2];
-	static const word32 s_init[4*256];
-	SecBlock<word32> pbox, sbox;
+	static const char *StaticAlgorithmName() {return "Blowfish";}
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#Blowfish">Blowfish</a>
-class BlowfishEncryption : public Blowfish
+//! <a href="http://www.weidai.com/scan-mirror/cs.html#Blowfish">Blowfish</a>
+class Blowfish : public Blowfish_Info, public BlockCipherDocumentation
 {
+	class Base : public BlockCipherBaseTemplate<Blowfish_Info>
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+		void UncheckedSetKey(CipherDir direction, const byte *key_string, unsigned int keylength);
+
+	private:
+		void crypt_block(const word32 in[2], word32 out[2]) const;
+
+		static const word32 p_init[ROUNDS+2];
+		static const word32 s_init[4*256];
+
+		FixedSizeSecBlock<word32, ROUNDS+2> pbox;
+		FixedSizeSecBlock<word32, 4*256> sbox;
+	};
+
 public:
-	BlowfishEncryption(const byte *key_string, unsigned int keylength=DEFAULT_KEYLENGTH)
-		: Blowfish(key_string, keylength, ENCRYPTION) {}
+	typedef BlockCipherTemplate<ENCRYPTION, Base> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Base> Decryption;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#Blowfish">Blowfish</a>
-class BlowfishDecryption : public Blowfish
-{
-public:
-	BlowfishDecryption(const byte *key_string, unsigned int keylength=DEFAULT_KEYLENGTH)
-		: Blowfish(key_string, keylength, DECRYPTION) {}
-};
+typedef Blowfish::Encryption BlowfishEncryption;
+typedef Blowfish::Decryption BlowfishDecryption;
 
 NAMESPACE_END
 

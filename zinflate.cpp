@@ -10,6 +10,12 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+struct CodeLessThan
+{
+	inline bool operator()(const CryptoPP::HuffmanDecoder::code_t lhs, const CryptoPP::HuffmanDecoder::CodeInfo &rhs)
+		{return lhs < rhs.code;}
+};
+
 inline bool LowFirstBitReader::FillBuffer(unsigned int length)
 {
 	while (m_bitsBuffered < length)
@@ -52,22 +58,42 @@ inline HuffmanDecoder::code_t HuffmanDecoder::NormalizeCode(HuffmanDecoder::code
 
 void HuffmanDecoder::Initialize(const unsigned int *codeBits, unsigned int nCodes)
 {
+	// the Huffman codes are represented in 3 ways in this code:
+	//
+	// 1. most significant code bit (i.e. top of code tree) in the least significant bit position
+	// 2. most significant code bit (i.e. top of code tree) in the most significant bit position
+	// 3. most significant code bit (i.e. top of code tree) in n-th least significant bit position,
+	//    where n is the maximum code length for this code tree
+	//
+	// (1) is the way the codes come in from the deflate stream
+	// (2) is used to sort codes so they can be binary searched
+	// (3) is used in this function to compute codes from code lengths
+	//
+	// a code in representation (2) is called "normalized" here
+	// The BitReverse() function is used to convert between (1) and (2)
+	// The NormalizeCode() function is used to convert from (3) to (2)
+
 	if (nCodes == 0)
 		throw Err("null code");
 
 	m_maxCodeBits = *std::max_element(codeBits, codeBits+nCodes);
 
+	if (m_maxCodeBits > MAX_CODE_BITS)
+		throw Err("code length exceeds maximum");
+
 	if (m_maxCodeBits == 0)
 		throw Err("null code");
 
-	SecBlock<unsigned int> blCount(m_maxCodeBits+1);
-	std::fill(blCount.Begin(), blCount.End(), 0);
+	// count number of codes of each length
+	SecBlockWithHint<unsigned int, 15+1> blCount(m_maxCodeBits+1);
+	std::fill(blCount.begin(), blCount.end(), 0);
 	unsigned int i;
 	for (i=0; i<nCodes; i++)
 		blCount[codeBits[i]]++;
 
+	// compute the starting code of each length
 	code_t code = 0;
-	SecBlock<code_t> nextCode(m_maxCodeBits+1);
+	SecBlockWithHint<code_t, 15+1> nextCode(m_maxCodeBits+1);
 	nextCode[1] = 0;
 	for (i=2; i<=m_maxCodeBits; i++)
 	{
@@ -86,7 +112,8 @@ void HuffmanDecoder::Initialize(const unsigned int *codeBits, unsigned int nCode
 	else if (m_maxCodeBits != 1 && code < (1 << m_maxCodeBits) - blCount[m_maxCodeBits])
 		throw Err("codes incomplete");
 
-	m_codeToValue.Resize(nCodes - blCount[0]);
+	// compute a vector of <code, length, value> triples sorted by code
+	m_codeToValue.resize(nCodes - blCount[0]);
 	unsigned int j=0;
 	for (i=0; i<nCodes; i++) 
 	{
@@ -100,56 +127,70 @@ void HuffmanDecoder::Initialize(const unsigned int *codeBits, unsigned int nCode
 			j++;
 		}
 	}
-	std::sort(m_codeToValue.Begin(), m_codeToValue.End());
+	std::sort(m_codeToValue.begin(), m_codeToValue.end());
 
+	// initialize the decoding cache
 	m_cacheBits = STDMIN(9U, m_maxCodeBits);
 	m_cacheMask = (1 << m_cacheBits) - 1;
-	code_t leftoverMask = ~NormalizeCode(m_cacheMask, m_cacheBits);
-	m_cache.Resize(1 << m_cacheBits);
+	m_normalizedCacheMask = NormalizeCode(m_cacheMask, m_cacheBits);
+	assert(m_normalizedCacheMask == BitReverse(m_cacheMask));
 
-	for (i=0; i<m_cache.size; i++)
+	if (m_cache.size() != 1 << m_cacheBits)
+		m_cache.resize(1 << m_cacheBits);
+
+	for (i=0; i<m_cache.size(); i++)
+		m_cache[i].type = 0;
+}
+
+void HuffmanDecoder::FillCacheEntry(LookupEntry &entry, code_t normalizedCode) const
+{
+	normalizedCode &= m_normalizedCacheMask;
+	const CodeInfo &codeInfo = *(std::upper_bound(m_codeToValue.begin(), m_codeToValue.end(), normalizedCode, CodeLessThan())-1);
+	if (codeInfo.len <= m_cacheBits)
 	{
-		code_t normalizedCode = bitReverse(i);
-		const CodeInfo &codeInfo = *(std::upper_bound(m_codeToValue.Begin(), m_codeToValue.End(), normalizedCode, CodeLessThan)-1);
-		if (codeInfo.len <= m_cacheBits)
+		entry.type = 1;
+		entry.value = codeInfo.value;
+		entry.len = codeInfo.len;
+	}
+	else
+	{
+		entry.begin = &codeInfo;
+		const CodeInfo *last = & *(std::upper_bound(m_codeToValue.begin(), m_codeToValue.end(), normalizedCode + ~m_normalizedCacheMask, CodeLessThan())-1);
+		if (codeInfo.len == last->len)
 		{
-			m_cache[i].type = 0;
-			m_cache[i].value = codeInfo.value;
-			m_cache[i].len = codeInfo.len;
+			entry.type = 2;
+			entry.len = codeInfo.len;
 		}
 		else
 		{
-			m_cache[i].begin = &codeInfo;
-			const CodeInfo *last = std::upper_bound(m_codeToValue.Begin(), m_codeToValue.End(), normalizedCode + leftoverMask, CodeLessThan)-1;
-			if (codeInfo.len == last->len)
-			{
-				m_cache[i].type = 1;
-				m_cache[i].len = codeInfo.len;
-			}
-			else
-			{
-				m_cache[i].type = 2;
-				m_cache[i].end = last+1;
-			}
+			entry.type = 3;
+			entry.end = last+1;
 		}
 	}
 }
 
 inline unsigned int HuffmanDecoder::Decode(code_t code, /* out */ value_t &value) const
 {
-	assert(m_codeToValue.size > 0);
-	const LookupEntry &entry = m_cache[code & m_cacheMask];
+	assert(m_codeToValue.size() > 0);
+	LookupEntry &entry = m_cache[code & m_cacheMask];
+
+	code_t normalizedCode;
+	if (entry.type != 1)
+		normalizedCode = BitReverse(code);
+
 	if (entry.type == 0)
+		FillCacheEntry(entry, normalizedCode);
+
+	if (entry.type == 1)
 	{
 		value = entry.value;
 		return entry.len;
 	}
 	else
 	{
-		code_t normalizedCode = bitReverse(code);
-		const CodeInfo &codeInfo = (entry.type == 1)
+		const CodeInfo &codeInfo = (entry.type == 2)
 			? entry.begin[(normalizedCode << m_cacheBits) >> (MAX_CODE_BITS - (entry.len - m_cacheBits))]
-			: *(std::upper_bound(entry.begin, entry.end, normalizedCode, CodeLessThan)-1);
+			: *(std::upper_bound(entry.begin, entry.end, normalizedCode, CodeLessThan())-1);
 		value = codeInfo.value;
 		return codeInfo.len;
 	}
@@ -167,23 +208,31 @@ bool HuffmanDecoder::Decode(LowFirstBitReader &reader, value_t &value) const
 
 // *************************************************************
 
-Inflator::Inflator(BufferedTransformation *outQueue, bool repeat, int propagation)
-	: Filter(outQueue), BufferedTransformationWithAutoSignal(propagation)
-	, m_repeat(repeat), m_decodersInitializedWithFixedCodes(false)
-	, m_state(PRE_STREAM), m_reader(m_inQueue)
+Inflator::Inflator(BufferedTransformation *attachment, bool repeat, int propagation)
+	: AutoSignaling<Filter>(attachment, propagation)
+	, m_state(PRE_STREAM), m_repeat(repeat)
+	, m_decodersInitializedWithFixedCodes(false), m_reader(m_inQueue)
 {
+}
+
+void Inflator::IsolatedInitialize(const NameValuePairs &parameters)
+{
+	m_state = PRE_STREAM;
+	parameters.GetValue("Repeat", m_repeat);
+	m_inQueue.Clear();
+	m_reader.SkipBits(m_reader.BitsBuffered());
 }
 
 inline void Inflator::OutputByte(byte b)
 {
 	m_window[m_current++] = b;
-	if (m_current == m_window.size)
+	if (m_current == m_window.size())
 	{
-		ProcessDecompressedData(m_window + m_lastFlush, m_window.size - m_lastFlush);
+		ProcessDecompressedData(m_window + m_lastFlush, m_window.size() - m_lastFlush);
 		m_lastFlush = 0;
 		m_current = 0;
 	}
-	if (m_maxDistance < m_window.size)
+	if (m_maxDistance < m_window.size())
 		m_maxDistance++;
 }
 
@@ -201,16 +250,16 @@ void Inflator::OutputPast(unsigned int length, unsigned int distance)
 	if (m_current > distance)
 		start = m_current - distance;
 	else
-		start = m_current + m_window.size - distance;
+		start = m_current + m_window.size() - distance;
 
-	if (start + length > m_window.size)
+	if (start + length > m_window.size())
 	{
-		for (; start < m_window.size; start++, length--)
+		for (; start < m_window.size(); start++, length--)
 			OutputByte(m_window[start]);
 		start = 0;
 	}
 
-	if (start + length > m_current || m_current + length >= m_window.size)
+	if (start + length > m_current || m_current + length >= m_window.size())
 	{
 		while (length--)
 			OutputByte(m_window[start++]);
@@ -219,36 +268,45 @@ void Inflator::OutputPast(unsigned int length, unsigned int distance)
 	{
 		memcpy(m_window + m_current, m_window + start, length);
 		m_current += length;
-		m_maxDistance = STDMIN(m_window.size, m_maxDistance + length);
+		m_maxDistance = STDMIN((unsigned int)m_window.size(), m_maxDistance + length);
 	}
 }
 
-void Inflator::Put(const byte *inString, unsigned int length)
+unsigned int Inflator::Put2(const byte *inString, unsigned int length, int messageEnd, bool blocking)
 {
+	if (!blocking)
+		throw BlockingInputOnly("Inflator");
+
 	LazyPutter lp(m_inQueue, inString, length);
-	ProcessInput(false);
+	ProcessInput(messageEnd != 0);
+
+	if (messageEnd)
+		if (!(m_state == PRE_STREAM || m_state == AFTER_END))
+			throw UnexpectedEndErr();
+
+	Output(0, NULL, 0, messageEnd, blocking);
+	return 0;
 }
 
-void Inflator::Flush(bool completeFlush, int propagation)
+bool Inflator::IsolatedFlush(bool hardFlush, bool blocking)
 {
-	if (completeFlush)
+	if (!blocking)
+		throw BlockingInputOnly("Inflator");
+
+	if (hardFlush)
 		ProcessInput(true);
 	FlushOutput();
-	Filter::Flush(completeFlush, propagation);
-}
 
-void Inflator::MessageEnd(int propagation)
-{
-	ProcessInput(true);
-	if (!(m_state == PRE_STREAM || m_state == AFTER_END))
-		throw UnexpectedEndErr();
-	Filter::MessageEnd(propagation);
+	return false;
 }
 
 void Inflator::ProcessInput(bool flush)
 {
 	while (true)
 	{
+		if (m_inQueue.IsEmpty())
+			return;
+
 		switch (m_state)
 		{
 		case PRE_STREAM:
@@ -259,12 +317,12 @@ void Inflator::ProcessInput(bool flush)
 			m_maxDistance = 0;
 			m_current = 0;
 			m_lastFlush = 0;
-			m_window.Resize(1 << GetLog2WindowSize());
+			m_window.New(1 << GetLog2WindowSize());
 			break;
 		case WAIT_HEADER:
 			{
 			// maximum number of bytes before actual compressed data starts
-			const unsigned int MAX_HEADER_SIZE = bitsToBytes(3+5+5+4+19*7+286*15+19*15);
+			const unsigned int MAX_HEADER_SIZE = BitsToBytes(3+5+5+4+19*7+286*15+19*15);
 			if (m_inQueue.CurrentSize() < (flush ? 1 : MAX_HEADER_SIZE))
 				return;
 			DecodeHeader();
@@ -279,9 +337,7 @@ void Inflator::ProcessInput(bool flush)
 				return;
 			ProcessPoststreamTail();
 			m_state = m_repeat ? PRE_STREAM : AFTER_END;
-			Filter::MessageEnd(GetAutoSignalPropagation());
-			if (m_inQueue.IsEmpty())
-				return;
+			Output(0, NULL, 0, GetAutoSignalPropagation(), true);	// TODO: non-blocking
 			break;
 		case AFTER_END:
 			m_inQueue.TransferTo(*AttachedTransformation());
@@ -294,8 +350,8 @@ void Inflator::DecodeHeader()
 {
 	if (!m_reader.FillBuffer(3))
 		throw UnexpectedEndErr();
-	m_eof = m_reader.GetBits(1);
-	m_blockType = m_reader.GetBits(2);
+	m_eof = m_reader.GetBits(1) != 0;
+	m_blockType = (byte)m_reader.GetBits(2);
 	switch (m_blockType)
 	{
 	case 0:	// stored
@@ -303,8 +359,8 @@ void Inflator::DecodeHeader()
 		m_reader.SkipBits(m_reader.BitsBuffered() % 8);
 		if (!m_reader.FillBuffer(32))
 			throw UnexpectedEndErr();
-		m_storedLen = m_reader.GetBits(16);
-		word16 nlen = m_reader.GetBits(16);
+		m_storedLen = (word16)m_reader.GetBits(16);
+		word16 nlen = (word16)m_reader.GetBits(16);
 		if (nlen != (word16)~m_storedLen)
 			throw BadBlockErr();
 		break;
@@ -333,11 +389,11 @@ void Inflator::DecodeHeader()
 		unsigned int hdist = m_reader.GetBits(5);
 		unsigned int hclen = m_reader.GetBits(4);
 
-		SecBlock<unsigned int> codeLengths(286+32);
+		FixedSizeSecBlock<unsigned int, 286+32> codeLengths;
 		unsigned int i;
 		static const unsigned int border[] = {    // Order of the bit length code lengths
 			16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
-		std::fill(codeLengths.ptr, codeLengths+19, 0);
+		std::fill(codeLengths.begin(), codeLengths+19, 0);
 		for (i=0; i<hclen+4; i++)
 			codeLengths[border[i]] = m_reader.GetBits(3);
 
@@ -499,10 +555,10 @@ bool Inflator::DecodeBody()
 			if (m_reader.BitsBuffered())
 			{
 				// undo too much lookahead
-				SecByteBlock buffer(m_reader.BitsBuffered() / 8);
-				for (unsigned int i=0; i<buffer.size; i++)
-					buffer[i] = m_reader.GetBits(8);
-				m_inQueue.Unget(buffer, buffer.size);
+				SecBlockWithHint<byte, 4> buffer(m_reader.BitsBuffered() / 8);
+				for (unsigned int i=0; i<buffer.size(); i++)
+					buffer[i] = (byte)m_reader.GetBits(8);
+				m_inQueue.Unget(buffer, buffer.size());
 			}
 			m_state = POST_STREAM;
 		}
@@ -514,9 +570,12 @@ bool Inflator::DecodeBody()
 
 void Inflator::FlushOutput()
 {
-	assert(m_current >= m_lastFlush);
-	ProcessDecompressedData(m_window + m_lastFlush, m_current - m_lastFlush);
-	m_lastFlush = m_current;
+	if (m_state != PRE_STREAM)
+	{
+		assert(m_current >= m_lastFlush);
+		ProcessDecompressedData(m_window + m_lastFlush, m_current - m_lastFlush);
+		m_lastFlush = m_current;
+	}
 }
 
 NAMESPACE_END

@@ -1,11 +1,12 @@
 // hrtimer.cpp - written and placed in the public domain by Wei Dai
+
 #include "pch.h"
 #include "hrtimer.h"
 #include <stddef.h>		// for NULL
 
 #ifdef HIGHRES_TIMER_AVAILABLE
 
-#if defined(_WIN32)
+#if defined(CRYPTOPP_WIN32_AVAILABLE)
 #include <windows.h>
 #elif defined(__unix__)
 #include <sys/time.h>
@@ -19,7 +20,7 @@ NAMESPACE_BEGIN(CryptoPP)
 
 word64 Timer::GetCurrentTimerValue()
 {
-#if defined(_WIN32)
+#if defined(CRYPTOPP_WIN32_AVAILABLE)
 	FILETIME now;
 	GetSystemTimeAsFileTime(&now);
 	return now.dwLowDateTime + ((word64)now.dwHighDateTime << 32);
@@ -58,7 +59,9 @@ void Timer::StartTimer()
 
 unsigned long Timer::ElapsedTime()
 {
-	if (m_started)
+	if (m_stuckAtZero)
+		return 0;
+	else if (m_started)
 		return ConvertTo(GetCurrentTimerValue() - m_start, m_timerUnit);
 	else
 	{

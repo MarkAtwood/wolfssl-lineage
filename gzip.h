@@ -11,7 +11,10 @@ NAMESPACE_BEGIN(CryptoPP)
 class Gzip : public Deflator
 {
 public:
-	Gzip(BufferedTransformation *outQ=NULL, unsigned int deflateLevel=DEFAULT_DEFLATE_LEVEL, unsigned int log2WindowSize=DEFAULT_LOG2_WINDOW_SIZE);
+	Gzip(BufferedTransformation *attachment=NULL, unsigned int deflateLevel=DEFAULT_DEFLATE_LEVEL, unsigned int log2WindowSize=DEFAULT_LOG2_WINDOW_SIZE)
+		: Deflator(attachment, deflateLevel, log2WindowSize) {}
+	Gzip(const NameValuePairs &parameters, BufferedTransformation *attachment=NULL)
+		: Deflator(parameters, attachment) {}
 
 protected:
 	enum {MAGIC1=0x1f, MAGIC2=0x8b,   // flags for the header
@@ -38,7 +41,7 @@ public:
 	/*! \param repeat decompress multiple compressed streams in series
 		\param autoSignalPropagation 0 to turn off MessageEnd signal
 	*/
-	Gunzip(BufferedTransformation *outQueue = NULL, bool repeat = false, int autoSignalPropagation = -1);
+	Gunzip(BufferedTransformation *attachment = NULL, bool repeat = false, int autoSignalPropagation = -1);
 
 protected:
 	enum {MAGIC1=0x1f, MAGIC2=0x8b,   // flags for the header

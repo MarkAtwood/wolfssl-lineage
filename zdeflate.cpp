@@ -13,9 +13,8 @@ NAMESPACE_BEGIN(CryptoPP)
 
 using namespace std;
 
-LowFirstBitWriter::LowFirstBitWriter(BufferedTransformation *outQ)
-	: Filter(outQ), m_counting(false), m_buffer(0), m_bitsBuffered(0)
-	, m_bytesBuffered(0), m_outputBuffer(256)
+LowFirstBitWriter::LowFirstBitWriter(BufferedTransformation *attachment)
+	: Filter(attachment), m_counting(false), m_buffer(0), m_bitsBuffered(0), m_bytesBuffered(0)
 {
 }
 
@@ -45,9 +44,9 @@ void LowFirstBitWriter::PutBits(unsigned long value, unsigned int length)
 		while (m_bitsBuffered >= 8)
 		{
 			m_outputBuffer[m_bytesBuffered++] = (byte)m_buffer;
-			if (m_bytesBuffered == m_outputBuffer.size)
+			if (m_bytesBuffered == m_outputBuffer.size())
 			{
-				AttachedTransformation()->Put(m_outputBuffer, m_bytesBuffered);
+				AttachedTransformation()->PutModifiable(m_outputBuffer, m_bytesBuffered);
 				m_bytesBuffered = 0;
 			}
 			m_buffer >>= 8;
@@ -64,7 +63,7 @@ void LowFirstBitWriter::FlushBitBuffer()
 	{
 		if (m_bytesBuffered > 0)
 		{
-			AttachedTransformation()->Put(m_outputBuffer, m_bytesBuffered);
+			AttachedTransformation()->PutModifiable(m_outputBuffer, m_bytesBuffered);
 			m_bytesBuffered = 0;
 		}
 		if (m_bitsBuffered > 0)
@@ -74,6 +73,13 @@ void LowFirstBitWriter::FlushBitBuffer()
 			m_bitsBuffered = 0;
 		}
 	}
+}
+
+void LowFirstBitWriter::ClearBitBuffer()
+{
+	m_buffer = 0;
+	m_bytesBuffered = 0;
+	m_bitsBuffered = 0;
 }
 
 HuffmanEncoder::HuffmanEncoder(const unsigned int *codeBits, unsigned int nCodes)
@@ -96,26 +102,26 @@ struct FreqLessThan
 void HuffmanEncoder::GenerateCodeLengths(unsigned int *codeBits, unsigned int maxCodeBits, const unsigned int *codeCounts, unsigned int nCodes)
 {
 	assert(nCodes > 0);
-	assert(nCodes <= (1 << maxCodeBits));
+	assert(nCodes <= (unsigned int)(1 << maxCodeBits));
 
 	unsigned int i;
-	SecBlock<HuffmanNode> tree(nCodes);
+	SecBlockWithHint<HuffmanNode, 2*286> tree(nCodes);
 	for (i=0; i<nCodes; i++)
 	{
 		tree[i].symbol = i;
 		tree[i].freq = codeCounts[i];
 	}
-	sort(tree.Begin(), tree.End(), FreqLessThan());
-	unsigned int treeBegin = upper_bound(tree.Begin(), tree.End(), 0, FreqLessThan()) - tree.Begin();
+	sort(tree.begin(), tree.end(), FreqLessThan());
+	unsigned int treeBegin = upper_bound(tree.begin(), tree.end(), 0, FreqLessThan()) - tree.begin();
 	if (treeBegin == nCodes)
 	{	// special case for no codes
 		fill(codeBits, codeBits+nCodes, 0);
 		return;
 	}
-	tree.Resize(nCodes + nCodes - treeBegin - 1);
+	tree.resize(nCodes + nCodes - treeBegin - 1);
 
 	unsigned int leastLeaf = treeBegin, leastInterior = nCodes;
-	for (i=nCodes; i<tree.size; i++)
+	for (i=nCodes; i<tree.size(); i++)
 	{
 		unsigned int least;
 		least = (leastLeaf == nCodes || (leastInterior < i && tree[leastInterior].freq < tree[leastLeaf].freq)) ? leastInterior++ : leastLeaf++;
@@ -126,13 +132,13 @@ void HuffmanEncoder::GenerateCodeLengths(unsigned int *codeBits, unsigned int ma
 		tree[least].parent = i;
 	}
 
-	tree[tree.size-1].depth = 0;
-	if (tree.size >= 2)
-		for (i=tree.size-2; i>=nCodes; i--)
+	tree[tree.size()-1].depth = 0;
+	if (tree.size() >= 2)
+		for (i=tree.size()-2; i>=nCodes; i--)
 			tree[i].depth = tree[tree[i].parent].depth + 1;
 	unsigned int sum = 0;
-	SecBlock<unsigned int> blCount(maxCodeBits+1);
-	fill(blCount.Begin(), blCount.End(), 0);
+	SecBlockWithHint<unsigned int, 15+1> blCount(maxCodeBits+1);
+	fill(blCount.begin(), blCount.end(), 0);
 	for (i=treeBegin; i<nCodes; i++)
 	{
 		unsigned int depth = STDMIN(maxCodeBits, tree[tree[i].parent].depth + 1);
@@ -140,7 +146,7 @@ void HuffmanEncoder::GenerateCodeLengths(unsigned int *codeBits, unsigned int ma
 		sum += 1 << (maxCodeBits - depth);
 	}
 
-	unsigned int overflow = sum > (1 << maxCodeBits) ? sum - (1 << maxCodeBits) : 0;
+	unsigned int overflow = sum > (unsigned int)(1 << maxCodeBits) ? sum - (1 << maxCodeBits) : 0;
 
 	while (overflow--)
 	{
@@ -173,14 +179,14 @@ void HuffmanEncoder::Initialize(const unsigned int *codeBits, unsigned int nCode
 	if (maxCodeBits == 0)
 		return;		// assume this object won't be used
 
-	SecBlock<unsigned int> blCount(maxCodeBits+1);
-	fill(blCount.Begin(), blCount.End(), 0);
+	SecBlockWithHint<unsigned int, 15+1> blCount(maxCodeBits+1);
+	fill(blCount.begin(), blCount.end(), 0);
 	unsigned int i;
 	for (i=0; i<nCodes; i++)
 		blCount[codeBits[i]]++;
 
 	code_t code = 0;
-	SecBlock<code_t> nextCode(maxCodeBits+1);
+	SecBlockWithHint<code_t, 15+1> nextCode(maxCodeBits+1);
 	nextCode[1] = 0;
 	for (i=2; i<=maxCodeBits; i++)
 	{
@@ -189,12 +195,12 @@ void HuffmanEncoder::Initialize(const unsigned int *codeBits, unsigned int nCode
 	}
 	assert(maxCodeBits == 1 || code == (1 << maxCodeBits) - blCount[maxCodeBits]);
 
-	m_valueToCode.Resize(nCodes);
+	m_valueToCode.resize(nCodes);
 	for (i=0; i<nCodes; i++)
 	{
 		unsigned int len = m_valueToCode[i].len = codeBits[i];
 		if (len != 0)
-			m_valueToCode[i].code = bitReverse(nextCode[len]++) >> (8*sizeof(code_t)-len);
+			m_valueToCode[i].code = BitReverse(nextCode[len]++) >> (8*sizeof(code_t)-len);
 	}
 }
 
@@ -204,17 +210,22 @@ inline void HuffmanEncoder::Encode(LowFirstBitWriter &writer, value_t value) con
 	writer.PutBits(m_valueToCode[value].code, m_valueToCode[value].len);
 }
 
-Deflator::Deflator(BufferedTransformation *outQ, unsigned int deflateLevel, unsigned int log2WindowSize)
-	: LowFirstBitWriter(outQ)
-	, m_log2WindowSize(log2WindowSize)
-	, m_literalCounts(286), m_distanceCounts(30)
-	, DSIZE(1<<log2WindowSize), DMASK(DSIZE-1), HSIZE(1<<log2WindowSize), HMASK(HSIZE-1)
-	, m_head(HSIZE), m_prev(DSIZE)
-	, m_byteBuffer(2*DSIZE), m_matchBuffer(DSIZE/2)
+Deflator::Deflator(BufferedTransformation *attachment, int deflateLevel, int log2WindowSize)
+	: LowFirstBitWriter(attachment)
 {
-	assert(0 <= deflateLevel && deflateLevel <= 9);
-	assert(9 <= log2WindowSize && log2WindowSize <= 15);
+	InitializeStaticEncoders();
+	IsolatedInitialize(MakeParameters("DeflateLevel", deflateLevel)("Log2WindowSize", log2WindowSize));
+}
 
+Deflator::Deflator(const NameValuePairs &parameters, BufferedTransformation *attachment)
+	: LowFirstBitWriter(attachment)
+{
+	InitializeStaticEncoders();
+	IsolatedInitialize(parameters);
+}
+
+void Deflator::InitializeStaticEncoders()
+{
 	unsigned int codeLengths[288];
 	fill(codeLengths + 0, codeLengths + 144, 8);
 	fill(codeLengths + 144, codeLengths + 256, 9);
@@ -223,14 +234,35 @@ Deflator::Deflator(BufferedTransformation *outQ, unsigned int deflateLevel, unsi
 	m_staticLiteralEncoder.Initialize(codeLengths, 288);
 	fill(codeLengths + 0, codeLengths + 32, 5);
 	m_staticDistanceEncoder.Initialize(codeLengths, 32);
-
-	SetDeflateLevel(deflateLevel);
-	Reset();
 }
 
-void Deflator::Reset()
+void Deflator::IsolatedInitialize(const NameValuePairs &parameters)
 {
-	assert(m_bitsBuffered == 0);
+	int log2WindowSize = parameters.GetIntValueWithDefault("Log2WindowSize", DEFAULT_LOG2_WINDOW_SIZE);
+
+	if (!(MIN_LOG2_WINDOW_SIZE <= log2WindowSize && log2WindowSize <= MAX_LOG2_WINDOW_SIZE))
+		throw InvalidArgument("Deflator: " + IntToString(log2WindowSize) + " is an invalid window size");
+
+	m_log2WindowSize = log2WindowSize;
+	DSIZE = 1 << m_log2WindowSize;
+	DMASK = DSIZE - 1;
+	HSIZE = 1 << m_log2WindowSize;
+	HMASK = HSIZE - 1;
+	m_byteBuffer.New(2*DSIZE);
+	m_head.New(HSIZE);
+	m_prev.New(DSIZE);
+	m_matchBuffer.New(DSIZE/2);
+
+	SetDeflateLevel(parameters.GetIntValueWithDefault("DeflateLevel", DEFAULT_DEFLATE_LEVEL));
+	Reset(true);
+}
+
+void Deflator::Reset(bool forceReset)
+{
+	if (forceReset)
+		ClearBitBuffer();
+	else
+		assert(m_bitsBuffered == 0);
 
 	m_headerWritten = false;
 	m_matchAvailable = false;
@@ -245,14 +277,17 @@ void Deflator::Reset()
 	m_blockLength = 0;
 
 	// m_prev will be initialized automaticly in InsertString
-	fill(m_head.Begin(), m_head.End(), 0);
+	fill(m_head.begin(), m_head.end(), 0);
 
-	fill(m_literalCounts.Begin(), m_literalCounts.End(), 0);
-	fill(m_distanceCounts.Begin(), m_distanceCounts.End(), 0);
+	fill(m_literalCounts.begin(), m_literalCounts.end(), 0);
+	fill(m_distanceCounts.begin(), m_distanceCounts.end(), 0);
 }
 
-void Deflator::SetDeflateLevel(unsigned int deflateLevel)
+void Deflator::SetDeflateLevel(int deflateLevel)
 {
+	if (!(MIN_DEFLATE_LEVEL <= deflateLevel && deflateLevel <= MAX_DEFLATE_LEVEL))
+		throw InvalidArgument("Deflator: " + IntToString(deflateLevel) + " is an invalid deflate level");
+
 	unsigned int configurationTable[10][4] = {
 		/*      good lazy nice chain */
 		/* 0 */ {0,    0,  0,    0},  /* store only */
@@ -292,13 +327,13 @@ unsigned int Deflator::FillWindow(const byte *str, unsigned int length)
 		assert(m_blockStart >= DSIZE);
 		m_blockStart -= DSIZE;
 
-		unsigned int i, j;
+		unsigned int i;
 
 		for (i=0; i<HSIZE; i++)
-			m_head[i] = (j=m_head[i]) < DSIZE ? 0 : j-DSIZE;
+			m_head[i] = SaturatingSubtract(m_head[i], DSIZE);
 
 		for (i=0; i<DSIZE; i++)
-			m_prev[i] = (j=m_prev[i]) < DSIZE ? 0 : j-DSIZE;
+			m_prev[i] = SaturatingSubtract(m_prev[i], DSIZE);
 
 		accepted = STDMIN(accepted + DSIZE, length);
 	}
@@ -428,37 +463,48 @@ void Deflator::ProcessBuffer()
 	}
 }
 
-void Deflator::Put(const byte *str, unsigned int length)
+unsigned int Deflator::Put2(const byte *str, unsigned int length, int messageEnd, bool blocking)
 {
-	ProcessUncompressedData(str, length);
+	if (!blocking)
+		throw BlockingInputOnly("Deflator");
 
 	unsigned int accepted = 0;
 	while (accepted < length)
 	{
-		accepted += FillWindow(str+accepted, length-accepted);
+		unsigned int newAccepted = FillWindow(str+accepted, length-accepted);
 		ProcessBuffer();
+		// call ProcessUncompressedData() after WritePrestreamHeader()
+		ProcessUncompressedData(str+accepted, newAccepted);
+		accepted += newAccepted;
 	}
+	assert(accepted == length);
+
+	if (messageEnd)
+	{
+		m_minLookahead = 0;
+		ProcessBuffer();
+		EndBlock(true);
+		FlushBitBuffer();
+		WritePoststreamTail();
+		Reset();
+	}
+
+	Output(0, NULL, 0, messageEnd, blocking);
+	return 0;
 }
 
-void Deflator::Flush(bool completeFlush, int propagation)
+bool Deflator::IsolatedFlush(bool hardFlush, bool blocking)
 {
+	if (!blocking)
+		throw BlockingInputOnly("Deflator");
+
 	m_minLookahead = 0;
 	ProcessBuffer();
 	m_minLookahead = MAX_MATCH;
 	EndBlock(false);
-	EncodeBlock(false, STORED);
-	Filter::Flush(completeFlush, propagation);
-}
-
-void Deflator::MessageEnd(int propagation)
-{
-	m_minLookahead = 0;
-	ProcessBuffer();
-	EndBlock(true);
-	FlushBitBuffer();
-	WritePoststreamTail();
-	Filter::MessageEnd(propagation);
-	Reset();
+	if (hardFlush)
+		EncodeBlock(false, STORED);
+	return false;
 }
 
 void Deflator::LiteralByte(byte b)
@@ -466,7 +512,7 @@ void Deflator::LiteralByte(byte b)
 	m_matchBuffer[m_matchBufferEnd++].literalCode = b;
 	m_literalCounts[b]++;
 
-	if (m_blockStart+(++m_blockLength) == m_byteBuffer.size || m_matchBufferEnd == m_matchBuffer.size)
+	if (m_blockStart+(++m_blockLength) == m_byteBuffer.size() || m_matchBufferEnd == m_matchBuffer.size())
 		EndBlock(false);
 }
 
@@ -504,7 +550,7 @@ void Deflator::MatchFound(unsigned int distance, unsigned int length)
 	m_literalCounts[lengthCode]++;
 	m_distanceCounts[distanceCode]++;
 
-	if (m_blockStart+(m_blockLength+=length) == m_byteBuffer.size || m_matchBufferEnd == m_matchBuffer.size)
+	if (m_blockStart+(m_blockLength+=length) == m_byteBuffer.size() || m_matchBufferEnd == m_matchBuffer.size())
 		EndBlock(false);
 }
 
@@ -520,7 +566,7 @@ inline unsigned int CodeLengthEncode(const unsigned int *begin,
 		const unsigned int *oldp = p;
 		if (v==0 && p[1]==0 && p[2]==0)
 		{
-			for (p=p+3; *p==0 && p!=end && p!=oldp+138; p++) {}
+			for (p=p+3; p!=end && *p==0 && p!=oldp+138; p++) {}
 			unsigned int repeat = p - oldp;
 			if (repeat <= 10)
 			{
@@ -537,7 +583,7 @@ inline unsigned int CodeLengthEncode(const unsigned int *begin,
 		}
 		else if (p!=begin && v==p[-1] && v==p[1] && v==p[2])
 		{
-			for (p=p+3; *p==v && p!=end && p!=oldp+6; p++) {}
+			for (p=p+3; p!=end && *p==v && p!=oldp+6; p++) {}
 			unsigned int repeat = p - oldp;
 			extraBits = repeat-3;
 			extraBitsLength = 2;
@@ -557,39 +603,42 @@ void Deflator::EncodeBlock(bool eof, unsigned int blockType)
 
 	if (blockType == STORED)
 	{
-		assert(m_blockStart + m_blockLength <= m_byteBuffer.size);
+		assert(m_blockStart + m_blockLength <= m_byteBuffer.size());
 		FlushBitBuffer();
-		AttachedTransformation()->PutWord16(m_blockLength, false);
-		AttachedTransformation()->PutWord16(~m_blockLength, false);
+		AttachedTransformation()->PutWord16(m_blockLength, LITTLE_ENDIAN_ORDER);
+		AttachedTransformation()->PutWord16(~m_blockLength, LITTLE_ENDIAN_ORDER);
 		AttachedTransformation()->Put(m_byteBuffer + m_blockStart, m_blockLength);
 	}
 	else
 	{
 		if (blockType == DYNAMIC)
 		{
-			SecBlock<unsigned int> literalCodeLengths(286), distanceCodeLengths(30);
-#if defined(_MSC_VER) && !defined(__MWERKS__)		// VC60 workaround
+#if defined(_MSC_VER) && !defined(__MWERKS__)
+			// VC60 workaround: built-in reverse_iterator has two template parameters, Dinkumware only has one
 			typedef reverse_bidirectional_iterator<unsigned int *, unsigned int> RevIt;
 #else
 			typedef reverse_iterator<unsigned int *> RevIt;
 #endif
 
+			FixedSizeSecBlock<unsigned int, 286> literalCodeLengths;
+			FixedSizeSecBlock<unsigned int, 30> distanceCodeLengths;
+
 			m_literalCounts[256] = 1;
 			HuffmanEncoder::GenerateCodeLengths(literalCodeLengths, 15, m_literalCounts, 286);
 			m_dynamicLiteralEncoder.Initialize(literalCodeLengths, 286);
-			unsigned int hlit = find_if(RevIt(literalCodeLengths.End()), RevIt(literalCodeLengths.Begin()+257), bind2nd(not_equal_to<unsigned int>(), 0)).base() - (literalCodeLengths.Begin()+257);
+			unsigned int hlit = find_if(RevIt(literalCodeLengths.end()), RevIt(literalCodeLengths.begin()+257), bind2nd(not_equal_to<unsigned int>(), 0)).base() - (literalCodeLengths.begin()+257);
 
 			HuffmanEncoder::GenerateCodeLengths(distanceCodeLengths, 15, m_distanceCounts, 30);
 			m_dynamicDistanceEncoder.Initialize(distanceCodeLengths, 30);
-			unsigned int hdist = find_if(RevIt(distanceCodeLengths.End()), RevIt(distanceCodeLengths.Begin()+1), bind2nd(not_equal_to<unsigned int>(), 0)).base() - (distanceCodeLengths.Begin()+1);
+			unsigned int hdist = find_if(RevIt(distanceCodeLengths.end()), RevIt(distanceCodeLengths.begin()+1), bind2nd(not_equal_to<unsigned int>(), 0)).base() - (distanceCodeLengths.begin()+1);
 
-			SecBlock<unsigned int> combinedLengths(hlit+257+hdist+1);
+			SecBlockWithHint<unsigned int, 286+30> combinedLengths(hlit+257+hdist+1);
 			memcpy(combinedLengths, literalCodeLengths, (hlit+257)*sizeof(unsigned int));
 			memcpy(combinedLengths+hlit+257, distanceCodeLengths, (hdist+1)*sizeof(unsigned int));
 
-			SecBlock<unsigned int> codeLengthCodeCounts(19), codeLengthCodeLengths(19);
-			fill(codeLengthCodeCounts.Begin(), codeLengthCodeCounts.End(), 0);
-			const unsigned int *p = combinedLengths.Begin(), *begin = combinedLengths.Begin(), *end = combinedLengths.End();
+			FixedSizeSecBlock<unsigned int, 19> codeLengthCodeCounts, codeLengthCodeLengths;
+			fill(codeLengthCodeCounts.begin(), codeLengthCodeCounts.end(), 0);
+			const unsigned int *p = combinedLengths.begin(), *begin = combinedLengths.begin(), *end = combinedLengths.end();
 			while (p != end)
 			{
 				unsigned int code, extraBits, extraBitsLength;
@@ -612,7 +661,7 @@ void Deflator::EncodeBlock(bool eof, unsigned int blockType)
 			for (unsigned int i=0; i<hclen+4; i++)
 				PutBits(codeLengthCodeLengths[border[i]], 3);
 
-			p = combinedLengths.Begin();
+			p = combinedLengths.begin();
 			while (p != end)
 			{
 				unsigned int code, extraBits, extraBitsLength;
@@ -661,7 +710,7 @@ void Deflator::EndBlock(bool eof)
 		EncodeBlock(eof, STATIC);
 	else
 	{
-		unsigned int storedLen = 8*(m_blockLength+4) + RoundUpToMultipleOf(m_bitsBuffered+3, 8)-m_bitsBuffered;
+		unsigned int storedLen = 8*(m_blockLength+4) + RoundUpToMultipleOf(m_bitsBuffered+3, 8U)-m_bitsBuffered;
 		StartCounting();
 		EncodeBlock(eof, STATIC);
 		unsigned int staticLen = FinishCounting();
@@ -680,8 +729,8 @@ void Deflator::EndBlock(bool eof)
 	m_matchBufferEnd = 0;
 	m_blockStart += m_blockLength;
 	m_blockLength = 0;
-	fill(m_literalCounts.Begin(), m_literalCounts.End(), 0);
-	fill(m_distanceCounts.Begin(), m_distanceCounts.End(), 0);
+	fill(m_literalCounts.begin(), m_literalCounts.end(), 0);
+	fill(m_distanceCounts.begin(), m_distanceCounts.end(), 0);
 }
 
 NAMESPACE_END

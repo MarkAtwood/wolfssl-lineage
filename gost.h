@@ -4,48 +4,53 @@
 /** \file
 */
 
-#include "cryptlib.h"
-#include "misc.h"
+#include "seckey.h"
+#include "secblock.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// base class, do not use directly
-class GOST : public FixedBlockSize<8>, public FixedKeyLength<32>
+struct GOST_Info : public FixedBlockSize<8>, public FixedKeyLength<32>
 {
-protected:
-	GOST(const byte *userKey, CipherDir);
-	static void PrecalculateSTable();
-
-	static const byte sBox[8][16];
-	static bool sTableCalculated;
-	static word32 sTable[4][256];
-
-	SecBlock<word32> key;
+	static const char *StaticAlgorithmName() {return "GOST";}
 };
 
 /// <a href="http://www.weidai.com/scan-mirror/cs.html#GOST">GOST</a>
-class GOSTEncryption : public GOST
+class GOST : public GOST_Info, public BlockCipherDocumentation
 {
-public:
-	GOSTEncryption(const byte * userKey, unsigned int = 0)
-		: GOST (userKey, ENCRYPTION) {}
+	class Base : public BlockCipherBaseTemplate<GOST_Info>
+	{
+	public:
+		void UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length);
 
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-	void ProcessBlock(byte * inoutBlock) const
-		{GOSTEncryption::ProcessBlock(inoutBlock, inoutBlock);}
+	protected:
+		static void PrecalculateSTable();
+
+		static const byte sBox[8][16];
+		static bool sTableCalculated;
+		static word32 sTable[4][256];
+
+		FixedSizeSecBlock<word32, 8> key;
+	};
+
+	class Enc : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+	class Dec : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+public:
+	typedef BlockCipherTemplate<ENCRYPTION, Enc> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Dec> Decryption;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#GOST">GOST</a>
-class GOSTDecryption : public GOST
-{
-public:
-	GOSTDecryption(const byte * userKey, unsigned int = 0)
-		: GOST (userKey, DECRYPTION) {}
-
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-	void ProcessBlock(byte * inoutBlock) const
-		{GOSTDecryption::ProcessBlock(inoutBlock, inoutBlock);}
-};
+typedef GOST::Encryption GOSTEncryption;
+typedef GOST::Decryption GOSTDecryption;
 
 NAMESPACE_END
 

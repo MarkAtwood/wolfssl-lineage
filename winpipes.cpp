@@ -1,10 +1,11 @@
 // winpipes.cpp - written and placed in the public domain by Wei Dai
 
 #include "pch.h"
-
-#ifdef _WIN32
-
 #include "winpipes.h"
+
+#ifdef WINDOWS_PIPES_AVAILABLE
+
+#include "wait.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -60,25 +61,24 @@ void WindowsHandle::CloseHandle()
 	}
 }
 
-void WindowsPipe::CheckAndHandleError(const char *operation, BOOL result) const
+// ********************************************************
+
+void WindowsPipe::HandleError(const char *operation) const
 {
-	if (!result)
-	{
-		DWORD err = GetLastError();
-		throw Err(m_h, operation, err);
-	}
+	DWORD err = GetLastError();
+	throw Err(GetHandle(), operation, err);
 }
 
 WindowsPipe::Err::Err(HANDLE s, const std::string& operation, int error)
-	: Exception("WindowsPipeSink: error " + IntToString(error) + " during operation " + operation)
-	, m_h(s), m_operation(operation), m_error(error)
+	: OS_Error(IO_ERROR, "WindowsPipe: " + operation + " operation failed with error 0x" + IntToString(error, 16), operation, error)
+	, m_h(s)
 {
 }
 
 // *************************************************************
 
-WindowsReadPipe::WindowsReadPipe(HANDLE h, bool own)
-	: WindowsPipe(h, own), m_inProgress(false), m_lastResult(0), m_eofReceived(false)
+WindowsPipeReceiver::WindowsPipeReceiver()
+	: m_resultPending(false), m_eofReceived(false)
 {
 	m_event.AttachHandle(CreateEvent(NULL, true, false, NULL), true);
 	CheckAndHandleError("CreateEvent", m_event.HandleValid());
@@ -86,66 +86,72 @@ WindowsReadPipe::WindowsReadPipe(HANDLE h, bool own)
 	m_overlapped.hEvent = m_event;
 }
 
-bool WindowsReadPipe::Receive(byte* buf, unsigned int bufLen)
+void WindowsPipeReceiver::Receive(byte* buf, unsigned int bufLen)
 {
-	assert(!m_inProgress && !m_eofReceived);
+	assert(!m_resultPending && !m_eofReceived);
 
-	DWORD read = 0;
-	BOOL result = ReadFile(m_h, buf, bufLen, &read, &m_overlapped);
-	if (result)
-		m_lastResult = read;
-	else switch (GetLastError())
+	HANDLE h = GetHandle();
+	if (ReadFile(h, buf, bufLen, &m_lastResult, &m_overlapped))
 	{
-	default:
-		CheckAndHandleError("ReadFile", false);
-	case ERROR_BROKEN_PIPE:
-	case ERROR_HANDLE_EOF:
-		m_lastResult = 0;
-		m_eofReceived = true;
-		break;
-	case ERROR_IO_PENDING:
-		m_inProgress = true;
+		if (m_lastResult == 0)
+			m_eofReceived = true;
 	}
-	return !m_inProgress;
-}
-
-bool WindowsReadPipe::ReceiveResultReady(unsigned long timeout)
-{
-	if (!m_inProgress)
-		return true;
-
-	switch (WaitForSingleObject(m_event, timeout))
-	{
-	default:
-		CheckAndHandleError("WaitForSingleObject", false);
-	case WAIT_TIMEOUT:
-		return false;
-	case WAIT_OBJECT_0:
-		;
-	}
-
-	BOOL result = GetOverlappedResult(m_h, &m_overlapped, &m_lastResult, false);
-	if (!result)
+	else
 	{
 		switch (GetLastError())
 		{
 		default:
-			CheckAndHandleError("GetOverlappedResult", false);
+			CheckAndHandleError("ReadFile", false);
 		case ERROR_BROKEN_PIPE:
 		case ERROR_HANDLE_EOF:
 			m_lastResult = 0;
 			m_eofReceived = true;
+			break;
+		case ERROR_IO_PENDING:
+			m_resultPending = true;
 		}
 	}
+}
 
-	m_inProgress = false;
-	return true;
+void WindowsPipeReceiver::GetWaitObjects(WaitObjectContainer &container)
+{
+	if (m_resultPending)
+		container.AddHandle(m_event);
+	else if (!m_eofReceived)
+		container.SetNoWait();
+}
+
+unsigned int WindowsPipeReceiver::GetReceiveResult()
+{
+	if (m_resultPending)
+	{
+		HANDLE h = GetHandle();
+		if (GetOverlappedResult(h, &m_overlapped, &m_lastResult, false))
+		{
+			if (m_lastResult == 0)
+				m_eofReceived = true;
+		}
+		else
+		{
+			switch (GetLastError())
+			{
+			default:
+				CheckAndHandleError("GetOverlappedResult", false);
+			case ERROR_BROKEN_PIPE:
+			case ERROR_HANDLE_EOF:
+				m_lastResult = 0;
+				m_eofReceived = true;
+			}
+		}
+		m_resultPending = false;
+	}
+	return m_lastResult;
 }
 
 // *************************************************************
 
-WindowsWritePipe::WindowsWritePipe(HANDLE h, bool own)
-	: WindowsPipe(h, own), m_inProgress(false), m_lastResult(0)
+WindowsPipeSender::WindowsPipeSender()
+	: m_resultPending(false), m_lastResult(0)
 {
 	m_event.AttachHandle(CreateEvent(NULL, true, false, NULL), true);
 	CheckAndHandleError("CreateEvent", m_event.HandleValid());
@@ -153,45 +159,42 @@ WindowsWritePipe::WindowsWritePipe(HANDLE h, bool own)
 	m_overlapped.hEvent = m_event;
 }
 
-bool WindowsWritePipe::Send(const byte* buf, unsigned int bufLen)
+void WindowsPipeSender::Send(const byte* buf, unsigned int bufLen)
 {
 	DWORD written = 0;
-	BOOL result = WriteFile(m_h, buf, bufLen, &written, &m_overlapped);
-	if (result)
+	HANDLE h = GetHandle();
+	if (WriteFile(h, buf, bufLen, &written, &m_overlapped))
 	{
-		m_inProgress = false;
+		m_resultPending = false;
 		m_lastResult = written;
-		return true;
 	}
 	else
 	{
 		if (GetLastError() != ERROR_IO_PENDING)
 			CheckAndHandleError("WriteFile", false);
 
-		m_inProgress = true;
-		return false;
+		m_resultPending = true;
 	}
 }
 
-bool WindowsWritePipe::SendResultReady(unsigned long timeout)
+void WindowsPipeSender::GetWaitObjects(WaitObjectContainer &container)
 {
-	if (!m_inProgress)
-		return true;
+	if (m_resultPending)
+		container.AddHandle(m_event);
+	else
+		container.SetNoWait();
+}
 
-	switch (WaitForSingleObject(m_event, timeout))
+unsigned int WindowsPipeSender::GetSendResult()
+{
+	if (m_resultPending)
 	{
-	default:
-		CheckAndHandleError("WaitForSingleObject", false);
-	case WAIT_TIMEOUT:
-		return false;
-	case WAIT_OBJECT_0:
-		break;
+		HANDLE h = GetHandle();
+		BOOL result = GetOverlappedResult(h, &m_overlapped, &m_lastResult, false);
+		CheckAndHandleError("GetOverlappedResult", result);
+		m_resultPending = false;
 	}
-
-	BOOL result = GetOverlappedResult(m_h, &m_overlapped, &m_lastResult, false);
-	CheckAndHandleError("GetOverlappedResult", result);
-	m_inProgress = false;
-	return true;
+	return m_lastResult;
 }
 
 NAMESPACE_END

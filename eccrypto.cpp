@@ -5,8 +5,21 @@
 #include "nbtheory.h"
 #include "oids.h"
 #include "hex.h"
+#include "argnames.h"
 
 NAMESPACE_BEGIN(CryptoPP)
+
+static void ECDSA_TestInstantiations()
+{
+	ECDSA<EC2N>::Signer t1;
+	ECDSA<EC2N>::Verifier t2(t1);
+	ECNR<ECP>::Signer t3;
+	ECNR<ECP>::Verifier t4(t3);
+	ECIES<ECP>::Encryptor t5;
+	ECIES<EC2N>::Decryptor t6;
+	ECDH<ECP>::Domain t7;
+	ECMQV<ECP>::Domain t8;
+}
 
 // VC60 workaround: complains when these functions are put into an anonymous namespace
 static Integer ConvertToInteger(const PolynomialMod2 &x)
@@ -46,15 +59,14 @@ template<> struct EcRecommendedParameters<EC2N>
 		: oid(oid), t0(0), t1(0), t2(t2), t3(t3), t4(t4), a(a), b(b), g(g), n(n), h(h) {}
 	EcRecommendedParameters(const OID &oid, unsigned int t0, unsigned int t1, unsigned int t2, unsigned int t3, unsigned int t4, const char *a, const char *b, const char *g, const char *n, unsigned int h)
 		: oid(oid), t0(t0), t1(t1), t2(t2), t3(t3), t4(t4), a(a), b(b), g(g), n(n), h(h) {}
-	bool operator<(const OID &rhs) const {return oid < rhs;}
 	EC2N *NewEC() const
 	{
 		StringSource ssA(a, true, new HexDecoder);
 		StringSource ssB(b, true, new HexDecoder);
 		if (t0 == 0)
-			return new EC2N(GF2NT(t2, t3, t4), EC2N::FieldElement(ssA, ssA.MaxRetrieveable()), EC2N::FieldElement(ssB, ssB.MaxRetrieveable()));
+			return new EC2N(GF2NT(t2, t3, t4), EC2N::FieldElement(ssA, ssA.MaxRetrievable()), EC2N::FieldElement(ssB, ssB.MaxRetrievable()));
 		else
-			return new EC2N(GF2NPP(t0, t1, t2, t3, t4), EC2N::FieldElement(ssA, ssA.MaxRetrieveable()), EC2N::FieldElement(ssB, ssB.MaxRetrieveable()));
+			return new EC2N(GF2NPP(t0, t1, t2, t3, t4), EC2N::FieldElement(ssA, ssA.MaxRetrievable()), EC2N::FieldElement(ssB, ssB.MaxRetrievable()));
 	};
 
 	OID oid;
@@ -67,13 +79,12 @@ template<> struct EcRecommendedParameters<ECP>
 {
 	EcRecommendedParameters(const OID &oid, const char *p, const char *a, const char *b, const char *g, const char *n, unsigned int h)
 		: oid(oid), p(p), a(a), b(b), g(g), n(n), h(h) {}
-	inline bool operator<(const OID &rhs) const {return oid < rhs;}
 	ECP *NewEC() const
 	{
 		StringSource ssP(p, true, new HexDecoder);
 		StringSource ssA(a, true, new HexDecoder);
 		StringSource ssB(b, true, new HexDecoder);
-		return new ECP(Integer(ssP, ssP.MaxRetrieveable()), ECP::FieldElement(ssA, ssA.MaxRetrieveable()), ECP::FieldElement(ssB, ssB.MaxRetrieveable()));
+		return new ECP(Integer(ssP, ssP.MaxRetrievable()), ECP::FieldElement(ssA, ssA.MaxRetrievable()), ECP::FieldElement(ssB, ssB.MaxRetrievable()));
 	};
 
 	OID oid;
@@ -339,443 +350,290 @@ static void GetRecommendedParameters(const EcRecommendedParameters<ECP> *&begin,
 	end = rec + sizeof(rec)/sizeof(rec[0]);
 }
 
-template <class EC> OID ECParameters<EC>::GetNextRecommendedParametersOID(const OID &oid)
+template <class EC> OID DL_GroupParameters_EC<EC>::GetNextRecommendedParametersOID(const OID &oid)
 {
-	const EcRecommendedParameters<EC> *begin, *end;
+	const EcRecommendedParameters<EllipticCurve> *begin, *end;
 	GetRecommendedParameters(begin, end);
-	const EcRecommendedParameters<EC> *it = std::upper_bound(begin, end, oid, OIDLessThan());
+	const EcRecommendedParameters<EllipticCurve> *it = std::upper_bound(begin, end, oid, OIDLessThan());
 	return (it == end ? OID() : it->oid);
 }
 
-template <class EC> void ECParameters<EC>::LoadRecommendedParameters(const OID &oid)
+template <class EC> void DL_GroupParameters_EC<EC>::Initialize(const OID &oid)
 {
-	const EcRecommendedParameters<EC> *begin, *end;
+	const EcRecommendedParameters<EllipticCurve> *begin, *end;
 	GetRecommendedParameters(begin, end);
-	const EcRecommendedParameters<EC> *it = std::lower_bound(begin, end, oid, OIDLessThan());
+	const EcRecommendedParameters<EllipticCurve> *it = std::lower_bound(begin, end, oid, OIDLessThan());
 	if (it == end || it->oid != oid)
 		throw UnknownOID();
 
-	const EcRecommendedParameters<EC> &param = *it;
+	const EcRecommendedParameters<EllipticCurve> &param = *it;
 	m_oid = oid;
-	m_ec.reset(param.NewEC());
-	StringSource ssG(param.g, true, new HexDecoder);
-	bool result = m_ec->DecodePoint(m_G, ssG, ssG.MaxRetrieveable());
-	assert(result);
-	StringSource ssN(param.n, true, new HexDecoder);
-	m_n.Decode(ssN, ssN.MaxRetrieveable());
-	m_cofactorPresent = true;
-	m_k = param.h;
+	std::auto_ptr<EllipticCurve> ec(param.NewEC());
+	m_groupPrecomputation.SetCurve(*ec);
 
-	m_Gpc.SetCurveAndBase(GetCurve(), m_G);
+	StringSource ssG(param.g, true, new HexDecoder);
+	Element G;
+	bool result = GetCurve().DecodePoint(G, ssG, ssG.MaxRetrievable());
+	SetSubgroupGenerator(G);
+	assert(result);
+
+	StringSource ssN(param.n, true, new HexDecoder);
+	m_n.Decode(ssN, ssN.MaxRetrievable());
+	m_k = param.h;
 }
 
 template <class EC>
-void ECParameters<EC>::BERDecode(BufferedTransformation &bt)
+bool DL_GroupParameters_EC<EC>::GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const
+{
+	if (strcmp(name, Name::GroupOID()) == 0)
+	{
+		if (m_oid.m_values.empty())
+			return false;
+
+		ThrowIfTypeMismatch(name, typeid(OID), valueType);
+		*reinterpret_cast<OID *>(pValue) = m_oid;
+		return true;
+	}
+	else
+		return GetValueHelper<DL_GroupParameters<Element> >(this, name, valueType, pValue).Assignable()
+			CRYPTOPP_GET_FUNCTION_ENTRY(Curve);
+}
+
+template <class EC>
+void DL_GroupParameters_EC<EC>::AssignFrom(const NameValuePairs &source)
+{
+	OID oid;
+	if (source.GetValue(Name::GroupOID(), oid))
+		Initialize(oid);
+	else
+	{
+		EllipticCurve ec;
+		Point G;
+		Integer n;
+
+		source.GetRequiredParameter("DL_GroupParameters_EC<EC>", Name::Curve(), ec);
+		source.GetRequiredParameter("DL_GroupParameters_EC<EC>", Name::SubgroupGenerator(), G);
+		source.GetRequiredParameter("DL_GroupParameters_EC<EC>", Name::SubgroupOrder(), n);
+		Integer k = source.GetValueWithDefault(Name::Cofactor(), Integer::Zero());
+
+		Initialize(ec, G, n, k);
+	}
+}
+
+template <class EC>
+void DL_GroupParameters_EC<EC>::GenerateRandom(RandomNumberGenerator &rng, const NameValuePairs &alg)
+{
+	try
+	{
+		AssignFrom(alg);
+	}
+	catch (InvalidArgument &)
+	{
+		throw NotImplemented("DL_GroupParameters_EC<EC>: curve generation is not implemented yet");
+	}
+}
+
+template <class EC>
+void DL_GroupParameters_EC<EC>::BERDecode(BufferedTransformation &bt)
 {
 	byte b;
 	if (!bt.Peek(b))
 		BERDecodeError();
 	if (b == OBJECT_IDENTIFIER)
-		LoadRecommendedParameters(OID(bt));
+		Initialize(OID(bt));
 	else
 	{
 		BERSequenceDecoder seq(bt);
-		m_ec.reset(new EC(seq));
-		m_G = m_ec->BERDecodePoint(seq);
-		m_n.BERDecode(seq);
-		m_cofactorPresent = !seq.EndReached();
-		if (m_cofactorPresent)
-			m_k.BERDecode(seq);
+			word32 version;
+			BERDecodeUnsigned<word32>(seq, version, INTEGER, 1, 1);	// check version
+			EllipticCurve ec(seq);
+			Point G = ec.BERDecodePoint(seq);
+			Integer n(seq);
+			Integer k;
+			bool cofactorPresent = !seq.EndReached();
+			if (cofactorPresent)
+				k.BERDecode(seq);
+			else
+				k = Integer::Zero();
 		seq.MessageEnd();
 
-		m_Gpc.SetCurveAndBase(GetCurve(), m_G);
+		Initialize(ec, G, n, k);
 	}
 }
 
 template <class EC>
-void ECParameters<EC>::DEREncode(BufferedTransformation &bt) const
+void DL_GroupParameters_EC<EC>::DEREncode(BufferedTransformation &bt) const
 {
 	if (m_encodeAsOID && !m_oid.m_values.empty())
 		m_oid.DEREncode(bt);
 	else
 	{
 		DERSequenceEncoder seq(bt);
-		m_ec->DEREncode(seq);
-		m_ec->DEREncodePoint(seq, m_G, m_compress);
+		DEREncodeUnsigned<word32>(seq, 1);	// version
+		GetCurve().DEREncode(seq);
+		GetCurve().DEREncodePoint(seq, GetSubgroupGenerator(), m_compress);
 		m_n.DEREncode(seq);
-		if (m_cofactorPresent)
+		if (m_k.NotZero())
 			m_k.DEREncode(seq);
 		seq.MessageEnd();
 	}
 }
 
 template <class EC>
-bool ECParameters<EC>::ValidateParameters(RandomNumberGenerator &rng) const
+Integer DL_GroupParameters_EC<EC>::GetCofactor() const
 {
-	Integer q = m_ec->FieldSize(), qSqrt = q.SquareRoot();
+	if (!m_k)
+	{
+		Integer q = GetCurve().FieldSize();
+		Integer qSqrt = q.SquareRoot();
+		m_k = (q+2*qSqrt+1)/m_n;
+	}
 
-	return m_ec->ValidateParameters(rng) && m_n!=q && m_n>4*qSqrt && VerifyPrime(rng, m_n)
-		&& m_ec->VerifyPoint(m_G) && !m_G.identity && m_ec->Multiply(m_n, m_G).identity
-		&& m_k==(q+2*qSqrt+1)/m_n && CheckMOVCondition(q, m_n);
+	return m_k;
 }
 
 template <class EC>
-void ECParameters<EC>::Precompute(unsigned int precomputationStorage)
+Integer DL_GroupParameters_EC<EC>::ConvertElementToInteger(const Element &element) const
 {
-	m_Gpc.Precompute(ExponentBitLength(), precomputationStorage);
+	return ConvertToInteger(element.x);
+};
+
+template <class EC>
+bool DL_GroupParameters_EC<EC>::ValidateGroup(RandomNumberGenerator &rng, unsigned int level) const
+{
+	bool pass = GetCurve().ValidateParameters(rng, level);
+
+	Integer q = GetCurve().FieldSize();
+	pass = pass && m_n!=q;
+
+	if (level >= 2)
+	{
+		Integer qSqrt = q.SquareRoot();
+		pass = pass && m_n>4*qSqrt;
+		pass = pass && VerifyPrime(rng, m_n, level-2);
+		pass = pass && (m_k.IsZero() || m_k == (q+2*qSqrt+1)/m_n);
+		pass = pass && CheckMOVCondition(q, m_n);
+	}
+
+	return pass;
 }
 
 template <class EC>
-void ECParameters<EC>::LoadPrecomputation(BufferedTransformation &bt)
+bool DL_GroupParameters_EC<EC>::ValidateElement(unsigned int level, const Element &g, const DL_FixedBasePrecomputation<Element> *gpc) const
 {
-	m_Gpc.Load(bt);
+	bool pass = !IsIdentity(g) && GetCurve().VerifyPoint(g);
+	if (level >= 1)
+	{
+		if (gpc)
+			pass = pass && gpc->Exponentiate(GetGroupPrecomputation(), Integer::One()) == g;
+	}
+	if (level >= 2)
+	{
+		const Integer &q = GetSubgroupOrder();
+		pass = pass && IsIdentity(gpc ? gpc->Exponentiate(GetGroupPrecomputation(), q) : ExponentiateElement(g, q));
+	}
+	return pass;
 }
 
 template <class EC>
-void ECParameters<EC>::SavePrecomputation(BufferedTransformation &bt) const
+void DL_GroupParameters_EC<EC>::SimultaneousExponentiate(Element *results, const Element &base, const Integer *exponents, unsigned int exponentsCount) const
 {
-	m_Gpc.Save(bt);
+	GetCurve().SimultaneousMultiply(results, base, exponents, exponentsCount);
+}
+
+template <class EC>
+DL_GroupParameters_EC<EC>::Element DL_GroupParameters_EC<EC>::MultiplyElements(const Element &a, const Element &b) const
+{
+	return GetCurve().Add(a, b);
+}
+
+template <class EC>
+DL_GroupParameters_EC<EC>::Element DL_GroupParameters_EC<EC>::CascadeExponentiate(const Element &element1, const Integer &exponent1, const Element &element2, const Integer &exponent2) const
+{
+	return GetCurve().CascadeMultiply(exponent1, element1, exponent2, element2);
+}
+
+template <class EC>
+OID DL_GroupParameters_EC<EC>::GetAlgorithmID() const
+{
+	return ASN1::id_ecPublicKey();
 }
 
 // ******************************************************************
 
 template <class EC>
-ECPublicKey<EC>::ECPublicKey(BufferedTransformation &bt)
+void DL_PublicKey_EC<EC>::BERDecodeKey2(BufferedTransformation &bt, bool parametersPresent, unsigned int size)
+{
+	typename EC::Point P;
+	if (!GetGroupParameters().GetCurve().DecodePoint(P, bt, size))
+		BERDecodeError();
+	SetPublicElement(P);
+}
+
+template <class EC>
+void DL_PublicKey_EC<EC>::DEREncodeKey(BufferedTransformation &bt) const
+{
+	GetGroupParameters().GetCurve().EncodePoint(bt, GetPublicElement(), GetGroupParameters().GetPointCompression());
+}
+
+// ******************************************************************
+
+template <class EC>
+void DL_PrivateKey_EC<EC>::BERDecodeKey2(BufferedTransformation &bt, bool parametersPresent, unsigned int size)
 {
 	BERSequenceDecoder seq(bt);
-		BERSequenceDecoder algorithm(seq);
-			if (OID(algorithm) != ASN1::id_ecPublicKey())
-				BERDecodeError();
-			ECParameters<EC>::BERDecode(algorithm);
-		algorithm.MessageEnd();
-		SecByteBlock subjectPublicKey;
-		unsigned int unusedBits;
-		BERDecodeBitString(seq, subjectPublicKey, unusedBits);
-		if (!(unusedBits == 0 && m_ec->DecodePoint(m_Q, subjectPublicKey, subjectPublicKey.size)))
-			BERDecodeError();
-	seq.MessageEnd();
-
-	m_Qpc.SetCurveAndBase(GetCurve(), m_Q);
-}
-
-template <class EC>
-void ECPublicKey<EC>::DEREncode(BufferedTransformation &bt) const
-{
-	DERSequenceEncoder seq(bt);
-		DERSequenceEncoder algorithm(seq);
-			ASN1::id_ecPublicKey().DEREncode(algorithm);
-			ECParameters<EC>::DEREncode(algorithm);
-		algorithm.MessageEnd();
-
-		SecByteBlock subjectPublicKey(EncodedPointSize());
-		EncodePoint(subjectPublicKey, m_Q);
-		DEREncodeBitString(seq, subjectPublicKey.ptr, subjectPublicKey.size);
-	seq.MessageEnd();
-}
-
-template <class EC>
-void ECPublicKey<EC>::Precompute(unsigned int precomputationStorage)
-{
-	m_Gpc.Precompute(ExponentBitLength(), precomputationStorage);
-	m_Qpc.Precompute(ExponentBitLength(), precomputationStorage);
-}
-
-template <class EC>
-void ECPublicKey<EC>::LoadPrecomputation(BufferedTransformation &bt)
-{
-	m_Gpc.Load(bt);
-	m_Qpc.Load(bt);
-}
-
-template <class EC>
-void ECPublicKey<EC>::SavePrecomputation(BufferedTransformation &bt) const
-{
-	m_Gpc.Save(bt);
-	m_Qpc.Save(bt);
-}
-
-template <class EC>
-Integer ECPublicKey<EC>::EncodeDigest(ECSignatureScheme ss, const byte *digest, unsigned int digestLen) const
-{
-	if (ss == ECNR)
-		return NR_EncodeDigest(m_n.BitCount(), digest, digestLen);
-	else
-	{
-		assert(ss == ECDSA);
-		return DSA_EncodeDigest(m_n.BitCount(), digest, digestLen);
-	}
-}
-
-// ******************************************************************
-
-template <class EC>
-ECPrivateKey<EC>::ECPrivateKey(BufferedTransformation &bt)
-{
-	BERSequenceDecoder privateKeyInfo(bt);
 		word32 version;
-		BERDecodeUnsigned<word32>(privateKeyInfo, version, INTEGER, 0, 1);	// check version
+		BERDecodeUnsigned<word32>(seq, version, INTEGER, 1, 1);	// check version
 
-		if (version == 1)
-			RawDecode(privateKeyInfo, true);	// for backwards compatibility
-		else
-		{
-			BERSequenceDecoder algorithm(privateKeyInfo);
-				ASN1::id_ecPublicKey().BERDecodeAndCheck(algorithm);
-				bool noParameters = algorithm.PeekByte() == TAG_NULL;
-				if (noParameters)
-					BERDecodeNull(algorithm);
-				else
-					ECParameters<EC>::BERDecode(algorithm);
-			algorithm.MessageEnd();
-
-			BERGeneralDecoder octetString(privateKeyInfo, OCTET_STRING);
-				BERSequenceDecoder privateKey(octetString);
-					BERDecodeUnsigned<word32>(privateKey, version, INTEGER, 1, 1);	// check version
-					RawDecode(privateKey, noParameters);
-				privateKey.MessageEnd();
-			octetString.MessageEnd();
-		}
-	privateKeyInfo.MessageEnd();
-
-	m_Qpc.SetCurveAndBase(GetCurve(), m_Q);
-}
-
-template <class EC>
-void ECPrivateKey<EC>::RawDecode(BERSequenceDecoder &seq, bool needParameters)
-{
-	// SEC 1 ver 1.0 says privateKey (m_d) has the same length as order of the curve
-	// but there is some confusion so I'll allow any length
-	BERGeneralDecoder dec(seq, OCTET_STRING);
-	if (!dec.IsDefiniteLength())
-		BERDecodeError();
-	m_d.Decode(dec, dec.RemainingLength());
-	dec.MessageEnd();
-	if (needParameters && seq.PeekByte() != (CONTEXT_SPECIFIC | CONSTRUCTED | 0))
-		BERDecodeError();
-	if (!seq.EndReached() && seq.PeekByte() == (CONTEXT_SPECIFIC | CONSTRUCTED | 0))
-	{
-		BERGeneralDecoder parameters(seq, CONTEXT_SPECIFIC | CONSTRUCTED | 0);
-		ECParameters<EC>::BERDecode(parameters);
-		parameters.MessageEnd();
-	}
-	if (seq.EndReached())
-		m_Q = m_Gpc.Multiply(m_d);
-	{
-		SecByteBlock subjectPublicKey;
-		unsigned int unusedBits;
-		BERGeneralDecoder publicKey(seq, CONTEXT_SPECIFIC | CONSTRUCTED | 1);
-		BERDecodeBitString(publicKey, subjectPublicKey, unusedBits);
-		publicKey.MessageEnd();
-		if (!(unusedBits == 0 && m_ec->DecodePoint(m_Q, subjectPublicKey, subjectPublicKey.size)))
+		BERGeneralDecoder dec(seq, OCTET_STRING);
+		if (!dec.IsDefiniteLength())
 			BERDecodeError();
-	}
-}
-
-template <class EC>
-void ECPrivateKey<EC>::DEREncode(BufferedTransformation &bt) const
-{
-	DERSequenceEncoder privateKeyInfo(bt);
-		DEREncodeUnsigned<word32>(privateKeyInfo, 0);	// version
-
-		DERSequenceEncoder algorithm(privateKeyInfo);
-			ASN1::id_ecPublicKey().DEREncode(algorithm);
-			ECParameters<EC>::DEREncode(algorithm);
-		algorithm.MessageEnd();
-
-		DERGeneralEncoder octetString(privateKeyInfo, OCTET_STRING);
-			DERSequenceEncoder privateKey(octetString);
-				DEREncodeUnsigned<word32>(privateKey, 1);	// version
-				// SEC 1 ver 1.0 says privateKey (m_d) has the same length as order of the curve
-				// this will be changed to order of base point in a future version
-				m_d.DEREncodeAsOctetString(privateKey, m_n.ByteCount());
-
-				DERGeneralEncoder publicKey(privateKey, CONTEXT_SPECIFIC | CONSTRUCTED | 1);
-					SecByteBlock subjectPublicKey(EncodedPointSize());
-					EncodePoint(subjectPublicKey, m_Q);
-					DEREncodeBitString(publicKey, subjectPublicKey.ptr, subjectPublicKey.size);
-				publicKey.MessageEnd();
-			privateKey.MessageEnd();
-		octetString.MessageEnd();
-	privateKeyInfo.MessageEnd();
-}
-
-template <class EC>
-void ECPrivateKey<EC>::Randomize(RandomNumberGenerator &rng)
-{
-	m_d.Randomize(rng, 1, m_n-1, Integer::ANY);
-	m_Q = m_Gpc.Multiply(m_d);
-	m_Qpc.SetCurveAndBase(GetCurve(), m_Q);
-}
-
-// ******************************************************************
-
-template <class EC, ECSignatureScheme SS>
-bool ECDigestVerifier<EC, SS>::RawVerify(const Integer &e, const Integer &r, const Integer &s) const
-{
-	if (SS == ECNR)
-	{
-		if (r>=m_n || r<1 || s>=m_n)
-			return false;
-
-		// check r == ((r*P + s*P).x + e) % m_n
-		Integer x = ConvertToInteger(m_Gpc.CascadeMultiply(s, m_Qpc, r).x);
-		return r == (x+e) % m_n;
-	}
-	else	// ECDSA
-	{
-		if (r>=m_n || r<1 || s>=m_n || s<1)
-			return false;
-
-		Integer w = EuclideanMultiplicativeInverse(s, m_n);
-		Integer u1 = (e * w) % m_n;
-		Integer u2 = (r * w) % m_n;
-		// check r == (u1*P + u2*P).x % n
-		return r == ConvertToInteger(m_Gpc.CascadeMultiply(u1, m_Qpc, u2).x) % m_n;
-	}
-}
-
-template <class EC, ECSignatureScheme SS>
-bool ECDigestVerifier<EC, SS>::VerifyDigest(const byte *digest, unsigned int digestLen, const byte *signature) const
-{
-	assert (digestLen <= MaxDigestLength());
-
-	Integer e = EncodeDigest(SS, digest, digestLen);
-	Integer r(signature, ExponentLength());
-	Integer s(signature+ExponentLength(), ExponentLength());
-
-	return RawVerify(e, r, s);
-}
-
-// ******************************************************************
-
-template <class EC, ECSignatureScheme SS>
-void ECDigestSigner<EC, SS>::RawSign(const Integer &k, const Integer &e, Integer &r, Integer &s) const
-{
-	if (SS == ECNR)
-	{
-		do
+		Integer x;
+		x.Decode(dec, dec.RemainingLength());
+		dec.MessageEnd();
+		if (!parametersPresent && seq.PeekByte() != (CONTEXT_SPECIFIC | CONSTRUCTED | 0))
+			BERDecodeError();
+		if (!seq.EndReached() && seq.PeekByte() == (CONTEXT_SPECIFIC | CONSTRUCTED | 0))
 		{
-			// convert kP.x into an Integer
-			Integer x = ConvertToInteger(m_Gpc.Multiply(k).x);
-			r = (x+e) % m_n;
-			s = (k-m_d*r) % m_n;
-		} while (!r);
-	}
-	else
-	{
-		do
+			BERGeneralDecoder parameters(seq, CONTEXT_SPECIFIC | CONSTRUCTED | 0);
+			AccessGroupParameters().BERDecode(parameters);
+			parameters.MessageEnd();
+		}
+		if (!seq.EndReached())
 		{
-			r = ConvertToInteger(m_Gpc.Multiply(k).x) % m_n;
-			Integer kInv = EuclideanMultiplicativeInverse(k, m_n);
-			s = (kInv * (m_d*r + e)) % m_n;
-		} while (!r || !s);
-	}
+			// skip over the public element
+			SecByteBlock subjectPublicKey;
+			unsigned int unusedBits;
+			BERGeneralDecoder publicKey(seq, CONTEXT_SPECIFIC | CONSTRUCTED | 1);
+			BERDecodeBitString(publicKey, subjectPublicKey, unusedBits);
+			publicKey.MessageEnd();
+			Element Q;
+			if (!(unusedBits == 0 && GetGroupParameters().GetCurve().DecodePoint(Q, subjectPublicKey, subjectPublicKey.size())))
+				BERDecodeError();
+		}
+	seq.MessageEnd();
+
+	SetPrivateExponent(x);
 }
 
-template <class EC, ECSignatureScheme SS>
-void ECDigestSigner<EC, SS>::SignDigest(RandomNumberGenerator &rng, const byte *digest, unsigned int digestLen, byte *signature) const
+template <class EC>
+void DL_PrivateKey_EC<EC>::DEREncodeKey(BufferedTransformation &bt) const
 {
-	Integer r, s;
-	Integer e = EncodeDigest(SS, digest, digestLen);
-	Integer k(rng, 1, m_n-1, Integer::ANY);
-
-	RawSign(k, e, r, s);
-
-	r.Encode(signature, ExponentLength());
-	s.Encode(signature+ExponentLength(), ExponentLength());
+	DERSequenceEncoder privateKey(bt);
+		DEREncodeUnsigned<word32>(privateKey, 1);	// version
+		// SEC 1 ver 1.0 says privateKey (m_d) has the same length as order of the curve
+		// this will be changed to order of base point in a future version
+		GetPrivateExponent().DEREncodeAsOctetString(privateKey, GetGroupParameters().GetSubgroupOrder().ByteCount());
+	privateKey.MessageEnd();
 }
 
 // ******************************************************************
 
-template <class EC>
-void ECDHC<EC>::GenerateKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const
-{
-	Integer x(rng, 1, m_n-1);
-	Point Q = m_Gpc.Multiply(x);
-	x.Encode(privateKey, PrivateKeyLength());
-	EncodePoint(publicKey, Q);
-}
-
-template <class EC>
-bool ECDHC<EC>::Agree(byte *agreedValue, const byte *privateKey, const byte *otherPublicKey, bool validateOtherPublicKey) const
-{
-	Point W;
-	if (!GetCurve().DecodePoint(W, otherPublicKey, PublicKeyLength()))
-		return false;
-	if (validateOtherPublicKey && !GetCurve().VerifyPoint(W))
-		return false;
-
-	Integer s(privateKey, PrivateKeyLength());
-	Point Q = GetCurve().Multiply(m_k*s, W);
-	if (Q.identity)
-		return false;
-	Q.x.Encode(agreedValue, AgreedValueLength());
-	return true;
-}
-
-// ******************************************************************
-
-template <class EC>
-void ECMQVC<EC>::GenerateStaticKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const
-{
-	Integer x(rng, 1, m_n-1);
-	Point Q = m_Gpc.Multiply(x);
-	x.Encode(privateKey, StaticPrivateKeyLength());
-	EncodePoint(publicKey, Q);
-}
-
-template <class EC>
-void ECMQVC<EC>::GenerateEphemeralKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const
-{
-	Integer x(rng, 1, m_n-1);
-	Point Q = m_Gpc.Multiply(x);
-	x.Encode(privateKey, ExponentLength());
-	EncodePoint(privateKey+ExponentLength(), Q);
-	EncodePoint(publicKey, Q);
-}
-
-template <class EC>
-bool ECMQVC<EC>::Agree(byte *agreedValue, const byte *staticPrivateKey, const byte *ephemeralPrivateKey, const byte *staticOtherPublicKey, const byte *ephemeralOtherPublicKey, bool validateStaticOtherPublicKey) const
-{
-	Point WW, VV;
-	if (!(GetCurve().DecodePoint(WW, staticOtherPublicKey, StaticPublicKeyLength())
-		  && GetCurve().DecodePoint(VV, ephemeralOtherPublicKey, EphemeralPublicKeyLength())))
-		return false;
-	if (!GetCurve().VerifyPoint(VV) || (validateStaticOtherPublicKey && !GetCurve().VerifyPoint(WW)))
-		return false;
-
-	Integer s(staticPrivateKey, StaticPrivateKeyLength());
-	Integer u(ephemeralPrivateKey, ExponentLength());
-	Point V;
-	if (!GetCurve().DecodePoint(V, ephemeralPrivateKey+ExponentLength(), EncodedPointSize()))
-		return false;
-
-	Integer h2 = Integer::Power2((m_n.BitCount()+1)/2);
-	Integer e = ((h2+ConvertToInteger(V.x)%h2)*s+u) % m_n;
-	Point Q = GetCurve().CascadeMultiply(m_k*e, VV, m_k*(e*(h2+ConvertToInteger(VV.x)%h2)%m_n), WW);
-	if (Q.identity)
-		return false;
-	Q.x.Encode(agreedValue, AgreedValueLength());
-	return true;
-}
-
-template class ECParameters<EC2N>;
-template class ECParameters<ECP>;
-template class ECPublicKey<EC2N>;
-template class ECPublicKey<ECP>;
-template class ECPrivateKey<EC2N>;
-template class ECPrivateKey<ECP>;
-template class ECDigestVerifier<EC2N, ECDSA>;
-template class ECDigestVerifier<ECP, ECDSA>;
-template class ECDigestSigner<EC2N, ECDSA>;
-template class ECDigestSigner<ECP, ECDSA>;
-template class ECDigestVerifier<EC2N, ECNR>;
-template class ECDigestVerifier<ECP, ECNR>;
-template class ECDigestSigner<EC2N, ECNR>;
-template class ECDigestSigner<ECP, ECNR>;
-template class ECDHC<EC2N>;
-template class ECDHC<ECP>;
-template class ECMQVC<EC2N>;
-template class ECMQVC<ECP>;
+template class DL_GroupParameters_EC<EC2N>;
+template class DL_GroupParameters_EC<ECP>;
+template class DL_PublicKey_EC<EC2N>;
+template class DL_PublicKey_EC<ECP>;
+template class DL_PrivateKey_EC<EC2N>;
+template class DL_PrivateKey_EC<ECP>;
 
 NAMESPACE_END

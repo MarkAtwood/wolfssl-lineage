@@ -2,32 +2,33 @@
 
 #include "pch.h"
 #include "iterhash.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-template <class T>
-IteratedHashBase<T>::IteratedHashBase(unsigned int blockSize, unsigned int digestSize)
-	: blockSize(blockSize), countLo(0), countHi(0)
-	, data(blockSize/sizeof(T)), digest(digestSize/sizeof(T))
+template <class T, class BASE>
+IteratedHashBase<T, BASE>::IteratedHashBase(unsigned int blockSize, unsigned int digestSize)
+	: m_data(blockSize/sizeof(T)), m_digest(digestSize/sizeof(T))
+	, m_countHi(0), m_countLo(0)
 {
 }
 
-template <class T> void IteratedHashBase<T>::Update(const byte *input, unsigned int len)
+template <class T, class BASE> void IteratedHashBase<T, BASE>::Update(const byte *input, unsigned int len)
 {
-	HashWordType tmp = countLo;
-	if ((countLo = tmp + ((word32)len << 3)) < tmp)
-		countHi++;             // Carry from low to high
-	countHi += len >> (8*sizeof(HashWordType)-3);
+	HashWordType tmp = m_countLo;
+	if ((m_countLo = tmp + len) < tmp)
+		m_countHi++;             // Carry from low to high
+	m_countHi += SafeRightShift<8*sizeof(HashWordType)>(len);
 
-	assert((blockSize & (blockSize-1)) == 0);	// blockSize is a power of 2
-	unsigned int num = (unsigned int)(tmp >> 3) & (blockSize-1);
+	unsigned int blockSize = BlockSize();
+	unsigned int num = (unsigned int)(tmp & (blockSize-1));
 
 	if (num != 0)
 	{
 		if ((num+len) >= blockSize)
 		{
-			memcpy((byte *)data.ptr+num, input, blockSize-num);
-			HashBlock(data);
+			memcpy((byte *)m_data.begin()+num, input, blockSize-num);
+			HashBlock(m_data);
 			input += (blockSize-num);
 			len-=(blockSize - num);
 			num=0;
@@ -35,7 +36,7 @@ template <class T> void IteratedHashBase<T>::Update(const byte *input, unsigned 
 		}
 		else
 		{
-			memcpy((byte *)data.ptr+num, input, len);
+			memcpy((byte *)m_data.begin()+num, input, len);
 			return;
 		}
 	}
@@ -44,7 +45,13 @@ template <class T> void IteratedHashBase<T>::Update(const byte *input, unsigned 
 	// chars and save the leftovers to this->data.
 	if (len >= blockSize)
 	{
-		if (IsAligned<T>(input))
+		if (input == (byte *)m_data.begin())
+		{
+			assert(len == blockSize);
+			HashBlock(m_data);
+			return;
+		}
+		else if (IsAligned<T>(input))
 		{
 			unsigned int leftOver = HashMultipleBlocks((T *)input, len);
 			input += (len - leftOver);
@@ -53,18 +60,27 @@ template <class T> void IteratedHashBase<T>::Update(const byte *input, unsigned 
 		else
 			do
 			{   // copy input first if it's not aligned correctly
-				memcpy(data, input, blockSize);
-				HashBlock(data);
+				memcpy(m_data, input, blockSize);
+				HashBlock(m_data);
 				input+=blockSize;
 				len-=blockSize;
 			} while (len >= blockSize);
 	}
 
-	memcpy(data, input, len);
+	memcpy(m_data, input, len);
 }
 
-template <class T> unsigned int IteratedHashBase<T>::HashMultipleBlocks(const T *input, unsigned int length)
+template <class T, class BASE> byte * IteratedHashBase<T, BASE>::CreateUpdateSpace(unsigned int &size)
 {
+	unsigned int blockSize = BlockSize();
+	unsigned int num = ModPowerOf2(m_countLo, blockSize);
+	size = blockSize - num;
+	return (byte *)m_data.begin() + num;
+}
+
+template <class T, class BASE> unsigned int IteratedHashBase<T, BASE>::HashMultipleBlocks(const T *input, unsigned int length)
+{
+	unsigned int blockSize = BlockSize();
 	do
 	{
 		HashBlock(input);
@@ -75,35 +91,33 @@ template <class T> unsigned int IteratedHashBase<T>::HashMultipleBlocks(const T 
 	return length;
 }
 
-template <class T> void IteratedHashBase<T>::PadLastBlock(unsigned int lastBlockSize, byte padFirst)
+template <class T, class BASE> void IteratedHashBase<T, BASE>::PadLastBlock(unsigned int lastBlockSize, byte padFirst)
 {
-	unsigned int num = (unsigned int)(countLo >> 3) & (blockSize-1);
-	assert(num < blockSize);
-	((byte *)data.ptr)[num++]=padFirst;
+	unsigned int blockSize = BlockSize();
+	unsigned int num = ModPowerOf2(m_countLo, blockSize);
+	((byte *)m_data.begin())[num++]=padFirst;
 	if (num <= lastBlockSize)
-		memset((byte *)data.ptr+num, 0, lastBlockSize-num);
+		memset((byte *)m_data.begin()+num, 0, lastBlockSize-num);
 	else
 	{
-		memset((byte *)data.ptr+num, 0, blockSize-num);
-		HashBlock(data);
-		memset(data, 0, lastBlockSize);
+		memset((byte *)m_data.begin()+num, 0, blockSize-num);
+		HashBlock(m_data);
+		memset(m_data, 0, lastBlockSize);
 	}
 }
 
-template <class T> void IteratedHashBase<T>::Reinit()
+template <class T, class BASE> void IteratedHashBase<T, BASE>::Restart()
 {
-	countLo = countHi = 0;
+	m_countLo = m_countHi = 0;
 	Init();
 }
 
-// provide empty definitions to avoid instantiation warnings
-template <class T> void IteratedHashBase<T>::Init() {}
-template <class T> void IteratedHashBase<T>::HashBlock(const T *input) {}
-
 #ifdef WORD64_AVAILABLE
-template class IteratedHashBase<word64>;
+template class IteratedHashBase<word64, HashTransformation>;
+template class IteratedHashBase<word64, MessageAuthenticationCode>;
 #endif
 
-template class IteratedHashBase<word32>;
+template class IteratedHashBase<word32, HashTransformation>;
+template class IteratedHashBase<word32, MessageAuthenticationCode>;
 
 NAMESPACE_END

@@ -3,7 +3,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-const word32 Blowfish::p_init[Blowfish::ROUNDS+2] =
+const word32 Blowfish::Base::p_init[Blowfish::ROUNDS+2] =
 {
   608135816U, 2242054355U,  320440878U,   57701188U,
  2752067618U,  698298832U,  137296536U, 3964562569U,
@@ -12,7 +12,7 @@ const word32 Blowfish::p_init[Blowfish::ROUNDS+2] =
  2450970073U, 2306472731U
 } ;
 
-const word32 Blowfish::s_init[4*256] = {
+const word32 Blowfish::Base::s_init[4*256] = {
  3509652390U, 2564797868U,  805139163U, 3491422135U,
  3101798381U, 1780907670U, 3128725573U, 4046225305U,
   614570311U, 3012652279U,  134345442U, 2240740374U,

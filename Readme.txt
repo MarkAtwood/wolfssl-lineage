@@ -1,53 +1,58 @@
 Crypto++: a C++ Class Library of Cryptographic Primitives
-Version 4.2 11/5/2001
+Version 5.0 9/11/2002
 
 This library includes:
 
 - a class hierarchy with an API defined by abstract base classes  
-- Proposed AES (Rijndael) and other AES candidates: RC6, MARS, 
-  Twofish, Serpent, CAST-256  
-- other symmetric block ciphers: IDEA, DES, Triple DES (DES-EDE2 
-  and DES-EDE3), DESX (DES-XEX3), RC2, RC5, Blowfish, Diamond2, 
-  TEA, SAFER, 3-WAY, GOST, SHARK, CAST-128, Square, Skipjack  
-- generic cipher modes: CBC padded, CBC ciphertext stealing (CTS), 
-  CFB, OFB, counter mode  
-- stream ciphers: Panama, ARC4, SEAL, WAKE, Sapphire, BlumBlumShub  
-- public key cryptography: RSA, DSA, ElGamal, Nyberg-Rueppel (NR), 
-  BlumGoldwasser, Rabin, Rabin-Williams (RW), LUC, LUCELG  
-- padding schemes for public-key systems: PKCS#1 v2.0, OAEP, PSSR, 
-  IEEE P1363 EMSA2  
-- key agreement schemes: Diffie-Hellman (DH), Unified Diffie-
-  Hellman (DH2), Menezes-Qu-Vanstone (MQV), LUCDIF, XTR-DH  
-- elliptic curve cryptography: ECDSA, ECNR, ECIES, ECDHC, ECMQVC  
-- one-way hash functions: SHA-1, MD2, MD4, MD5, HAVAL, RIPEMD-160, 
-  Tiger, SHA-2 (SHA-256, SHA-384, and SHA-512), Panama  
+- Proposed AES (Rijndael) and other AES candidates: RC6, MARS, Twofish, 
+  Serpent, CAST-256  
+- other symmetric block ciphers: IDEA, DES, Triple DES (DES-EDE2 and 
+  DES-EDE3), DESX (DES-XEX3), RC2, RC5, Blowfish, Diamond2, TEA, SAFER, 
+  3-WAY, GOST, SHARK, CAST-128, Square, Skipjack  
+- generic block cipher modes: ECB, CBC, CBC ciphertext stealing (CTS), 
+  CFB, OFB, counter (CTR) mode  
+- stream ciphers: Panama, ARC4, SEAL, WAKE, WAKE-OFB, Sapphire II, 
+  BlumBlumShub  
+- public key cryptography: RSA, DSA, ElGamal, Nyberg-Rueppel (NR), Rabin, 
+  Rabin-Williams (RW), LUC, LUCELG, DLIES (variants of DHAES), ESIGN  
+- padding schemes for public-key systems: PKCS#1 v2.0, OAEP, PSSR, IEEE 
+  P1363 EMSA2  
+- key agreement schemes: Diffie-Hellman (DH), Unified Diffie-Hellman 
+  (DH2), Menezes-Qu-Vanstone (MQV), LUCDIF, XTR-DH  
+- elliptic curve cryptography: ECDSA, ECNR, ECIES, ECDH, ECMQV (with 
+  optional cofactor multiplication for ECIES, ECDHC, ECMQVC)  
+- one-way hash functions: SHA-1, MD2, MD4, MD5, HAVAL, RIPEMD-160, Tiger, 
+  SHA-2 (SHA-256, SHA-384, and SHA-512), Panama  
+- public and private key validation for asymmetric algorithms  
 - message authentication codes: MD5-MAC, HMAC, XOR-MAC, CBC-MAC, DMAC  
 - cipher constructions based on hash functions: Luby-Rackoff, MDC  
-- pseudo random number generators (PRNG): ANSI X9.17 appendix C, 
-  PGP’s RandPool  
-- Shamir’s secret sharing scheme and Rabin’s information dispersal 
+- pseudo random number generators (PRNG): ANSI X9.17 appendix C, PGP's 
+  RandPool  
+- Shamir's secret sharing scheme and Rabin's information dispersal 
   algorithm (IDA)  
-- DEFLATE (RFC 1951) compression/decompression with gzip (RFC 
-  1952) and zlib (RFC 1950) format support  
+- DEFLATE (RFC 1951) compression/decompression with gzip (RFC 1952) and 
+  zlib (RFC 1950) format support  
 - fast multi-precision integer (bignum) and polynomial operations  
+- finite field arithmetics, including GF(p) and GF(2^n)  
 - prime number generation and verification  
 - various miscellaneous modules such as base 64 coding and 32-bit CRC  
 - class wrappers for these operating system features (optional):  
-  - high resolution timers on Windows, Unix, and MacOS  
-  - Berkeley and Windows style sockets  
-  - Windows named pipes  
-  - /dev/random and /dev/urandom on Linux and FreeBSD  
-  - Microsoft’s CryptGenRandom on Windows  
-- A high level interface for most of the above, using a 
-  filter/pipeline metaphor  
-- benchmarks and validation testing
+    - high resolution timers on Windows, Unix, and MacOS  
+    - Berkeley and Windows style sockets  
+    - Windows named pipes  
+    - /dev/random and /dev/urandom on Linux and FreeBSD  
+    - Microsoft's CryptGenRandom on Windows  
+- A high level interface for most of the above, using a filter/pipeline 
+  metaphor  
+- benchmarks and validation testing  
 
 You are welcome to use it for any purpose without paying me, but see
 license.txt for the fine print.
 
 This version of Crypto++ has been compiled successfully with MSVC 6.0
-and 7.0 on Windows 2000 SP2, GCC 2.95.3 on FreeBSD 4.3, GCC 2.95.2 on
-Linux 2.2 and SunOS 5.8, and GCC 3.0.2 on Cygwin 1.3.3.
+and 7.0 on Windows XP, GCC 2.95.4 on FreeBSD 4.6, GCC 2.95.3 on
+Linux 2.4 and SunOS 5.8, GCC 3.2 on Cygwin 1.3.12, and Metrowerks
+CodeWarrior 8.2.
 
 To compile Crypto++ with MSVC, open the "cryptest.dsw" workspace file
 and build the "cryptest" project. This will compile Crypto++ as a static
@@ -63,7 +68,7 @@ you are using GNU Make and GNU ld. The make process will produce two files,
 libcryptopp.a and cryptest.exe. Run "cryptest.exe v" for the validation
 suite.
 
-Crypto++ is documented mostly in the header files.  If you are
+Crypto++ is documented mostly through comments in header files.  If you are
 not familiar with cryptography, I suggest that you read an introductory
 text (such as Bruce Schneier's _Applied Cryptography_) before attempting
 to use this library.  Then, you should start by looking at
@@ -209,7 +214,7 @@ History
     - fixed syntax to allow GCC to compile without -fpermissive
     - relaxed some restrictions in the license
 
-4.2 - added HMAC support for longer keys
+4.2 - added support for longer HMAC keys
     - added MD4 (which is not secure so use for compatibility purposes only)
     - added compatibility fixes/workarounds for STLport 4.5, GCC 3.0.2,
       and MSVC 7.0
@@ -218,3 +223,21 @@ History
     - fixed a bug in CBC-MAC with MACing multiple messages with the same object
     - fixed a bug in RC5 and RC6 with zero-length keys
     - fixed a bug in Adler32 where incorrect checksum may be generated
+
+5.0 - added ESIGN, DLIES, WAKE-OFB, PBKDF1 and PBKDF2 from PKCS #5
+    - added key validation for encryption and signature public/private keys
+    - renamed StreamCipher interface to SymmetricCipher, which is now implemented
+      by both stream ciphers and block cipher modes including ECB and CBC
+    - added keying interfaces to support resetting of keys and IVs without
+      having to destroy and recreate objects
+    - changed filter interface to support non-blocking input/output
+    - changed SocketSource and SocketSink to use overlapped I/O on Microsoft Windows
+    - grouped related classes inside structs to help templates, for example
+      AESEncryption and AESDecryption are now AES::Encryption and AES::Decryption
+    - where possible, typedefs have been added to improve backwards 
+      compatibility when the CRYPTOPP_MAINTAIN_BACKWARDS_COMPATIBILITY macro is defined
+    - changed HAVAL and IDEA to use public domain code
+    - implemented SSE2 optimizations for Integer operations
+    - is being evaluated for FIPS 140-2 compliance
+    - fixed a bug in HMAC::TruncatedFinal()
+    - fixed SKIPJACK byte ordering following NIST clarification dated 5/9/02

@@ -5,11 +5,11 @@
 #include "hmac.h"
 #include "des.h"
 #include "filters.h"
+#include "modes.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-typedef DES_EDE2_Encryption Default_ECB_Encryption;
-typedef DES_EDE2_Decryption Default_ECB_Decryption;
+typedef DES_EDE2 Default_BlockCipher;
 typedef SHA DefaultHashModule;
 typedef HMAC<DefaultHashModule> DefaultMAC;
 
@@ -17,8 +17,8 @@ typedef HMAC<DefaultHashModule> DefaultMAC;
 class DefaultEncryptor : public ProxyFilter
 {
 public:
-	DefaultEncryptor(const char *passphrase, BufferedTransformation *outQueue = NULL);
-	DefaultEncryptor(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQueue = NULL);
+	DefaultEncryptor(const char *passphrase, BufferedTransformation *attachment = NULL);
+	DefaultEncryptor(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *attachment = NULL);
 
 protected:
 	void FirstPut(const byte *);
@@ -26,21 +26,21 @@ protected:
 
 private:
 	SecByteBlock m_passphrase;
-	member_ptr<Default_ECB_Encryption> m_cipher;
+	CBC_Mode<Default_BlockCipher>::Encryption m_cipher;
 };
 
 //! Password-Based Decryptor using DES-EDE2
 class DefaultDecryptor : public ProxyFilter
 {
 public:
-	DefaultDecryptor(const char *passphrase, BufferedTransformation *outQueue = NULL, bool throwException=true);
-	DefaultDecryptor(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQueue = NULL, bool throwException=true);
+	DefaultDecryptor(const char *passphrase, BufferedTransformation *attachment = NULL, bool throwException=true);
+	DefaultDecryptor(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *attachment = NULL, bool throwException=true);
 
-	class Err : public BufferedTransformation::Err
+	class Err : public Exception
 	{
 	public:
 		Err(const std::string &s) 
-			: BufferedTransformation::Err(DATA_INTEGRITY_CHECK_FAILED, s) {}
+			: Exception(DATA_INTEGRITY_CHECK_FAILED, s) {}
 	};
 	class KeyBadErr : public Err {public: KeyBadErr() : Err("DefaultDecryptor: cannot decrypt message with this passphrase") {}};
 
@@ -57,7 +57,7 @@ private:
 	void CheckKey(const byte *salt, const byte *keyCheck);
 
 	SecByteBlock m_passphrase;
-	member_ptr<Default_ECB_Decryption> m_cipher;
+	CBC_Mode<Default_BlockCipher>::Decryption m_cipher;
 	member_ptr<FilterWithBufferedInput> m_decryptor;
 	bool m_throwException;
 };
@@ -66,8 +66,8 @@ private:
 class DefaultEncryptorWithMAC : public ProxyFilter
 {
 public:
-	DefaultEncryptorWithMAC(const char *passphrase, BufferedTransformation *outQueue = NULL);
-	DefaultEncryptorWithMAC(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQueue = NULL);
+	DefaultEncryptorWithMAC(const char *passphrase, BufferedTransformation *attachment = NULL);
+	DefaultEncryptorWithMAC(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *attachment = NULL);
 
 protected:
 	void FirstPut(const byte *inString) {}
@@ -83,8 +83,8 @@ class DefaultDecryptorWithMAC : public ProxyFilter
 public:
 	class MACBadErr : public DefaultDecryptor::Err {public: MACBadErr() : DefaultDecryptor::Err("DefaultDecryptorWithMAC: MAC check failed") {}};
 
-	DefaultDecryptorWithMAC(const char *passphrase, BufferedTransformation *outQueue = NULL, bool throwException=true);
-	DefaultDecryptorWithMAC(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQueue = NULL, bool throwException=true);
+	DefaultDecryptorWithMAC(const char *passphrase, BufferedTransformation *attachment = NULL, bool throwException=true);
+	DefaultDecryptorWithMAC(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *attachment = NULL, bool throwException=true);
 
 	DefaultDecryptor::State CurrentState() const;
 	bool CheckLastMAC() const;

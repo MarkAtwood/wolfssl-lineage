@@ -24,8 +24,8 @@ public:
 		c2.Encode(encodedElement+size/2, size/2);
 	}
 
-	bool operator==(const GFP2Element &rhs)	{return c1 == rhs.c1 && c2 == rhs.c2;}
-	bool operator!=(const GFP2Element &rhs) {return !operator==(rhs);}
+	bool operator==(const GFP2Element &rhs)	const {return c1 == rhs.c1 && c2 == rhs.c2;}
+	bool operator!=(const GFP2Element &rhs) const {return !operator==(rhs);}
 
 	void swap(GFP2Element &a)
 	{
@@ -45,7 +45,11 @@ class GFP2_ONB : public AbstractRing<GFP2Element>
 public:
 	typedef F BaseField;
 
-	GFP2_ONB(const Integer &p) : modp(p) {assert(p%3 == 2);}
+	GFP2_ONB(const Integer &p) : modp(p)
+	{
+		if (p%3 != 2)
+			throw InvalidArgument("GFP2_ONB: modulus must be equivalent to 2 mod 3");
+	}
 
 	const Integer& GetModulus() const {return modp.GetModulus();}
 
@@ -66,7 +70,7 @@ public:
 		return modp.Equal(a.c1, b.c1) && modp.Equal(a.c2, b.c2);
 	}
 
-	const Element& Zero() const
+	const Element& Identity() const
 	{
 		return GFP2Element::Zero();
 	}
@@ -118,9 +122,9 @@ public:
 		return a.c1.NotZero() || a.c2.NotZero();
 	}
 
-	const Element& One() const
+	const Element& MultiplicativeIdentity() const
 	{
-		result.c1 = result.c2 = modp.Inverse(modp.One());
+		result.c1 = result.c2 = modp.Inverse(modp.MultiplicativeIdentity());
 		return result;
 	}
 

@@ -16,6 +16,7 @@
 
 #include "pch.h"
 #include "mars.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -26,10 +27,10 @@ static word32 gen_mask(word32 x)
 
 	m = (~x ^ (x >> 1)) & 0x7fffffff;
 	m &= (m >> 1) & (m >> 2); m &= (m >> 3) & (m >> 6); 
-	
+
 	if(!m)
 		return 0;
-	
+
 	m <<= 1; m |= (m << 1); m |= (m << 2); m |= (m << 4);
 	m |= (m << 1) & ~x & 0x80000000;
 
@@ -37,16 +38,14 @@ static word32 gen_mask(word32 x)
 };
 NAMESPACE_END
 
-MARS::MARS(const byte *userKey, unsigned int keylen)
-	: EK(40)
+void MARS::Base::UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length)
 {
-	assert(keylen == KeyLength(keylen));
+	AssertValidKeyLength(length);
 
 	// Initialize T[] with the key data
-	SecBlock<word32> T(15);
-	GetUserKeyLittleEndian(T.ptr, 15, userKey, keylen);
-	assert(keylen%4==0 && keylen/4 < 15);
-	T[keylen/4] = keylen/4;
+	FixedSizeSecBlock<word32, 15> T;
+	GetUserKey(LITTLE_ENDIAN_ORDER, T.begin(), 15, userKey, length);
+	T[length/4] = length/4;
 
 	for (unsigned int j=0; j<4; j++)	// compute 10 words of K[] in each iteration
 	{
@@ -120,11 +119,13 @@ MARS::MARS(const byte *userKey, unsigned int keylen)
 	d ^= r; 				\
 	b -= rotlMod(l, r)
 
-void MARSEncryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
+typedef BlockGetAndPut<word32, LittleEndian> Block;
+
+void MARS::Enc::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 a, b, c, d, l, m, r;
 	
-	GetBlockLittleEndian(inBlock,a,b,c,d);
+	Block::Get(inBlock)(a)(b)(c)(d);
 
 	a += EK[0];
 	b += EK[1];
@@ -160,14 +161,14 @@ void MARSEncryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
 	c -= EK[38];
 	d -= EK[39];
 
-	PutBlockLittleEndian(outBlock,a,b,c,d);
+	Block::Put(xorBlock, outBlock)(a)(b)(c)(d);
 }
 
-void MARSDecryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
+void MARS::Dec::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 a, b, c, d, l, m, r;
 
-	GetBlockLittleEndian(inBlock,d,c,b,a);
+	Block::Get(inBlock)(d)(c)(b)(a);
 	
 	d += EK[36];
 	c += EK[37];
@@ -203,7 +204,7 @@ void MARSDecryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
 	b -= EK[2];
 	a -= EK[3];
 
-	PutBlockLittleEndian(outBlock,d,c,b,a);
+	Block::Put(xorBlock, outBlock)(d)(c)(b)(a);
 }
 
 NAMESPACE_END

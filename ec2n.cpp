@@ -3,7 +3,6 @@
 #include "pch.h"
 #include "ec2n.h"
 #include "asn.h"
-#include "nbtheory.h"	// for primeTable
 
 #include "algebra.cpp"
 #include "eprecomp.cpp"
@@ -18,7 +17,7 @@ EC2N::EC2N(BufferedTransformation &bt)
 	m_field->BERDecodeElement(seq, m_b);
 	// skip optional seed
 	if (!seq.EndReached())
-		BERDecodeOctetString(seq, g_bitBucket);
+		BERDecodeOctetString(seq, TheBitBucket());
 	seq.MessageEnd();
 }
 
@@ -90,22 +89,29 @@ bool EC2N::DecodePoint(EC2N::Point &P, BufferedTransformation &bt, unsigned int 
 	}
 }
 
-void EC2N::EncodePoint(byte *encodedPoint, const Point &P, bool compressed) const
+void EC2N::EncodePoint(BufferedTransformation &bt, const Point &P, bool compressed) const
 {
 	if (P.identity)
-		memset(encodedPoint, 0, EncodedPointSize(compressed));
+		NullStore().TransferTo(bt, EncodedPointSize(compressed));
 	else if (compressed)
 	{
-		encodedPoint[0] = 2 + (!P.x ? 0 : m_field->Divide(P.y, P.x).GetBit(0));
-		P.x.Encode(encodedPoint+1, m_field->MaxElementByteLength());
+		bt.Put(2 + (!P.x ? 0 : m_field->Divide(P.y, P.x).GetBit(0)));
+		P.x.Encode(bt, m_field->MaxElementByteLength());
 	}
 	else
 	{
 		unsigned int len = m_field->MaxElementByteLength();
-		encodedPoint[0] = 4;	// uncompressed
-		P.x.Encode(encodedPoint+1, len);
-		P.y.Encode(encodedPoint+1+len, len);
+		bt.Put(4);	// uncompressed
+		P.x.Encode(bt, len);
+		P.y.Encode(bt, len);
 	}
+}
+
+void EC2N::EncodePoint(byte *encodedPoint, const Point &P, bool compressed) const
+{
+	ArraySink sink(encodedPoint, EncodedPointSize(compressed));
+	EncodePoint(sink, P, compressed);
+	assert(sink.TotalPutLength() == EncodedPointSize(compressed));
 }
 
 EC2N::Point EC2N::BERDecodePoint(BufferedTransformation &bt) const
@@ -113,7 +119,7 @@ EC2N::Point EC2N::BERDecodePoint(BufferedTransformation &bt) const
 	SecByteBlock str;
 	BERDecodeOctetString(bt, str);
 	Point P;
-	if (!DecodePoint(P, str, str.size))
+	if (!DecodePoint(P, str, str.size()))
 		BERDecodeError();
 	return P;
 }
@@ -125,11 +131,16 @@ void EC2N::DEREncodePoint(BufferedTransformation &bt, const Point &P, bool compr
 	DEREncodeOctetString(bt, str);
 }
 
-bool EC2N::ValidateParameters(RandomNumberGenerator &rng) const
+bool EC2N::ValidateParameters(RandomNumberGenerator &rng, unsigned int level) const
 {
-	return m_field->GetModulus().IsIrreducible()
-		&& m_a.CoefficientCount() <= m_field->MaxElementBitLength()
-		&& m_b.CoefficientCount() <= m_field->MaxElementBitLength() && !!m_b;
+	bool pass = !!m_b;
+	pass = pass && m_a.CoefficientCount() <= m_field->MaxElementBitLength();
+	pass = pass && m_b.CoefficientCount() <= m_field->MaxElementBitLength();
+
+	if (level >= 1)
+		pass = pass && m_field->GetModulus().IsIrreducible();
+		
+	return pass;
 }
 
 bool EC2N::VerifyPoint(const Point &P) const
@@ -155,7 +166,7 @@ bool EC2N::Equal(const Point &P, const Point &Q) const
 	return (m_field->Equal(P.x,Q.x) && m_field->Equal(P.y,Q.y));
 }
 
-const EC2N::Point& EC2N::Zero() const
+const EC2N::Point& EC2N::Identity() const
 {
 	static const Point zero;
 	return zero;
@@ -179,7 +190,7 @@ const EC2N::Point& EC2N::Add(const Point &P, const Point &Q) const
 	if (P.identity) return Q;
 	if (Q.identity) return P;
 	if (Equal(P, Q)) return Double(P);
-	if (m_field->Equal(P.x, Q.x) && m_field->Equal(P.y, m_field->Add(Q.x, Q.y))) return Zero();
+	if (m_field->Equal(P.x, Q.x) && m_field->Equal(P.y, m_field->Add(Q.x, Q.y))) return Identity();
 
 	FieldElement t = m_field->Add(P.y, Q.y);
 	t = m_field->Divide(t, m_field->Add(P.x, Q.x));
@@ -199,7 +210,7 @@ const EC2N::Point& EC2N::Add(const Point &P, const Point &Q) const
 const EC2N::Point& EC2N::Double(const Point &P) const
 {
 	if (P.identity) return P;
-	if (!m_field->IsUnit(P.x)) return Zero();
+	if (!m_field->IsUnit(P.x)) return Identity();
 
 	FieldElement t = m_field->Divide(P.y, P.x);
 	m_field->Accumulate(t, P.x);
@@ -216,6 +227,7 @@ const EC2N::Point& EC2N::Double(const Point &P) const
 
 // ********************************************************
 
+/*
 EcPrecomputation<EC2N>& EcPrecomputation<EC2N>::operator=(const EcPrecomputation<EC2N> &rhs)
 {
 	m_ec = rhs.m_ec;
@@ -258,16 +270,18 @@ void EcPrecomputation<EC2N>::Save(BufferedTransformation &bt) const
 	seq.MessageEnd();
 }
 
-EC2N::Point EcPrecomputation<EC2N>::Multiply(const Integer &exponent) const
+EC2N::Point EcPrecomputation<EC2N>::Exponentiate(const Integer &exponent) const
 {
 	return m_ep.Exponentiate(exponent);
 }
 
-EC2N::Point EcPrecomputation<EC2N>::CascadeMultiply(const Integer &exponent, const EcPrecomputation<EC2N> &pc2, const Integer &exponent2) const
+EC2N::Point EcPrecomputation<EC2N>::CascadeExponentiate(const Integer &exponent, const DL_FixedBasePrecomputation<Element> &pc2, const Integer &exponent2) const
 {
-	return m_ep.CascadeExponentiate(exponent, pc2.m_ep, exponent2);
+	return m_ep.CascadeExponentiate(exponent, static_cast<const EcPrecomputation<EC2N> &>(pc2).m_ep, exponent2);
 }
+*/
 
 template class AbstractGroup<EC2N::Point>;
+template class DL_FixedBasePrecomputationImpl<EC2N::Point>;
 
 NAMESPACE_END

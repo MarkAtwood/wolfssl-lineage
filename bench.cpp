@@ -39,13 +39,11 @@
 #include "dmac.h"
 #include "blumshub.h"
 #include "rsa.h"
-#include "elgamal.h"
 #include "nr.h"
 #include "dsa.h"
 #include "luc.h"
 #include "rabin.h"
 #include "rw.h"
-#include "blumgold.h"
 #include "eccrypto.h"
 #include "ecp.h"
 #include "ec2n.h"
@@ -61,6 +59,7 @@
 #include "dh.h"
 #include "mqv.h"
 #include "xtrcrypt.h"
+#include "esign.h"
 
 #include "bench.h"
 
@@ -80,7 +79,7 @@ static const double CLOCK_TICKS_PER_SECOND = (double)CLK_TCK;
 static const double CLOCK_TICKS_PER_SECOND = 1000000.0;
 #endif
 
-static const byte *const key=(byte *)"0123456789abcdef000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+static const byte *const key=(byte *)"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
 static double logtotal = 0;
 static unsigned int logcount = 0;
@@ -113,8 +112,9 @@ void OutputResultOperations(const char *name, const char *operation, bool pc, un
 
 void BenchMark(const char *name, BlockTransformation &cipher, double timeTotal)
 {
-	const int BUF_SIZE = cipher.BlockSize();
+	const int BUF_SIZE = RoundDownToMultipleOf(1024U, cipher.OptimalNumberOfParallelBlocks() * cipher.BlockSize());
 	SecByteBlock buf(BUF_SIZE);
+	const int nBlocks = BUF_SIZE / cipher.BlockSize();
 	clock_t start = clock();
 
 	unsigned long i=0, length=BUF_SIZE;
@@ -123,7 +123,7 @@ void BenchMark(const char *name, BlockTransformation &cipher, double timeTotal)
 	{
 		length *= 2;
 		for (; i<length; i+=BUF_SIZE)
-			cipher.ProcessBlock(buf);
+			cipher.ProcessAndXorMultipleBlocks(buf, NULL, buf, nBlocks);
 		timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND;
 	}
 	while (timeTaken < 2.0/3*timeTotal);
@@ -131,9 +131,9 @@ void BenchMark(const char *name, BlockTransformation &cipher, double timeTotal)
 	OutputResultBytes(name, length, timeTaken);
 }
 
-void BenchMark(const char *name, StreamCipher &cipher, double timeTotal)
+void BenchMark(const char *name, StreamTransformation &cipher, double timeTotal)
 {
-	const int BUF_SIZE=128; // encrypt 128 bytes at a time
+	const int BUF_SIZE=1024;
 	SecByteBlock buf(BUF_SIZE);
 	clock_t start = clock();
 
@@ -151,9 +151,9 @@ void BenchMark(const char *name, StreamCipher &cipher, double timeTotal)
 	OutputResultBytes(name, length, timeTaken);
 }
 
-void BenchMark(const char *name, HashModule &hm, double timeTotal)
+void BenchMark(const char *name, HashTransformation &hash, double timeTotal)
 {
-	const int BUF_SIZE=1024; // update 1024 bytes at a time
+	const int BUF_SIZE=1024;
 	SecByteBlock buf(BUF_SIZE);
 	LC_RNG rng(time(NULL));
 	rng.GenerateBlock(buf, BUF_SIZE);
@@ -165,7 +165,7 @@ void BenchMark(const char *name, HashModule &hm, double timeTotal)
 	{
 		length *= 2;
 		for (; i<length; i+=BUF_SIZE)
-			hm.Update(buf, BUF_SIZE);
+			hash.Update(buf, BUF_SIZE);
 		timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND;
 	}
 	while (timeTaken < 2.0/3*timeTotal);
@@ -175,7 +175,7 @@ void BenchMark(const char *name, HashModule &hm, double timeTotal)
 
 void BenchMark(const char *name, BufferedTransformation &bt, double timeTotal)
 {
-	const int BUF_SIZE=1024; // update 1024 bytes at a time
+	const int BUF_SIZE=1024;
 	SecByteBlock buf(BUF_SIZE);
 	LC_RNG rng(time(NULL));
 	rng.GenerateBlock(buf, BUF_SIZE);
@@ -199,8 +199,8 @@ void BenchMarkEncryption(const char *name, PK_Encryptor &key, double timeTotal, 
 {
 	unsigned int len = 16;
 	LC_RNG rng(time(NULL));
-	SecByteBlock plaintext(len), ciphertext(key.CipherTextLength(len));
-	rng.GetBlock(plaintext, len);
+	SecByteBlock plaintext(len), ciphertext(key.CiphertextLength(len));
+	rng.GenerateBlock(plaintext, len);
 
 	clock_t start = clock();
 	unsigned int i;
@@ -209,36 +209,28 @@ void BenchMarkEncryption(const char *name, PK_Encryptor &key, double timeTotal, 
 		key.Encrypt(rng, plaintext, len, ciphertext);
 
 	OutputResultOperations(name, "Encryption", pc, i, timeTaken);
-}
 
-void BenchMarkEncryption(const char *name, PK_WithPrecomputation<PK_FixedLengthEncryptor> &key, double timeTotal)
-{
-	BenchMarkEncryption(name, dynamic_cast<PK_Encryptor &>(key), timeTotal);
-	key.Precompute(16);
-	BenchMarkEncryption(name, dynamic_cast<PK_Encryptor &>(key), timeTotal, true);
-}
-
-void BenchMarkEncryption(const char *name, PK_WithPrecomputation<PK_Encryptor> &key, double timeTotal)
-{
-	BenchMarkEncryption(name, dynamic_cast<PK_Encryptor &>(key), timeTotal);
-	key.Precompute(16);
-	BenchMarkEncryption(name, dynamic_cast<PK_Encryptor &>(key), timeTotal, true);
+	if (!pc && key.GetMaterial().SupportsPrecomputation())
+	{
+		key.AccessMaterial().Precompute(16);
+		BenchMarkEncryption(name, key, timeTotal, true);
+	}
 }
 
 void BenchMarkDecryption(const char *name, PK_Decryptor &priv, PK_Encryptor &pub, double timeTotal)
 {
 	unsigned int len = 16;
 	LC_RNG rng(time(NULL));
-	SecByteBlock ciphertext(pub.CipherTextLength(len));
-	SecByteBlock plaintext(pub.MaxPlainTextLength(ciphertext.size));
-	rng.GetBlock(plaintext, len);
+	SecByteBlock ciphertext(pub.CiphertextLength(len));
+	SecByteBlock plaintext(pub.MaxPlaintextLength(ciphertext.size()));
+	rng.GenerateBlock(plaintext, len);
 	pub.Encrypt(rng, plaintext, len, ciphertext);
 
 	clock_t start = clock();
 	unsigned int i;
 	double timeTaken;
 	for (timeTaken=(double)0, i=0; timeTaken < timeTotal; timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND, i++)
-		priv.Decrypt(ciphertext, ciphertext.size, plaintext);
+		priv.Decrypt(ciphertext, ciphertext.size(), plaintext);
 
 	OutputResultOperations(name, "Decryption", false, i, timeTaken);
 }
@@ -248,7 +240,7 @@ void BenchMarkSigning(const char *name, PK_Signer &key, double timeTotal, bool p
 	unsigned int len = 16;
 	LC_RNG rng(time(NULL));
 	SecByteBlock message(len), signature(key.SignatureLength());
-	rng.GetBlock(message, len);
+	rng.GenerateBlock(message, len);
 
 	clock_t start = clock();
 	unsigned int i;
@@ -257,21 +249,20 @@ void BenchMarkSigning(const char *name, PK_Signer &key, double timeTotal, bool p
 		key.SignMessage(rng, message, len, signature);
 
 	OutputResultOperations(name, "Signature", pc, i, timeTaken);
+
+	if (!pc && key.GetMaterial().SupportsPrecomputation())
+	{
+		key.AccessMaterial().Precompute(16);
+		BenchMarkSigning(name, key, timeTotal, true);
+	}
 }
 
-void BenchMarkSigning(const char *name, PK_WithPrecomputation<PK_Signer> &key, double timeTotal)
-{
-	BenchMarkSigning(name, dynamic_cast<PK_Signer &>(key), timeTotal);
-	key.Precompute(16);
-	BenchMarkSigning(name, dynamic_cast<PK_Signer &>(key), timeTotal, true);
-}
-
-void BenchMarkVerification(const char *name, PK_Signer &priv, PK_Verifier &pub, double timeTotal, bool pc=false)
+void BenchMarkVerification(const char *name, const PK_Signer &priv, PK_Verifier &pub, double timeTotal, bool pc=false)
 {
 	unsigned int len = 16;
 	LC_RNG rng(time(NULL));
 	SecByteBlock message(len), signature(pub.SignatureLength());
-	rng.GetBlock(message, len);
+	rng.GenerateBlock(message, len);
 	priv.SignMessage(rng, message, len, signature);
 
 	clock_t start = clock();
@@ -281,16 +272,15 @@ void BenchMarkVerification(const char *name, PK_Signer &priv, PK_Verifier &pub, 
 		pub.VerifyMessage(message, len, signature);
 
 	OutputResultOperations(name, "Verification", pc, i, timeTaken);
+
+	if (!pc && pub.GetMaterial().SupportsPrecomputation())
+	{
+		pub.AccessMaterial().Precompute(16);
+		BenchMarkVerification(name, priv, pub, timeTotal, true);
+	}
 }
 
-void BenchMarkVerification(const char *name, PK_Signer &priv, PK_WithPrecomputation<PK_Verifier> &pub, double timeTotal)
-{
-	BenchMarkVerification(name, priv, dynamic_cast<PK_Verifier &>(pub), timeTotal);
-	pub.Precompute(16);
-	BenchMarkVerification(name, priv, dynamic_cast<PK_Verifier &>(pub), timeTotal, true);
-}
-
-void BenchMarkKeyGen(const char *name, PK_SimpleKeyAgreementDomain &d, double timeTotal, bool pc=false)
+void BenchMarkKeyGen(const char *name, SimpleKeyAgreementDomain &d, double timeTotal, bool pc=false)
 {
 	LC_RNG rng(time(NULL));
 	SecByteBlock priv(d.PrivateKeyLength()), pub(d.PublicKeyLength());
@@ -302,16 +292,15 @@ void BenchMarkKeyGen(const char *name, PK_SimpleKeyAgreementDomain &d, double ti
 		d.GenerateKeyPair(rng, priv, pub);
 
 	OutputResultOperations(name, "Key-Pair Generation", pc, i, timeTaken);
+
+	if (!pc && d.GetMaterial().SupportsPrecomputation())
+	{
+		d.AccessMaterial().Precompute(16);
+		BenchMarkKeyGen(name, d, timeTotal, true);
+	}
 }
 
-void BenchMarkKeyGen(const char *name, PK_WithPrecomputation<PK_SimpleKeyAgreementDomain> &d, double timeTotal)
-{
-	BenchMarkKeyGen(name, dynamic_cast<PK_SimpleKeyAgreementDomain &>(d), timeTotal);
-	d.Precompute(16);
-	BenchMarkKeyGen(name, dynamic_cast<PK_SimpleKeyAgreementDomain &>(d), timeTotal, true);
-}
-
-void BenchMarkKeyGen(const char *name, PK_AuthenticatedKeyAgreementDomain &d, double timeTotal, bool pc=false)
+void BenchMarkKeyGen(const char *name, AuthenticatedKeyAgreementDomain &d, double timeTotal, bool pc=false)
 {
 	LC_RNG rng(time(NULL));
 	SecByteBlock priv(d.EphemeralPrivateKeyLength()), pub(d.EphemeralPublicKeyLength());
@@ -323,16 +312,15 @@ void BenchMarkKeyGen(const char *name, PK_AuthenticatedKeyAgreementDomain &d, do
 		d.GenerateEphemeralKeyPair(rng, priv, pub);
 
 	OutputResultOperations(name, "Key-Pair Generation", pc, i, timeTaken);
+
+	if (!pc && d.GetMaterial().SupportsPrecomputation())
+	{
+		d.AccessMaterial().Precompute(16);
+		BenchMarkKeyGen(name, d, timeTotal, true);
+	}
 }
 
-void BenchMarkKeyGen(const char *name, PK_WithPrecomputation<PK_AuthenticatedKeyAgreementDomain> &d, double timeTotal)
-{
-	BenchMarkKeyGen(name, dynamic_cast<PK_AuthenticatedKeyAgreementDomain &>(d), timeTotal);
-	d.Precompute(16);
-	BenchMarkKeyGen(name, dynamic_cast<PK_AuthenticatedKeyAgreementDomain &>(d), timeTotal, true);
-}
-
-void BenchMarkAgreement(const char *name, PK_SimpleKeyAgreementDomain &d, double timeTotal, bool pc=false)
+void BenchMarkAgreement(const char *name, SimpleKeyAgreementDomain &d, double timeTotal, bool pc=false)
 {
 	LC_RNG rng(time(NULL));
 	SecByteBlock priv1(d.PrivateKeyLength()), priv2(d.PrivateKeyLength());
@@ -353,7 +341,7 @@ void BenchMarkAgreement(const char *name, PK_SimpleKeyAgreementDomain &d, double
 	OutputResultOperations(name, "Key Agreement", pc, i, timeTaken);
 }
 
-void BenchMarkAgreement(const char *name, PK_AuthenticatedKeyAgreementDomain &d, double timeTotal, bool pc=false)
+void BenchMarkAgreement(const char *name, AuthenticatedKeyAgreementDomain &d, double timeTotal, bool pc=false)
 {
 	LC_RNG rng(time(NULL));
 	SecByteBlock spriv1(d.StaticPrivateKeyLength()), spriv2(d.StaticPrivateKeyLength());
@@ -382,7 +370,8 @@ void BenchMarkAgreement(const char *name, PK_AuthenticatedKeyAgreementDomain &d,
 template <class T>
 void BenchMarkKeyed(const char *name, double timeTotal, T *x=NULL)
 {
-	T c(key);
+	T c;
+	c.SetKeyWithIV(key, c.DefaultKeyLength(), key);
 	BenchMark(name, c, timeTotal);
 }
 
@@ -390,7 +379,8 @@ void BenchMarkKeyed(const char *name, double timeTotal, T *x=NULL)
 template <class T>
 void BenchMarkKeyedVariable(const char *name, double timeTotal, unsigned int keyLength, T *x=NULL)
 {
-	T c(key, keyLength);
+	T c;
+	c.SetKeyWithIV(key, keyLength, key);
 	BenchMark(name, c, timeTotal);
 }
 
@@ -403,23 +393,23 @@ void BenchMarkKeyless(const char *name, double timeTotal, T *x=NULL)
 }
 
 //VC60 workaround: compiler bug triggered without the extra dummy parameters
-template <class D, class E>
-void BenchMarkCrypto(const char *filename, const char *name, double timeTotal, D *x=NULL, E *y=NULL)
+template <class SCHEME>
+void BenchMarkCrypto(const char *filename, const char *name, double timeTotal, SCHEME *x=NULL)
 {
 	FileSource f(filename, true, new HexDecoder());
-	D priv(f);
-	E pub(priv);
+	typename SCHEME::Decryptor priv(f);
+	typename SCHEME::Encryptor pub(priv);
 	BenchMarkEncryption(name, pub, timeTotal);
 	BenchMarkDecryption(name, priv, pub, timeTotal);
 }
 
 //VC60 workaround: compiler bug triggered without the extra dummy parameters
-template <class S, class V>
-void BenchMarkSignature(const char *filename, const char *name, double timeTotal, S *x=NULL, V *y=NULL)
+template <class SCHEME>
+void BenchMarkSignature(const char *filename, const char *name, double timeTotal, SCHEME *x=NULL)
 {
 	FileSource f(filename, true, new HexDecoder());
-	S priv(f);
-	V pub(priv);
+	typename SCHEME::Signer priv(f);
+	typename SCHEME::Verifier pub(priv);
 	BenchMarkSigning(name, priv, timeTotal);
 	BenchMarkVerification(name, priv, pub, timeTotal);
 }
@@ -436,6 +426,7 @@ void BenchMarkKeyAgreement(const char *filename, const char *name, double timeTo
 
 void BenchMarkAll(double t)
 {
+#if 1
 	logtotal = 0;
 	logcount = 0;
 
@@ -456,51 +447,55 @@ void BenchMarkAll(double t)
 	BenchMarkKeyless<Tiger>("Tiger", t);
 #endif
 	BenchMarkKeyless<RIPEMD160>("RIPE-MD160", t);
-	BenchMarkKeyless<PanamaHash<false> >("Panama Hash (little endian)", t);
-	BenchMarkKeyless<PanamaHash<true> >("Panama Hash (big endian)", t);
-	BenchMarkKeyed<MDC<MD5> >("MDC/MD5", t);
-	BenchMarkKeyed<LREncryption<MD5> >("Luby-Rackoff/MD5", t);
-	BenchMarkKeyed<DESEncryption>("DES", t);
-	BenchMarkKeyed<DES_XEX3_Encryption>("DES-XEX3", t);
-	BenchMarkKeyed<DES_EDE3_Encryption>("DES-EDE3", t);
-	BenchMarkKeyed<IDEAEncryption>("IDEA", t);
-	BenchMarkKeyed<RC2Encryption>("RC2", t);
-	BenchMarkKeyed<RC5Encryption>("RC5 (r=16)", t);
-	BenchMarkKeyed<BlowfishEncryption>("Blowfish", t);
-	BenchMarkKeyed<Diamond2Encryption>("Diamond2", t);
-	BenchMarkKeyed<Diamond2LiteEncryption>("Diamond2 Lite", t);
+	BenchMarkKeyless<PanamaHash<LittleEndian> >("Panama Hash (little endian)", t);
+	BenchMarkKeyless<PanamaHash<BigEndian> >("Panama Hash (big endian)", t);
+	BenchMarkKeyed<MDC<MD5>::Encryption>("MDC/MD5", t);
+	BenchMarkKeyed<LR<MD5>::Encryption>("Luby-Rackoff/MD5", t);
+	BenchMarkKeyed<DES::Encryption>("DES", t);
+	BenchMarkKeyed<DES_XEX3::Encryption>("DES-XEX3", t);
+	BenchMarkKeyed<DES_EDE3::Encryption>("DES-EDE3", t);
+	BenchMarkKeyed<IDEA::Encryption>("IDEA", t);
+	BenchMarkKeyed<RC2::Encryption>("RC2", t);
+	BenchMarkKeyed<RC5::Encryption>("RC5 (r=16)", t);
+	BenchMarkKeyed<Blowfish::Encryption>("Blowfish", t);
+	BenchMarkKeyed<Diamond2::Encryption>("Diamond2", t);
+	BenchMarkKeyed<Diamond2Lite::Encryption>("Diamond2 Lite", t);
 	BenchMarkKeyed<ThreeWayDecryption>("3-WAY", t);
-	BenchMarkKeyed<TEAEncryption>("TEA", t);
-	BenchMarkKeyed<SAFER_SK64_Encryption>("SAFER (r=8)", t);
-	BenchMarkKeyed<GOSTEncryption>("GOST", t);
+	BenchMarkKeyed<TEA::Encryption>("TEA", t);
+	BenchMarkKeyedVariable<SAFER_SK::Encryption>("SAFER (r=8)", t, 8);
+	BenchMarkKeyed<GOST::Encryption>("GOST", t);
 #ifdef WORD64_AVAILABLE
-	BenchMarkKeyed<SHARKEncryption>("SHARK (r=6)", t);
+	BenchMarkKeyed<SHARK::Encryption>("SHARK (r=6)", t);
 #endif
-	BenchMarkKeyed<CAST128Encryption>("CAST-128", t);
-	BenchMarkKeyed<CAST256Encryption>("CAST-256", t);
-	BenchMarkKeyed<SquareEncryption>("Square", t);
-	BenchMarkKeyed<SKIPJACKEncryption>("SKIPJACK", t);
-	BenchMarkKeyed<RC6Encryption>("RC6", t);
-	BenchMarkKeyed<MARSEncryption>("MARS", t);
-	BenchMarkKeyedVariable<RijndaelEncryption>("Rijndael (128-bit key)", t, 16);
-	BenchMarkKeyedVariable<RijndaelEncryption>("Rijndael (192-bit key)", t, 24);
-	BenchMarkKeyedVariable<RijndaelEncryption>("Rijndael (256-bit key)", t, 32);
-	BenchMarkKeyed<TwofishEncryption>("Twofish", t);
-	BenchMarkKeyed<SerpentEncryption>("Serpent", t);
+	BenchMarkKeyed<CAST128::Encryption>("CAST-128", t);
+	BenchMarkKeyed<CAST256::Encryption>("CAST-256", t);
+	BenchMarkKeyed<Square::Encryption>("Square", t);
+	BenchMarkKeyed<SKIPJACK::Encryption>("SKIPJACK", t);
+	BenchMarkKeyed<RC6::Encryption>("RC6", t);
+	BenchMarkKeyed<MARS::Encryption>("MARS", t);
+	BenchMarkKeyedVariable<Rijndael::Encryption>("Rijndael (128-bit key)", t, 16);
+	BenchMarkKeyedVariable<Rijndael::Encryption>("Rijndael (192-bit key)", t, 24);
+	BenchMarkKeyedVariable<Rijndael::Encryption>("Rijndael (256-bit key)", t, 32);
+	BenchMarkKeyedVariable<CTR_Mode<Rijndael>::Encryption>("Rijndael (128) CTR", t, 16);
+	BenchMarkKeyedVariable<OFB_Mode<Rijndael>::Encryption>("Rijndael (128) OFB", t, 16);
+	BenchMarkKeyedVariable<CFB_Mode<Rijndael>::Encryption>("Rijndael (128) CFB", t, 16);
+	BenchMarkKeyedVariable<CBC_Mode<Rijndael>::Encryption>("Rijndael (128) CBC", t, 16);
+	BenchMarkKeyed<Twofish::Encryption>("Twofish", t);
+	BenchMarkKeyed<Serpent::Encryption>("Serpent", t);
 	BenchMarkKeyed<ARC4>("ARC4", t);
-	BenchMarkKeyed<SEAL>("SEAL", t);
-	{
-		WAKEEncryption c(key, new BitBucket);
-		BenchMark("WAKE", c, t);
-	}
-	BenchMarkKeyed<PanamaCipher<false> >("Panama Cipher (little endian)", t);
-	BenchMarkKeyed<PanamaCipher<true> >("Panama Cipher (big endian)", t);
-	BenchMarkKeyed<SapphireEncryption>("Sapphire II", t);
+	BenchMarkKeyed<SEAL<BigEndian>::Encryption>("SEAL-3.0-BE", t);
+	BenchMarkKeyed<SEAL<LittleEndian>::Encryption>("SEAL-3.0-LE", t);
+	BenchMarkKeyed<WAKE_CFB<BigEndian>::Encryption>("WAKE-CFB-BE", t);
+	BenchMarkKeyed<WAKE_CFB<LittleEndian>::Encryption>("WAKE-CFB-LE", t);
+	BenchMarkKeyed<WAKE_OFB<BigEndian>::Encryption>("WAKE-OFB-BE", t);
+	BenchMarkKeyed<WAKE_OFB<LittleEndian>::Encryption>("WAKE-OFB-LE", t);
+	BenchMarkKeyed<PanamaCipher<LittleEndian>::Encryption>("Panama Cipher (little endian)", t);
+	BenchMarkKeyed<PanamaCipher<BigEndian>::Encryption>("Panama Cipher (big endian)", t);
 	BenchMarkKeyed<MD5MAC>("MD5-MAC", t);
 	BenchMarkKeyed<XMACC<MD5> >("XMACC/MD5", t);
 	BenchMarkKeyed<HMAC<MD5> >("HMAC/MD5", t);
-	BenchMarkKeyed<CBC_MAC<RijndaelEncryption> >("CBC-MAC/Rijndael", t);
-	BenchMarkKeyed<DMAC<RijndaelEncryption> >("DMAC/Rijndael", t);
+	BenchMarkKeyed<CBC_MAC<Rijndael> >("CBC-MAC/Rijndael", t);
+	BenchMarkKeyed<DMAC<Rijndael> >("DMAC/Rijndael", t);
 
 	{
 		Integer p("CB6C,B8CE,6351,164F,5D0C,0C9E,9E31,E231,CF4E,D551,CBD0,E671,5D6A,7B06,D8DF,C4A7h");
@@ -545,63 +540,48 @@ void BenchMarkAll(double t)
 
 	cout << "<TABLE border=1><COLGROUP><COL align=left><COL align=right><COL align=right><COL align=right>" << endl;
 	cout << "<THEAD><TR><TH>Operation<TH>Iterations<TH>Total Time<TH>Milliseconds/Operation" << endl;
-	cout << "<TBODY style=\"background: yellow\">" << endl;
-	BenchMarkCrypto<RSAES_OAEP_SHA_Decryptor, RSAES_OAEP_SHA_Encryptor>("rsa512.dat", "RSA 512", t);
-	BenchMarkCrypto<RabinDecryptor, RabinEncryptor>("rabi512.dat", "Rabin 512", t);
-	BenchMarkCrypto<BlumGoldwasserPrivateKey, BlumGoldwasserPublicKey>("blum512.dat", "BlumGoldwasser 512", t);
-	BenchMarkCrypto<LUCES_OAEP_SHA_Decryptor, LUCES_OAEP_SHA_Encryptor>("luc512.dat", "LUC 512", t);
-	BenchMarkCrypto<ElGamalDecryptor, ElGamalEncryptor>("elgc512.dat", "ElGamal 512", t);
-
-	cout << "<TBODY style=\"background: white\">" << endl;
-	BenchMarkCrypto<RSAES_OAEP_SHA_Decryptor, RSAES_OAEP_SHA_Encryptor>("rsa1024.dat", "RSA 1024", t);
-	BenchMarkCrypto<RabinDecryptor, RabinEncryptor>("rabi1024.dat", "Rabin 1024", t);
-	BenchMarkCrypto<BlumGoldwasserPrivateKey, BlumGoldwasserPublicKey>("blum1024.dat", "BlumGoldwasser 1024", t);
-	BenchMarkCrypto<LUCES_OAEP_SHA_Decryptor, LUCES_OAEP_SHA_Encryptor>("luc1024.dat", "LUC 1024", t);
-	BenchMarkCrypto<ElGamalDecryptor, ElGamalEncryptor>("elgc1024.dat", "ElGamal 1024", t);
-	BenchMarkCrypto<LUCELG_Decryptor, LUCELG_Encryptor>("lucc512.dat", "LUCELG 512", t);
 
 	cout << "<TBODY style=\"background: yellow\">" << endl;
-	BenchMarkCrypto<RSAES_OAEP_SHA_Decryptor, RSAES_OAEP_SHA_Encryptor>("rsa2048.dat", "RSA 2048", t);
-	BenchMarkCrypto<RabinDecryptor, RabinEncryptor>("rabi2048.dat", "Rabin 2048", t);
-	BenchMarkCrypto<BlumGoldwasserPrivateKey, BlumGoldwasserPublicKey>("blum2048.dat", "BlumGoldwasser 2048", t);
-	BenchMarkCrypto<LUCES_OAEP_SHA_Decryptor, LUCES_OAEP_SHA_Encryptor>("luc2048.dat", "LUC 2048", t);
-	BenchMarkCrypto<ElGamalDecryptor, ElGamalEncryptor>("elgc2048.dat", "ElGamal 2048", t);
-	BenchMarkCrypto<LUCELG_Decryptor, LUCELG_Encryptor>("lucc1024.dat", "LUCELG 1024", t);
+	BenchMarkCrypto<RSAES<OAEP<SHA> > >("rsa1024.dat", "RSA 1024", t);
+	BenchMarkCrypto<RabinES<OAEP<SHA> > >("rabi1024.dat", "Rabin 1024", t);
+	BenchMarkCrypto<LUCES<OAEP<SHA> > >("luc1024.dat", "LUC 1024", t);
+	BenchMarkCrypto<DLIES<> >("dlie1024.dat", "DLIES 1024", t);
+	BenchMarkCrypto<LUC_IES<> >("lucc512.dat", "LUCELG 512", t);
 
 	cout << "<TBODY style=\"background: white\">" << endl;
-	BenchMarkSignature<RSASSA_PKCS1v15_SHA_Signer, RSASSA_PKCS1v15_SHA_Verifier>("rsa512.dat", "RSA 512", t);
-	BenchMarkSignature<RabinSignerWith(SHA), RabinVerifierWith(SHA) >("rabi512.dat", "Rabin 512", t);
-	BenchMarkSignature<RWSigner<SHA>, RWVerifier<SHA> >("rw512.dat", "RW 512", t);
-	BenchMarkSignature<LUCSSA_PKCS1v15_SHA_Signer, LUCSSA_PKCS1v15_SHA_Verifier>("luc512.dat", "LUC 512", t);
-	BenchMarkSignature<NRSigner<SHA>, NRVerifier<SHA> >("nr512.dat", "NR 512", t);
-	BenchMarkSignature<DSAPrivateKey, DSAPublicKey>("dsa512.dat", "DSA 512", t);
+	BenchMarkCrypto<RSAES<OAEP<SHA> > >("rsa2048.dat", "RSA 2048", t);
+	BenchMarkCrypto<RabinES<OAEP<SHA> > >("rabi2048.dat", "Rabin 2048", t);
+	BenchMarkCrypto<LUCES<OAEP<SHA> > >("luc2048.dat", "LUC 2048", t);
+	BenchMarkCrypto<DLIES<> >("dlie2048.dat", "DLIES 2048", t);
+	BenchMarkCrypto<LUC_IES<> >("lucc1024.dat", "LUCELG 1024", t);
 
 	cout << "<TBODY style=\"background: yellow\">" << endl;
-	BenchMarkSignature<RSASSA_PKCS1v15_SHA_Signer, RSASSA_PKCS1v15_SHA_Verifier>("rsa1024.dat", "RSA 1024", t);
-	BenchMarkSignature<RabinSignerWith(SHA), RabinVerifierWith(SHA) >("rabi1024.dat", "Rabin 1024", t);
-	BenchMarkSignature<RWSigner<SHA>, RWVerifier<SHA> >("rw1024.dat", "RW 1024", t);
-	BenchMarkSignature<LUCSSA_PKCS1v15_SHA_Signer, LUCSSA_PKCS1v15_SHA_Verifier>("luc1024.dat", "LUC 1024", t);
-	BenchMarkSignature<NRSigner<SHA>, NRVerifier<SHA> >("nr1024.dat", "NR 1024", t);
-	BenchMarkSignature<DSAPrivateKey, DSAPublicKey>("dsa1024.dat", "DSA 1024", t);
-	BenchMarkSignature<LUCELG_Signer<SHA>, LUCELG_Verifier<SHA> >("lucs512.dat", "LUCELG 512", t);
+	BenchMarkSignature<RSASSA<PKCS1v15, SHA> >("rsa1024.dat", "RSA 1024", t);
+	BenchMarkSignature<RabinPSSR<SHA> >("rabi1024.dat", "Rabin 1024", t);
+	BenchMarkSignature<RWSSA<SHA> >("rw1024.dat", "RW 1024", t);
+	BenchMarkSignature<LUCSSA<SHA> >("luc1024.dat", "LUC 1024", t);
+	BenchMarkSignature<NR<SHA> >("nr1024.dat", "NR 1024", t);
+	BenchMarkSignature<DSA>("dsa1024.dat", "DSA 1024", t);
+	BenchMarkSignature<LUC_HMP<SHA> >("lucs512.dat", "LUC-HMP 512", t);
+	BenchMarkSignature<ESIGN<SHA> >("esig1023.dat", "ESIGN 1023", t);
+	BenchMarkSignature<ESIGN<SHA> >("esig1536.dat", "ESIGN 1536", t);
 
 	cout << "<TBODY style=\"background: white\">" << endl;
-	BenchMarkSignature<RSASSA_PKCS1v15_SHA_Signer, RSASSA_PKCS1v15_SHA_Verifier>("rsa2048.dat", "RSA 2048", t);
-	BenchMarkSignature<RabinSignerWith(SHA), RabinVerifierWith(SHA) >("rabi2048.dat", "Rabin 2048", t);
-	BenchMarkSignature<RWSigner<SHA>, RWVerifier<SHA> >("rw2048.dat", "RW 2048", t);
-	BenchMarkSignature<LUCSSA_PKCS1v15_SHA_Signer, LUCSSA_PKCS1v15_SHA_Verifier>("luc2048.dat", "LUC 2048", t);
-	BenchMarkSignature<NRSigner<SHA>, NRVerifier<SHA> >("nr2048.dat", "NR 2048", t);
-	BenchMarkSignature<LUCELG_Signer<SHA>, LUCELG_Verifier<SHA> >("lucs1024.dat", "LUCELG 1024", t);
+	BenchMarkSignature<RSASSA<PKCS1v15, SHA> >("rsa2048.dat", "RSA 2048", t);
+	BenchMarkSignature<RabinPSSR<SHA> >("rabi2048.dat", "Rabin 2048", t);
+	BenchMarkSignature<RWSSA<SHA> >("rw2048.dat", "RW 2048", t);
+	BenchMarkSignature<LUCSSA<SHA> >("luc2048.dat", "LUC 2048", t);
+	BenchMarkSignature<NR<SHA> >("nr2048.dat", "NR 2048", t);
+	BenchMarkSignature<LUC_HMP<SHA> >("lucs1024.dat", "LUC-HMP 1024", t);
+	BenchMarkSignature<ESIGN<SHA> >("esig2046.dat", "ESIGN 2046", t);
 
 	cout << "<TBODY style=\"background: yellow\">" << endl;
 	BenchMarkKeyAgreement<XTR_DH>("xtrdh171.dat", "XTR-DH 171", t);
 	BenchMarkKeyAgreement<XTR_DH>("xtrdh342.dat", "XTR-DH 342", t);
-	BenchMarkKeyAgreement<DH>("dh512.dat", "DH 512", t);
 	BenchMarkKeyAgreement<DH>("dh1024.dat", "DH 1024", t);
 	BenchMarkKeyAgreement<DH>("dh2048.dat", "DH 2048", t);
-	BenchMarkKeyAgreement<LUCDIF>("lucd512.dat", "LUCDIF 512", t);
-	BenchMarkKeyAgreement<LUCDIF>("lucd1024.dat", "LUCDIF 1024", t);
-	BenchMarkKeyAgreement<MQV>("mqv512.dat", "MQV 512", t);
+	BenchMarkKeyAgreement<LUC_DH>("lucd512.dat", "LUCDIF 512", t);
+	BenchMarkKeyAgreement<LUC_DH>("lucd1024.dat", "LUCDIF 1024", t);
 	BenchMarkKeyAgreement<MQV>("mqv1024.dat", "MQV 1024", t);
 	BenchMarkKeyAgreement<MQV>("mqv2048.dat", "MQV 2048", t);
 
@@ -620,12 +600,12 @@ void BenchMarkAll(double t)
 		ECP::Point P(x, y);
 		P = ec.Multiply(k, P);
 		ECP::Point Q(ec.Multiply(d, P));
-		ECDecryptor<ECP> cpriv(ec, P, r, Q, d);
-		ECEncryptor<ECP> cpub(cpriv);
-		ECSigner<ECP, SHA> spriv(cpriv);
-		ECVerifier<ECP, SHA> spub(spriv);
-		ECDHC<ECP> ecdhc(ec, P, r, k);
-		ECMQVC<ECP> ecmqvc(ec, P, r, k);
+		ECIES<ECP>::Decryptor cpriv(ec, P, r, d);
+		ECIES<ECP>::Encryptor cpub(cpriv);
+		ECDSA<ECP, SHA>::Signer spriv(cpriv);
+		ECDSA<ECP, SHA>::Verifier spub(spriv);
+		ECDH<ECP>::Domain ecdhc(ec, P, r, k);
+		ECMQV<ECP>::Domain ecmqvc(ec, P, r, k);
 
 		BenchMarkEncryption("ECIES over GF(p) 168", cpub, t);
 		BenchMarkDecryption("ECIES over GF(p) 168", cpriv, cpub, t);
@@ -649,12 +629,12 @@ void BenchMarkAll(double t)
 		EC2N::Point P(0x7B, 0x1C8);
 		P = ec.Multiply(k, P);
 		EC2N::Point Q(ec.Multiply(d, P));
-		ECDecryptor<EC2N> cpriv(ec, P, r, Q, d);
-		ECEncryptor<EC2N> cpub(cpriv);
-		ECSigner<EC2N, SHA> spriv(cpriv);
-		ECVerifier<EC2N, SHA> spub(spriv);
-		ECDHC<EC2N> ecdhc(ec, P, r, k);
-		ECMQVC<EC2N> ecmqvc(ec, P, r, k);
+		ECIES<EC2N>::Decryptor cpriv(ec, P, r, d);
+		ECIES<EC2N>::Encryptor cpub(cpriv);
+		ECDSA<EC2N, SHA>::Signer spriv(cpriv);
+		ECDSA<EC2N, SHA>::Verifier spub(spriv);
+		ECDH<EC2N>::Domain ecdhc(ec, P, r, k);
+		ECMQV<EC2N>::Domain ecmqvc(ec, P, r, k);
 
 		BenchMarkEncryption("ECIES over GF(2^n) 155", cpub, t);
 		BenchMarkDecryption("ECIES over GF(2^n) 155", cpriv, cpub, t);
@@ -668,4 +648,8 @@ void BenchMarkAll(double t)
 	cout << "</TABLE>" << endl;
 
 	cout << "Throughput Geometric Average: " << setiosflags(ios::fixed) << exp(logtotal/logcount) << endl;
+
+	time_t endTime = time(NULL);
+	cout << "\nTest ended at " << asctime(localtime(&endTime));
+#endif
 }

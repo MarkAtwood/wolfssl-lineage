@@ -4,47 +4,49 @@
 /** \file
 */
 
-#include "cryptlib.h"
-#include "misc.h"
+#include "seckey.h"
+#include "secblock.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// base class, do not use directly
-class TEA : public FixedBlockSize<8>, public FixedKeyLength<16>
+struct TEA_Info : public FixedBlockSize<8>, public FixedKeyLength<16>, public FixedRounds<32>
 {
-public:
-	TEA(const byte *userKey);
-
-	enum {ROUNDS=32, LOG_ROUNDS=5};
-
-protected:
-	static const word32 DELTA;
-	SecBlock<word32> k;
+	enum {LOG_ROUNDS=5};
+	static const char *StaticAlgorithmName() {return "TEA";}
 };
 
 /// <a href="http://www.weidai.com/scan-mirror/cs.html#TEA">TEA</a>
-class TEAEncryption : public TEA
+class TEA : public TEA_Info, public BlockCipherDocumentation
 {
-public:
-	TEAEncryption(const byte *userKey, unsigned int = 0)
-		: TEA(userKey) {}
+	class Base : public BlockCipherBaseTemplate<TEA_Info>
+	{
+	public:
+		void UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length);
 
-	void ProcessBlock(byte * inoutBlock) const
-		{TEAEncryption::ProcessBlock(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte *outBlock) const;
+	protected:
+		static const word32 DELTA;
+		FixedSizeSecBlock<word32, 4> k;
+	};
+
+	class Enc : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+	class Dec : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+public:
+	typedef BlockCipherTemplate<ENCRYPTION, Enc> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Dec> Decryption;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#TEA">TEA</a>
-class TEADecryption : public TEA
-{
-public:
-	TEADecryption(const byte *userKey, unsigned int = 0)
-		: TEA(userKey) {}
-
-	void ProcessBlock(byte * inoutBlock) const
-		{TEADecryption::ProcessBlock(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte *outBlock) const;
-};
+typedef TEA::Encryption TEAEncryption;
+typedef TEA::Decryption TEADecryption;
 
 NAMESPACE_END
 

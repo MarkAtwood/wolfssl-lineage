@@ -148,8 +148,10 @@ void CRC32::Update(const byte *s, unsigned int n)
 
 void CRC32::TruncatedFinal(byte *hash, unsigned int size)
 {
+	ThrowIfInvalidTruncatedSize(size);
+
 	m_crc ^= CRC32_NEGL;
-	for (int i=0; i<size; i++)
+	for (unsigned int i=0; i<size; i++)
 		hash[i] = GetCrcByte(i);
 
 	Reset();

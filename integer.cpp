@@ -1,4 +1,5 @@
 // integer.cpp - written and placed in the public domain by Wei Dai
+// contains public domain code contributed by Alister Lee and Leonard Janke
 
 #include "pch.h"
 #include "integer.h"
@@ -7,274 +8,46 @@
 #include "asn.h"
 #include "oids.h"
 #include "words.h"
+#include "algparam.h"
+#include "pubkey.h"		// for P1363_KDF2
+#include "sha.h"
 
 #include <iostream>
+
+#ifdef SSE2_INTRINSICS_AVAILABLE
+#include <emmintrin.h>
+#endif
 
 #include "algebra.cpp"
 #include "eprecomp.cpp"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-template class AbstractGroup<Integer>; 	// for MacOS X
+#ifdef SSE2_INTRINSICS_AVAILABLE
+template <class T>
+AllocatorBase<T>::pointer AlignedAllocator<T>::allocate(size_type n, const void *)
+{
+	if (n < 4)
+		return new T[n];
+	else
+		return (T *)_mm_malloc(sizeof(T)*n, 16);
+
+}
+
+template <class T>
+void AlignedAllocator<T>::deallocate(void *p, size_type n)
+{
+	memset(p, 0, n*sizeof(T));
+	if (n < 4)
+		delete [] p;
+	else
+		_mm_free(p);
+}
+
+template class AlignedAllocator<word>;
+#endif
 
 #define MAKE_DWORD(lowWord, highWord) ((dword(highWord)<<WORD_BITS) | (lowWord))
-
-// Add() and Subtract() are coded in Pentium assembly for a speed increase
-// of about 10-20 percent for a RSA signature
-
-// CodeWarrior defines _MSC_VER
-#if defined(_MSC_VER) && !defined(__MWERKS__) && defined(_M_IX86) && (_M_IX86<=600)
-
-static __declspec(naked) word __fastcall Add(word *C, const word *A, const word *B, unsigned int N)
-{
-	__asm
-	{
-		push ebp
-		push ebx
-		push esi
-		push edi
-
-		mov esi, [esp+24]	; N
-		mov ebx, [esp+20]	; B
-
-		// now: ebx = B, ecx = C, edx = A, esi = N
-
-		sub ecx, edx	// hold the distance between C & A so we can add this to A to get C
-		xor eax, eax	// clear eax
-
-		sub eax, esi	// eax is a negative index from end of B
-		lea ebx, [ebx+4*esi]	// ebx is end of B
-
-		sar eax, 1		// unit of eax is now dwords; this also clears the carry flag
-		jz	loopend		// if no dwords then nothing to do
-
-loopstart:
-		mov    esi,[edx]			// load lower word of A
-		mov    ebp,[edx+4]			// load higher word of A
-
-		mov    edi,[ebx+8*eax]		// load lower word of B
-		lea    edx,[edx+8]			// advance A and C
-
-		adc    esi,edi				// add lower words
-		mov    edi,[ebx+8*eax+4]	// load higher word of B
-
-		adc    ebp,edi				// add higher words
-		inc    eax					// advance B
-
-		mov    [edx+ecx-8],esi		// store lower word result
-		mov    [edx+ecx-4],ebp		// store higher word result
-
-		jnz    loopstart			// loop until eax overflows and becomes zero
-
-loopend:
-		adc eax, 0		// store carry into eax (return result register)
-		pop edi
-		pop esi
-		pop ebx
-		pop ebp
-		ret 8
-	}
-}
-
-static __declspec(naked) word __fastcall Subtract(word *C, const word *A, const word *B, unsigned int N)
-{
-	__asm
-	{
-		push ebp
-		push ebx
-		push esi
-		push edi
-
-		mov esi, [esp+24]	; N
-		mov ebx, [esp+20]	; B
-
-		sub ecx, edx
-		xor eax, eax
-
-		sub eax, esi
-		lea ebx, [ebx+4*esi]
-
-		sar eax, 1
-		jz	loopend
-
-loopstart:
-		mov    esi,[edx]
-		mov    ebp,[edx+4]
-
-		mov    edi,[ebx+8*eax]
-		lea    edx,[edx+8]
-
-		sbb    esi,edi
-		mov    edi,[ebx+8*eax+4]
-
-		sbb    ebp,edi
-		inc    eax
-
-		mov    [edx+ecx-8],esi
-		mov    [edx+ecx-4],ebp
-
-		jnz    loopstart
-
-loopend:
-		adc eax, 0
-		pop edi
-		pop esi
-		pop ebx
-		pop ebp
-		ret 8
-	}
-}
-
-#elif defined(__GNUC__) && defined(__i386__) && !defined(__pic__)
-
-__attribute__((regparm(3))) static word Add(word *C, const word *A, const word *B, unsigned int N)
-{
-	assert (N%2 == 0);
-
-	register word carry, temp;
-
-	__asm__ __volatile__(
-			"push %%ebp;"
-			"sub %3, %2;"
-			"xor %0, %0;"
-			"sub %4, %0;"
-			"lea (%1,%4,4), %1;"
-			"sar $1, %0;"
-			"jz 1f;"
-
-		"0:;"
-			"mov 0(%3), %4;"
-			"mov 4(%3), %%ebp;"
-			"mov (%1,%0,8), %5;"
-			"lea 8(%3), %3;"
-			"adc %5, %4;"
-			"mov 4(%1,%0,8), %5;"
-			"adc %5, %%ebp;"
-			"inc %0;"
-			"mov %4, -8(%3, %2);"
-			"mov %%ebp, -4(%3, %2);"
-			"jnz 0b;"
-
-		"1:;"
-			"adc $0, %0;"
-			"pop %%ebp;"
-
-		: "=aSD" (carry), "+r" (B), "+r" (C), "+r" (A), "+r" (N), "=r" (temp)
-		: : "cc", "memory");
-
-	return carry;
-}
-
-__attribute__((regparm(3))) static word Subtract(word *C, const word *A, const word *B, unsigned int N)
-{
-	assert (N%2 == 0);
-
-	register word carry, temp;
-
-	__asm__ __volatile__(
-			"push %%ebp;"
-			"sub %3, %2;"
-			"xor %0, %0;"
-			"sub %4, %0;"
-			"lea (%1,%4,4), %1;"
-			"sar $1, %0;"
-			"jz 1f;"
-
-		"0:;"
-			"mov 0(%3), %4;"
-			"mov 4(%3), %%ebp;"
-			"mov (%1,%0,8), %5;"
-			"lea 8(%3), %3;"
-			"sbb %5, %4;"
-			"mov 4(%1,%0,8), %5;"
-			"sbb %5, %%ebp;"
-			"inc %0;"
-			"mov %4, -8(%3, %2);"
-			"mov %%ebp, -4(%3, %2);"
-			"jnz 0b;"
-
-		"1:;"
-			"adc $0, %0;"
-			"pop %%ebp;"
-
-		: "=aSD" (carry), "+r" (B), "+r" (C), "+r" (A), "+r" (N), "=r" (temp)
-		: : "cc", "memory");
-
-	return carry;
-}
-
-#else	// defined(_MSC_VER) && !defined(__MWERKS__) && defined(_M_IX86) && (_M_IX86<=600)
-
-static word Add(word *C, const word *A, const word *B, unsigned int N)
-{
-	assert (N%2 == 0);
-
-#ifdef IS_LITTLE_ENDIAN
-	if (sizeof(dword) == sizeof(size_t))	// dword is only register size
-	{
-		dword carry = 0;
-		N >>= 1;
-		for (unsigned int i = 0; i < N; i++)
-		{
-			dword a = ((const dword *)A)[i] + carry;
-			dword c = a + ((const dword *)B)[i];
-			((dword *)C)[i] = c;
-			carry = (a < carry) | (c < a);
-		}
-		return (word)carry;
-	}
-	else
-#endif
-	{
-		word carry = 0;
-		for (unsigned int i = 0; i < N; i+=2)
-		{
-			dword u = (dword) carry + A[i] + B[i];
-			C[i] = LOW_WORD(u);
-			u = (dword) HIGH_WORD(u) + A[i+1] + B[i+1];
-			C[i+1] = LOW_WORD(u);
-			carry = HIGH_WORD(u);
-		}
-		return carry;
-	}
-}
-
-static word Subtract(word *C, const word *A, const word *B, unsigned int N)
-{
-	assert (N%2 == 0);
-
-#ifdef IS_LITTLE_ENDIAN
-	if (sizeof(dword) == sizeof(size_t))	// dword is only register size
-	{
-		dword borrow = 0;
-		N >>= 1;
-		for (unsigned int i = 0; i < N; i++)
-		{
-			dword a = ((const dword *)A)[i];
-			dword b = a - borrow;
-			dword c = b - ((const dword *)B)[i];
-			((dword *)C)[i] = c;
-			borrow = (b > a) | (c > b);
-		}
-		return (word)borrow;
-	}
-	else
-#endif
-	{
-		word borrow=0;
-		for (unsigned i = 0; i < N; i+=2)
-		{
-			dword u = (dword) A[i] - B[i] - borrow;
-			C[i] = LOW_WORD(u);
-			u = (dword) A[i+1] - B[i+1] - (word)(0-HIGH_WORD(u));
-			C[i+1] = LOW_WORD(u);
-			borrow = 0-HIGH_WORD(u);
-		}
-		return borrow;
-	}
-}
-
-#endif	// defined(_MSC_VER) && !defined(__MWERKS__) && defined(_M_IX86) && (_M_IX86<=600)
 
 static int Compare(const word *A, const word *B, unsigned int N)
 {
@@ -332,35 +105,116 @@ static word LinearMultiply(word *C, const word *A, word B, unsigned int N)
 	return carry;
 }
 
-#if defined(__GNUC__) && defined(__alpha__)
-
-static inline void AtomicMultiply(word *C, const word *A, const word *B)
+static void AtomicInverseModPower2(word *C, word A0, word A1)
 {
-	register dword c, a = *(const dword *)A, b = *(const dword *)B;
-	((dword *)C)[0] = a*b;
-	__asm__("umulh %1,%2,%0" : "=r" (c) : "r" (a), "r" (b));
-	((dword *)C)[1] = c;
+	assert(A0%2==1);
+
+	dword A=MAKE_DWORD(A0, A1), R=A0%8;
+
+	for (unsigned i=3; i<2*WORD_BITS; i*=2)
+		R = R*(2-R*A);
+
+	assert(R*A==1);
+
+	C[0] = LOW_WORD(R);
+	C[1] = HIGH_WORD(R);
 }
 
-static inline word AtomicMultiplyAdd(word *C, const word *A, const word *B)
+// ********************************************************
+
+class Portable
 {
-	register dword c, d, e, a = *(const dword *)A, b = *(const dword *)B;
-	c = ((dword *)C)[0];
-	d = a*b + c;
-	__asm__("umulh %1,%2,%0" : "=r" (e) : "r" (a), "r" (b));
-	((dword *)C)[0] = d;
-	d = (d < c);
-	c = ((dword *)C)[1] + d;
-	d = (c < d);
-	c += e;
-	((dword *)C)[1] = c;
-	d |= (c < e);
-	return d;
+public:
+	static word Add(word *C, const word *A, const word *B, unsigned int N);
+	static word Subtract(word *C, const word *A, const word *B, unsigned int N);
+
+	static inline void Multiply2(word *C, const word *A, const word *B);
+	static inline word Multiply2Add(word *C, const word *A, const word *B);
+	static void Multiply4(word *C, const word *A, const word *B);
+	static void Multiply8(word *C, const word *A, const word *B);
+	static inline unsigned int MultiplyRecursionLimit() {return 8;}
+
+	static inline void Multiply2Bottom(word *C, const word *A, const word *B);
+	static void Multiply4Bottom(word *C, const word *A, const word *B);
+	static void Multiply8Bottom(word *C, const word *A, const word *B);
+	static inline unsigned int MultiplyBottomRecursionLimit() {return 8;}
+
+	static void Square2(word *R, const word *A);
+	static void Square4(word *R, const word *A);
+	static void Square8(word *R, const word *A) {assert(false);}
+	static inline unsigned int SquareRecursionLimit() {return 4;}
+};
+
+word Portable::Add(word *C, const word *A, const word *B, unsigned int N)
+{
+	assert (N%2 == 0);
+
+#ifdef IS_LITTLE_ENDIAN
+	if (sizeof(dword) == sizeof(size_t))	// dword is only register size
+	{
+		dword carry = 0;
+		N >>= 1;
+		for (unsigned int i = 0; i < N; i++)
+		{
+			dword a = ((const dword *)A)[i] + carry;
+			dword c = a + ((const dword *)B)[i];
+			((dword *)C)[i] = c;
+			carry = (a < carry) | (c < a);
+		}
+		return (word)carry;
+	}
+	else
+#endif
+	{
+		word carry = 0;
+		for (unsigned int i = 0; i < N; i+=2)
+		{
+			dword u = (dword) carry + A[i] + B[i];
+			C[i] = LOW_WORD(u);
+			u = (dword) HIGH_WORD(u) + A[i+1] + B[i+1];
+			C[i+1] = LOW_WORD(u);
+			carry = HIGH_WORD(u);
+		}
+		return carry;
+	}
 }
 
-#else	// defined(__GNUC__) && defined(__alpha__)
+word Portable::Subtract(word *C, const word *A, const word *B, unsigned int N)
+{
+	assert (N%2 == 0);
 
-static void AtomicMultiply(word *C, const word *A, const word *B)
+#ifdef IS_LITTLE_ENDIAN
+	if (sizeof(dword) == sizeof(size_t))	// dword is only register size
+	{
+		dword borrow = 0;
+		N >>= 1;
+		for (unsigned int i = 0; i < N; i++)
+		{
+			dword a = ((const dword *)A)[i];
+			dword b = a - borrow;
+			dword c = b - ((const dword *)B)[i];
+			((dword *)C)[i] = c;
+			borrow = (b > a) | (c > b);
+		}
+		return (word)borrow;
+	}
+	else
+#endif
+	{
+		word borrow=0;
+		for (unsigned i = 0; i < N; i+=2)
+		{
+			dword u = (dword) A[i] - B[i] - borrow;
+			C[i] = LOW_WORD(u);
+			u = (dword) A[i+1] - B[i+1] - (word)(0-HIGH_WORD(u));
+			C[i+1] = LOW_WORD(u);
+			borrow = 0-HIGH_WORD(u);
+		}
+		return borrow;
+	}
+}
+
+void Portable::Multiply2(word *C, const word *A, const word *B)
 {
 /*
 	word s;
@@ -411,7 +265,24 @@ static void AtomicMultiply(word *C, const word *A, const word *B)
 	C[3] = HIGH_WORD(t);
 }
 
-static word AtomicMultiplyAdd(word *C, const word *A, const word *B)
+inline void Portable::Multiply2Bottom(word *C, const word *A, const word *B)
+{
+#ifdef IS_LITTLE_ENDIAN
+	if (sizeof(dword) == sizeof(size_t))
+	{
+		dword a = *(const dword *)A, b = *(const dword *)B;
+		((dword *)C)[0] = a*b;
+	}
+	else
+#endif
+	{
+		dword t = (dword)A[0]*B[0];
+		C[0] = LOW_WORD(t);
+		C[1] = HIGH_WORD(t) + A[0]*B[1] + A[1]*B[0];
+	}
+}
+
+word Portable::Multiply2Add(word *C, const word *A, const word *B)
 {
 	word D[4] = {A[1]-A[0], A[0]-A[1], B[0]-B[1], B[1]-B[0]};
 	unsigned int ai = A[1] < A[0];
@@ -438,25 +309,6 @@ static word AtomicMultiplyAdd(word *C, const word *A, const word *B)
 	return HIGH_WORD(t);
 }
 
-#endif	// defined(__GNUC__) && defined(__alpha__)
-
-static inline void AtomicMultiplyBottom(word *C, const word *A, const word *B)
-{
-#ifdef IS_LITTLE_ENDIAN
-	if (sizeof(dword) == sizeof(size_t))
-	{
-		dword a = *(const dword *)A, b = *(const dword *)B;
-		((dword *)C)[0] = a*b;
-	}
-	else
-#endif
-	{
-		dword t = (dword)A[0]*B[0];
-		C[0] = LOW_WORD(t);
-		C[1] = HIGH_WORD(t) + A[0]*B[1] + A[1]*B[0];
-	}
-}
-
 #define MulAcc(x, y)								\
 	p = (dword)A[x] * B[y] + c; 					\
 	c = LOW_WORD(p);								\
@@ -472,24 +324,14 @@ static inline void AtomicMultiplyBottom(word *C, const word *A, const word *B)
 	d = LOW_WORD(p);								\
 	e = HIGH_WORD(p);
 
-#define MulAcc1(x, y)								\
-	p = (dword)A[x] * A[y] + c; 					\
+#define SquAcc(x, y)								\
+	q = (dword)A[x] * A[y];	\
+	p = q + c; 					\
 	c = LOW_WORD(p);								\
 	p = (dword)d + HIGH_WORD(p);					\
 	d = LOW_WORD(p);								\
-	e += HIGH_WORD(p);
-
-#define SaveMulAcc1(s, x, y) 						\
-	R[s] = c;										\
-	p = (dword)A[x] * A[y] + d; 					\
-	c = LOW_WORD(p);								\
-	p = (dword)e + HIGH_WORD(p);					\
-	d = LOW_WORD(p);								\
-	e = HIGH_WORD(p);
-
-#define SquAcc(x, y)								\
-	p = (dword)A[x] * A[y];	\
-	p = p + p + c; 					\
+	e += HIGH_WORD(p);			\
+	p = q + c; 					\
 	c = LOW_WORD(p);								\
 	p = (dword)d + HIGH_WORD(p);					\
 	d = LOW_WORD(p);								\
@@ -497,43 +339,19 @@ static inline void AtomicMultiplyBottom(word *C, const word *A, const word *B)
 
 #define SaveSquAcc(s, x, y) 						\
 	R[s] = c;										\
-	p = (dword)A[x] * A[y];	\
-	p = p + p + d; 					\
+	q = (dword)A[x] * A[y];	\
+	p = q + d; 					\
 	c = LOW_WORD(p);								\
 	p = (dword)e + HIGH_WORD(p);					\
 	d = LOW_WORD(p);								\
-	e = HIGH_WORD(p);
+	e = HIGH_WORD(p);			\
+	p = q + c; 					\
+	c = LOW_WORD(p);								\
+	p = (dword)d + HIGH_WORD(p);					\
+	d = LOW_WORD(p);								\
+	e += HIGH_WORD(p);
 
-static void CombaSquare4(word *R, const word *A)
-{
-	dword p;
-	word c, d, e;
-
-	p = (dword)A[0] * A[0];
-	R[0] = LOW_WORD(p);
-	c = HIGH_WORD(p);
-	d = e = 0;
-
-	SquAcc(0, 1);
-
-	SaveSquAcc(1, 2, 0);
-	MulAcc1(1, 1);
-
-	SaveSquAcc(2, 0, 3);
-	SquAcc(1, 2);
-
-	SaveSquAcc(3, 3, 1);
-	MulAcc1(2, 2);
-
-	SaveSquAcc(4, 2, 3);
-
-	R[5] = c;
-	p = (dword)A[3] * A[3] + d;
-	R[6] = LOW_WORD(p);
-	R[7] = e + HIGH_WORD(p);
-}
-
-static void CombaMultiply4(word *R, const word *A, const word *B)
+void Portable::Multiply4(word *R, const word *A, const word *B)
 {
 	dword p;
 	word c, d, e;
@@ -568,7 +386,55 @@ static void CombaMultiply4(word *R, const word *A, const word *B)
 	R[7] = e + HIGH_WORD(p);
 }
 
-static void CombaMultiply8(word *R, const word *A, const word *B)
+void Portable::Square2(word *R, const word *A)
+{
+	dword p, q;
+	word c, d, e;
+
+	p = (dword)A[0] * A[0];
+	R[0] = LOW_WORD(p);
+	c = HIGH_WORD(p);
+	d = e = 0;
+
+	SquAcc(0, 1);
+
+	R[1] = c;
+	p = (dword)A[1] * A[1] + d;
+	R[2] = LOW_WORD(p);
+	R[3] = e + HIGH_WORD(p);
+}
+
+void Portable::Square4(word *R, const word *A)
+{
+	const word *B = A;
+	dword p, q;
+	word c, d, e;
+
+	p = (dword)A[0] * A[0];
+	R[0] = LOW_WORD(p);
+	c = HIGH_WORD(p);
+	d = e = 0;
+
+	SquAcc(0, 1);
+
+	SaveSquAcc(1, 2, 0);
+	MulAcc(1, 1);
+
+	SaveSquAcc(2, 0, 3);
+	SquAcc(1, 2);
+
+	SaveSquAcc(3, 3, 1);
+	MulAcc(2, 2);
+
+	SaveSquAcc(4, 2, 3);
+
+	R[5] = c;
+	p = (dword)A[3] * A[3] + d;
+	R[6] = LOW_WORD(p);
+	R[7] = e + HIGH_WORD(p);
+}
+
+void Portable::Multiply8(word *R, const word *A, const word *B)
 {
 	dword p;
 	word c, d, e;
@@ -659,7 +525,7 @@ static void CombaMultiply8(word *R, const word *A, const word *B)
 	R[15] = e + HIGH_WORD(p);
 }
 
-static void CombaMultiplyBottom4(word *R, const word *A, const word *B)
+void Portable::Multiply4Bottom(word *R, const word *A, const word *B)
 {
 	dword p;
 	word c, d, e;
@@ -680,7 +546,7 @@ static void CombaMultiplyBottom4(word *R, const word *A, const word *B)
 	R[3] = d + A[0] * B[3] + A[1] * B[2] + A[2] * B[1] + A[3] * B[0];
 }
 
-static void CombaMultiplyBottom8(word *R, const word *A, const word *B)
+void Portable::Multiply8Bottom(word *R, const word *A, const word *B)
 {
 	dword p;
 	word c, d, e;
@@ -730,21 +596,1163 @@ static void CombaMultiplyBottom8(word *R, const word *A, const word *B)
 
 #undef MulAcc
 #undef SaveMulAcc
+#undef SquAcc
+#undef SaveSquAcc
 
-static void AtomicInverseModPower2(word *C, word A0, word A1)
+// CodeWarrior defines _MSC_VER
+#if defined(_MSC_VER) && !defined(__MWERKS__) && defined(_M_IX86) && (_M_IX86<=700)
+
+class PentiumOptimized : public Portable
 {
-	assert(A0%2==1);
+public:
+	static word __fastcall Add(word *C, const word *A, const word *B, unsigned int N);
+	static word __fastcall Subtract(word *C, const word *A, const word *B, unsigned int N);
+	static inline void Square4(word *R, const word *A)
+	{
+		// VC60 workaround: MSVC 6.0 has an optimization bug that makes
+		// (dword)A*B where either A or B has been cast to a dword before
+		// very expensive. Revisit this function when this
+		// bug is fixed.
+		Multiply4(R, A, A);
+	}
+};
 
-	dword A=MAKE_DWORD(A0, A1), R=A0%8;
+typedef PentiumOptimized LowLevel;
 
-	for (unsigned i=3; i<2*WORD_BITS; i*=2)
-		R = R*(2-R*A);
+__declspec(naked) word __fastcall PentiumOptimized::Add(word *C, const word *A, const word *B, unsigned int N)
+{
+	__asm
+	{
+		push ebp
+		push ebx
+		push esi
+		push edi
 
-	assert(R*A==1);
+		mov esi, [esp+24]	; N
+		mov ebx, [esp+20]	; B
 
-	C[0] = LOW_WORD(R);
-	C[1] = HIGH_WORD(R);
+		// now: ebx = B, ecx = C, edx = A, esi = N
+
+		sub ecx, edx	// hold the distance between C & A so we can add this to A to get C
+		xor eax, eax	// clear eax
+
+		sub eax, esi	// eax is a negative index from end of B
+		lea ebx, [ebx+4*esi]	// ebx is end of B
+
+		sar eax, 1		// unit of eax is now dwords; this also clears the carry flag
+		jz	loopend		// if no dwords then nothing to do
+
+loopstart:
+		mov    esi,[edx]			// load lower word of A
+		mov    ebp,[edx+4]			// load higher word of A
+
+		mov    edi,[ebx+8*eax]		// load lower word of B
+		lea    edx,[edx+8]			// advance A and C
+
+		adc    esi,edi				// add lower words
+		mov    edi,[ebx+8*eax+4]	// load higher word of B
+
+		adc    ebp,edi				// add higher words
+		inc    eax					// advance B
+
+		mov    [edx+ecx-8],esi		// store lower word result
+		mov    [edx+ecx-4],ebp		// store higher word result
+
+		jnz    loopstart			// loop until eax overflows and becomes zero
+
+loopend:
+		adc eax, 0		// store carry into eax (return result register)
+		pop edi
+		pop esi
+		pop ebx
+		pop ebp
+		ret 8
+	}
 }
+
+__declspec(naked) word __fastcall PentiumOptimized::Subtract(word *C, const word *A, const word *B, unsigned int N)
+{
+	__asm
+	{
+		push ebp
+		push ebx
+		push esi
+		push edi
+
+		mov esi, [esp+24]	; N
+		mov ebx, [esp+20]	; B
+
+		sub ecx, edx
+		xor eax, eax
+
+		sub eax, esi
+		lea ebx, [ebx+4*esi]
+
+		sar eax, 1
+		jz	loopend
+
+loopstart:
+		mov    esi,[edx]
+		mov    ebp,[edx+4]
+
+		mov    edi,[ebx+8*eax]
+		lea    edx,[edx+8]
+
+		sbb    esi,edi
+		mov    edi,[ebx+8*eax+4]
+
+		sbb    ebp,edi
+		inc    eax
+
+		mov    [edx+ecx-8],esi
+		mov    [edx+ecx-4],ebp
+
+		jnz    loopstart
+
+loopend:
+		adc eax, 0
+		pop edi
+		pop esi
+		pop ebx
+		pop ebp
+		ret 8
+	}
+}
+
+#ifdef SSE2_INTRINSICS_AVAILABLE
+
+static bool GetSSE2Capability()
+{
+	word32 b;
+
+	__asm
+	{
+		mov		eax, 1
+		cpuid
+		mov		b, edx
+	}
+
+	return (b & (1 << 26)) != 0;
+}
+
+bool g_sse2DetectionDone = false, g_sse2Detected, g_sse2Enabled = true;
+
+static inline bool HasSSE2()
+{
+	if (g_sse2Enabled && !g_sse2DetectionDone)
+	{
+		g_sse2Detected = GetSSE2Capability();
+		g_sse2DetectionDone = true;
+	}
+	return g_sse2Enabled && g_sse2Detected;
+}
+
+class P4Optimized : public PentiumOptimized
+{
+public:
+	static word __fastcall Add(word *C, const word *A, const word *B, unsigned int N);
+	static word __fastcall Subtract(word *C, const word *A, const word *B, unsigned int N);
+	static void Multiply4(word *C, const word *A, const word *B);
+	static void Multiply8(word *C, const word *A, const word *B);
+	static inline void Square4(word *R, const word *A)
+	{
+		Multiply4(R, A, A);
+	}
+	static void Multiply8Bottom(word *C, const word *A, const word *B);
+};
+
+static void __fastcall P4_Mul(__m128i *C, const __m128i *A, const __m128i *B)
+{
+	__m128i a3210 = _mm_load_si128(A);
+	__m128i b3210 = _mm_load_si128(B);
+
+	__m128i sum;
+
+	__m128i z = _mm_setzero_si128();
+	__m128i a2b2_a0b0 = _mm_mul_epu32(a3210, b3210);
+	C[0] = a2b2_a0b0;
+
+	__m128i a3120 = _mm_shuffle_epi32(a3210, _MM_SHUFFLE(3, 1, 2, 0));
+	__m128i b3021 = _mm_shuffle_epi32(b3210, _MM_SHUFFLE(3, 0, 2, 1));
+	__m128i a1b0_a0b1 = _mm_mul_epu32(a3120, b3021);
+	__m128i a1b0 = _mm_unpackhi_epi32(a1b0_a0b1, z);
+	__m128i a0b1 = _mm_unpacklo_epi32(a1b0_a0b1, z);
+	C[1] = _mm_add_epi64(a1b0, a0b1);
+
+	__m128i a31 = _mm_srli_epi64(a3210, 32);
+	__m128i b31 = _mm_srli_epi64(b3210, 32);
+	__m128i a3b3_a1b1 = _mm_mul_epu32(a31, b31);
+	C[6] = a3b3_a1b1;
+
+	__m128i a1b1 = _mm_unpacklo_epi32(a3b3_a1b1, z);
+	__m128i b3012 = _mm_shuffle_epi32(b3210, _MM_SHUFFLE(3, 0, 1, 2));
+	__m128i a2b0_a0b2 = _mm_mul_epu32(a3210, b3012);
+	__m128i a0b2 = _mm_unpacklo_epi32(a2b0_a0b2, z);
+	__m128i a2b0 = _mm_unpackhi_epi32(a2b0_a0b2, z);
+	sum = _mm_add_epi64(a1b1, a0b2);
+	C[2] = _mm_add_epi64(sum, a2b0);
+
+	__m128i a2301 = _mm_shuffle_epi32(a3210, _MM_SHUFFLE(2, 3, 0, 1));
+	__m128i b2103 = _mm_shuffle_epi32(b3210, _MM_SHUFFLE(2, 1, 0, 3));
+	__m128i a3b0_a1b2 = _mm_mul_epu32(a2301, b3012);
+	__m128i a2b1_a0b3 = _mm_mul_epu32(a3210, b2103);
+	__m128i a3b0 = _mm_unpackhi_epi32(a3b0_a1b2, z);
+	__m128i a1b2 = _mm_unpacklo_epi32(a3b0_a1b2, z);
+	__m128i a2b1 = _mm_unpackhi_epi32(a2b1_a0b3, z);
+	__m128i a0b3 = _mm_unpacklo_epi32(a2b1_a0b3, z);
+	__m128i sum1 = _mm_add_epi64(a3b0, a1b2);
+	sum = _mm_add_epi64(a2b1, a0b3);
+	C[3] = _mm_add_epi64(sum, sum1);
+
+	__m128i	a3b1_a1b3 = _mm_mul_epu32(a2301, b2103);
+	__m128i a2b2 = _mm_unpackhi_epi32(a2b2_a0b0, z);
+	__m128i a3b1 = _mm_unpackhi_epi32(a3b1_a1b3, z);
+	__m128i a1b3 = _mm_unpacklo_epi32(a3b1_a1b3, z);
+	sum = _mm_add_epi64(a2b2, a3b1);
+	C[4] = _mm_add_epi64(sum, a1b3);
+
+	__m128i a1302 = _mm_shuffle_epi32(a3210, _MM_SHUFFLE(1, 3, 0, 2));
+	__m128i b1203 = _mm_shuffle_epi32(b3210, _MM_SHUFFLE(1, 2, 0, 3));
+	__m128i a3b2_a2b3 = _mm_mul_epu32(a1302, b1203);
+	__m128i a3b2 = _mm_unpackhi_epi32(a3b2_a2b3, z);
+	__m128i a2b3 = _mm_unpacklo_epi32(a3b2_a2b3, z);
+	C[5] = _mm_add_epi64(a3b2, a2b3);
+}
+
+void P4Optimized::Multiply4(word *C, const word *A, const word *B)
+{
+	__m128i temp[7];
+	const word *w = (word *)temp;
+	const __m64 *mw = (__m64 *)w;
+
+	P4_Mul(temp, (__m128i *)A, (__m128i *)B);
+
+	C[0] = w[0];
+
+	__m64 s1, s2;
+
+	__m64 w1 = _m_from_int(w[1]);
+	__m64 w4 = mw[2];
+	__m64 w6 = mw[3];
+	__m64 w8 = mw[4];
+	__m64 w10 = mw[5];
+	__m64 w12 = mw[6];
+	__m64 w14 = mw[7];
+	__m64 w16 = mw[8];
+	__m64 w18 = mw[9];
+	__m64 w20 = mw[10];
+	__m64 w22 = mw[11];
+	__m64 w26 = _m_from_int(w[26]);
+
+	s1 = _mm_add_si64(w1, w4);
+	C[1] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s2 = _mm_add_si64(w6, w8);
+	s1 = _mm_add_si64(s1, s2);
+	C[2] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s2 = _mm_add_si64(w10, w12);
+	s1 = _mm_add_si64(s1, s2);
+	C[3] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s2 = _mm_add_si64(w14, w16);
+	s1 = _mm_add_si64(s1, s2);
+	C[4] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s2 = _mm_add_si64(w18, w20);
+	s1 = _mm_add_si64(s1, s2);
+	C[5] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s2 = _mm_add_si64(w22, w26);
+	s1 = _mm_add_si64(s1, s2);
+	C[6] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	C[7] = _m_to_int(s1) + w[27];
+	_mm_empty();
+}
+
+void P4Optimized::Multiply8(word *C, const word *A, const word *B)
+{
+	__m128i temp[28];
+	const word *w = (word *)temp;
+	const __m64 *mw = (__m64 *)w;
+	const word *x = (word *)temp+7*4;
+	const __m64 *mx = (__m64 *)x;
+	const word *y = (word *)temp+7*4*2;
+	const __m64 *my = (__m64 *)y;
+	const word *z = (word *)temp+7*4*3;
+	const __m64 *mz = (__m64 *)z;
+
+	P4_Mul(temp, (__m128i *)A, (__m128i *)B);
+
+	P4_Mul(temp+7, (__m128i *)A+1, (__m128i *)B);
+
+	P4_Mul(temp+14, (__m128i *)A, (__m128i *)B+1);
+
+	P4_Mul(temp+21, (__m128i *)A+1, (__m128i *)B+1);
+
+	C[0] = w[0];
+
+	__m64 s1, s2, s3, s4;
+
+	__m64 w1 = _m_from_int(w[1]);
+	__m64 w4 = mw[2];
+	__m64 w6 = mw[3];
+	__m64 w8 = mw[4];
+	__m64 w10 = mw[5];
+	__m64 w12 = mw[6];
+	__m64 w14 = mw[7];
+	__m64 w16 = mw[8];
+	__m64 w18 = mw[9];
+	__m64 w20 = mw[10];
+	__m64 w22 = mw[11];
+	__m64 w26 = _m_from_int(w[26]);
+	__m64 w27 = _m_from_int(w[27]);
+
+	__m64 x0 = _m_from_int(x[0]);
+	__m64 x1 = _m_from_int(x[1]);
+	__m64 x4 = mx[2];
+	__m64 x6 = mx[3];
+	__m64 x8 = mx[4];
+	__m64 x10 = mx[5];
+	__m64 x12 = mx[6];
+	__m64 x14 = mx[7];
+	__m64 x16 = mx[8];
+	__m64 x18 = mx[9];
+	__m64 x20 = mx[10];
+	__m64 x22 = mx[11];
+	__m64 x26 = _m_from_int(x[26]);
+	__m64 x27 = _m_from_int(x[27]);
+
+	__m64 y0 = _m_from_int(y[0]);
+	__m64 y1 = _m_from_int(y[1]);
+	__m64 y4 = my[2];
+	__m64 y6 = my[3];
+	__m64 y8 = my[4];
+	__m64 y10 = my[5];
+	__m64 y12 = my[6];
+	__m64 y14 = my[7];
+	__m64 y16 = my[8];
+	__m64 y18 = my[9];
+	__m64 y20 = my[10];
+	__m64 y22 = my[11];
+	__m64 y26 = _m_from_int(y[26]);
+	__m64 y27 = _m_from_int(y[27]);
+
+	__m64 z0 = _m_from_int(z[0]);
+	__m64 z1 = _m_from_int(z[1]);
+	__m64 z4 = mz[2];
+	__m64 z6 = mz[3];
+	__m64 z8 = mz[4];
+	__m64 z10 = mz[5];
+	__m64 z12 = mz[6];
+	__m64 z14 = mz[7];
+	__m64 z16 = mz[8];
+	__m64 z18 = mz[9];
+	__m64 z20 = mz[10];
+	__m64 z22 = mz[11];
+	__m64 z26 = _m_from_int(z[26]);
+
+	s1 = _mm_add_si64(w1, w4);
+	C[1] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s2 = _mm_add_si64(w6, w8);
+	s1 = _mm_add_si64(s1, s2);
+	C[2] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s2 = _mm_add_si64(w10, w12);
+	s1 = _mm_add_si64(s1, s2);
+	C[3] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s3 = _mm_add_si64(x0, y0);
+	s2 = _mm_add_si64(w14, w16);
+	s1 = _mm_add_si64(s1, s3);
+	s1 = _mm_add_si64(s1, s2);
+	C[4] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s3 = _mm_add_si64(x1, y1);
+	s4 = _mm_add_si64(x4, y4);
+	s1 = _mm_add_si64(s1, w18);
+	s3 = _mm_add_si64(s3, s4);
+	s1 = _mm_add_si64(s1, w20);
+	s1 = _mm_add_si64(s1, s3);
+	C[5] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s3 = _mm_add_si64(x6, y6);
+	s4 = _mm_add_si64(x8, y8);
+	s1 = _mm_add_si64(s1, w22);
+	s3 = _mm_add_si64(s3, s4);
+	s1 = _mm_add_si64(s1, w26);
+	s1 = _mm_add_si64(s1, s3);
+	C[6] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s3 = _mm_add_si64(x10, y10);
+	s4 = _mm_add_si64(x12, y12);
+	s1 = _mm_add_si64(s1, w27);
+	s3 = _mm_add_si64(s3, s4);
+	s1 = _mm_add_si64(s1, s3);
+	C[7] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s3 = _mm_add_si64(x14, y14);
+	s4 = _mm_add_si64(x16, y16);
+	s1 = _mm_add_si64(s1, z0);
+	s3 = _mm_add_si64(s3, s4);
+	s1 = _mm_add_si64(s1, s3);
+	C[8] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s3 = _mm_add_si64(x18, y18);
+	s4 = _mm_add_si64(x20, y20);
+	s1 = _mm_add_si64(s1, z1);
+	s3 = _mm_add_si64(s3, s4);
+	s1 = _mm_add_si64(s1, z4);
+	s1 = _mm_add_si64(s1, s3);
+	C[9] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s3 = _mm_add_si64(x22, y22);
+	s4 = _mm_add_si64(x26, y26);
+	s1 = _mm_add_si64(s1, z6);
+	s3 = _mm_add_si64(s3, s4);
+	s1 = _mm_add_si64(s1, z8);
+	s1 = _mm_add_si64(s1, s3);
+	C[10] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s3 = _mm_add_si64(x27, y27);
+	s1 = _mm_add_si64(s1, z10);
+	s1 = _mm_add_si64(s1, z12);
+	s1 = _mm_add_si64(s1, s3);
+	C[11] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s3 = _mm_add_si64(z14, z16);
+	s1 = _mm_add_si64(s1, s3);
+	C[12] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s3 = _mm_add_si64(z18, z20);
+	s1 = _mm_add_si64(s1, s3);
+	C[13] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s3 = _mm_add_si64(z22, z26);
+	s1 = _mm_add_si64(s1, s3);
+	C[14] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	C[15] = z[27] + _m_to_int(s1);
+	_mm_empty();
+}
+
+void P4Optimized::Multiply8Bottom(word *C, const word *A, const word *B)
+{
+	__m128i temp[21];
+	const word *w = (word *)temp;
+	const __m64 *mw = (__m64 *)w;
+	const word *x = (word *)temp+7*4;
+	const __m64 *mx = (__m64 *)x;
+	const word *y = (word *)temp+7*4*2;
+	const __m64 *my = (__m64 *)y;
+
+	P4_Mul(temp, (__m128i *)A, (__m128i *)B);
+
+	P4_Mul(temp+7, (__m128i *)A+1, (__m128i *)B);
+
+	P4_Mul(temp+14, (__m128i *)A, (__m128i *)B+1);
+
+	C[0] = w[0];
+
+	__m64 s1, s2, s3, s4;
+
+	__m64 w1 = _m_from_int(w[1]);
+	__m64 w4 = mw[2];
+	__m64 w6 = mw[3];
+	__m64 w8 = mw[4];
+	__m64 w10 = mw[5];
+	__m64 w12 = mw[6];
+	__m64 w14 = mw[7];
+	__m64 w16 = mw[8];
+	__m64 w18 = mw[9];
+	__m64 w20 = mw[10];
+	__m64 w22 = mw[11];
+	__m64 w26 = _m_from_int(w[26]);
+
+	__m64 x0 = _m_from_int(x[0]);
+	__m64 x1 = _m_from_int(x[1]);
+	__m64 x4 = mx[2];
+	__m64 x6 = mx[3];
+	__m64 x8 = mx[4];
+
+	__m64 y0 = _m_from_int(y[0]);
+	__m64 y1 = _m_from_int(y[1]);
+	__m64 y4 = my[2];
+	__m64 y6 = my[3];
+	__m64 y8 = my[4];
+
+	s1 = _mm_add_si64(w1, w4);
+	C[1] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s2 = _mm_add_si64(w6, w8);
+	s1 = _mm_add_si64(s1, s2);
+	C[2] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s2 = _mm_add_si64(w10, w12);
+	s1 = _mm_add_si64(s1, s2);
+	C[3] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s3 = _mm_add_si64(x0, y0);
+	s2 = _mm_add_si64(w14, w16);
+	s1 = _mm_add_si64(s1, s3);
+	s1 = _mm_add_si64(s1, s2);
+	C[4] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s3 = _mm_add_si64(x1, y1);
+	s4 = _mm_add_si64(x4, y4);
+	s1 = _mm_add_si64(s1, w18);
+	s3 = _mm_add_si64(s3, s4);
+	s1 = _mm_add_si64(s1, w20);
+	s1 = _mm_add_si64(s1, s3);
+	C[5] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	s3 = _mm_add_si64(x6, y6);
+	s4 = _mm_add_si64(x8, y8);
+	s1 = _mm_add_si64(s1, w22);
+	s3 = _mm_add_si64(s3, s4);
+	s1 = _mm_add_si64(s1, w26);
+	s1 = _mm_add_si64(s1, s3);
+	C[6] = _m_to_int(s1);
+	s1 = _m_psrlqi(s1, 32);
+
+	C[7] = _m_to_int(s1) + w[27] + x[10] + y[10] + x[12] + y[12];
+	_mm_empty();
+}
+
+__declspec(naked) word __fastcall P4Optimized::Add(word *C, const word *A, const word *B, unsigned int N)
+{
+	__asm
+	{
+		sub		esp, 16
+		xor		eax, eax
+		mov		[esp], edi
+		mov		[esp+4], esi
+		mov		[esp+8], ebx
+		mov		[esp+12], ebp
+
+		mov		ebx, [esp+20]	// B
+		mov		esi, [esp+24]	// N
+
+		// now: ebx = B, ecx = C, edx = A, esi = N
+
+		neg		esi
+		jz		loopend		// if no dwords then nothing to do
+
+		mov		edi, [edx]
+		mov		ebp, [ebx]
+
+loopstart:
+		add		edi, eax
+		jc		carry1
+
+		xor		eax, eax
+
+carry1continue:
+		add		edi, ebp
+		mov		ebp, 1
+		mov		[ecx], edi
+		mov		edi, [edx+4]
+		cmovc	eax, ebp
+		mov		ebp, [ebx+4]
+		lea		ebx, [ebx+8]
+		add		edi, eax
+		jc		carry2
+
+		xor		eax, eax
+
+carry2continue:
+		add		edi, ebp
+		mov		ebp, 1
+		cmovc	eax, ebp
+		mov		[ecx+4], edi
+		add		ecx, 8
+		mov		edi, [edx+8]
+		add		edx, 8
+		add		esi, 2
+		mov		ebp, [ebx]
+		jnz		loopstart
+
+loopend:
+		mov		edi, [esp]
+		mov		esi, [esp+4]
+		mov		ebx, [esp+8]
+		mov		ebp, [esp+12]
+		add		esp, 16
+		ret		8
+
+carry1:
+		mov		eax, 1
+		jmp		carry1continue
+
+carry2:
+		mov		eax, 1
+		jmp		carry2continue
+	}
+}
+
+__declspec(naked) word __fastcall P4Optimized::Subtract(word *C, const word *A, const word *B, unsigned int N)
+{
+	__asm
+	{
+		sub		esp, 16
+		xor		eax, eax
+		mov		[esp], edi
+		mov		[esp+4], esi
+		mov		[esp+8], ebx
+		mov		[esp+12], ebp
+
+		mov		ebx, [esp+20]	// B
+		mov		esi, [esp+24]	// N
+
+		// now: ebx = B, ecx = C, edx = A, esi = N
+
+		neg		esi
+		jz		loopend		// if no dwords then nothing to do
+
+		mov		edi, [edx]
+		mov		ebp, [ebx]
+
+loopstart:
+		sub		edi, eax
+		jc		carry1
+
+		xor		eax, eax
+
+carry1continue:
+		sub		edi, ebp
+		mov		ebp, 1
+		mov		[ecx], edi
+		mov		edi, [edx+4]
+		cmovc	eax, ebp
+		mov		ebp, [ebx+4]
+		lea		ebx, [ebx+8]
+		sub		edi, eax
+		jc		carry2
+
+		xor		eax, eax
+
+carry2continue:
+		sub		edi, ebp
+		mov		ebp, 1
+		cmovc	eax, ebp
+		mov		[ecx+4], edi
+		add		ecx, 8
+		mov		edi, [edx+8]
+		add		edx, 8
+		add		esi, 2
+		mov		ebp, [ebx]
+		jnz		loopstart
+
+loopend:
+		mov		edi, [esp]
+		mov		esi, [esp+4]
+		mov		ebx, [esp+8]
+		mov		ebp, [esp+12]
+		add		esp, 16
+		ret		8
+
+carry1:
+		mov		eax, 1
+		jmp		carry1continue
+
+carry2:
+		mov		eax, 1
+		jmp		carry2continue
+	}
+}
+
+#endif	// #ifdef SSE2_INTRINSICS_AVAILABLE
+
+#elif defined(__GNUC__) && defined(__i386__)
+
+class PentiumOptimized : public Portable
+{
+public:
+	static word Add(word *C, const word *A, const word *B, unsigned int N);
+	static word Subtract(word *C, const word *A, const word *B, unsigned int N);
+	static void Square4(word *R, const word *A);
+	static void Multiply4(word *C, const word *A, const word *B);
+	static void Multiply8(word *C, const word *A, const word *B);
+};
+
+typedef PentiumOptimized LowLevel;
+
+// Add and Subtract assembly code originally contributed by Alister Lee
+
+__attribute__((regparm(3))) word PentiumOptimized::Add(word *C, const word *A, const word *B, unsigned int N)
+{
+	assert (N%2 == 0);
+
+	register word carry, temp;
+
+	__asm__ __volatile__(
+			"push %%ebp;"
+			"sub %3, %2;"
+			"xor %0, %0;"
+			"sub %4, %0;"
+			"lea (%1,%4,4), %1;"
+			"sar $1, %0;"
+			"jz 1f;"
+
+		"0:;"
+			"mov 0(%3), %4;"
+			"mov 4(%3), %%ebp;"
+			"mov (%1,%0,8), %5;"
+			"lea 8(%3), %3;"
+			"adc %5, %4;"
+			"mov 4(%1,%0,8), %5;"
+			"adc %5, %%ebp;"
+			"inc %0;"
+			"mov %4, -8(%3, %2);"
+			"mov %%ebp, -4(%3, %2);"
+			"jnz 0b;"
+
+		"1:;"
+			"adc $0, %0;"
+			"pop %%ebp;"
+
+		: "=aSD" (carry), "+r" (B), "+r" (C), "+r" (A), "+r" (N), "=r" (temp)
+		: : "cc", "memory");
+
+	return carry;
+}
+
+__attribute__((regparm(3))) word PentiumOptimized::Subtract(word *C, const word *A, const word *B, unsigned int N)
+{
+	assert (N%2 == 0);
+
+	register word carry, temp;
+
+	__asm__ __volatile__(
+			"push %%ebp;"
+			"sub %3, %2;"
+			"xor %0, %0;"
+			"sub %4, %0;"
+			"lea (%1,%4,4), %1;"
+			"sar $1, %0;"
+			"jz 1f;"
+
+		"0:;"
+			"mov 0(%3), %4;"
+			"mov 4(%3), %%ebp;"
+			"mov (%1,%0,8), %5;"
+			"lea 8(%3), %3;"
+			"sbb %5, %4;"
+			"mov 4(%1,%0,8), %5;"
+			"sbb %5, %%ebp;"
+			"inc %0;"
+			"mov %4, -8(%3, %2);"
+			"mov %%ebp, -4(%3, %2);"
+			"jnz 0b;"
+
+		"1:;"
+			"adc $0, %0;"
+			"pop %%ebp;"
+
+		: "=aSD" (carry), "+r" (B), "+r" (C), "+r" (A), "+r" (N), "=r" (temp)
+		: : "cc", "memory");
+
+	return carry;
+}
+
+// Comba square and multiply assembly code originally contributed by Leonard Janke
+
+#define SqrStartup \
+  "push %%ebp\n\t" \
+  "push %%esi\n\t" \
+  "push %%ebx\n\t" \
+  "xor %%ebp, %%ebp\n\t" \
+  "xor %%ebx, %%ebx\n\t" \
+  "xor %%ecx, %%ecx\n\t" 
+
+#define SqrShiftCarry \
+  "mov %%ebx, %%ebp\n\t" \
+  "mov %%ecx, %%ebx\n\t" \
+  "xor %%ecx, %%ecx\n\t"
+
+#define SqrAccumulate(i,j) \
+  "mov 4*"#j"(%%esi), %%eax\n\t" \
+  "mull 4*"#i"(%%esi)\n\t" \
+  "add %%eax, %%ebp\n\t" \
+  "adc %%edx, %%ebx\n\t" \
+  "adc %%ch, %%cl\n\t" \
+  "add %%eax, %%ebp\n\t" \
+  "adc %%edx, %%ebx\n\t" \
+  "adc %%ch, %%cl\n\t"
+
+#define SqrAccumulateCentre(i) \
+  "mov 4*"#i"(%%esi), %%eax\n\t" \
+  "mull 4*"#i"(%%esi)\n\t" \
+  "add %%eax, %%ebp\n\t" \
+  "adc %%edx, %%ebx\n\t" \
+  "adc %%ch, %%cl\n\t" 
+
+#define SqrStoreDigit(X)  \
+  "mov %%ebp, 4*"#X"(%%edi)\n\t" \
+
+#define SqrLastDiagonal(digits) \
+  "mov 4*("#digits"-1)(%%esi), %%eax\n\t" \
+  "mull 4*("#digits"-1)(%%esi)\n\t" \
+  "add %%eax, %%ebp\n\t" \
+  "adc %%edx, %%ebx\n\t" \
+  "mov %%ebp, 4*(2*"#digits"-2)(%%edi)\n\t" \
+  "mov %%ebx, 4*(2*"#digits"-1)(%%edi)\n\t" 
+
+#define SqrCleanup \
+  "pop %%ebx\n\t" \
+  "pop %%esi\n\t" \
+  "pop %%ebp\n\t" 
+
+void PentiumOptimized::Square4(word* Y, const word* X)
+{
+	__asm__ __volatile__(
+		SqrStartup
+
+		SqrAccumulateCentre(0)
+		SqrStoreDigit(0)
+		SqrShiftCarry
+
+		SqrAccumulate(1,0)
+		SqrStoreDigit(1)
+		SqrShiftCarry
+
+		SqrAccumulate(2,0)
+		SqrAccumulateCentre(1)
+		SqrStoreDigit(2)
+		SqrShiftCarry
+
+		SqrAccumulate(3,0)
+		SqrAccumulate(2,1)
+		SqrStoreDigit(3)
+		SqrShiftCarry
+
+		SqrAccumulate(3,1)
+		SqrAccumulateCentre(2)
+		SqrStoreDigit(4)
+		SqrShiftCarry
+
+		SqrAccumulate(3,2)
+		SqrStoreDigit(5)
+		SqrShiftCarry
+
+		SqrLastDiagonal(4)
+
+		SqrCleanup
+
+		:
+		: "D" (Y), "S" (X)
+		: "eax",  "ecx", "edx", "ebp",   "memory"
+	);
+}
+
+#define MulStartup \
+  "push %%ebp\n\t" \
+  "push %%esi\n\t" \
+  "push %%ebx\n\t" \
+  "push %%edi\n\t" \
+  "mov %%eax, %%ebx \n\t" \
+  "xor %%ebp, %%ebp\n\t" \
+  "xor %%edi, %%edi\n\t" \
+  "xor %%ecx, %%ecx\n\t" 
+
+#define MulShiftCarry \
+  "mov %%edx, %%ebp\n\t" \
+  "mov %%ecx, %%edi\n\t" \
+  "xor %%ecx, %%ecx\n\t"
+
+#define MulAccumulate(i,j) \
+  "mov 4*"#j"(%%ebx), %%eax\n\t" \
+  "mull 4*"#i"(%%esi)\n\t" \
+  "add %%eax, %%ebp\n\t" \
+  "adc %%edx, %%edi\n\t" \
+  "adc %%ch, %%cl\n\t"
+
+#define MulStoreDigit(X)  \
+  "mov %%edi, %%edx \n\t" \
+  "mov (%%esp), %%edi \n\t" \
+  "mov %%ebp, 4*"#X"(%%edi)\n\t" \
+  "mov %%edi, (%%esp)\n\t" 
+
+#define MulLastDiagonal(digits) \
+  "mov 4*("#digits"-1)(%%ebx), %%eax\n\t" \
+  "mull 4*("#digits"-1)(%%esi)\n\t" \
+  "add %%eax, %%ebp\n\t" \
+  "adc %%edi, %%edx\n\t" \
+  "mov (%%esp), %%edi\n\t" \
+  "mov %%ebp, 4*(2*"#digits"-2)(%%edi)\n\t" \
+  "mov %%edx, 4*(2*"#digits"-1)(%%edi)\n\t" 
+
+#define MulCleanup \
+  "pop %%edi\n\t" \
+  "pop %%ebx\n\t" \
+  "pop %%esi\n\t" \
+  "pop %%ebp\n\t" 
+
+void PentiumOptimized::Multiply4(word* Z, const word* X, const word* Y)
+{
+	__asm__ __volatile__(
+		MulStartup
+		MulAccumulate(0,0)
+		MulStoreDigit(0)
+		MulShiftCarry
+
+		MulAccumulate(1,0)
+		MulAccumulate(0,1)
+		MulStoreDigit(1)
+		MulShiftCarry
+
+		MulAccumulate(2,0)
+		MulAccumulate(1,1)
+		MulAccumulate(0,2)
+		MulStoreDigit(2)
+		MulShiftCarry
+
+		MulAccumulate(3,0)
+		MulAccumulate(2,1)
+		MulAccumulate(1,2)
+		MulAccumulate(0,3)
+		MulStoreDigit(3)
+		MulShiftCarry
+
+		MulAccumulate(3,1)
+		MulAccumulate(2,2)
+		MulAccumulate(1,3)
+		MulStoreDigit(4)
+		MulShiftCarry
+
+		MulAccumulate(3,2)
+		MulAccumulate(2,3)
+		MulStoreDigit(5)
+		MulShiftCarry
+
+		MulLastDiagonal(4)
+
+		MulCleanup
+
+		: 
+		: "D" (Z), "S" (X), "a" (Y)
+		: "%ecx", "%edx",  "memory"
+	);
+}
+
+void PentiumOptimized::Multiply8(word* Z, const word* X, const word* Y)
+{
+	__asm__ __volatile__(
+		MulStartup
+		MulAccumulate(0,0)
+		MulStoreDigit(0)
+		MulShiftCarry
+
+		MulAccumulate(1,0)
+		MulAccumulate(0,1)
+		MulStoreDigit(1)
+		MulShiftCarry
+
+		MulAccumulate(2,0)
+		MulAccumulate(1,1)
+		MulAccumulate(0,2)
+		MulStoreDigit(2)
+		MulShiftCarry
+
+		MulAccumulate(3,0)
+		MulAccumulate(2,1)
+		MulAccumulate(1,2)
+		MulAccumulate(0,3)
+		MulStoreDigit(3)
+		MulShiftCarry
+
+		MulAccumulate(4,0)
+		MulAccumulate(3,1)
+		MulAccumulate(2,2)
+		MulAccumulate(1,3)
+		MulAccumulate(0,4)
+		MulStoreDigit(4)
+		MulShiftCarry
+
+		MulAccumulate(5,0)
+		MulAccumulate(4,1)
+		MulAccumulate(3,2)
+		MulAccumulate(2,3)
+		MulAccumulate(1,4)
+		MulAccumulate(0,5)
+		MulStoreDigit(5)
+		MulShiftCarry
+
+		MulAccumulate(6,0)
+		MulAccumulate(5,1)
+		MulAccumulate(4,2)
+		MulAccumulate(3,3)
+		MulAccumulate(2,4)
+		MulAccumulate(1,5)
+		MulAccumulate(0,6)
+		MulStoreDigit(6)
+		MulShiftCarry
+
+		MulAccumulate(7,0)
+		MulAccumulate(6,1)
+		MulAccumulate(5,2)
+		MulAccumulate(4,3)
+		MulAccumulate(3,4)
+		MulAccumulate(2,5)
+		MulAccumulate(1,6)
+		MulAccumulate(0,7)
+		MulStoreDigit(7)
+		MulShiftCarry
+
+		MulAccumulate(7,1)
+		MulAccumulate(6,2)
+		MulAccumulate(5,3)
+		MulAccumulate(4,4)
+		MulAccumulate(3,5)
+		MulAccumulate(2,6)
+		MulAccumulate(1,7)
+		MulStoreDigit(8)
+		MulShiftCarry
+
+		MulAccumulate(7,2)
+		MulAccumulate(6,3)
+		MulAccumulate(5,4)
+		MulAccumulate(4,5)
+		MulAccumulate(3,6)
+		MulAccumulate(2,7)
+		MulStoreDigit(9)
+		MulShiftCarry
+
+		MulAccumulate(7,3)
+		MulAccumulate(6,4)
+		MulAccumulate(5,5)
+		MulAccumulate(4,6)
+		MulAccumulate(3,7)
+		MulStoreDigit(10)
+		MulShiftCarry
+
+		MulAccumulate(7,4)
+		MulAccumulate(6,5)
+		MulAccumulate(5,6)
+		MulAccumulate(4,7)
+		MulStoreDigit(11)
+		MulShiftCarry
+
+		MulAccumulate(7,5)
+		MulAccumulate(6,6)
+		MulAccumulate(5,7)
+		MulStoreDigit(12)
+		MulShiftCarry
+
+		MulAccumulate(7,6)
+		MulAccumulate(6,7)
+		MulStoreDigit(13)
+		MulShiftCarry
+
+		MulLastDiagonal(8)
+
+		MulCleanup
+
+		: 
+		: "D" (Z), "S" (X), "a" (Y)
+		: "%ecx", "%edx",  "memory"
+	);
+}
+
+#elif defined(__GNUC__) && defined(__alpha__)
+
+class AlphaOptimized : public Portable
+{
+public:
+	static inline void Multiply2(word *C, const word *A, const word *B);
+	static inline word Multiply2Add(word *C, const word *A, const word *B);
+	static inline void Multiply4(word *C, const word *A, const word *B);
+	static inline unsigned int MultiplyRecursionLimit() {return 4;}
+
+	static inline void Multiply4Bottom(word *C, const word *A, const word *B);
+	static inline unsigned int MultiplyBottomRecursionLimit() {return 4;}
+
+	static inline void Square4(word *R, const word *A)
+	{
+		Multiply4(R, A, A);
+	}
+};
+
+typedef AlphaOptimized LowLevel;
+
+inline void AlphaOptimized::Multiply2(word *C, const word *A, const word *B)
+{
+	register dword c, a = *(const dword *)A, b = *(const dword *)B;
+	((dword *)C)[0] = a*b;
+	__asm__("umulh %1,%2,%0" : "=r" (c) : "r" (a), "r" (b));
+	((dword *)C)[1] = c;
+}
+
+inline word AlphaOptimized::Multiply2Add(word *C, const word *A, const word *B)
+{
+	register dword c, d, e, a = *(const dword *)A, b = *(const dword *)B;
+	c = ((dword *)C)[0];
+	d = a*b + c;
+	__asm__("umulh %1,%2,%0" : "=r" (e) : "r" (a), "r" (b));
+	((dword *)C)[0] = d;
+	d = (d < c);
+	c = ((dword *)C)[1] + d;
+	d = (c < d);
+	c += e;
+	((dword *)C)[1] = c;
+	d |= (c < e);
+	return d;
+}
+
+inline void AlphaOptimized::Multiply4(word *R, const word *A, const word *B)
+{
+	Multiply2(R, A, B);
+	Multiply2(R+4, A+2, B+2);
+	word carry = Multiply2Add(R+2, A+0, B+2);
+	carry += Multiply2Add(R+2, A+2, B+0);
+	Increment(R+6, 2, carry);
+}
+
+static inline void Multiply2BottomAdd(word *C, const word *A, const word *B)
+{
+	register dword a = *(const dword *)A, b = *(const dword *)B;
+	((dword *)C)[0] = a*b + ((dword *)C)[0];
+}
+
+inline void AlphaOptimized::Multiply4Bottom(word *R, const word *A, const word *B)
+{
+	Multiply2(R, A, B);
+	Multiply2BottomAdd(R+2, A+0, B+2);
+	Multiply2BottomAdd(R+2, A+2, B+0);
+}
+
+#else	// no processor specific code available
+
+typedef Portable LowLevel;
+
+#endif
 
 // ********************************************************
 
@@ -763,117 +1771,119 @@ static void AtomicInverseModPower2(word *C, word A0, word A1)
 #define R2		(R+N)
 #define R3		(R+N+N2)
 
+//VC60 workaround: compiler bug triggered without the extra dummy parameters
+
 // R[2*N] - result = A*B
 // T[2*N] - temporary work space
 // A[N] --- multiplier
 // B[N] --- multiplicant
 
-void RecursiveMultiply(word *R, word *T, const word *A, const word *B, unsigned int N)
+template <class P>
+void DoRecursiveMultiply(word *R, word *T, const word *A, const word *B, unsigned int N, const P *dummy=NULL);
+
+template <class P>
+inline void RecursiveMultiply(word *R, word *T, const word *A, const word *B, unsigned int N, const P *dummy=NULL)
 {
 	assert(N>=2 && N%2==0);
 
-	if (N==2)
-		AtomicMultiply(R, A, B);
-#if defined(__GNUC__) && defined(__alpha__)
-	else if (N==4)
-	{
-		AtomicMultiply(R, A, B);
-		AtomicMultiply(R+4, A+2, B+2);
-		word carry = AtomicMultiplyAdd(R+2, A+0, B+2);
-		carry += AtomicMultiplyAdd(R+2, A+2, B+0);
-		Increment(R+6, 2, carry);
-	}
-#else
-	else if (N==4)
-		CombaMultiply4(R, A, B);
-	else if (N==8)
-		CombaMultiply8(R, A, B);
-#endif
+	if (P::MultiplyRecursionLimit() >= 8 && N==8)
+		P::Multiply8(R, A, B);
+	else if (P::MultiplyRecursionLimit() >= 4 && N==4)
+		P::Multiply4(R, A, B);
+	else if (N==2)
+		P::Multiply2(R, A, B);
 	else
+		DoRecursiveMultiply<P>(R, T, A, B, N, NULL);	// VC60 workaround: needs this NULL
+}
+
+template <class P>
+void DoRecursiveMultiply(word *R, word *T, const word *A, const word *B, unsigned int N, const P *dummy)
+{
+	const unsigned int N2 = N/2;
+	int carry;
+
+	int aComp = Compare(A0, A1, N2);
+	int bComp = Compare(B0, B1, N2);
+
+	switch (2*aComp + aComp + bComp)
 	{
-		const unsigned int N2 = N/2;
-		int carry;
-
-		int aComp = Compare(A0, A1, N2);
-		int bComp = Compare(B0, B1, N2);
-
-		switch (2*aComp + aComp + bComp)
-		{
-		case -4:
-			Subtract(R0, A1, A0, N2);
-			Subtract(R1, B0, B1, N2);
-			RecursiveMultiply(T0, T2, R0, R1, N2);
-			Subtract(T1, T1, R0, N2);
-			carry = -1;
-			break;
-		case -2:
-			Subtract(R0, A1, A0, N2);
-			Subtract(R1, B0, B1, N2);
-			RecursiveMultiply(T0, T2, R0, R1, N2);
-			carry = 0;
-			break;
-		case 2:
-			Subtract(R0, A0, A1, N2);
-			Subtract(R1, B1, B0, N2);
-			RecursiveMultiply(T0, T2, R0, R1, N2);
-			carry = 0;
-			break;
-		case 4:
-			Subtract(R0, A1, A0, N2);
-			Subtract(R1, B0, B1, N2);
-			RecursiveMultiply(T0, T2, R0, R1, N2);
-			Subtract(T1, T1, R1, N2);
-			carry = -1;
-			break;
-		default:
-			SetWords(T0, 0, N);
-			carry = 0;
-		}
-
-		RecursiveMultiply(R0, T2, A0, B0, N2);
-		RecursiveMultiply(R2, T2, A1, B1, N2);
-
-		// now T[01] holds (A1-A0)*(B0-B1), R[01] holds A0*B0, R[23] holds A1*B1
-
-		carry += Add(T0, T0, R0, N);
-		carry += Add(T0, T0, R2, N);
-		carry += Add(R1, R1, T0, N);
-
-		assert (carry >= 0 && carry <= 2);
-		Increment(R3, N2, carry);
+	case -4:
+		P::Subtract(R0, A1, A0, N2);
+		P::Subtract(R1, B0, B1, N2);
+		RecursiveMultiply<P>(T0, T2, R0, R1, N2);
+		P::Subtract(T1, T1, R0, N2);
+		carry = -1;
+		break;
+	case -2:
+		P::Subtract(R0, A1, A0, N2);
+		P::Subtract(R1, B0, B1, N2);
+		RecursiveMultiply<P>(T0, T2, R0, R1, N2);
+		carry = 0;
+		break;
+	case 2:
+		P::Subtract(R0, A0, A1, N2);
+		P::Subtract(R1, B1, B0, N2);
+		RecursiveMultiply<P>(T0, T2, R0, R1, N2);
+		carry = 0;
+		break;
+	case 4:
+		P::Subtract(R0, A1, A0, N2);
+		P::Subtract(R1, B0, B1, N2);
+		RecursiveMultiply<P>(T0, T2, R0, R1, N2);
+		P::Subtract(T1, T1, R1, N2);
+		carry = -1;
+		break;
+	default:
+		SetWords(T0, 0, N);
+		carry = 0;
 	}
+
+	RecursiveMultiply<P>(R0, T2, A0, B0, N2);
+	RecursiveMultiply<P>(R2, T2, A1, B1, N2);
+
+	// now T[01] holds (A1-A0)*(B0-B1), R[01] holds A0*B0, R[23] holds A1*B1
+
+	carry += P::Add(T0, T0, R0, N);
+	carry += P::Add(T0, T0, R2, N);
+	carry += P::Add(R1, R1, T0, N);
+
+	assert (carry >= 0 && carry <= 2);
+	Increment(R3, N2, carry);
 }
 
 // R[2*N] - result = A*A
 // T[2*N] - temporary work space
 // A[N] --- number to be squared
 
-void RecursiveSquare(word *R, word *T, const word *A, unsigned int N)
+template <class P>
+void DoRecursiveSquare(word *R, word *T, const word *A, unsigned int N, const P *dummy=NULL);
+
+template <class P>
+inline void RecursiveSquare(word *R, word *T, const word *A, unsigned int N, const P *dummy=NULL)
 {
 	assert(N && N%2==0);
-
-	if (N==2)
-		AtomicMultiply(R, A, A);
-	else if (N==4)
-	{
-		// VC60 workaround: MSVC 6.0 has an optimization bug that makes
-		// (dword)A*B where either A or B has been cast to a dword before
-		// very expensive. Revisit a CombaSquare4() function when this
-		// bug is fixed.
-		CombaMultiply4(R, A, A);
-	}
+	if (P::SquareRecursionLimit() >= 8 && N==8)
+		P::Square8(R, A);
+	if (P::SquareRecursionLimit() >= 4 && N==4)
+		P::Square4(R, A);
+	else if (N==2)
+		P::Square2(R, A);
 	else
-	{
-		const unsigned int N2 = N/2;
+		DoRecursiveSquare<P>(R, T, A, N, NULL);	// VC60 workaround: needs this NULL
+}
 
-		RecursiveSquare(R0, T2, A0, N2);
-		RecursiveSquare(R2, T2, A1, N2);
-		RecursiveMultiply(T0, T2, A0, A1, N2);
+template <class P>
+void DoRecursiveSquare(word *R, word *T, const word *A, unsigned int N, const P *dummy)
+{
+	const unsigned int N2 = N/2;
 
-		word carry = Add(R1, R1, T0, N);
-		carry += Add(R1, R1, T0, N);
-		Increment(R3, N2, carry);
-	}
+	RecursiveSquare<P>(R0, T2, A0, N2);
+	RecursiveSquare<P>(R2, T2, A1, N2);
+	RecursiveMultiply<P>(T0, T2, A0, A1, N2);
+
+	word carry = P::Add(R1, R1, T0, N);
+	carry += P::Add(R1, R1, T0, N);
+	Increment(R3, N2, carry);
 }
 
 // R[N] - bottom half of A*B
@@ -881,26 +1891,33 @@ void RecursiveSquare(word *R, word *T, const word *A, unsigned int N)
 // A[N] - multiplier
 // B[N] - multiplicant
 
-void RecursiveMultiplyBottom(word *R, word *T, const word *A, const word *B, unsigned int N)
+template <class P>
+void DoRecursiveMultiplyBottom(word *R, word *T, const word *A, const word *B, unsigned int N, const P *dummy=NULL);
+
+template <class P>
+inline void RecursiveMultiplyBottom(word *R, word *T, const word *A, const word *B, unsigned int N, const P *dummy=NULL)
 {
 	assert(N>=2 && N%2==0);
-
-	if (N==2)
-		AtomicMultiplyBottom(R, A, B);
-	else if (N==4)
-		CombaMultiplyBottom4(R, A, B);
-	else if (N==8)
-		CombaMultiplyBottom8(R, A, B);
+	if (P::MultiplyBottomRecursionLimit() >= 8 && N==8)
+		P::Multiply8Bottom(R, A, B);
+	else if (P::MultiplyBottomRecursionLimit() >= 4 && N==4)
+		P::Multiply4Bottom(R, A, B);
+	else if (N==2)
+		P::Multiply2Bottom(R, A, B);
 	else
-	{
-		const unsigned int N2 = N/2;
+		DoRecursiveMultiplyBottom<P>(R, T, A, B, N, NULL);
+}
 
-		RecursiveMultiply(R, T, A0, B0, N2);
-		RecursiveMultiplyBottom(T0, T1, A1, B0, N2);
-		Add(R1, R1, T0, N2);
-		RecursiveMultiplyBottom(T0, T1, A0, B1, N2);
-		Add(R1, R1, T0, N2);
-	}
+template <class P>
+void DoRecursiveMultiplyBottom(word *R, word *T, const word *A, const word *B, unsigned int N, const P *dummy)
+{
+	const unsigned int N2 = N/2;
+
+	RecursiveMultiply<P>(R, T, A0, B0, N2);
+	RecursiveMultiplyBottom<P>(T0, T1, A1, B0, N2);
+	P::Add(R1, R1, T0, N2);
+	RecursiveMultiplyBottom<P>(T0, T1, A0, B1, N2);
+	P::Add(R1, R1, T0, N2);
 }
 
 // R[N] --- upper half of A*B
@@ -909,20 +1926,21 @@ void RecursiveMultiplyBottom(word *R, word *T, const word *A, const word *B, uns
 // A[N] --- multiplier
 // B[N] --- multiplicant
 
-void RecursiveMultiplyTop(word *R, word *T, const word *L, const word *A, const word *B, unsigned int N)
+template <class P>
+void RecursiveMultiplyTop(word *R, word *T, const word *L, const word *A, const word *B, unsigned int N, const P *dummy=NULL)
 {
 	assert(N>=2 && N%2==0);
 
-	if (N==2)
+	if (N==4)
 	{
-		AtomicMultiply(T, A, B);
-		((dword *)R)[0] = ((dword *)T)[1];
-	}
-	else if (N==4)
-	{
-		CombaMultiply4(T, A, B);
+		P::Multiply4(T, A, B);
 		((dword *)R)[0] = ((dword *)T)[2];
 		((dword *)R)[1] = ((dword *)T)[3];
+	}
+	else if (N==2)
+	{
+		P::Multiply2(T, A, B);
+		((dword *)R)[0] = ((dword *)T)[1];
 	}
 	else
 	{
@@ -935,29 +1953,29 @@ void RecursiveMultiplyTop(word *R, word *T, const word *L, const word *A, const 
 		switch (2*aComp + aComp + bComp)
 		{
 		case -4:
-			Subtract(R0, A1, A0, N2);
-			Subtract(R1, B0, B1, N2);
-			RecursiveMultiply(T0, T2, R0, R1, N2);
-			Subtract(T1, T1, R0, N2);
+			P::Subtract(R0, A1, A0, N2);
+			P::Subtract(R1, B0, B1, N2);
+			RecursiveMultiply<P>(T0, T2, R0, R1, N2);
+			P::Subtract(T1, T1, R0, N2);
 			carry = -1;
 			break;
 		case -2:
-			Subtract(R0, A1, A0, N2);
-			Subtract(R1, B0, B1, N2);
-			RecursiveMultiply(T0, T2, R0, R1, N2);
+			P::Subtract(R0, A1, A0, N2);
+			P::Subtract(R1, B0, B1, N2);
+			RecursiveMultiply<P>(T0, T2, R0, R1, N2);
 			carry = 0;
 			break;
 		case 2:
-			Subtract(R0, A0, A1, N2);
-			Subtract(R1, B1, B0, N2);
-			RecursiveMultiply(T0, T2, R0, R1, N2);
+			P::Subtract(R0, A0, A1, N2);
+			P::Subtract(R1, B1, B0, N2);
+			RecursiveMultiply<P>(T0, T2, R0, R1, N2);
 			carry = 0;
 			break;
 		case 4:
-			Subtract(R0, A1, A0, N2);
-			Subtract(R1, B0, B1, N2);
-			RecursiveMultiply(T0, T2, R0, R1, N2);
-			Subtract(T1, T1, R1, N2);
+			P::Subtract(R0, A1, A0, N2);
+			P::Subtract(R1, B0, B1, N2);
+			RecursiveMultiply<P>(T0, T2, R0, R1, N2);
+			P::Subtract(T1, T1, R1, N2);
 			carry = -1;
 			break;
 		default:
@@ -965,24 +1983,73 @@ void RecursiveMultiplyTop(word *R, word *T, const word *L, const word *A, const 
 			carry = 0;
 		}
 
-		RecursiveMultiply(T2, R0, A1, B1, N2);
+		RecursiveMultiply<P>(T2, R0, A1, B1, N2);
 
 		// now T[01] holds (A1-A0)*(B0-B1), T[23] holds A1*B1
 
-		CopyWords(R0, L+N2, N2);
-		word c2 = Subtract(R0, R0, L, N2);
-		c2 += Subtract(R0, R0, T0, N2);
+		word c2 = P::Subtract(R0, L+N2, L, N2);
+		c2 += P::Subtract(R0, R0, T0, N2);
 		word t = (Compare(R0, T2, N2) == -1);
 
 		carry += t;
 		carry += Increment(R0, N2, c2+t);
-		carry += Add(R0, R0, T1, N2);
-		carry += Add(R0, R0, T3, N2);
+		carry += P::Add(R0, R0, T1, N2);
+		carry += P::Add(R0, R0, T3, N2);
+		assert (carry >= 0 && carry <= 2);
 
 		CopyWords(R1, T3, N2);
-		assert (carry >= 0 && carry <= 2);
 		Increment(R1, N2, carry);
 	}
+}
+
+inline word Add(word *C, const word *A, const word *B, unsigned int N)
+{
+	return LowLevel::Add(C, A, B, N);
+}
+
+inline word Subtract(word *C, const word *A, const word *B, unsigned int N)
+{
+	return LowLevel::Subtract(C, A, B, N);
+}
+
+inline void Multiply(word *R, word *T, const word *A, const word *B, unsigned int N)
+{
+#ifdef SSE2_INTRINSICS_AVAILABLE
+	if (HasSSE2())
+		RecursiveMultiply<P4Optimized>(R, T, A, B, N);
+	else
+#endif
+		RecursiveMultiply<LowLevel>(R, T, A, B, N);
+}
+
+inline void Square(word *R, word *T, const word *A, unsigned int N)
+{
+#ifdef SSE2_INTRINSICS_AVAILABLE
+	if (HasSSE2())
+		RecursiveSquare<P4Optimized>(R, T, A, N);
+	else
+#endif
+		RecursiveSquare<LowLevel>(R, T, A, N);
+}
+
+inline void MultiplyBottom(word *R, word *T, const word *A, const word *B, unsigned int N)
+{
+#ifdef SSE2_INTRINSICS_AVAILABLE
+	if (HasSSE2())
+		RecursiveMultiplyBottom<P4Optimized>(R, T, A, B, N);
+	else
+#endif
+		RecursiveMultiplyBottom<LowLevel>(R, T, A, B, N);
+}
+
+inline void MultiplyTop(word *R, word *T, const word *L, const word *A, const word *B, unsigned int N)
+{
+#ifdef SSE2_INTRINSICS_AVAILABLE
+	if (HasSSE2())
+		RecursiveMultiplyTop<P4Optimized>(R, T, L, A, B, N);
+	else
+#endif
+		RecursiveMultiplyTop<LowLevel>(R, T, L, A, B, N);
 }
 
 // R[NA+NB] - result = A*B
@@ -995,9 +2062,9 @@ void AsymmetricMultiply(word *R, word *T, const word *A, unsigned int NA, const 
 	if (NA == NB)
 	{
 		if (A == B)
-			RecursiveSquare(R, T, A, NA);
+			Square(R, T, A, NA);
 		else
-			RecursiveMultiply(R, T, A, B, NA);
+			Multiply(R, T, A, B, NA);
 
 		return;
 	}
@@ -1029,15 +2096,15 @@ void AsymmetricMultiply(word *R, word *T, const word *A, unsigned int NA, const 
 		}
 	}
 
-	RecursiveMultiply(R, T, A, B, NA);
+	Multiply(R, T, A, B, NA);
 	CopyWords(T+2*NA, R+NA, NA);
 
 	unsigned i;
 
 	for (i=2*NA; i<NB; i+=2*NA)
-		RecursiveMultiply(T+NA+i, T, A, B+i, NA);
+		Multiply(T+NA+i, T, A, B+i, NA);
 	for (i=NA; i<NB; i+=2*NA)
-		RecursiveMultiply(R+i, T, A, B+i, NA);
+		Multiply(R+i, T, A, B+i, NA);
 
 	if (Add(R+NA, R+NA, T+2*NA, NB-NA))
 		Increment(R+NB, NA);
@@ -1057,11 +2124,11 @@ void RecursiveInverseModPower2(word *R, word *T, const word *A, unsigned int N)
 		RecursiveInverseModPower2(R0, T0, A0, N2);
 		T0[0] = 1;
 		SetWords(T0+1, 0, N2-1);
-		RecursiveMultiplyTop(R1, T1, T0, R0, A0, N2);
-		RecursiveMultiplyBottom(T0, T1, R0, A1, N2);
+		MultiplyTop(R1, T1, T0, R0, A0, N2);
+		MultiplyBottom(T0, T1, R0, A1, N2);
 		Add(T0, R1, T0, N2);
 		TwosComplement(T0, N2);
-		RecursiveMultiplyBottom(R1, T1, R0, T0, N2);
+		MultiplyBottom(R1, T1, R0, T0, N2);
 	}
 }
 
@@ -1073,8 +2140,8 @@ void RecursiveInverseModPower2(word *R, word *T, const word *A, unsigned int N)
 
 void MontgomeryReduce(word *R, word *T, const word *X, const word *M, const word *U, unsigned int N)
 {
-	RecursiveMultiplyBottom(R, T, X, U, N);
-	RecursiveMultiplyTop(T, T+N, X, R, M, N);
+	MultiplyBottom(R, T, X, U, N);
+	MultiplyTop(T, T+N, X, R, M, N);
 	if (Subtract(R, X+N, T, N))
 	{
 		word carry = Add(R, R, M, N);
@@ -1104,15 +2171,15 @@ void HalfMontgomeryReduce(word *R, word *T, const word *X, const word *M, const 
 #define X3		(X+N+N2)
 
 	const unsigned int N2 = N/2;
-	RecursiveMultiply(T0, T2, V0, X3, N2);
+	Multiply(T0, T2, V0, X3, N2);
 	int c2 = Add(T0, T0, X0, N);
-	RecursiveMultiplyBottom(T3, T2, T0, U, N2);
-	RecursiveMultiplyTop(T2, R, T0, T3, M0, N2);
+	MultiplyBottom(T3, T2, T0, U, N2);
+	MultiplyTop(T2, R, T0, T3, M0, N2);
 	c2 -= Subtract(T2, T1, T2, N2);
-	RecursiveMultiply(T0, R, T3, M1, N2);
+	Multiply(T0, R, T3, M1, N2);
 	c2 -= Subtract(T0, T2, T0, N2);
 	int c3 = -(int)Subtract(T1, X2, T1, N2);
-	RecursiveMultiply(R0, T2, V1, X3, N2);
+	Multiply(R0, T2, V1, X3, N2);
 	c3 += Add(R, R, T, N);
 
 	if (c2>0)
@@ -1209,7 +2276,7 @@ static inline void AtomicDivide(word *Q, const word *A, const word *B)
 		// multiply quotient and divisor and add remainder, make sure it equals dividend
 		assert(!T[2] && !T[3] && (T[1] < B[1] || (T[1]==B[1] && T[0]<B[0])));
 		word P[4];
-		AtomicMultiply(P, Q, B);
+		LowLevel::Multiply2(P, Q, B);
 		Add(P, P, T, 4);
 		assert(memcmp(P, A, 4*WORD_SIZE)==0);
 #endif
@@ -1226,9 +2293,9 @@ static void CorrectQuotientEstimate(word *R, word *T, word *Q, const word *B, un
 		T[N] = T[N+1] = 0;
 		unsigned i;
 		for (i=0; i<N; i+=4)
-			AtomicMultiply(T+i, Q, B+i);
+			LowLevel::Multiply2(T+i, Q, B+i);
 		for (i=2; i<N; i+=4)
-			if (AtomicMultiplyAdd(T+i, Q, B+i))
+			if (LowLevel::Multiply2Add(T+i, Q, B+i))
 				T[i+5] += (++T[i+4]==0);
 	}
 	else
@@ -1464,7 +2531,7 @@ Integer::Integer()
 Integer::Integer(const Integer& t)
 	: reg(RoundupSize(t.WordCount())), sign(t.sign)
 {
-	CopyWords(reg, t.reg, reg.size);
+	CopyWords(reg, t.reg, reg.size());
 }
 
 Integer::Integer(signed long value)
@@ -1478,7 +2545,7 @@ Integer::Integer(signed long value)
 		value = -value;
 	}
 	reg[0] = word(value);
-	reg[1] = sizeof(value)>WORD_SIZE ? word(value>>WORD_BITS) : 0;
+	reg[1] = word(SafeRightShift<WORD_BITS, unsigned long>(value));
 }
 
 bool Integer::IsConvertableToLong() const
@@ -1487,7 +2554,7 @@ bool Integer::IsConvertableToLong() const
 		return false;
 
 	unsigned long value = reg[0];
-	value += sizeof(value)>WORD_SIZE ? ((unsigned long)reg[1]<<WORD_BITS) : 0;
+	value += SafeLeftShift<WORD_BITS, unsigned long>(reg[1]);
 
 	if (sign==POSITIVE)
 		return (signed long)value >= 0;
@@ -1497,8 +2564,10 @@ bool Integer::IsConvertableToLong() const
 
 signed long Integer::ConvertToLong() const
 {
+	assert(IsConvertableToLong());
+
 	unsigned long value = reg[0];
-	value += sizeof(value)>WORD_SIZE ? ((unsigned long)reg[1]<<WORD_BITS) : 0;
+	value += SafeLeftShift<WORD_BITS, unsigned long>(reg[1]);
 	return sign==POSITIVE ? value : -(signed long)value;
 }
 
@@ -1530,7 +2599,7 @@ Integer::Integer(RandomNumberGenerator &rng, const Integer &min, const Integer &
 
 Integer Integer::Power2(unsigned int e)
 {
-	Integer r((word)0, bitsToWords(e+1));
+	Integer r((word)0, BitsToWords(e+1));
 	r.SetBit(e);
 	return r;
 }
@@ -1547,6 +2616,12 @@ const Integer &Integer::One()
 	return one;
 }
 
+const Integer &Integer::Two()
+{
+	static const Integer two(2,2);
+	return two;
+}
+
 bool Integer::operator!() const
 {
 	return IsNegative() ? false : (reg[0]==0 && WordCount()==0);
@@ -1557,7 +2632,7 @@ Integer& Integer::operator=(const Integer& t)
 	if (this != &t)
 	{
 		reg.New(RoundupSize(t.WordCount()));
-		CopyWords(reg, t.reg, reg.size);
+		CopyWords(reg, t.reg, reg.size());
 		sign = t.sign;
 	}
 	return *this;
@@ -1565,7 +2640,7 @@ Integer& Integer::operator=(const Integer& t)
 
 bool Integer::GetBit(unsigned int n) const
 {
-	if (n/WORD_BITS >= reg.size)
+	if (n/WORD_BITS >= reg.size())
 		return 0;
 	else
 		return bool((reg[n/WORD_BITS] >> (n % WORD_BITS)) & 1);
@@ -1575,19 +2650,19 @@ void Integer::SetBit(unsigned int n, bool value)
 {
 	if (value)
 	{
-		reg.CleanGrow(RoundupSize(bitsToWords(n+1)));
+		reg.CleanGrow(RoundupSize(BitsToWords(n+1)));
 		reg[n/WORD_BITS] |= (word(1) << (n%WORD_BITS));
 	}
 	else
 	{
-		if (n/WORD_BITS < reg.size)
+		if (n/WORD_BITS < reg.size())
 			reg[n/WORD_BITS] &= ~(word(1) << (n%WORD_BITS));
 	}
 }
 
 byte Integer::GetByte(unsigned int n) const
 {
-	if (n/WORD_SIZE >= reg.size)
+	if (n/WORD_SIZE >= reg.size())
 		return 0;
 	else
 		return byte(reg[n/WORD_SIZE] >> ((n%WORD_SIZE)*8));
@@ -1595,7 +2670,7 @@ byte Integer::GetByte(unsigned int n) const
 
 void Integer::SetByte(unsigned int n, byte value)
 {
-	reg.CleanGrow(RoundupSize(bytesToWords(n+1)));
+	reg.CleanGrow(RoundupSize(BytesToWords(n+1)));
 	reg[n/WORD_SIZE] &= ~(word(0xff) << 8*(n%WORD_SIZE));
 	reg[n/WORD_SIZE] |= (word(value) << 8*(n%WORD_SIZE));
 }
@@ -1633,20 +2708,26 @@ Integer::Integer(word value, unsigned int length)
 	: reg(RoundupSize(length)), sign(POSITIVE)
 {
 	reg[0] = value;
-	SetWords(reg+1, 0, reg.size-1);
+	SetWords(reg+1, 0, reg.size()-1);
 }
 
-
-Integer::Integer(const char *str)
-	: reg(2), sign(POSITIVE)
+template <class T>
+static Integer StringToInteger(const T *str)
 {
 	word radix;
-	unsigned length = strlen(str);
+#if (defined(__GNUC__) && __GNUC__ <= 3)		// GCC workaround
+	// std::char_traits doesn't exist in GCC 2.x
+	// std::char_traits<wchar_t>::length() not defined in GCC 3.2
+	unsigned int length;
+	for (length = 0; str[length] != 0; length++) {}
+#else
+	unsigned int length = std::char_traits<T>::length(str);
+#endif
 
-	SetWords(reg, 0, 2);
+	Integer v;
 
 	if (length == 0)
-		return;
+		return v;
 
 	switch (str[length-1])
 	{
@@ -1666,7 +2747,7 @@ Integer::Integer(const char *str)
 		radix=10;
 	}
 
-	if (strncmp("0x", str, 2) == 0)
+	if (length > 2 && str[0] == '0' && str[1] == 'x')
 		radix = 16;
 
 	for (unsigned i=0; i<length; i++)
@@ -1684,18 +2765,32 @@ Integer::Integer(const char *str)
 
 		if (digit < radix)
 		{
-			*this *= radix;
-			*this += digit;
+			v *= radix;
+			v += digit;
 		}
 	}
 
 	if (str[0] == '-')
-		Negate();
+		v.Negate();
+
+	return v;
+}
+
+Integer::Integer(const char *str)
+	: reg(2), sign(POSITIVE)
+{
+	*this = StringToInteger(str);
+}
+
+Integer::Integer(const wchar_t *str)
+	: reg(2), sign(POSITIVE)
+{
+	*this = StringToInteger(str);
 }
 
 unsigned int Integer::WordCount() const
 {
-	return CountWords(reg, reg.size);
+	return CountWords(reg, reg.size());
 }
 
 unsigned int Integer::ByteCount() const
@@ -1737,7 +2832,7 @@ void Integer::Decode(BufferedTransformation &bt, unsigned int inputLen, Signedne
 		bt.Peek(b);
 	}
 
-	reg.CleanNew(RoundupSize(bytesToWords(inputLen)));
+	reg.CleanNew(RoundupSize(BytesToWords(inputLen)));
 
 	for (unsigned int i=inputLen; i > 0; i--)
 	{
@@ -1747,9 +2842,9 @@ void Integer::Decode(BufferedTransformation &bt, unsigned int inputLen, Signedne
 
 	if (sign == NEGATIVE)
 	{
-		for (unsigned i=inputLen; i<reg.size*WORD_SIZE; i++)
+		for (unsigned i=inputLen; i<reg.size()*WORD_SIZE; i++)
 			reg[i/WORD_SIZE] |= 0xff << (i%WORD_SIZE)*8;
-		TwosComplement(reg, reg.size);
+		TwosComplement(reg, reg.size());
 	}
 }
 
@@ -1768,7 +2863,7 @@ unsigned int Integer::MinEncodedSize(Signedness signedness) const
 unsigned int Integer::Encode(byte *output, unsigned int outputLen, Signedness signedness) const
 {
 	ArraySink sink(output, outputLen);
-	return Encode(sink, outputLen);
+	return Encode(sink, outputLen, signedness);
 }
 
 unsigned int Integer::Encode(BufferedTransformation &bt, unsigned int outputLen, Signedness signedness) const
@@ -1836,7 +2931,7 @@ unsigned int Integer::OpenPGPEncode(BufferedTransformation &bt) const
 {
 	word16 bitCount = BitCount();
 	bt.PutWord16(bitCount);
-	return 2 + Encode(bt, bitsToBytes(bitCount));
+	return 2 + Encode(bt, BitsToBytes(bitCount));
 }
 
 void Integer::OpenPGPDecode(const byte *input, unsigned int len)
@@ -1848,16 +2943,16 @@ void Integer::OpenPGPDecode(const byte *input, unsigned int len)
 void Integer::OpenPGPDecode(BufferedTransformation &bt)
 {
 	word16 bitCount;
-	if (bt.GetWord16(bitCount) != 2 || bt.MaxRetrievable() < bitsToBytes(bitCount))
+	if (bt.GetWord16(bitCount) != 2 || bt.MaxRetrievable() < BitsToBytes(bitCount))
 		throw OpenPGPDecodeErr();
-	Decode(bt, bitsToBytes(bitCount));
+	Decode(bt, BitsToBytes(bitCount));
 }
 
 void Integer::Randomize(RandomNumberGenerator &rng, unsigned int nbits)
 {
 	const unsigned int nbytes = nbits/8 + 1;
 	SecByteBlock buf(nbytes);
-	rng.GetBlock(buf, nbytes);
+	rng.GenerateBlock(buf, nbytes);
 	if (nbytes)
 		buf[0] = (byte)Crop(buf[0], nbits % 8);
 	Decode(buf, nbytes, UNSIGNED);
@@ -1865,7 +2960,8 @@ void Integer::Randomize(RandomNumberGenerator &rng, unsigned int nbits)
 
 void Integer::Randomize(RandomNumberGenerator &rng, const Integer &min, const Integer &max)
 {
-	assert(max >= min);
+	if (min > max)
+		throw InvalidArgument("Integer: Min must be no greater than Max");
 
 	Integer range = max - min;
 	const unsigned int nbits = range.BitCount();
@@ -1881,7 +2977,79 @@ void Integer::Randomize(RandomNumberGenerator &rng, const Integer &min, const In
 
 bool Integer::Randomize(RandomNumberGenerator &rng, const Integer &min, const Integer &max, RandomNumberType rnType, const Integer &equiv, const Integer &mod)
 {
-	assert(!equiv.IsNegative() && equiv < mod);
+	return GenerateRandomNoThrow(rng, MakeParameters("Min", min)("Max", max)("RandomNumberType", rnType)("EquivalentTo", equiv)("Mod", mod));
+}
+
+class KDF2_RNG : public RandomNumberGenerator
+{
+public:
+	KDF2_RNG(const byte *seed, unsigned int seedSize)
+		: m_counter(0), m_counterAndSeed(seedSize + 4)
+	{
+		memcpy(m_counterAndSeed + 4, seed, seedSize);
+	}
+
+	byte GenerateByte()
+	{
+		byte b;
+		GenerateBlock(&b, 1);
+		return b;
+	}
+
+	void GenerateBlock(byte *output, unsigned int size)
+	{
+		UnalignedPutWord(BIG_ENDIAN_ORDER, m_counterAndSeed, m_counter);
+		++m_counter;
+		P1363_KDF2<SHA1>::DeriveKey(output, size, m_counterAndSeed, m_counterAndSeed.size());
+	}
+
+private:
+	word32 m_counter;
+	SecByteBlock m_counterAndSeed;
+};
+
+bool Integer::GenerateRandomNoThrow(RandomNumberGenerator &i_rng, const NameValuePairs &params)
+{
+	Integer min = params.GetValueWithDefault("Min", Integer::Zero());
+	Integer max;
+	if (!params.GetValue("Max", max))
+	{
+		int bitLength;
+		if (params.GetIntValue("BitLength", bitLength))
+			max = Integer::Power2(bitLength);
+		else
+			throw InvalidArgument("Integer: missing Max argument");
+	}
+	if (min > max)
+		throw InvalidArgument("Integer: Min must be no greater than Max");
+
+	Integer equiv = params.GetValueWithDefault("EquivalentTo", Integer::Zero());
+	Integer mod = params.GetValueWithDefault("Mod", Integer::One());
+
+	if (equiv.IsNegative() || equiv >= mod)
+		throw InvalidArgument("Integer: invalid EquivalentTo and/or Mod argument");
+
+	Integer::RandomNumberType rnType = params.GetValueWithDefault("RandomNumberType", Integer::ANY);
+
+	member_ptr<KDF2_RNG> kdf2Rng;
+	ConstByteArrayParameter seed;
+	if (params.GetValue("Seed", seed))
+	{
+		ByteQueue bq;
+		DERSequenceEncoder seq(bq);
+		min.DEREncode(seq);
+		max.DEREncode(seq);
+		equiv.DEREncode(seq);
+		mod.DEREncode(seq);
+		DEREncodeUnsigned(seq, rnType);
+		DEREncodeOctetString(seq, seed.begin(), seed.size());
+		seq.MessageEnd();
+
+		SecByteBlock finalSeed(bq.MaxRetrievable());
+		bq.Get(finalSeed, finalSeed.size());
+		kdf2Rng.reset(new KDF2_RNG(finalSeed.begin(), finalSeed.size()));
+	}
+	RandomNumberGenerator &rng = kdf2Rng.get() ? (RandomNumberGenerator &)*kdf2Rng : i_rng;
 
 	switch (rnType)
 	{
@@ -1900,6 +3068,9 @@ bool Integer::Randomize(RandomNumberGenerator &rng, const Integer &min, const In
 			return true;
 
 		case PRIME:
+		{
+			const PrimeSelector *pSelector = params.GetValueWithDefault("PointerToPrimeSelector", (const PrimeSelector *)NULL);
+
 			int i;
 			i = 0;
 			while (1)
@@ -1908,11 +3079,11 @@ bool Integer::Randomize(RandomNumberGenerator &rng, const Integer &min, const In
 				{
 					// check if there are any suitable primes in [min, max]
 					Integer first = min;
-					if (FirstPrime(first, max, equiv, mod))
+					if (FirstPrime(first, max, equiv, mod, pSelector))
 					{
 						// if there is only one suitable prime, we're done
 						*this = first;
-						if (!FirstPrime(first, max, equiv, mod))
+						if (!FirstPrime(first, max, equiv, mod, pSelector))
 							return true;
 					}
 					else
@@ -1920,13 +3091,13 @@ bool Integer::Randomize(RandomNumberGenerator &rng, const Integer &min, const In
 				}
 
 				Randomize(rng, min, max);
-				if (FirstPrime(*this, STDMIN(*this+mod*PrimeSearchInterval(max), max), equiv, mod))
+				if (FirstPrime(*this, STDMIN(*this+mod*PrimeSearchInterval(max), max), equiv, mod, pSelector))
 					return true;
 			}
+		}
 
 		default:
-			assert(false);
-			return false;
+			throw InvalidArgument("Integer: invalid RandomNumberType argument");
 	}
 }
 
@@ -1942,7 +3113,7 @@ std::istream& operator>>(std::istream& in, Integer &a)
 	{
 		in.read(&c, 1);
 		str[length++] = c;
-		if (length >= str.size)
+		if (length >= str.size())
 			str.Grow(length + 16);
 	}
 	while (in && (c=='-' || c=='x' || (c>='0' && c<='9') || (c>='a' && c<='f') || (c>='A' && c<='F') || c=='h' || c=='H' || c=='o' || c=='O' || c==',' || c=='.'));
@@ -2014,15 +3185,15 @@ Integer& Integer::operator++()
 {
 	if (NotNegative())
 	{
-		if (Increment(reg, reg.size))
+		if (Increment(reg, reg.size()))
 		{
-			reg.CleanGrow(2*reg.size);
-			reg[reg.size/2]=1;
+			reg.CleanGrow(2*reg.size());
+			reg[reg.size()/2]=1;
 		}
 	}
 	else
 	{
-		word borrow = Decrement(reg, reg.size);
+		word borrow = Decrement(reg, reg.size());
 		assert(!borrow);
 		if (WordCount()==0)
 			*this = Zero();
@@ -2034,15 +3205,15 @@ Integer& Integer::operator--()
 {
 	if (IsNegative())
 	{
-		if (Increment(reg, reg.size))
+		if (Increment(reg, reg.size()))
 		{
-			reg.CleanGrow(2*reg.size);
-			reg[reg.size/2]=1;
+			reg.CleanGrow(2*reg.size());
+			reg[reg.size()/2]=1;
 		}
 	}
 	else
 	{
-		if (Decrement(reg, reg.size))
+		if (Decrement(reg, reg.size()))
 			*this = -One();
 	}
 	return *this;
@@ -2051,25 +3222,25 @@ Integer& Integer::operator--()
 void PositiveAdd(Integer &sum, const Integer &a, const Integer& b)
 {
 	word carry;
-	if (a.reg.size == b.reg.size)
-		carry = Add(sum.reg, a.reg, b.reg, a.reg.size);
-	else if (a.reg.size > b.reg.size)
+	if (a.reg.size() == b.reg.size())
+		carry = Add(sum.reg, a.reg, b.reg, a.reg.size());
+	else if (a.reg.size() > b.reg.size())
 	{
-		carry = Add(sum.reg, a.reg, b.reg, b.reg.size);
-		CopyWords(sum.reg+b.reg.size, a.reg+b.reg.size, a.reg.size-b.reg.size);
-		carry = Increment(sum.reg+b.reg.size, a.reg.size-b.reg.size, carry);
+		carry = Add(sum.reg, a.reg, b.reg, b.reg.size());
+		CopyWords(sum.reg+b.reg.size(), a.reg+b.reg.size(), a.reg.size()-b.reg.size());
+		carry = Increment(sum.reg+b.reg.size(), a.reg.size()-b.reg.size(), carry);
 	}
 	else
 	{
-		carry = Add(sum.reg, a.reg, b.reg, a.reg.size);
-		CopyWords(sum.reg+a.reg.size, b.reg+a.reg.size, b.reg.size-a.reg.size);
-		carry = Increment(sum.reg+a.reg.size, b.reg.size-a.reg.size, carry);
+		carry = Add(sum.reg, a.reg, b.reg, a.reg.size());
+		CopyWords(sum.reg+a.reg.size(), b.reg+a.reg.size(), b.reg.size()-a.reg.size());
+		carry = Increment(sum.reg+a.reg.size(), b.reg.size()-a.reg.size(), carry);
 	}
 
 	if (carry)
 	{
-		sum.reg.CleanGrow(2*sum.reg.size);
-		sum.reg[sum.reg.size/2] = 1;
+		sum.reg.CleanGrow(2*sum.reg.size());
+		sum.reg[sum.reg.size()/2] = 1;
 	}
 	sum.sign = Integer::POSITIVE;
 }
@@ -2114,7 +3285,7 @@ void PositiveSubtract(Integer &diff, const Integer &a, const Integer& b)
 
 Integer Integer::Plus(const Integer& b) const
 {
-	Integer sum((word)0, STDMAX(reg.size, b.reg.size));
+	Integer sum((word)0, STDMAX(reg.size(), b.reg.size()));
 	if (NotNegative())
 	{
 		if (b.NotNegative())
@@ -2137,7 +3308,7 @@ Integer Integer::Plus(const Integer& b) const
 
 Integer& Integer::operator+=(const Integer& t)
 {
-	reg.CleanGrow(t.reg.size);
+	reg.CleanGrow(t.reg.size());
 	if (NotNegative())
 	{
 		if (t.NotNegative())
@@ -2160,7 +3331,7 @@ Integer& Integer::operator+=(const Integer& t)
 
 Integer Integer::Minus(const Integer& b) const
 {
-	Integer diff((word)0, STDMAX(reg.size, b.reg.size));
+	Integer diff((word)0, STDMAX(reg.size(), b.reg.size()));
 	if (NotNegative())
 	{
 		if (b.NotNegative())
@@ -2183,7 +3354,7 @@ Integer Integer::Minus(const Integer& b) const
 
 Integer& Integer::operator-=(const Integer& t)
 {
-	reg.CleanGrow(t.reg.size);
+	reg.CleanGrow(t.reg.size());
 	if (NotNegative())
 	{
 		if (t.NotNegative())
@@ -2210,9 +3381,9 @@ Integer& Integer::operator<<=(unsigned int n)
 	const unsigned int shiftWords = n / WORD_BITS;
 	const unsigned int shiftBits = n % WORD_BITS;
 
-	reg.CleanGrow(RoundupSize(wordCount+bitsToWords(n)));
+	reg.CleanGrow(RoundupSize(wordCount+BitsToWords(n)));
 	ShiftWordsLeftByWords(reg, wordCount + shiftWords, shiftWords);
-	ShiftWordsLeftByBits(reg+shiftWords, wordCount+bitsToWords(shiftBits), shiftBits);
+	ShiftWordsLeftByBits(reg+shiftWords, wordCount+BitsToWords(shiftBits), shiftBits);
 	return *this;
 }
 
@@ -2238,7 +3409,7 @@ void PositiveMultiply(Integer &product, const Integer &a, const Integer &b)
 	product.reg.CleanNew(RoundupSize(aSize+bSize));
 	product.sign = Integer::POSITIVE;
 
-	SecWordBlock workspace(aSize + bSize);
+	SecAlignedWordBlock workspace(aSize + bSize);
 	AsymmetricMultiply(product.reg, workspace, a.reg, aSize, b.reg, bSize);
 }
 
@@ -2261,18 +3432,18 @@ Integer Integer::Times(const Integer &b) const
 void PositiveDivide(Integer &remainder, Integer &quotient,
 				   const Integer &dividend, const Integer &divisor)
 {
-	remainder.reg.CleanNew(divisor.reg.size);
+	remainder.reg.CleanNew(divisor.reg.size());
 	remainder.sign = Integer::POSITIVE;
 	quotient.reg.New(0);
 	quotient.sign = Integer::POSITIVE;
 	unsigned i=dividend.BitCount();
 	while (i--)
 	{
-		word overflow = ShiftWordsLeftByBits(remainder.reg, remainder.reg.size, 1);
+		word overflow = ShiftWordsLeftByBits(remainder.reg, remainder.reg.size(), 1);
 		remainder.reg[0] |= dividend[i];
 		if (overflow || remainder >= divisor)
 		{
-			Subtract(remainder.reg, remainder.reg, divisor.reg, remainder.reg.size);
+			Subtract(remainder.reg, remainder.reg, divisor.reg, remainder.reg.size());
 			quotient.SetBit(i);
 		}
 	}
@@ -2304,7 +3475,7 @@ void PositiveDivide(Integer &remainder, Integer &quotient,
 	quotient.reg.CleanNew(RoundupSize(aSize-bSize+2));
 	quotient.sign = Integer::POSITIVE;
 
-	SecWordBlock T(aSize+2*bSize+4);
+	SecAlignedWordBlock T(aSize+2*bSize+4);
 	Divide(remainder.reg, quotient.reg, T, a.reg, aSize, b.reg, bSize);
 }
 
@@ -2331,19 +3502,19 @@ void Integer::DivideByPowerOf2(Integer &r, Integer &q, const Integer &a, unsigne
 	q = a;
 	q >>= n;
 
-	const unsigned int wordCount = bitsToWords(n);
+	const unsigned int wordCount = BitsToWords(n);
 	if (wordCount <= a.WordCount())
 	{
-		r.reg.Resize(RoundupSize(wordCount));
+		r.reg.resize(RoundupSize(wordCount));
 		CopyWords(r.reg, a.reg, wordCount);
-		SetWords(r.reg+wordCount, 0, r.reg.size-wordCount);
+		SetWords(r.reg+wordCount, 0, r.reg.size()-wordCount);
 		if (n % WORD_BITS != 0)
 			r.reg[wordCount-1] %= (1 << (n % WORD_BITS));
 	}
 	else
 	{
-		r.reg.Resize(RoundupSize(a.WordCount()));
-		CopyWords(r.reg, a.reg, r.reg.size);
+		r.reg.resize(RoundupSize(a.WordCount()));
+		CopyWords(r.reg, a.reg, r.reg.size());
 	}
 	r.sign = POSITIVE;
 
@@ -2550,10 +3721,10 @@ Integer Integer::InverseMod(const Integer &m) const
 		return !u ? Zero() : (m*(*this-u)+1)/(*this);
 	}
 
-	SecBlock<word> T(m.reg.size * 4);
-	Integer r((word)0, m.reg.size);
-	unsigned k = AlmostInverse(r.reg, T, reg, reg.size, m.reg, m.reg.size);
-	DivideByPower2Mod(r.reg, r.reg, k, m.reg, m.reg.size);
+	SecBlock<word> T(m.reg.size() * 4);
+	Integer r((word)0, m.reg.size());
+	unsigned k = AlmostInverse(r.reg, T, reg, reg.size(), m.reg, m.reg.size());
+	DivideByPower2Mod(r.reg, r.reg, k, m.reg, m.reg.size());
 	return r;
 }
 
@@ -2592,7 +3763,7 @@ ModularArithmetic::ModularArithmetic(BufferedTransformation &bt)
 		BERDecodeError();
 	modulus.BERDecode(seq);
 	seq.MessageEnd();
-	result.reg.Resize(modulus.reg.size);
+	result.reg.resize(modulus.reg.size());
 }
 
 void ModularArithmetic::DEREncode(BufferedTransformation &bt) const
@@ -2615,9 +3786,9 @@ void ModularArithmetic::BERDecodeElement(BufferedTransformation &in, Element &a)
 
 const Integer& ModularArithmetic::Half(const Integer &a) const
 {
-	if (a.reg.size==modulus.reg.size)
+	if (a.reg.size()==modulus.reg.size())
 	{
-		CryptoPP::DivideByPower2Mod(result.reg.ptr, a.reg, 1, modulus.reg, a.reg.size);
+		CryptoPP::DivideByPower2Mod(result.reg.begin(), a.reg, 1, modulus.reg, a.reg.size());
 		return result;
 	}
 	else
@@ -2626,12 +3797,12 @@ const Integer& ModularArithmetic::Half(const Integer &a) const
 
 const Integer& ModularArithmetic::Add(const Integer &a, const Integer &b) const
 {
-	if (a.reg.size==modulus.reg.size && b.reg.size==modulus.reg.size)
+	if (a.reg.size()==modulus.reg.size() && b.reg.size()==modulus.reg.size())
 	{
-		if (CryptoPP::Add(result.reg.ptr, a.reg, b.reg, a.reg.size)
-			|| Compare(result.reg, modulus.reg, a.reg.size) >= 0)
+		if (CryptoPP::Add(result.reg.begin(), a.reg, b.reg, a.reg.size())
+			|| Compare(result.reg, modulus.reg, a.reg.size()) >= 0)
 		{
-			CryptoPP::Subtract(result.reg.ptr, result.reg, modulus.reg, a.reg.size);
+			CryptoPP::Subtract(result.reg.begin(), result.reg, modulus.reg, a.reg.size());
 		}
 		return result;
 	}
@@ -2646,12 +3817,12 @@ const Integer& ModularArithmetic::Add(const Integer &a, const Integer &b) const
 
 Integer& ModularArithmetic::Accumulate(Integer &a, const Integer &b) const
 {
-	if (a.reg.size==modulus.reg.size && b.reg.size==modulus.reg.size)
+	if (a.reg.size()==modulus.reg.size() && b.reg.size()==modulus.reg.size())
 	{
-		if (CryptoPP::Add(a.reg, a.reg, b.reg, a.reg.size)
-			|| Compare(a.reg, modulus.reg, a.reg.size) >= 0)
+		if (CryptoPP::Add(a.reg, a.reg, b.reg, a.reg.size())
+			|| Compare(a.reg, modulus.reg, a.reg.size()) >= 0)
 		{
-			CryptoPP::Subtract(a.reg, a.reg, modulus.reg, a.reg.size);
+			CryptoPP::Subtract(a.reg, a.reg, modulus.reg, a.reg.size());
 		}
 	}
 	else
@@ -2666,10 +3837,10 @@ Integer& ModularArithmetic::Accumulate(Integer &a, const Integer &b) const
 
 const Integer& ModularArithmetic::Subtract(const Integer &a, const Integer &b) const
 {
-	if (a.reg.size==modulus.reg.size && b.reg.size==modulus.reg.size)
+	if (a.reg.size()==modulus.reg.size() && b.reg.size()==modulus.reg.size())
 	{
-		if (CryptoPP::Subtract(result.reg.ptr, a.reg, b.reg, a.reg.size))
-			CryptoPP::Add(result.reg.ptr, result.reg, modulus.reg, a.reg.size);
+		if (CryptoPP::Subtract(result.reg.begin(), a.reg, b.reg, a.reg.size()))
+			CryptoPP::Add(result.reg.begin(), result.reg, modulus.reg, a.reg.size());
 		return result;
 	}
 	else
@@ -2683,10 +3854,10 @@ const Integer& ModularArithmetic::Subtract(const Integer &a, const Integer &b) c
 
 Integer& ModularArithmetic::Reduce(Integer &a, const Integer &b) const
 {
-	if (a.reg.size==modulus.reg.size && b.reg.size==modulus.reg.size)
+	if (a.reg.size()==modulus.reg.size() && b.reg.size()==modulus.reg.size())
 	{
-		if (CryptoPP::Subtract(a.reg, a.reg, b.reg, a.reg.size))
-			CryptoPP::Add(a.reg, a.reg, modulus.reg, a.reg.size);
+		if (CryptoPP::Subtract(a.reg, a.reg, b.reg, a.reg.size()))
+			CryptoPP::Add(a.reg, a.reg, modulus.reg, a.reg.size());
 	}
 	else
 	{
@@ -2703,9 +3874,9 @@ const Integer& ModularArithmetic::Inverse(const Integer &a) const
 	if (!a)
 		return a;
 
-	CopyWords(result.reg.ptr, modulus.reg, modulus.reg.size);
-	if (CryptoPP::Subtract(result.reg.ptr, result.reg, a.reg, a.reg.size))
-		Decrement(result.reg.ptr+a.reg.size, 1, modulus.reg.size-a.reg.size);
+	CopyWords(result.reg.begin(), modulus.reg, modulus.reg.size());
+	if (CryptoPP::Subtract(result.reg.begin(), result.reg, a.reg, a.reg.size()))
+		Decrement(result.reg.begin()+a.reg.size(), 1, modulus.reg.size()-a.reg.size());
 
 	return result;
 }
@@ -2736,62 +3907,64 @@ void ModularArithmetic::SimultaneousExponentiate(Integer *results, const Integer
 
 MontgomeryRepresentation::MontgomeryRepresentation(const Integer &m)	// modulus must be odd
 	: ModularArithmetic(m),
-	  u((word)0, modulus.reg.size),
-	  workspace(5*modulus.reg.size)
+	  u((word)0, modulus.reg.size()),
+	  workspace(5*modulus.reg.size())
 {
-	assert(modulus.IsOdd());
-	RecursiveInverseModPower2(u.reg, workspace, modulus.reg, modulus.reg.size);
+	if (!modulus.IsOdd())
+		throw InvalidArgument("MontgomeryRepresentation: Montgomery representation requires an odd modulus");
+
+	RecursiveInverseModPower2(u.reg, workspace, modulus.reg, modulus.reg.size());
 }
 
 const Integer& MontgomeryRepresentation::Multiply(const Integer &a, const Integer &b) const
 {
-	word *const T = workspace.ptr;
-	word *const R = result.reg.ptr;
-	const unsigned int N = modulus.reg.size;
-	assert(a.reg.size<=N && b.reg.size<=N);
+	word *const T = workspace.begin();
+	word *const R = result.reg.begin();
+	const unsigned int N = modulus.reg.size();
+	assert(a.reg.size()<=N && b.reg.size()<=N);
 
-	AsymmetricMultiply(T, T+2*N, a.reg, a.reg.size, b.reg, b.reg.size);
-	SetWords(T+a.reg.size+b.reg.size, 0, 2*N-a.reg.size-b.reg.size);
+	AsymmetricMultiply(T, T+2*N, a.reg, a.reg.size(), b.reg, b.reg.size());
+	SetWords(T+a.reg.size()+b.reg.size(), 0, 2*N-a.reg.size()-b.reg.size());
 	MontgomeryReduce(R, T+2*N, T, modulus.reg, u.reg, N);
 	return result;
 }
 
 const Integer& MontgomeryRepresentation::Square(const Integer &a) const
 {
-	word *const T = workspace.ptr;
-	word *const R = result.reg.ptr;
-	const unsigned int N = modulus.reg.size;
-	assert(a.reg.size<=N);
+	word *const T = workspace.begin();
+	word *const R = result.reg.begin();
+	const unsigned int N = modulus.reg.size();
+	assert(a.reg.size()<=N);
 
-	RecursiveSquare(T, T+2*N, a.reg, a.reg.size);
-	SetWords(T+2*a.reg.size, 0, 2*N-2*a.reg.size);
+	CryptoPP::Square(T, T+2*N, a.reg, a.reg.size());
+	SetWords(T+2*a.reg.size(), 0, 2*N-2*a.reg.size());
 	MontgomeryReduce(R, T+2*N, T, modulus.reg, u.reg, N);
 	return result;
 }
 
 Integer MontgomeryRepresentation::ConvertOut(const Integer &a) const
 {
-	word *const T = workspace.ptr;
-	word *const R = result.reg.ptr;
-	const unsigned int N = modulus.reg.size;
-	assert(a.reg.size<=N);
+	word *const T = workspace.begin();
+	word *const R = result.reg.begin();
+	const unsigned int N = modulus.reg.size();
+	assert(a.reg.size()<=N);
 
-	CopyWords(T, a.reg, a.reg.size);
-	SetWords(T+a.reg.size, 0, 2*N-a.reg.size);
+	CopyWords(T, a.reg, a.reg.size());
+	SetWords(T+a.reg.size(), 0, 2*N-a.reg.size());
 	MontgomeryReduce(R, T+2*N, T, modulus.reg, u.reg, N);
 	return result;
 }
 
 const Integer& MontgomeryRepresentation::MultiplicativeInverse(const Integer &a) const
 {
-//	  return (EuclideanMultiplicativeInverse(a, modulus)<<(2*WORD_BITS*modulus.reg.size))%modulus;
-	word *const T = workspace.ptr;
-	word *const R = result.reg.ptr;
-	const unsigned int N = modulus.reg.size;
-	assert(a.reg.size<=N);
+//	  return (EuclideanMultiplicativeInverse(a, modulus)<<(2*WORD_BITS*modulus.reg.size()))%modulus;
+	word *const T = workspace.begin();
+	word *const R = result.reg.begin();
+	const unsigned int N = modulus.reg.size();
+	assert(a.reg.size()<=N);
 
-	CopyWords(T, a.reg, a.reg.size);
-	SetWords(T+a.reg.size, 0, 2*N-a.reg.size);
+	CopyWords(T, a.reg, a.reg.size());
+	SetWords(T+a.reg.size(), 0, 2*N-a.reg.size());
 	MontgomeryReduce(R, T+2*N, T, modulus.reg, u.reg, N);
 	unsigned k = AlmostInverse(R, T, R, N, modulus.reg, N);
 
@@ -2805,6 +3978,6 @@ const Integer& MontgomeryRepresentation::MultiplicativeInverse(const Integer &a)
 	return result;
 }
 
-template class AbstractRing<Integer>;
+template class AbstractRing<Integer>;    
 
 NAMESPACE_END

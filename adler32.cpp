@@ -2,7 +2,6 @@
 
 #include "pch.h"
 #include "adler32.h"
-#include <assert.h>
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -56,6 +55,8 @@ void Adler32::Update(const byte *input, unsigned int length)
 
 void Adler32::TruncatedFinal(byte *hash, unsigned int size)
 {
+	ThrowIfInvalidTruncatedSize(size);
+
 	switch (size)
 	{
 	default:

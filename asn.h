@@ -38,23 +38,15 @@ enum ASNTag
 enum ASNIdFlag
 {
 	UNIVERSAL			= 0x00,
-	DATA				= 0x01,
-	HEADER				= 0x02,
+//	DATA				= 0x01,
+//	HEADER				= 0x02,
 	CONSTRUCTED 		= 0x20,
 	APPLICATION 		= 0x40,
 	CONTEXT_SPECIFIC	= 0x80,
 	PRIVATE 			= 0xc0
 };
 
-#define BERDecodeError() throw BERDecodeErr()
-
-//! BER Decoder Exception Class  
-class BERDecodeErr : public Exception
-{
-public: 
-	BERDecodeErr() : Exception("BER decode error") {}
-	BERDecodeErr(const char *err) : Exception(err) {}
-};
+inline void BERDecodeError() {throw BERDecodeErr();}
 
 class UnknownOID : public BERDecodeErr
 {
@@ -91,12 +83,7 @@ public:
 	OID(unsigned long v) : m_values(1, v) {}
 	OID(BufferedTransformation &bt) {BERDecode(bt);}
 
-	bool operator==(const OID &rhs) const {return m_values == rhs.m_values;}
-	bool operator!=(const OID &rhs) const {return !operator==(rhs);}
-	bool operator<(const OID &rhs) const {return std::lexicographical_compare(m_values.begin(), m_values.end(), rhs.m_values.begin(), rhs.m_values.end());}
-
 	inline OID & operator+=(unsigned long rhs) {m_values.push_back(rhs); return *this;}
-	inline OID operator+(unsigned long rhs) const {return OID(*this)+=rhs;}
 
 	void DEREncode(BufferedTransformation &bt) const;
 	void BERDecode(BufferedTransformation &bt);
@@ -109,6 +96,29 @@ public:
 private:
 	static void EncodeValue(BufferedTransformation &bt, unsigned long v);
 	static unsigned int DecodeValue(BufferedTransformation &bt, unsigned long &v);
+};
+
+class EncodedObjectFilter : public Filter
+{
+public:
+	enum Flag {PUT_OBJECTS=1, PUT_MESSANGE_END_AFTER_EACH_OBJECT=2, PUT_MESSANGE_END_AFTER_ALL_OBJECTS=4, PUT_MESSANGE_SERIES_END_AFTER_ALL_OBJECTS=8};
+	EncodedObjectFilter(BufferedTransformation *attachment = NULL, unsigned int nObjects = 1, word32 flags = 0);
+
+	void Put(const byte *inString, unsigned int length);
+
+	unsigned int GetNumberOfCompletedObjects() const {return m_nCurrentObject;}
+	unsigned long GetPositionOfObject(unsigned int i) const {return m_positions[i];}
+
+private:
+	BufferedTransformation & CurrentTarget();
+
+	word32 m_flags;
+	unsigned int m_nObjects, m_nCurrentObject, m_level;
+	std::vector<unsigned int> m_positions;
+	ByteQueue m_queue;
+	enum State {IDENTIFIER, LENGTH, BODY, TAIL, ALL_DONE} m_state;
+	byte m_id;
+	unsigned int m_lengthRemaining;
 };
 
 //! BER General Decoder
@@ -125,11 +135,11 @@ public:
 	byte PeekByte() const;
 	void CheckByte(byte b);
 
-	unsigned long TransferTo(BufferedTransformation &target, unsigned long transferMax);
-	unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax) const;
+	unsigned int TransferTo2(BufferedTransformation &target, unsigned long &transferBytes, const std::string &channel=NULL_CHANNEL, bool blocking=true);
+	unsigned int CopyRangeTo2(BufferedTransformation &target, unsigned long &begin, unsigned long end=ULONG_MAX, const std::string &channel=NULL_CHANNEL, bool blocking=true) const;
 
 	// call this to denote end of sequence
-	void MessageEnd(int=-1);
+	void MessageEnd();
 
 protected:
 	BufferedTransformation &m_inQueue;
@@ -137,6 +147,7 @@ protected:
 	unsigned int m_length;
 
 private:
+	void StoreInitialize(const NameValuePairs &parameters) {assert(false);}
 	unsigned int ReduceLength(unsigned int delta);
 };
 
@@ -149,7 +160,7 @@ public:
 	~DERGeneralEncoder();
 
 	// call this to denote end of sequence
-	void MessageEnd(int=-1);
+	void MessageEnd();
 
 private:
 	BufferedTransformation &m_outQueue;
@@ -196,6 +207,60 @@ public:
 		: DERGeneralEncoder(outQueue, asnTag) {}
 	explicit DERSetEncoder(DERSetEncoder &outQueue, byte asnTag = SET | CONSTRUCTED)
 		: DERGeneralEncoder(outQueue, asnTag) {}
+};
+
+template <class T>
+class ASNOptional : public member_ptr<T>
+{
+public:
+	void BERDecode(BERSequenceDecoder &seqDecoder, byte tag, byte mask = ~CONSTRUCTED)
+	{
+		byte b;
+		if (seqDecoder.Peek(b) && (b & mask) == tag)
+			reset(new T(seqDecoder));
+	}
+	void DEREncode(BufferedTransformation &out)
+	{
+		if (get() != NULL)
+			get()->DEREncode(out);
+	}
+};
+
+//! .
+class ASN1Key : public ASN1CryptoMaterial
+{
+public:
+	virtual OID GetAlgorithmID() const =0;
+	virtual bool BERDecodeAlgorithmParameters(BufferedTransformation &bt)
+		{BERDecodeNull(bt); return false;}
+	virtual bool DEREncodeAlgorithmParameters(BufferedTransformation &bt) const
+		{DEREncodeNull(bt); return false;}	// see RFC 2459, section 7.3.1
+	// one of the following two should be overriden
+	virtual void BERDecodeKey(BufferedTransformation &bt) {assert(false);}
+	virtual void BERDecodeKey2(BufferedTransformation &bt, bool parametersPresent, unsigned int size)
+		{BERDecodeKey(bt);}
+	virtual void DEREncodeKey(BufferedTransformation &bt) const =0;
+};
+
+//! .
+class X509PublicKey : virtual public ASN1Key, public PublicKey
+{
+public:
+	void BERDecode(BufferedTransformation &bt);
+	void DEREncode(BufferedTransformation &bt) const;
+};
+
+//! .
+class PKCS8PrivateKey : virtual public ASN1Key, public PrivateKey
+{
+public:
+	void BERDecode(BufferedTransformation &bt);
+	void DEREncode(BufferedTransformation &bt) const;
+
+	virtual void BERDecodeOptionalAttributes(BufferedTransformation &bt)
+		{}	// TODO: skip optional attributes if present
+	virtual void DEREncodeOptionalAttributes(BufferedTransformation &bt) const
+		{}
 };
 
 // ********************************************************
@@ -264,6 +329,15 @@ void BERDecodeUnsigned(BufferedTransformation &in, T &w, byte asnTag = INTEGER,
 	if (w < minValue || w > maxValue)
 		BERDecodeError();
 }
+
+inline bool operator==(const ::CryptoPP::OID &lhs, const ::CryptoPP::OID &rhs)
+	{return lhs.m_values == rhs.m_values;}
+inline bool operator!=(const ::CryptoPP::OID &lhs, const ::CryptoPP::OID &rhs)
+	{return lhs.m_values != rhs.m_values;}
+inline bool operator<(const ::CryptoPP::OID &lhs, const ::CryptoPP::OID &rhs)
+	{return std::lexicographical_compare(lhs.m_values.begin(), lhs.m_values.end(), rhs.m_values.begin(), rhs.m_values.end());}
+inline ::CryptoPP::OID operator+(const ::CryptoPP::OID &lhs, unsigned long rhs)
+	{return ::CryptoPP::OID(lhs)+=rhs;}
 
 NAMESPACE_END
 

@@ -5,7 +5,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-const word32 MARS::Sbox[512] = {
+const word32 MARS::Base::Sbox[512] = {
   0x09d0c479, 0x28c8ffe0, 0x84aa6c39, 0x9dad7287, 
   0x7dff9be3, 0xd4268361, 0xc96da1d4, 0x7974cc93, 
   0x85d0582e, 0x2a4b5705, 0x1ca16a62, 0xc3bd279d, 

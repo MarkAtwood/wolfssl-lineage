@@ -1,62 +1,75 @@
 #ifndef CRYPTOPP_WAKE_H
 #define CRYPTOPP_WAKE_H
 
-#include "cryptlib.h"
-#include "misc.h"
-#include "filters.h"
+#include "seckey.h"
+#include "secblock.h"
+#include "strciphr.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class WAKE
+template <class B = BigEndian>
+struct WAKE_Info : public FixedKeyLength<32>
+{
+	static const char *StaticAlgorithmName() {return B::ToEnum() == LITTLE_ENDIAN_ORDER ? "WAKE-CFB-LE" : "WAKE-CFB-BE";}
+};
+
+class WAKE_Base
 {
 protected:
-	inline word32 M(word32 x, word32 y);
-	inline word32 enc(word32 V);
-	inline word32 dec(word32 V);
-	void genkey(word32 k0, word32 k1, word32 k2, word32 k3);
+	word32 M(word32 x, word32 y);
+	void GenKey(word32 k0, word32 k1, word32 k2, word32 k3);
 
 	word32 t[257];
 	word32 r3, r4, r5, r6;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#WAKE-CFB-BE">WAKE-CFB-BE</a>
-class WAKEEncryption : public Filter, protected WAKE, public FixedKeyLength<32>
+template <class B = BigEndian>
+class WAKE_Policy : public WAKE_Info<B>
+				, public CFB_CipherConcretePolicy<word32, 1>
+				, public AdditiveCipherConcretePolicy<word32, 1, 64>
+				, protected WAKE_Base
 {
-public:
-	/// key length is 32 bytes
-	WAKEEncryption(const byte *key, BufferedTransformation *outQueue = NULL);
-
-	void Put(byte inByte)
-	{
-		if (inbufSize==INBUFMAX)
-			ProcessInbuf();
-		inbuf[inbufSize++] = inByte;
-	}
-
-	void Put(const byte *inString, unsigned int length);
-	void MessageEnd(int propagation=-1);
-
 protected:
-	virtual void ProcessInbuf();
-	enum {INBUFMAX=256};
-	SecByteBlock inbuf;
-	unsigned int inbufSize;
+	void CipherSetKey(const NameValuePairs &params, const byte *key, unsigned int length);
+	// CFB
+	byte * GetRegisterBegin() {return (byte *)&r6;}
+	void Iterate(byte *output, const byte *input, CipherDir dir, unsigned int iterationCount);
+	// OFB
+	void OperateKeystream(KeystreamOperation operation, byte *output, const byte *input, unsigned int iterationCount);
+	bool IsRandomAccess() const {return false;}
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#WAKE-CFB-BE">WAKE-CFB-BE</a>
-class WAKEDecryption : public WAKEEncryption
+//! <a href="http://www.weidai.com/scan-mirror/cs.html#WAKE-CFB-BE">WAKE-CFB-BE</a>
+template <class B = BigEndian>
+struct WAKE_CFB : public WAKE_Info<B>, public SymmetricCipherDocumentation
 {
-public:
-	/// key length is 32 bytes
-	WAKEDecryption(const byte *key, BufferedTransformation *outQueue = NULL)
-		: WAKEEncryption(key, outQueue) {lastBlock=false;}
-
-	void MessageEnd(int propagation=-1);
-
-protected:
-	virtual void ProcessInbuf();
-	bool lastBlock;
+	typedef SymmetricCipherFinalTemplate<ConcretePolicyHolder<WAKE_Policy<B>, CFB_EncryptionTemplate<> > > Encryption;
+	typedef SymmetricCipherFinalTemplate<ConcretePolicyHolder<WAKE_Policy<B>, CFB_DecryptionTemplate<> > > Decryption;
 };
+
+//! WAKE-OFB
+template <class B = BigEndian>
+struct WAKE_OFB : public WAKE_Info<B>, public SymmetricCipherDocumentation
+{
+	typedef SymmetricCipherFinalTemplate<ConcretePolicyHolder<WAKE_Policy<B>, AdditiveCipherTemplate<> > > Encryption;
+	typedef Encryption Decryption;
+};
+
+/*
+template <class B = BigEndian>
+class WAKE_ROFB_Policy : public WAKE_Policy<B>
+{
+protected:
+	void Iterate(KeystreamOperation operation, byte *output, const byte *input, unsigned int iterationCount);
+};
+
+template <class B = BigEndian>
+struct WAKE_ROFB : public WAKE_Info<B>
+{
+	typedef SymmetricCipherTemplate<ConcretePolicyHolder<AdditiveCipherTemplate<>, WAKE_ROFB_Policy<B> > > Encryption;
+	typedef Encryption Decryption;
+};
+*/
 
 NAMESPACE_END
 

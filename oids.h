@@ -34,10 +34,20 @@ DEFINE_OID(1, iso)
 				DEFINE_OID(rsadsi()+1, pkcs)
 					DEFINE_OID(pkcs()+1, pkcs_1)
 						DEFINE_OID(pkcs_1()+1, rsaEncryption);
+				DEFINE_OID(rsadsi()+2, rsadsi_digestAlgorithm)
+					DEFINE_OID(rsadsi_digestAlgorithm()+2, id_md2)
+					DEFINE_OID(rsadsi_digestAlgorithm()+5, id_md5)
 	DEFINE_OID(iso()+3, identified_organization);
+		DEFINE_OID(identified_organization()+14, oiw);
+			DEFINE_OID(oiw()+14, oiw_secsig);
+				DEFINE_OID(oiw_secsig()+2, oiw_secsig_algorithms);
+					DEFINE_OID(oiw_secsig_algorithms()+26, id_sha1);
+		DEFINE_OID(identified_organization()+36, teletrust);
+			DEFINE_OID(teletrust()+3+2+1, id_ripemd160)
 		DEFINE_OID(identified_organization()+132, certicom);
 			DEFINE_OID(certicom()+0, certicom_ellipticCurve);
 				// these are sorted by curve type and then by OID
+				// first curves based on GF(p)
 				DEFINE_OID(certicom_ellipticCurve()+6, secp112r1);
 				DEFINE_OID(certicom_ellipticCurve()+7, secp112r2);
 				DEFINE_OID(certicom_ellipticCurve()+8, secp160r1);
@@ -51,6 +61,7 @@ DEFINE_OID(1, iso)
 				DEFINE_OID(certicom_ellipticCurve()+33, secp224r1);
 				DEFINE_OID(certicom_ellipticCurve()+34, secp384r1);
 				DEFINE_OID(certicom_ellipticCurve()+35, secp521r1);
+				// then curves based on GF(2^n)
 				DEFINE_OID(certicom_ellipticCurve()+1, sect163k1);
 				DEFINE_OID(certicom_ellipticCurve()+2, sect163r1);
 				DEFINE_OID(certicom_ellipticCurve()+3, sect239k1);
@@ -89,6 +100,10 @@ DEFINE_OID(2, joint_iso_ccitt)
 								DEFINE_OID(aes()+42, id_aes256_cbc)
 								DEFINE_OID(aes()+43, id_aes256_ofb)
 								DEFINE_OID(aes()+44, id_aes256_cfb)
+							DEFINE_OID(nistalgorithms()+2, nist_hashalgs)
+								DEFINE_OID(nist_hashalgs()+1, id_sha256)
+								DEFINE_OID(nist_hashalgs()+2, id_sha384)
+								DEFINE_OID(nist_hashalgs()+3, id_sha512)
 
 NAMESPACE_END
 

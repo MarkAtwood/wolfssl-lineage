@@ -4,18 +4,50 @@
 /** \file */
 
 #include "cryptlib.h"
-#include "misc.h"
+#include "secblock.h"
 
 #include <iosfwd>
+#include <algorithm>
+
+#ifdef _M_IX86
+#	if (defined(__INTEL_COMPILER) && (__INTEL_COMPILER >= 500)) || (defined(__ICL) && (__ICL >= 500))
+#		define SSE2_INTRINSICS_AVAILABLE
+#	elif defined(_MSC_VER)
+		// _mm_free seems to be the only way to tell if the Processor Pack is installed or not
+#		include <malloc.h>
+#		if defined(_mm_free)
+#			define SSE2_INTRINSICS_AVAILABLE
+#		endif
+#	endif
+#endif
 
 NAMESPACE_BEGIN(CryptoPP)
+
+#ifdef SSE2_INTRINSICS_AVAILABLE
+	template <class T>
+	class AlignedAllocator : public AllocatorBase<T>
+	{
+	public:
+		CRYPTOPP_INHERIT_ALLOCATOR_TYPES
+
+		pointer allocate(size_type n, const void *);
+		void deallocate(void *p, size_type n);
+		pointer reallocate(T *p, size_type oldSize, size_type newSize, bool preserve)
+		{
+			return StandardReallocate(*this, p, oldSize, newSize, preserve);
+		}
+	};
+	typedef SecBlock<word, AlignedAllocator<word> > SecAlignedWordBlock;
+#else
+	typedef SecWordBlock SecAlignedWordBlock;
+#endif
 
 //! multiple precision integer and basic arithmetics
 /*! This class can represent positive and negative integers
 	with absolute value less than (256**sizeof(word)) ** (256**sizeof(int)).
 	\nosubgrouping
 */
-class Integer
+class Integer : public ASN1Object
 {
 public:
 	//! \name ENUMS, EXCEPTIONS, and TYPEDEFS
@@ -24,14 +56,14 @@ public:
 		class DivideByZero : public Exception
 		{
 		public:
-			DivideByZero() : Exception("Integer: division by zero") {}
+			DivideByZero() : Exception(OTHER_ERROR, "Integer: division by zero") {}
 		};
 
 		//!
 		class RandomNumberNotFound : public Exception
 		{
 		public:
-			RandomNumberNotFound() : Exception("Integer: random number not found") {}
+			RandomNumberNotFound() : Exception(OTHER_ERROR, "Integer: no integer satisfies the given parameters") {}
 		};
 
 		//!
@@ -64,7 +96,8 @@ public:
 		/*! str can be in base 2, 8, 10, or 16.  Base is determined by a
 			case insensitive suffix of 'h', 'o', or 'b'.  No suffix means base 10.
 		*/
-		Integer(const char *str);
+		explicit Integer(const char *str);
+		explicit Integer(const wchar_t *str);
 
 		//! convert from big-endian byte array
 		Integer(const byte *encodedInteger, unsigned int byteCount, Signedness s=UNSIGNED);
@@ -73,7 +106,7 @@ public:
 		Integer(BufferedTransformation &bt, unsigned int byteCount, Signedness s=UNSIGNED);
 
 		//! convert from BER encoded byte array stored in a BufferedTransformation object
-		Integer(BufferedTransformation &bt);
+		explicit Integer(BufferedTransformation &bt);
 
 		//! create a random integer
 		/*! The random integer created is uniformly distributed over [0, 2**bitcount). */
@@ -83,6 +116,8 @@ public:
 		static const Integer &Zero();
 		//! avoid calling constructors for these frequently used integers
 		static const Integer &One();
+		//! avoid calling constructors for these frequently used integers
+		static const Integer &Two();
 
 		//! create a random integer of special type
 		/*! Ideally, the random integer created should be uniformly distributed
@@ -143,7 +178,7 @@ public:
 		class OpenPGPDecodeErr : public Exception
 		{
 		public: 
-			OpenPGPDecodeErr() : Exception("OpenPGP decode error") {}
+			OpenPGPDecodeErr() : Exception(INVALID_DATA_FORMAT, "OpenPGP decode error") {}
 		};
 
 		//!
@@ -223,6 +258,13 @@ public:
 		//! set this Integer to a random element of {x | min <= x <= max and x is of rnType and x % mod == equiv}
 		/*! returns false if the set is empty */
 		bool Randomize(RandomNumberGenerator &rng, const Integer &min, const Integer &max, RandomNumberType rnType, const Integer &equiv=Zero(), const Integer &mod=One());
+
+		bool GenerateRandomNoThrow(RandomNumberGenerator &rng, const NameValuePairs &params = g_nullNameValuePairs);
+		void GenerateRandom(RandomNumberGenerator &rng, const NameValuePairs &params = g_nullNameValuePairs)
+		{
+			if (!GenerateRandomNoThrow(rng, params))
+				throw RandomNumberNotFound();
+		}
 
 		//! set the n-th bit to value
 		void SetBit(unsigned int n, bool value=1);
@@ -350,14 +392,9 @@ private:
 
 	enum Sign {POSITIVE=0, NEGATIVE=1};
 
-	SecWordBlock reg;
+	SecAlignedWordBlock reg;
 	Sign sign;
 };
-
-NAMESPACE_END
-
-// declaring these overloaded operators inside the CryptoPP namespace
-// causes problems with GCC 2.95.2
 
 //!
 inline bool operator==(const CryptoPP::Integer& a, const CryptoPP::Integer& b) {return a.Compare(b)==0;}
@@ -385,6 +422,8 @@ inline CryptoPP::Integer operator%(const CryptoPP::Integer &a, const CryptoPP::I
 inline CryptoPP::Integer operator/(const CryptoPP::Integer &a, CryptoPP::word b) {return a.DividedBy(b);}
 //!
 inline CryptoPP::word    operator%(const CryptoPP::Integer &a, CryptoPP::word b) {return a.Modulo(b);}
+
+NAMESPACE_END
 
 NAMESPACE_BEGIN(std)
 template<> inline void swap(CryptoPP::Integer &a, CryptoPP::Integer &b)

@@ -1,66 +1,74 @@
 #ifndef CRYPTOPP_VALIDATE_H
 #define CRYPTOPP_VALIDATE_H
 
-bool ValidateAll();
+#include "cryptlib.h"
+#include "randpool.h"
+
+bool ValidateAll(bool thorough);
 bool TestSettings();
 bool TestOS_RNG();
 
-bool ZKValidate();
+bool ValidateCRC32();
+bool ValidateAdler32();
+bool ValidateMD2();
+bool ValidateMD4();
+bool ValidateMD5();
+bool ValidateSHA();
+bool ValidateSHA2();
+bool ValidateHAVAL();
+bool ValidateTiger();
+bool ValidateRIPEMD();
+bool ValidatePanama();
 
-bool CRC32Validate();
-bool Adler32Validate();
-bool MD2Validate();
-bool MD5Validate();
-bool SHAValidate();
-bool SHA2Validate();
-bool HAVALValidate();
-bool TigerValidate();
-bool RIPEMDValidate();
-bool PanamaValidate();
+bool ValidateMD5MAC();
+bool ValidateHMAC();
+bool ValidateXMACC();
 
-bool MD5MACValidate();
-bool HMACValidate();
-bool XMACCValidate();
+bool ValidateCipherModes();
+bool ValidatePBKDF();
 
-bool CipherModesValidate();
+bool ValidateDES();
+bool ValidateIDEA();
+bool ValidateSAFER();
+bool ValidateRC2();
+bool ValidateARC4();
 
-bool DESValidate();
-bool IDEAValidate();
-bool SAFERValidate();
-bool RC2Validate();
-bool ARC4Validate();
-bool RC5Validate();
-bool BlowfishValidate();
-bool Diamond2Validate();
-bool ThreeWayValidate();
-bool GOSTValidate();
-bool SHARKValidate();
-bool SEALValidate();
-bool CASTValidate();
-bool SquareValidate();
-bool SKIPJACKValidate();
-bool RC6Validate();
-bool MARSValidate();
-bool RijndaelValidate();
-bool TwofishValidate();
-bool SerpentValidate();
+bool ValidateRC5();
+bool ValidateBlowfish();
+bool ValidateDiamond2();
+bool ValidateThreeWay();
+bool ValidateGOST();
+bool ValidateSHARK();
+bool ValidateSEAL();
+bool ValidateCAST();
+bool ValidateSquare();
+bool ValidateSKIPJACK();
+bool ValidateRC6();
+bool ValidateMARS();
+bool ValidateRijndael();
+bool ValidateTwofish();
+bool ValidateSerpent();
 
-bool BBSValidate();
-bool DHValidate();
-bool MQVValidate();
-bool RSAValidate();
-bool ElGamalValidate();
-bool NRValidate();
-bool DSAValidate();
-bool LUCValidate();
-bool LUCDIFValidate();
-bool LUCELGValidate();
-bool XTRDHValidate();
-bool RabinValidate();
-bool RWValidate();
-bool BlumGoldwasserValidate();
-bool ECPValidate();
-bool EC2NValidate();
-bool ECDSAValidate();
+bool ValidateBBS();
+bool ValidateDH();
+bool ValidateMQV();
+bool ValidateRSA();
+bool ValidateElGamal();
+bool ValidateDLIES();
+bool ValidateNR();
+bool ValidateDSA(bool thorough);
+bool ValidateLUC();
+bool ValidateLUC_DL();
+bool ValidateLUC_DH();
+bool ValidateXTR_DH();
+bool ValidateRabin();
+bool ValidateRW();
+//bool ValidateBlumGoldwasser();
+bool ValidateECP();
+bool ValidateEC2N();
+bool ValidateECDSA();
+bool ValidateESIGN();
+
+CryptoPP::RandomPool & GlobalRNG();
 
 #endif

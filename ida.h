@@ -10,24 +10,25 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 /// base class for secret sharing and information dispersal
-class RawIDA : public Filter, public BufferedTransformationWithAutoSignal
+class RawIDA : public AutoSignaling<Unflushable<Multichannel<Filter> > >
 {
 public:
-	RawIDA(unsigned int threshold, BufferedTransformation *outQueue=NULL);
+	RawIDA(BufferedTransformation *attachment=NULL)
+		: AutoSignaling<Unflushable<Multichannel<Filter> > >(attachment) {}
 
 	unsigned int GetThreshold() const {return m_threshold;}
 	void AddOutputChannel(word32 channelId);
-	void ChannelData(word32 channelId, const byte *inString, unsigned int length);
+	void ChannelData(word32 channelId, const byte *inString, unsigned int length, bool messageEnd);
 	unsigned int InputBuffered(word32 channelId) const;
 
-	void ChannelPut(const std::string &channel, byte inByte)
-		{ChannelData(StringToWord<word32>(channel), &inByte, 1);}
-	void ChannelPut(const std::string &channel, const byte *inString, unsigned int length)
-		{ChannelData(StringToWord<word32>(channel), inString, length);}
-	void ChannelMessageEnd(const std::string &channel, int propagation=-1);
-
-	void Put(byte inByte) {}
-	void Put(const byte *inString, unsigned int length) {}
+	void ChannelInitialize(const std::string &channel, const NameValuePairs &parameters=g_nullNameValuePairs, int propagation=-1);
+	unsigned int ChannelPut2(const std::string &channel, const byte *begin, unsigned int length, int messageEnd, bool blocking)
+	{
+		if (!blocking)
+			throw BlockingInputOnly("RawIDA");
+		ChannelData(StringToWord<word32>(channel), begin, length, messageEnd != 0);
+		return 0;
+	}
 
 protected:
 	virtual void FlushOutputQueues();
@@ -43,23 +44,25 @@ protected:
 	std::map<word32, unsigned int>::iterator m_lastMapPosition;
 	std::vector<MessageQueue> m_inputQueues;
 	std::vector<word32> m_inputChannelIds, m_outputChannelIds, m_outputToInput;
+	std::vector<std::string> m_outputChannelIdStrings;
 	std::vector<ByteQueue> m_outputQueues;
-	std::vector<ChannelSwitch> m_channelSwitches;
-	unsigned int m_threshold, m_channelsReady, m_channelsFinished;
+	int m_threshold;
+	unsigned int m_channelsReady, m_channelsFinished;
 	std::vector<SecBlock<word32> > m_v;
 	SecBlock<word32> m_u, m_w, m_y;
 };
 
 /// a variant of Shamir's Secret Sharing Algorithm
-class SecretSharing : public Filter
+class SecretSharing : public CustomSignalPropagation<Filter>
 {
 public:
-	SecretSharing(RandomNumberGenerator &rng, unsigned int threshold, unsigned int nShares, BufferedTransformation *outQueue=NULL, bool addPadding=true);
+	SecretSharing(RandomNumberGenerator &rng, int threshold, int nShares, BufferedTransformation *attachment=NULL, bool addPadding=true)
+		: CustomSignalPropagation<Filter>(attachment), m_rng(rng), m_ida(new OutputProxy(*this, true))
+		{Initialize(MakeParameters("RecoveryThreshold", threshold)("NumberOfShares", nShares)("AddPadding", addPadding), 0);}
 
-	void Put(byte inByte)
-		{SecretSharing::Put(&inByte, 1);}
-	void Put(const byte *inString, unsigned int length);
-	void MessageEnd(int propagation=-1);
+	void Initialize(const NameValuePairs &parameters=g_nullNameValuePairs, int propagation=-1);
+	unsigned int Put2(const byte *begin, unsigned int length, int messageEnd, bool blocking);
+	bool Flush(bool hardFlush, int propagation=-1, bool blocking=true) {return m_ida.Flush(hardFlush, propagation, blocking);}
 
 protected:
 	RandomNumberGenerator &m_rng;
@@ -71,7 +74,11 @@ protected:
 class SecretRecovery : public RawIDA
 {
 public:
-	SecretRecovery(unsigned int threshold, BufferedTransformation *outQueue=NULL, bool removePadding=true);
+	SecretRecovery(int threshold, BufferedTransformation *attachment=NULL, bool removePadding=true)
+		: RawIDA(attachment)
+		{Initialize(MakeParameters("RecoveryThreshold", threshold)("RemovePadding", removePadding), 0);}
+
+	void Initialize(const NameValuePairs &parameters=g_nullNameValuePairs, int propagation=-1);
 
 protected:
 	void FlushOutputQueues();
@@ -81,15 +88,16 @@ protected:
 };
 
 /// a variant of Rabin's Information Dispersal Algorithm
-class InformationDispersal : public Filter
+class InformationDispersal : public CustomSignalPropagation<Filter>
 {
 public:
-	InformationDispersal(unsigned int threshold, unsigned int nShares, BufferedTransformation *outQueue=NULL, bool addPadding=true);
+	InformationDispersal(int threshold, int nShares, BufferedTransformation *attachment=NULL, bool addPadding=true)
+		: CustomSignalPropagation<Filter>(attachment), m_ida(new OutputProxy(*this, true))
+		{Initialize(MakeParameters("RecoveryThreshold", threshold)("NumberOfShares", nShares)("AddPadding", addPadding), 0);}
 
-	void Put(byte inByte)
-		{InformationDispersal::Put(&inByte, 1);}
-	void Put(const byte *inString, unsigned int length);
-	void MessageEnd(int propagation=-1);
+	void Initialize(const NameValuePairs &parameters=g_nullNameValuePairs, int propagation=-1);
+	unsigned int Put2(const byte *begin, unsigned int length, int messageEnd, bool blocking);
+	bool Flush(bool hardFlush, int propagation=-1, bool blocking=true) {return m_ida.Flush(hardFlush, propagation, blocking);}
 
 protected:
 	RawIDA m_ida;
@@ -101,7 +109,11 @@ protected:
 class InformationRecovery : public RawIDA
 {
 public:
-	InformationRecovery(unsigned int threshold, BufferedTransformation *outQueue=NULL, bool removePadding=true);
+	InformationRecovery(int threshold, BufferedTransformation *attachment=NULL, bool removePadding=true)
+		: RawIDA(attachment)
+		{Initialize(MakeParameters("RecoveryThreshold", threshold)("RemovePadding", removePadding), 0);}
+
+	void Initialize(const NameValuePairs &parameters=g_nullNameValuePairs, int propagation=-1);
 
 protected:
 	void FlushOutputQueues();
@@ -111,15 +123,14 @@ protected:
 	ByteQueue m_queue;
 };
 
-class PaddingRemover : public Filter
+class PaddingRemover : public Unflushable<Filter>
 {
 public:
-	PaddingRemover(BufferedTransformation *outQueue=NULL)
-		: Filter(outQueue), m_possiblePadding(false) {}
+	PaddingRemover(BufferedTransformation *attachment=NULL)
+		: Unflushable<Filter>(attachment), m_possiblePadding(false) {}
 
-	void Put(byte inByte);
-	void Put(const byte *inString, unsigned int length);
-	void MessageEnd(int propagation=-1);
+	void IsolatedInitialize(const NameValuePairs &parameters) {m_possiblePadding = false;}
+	unsigned int Put2(const byte *begin, unsigned int length, int messageEnd, bool blocking);
 
 	// GetPossiblePadding() == false at the end of a message indicates incorrect padding
 	bool GetPossiblePadding() const {return m_possiblePadding;}

@@ -6,10 +6,10 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 /// <a href="http://www.weidai.com/scan-mirror/md.html#HAVAL">HAVAL</a>
-class HAVAL : public IteratedHash<word32, false, 128>
+class HAVAL : public IteratedHash<word32, LittleEndian, 128>
 {
 public:
-	enum {DIGESTSIZE = 32, VERSION = 1};
+	enum {DIGESTSIZE = 32, HAVAL_VERSION = 1};
 
 	/// digestSize can be 16, 20, 24, 28, or 32 (Default=32)<br>
 	/// pass can be 3, 4 or 5 (Default=3)

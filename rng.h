@@ -6,19 +6,13 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-//! can be passed to functions that ask for a RNG but doesn't actually use it
-class NullRNG : public RandomNumberGenerator
-{
-	byte GenerateByte() {assert(false); return 0x7d;}
-};
-
 //! linear congruential generator
 /*! originally by William S. England, do not use for cryptographic purposes */
 class LC_RNG : public RandomNumberGenerator
 {
 public:
 	LC_RNG(word32 init_seed)
-		: seedBytes((byte *)&seed) {seed=init_seed;}
+		: seed(init_seed) {}
 
 	byte GenerateByte();
 
@@ -26,7 +20,6 @@ public:
 
 private:
 	word32 seed;
-	byte *const seedBytes;
 
 	static const word32 m;
 	static const word32 q;

@@ -3,17 +3,17 @@
 #ifndef CRYPTOPP_QUEUE_H
 #define CRYPTOPP_QUEUE_H
 
-#include "cryptlib.h"
-#include <algorithm>
+#include "simple.h"
+//#include <algorithm>
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/** The queue is implemented as a linked list of arrays, but you don't need to
+/** The queue is implemented as a linked list of byte arrays, but you don't need to
     know about that.  So just ignore this next line. :) */
 class ByteQueueNode;
 
 //! Byte Queue
-class ByteQueue : public BufferedTransformation
+class ByteQueue : public Bufferless<BufferedTransformation>
 {
 public:
 	ByteQueue(unsigned int m_nodeSize=256);
@@ -25,8 +25,9 @@ public:
 	bool AnyRetrievable() const
 		{return !IsEmpty();}
 
-	void Put(byte inByte);
-	void Put(const byte *inString, unsigned int length);
+	void IsolatedInitialize(const NameValuePairs &parameters);
+	byte * CreatePutSpace(unsigned int &size);
+	unsigned int Put2(const byte *inString, unsigned int length, int messageEnd, bool blocking);
 
 	unsigned int Get(byte &outByte);
 	unsigned int Get(byte *outString, unsigned int getMax);
@@ -34,9 +35,8 @@ public:
 	unsigned int Peek(byte &outByte) const;
 	unsigned int Peek(byte *outString, unsigned int peekMax) const;
 
-	unsigned long Skip(unsigned long skipMax=ULONG_MAX);
-	unsigned long TransferTo(BufferedTransformation &target, unsigned long transferMax=ULONG_MAX);
-	unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax=ULONG_MAX) const;
+	unsigned int TransferTo2(BufferedTransformation &target, unsigned long &transferBytes, const std::string &channel=NULL_CHANNEL, bool blocking=true);
+	unsigned int CopyRangeTo2(BufferedTransformation &target, unsigned long &begin, unsigned long end=ULONG_MAX, const std::string &channel=NULL_CHANNEL, bool blocking=true) const;
 
 	// these member functions are not inherited
 	void SetNodeSize(unsigned int nodeSize) {m_nodeSize = nodeSize;}
@@ -51,10 +51,8 @@ public:
 
 	const byte * Spy(unsigned int &contiguousSize) const;
 
-	byte * MakeNewSpace(unsigned int &contiguousSize);
-	void OccupyNewSpace(unsigned int size);
-
 	void LazyPut(const byte *inString, unsigned int size);
+	void UndoLazyPut(unsigned int size);
 	void FinalizeLazyPut();
 
 	ByteQueue & operator=(const ByteQueue &rhs);
@@ -62,18 +60,18 @@ public:
 	byte operator[](unsigned long i) const;
 	void swap(ByteQueue &rhs);
 
-	class Walker : public BufferedTransformation
+	class Walker : public InputRejecting<BufferedTransformation>
 	{
 	public:
 		Walker(const ByteQueue &queue)
-			: m_queue(queue), m_node(queue.m_head), m_position(0), m_offset(0)
-			, m_lazyString(queue.m_lazyString), m_lazyLength(queue.m_lazyLength) {}
+			: m_queue(queue) {Initialize();}
+
+		unsigned long GetCurrentPosition() {return m_position;}
 
 		unsigned long MaxRetrievable() const
 			{return m_queue.CurrentSize() - m_position;}
 
-		void Put(byte inByte) {}
-		void Put(const byte *inString, unsigned int length) {}
+		void IsolatedInitialize(const NameValuePairs &parameters);
 
 		unsigned int Get(byte &outByte);
 		unsigned int Get(byte *outString, unsigned int getMax);
@@ -81,14 +79,14 @@ public:
 		unsigned int Peek(byte &outByte) const;
 		unsigned int Peek(byte *outString, unsigned int peekMax) const;
 
-		unsigned long Skip(unsigned long skipMax=ULONG_MAX);
-		unsigned long TransferTo(BufferedTransformation &target, unsigned long transferMax=ULONG_MAX);
-		unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax=ULONG_MAX) const;
+		unsigned int TransferTo2(BufferedTransformation &target, unsigned long &transferBytes, const std::string &channel=NULL_CHANNEL, bool blocking=true);
+		unsigned int CopyRangeTo2(BufferedTransformation &target, unsigned long &begin, unsigned long end=ULONG_MAX, const std::string &channel=NULL_CHANNEL, bool blocking=true) const;
 
 	private:
 		const ByteQueue &m_queue;
 		const ByteQueueNode *m_node;
-		unsigned int m_position, m_offset;
+		unsigned long m_position;
+		unsigned int m_offset;
 		const byte *m_lazyString;
 		unsigned int m_lazyLength;
 	};

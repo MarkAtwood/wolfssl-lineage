@@ -7,30 +7,58 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/**
-   Please do not directly use the following class.  It should be
-   considered a private class for the library.  The following
-   classes are public and use ExponentiationPrecomputation internally. <br><br>
- 
-   ModExpPrecomputation; <br>
-   EcPrecomputation<EC2N>; <br>
-   EcPrecomputation<ECP>;
-*/
-template <class T> class ExponentiationPrecomputation
+template <class T>
+class DL_GroupPrecomputation
 {
 public:
 	typedef T Element;
-	typedef AbstractGroup<T> Group;
 
-	ExponentiationPrecomputation() : m_group(NULL) {}
+	virtual bool NeedConversions() const {return false;}
+	virtual Element ConvertIn(const Element &v) const {return v;}
+	virtual Element ConvertOut(const Element &v) const {return v;}
+	virtual const AbstractGroup<Element> & GetGroup() const =0;
+	virtual Element BERDecodeElement(BufferedTransformation &bt) const =0;
+	virtual void DEREncodeElement(BufferedTransformation &bt, const Element &P) const =0;
+};
 
-	void SetGroupAndBase(const Group &group, const Element &base);
-	void Precompute(unsigned int maxExpBits, unsigned int storage);
-	void PrepareCascade(std::vector<BaseAndExponent<Element> > &eb, const Integer &exponent) const;
-	Element Exponentiate(const Integer &exponent) const;
-	Element CascadeExponentiate(const Integer &exponent, const ExponentiationPrecomputation<T> &pc2, const Integer &exponent2) const;
+template <class T>
+class DL_FixedBasePrecomputation
+{
+public:
+	typedef T Element;
 
-	const Group *m_group;
+	virtual bool IsInitialized() const =0;
+	virtual void SetBase(const DL_GroupPrecomputation<Element> &group, const Element &base) =0;
+	virtual const Element & GetBase(const DL_GroupPrecomputation<Element> &group) const =0;
+	virtual void Precompute(const DL_GroupPrecomputation<Element> &group, unsigned int maxExpBits, unsigned int storage) =0;
+	virtual void Load(const DL_GroupPrecomputation<Element> &group, BufferedTransformation &storedPrecomputation) =0;
+	virtual void Save(const DL_GroupPrecomputation<Element> &group, BufferedTransformation &storedPrecomputation) const =0;
+	virtual Element Exponentiate(const DL_GroupPrecomputation<Element> &group, const Integer &exponent) const =0;
+	virtual Element CascadeExponentiate(const DL_GroupPrecomputation<Element> &group, const Integer &exponent, const DL_FixedBasePrecomputation<Element> &pc2, const Integer &exponent2) const =0;
+};
+
+template <class T>
+class DL_FixedBasePrecomputationImpl : public DL_FixedBasePrecomputation<T>
+{
+public:
+	typedef T Element;
+
+	// DL_FixedBasePrecomputation
+	bool IsInitialized() const
+		{return !m_bases.empty();}
+	void SetBase(const DL_GroupPrecomputation<Element> &group, const Element &base);
+	const Element & GetBase(const DL_GroupPrecomputation<Element> &group) const
+		{return group.NeedConversions() ? m_base : m_bases[0];}
+	void Precompute(const DL_GroupPrecomputation<Element> &group, unsigned int maxExpBits, unsigned int storage);
+	void Load(const DL_GroupPrecomputation<Element> &group, BufferedTransformation &storedPrecomputation);
+	void Save(const DL_GroupPrecomputation<Element> &group, BufferedTransformation &storedPrecomputation) const;
+	Element Exponentiate(const DL_GroupPrecomputation<Element> &group, const Integer &exponent) const;
+	Element CascadeExponentiate(const DL_GroupPrecomputation<Element> &group, const Integer &exponent, const DL_FixedBasePrecomputation<Element> &pc2, const Integer &exponent2) const;
+
+private:
+	void PrepareCascade(const DL_GroupPrecomputation<Element> &group, std::vector<BaseAndExponent<Element> > &eb, const Integer &exponent) const;
+
+	Element m_base;
 	unsigned int m_windowSize;
 	Integer m_exponentBase;			// what base to represent the exponent in
 	std::vector<Element> m_bases;	// precalculated bases

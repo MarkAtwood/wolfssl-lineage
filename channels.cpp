@@ -6,37 +6,86 @@
 NAMESPACE_BEGIN(CryptoPP)
 USING_NAMESPACE(std)
 
-void ChannelSwitch::Put(byte inByte)
+#if 0
+void MessageSwitch::AddDefaultRoute(BufferedTransformation &destination, const std::string &channel)
 {
-	ChannelPut(NULL_CHANNEL, inByte);
+	m_defaultRoutes.push_back(Route(&destination, channel));
 }
 
-void ChannelSwitch::Put(const byte *inString, unsigned int length)
+void MessageSwitch::AddRoute(unsigned int begin, unsigned int end, BufferedTransformation &destination, const std::string &channel)
 {
-	ChannelPut(NULL_CHANNEL, inString, length);
+	RangeRoute route(begin, end, Route(&destination, channel));
+	RouteList::iterator it = upper_bound(m_routes.begin(), m_routes.end(), route);
+	m_routes.insert(it, route);
 }
 
-void ChannelSwitch::Flush(bool completeFlush, int propagation)
+/*
+class MessageRouteIterator
 {
-	ChannelFlush(NULL_CHANNEL, completeFlush, propagation);
-}
+public:
+	typedef MessageSwitch::RouteList::const_iterator RouteIterator;
+	typedef MessageSwitch::DefaultRouteList::const_iterator DefaultIterator;
 
-void ChannelSwitch::MessageEnd(int propagation)
-{
-	ChannelMessageEnd(NULL_CHANNEL, propagation);
-}
+	bool m_useDefault;
+	RouteIterator m_itRouteCurrent, m_itRouteEnd;
+	DefaultIterator m_itDefaultCurrent, m_itDefaultEnd;
 
-void ChannelSwitch::MessageSeriesEnd(int propagation)
-{
-	ChannelMessageSeriesEnd(NULL_CHANNEL, propagation);
-}
+	MessageRouteIterator(MessageSwitch &ms, const std::string &channel)
+		: m_channel(channel)
+	{
+		pair<MapIterator, MapIterator> range = cs.m_routeMap.equal_range(channel);
+		if (range.first == range.second)
+		{
+			m_useDefault = true;
+			m_itListCurrent = cs.m_defaultRoutes.begin();
+			m_itListEnd = cs.m_defaultRoutes.end();
+		}
+		else
+		{
+			m_useDefault = false;
+			m_itMapCurrent = range.first;
+			m_itMapEnd = range.second;
+		}
+	}
 
-void ChannelSwitch::PutMessageEnd(const byte *inString, unsigned int length, int propagation)
-{
-	ChannelPutMessageEnd(NULL_CHANNEL, inString, length, propagation);
-}
+	bool End() const
+	{
+		return m_useDefault ? m_itListCurrent == m_itListEnd : m_itMapCurrent == m_itMapEnd;
+	}
 
-class RouteIterator
+	void Next()
+	{
+		if (m_useDefault)
+			++m_itListCurrent;
+		else
+			++m_itMapCurrent;
+	}
+
+	BufferedTransformation & Destination()
+	{
+		return m_useDefault ? *m_itListCurrent->first : *m_itMapCurrent->second.first;
+	}
+
+	const std::string & Message()
+	{
+		if (m_useDefault)
+			return m_itListCurrent->second.get() ? *m_itListCurrent->second.get() : m_channel;
+		else
+			return m_itMapCurrent->second.second;
+	}
+};
+
+void MessageSwitch::Put(byte inByte);
+void MessageSwitch::Put(const byte *inString, unsigned int length);
+
+void MessageSwitch::Flush(bool completeFlush, int propagation=-1);
+void MessageSwitch::MessageEnd(int propagation=-1);
+void MessageSwitch::PutMessageEnd(const byte *inString, unsigned int length, int propagation=-1);
+void MessageSwitch::MessageSeriesEnd(int propagation=-1);
+*/
+#endif
+
+class ChannelRouteIterator
 {
 public:
 	typedef ChannelSwitch::RouteMap::const_iterator MapIterator;
@@ -47,7 +96,7 @@ public:
 	MapIterator m_itMapCurrent, m_itMapEnd;
 	ListIterator m_itListCurrent, m_itListEnd;
 
-	RouteIterator(ChannelSwitch &cs, const std::string &channel)
+	ChannelRouteIterator(ChannelSwitch &cs, const std::string &channel)
 		: m_channel(channel)
 	{
 		pair<MapIterator, MapIterator> range = cs.m_routeMap.equal_range(channel);
@@ -92,64 +141,94 @@ public:
 	}
 };
 
-void ChannelSwitch::ChannelPut(const std::string &channel, byte inByte)
+unsigned int ChannelSwitch::ChannelPut2(const std::string &channel, const byte *begin, unsigned int length, int messageEnd, bool blocking)
 {
-	RouteIterator it(*this, channel);
+	if (!blocking)
+		throw BlockingInputOnly("ChannelSwitch");
+
+	ChannelRouteIterator it(*this, channel);
 	while (!it.End())
 	{
-		it.Destination().ChannelPut(it.Channel(), inByte);
+		it.Destination().ChannelPut2(it.Channel(), begin, length, messageEnd, blocking);
+		it.Next();
+	}
+	return 0;
+}
+
+void ChannelSwitch::ChannelInitialize(const std::string &channel, const NameValuePairs &parameters/* =g_nullNameValuePairs */, int propagation/* =-1 */)
+{
+	if (channel.empty())
+	{
+		m_routeMap.clear();
+		m_defaultRoutes.clear();
+	}
+
+	ChannelRouteIterator it(*this, channel);
+	while (!it.End())
+	{
+		it.Destination().ChannelInitialize(it.Channel(), parameters, propagation);
 		it.Next();
 	}
 }
 
-void ChannelSwitch::ChannelPut(const std::string &channel, const byte *inString, unsigned int length)
+bool ChannelSwitch::ChannelFlush(const std::string &channel, bool completeFlush, int propagation, bool blocking)
 {
-	RouteIterator it(*this, channel);
+	if (!blocking)
+		throw BlockingInputOnly("ChannelSwitch");
+
+	ChannelRouteIterator it(*this, channel);
 	while (!it.End())
 	{
-		it.Destination().ChannelPut(it.Channel(), inString, length);
+		it.Destination().ChannelFlush(it.Channel(), completeFlush, propagation, blocking);
 		it.Next();
 	}
+	return false;
 }
 
-void ChannelSwitch::ChannelFlush(const std::string &channel, bool completeFlush, int propagation)
+bool ChannelSwitch::ChannelMessageSeriesEnd(const std::string &channel, int propagation, bool blocking)
 {
-	RouteIterator it(*this, channel);
-	while (!it.End())
-	{
-		it.Destination().ChannelFlush(it.Channel(), completeFlush, propagation);
-		it.Next();
-	}
-}
+	if (!blocking)
+		throw BlockingInputOnly("ChannelSwitch");
 
-void ChannelSwitch::ChannelMessageEnd(const std::string &channel, int propagation)
-{
-	RouteIterator it(*this, channel);
-	while (!it.End())
-	{
-		it.Destination().ChannelMessageEnd(it.Channel(), propagation);
-		it.Next();
-	}
-}
-
-void ChannelSwitch::ChannelMessageSeriesEnd(const std::string &channel, int propagation)
-{
-	RouteIterator it(*this, channel);
+	ChannelRouteIterator it(*this, channel);
 	while (!it.End())
 	{
 		it.Destination().ChannelMessageSeriesEnd(it.Channel(), propagation);
 		it.Next();
 	}
+	return false;
 }
 
-void ChannelSwitch::ChannelPutMessageEnd(const std::string &channel, const byte *inString, unsigned int length, int propagation)
+byte * ChannelSwitch::ChannelCreatePutSpace(const std::string &channel, unsigned int &size)
 {
-	RouteIterator it(*this, channel);
-	while (!it.End())
+	ChannelRouteIterator it(*this, channel);
+	if (!it.End())
 	{
-		it.Destination().ChannelPutMessageEnd(it.Channel(), inString, length, propagation);
+		BufferedTransformation &target = it.Destination();
 		it.Next();
+		if (it.End())	// there is only one target channel
+			return target.ChannelCreatePutSpace(it.Channel(), size);
 	}
+	size = 0;
+	return NULL;
+}
+
+unsigned int ChannelSwitch::ChannelPutModifiable2(const std::string &channel, byte *inString, unsigned int length, int messageEnd, bool blocking)
+{
+	if (!blocking)
+		throw BlockingInputOnly("ChannelSwitch");
+
+	ChannelRouteIterator it(*this, channel);
+	if (!it.End())
+	{
+		BufferedTransformation &target = it.Destination();
+		const std::string &targetChannel = it.Channel();
+		it.Next();
+		if (it.End())	// there is only one target channel
+			return target.ChannelPutModifiable2(targetChannel, inString, length, messageEnd, blocking);
+	}
+	ChannelPut2(channel, inString, length, messageEnd, blocking);
+	return false;
 }
 
 void ChannelSwitch::AddDefaultRoute(BufferedTransformation &destination)

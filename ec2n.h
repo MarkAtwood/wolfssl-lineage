@@ -4,6 +4,7 @@
 #include "gf2n.h"
 #include "eprecomp.h"
 #include "smartptr.h"
+#include "pubkey.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -31,6 +32,7 @@ public:
 	typedef Field::Element FieldElement;
 	typedef EC2NPoint Point;
 
+	EC2N() {}
 	EC2N(const Field &field, const Field::Element &a, const Field::Element &b)
 		: m_field(field), m_a(a), m_b(b) {}
 	// construct from BER encoded parameters
@@ -41,7 +43,7 @@ public:
 	void DEREncode(BufferedTransformation &bt) const;
 
 	bool Equal(const Point &P, const Point &Q) const;
-	const Point& Zero() const;
+	const Point& Identity() const;
 	const Point& Inverse(const Point &P) const;
 	bool InversionIsFast() const {return true;}
 	const Point& Add(const Point &P, const Point &Q) const;
@@ -52,7 +54,7 @@ public:
 	Point CascadeMultiply(const Integer &k1, const Point &P, const Integer &k2, const Point &Q) const
 		{return CascadeScalarMultiply(P, k1, Q, k2);}
 
-	bool ValidateParameters(RandomNumberGenerator &rng) const;
+	bool ValidateParameters(RandomNumberGenerator &rng, unsigned int level=3) const;
 	bool VerifyPoint(const Point &P) const;
 
 	unsigned int EncodedPointSize(bool compressed = false) const
@@ -60,10 +62,11 @@ public:
 	// returns false if point is compressed and not valid (doesn't check if uncompressed)
 	bool DecodePoint(Point &P, BufferedTransformation &bt, unsigned int len) const;
 	bool DecodePoint(Point &P, const byte *encodedPoint, unsigned int len) const;
-	void EncodePoint(byte *encodedPoint, const Point &P, bool compressed = false) const;
+	void EncodePoint(byte *encodedPoint, const Point &P, bool compressed) const;
+	void EncodePoint(BufferedTransformation &bt, const Point &P, bool compressed) const;
 
 	Point BERDecodePoint(BufferedTransformation &bt) const;
-	void DEREncodePoint(BufferedTransformation &bt, const Point &P, bool compressed = false) const;
+	void DEREncodePoint(BufferedTransformation &bt, const Point &P, bool compressed) const;
 
 	Integer FieldSize() const {return Integer::Power2(m_field->MaxElementBitLength());}
 	const Field & GetField() const {return *m_field;}
@@ -79,28 +82,22 @@ private:
 template <class T> class EcPrecomputation;
 
 //! .
-template<> class EcPrecomputation<EC2N>
+template<> class EcPrecomputation<EC2N> : public DL_GroupPrecomputation<EC2N::Point>
 {
 public:
-	EcPrecomputation() : m_ec(NULL) {}
-	EcPrecomputation(const EcPrecomputation &a)
-		{operator=(a);}
-	EcPrecomputation(const EC2N &ec, const EC2N::Point &base)
-		{SetCurveAndBase(ec, base);}
+	typedef EC2N EllipticCurve;
 
-	EcPrecomputation& operator=(const EcPrecomputation &rhs);
+	// DL_GroupPrecomputation
+	const AbstractGroup<Element> & GetGroup() const {return m_ec;}
+	Element BERDecodeElement(BufferedTransformation &bt) const {return m_ec.BERDecodePoint(bt);}
+	void DEREncodeElement(BufferedTransformation &bt, const Element &v) const {m_ec.DEREncodePoint(bt, v, false);}
 
-	void SetCurveAndBase(const EC2N &ec, const EC2N::Point &base);
-	void Precompute(unsigned int maxExpBits, unsigned int storage);
-	void Load(BufferedTransformation &storedPrecomputation);
-	void Save(BufferedTransformation &storedPrecomputation) const;
-
-	EC2N::Point Multiply(const Integer &exponent) const;
-	EC2N::Point CascadeMultiply(const Integer &exponent, const EcPrecomputation<EC2N> &pc2, const Integer &exponent2) const;
+	// non-inherited
+	void SetCurve(const EC2N &ec) {m_ec = ec;}
+	const EC2N & GetCurve() const {return m_ec;}
 
 private:
-	value_ptr<EC2N> m_ec;
-	ExponentiationPrecomputation<EC2N::Point> m_ep;
+	EC2N m_ec;
 };
 
 NAMESPACE_END

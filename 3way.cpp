@@ -3,11 +3,19 @@
 
 #include "pch.h"
 #include "3way.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
+void ThreeWay_TestInstantiations()
+{
+	ThreeWay::Encryption x1;
+	ThreeWay::Decryption x2;
+}
+
 static const word32 START_E = 0x0b0b; // round constant of first encryption round
 static const word32 START_D = 0xb1b1; // round constant of first decryption round
+static const word32 RC_MODULUS = 0x11011;
 
 static inline word32 reverseBits(word32 a)
 {
@@ -53,123 +61,80 @@ static inline word32 reverseBits(word32 a)
 	pi_gamma_pi(a0, a1, a2);	\
 }											
 
-static void GenerateRoundConstants(word32 strt, word32 *rtab, unsigned int rounds)
+void ThreeWay::Base::UncheckedSetKey(CipherDir dir, const byte *uk, unsigned int length, unsigned int r)
 {
-	for(unsigned i=0; i<=rounds; i++)
+	AssertValidKeyLength(length);
+	AssertValidRounds(r);
+
+	m_rounds = r;
+
+	for (unsigned int i=0; i<3; i++)
+		m_k[i] = (word32)uk[4*i+3] | ((word32)uk[4*i+2]<<8) | ((word32)uk[4*i+1]<<16) | ((word32)uk[4*i]<<24);
+
+	if (dir == DECRYPTION)
 	{
-		rtab[i] = strt;
-		strt <<= 1;
-		if (strt&0x10000) strt ^= 0x11011;
+		theta(m_k[0], m_k[1], m_k[2]);
+		mu(m_k[0], m_k[1], m_k[2]);
+		m_k[0] = ByteReverse(m_k[0]);
+		m_k[1] = ByteReverse(m_k[1]);
+		m_k[2] = ByteReverse(m_k[2]);
 	}
 }
 
-ThreeWayEncryption::ThreeWayEncryption(const byte *uk, unsigned int keylength, unsigned int rounds)
-	: rounds(rounds), rc(rounds+1)
+void ThreeWay::Enc::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
-	assert(keylength == 0 || keylength == KEYLENGTH);
-	GenerateRoundConstants(START_E, rc, rounds);
-	for (int i=0; i<3; i++)
-		k[i] = (word32)uk[4*i+3] | ((word32)uk[4*i+2]<<8) | ((word32)uk[4*i+1]<<16) | ((word32)uk[4*i]<<24);
-}
+	typedef BlockGetAndPut<word32, BigEndian> Block;
 
-ThreeWayEncryption::~ThreeWayEncryption()
-{
-	k[0]=k[1]=k[2]=0;
-}
-
-void ThreeWayEncryption::ProcessBlock(const byte *in, byte * out) const
-{
 	word32 a0, a1, a2;
+	Block::Get(inBlock)(a0)(a1)(a2);
 
-#ifdef IS_LITTLE_ENDIAN
-	a0 = byteReverse(*(word32 *)in);
-	a1 = byteReverse(*(word32 *)(in+4));
-	a2 = byteReverse(*(word32 *)(in+8));
-#else
-	a0 = *(word32 *)in;
-	a1 = *(word32 *)(in+4);
-	a2 = *(word32 *)(in+8);
-#endif
+	word32 rc = START_E;
 
-	for(unsigned i=0; i<rounds; i++)
+	for(unsigned i=0; i<m_rounds; i++)
 	{
-		a0 ^= k[0] ^ (rc[i]<<16);
-		a1 ^= k[1];
-		a2 ^= k[2] ^ rc[i];
+		a0 ^= m_k[0] ^ (rc<<16);
+		a1 ^= m_k[1];
+		a2 ^= m_k[2] ^ rc;
 		rho(a0, a1, a2);
+
+		rc <<= 1;
+		if (rc&0x10000) rc ^= 0x11011;
 	}
-	a0 ^= k[0] ^ (rc[rounds]<<16);
-	a1 ^= k[1];
-	a2 ^= k[2] ^ rc[rounds];
+	a0 ^= m_k[0] ^ (rc<<16);
+	a1 ^= m_k[1];
+	a2 ^= m_k[2] ^ rc;
 	theta(a0, a1, a2);
 
-#ifdef IS_LITTLE_ENDIAN
-	*(word32 *)out = byteReverse(a0);
-	*(word32 *)(out+4) = byteReverse(a1);
-	*(word32 *)(out+8) = byteReverse(a2);
-#else
-	*(word32 *)out = a0;
-	*(word32 *)(out+4) = a1;
-	*(word32 *)(out+8) = a2;
-#endif
+	Block::Put(xorBlock, outBlock)(a0)(a1)(a2);
 }
 
-ThreeWayDecryption::ThreeWayDecryption(const byte *uk, unsigned int keylength, unsigned int rounds)
-	: rounds(rounds), rc(rounds+1)
+void ThreeWay::Dec::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
-	assert(keylength == 0 || keylength == KEYLENGTH);
-	GenerateRoundConstants(START_D, rc, rounds);
-	for (int i=0; i<3; i++)
-		k[i] = (word32)uk[4*i+3] | ((word32)uk[4*i+2]<<8) | ((word32)uk[4*i+1]<<16) | ((word32)uk[4*i]<<24);
-	theta(k[0], k[1], k[2]);
-	mu(k[0], k[1], k[2]);
-	k[0] = byteReverse(k[0]);
-	k[1] = byteReverse(k[1]);
-	k[2] = byteReverse(k[2]);
-}
+	typedef BlockGetAndPut<word32, LittleEndian> Block;
 
-ThreeWayDecryption::~ThreeWayDecryption()
-{
-	k[0]=k[1]=k[2]=0;
-}
-
-void ThreeWayDecryption::ProcessBlock(const byte *in, byte * out) const
-{
 	word32 a0, a1, a2;
+	Block::Get(inBlock)(a0)(a1)(a2);
 
-#ifndef IS_LITTLE_ENDIAN
-	a0 = byteReverse(*(word32 *)in);
-	a1 = byteReverse(*(word32 *)(in+4));
-	a2 = byteReverse(*(word32 *)(in+8));
-#else
-	a0 = *(word32 *)in;
-	a1 = *(word32 *)(in+4);
-	a2 = *(word32 *)(in+8);
-#endif
+	word32 rc = START_D;
 
 	mu(a0, a1, a2);
-	for(unsigned i=0; i<rounds; i++)
+	for(unsigned i=0; i<m_rounds; i++)
 	{
-		a0 ^= k[0] ^ (rc[i]<<16);
-		a1 ^= k[1];
-		a2 ^= k[2] ^ rc[i];
+		a0 ^= m_k[0] ^ (rc<<16);
+		a1 ^= m_k[1];
+		a2 ^= m_k[2] ^ rc;
 		rho(a0, a1, a2);
+
+		rc <<= 1;
+		if (rc&0x10000) rc ^= 0x11011;
 	}
-	a0 ^= k[0] ^ (rc[rounds]<<16);
-	a1 ^= k[1];
-	a2 ^= k[2] ^ rc[rounds];
+	a0 ^= m_k[0] ^ (rc<<16);
+	a1 ^= m_k[1];
+	a2 ^= m_k[2] ^ rc;
 	theta(a0, a1, a2);
 	mu(a0, a1, a2);
 
-#ifndef IS_LITTLE_ENDIAN
-	*(word32 *)out = byteReverse(a0);
-	*(word32 *)(out+4) = byteReverse(a1);
-	*(word32 *)(out+8) = byteReverse(a2);
-#else
-	*(word32 *)out = a0;
-	*(word32 *)(out+4) = a1;
-	*(word32 *)(out+8) = a2;
-#endif
+	Block::Put(xorBlock, outBlock)(a0)(a1)(a2);
 }
 
 NAMESPACE_END

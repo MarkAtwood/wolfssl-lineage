@@ -1,50 +1,12 @@
-// idea.cpp - modified by Wei Dai from:
-// Copyright 1992 by Colin Plumb.  Distributed with permission.
-
-/*      idea.c - C source code for IDEA block cipher.
- *      IDEA (International Data Encryption Algorithm), formerly known as
- *      IPES (Improved Proposed Encryption Standard).
- *      Algorithm developed by Xuejia Lai and James L. Massey, of ETH Zurich.
- *      This implementation modified and derived from original C code
- *      developed by Xuejia Lai.
- *      Zero-based indexing added, names changed from IPES to IDEA.
- *
- *  Optimized for speed 21 Oct 92 by Colin Plumb.
- *
- *      The IDEA(tm) block cipher is covered by a patent held by ETH and a
- *      Swiss company called Ascom-Tech AG.  The Swiss patent number is
- *      PCT/CH91/00117.  International patents are pending. IDEA(tm) is a
- *      trademark of Ascom-Tech AG.  There is no license fee required for
- *      noncommercial use.  Commercial users may obtain licensing details
- *      from Dieter Profos, Ascom Tech AG, Solothurn Lab, Postfach 151, 4502
- *      Solothurn, Switzerland, Tel +41 65 242885, Fax +41 65 235761.
- *
- *      The IDEA block cipher uses a 64-bit block size, and a 128-bit key
- *      size.  It breaks the 64-bit cipher block into four 16-bit words
- *      because all of the primitive inner operations are done with 16-bit
- *      arithmetic.  It likewise breaks the 128-bit cipher key into eight
- *      16-bit words.
- *
- *      For further information on the IDEA cipher, see these papers:
- *      1) Xuejia Lai, "Detailed Description and a Software Implementation of
- *         the IPES Cipher", Institute for Signal and Information
- *         Processing, ETH-Zentrum, Zurich, Switzerland, 1991
- *      2) Xuejia Lai, James L. Massey, Sean Murphy, "Markov Ciphers and
- *         Differential Cryptanalysis", Advances in Cryptology- EUROCRYPT'91
- *
- *      This code assumes that each pair of 8-bit bytes comprising a 16-bit
- *      word in the key and in the cipher block are externally represented
- *      with the Most Significant Byte (MSB) first, regardless of the
- *      internal native byte order of the target CPU.
- */
+// idea.cpp - written and placed in the public domain by Wei Dai
 
 #include "pch.h"
 #include "idea.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-static const int ROUNDS=8;
-static const int IDEA_KEYLEN=(6*ROUNDS+4);  // key schedule length in # of word16s
+static const int IDEA_KEYLEN=(6*IDEA::ROUNDS+4);  // key schedule length in # of word16s
 
 #define low16(x) ((x)&0xffff)	// compiler should be able to optimize this away if word is 16 bits
 #define high16(x) ((x)>>16)
@@ -66,88 +28,87 @@ static const int IDEA_KEYLEN=(6*ROUNDS+4);  // key schedule length in # of word1
 }
 
 #ifdef IDEA_LARGECACHE
-bool IDEA::tablesBuilt = false;
-word16 IDEA::log[0x10000];
-word16 IDEA::antilog[0x10000];
+bool IDEA::Base::tablesBuilt = false;
+word16 IDEA::Base::log[0x10000];
+word16 IDEA::Base::antilog[0x10000];
 
-void IDEA::BuildLogTables()
+void IDEA::Base::BuildLogTables()
 {
 	if (tablesBuilt)
 		return;
 	else
 	{
 		tablesBuilt = true;
-
+		
 		word x=1;
 		word32 i;
-
+		
 		for (i=0; i<0x10000; i++)
 		{
 			antilog[i] = (word16)x;
 			DirectMUL(x, 3);
 		}
-
+		
 		for (i=0; i<0x10000; i++)
 			log[antilog[i]] = (word16)i;
 	}
 }
 
-void IDEA::LookupKeyLogs()
+void IDEA::Base::LookupKeyLogs()
 {
-   word* Z=key;
-   int r=ROUNDS;
-   do
-   {
-	   Z[0] = log[Z[0]];
-	   Z[3] = log[Z[3]];
-	   Z[4] = log[Z[4]];
-	   Z[5] = log[Z[5]];
-	   Z+=6;
-   } while (--r);
-   Z[0] = log[Z[0]];
-   Z[3] = log[Z[3]];
+	word* Z=key;
+	int r=ROUNDS;
+	do
+	{
+		Z[0] = log[Z[0]];
+		Z[3] = log[Z[3]];
+		Z[4] = log[Z[4]];
+		Z[5] = log[Z[5]];
+		Z+=6;
+	} while (--r);
+	Z[0] = log[Z[0]];
+	Z[3] = log[Z[3]];
 }
 
-inline void IDEA::LookupMUL(word &a, word b)
+inline void IDEA::Base::LookupMUL(word &a, word b)
 {
 	a = antilog[low16(log[low16(a)]+b)];
 }
 #endif // IDEA_LARGECACHE
 
-IDEA::IDEA (const byte * userKey, CipherDir direction)
-	: key(IDEA_KEYLEN)
+void IDEA::Base::UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length)
 {
+	AssertValidKeyLength(length);
+	
 #ifdef IDEA_LARGECACHE
 	BuildLogTables();
 #endif
-
+	
 	EnKey(userKey);
-
+	
 	if (direction==DECRYPTION)
 		DeKey();
-
+	
 #ifdef IDEA_LARGECACHE
 	LookupKeyLogs();
 #endif
 }
 
-void IDEA::EnKey (const byte *userKey)
+void IDEA::Base::EnKey (const byte *userKey)
 {
-   int i, j;
-   word *Z=key;
-
-   for (j=0;j<8;j++)
-	   Z[j] = (userKey[2*j]<<8) + userKey[2*j+1];
-   for (i=0;j<IDEA_KEYLEN;j++)
-   {
-	  i++;
-	  Z[i+7]=low16((Z[i&7] << 9) | (Z[i+1 & 7] >> 7));
-	  Z+=i&8;
-	  i&=7;
-   }
+	unsigned int i;
+	
+	for (i=0; i<8; i++)
+		m_key[i] = ((word)userKey[2*i]<<8) | userKey[2*i+1];
+	
+	for (; i<IDEA_KEYLEN; i++)
+	{
+		unsigned int j = RoundDownToMultipleOf(i,8U)-8;
+		m_key[i] = low16((m_key[j+(i+1)%8] << 9) | (m_key[j+(i+2)%8] >> 7));
+	}
 }
 
-static word inv(word x)
+static word MulInv(word x)
 {
 	word y=x;
 	for (unsigned i=0; i<15; i++)
@@ -158,45 +119,32 @@ static word inv(word x)
 	return low16(y);
 }
 
-void IDEA::DeKey()
+static inline word AddInv(word x)
 {
-   word *Z=key;
-   int j;
-   word t1,t2,t3;
-   SecBlock<word> tempKey(IDEA_KEYLEN);
-   word *p=tempKey+IDEA_KEYLEN;
-   t1=inv(*Z++);
-   t2=low16(0-*Z++);
-   t3=low16(0-*Z++);
-   *--p=inv(*Z++);
-   *--p=t3;
-   *--p=t2;
-   *--p=t1;
-   for (j=1;j<ROUNDS;j++)
-   {
-	  t1=*Z++;
-	  *--p=*Z++;
-	  *--p=t1;
-	  t1=inv(*Z++);
-	  t2=low16(0-*Z++);
-	  t3=low16(0-*Z++);
-	  *--p=inv(*Z++);
-	  *--p=t2;
-	  *--p=t3;
-	  *--p=t1;
-   }
-   t1=*Z++;
-   *--p=*Z++;
-   *--p=t1;
-   t1=inv(*Z++);
-   t2=low16(0-*Z++);
-   t3=low16(0-*Z++);
-   *--p=inv(*Z++);
-   *--p=t3;
-   *--p=t2;
-   *--p=t1;
-   /*copy and destroy temp copy*/
-   memcpy(key, tempKey, IDEA_KEYLEN*sizeof(word));
+	return low16(0-x);
+}
+
+void IDEA::Base::DeKey()
+{
+	FixedSizeSecBlock<word, 6*ROUNDS+4> tempkey;
+	unsigned int i;
+
+	for (i=0; i<ROUNDS; i++)
+	{
+		tempkey[i*6+0] = MulInv(m_key[(ROUNDS-i)*6+0]);
+		tempkey[i*6+1] = AddInv(m_key[(ROUNDS-i)*6+1+(i>0)]);
+		tempkey[i*6+2] = AddInv(m_key[(ROUNDS-i)*6+2-(i>0)]);
+		tempkey[i*6+3] = MulInv(m_key[(ROUNDS-i)*6+3]);
+		tempkey[i*6+4] =        m_key[(ROUNDS-1-i)*6+4];
+		tempkey[i*6+5] =        m_key[(ROUNDS-1-i)*6+5];
+	}
+
+	tempkey[i*6+0] = MulInv(m_key[(ROUNDS-i)*6+0]);
+	tempkey[i*6+1] = AddInv(m_key[(ROUNDS-i)*6+1]);
+	tempkey[i*6+2] = AddInv(m_key[(ROUNDS-i)*6+2]);
+	tempkey[i*6+3] = MulInv(m_key[(ROUNDS-i)*6+3]);
+
+	m_key = tempkey;
 }
 
 #ifdef IDEA_LARGECACHE
@@ -205,47 +153,38 @@ void IDEA::DeKey()
 #define MUL(a,b) DirectMUL(a,b)
 #endif
 
-void IDEA::ProcessBlock(const byte *in, byte *out) const
+void IDEA::Base::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
-   word x1,x2,x3,x4,t1,t2;
-#ifdef IS_LITTLE_ENDIAN
-   x1=byteReverse(((word16 *)in)[0]);
-   x2=byteReverse(((word16 *)in)[1]);
-   x3=byteReverse(((word16 *)in)[2]);
-   x4=byteReverse(((word16 *)in)[3]);
-#else
-   x1=((word16 *)in)[0];
-   x2=((word16 *)in)[1];
-   x3=((word16 *)in)[2];
-   x4=((word16 *)in)[3];
-#endif
+	typedef BlockGetAndPut<word16, BigEndian> Block;
 
-   const word* Z=key;
-   int r=ROUNDS;
-   do
-   {
-	  MUL(x1,Z[0]);
-	  x2+=Z[1];
-	  x3+=Z[2];
-	  MUL(x4,Z[3]);
-	  t2=x1^x3;
-	  MUL(t2,Z[4]);
-	  t1=t2+(x2^x4);
-	  MUL(t1,Z[5]);
-	  Z+=6;
-	  t2+=t1;
-	  x1^=t1;
-	  x4^=t2;
-	  t2^=x2;
-	  x2=x3^t1;
-	  x3=t2;
-   } while (--r);
-   MUL(x1,Z[0]);
-   x3+=Z[1];
-   x2+=Z[2];
-   MUL(x4,Z[3]);
+	const word *key = m_key;
+	word x0,x1,x2,x3,t0,t1;
+	Block::Get(inBlock)(x0)(x1)(x2)(x3);
 
-   PutBlockBigEndian<word16>(out, x1, x3, x2, x4);
+	for (unsigned int i=0; i<ROUNDS; i++)
+	{
+		MUL(x0, key[i*6+0]);
+		x1 += key[i*6+1];
+		x2 += key[i*6+2];
+		MUL(x3, key[i*6+3]);
+		t0 = x0^x2; 
+		MUL(t0, key[i*6+4]);
+		t1 = t0 + (x1^x3);
+		MUL(t1, key[i*6+5]);
+		t0 += t1;
+		x0 ^= t1;
+		x3 ^= t0;
+		t0 ^= x1;
+		x1 = x2^t1;
+		x2 = t0;
+	}
+
+	MUL(x0, key[ROUNDS*6+0]);
+	x2 += key[ROUNDS*6+1];
+	x1 += key[ROUNDS*6+2];
+	MUL(x3, key[ROUNDS*6+3]);
+
+	Block::Put(xorBlock, outBlock)(x0)(x2)(x1)(x3);
 }
 
 NAMESPACE_END

@@ -4,45 +4,49 @@
 /** \file
 */
 
-#include "cryptlib.h"
-#include "misc.h"
+#include "seckey.h"
+#include "secblock.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// base class, do not use directly
-class MARS : public FixedBlockSize<16>, public VariableKeyLength<16, 16, 56, 4>
+struct MARS_Info : public FixedBlockSize<16>, public VariableKeyLength<16, 16, 56, 4>
 {
-protected:
-	MARS(const byte *userKey, unsigned int keylength);
-
-	static const word32 Sbox[512];
-
-	SecBlock<word32> EK;
+	static const char *StaticAlgorithmName() {return "MARS";}
 };
 
 /// <a href="http://www.weidai.com/scan-mirror/cs.html#MARS">MARS</a>
-class MARSEncryption : public MARS
+class MARS : public MARS_Info, public BlockCipherDocumentation
 {
-public:
-	MARSEncryption(const byte *userKey, unsigned int keylength=DEFAULT_KEYLENGTH)
-		: MARS(userKey, keylength) {}
+	class Base : public BlockCipherBaseTemplate<MARS_Info>
+	{
+	public:
+		void UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length);
 
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-	void ProcessBlock(byte * inoutBlock) const
-		{MARSEncryption::ProcessBlock(inoutBlock, inoutBlock);}
+	protected:
+		static const word32 Sbox[512];
+
+		FixedSizeSecBlock<word32, 40> EK;
+	};
+
+	class Enc : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+	class Dec : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+public:
+	typedef BlockCipherTemplate<ENCRYPTION, Enc> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Dec> Decryption;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#MARS">MARS</a>
-class MARSDecryption : public MARS
-{
-public:
-	MARSDecryption(const byte *userKey, unsigned int keylength=DEFAULT_KEYLENGTH)
-		: MARS(userKey, keylength) {}
-
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-	void ProcessBlock(byte * inoutBlock) const
-		{MARSDecryption::ProcessBlock(inoutBlock, inoutBlock);}
-};
+typedef MARS::Encryption MARSEncryption;
+typedef MARS::Decryption MARSDecryption;
 
 NAMESPACE_END
 

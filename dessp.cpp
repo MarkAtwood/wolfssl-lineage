@@ -5,7 +5,14 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-const word32 DES::Spbox[8][64] = {
+// VC60 workaround: gives a C4786 warning without this function
+// when runtime lib is set to multithread debug DLL
+// even though warning 4786 is disabled!
+void DES_VC60Workaround()
+{
+}
+
+const word32 DES::Base::Spbox[8][64] = {
 {
 0x01010400,0x00000000,0x00010000,0x01010404, 0x01010004,0x00010404,0x00000004,0x00010000,
 0x00000400,0x01010400,0x01010404,0x00000400, 0x01000404,0x01010004,0x01000000,0x00000004,

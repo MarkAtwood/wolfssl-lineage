@@ -11,91 +11,112 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 //! Rabin
-class RabinFunction : virtual public TrapdoorFunction
+class RabinFunction : public TrapdoorFunction, public PublicKey
 {
+	typedef RabinFunction ThisClass;
+
 public:
-	RabinFunction(const Integer &n, const Integer &r, const Integer &s);
-	RabinFunction(BufferedTransformation &bt);
+	void Initialize(const Integer &n, const Integer &r, const Integer &s)
+		{m_n = n; m_r = r; m_s = s;}
+
+	void BERDecode(BufferedTransformation &bt);
 	void DEREncode(BufferedTransformation &bt) const;
 
 	Integer ApplyFunction(const Integer &x) const;
-	Integer PreimageBound() const {return n;}
-	Integer ImageBound() const {return n;}
+	Integer PreimageBound() const {return m_n;}
+	Integer ImageBound() const {return m_n;}
 
-	const Integer& GetModulus() const {return n;}
-	const Integer& GetQuadraticResidueModPrime1() const {return r;}
-	const Integer& GetQuadraticResidueModPrime2() const {return s;}
+	bool Validate(RandomNumberGenerator &rng, unsigned int level) const;
+	bool GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const;
+	void AssignFrom(const NameValuePairs &source);
+
+	const Integer& GetModulus() const {return m_n;}
+	const Integer& GetQuadraticResidueModPrime1() const {return m_r;}
+	const Integer& GetQuadraticResidueModPrime2() const {return m_s;}
+
+	void SetModulus(const Integer &n) {m_n = n;}
+	void SetQuadraticResidueModPrime1(const Integer &r) {m_r = r;}
+	void SetQuadraticResidueModPrime2(const Integer &s) {m_s = s;}
 
 protected:
-	RabinFunction() {}	// to be used only by InvertibleRabinFunction
-	Integer n, r, s;	// these are only modified in constructors
+	Integer m_n, m_r, m_s;
 };
 
 //! Invertible Rabin
-class InvertibleRabinFunction : public RabinFunction, public InvertibleTrapdoorFunction
+class InvertibleRabinFunction : public RabinFunction, public TrapdoorFunctionInverse, public PrivateKey
 {
+	typedef InvertibleRabinFunction ThisClass;
+
 public:
-	InvertibleRabinFunction(const Integer &n, const Integer &r, const Integer &s,
-							const Integer &p, const Integer &q, const Integer &u);
-	// generate a random private key
-	InvertibleRabinFunction(RandomNumberGenerator &rng, unsigned int keybits);
-	InvertibleRabinFunction(BufferedTransformation &bt);
+	void Initialize(const Integer &n, const Integer &r, const Integer &s,
+							const Integer &p, const Integer &q, const Integer &u)
+		{m_n = n; m_r = r; m_s = s; m_p = p; m_q = q; m_u = u;}
+	void Initialize(RandomNumberGenerator &rng, unsigned int keybits)
+		{GenerateRandomWithKeySize(rng, keybits);}
+
+	void BERDecode(BufferedTransformation &bt);
 	void DEREncode(BufferedTransformation &bt) const;
 
 	Integer CalculateInverse(const Integer &x) const;
 
-	const Integer& GetPrime1() const {return p;}
-	const Integer& GetPrime2() const {return q;}
+	bool Validate(RandomNumberGenerator &rng, unsigned int level) const;
+	bool GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const;
+	void AssignFrom(const NameValuePairs &source);
+	/*! parameters: (ModulusSize) */
+	void GenerateRandom(RandomNumberGenerator &rng, const NameValuePairs &alg);
+
+	const Integer& GetPrime1() const {return m_p;}
+	const Integer& GetPrime2() const {return m_q;}
+	const Integer& GetMultiplicativeInverseOfPrime2ModPrime1() const {return m_u;}
+
+	void SetPrime1(const Integer &p) {m_p = p;}
+	void SetPrime2(const Integer &q) {m_q = q;}
+	void SetMultiplicativeInverseOfPrime2ModPrime1(const Integer &u) {m_u = u;}
 
 protected:
-	Integer p, q, u;
+	Integer m_p, m_q, m_u;
 };
 
-//! Rabin Private Key
-template <class B>
-class RabinPrivateKeyTemplate : public B
+//! .
+struct Rabin
 {
-public:
-	RabinPrivateKeyTemplate(const Integer &n, const Integer &r, const Integer &s,
-					const Integer &p, const Integer &q, const Integer &u)
-		: PublicKeyBaseTemplate<InvertibleRabinFunction>(
-			InvertibleRabinFunction(n, r, s, p, q, u)) {}
-
-	RabinPrivateKeyTemplate(RandomNumberGenerator &rng, unsigned int keybits)
-		: PublicKeyBaseTemplate<InvertibleRabinFunction>(
-			InvertibleRabinFunction(rng, keybits)) {}
-
-	RabinPrivateKeyTemplate(BufferedTransformation &bt)
-		: PublicKeyBaseTemplate<InvertibleRabinFunction>(bt) {}
+	static std::string StaticAlgorithmName() {return "Rabin-Crypto++Variant";}
+	typedef RabinFunction PublicKey;
+	typedef InvertibleRabinFunction PrivateKey;
 };
 
-//! Rabin Public Key
-template <class B, class V>
-class RabinPublicKeyTemplate : public B
+//! .
+template <class STANDARD>
+struct RabinES : public TF_ES<STANDARD, Rabin>
 {
-public:
-	RabinPublicKeyTemplate(const Integer &n, const Integer &r, const Integer &s)
-		: PublicKeyBaseTemplate<RabinFunction>(RabinFunction(n, r, s)) {}
+};
 
-	RabinPublicKeyTemplate(const V &priv)
-		: PublicKeyBaseTemplate<RabinFunction>(priv.GetTrapdoorFunction()) {}
+//! .
+template <class EM>
+struct RabinSSR
+{
+	typedef PK_FinalTemplate<SignerWithRecoveryTemplate<InvertibleRabinFunction, EM> > Signer;
+	typedef PK_FinalTemplate<VerifierWithRecoveryTemplate<RabinFunction, EM> > Verifier;
+};
 
-	RabinPublicKeyTemplate(BufferedTransformation &bt)
-		: PublicKeyBaseTemplate<RabinFunction>(bt) {}
+//! .
+template <class H>
+struct RabinPSSR : public RabinSSR<PSSR<H> >
+{
 };
 
 class SHA;
 
-//! Rabin Decryptor
-typedef RabinPrivateKeyTemplate<DecryptorTemplate<OAEP<SHA>, InvertibleRabinFunction> >
-	RabinDecryptor;
-//! Rabin Encryptor
-typedef RabinPublicKeyTemplate<EncryptorTemplate<OAEP<SHA>, RabinFunction>, RabinDecryptor>
-	RabinEncryptor;
+// More typedefs for backwards compatibility
 
+typedef RabinES<OAEP<SHA> >::Decryptor RabinDecryptor;
+typedef RabinES<OAEP<SHA> >::Encryptor RabinEncryptor;
+
+#ifdef CRYPTOPP_MAINTAIN_BACKWARDS_COMPATIBILITY
 // simulate template typedef
-#define RabinSignerWith(H) RabinPrivateKeyTemplate<SignerWithRecoveryTemplate<InvertibleRabinFunction, PSSR<H> > >
-#define RabinVerifierWith(H) RabinPublicKeyTemplate<VerifierWithRecoveryTemplate<RabinFunction, PSSR<H> >, RabinSignerWith(H) >
+#define RabinSignerWith(H) RabinPSSR<H>::Signer
+#define RabinVerifierWith(H) RabinPSSR<H>::Verifier
+#endif
 
 NAMESPACE_END
 

@@ -5,21 +5,17 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-//! DMAC
-/*! Based on "CBC MAC for Real-Time Data Sources" by Erez Petrank
-	and Charles Rackoff. T should be an encryption class.
-*/
-template <class T> class DMAC : public MessageAuthenticationCode, SameKeyLengthAs<T>
+template <class T>
+class DMAC_Base : public SameKeyLengthAs<T>, public MessageAuthenticationCode
 {
 public:
+	static std::string StaticAlgorithmName() {return std::string("DMAC(") + T::StaticAlgorithmName() + ")";}
+
 	enum {DIGESTSIZE=T::BLOCKSIZE};
 
-#ifdef __MWERKS__	// CW50 workaround: can't use DEFAULT_KEYLENGTH here
-	DMAC(const byte *key, unsigned int keylength = T::DEFAULT_KEYLENGTH);
-#else
-	DMAC(const byte *key, unsigned int keylength = DEFAULT_KEYLENGTH);
-#endif
+	DMAC_Base() {}
 
+	void CheckedSetKey(void *, Empty empty, const byte *key, unsigned int length, const NameValuePairs &params);
 	void Update(const byte *input, unsigned int length);
 	void TruncatedFinal(byte *mac, unsigned int size);
 	unsigned int DigestSize() const {return DIGESTSIZE;}
@@ -27,51 +23,66 @@ public:
 private:
 	byte *GenerateSubKeys(const byte *key, unsigned int keylength);
 
-	unsigned int subkeylength;
-	SecByteBlock subkeys;
-	CBC_MAC<T> mac1;
-	T f2;
-	unsigned int counter;
+	unsigned int m_subkeylength;
+	SecByteBlock m_subkeys;
+	CBC_MAC<T> m_mac1;
+	typename T::Encryption m_f2;
+	unsigned int m_counter;
+};
+
+//! DMAC
+/*! Based on "CBC MAC for Real-Time Data Sources" by Erez Petrank
+	and Charles Rackoff. T should be BlockTransformation class.
+*/
+template <class T>
+class DMAC : public MessageAuthenticationCodeTemplate<DMAC_Base<T> >
+{
+public:
+	DMAC() {}
+	DMAC(const byte *key, unsigned int length=DMAC_Base<T>::DEFAULT_KEYLENGTH)
+		{SetKey(key, length);}
 };
 
 template <class T>
-DMAC<T>::DMAC(const byte *key, unsigned int keylength)
-	: subkeylength(T::KeyLength(T::BLOCKSIZE))
-	, subkeys(2*STDMAX((unsigned int)T::BLOCKSIZE, subkeylength))
-	, mac1(GenerateSubKeys(key, keylength), subkeylength)
-	, f2(subkeys+subkeys.size/2, subkeylength)
-	, counter(0)
+void DMAC_Base<T>::CheckedSetKey(void *, Empty empty, const byte *key, unsigned int length, const NameValuePairs &params)
 {
-	subkeys.Resize(0);
+	m_subkeylength = T::StaticGetValidKeyLength(T::BLOCKSIZE);
+	m_subkeys.resize(2*STDMAX((unsigned int)T::BLOCKSIZE, m_subkeylength));
+	m_mac1.SetKey(GenerateSubKeys(key, length), m_subkeylength, params);
+	m_f2.SetKey(m_subkeys+m_subkeys.size()/2, m_subkeylength, params);
+	m_counter = 0;
+	m_subkeys.resize(0);
 }
 
 template <class T>
-void DMAC<T>::Update(const byte *input, unsigned int length)
+void DMAC_Base<T>::Update(const byte *input, unsigned int length)
 {
-	mac1.Update(input, length);
-	counter = (counter + length) % T::BLOCKSIZE;
+	m_mac1.Update(input, length);
+	m_counter = (m_counter + length) % T::BLOCKSIZE;
 }
 
 template <class T>
-void DMAC<T>::TruncatedFinal(byte *mac, unsigned int size)
+void DMAC_Base<T>::TruncatedFinal(byte *mac, unsigned int size)
 {
+	ThrowIfInvalidTruncatedSize(size);
+
 	byte pad[T::BLOCKSIZE];
-	byte padByte = byte(T::BLOCKSIZE-counter);
+	byte padByte = byte(T::BLOCKSIZE-m_counter);
 	memset(pad, padByte, padByte);
-	mac1.Update(pad, padByte);
-	mac1.TruncatedFinal(mac, size);
-	f2.ProcessBlock(mac);
+	m_mac1.Update(pad, padByte);
+	m_mac1.TruncatedFinal(mac, size);
+	m_f2.ProcessBlock(mac);
 }
 
 template <class T>
-byte *DMAC<T>::GenerateSubKeys(const byte *key, unsigned int keylength)
+byte *DMAC_Base<T>::GenerateSubKeys(const byte *key, unsigned int keylength)
 {
-	T cipher(key, keylength);
-	memset(subkeys, 0, subkeys.size);
-	cipher.ProcessBlock(subkeys);
-	subkeys[subkeys.size/2 + T::BLOCKSIZE - 1] = 1;
-	cipher.ProcessBlock(subkeys+subkeys.size/2);
-	return subkeys;
+	typename T::Encryption cipher(key, keylength);
+	memset(m_subkeys, 0, m_subkeys.size());
+	cipher.ProcessBlock(m_subkeys);
+	m_subkeys[m_subkeys.size()/2 + T::BLOCKSIZE - 1] = 1;
+	cipher.ProcessBlock(m_subkeys+m_subkeys.size()/2);
+	return m_subkeys;
 }
 
 NAMESPACE_END

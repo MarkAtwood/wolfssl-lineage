@@ -109,7 +109,10 @@ void SapphireEncryption::ProcessString(byte *outString, const byte *inString, un
 void SapphireEncryption::ProcessString(byte *inoutString, unsigned int length)
 {
 	while(length--)
-		*inoutString++ = SapphireEncryption::ProcessByte(*inoutString);
+	{
+		*inoutString = SapphireEncryption::ProcessByte(*inoutString);
+		inoutString++;
+	}
 }
 
 void SapphireDecryption::ProcessString(byte *outString, const byte *inString, unsigned int length)
@@ -121,7 +124,10 @@ void SapphireDecryption::ProcessString(byte *outString, const byte *inString, un
 void SapphireDecryption::ProcessString(byte *inoutString, unsigned int length)
 {
 	while(length--)
-		*inoutString++ = SapphireDecryption::ProcessByte(*inoutString);
+	{
+		*inoutString = SapphireDecryption::ProcessByte(*inoutString);
+		inoutString++;
+	}
 }
 
 SapphireHash::SapphireHash(unsigned int hashLength)
@@ -159,6 +165,8 @@ void SapphireHash::Update(const byte *input, unsigned int length)
 
 void SapphireHash::TruncatedFinal(byte *hash, unsigned int size)
 {
+	ThrowIfInvalidTruncatedSize(size);
+
 	for (int i=255; i>=0; i--)
 		ProcessByte((byte) i);
 

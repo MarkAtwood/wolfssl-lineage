@@ -3,6 +3,7 @@
 
 #include "pch.h"
 #include "cast.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -30,12 +31,14 @@ NAMESPACE_BEGIN(CryptoPP)
 #define F2(l, r, i, j) f2(l, r, K[i], K[i+j])
 #define F3(l, r, i, j) f3(l, r, K[i], K[i+j])
 
-void CAST128Encryption::ProcessBlock(const byte *inBlock, byte * outBlock) const
+typedef BlockGetAndPut<word32, BigEndian> Block;
+
+void CAST128::Enc::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 t, l, r;
 
 	/* Get inblock into l,r */
-	GetBlockBigEndian(inBlock,l,r);
+	Block::Get(inBlock)(l)(r);
 	/* Do the work */
 	F1(l, r,  0, 16);
 	F2(r, l,  1, 16);
@@ -57,17 +60,15 @@ void CAST128Encryption::ProcessBlock(const byte *inBlock, byte * outBlock) const
 		F1(r, l, 15, 16);
 	}
 	/* Put l,r into outblock */
-	PutBlockBigEndian(outBlock,r,l);
-	/* Wipe clean */
-	t = l = r = 0;
+	Block::Put(xorBlock, outBlock)(r)(l);
 }
 
-void CAST128Decryption::ProcessBlock(const byte *inBlock, byte * outBlock) const
+void CAST128::Dec::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 t, l, r;
 
 	/* Get inblock into l,r */
-	GetBlockBigEndian(inBlock,r,l);
+	Block::Get(inBlock)(r)(l);
 	/* Only do full 16 rounds if key length > 80 bits */
 	if (!reduced) {
 		F1(r, l, 15, 16);
@@ -88,18 +89,19 @@ void CAST128Decryption::ProcessBlock(const byte *inBlock, byte * outBlock) const
 	F2(r, l,  1, 16);
 	F1(l, r,  0, 16);
 	/* Put l,r into outblock */
-	PutBlockBigEndian(outBlock,l,r);
+	Block::Put(xorBlock, outBlock)(l)(r);
 	/* Wipe clean */
 	t = l = r = 0;
 }
 
-CAST128::CAST128(const byte *userKey, unsigned int keylength)
-	: reduced(keylength <= 10), K(32)
+void CAST128::Base::UncheckedSetKey(CipherDir dir, const byte *userKey, unsigned int keylength)
 {
-	assert(keylength == KeyLength(keylength));
+	AssertValidKeyLength(keylength);
+
+	reduced = (keylength <= 10);
 
 	word32 X[4], Z[4];
-	GetUserKeyBigEndian(X, 4, userKey, keylength);
+	GetUserKey(BIG_ENDIAN_ORDER, X, 4, userKey, keylength);
 
 #define x(i) GETBYTE(X[i/4], 3-i%4)
 #define z(i) GETBYTE(Z[i/4], 3-i%4)
@@ -148,7 +150,7 @@ CAST128::CAST128(const byte *userKey, unsigned int keylength)
 
 // The following CAST-256 implementation was contributed by Leonard Janke
 
-const word32 CAST256::t_m[8][24]={
+const word32 CAST256::Base::t_m[8][24]={
 	0x5a827999, 0xd151d6a1, 0x482133a9, 0xbef090b1, 0x35bfedb9, 0xac8f4ac1, 
 	0x235ea7c9, 0x9a2e04d1, 0x10fd61d9, 0x87ccbee1, 0xfe9c1be9, 0x756b78f1, 
 	0xec3ad5f9, 0x630a3301, 0xd9d99009, 0x50a8ed11, 0xc7784a19, 0x3e47a721, 
@@ -183,7 +185,7 @@ const word32 CAST256::t_m[8][24]={
 	0xbd0c7590, 0x33dbd298, 0xaaab2fa0, 0x217a8ca8, 0x9849e9b0, 0x0f1946b8 
 };
 
-const unsigned int CAST256::t_r[8][24]={ 
+const unsigned int CAST256::Base::t_r[8][24]={ 
 	19, 27, 3, 11, 19, 27, 3, 11, 19, 27, 3, 11, 19, 27, 3, 11, 19, 27, 3, 11, 19, 27, 3, 11, 
 	4, 12, 20, 28, 4, 12, 20, 28, 4, 12, 20, 28, 4, 12, 20, 28, 4, 12, 20, 28, 4, 12, 20, 28, 
 	21, 29, 5, 13, 21, 29, 5, 13, 21, 29, 5, 13, 21, 29, 5, 13, 21, 29, 5, 13, 21, 29, 5, 13, 
@@ -209,10 +211,10 @@ const unsigned int CAST256::t_r[8][24]={
 /* CAST256's encrypt/decrypt functions  are identical except for the order that
 the keys are used */
 
-void CAST256::ProcessBlock(const byte *inBlock, byte * outBlock) const
+void CAST256::Base::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 t, block[4];
-	GetBlockBigEndian(inBlock,block[0],block[1],block[2],block[3]);
+	Block::Get(inBlock)(block[0])(block[1])(block[2])(block[3]);
 
 	// Perform 6 forward quad rounds
 	Q(0);
@@ -230,12 +232,12 @@ void CAST256::ProcessBlock(const byte *inBlock, byte * outBlock) const
 	QBar(10);
 	QBar(11);
 
-	PutBlockBigEndian(outBlock,block[0],block[1],block[2],block[3]);
+	Block::Put(xorBlock, outBlock)(block[0])(block[1])(block[2])(block[3]);
 }
 
 /* Set up a CAST-256 key */
 
-void CAST256::Omega(int i, word32 kappa[8])
+void CAST256::Base::Omega(int i, word32 kappa[8])
 {
 	word32 t;
 
@@ -249,13 +251,12 @@ void CAST256::Omega(int i, word32 kappa[8])
 	f2(kappa[7],kappa[0],t_m[7][i],t_r[7][i]);
 }
 
-CAST256::CAST256(const byte *userKey, unsigned int keylength)
-	: K(8*12)
+void CAST256::Base::UncheckedSetKey(CipherDir dir, const byte *userKey, unsigned int keylength)
 {
-	assert(keylength == KeyLength(keylength));
+	AssertValidKeyLength(keylength);
 
 	word32 kappa[8];
-	GetUserKeyBigEndian(kappa, 8, userKey, keylength);
+	GetUserKey(BIG_ENDIAN_ORDER, kappa, 8, userKey, keylength);
 
 	for(int i=0; i<12; ++i)
 	{
@@ -272,25 +273,24 @@ CAST256::CAST256(const byte *userKey, unsigned int keylength)
 		K[8*i+7]=kappa[1];
 	}
 
-	memset(kappa, 0, sizeof(kappa));
-}
-
-CAST256Decryption::CAST256Decryption(const byte *userKey, unsigned int keylength)
-	: CAST256(userKey, keylength) 
-{
-	for(int j=0; j<6; ++j)
+	if (dir == DECRYPTION)
 	{
-		for(int i=0; i<4; ++i)
+		for(int j=0; j<6; ++j)
 		{
-			int i1=8*j+i;
-			int i2=8*(11-j)+i;
+			for(int i=0; i<4; ++i)
+			{
+				int i1=8*j+i;
+				int i2=8*(11-j)+i;
 
-			assert(i1<i2);
+				assert(i1<i2);
 
-			std::swap(K[i1],K[i2]); 
-			std::swap(K[i1+4],K[i2+4]); 
+				std::swap(K[i1],K[i2]); 
+				std::swap(K[i1+4],K[i2+4]); 
+			}
 		}
 	}
+
+	memset(kappa, 0, sizeof(kappa));
 }
 
 NAMESPACE_END

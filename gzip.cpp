@@ -5,14 +5,11 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-Gzip::Gzip(BufferedTransformation *bt, unsigned int deflateLevel, unsigned int log2WindowSize)
-	: Deflator(bt, deflateLevel, log2WindowSize)
-	, m_totalLen(0)
-{
-}
-
 void Gzip::WritePrestreamHeader()
 {
+	m_totalLen = 0;
+	m_crc.Restart();
+
 	AttachedTransformation()->Put(MAGIC1);
 	AttachedTransformation()->Put(MAGIC2);
 	AttachedTransformation()->Put(DEFLATED);
@@ -34,19 +31,21 @@ void Gzip::WritePoststreamTail()
 	SecByteBlock crc(4);
 	m_crc.Final(crc);
 	AttachedTransformation()->Put(crc, 4);
-	AttachedTransformation()->PutWord32(m_totalLen, false);
-	m_totalLen = 0;
+	AttachedTransformation()->PutWord32(m_totalLen, LITTLE_ENDIAN_ORDER);
 }
 
 // *************************************************************
 
-Gunzip::Gunzip(BufferedTransformation *outQueue, bool repeat, int propagation)
-	: Inflator(outQueue, repeat, propagation), m_length(0)
+Gunzip::Gunzip(BufferedTransformation *attachment, bool repeat, int propagation)
+	: Inflator(attachment, repeat, propagation)
 {
 }
 
 void Gunzip::ProcessPrestreamHeader()
 {
+	m_length = 0;
+	m_crc.Restart();
+
 	byte buf[6];
 	byte b, flags;
 
@@ -60,7 +59,7 @@ void Gunzip::ProcessPrestreamHeader()
 	if (flags & EXTRA_FIELDS)	// skip extra fields
 	{
 		word16 length;
-		if (m_inQueue.GetWord16(length, false) != 2) throw HeaderErr();
+		if (m_inQueue.GetWord16(length, LITTLE_ENDIAN_ORDER) != 2) throw HeaderErr();
 		if (m_inQueue.Skip(length)!=length) throw HeaderErr();
 	}
 
@@ -91,11 +90,10 @@ void Gunzip::ProcessPoststreamTail()
 		throw CrcErr();
 
 	word32 lengthCheck;
-	if (m_inQueue.GetWord32(lengthCheck, false) != 4)
+	if (m_inQueue.GetWord32(lengthCheck, LITTLE_ENDIAN_ORDER) != 4)
 		throw TailErr();
 	if (lengthCheck != m_length)
 		throw LengthErr();
-	m_length = 0;
 }
 
 NAMESPACE_END

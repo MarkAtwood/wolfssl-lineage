@@ -1,47 +1,45 @@
 #ifndef CRYPTOPP_SEAL_H
 #define CRYPTOPP_SEAL_H
 
-#include "cryptlib.h"
-#include "misc.h"
+#include "strciphr.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#SEAL-3.0-BE">SEAL</a>
-class SEAL : public RandomNumberGenerator,
-			 public RandomAccessStreamCipher
+template <class B = BigEndian>
+struct SEAL_Info : public FixedKeyLength<20, SimpleKeyingInterface::INTERNALLY_GENERATED_IV>
+{
+	static const char *StaticAlgorithmName() {return B::ToEnum() == LITTLE_ENDIAN_ORDER ? "SEAL-3.0-LE" : "SEAL-3.0-BE";}
+};
+
+template <class B = BigEndian>
+class SEAL_Policy : public AdditiveCipherConcretePolicy<word32, 1024>, public SEAL_Info<B>
 {
 public:
-	// If you plan to encrypt more than one message with a key,
-	// you must call NextCount() after each message, save the count,
-	// and initialize SEAL with it for the next message.
-	SEAL(const byte *key, word32 counter = 0, unsigned int L = 32*1024);
-
-	word32 NextCount() const {return counter+1;}
-
-	byte GenerateByte();
-	byte ProcessByte(byte input)
-		{return (input ^ SEAL::GenerateByte());}
-
-	void ProcessString(byte *outString, const byte *inString, unsigned int length);
-	void ProcessString(byte *inoutString, unsigned int length)
-		{SEAL::ProcessString(inoutString, inoutString, length);}
-
-	void Seek(unsigned long position);
-
-	enum {KEYLENGTH=20};
+	unsigned int IVSize() const {return 4;}
+	void GetNextIV(byte *IV) const {UnalignedPutWord(BIG_ENDIAN_ORDER, IV, m_outsideCounter+1);}
 
 protected:
-	void Generate(word32 in, byte *out) const;
-	void IncrementCounter();
+	void CipherSetKey(const NameValuePairs &params, const byte *key, unsigned int length);
+	void OperateKeystream(KeystreamOperation operation, byte *output, const byte *input, unsigned int iterationCount);
+	void CipherResynchronize(byte *keystreamBuffer, const byte *IV);
+	bool IsRandomAccess() const {return true;}
+	void SeekToIteration(dword iterationCount);
 
 private:
-	const unsigned int L;
-	SecBlock<word32> R, S, T;
+	FixedSizeSecBlock<word32, 512> m_T;
+	FixedSizeSecBlock<word32, 256> m_S;
+	SecBlock<word32> m_R;
 
-	const word32 startCount;
-	word32 counter;
-	unsigned int position;
-	SecByteBlock buffer;
+	word32 m_startCount, m_iterationsPerCount;
+	word32 m_outsideCounter, m_insideCounter;
+};
+
+//! <a href="http://www.weidai.com/scan-mirror/cs.html#SEAL-3.0-BE">SEAL</a>
+template <class B = BigEndian>
+struct SEAL : public SEAL_Info<B>, public SymmetricCipherDocumentation
+{
+	typedef SymmetricCipherFinalTemplate<ConcretePolicyHolder<SEAL_Policy<B>, AdditiveCipherTemplate<> >, SEAL_Info<B> > Encryption;
+	typedef Encryption Decryption;
 };
 
 NAMESPACE_END

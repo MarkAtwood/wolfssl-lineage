@@ -2,24 +2,19 @@
 
 #include "pch.h"
 #include "panama.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-static const unsigned int STAGES = 32;
-
-Panama::Panama()
-	: m_state(17*2 + STAGES*sizeof(Stage))
-{
-	Reset();
-}
-
-void Panama::Reset()
+template <class B>
+void Panama<B>::Reset()
 {
 	m_bstart = 0;
-	memset(m_state, 0, m_state.size*4);
+	memset(m_state, 0, m_state.size()*4);
 }
 
-void Panama::Iterate(unsigned int count, const word32 *p, word32 *z, const word32 *y)
+template <class B>
+void Panama<B>::Iterate(unsigned int count, const word32 *p, word32 *z, const word32 *y)
 {
 	unsigned int bstart = m_bstart;
 	word32 *const a = m_state;
@@ -27,16 +22,16 @@ void Panama::Iterate(unsigned int count, const word32 *p, word32 *z, const word3
 #define b ((Stage *)(a+34))
 
 // output
-#define OA(i) z[i] = a[i+9]
-#define OX(i) z[i] = y[i] ^ a[i+9]
+#define OA(i) z[i] = ConditionalByteReverse(B::ToEnum(), a[i+9])
+#define OX(i) z[i] = y[i] ^ ConditionalByteReverse(B::ToEnum(), a[i+9])
 // buffer update
-#define US(i) {word32 t=b0[i]; b0[i]=p[i]^t; b25[(i+6)%8]^=t;}
+#define US(i) {word32 t=b0[i]; b0[i]=ConditionalByteReverse(B::ToEnum(), p[i])^t; b25[(i+6)%8]^=t;}
 #define UL(i) {word32 t=b0[i]; b0[i]=a[i+1]^t; b25[(i+6)%8]^=t;}
 // gamma and pi
 #define GP(i) c[5*i%17] = rotlFixed(a[i] ^ (a[(i+1)%17] | ~a[(i+2)%17]), ((5*i%17)*((5*i%17)+1)/2)%32)
 // theta and sigma
 #define T(i,x) a[i] = c[i] ^ c[(i+1)%17] ^ c[(i+4)%17] ^ x
-#define TS1S(i) T(i+1, p[i])
+#define TS1S(i) T(i+1, ConditionalByteReverse(B::ToEnum(), p[i]))
 #define TS1L(i) T(i+1, b4[i])
 #define TS2(i) T(i+9, b16[i])
 
@@ -92,98 +87,60 @@ void Panama::Iterate(unsigned int count, const word32 *p, word32 *z, const word3
 	m_bstart = bstart;
 }
 
-template <bool H>
-unsigned int PanamaHash<H>::HashMultipleBlocks(const word32 *input, unsigned int length)
+template <class B>
+unsigned int PanamaHash<B>::HashMultipleBlocks(const word32 *input, unsigned int length)
 {
-	if (CheckEndianess(HIGHFIRST))
-	{
-		Iterate(length / BLOCKSIZE, input);
-		return length % BLOCKSIZE;
-	}
-	else
-		return IteratedHashBase<word32>::HashMultipleBlocks(input, length);
+	Iterate(length / BLOCKSIZE, input);
+	return length % BLOCKSIZE;
 }
 
-template <bool H>
-void PanamaHash<H>::TruncatedFinal(byte *hash, unsigned int size)
+template <class B>
+void PanamaHash<B>::TruncatedFinal(byte *hash, unsigned int size)
 {
-	assert(size <= DIGESTSIZE);
+	ThrowIfInvalidTruncatedSize(size);
 
 	PadLastBlock(BLOCKSIZE, 0x01);
-	CorrectEndianess(data, data, BLOCKSIZE);
 	
-	vTransform(data);
+	vTransform(m_data);
 
 	Iterate(32);	// pull
 
-	CorrectEndianess(m_state+9, m_state+9, DIGESTSIZE);
+	ConditionalByteReverse(B::ToEnum(), m_state+9, m_state+9, DIGESTSIZE);
 	memcpy(hash, m_state+9, size);
 
-	Reinit();		// reinit for next use
+	Restart();		// reinit for next use
 }
 
-template <bool H>
-PanamaCipher<H>::PanamaCipher(const byte *key, const byte *iv)
-	: m_buf(8), m_leftOver(0)
+template <class B>
+void PanamaCipherPolicy<B>::CipherSetKey(const NameValuePairs &params, const byte *key, unsigned int length)
 {
-	memcpy(m_buf, key, 32);
-	CorrectEndianess(m_buf, m_buf, 32);
-	Iterate(1, m_buf);
-	if (iv)
-	{
-		memcpy(m_buf, iv, 32);
-		CorrectEndianess(m_buf, m_buf, 32);
-	}
+	FixedSizeSecBlock<word32, 8> buf;
+
+	Reset();
+	memcpy(buf, key, 32);
+	Iterate(1, buf);
+	if (length == 64)
+		memcpy(buf, key+32, 32);
 	else
-		memset(m_buf, 0, 32);
-	Iterate(1, m_buf);
+		memset(buf, 0, 32);
+	Iterate(1, buf);
 
 	Iterate(32);
 }
 
-template <bool H>
-void PanamaCipher<H>::ProcessString(byte *outString, const byte *inString, unsigned int length)
+template <class B>
+void PanamaCipherPolicy<B>::OperateKeystream(KeystreamOperation operation, byte *output, const byte *input, unsigned int iterationCount)
 {
-	if (m_leftOver > 0)
-	{
-		unsigned int len = STDMIN(m_leftOver, length);
-		xorbuf(outString, inString, (byte *)(m_buf+m_buf.size)-m_leftOver, len);
-		length -= len;
-		m_leftOver -= len;
-		inString += len;
-		outString += len;
-	}
-
-	if (CheckEndianess(HIGHFIRST) && IsAligned<word32>(outString))
-	{
-		if (!IsAligned<word32>(inString))
-		{
-			memcpy(outString, inString, length);
-			inString = outString;
-		}
-		Iterate(length / 32, NULL, (word32 *)outString, (const word32 *)inString);
-		inString += length - length % 32;
-		outString += length - length % 32;
-		length %= 32;
-	}
-
-	while (length)
-	{
-		Iterate(1, NULL, m_buf);
-		CorrectEndianess(m_buf, m_buf, 32);
-		unsigned int len = STDMIN(32U, length);
-		xorbuf(outString, inString, (byte *)m_buf.ptr, len);
-		length -= len;
-		m_leftOver = 32 - len;
-		inString += len;
-		outString += len;
-	}
+	Iterate(iterationCount, NULL, (word32 *)output, (const word32 *)input);
 }
 
-template class PanamaHash<true>;
-template class PanamaHash<false>;
+template class Panama<BigEndian>;
+template class Panama<LittleEndian>;
 
-template class PanamaCipher<true>;
-template class PanamaCipher<false>;
+template class PanamaHash<BigEndian>;
+template class PanamaHash<LittleEndian>;
+
+template class PanamaCipherPolicy<BigEndian>;
+template class PanamaCipherPolicy<LittleEndian>;
 
 NAMESPACE_END

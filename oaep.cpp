@@ -55,19 +55,20 @@ void OAEP<H,MGF,P,PLen>::Pad(RandomNumberGenerator &rng, const byte *input, unsi
 	maskedDB[dbLen-inputLength-1] = 0x01;
 	memcpy(maskedDB+dbLen-inputLength, input, inputLength);
 
-	rng.GetBlock(maskedSeed, seedLen);
+	rng.GenerateBlock(maskedSeed, seedLen);
 	MGF::GenerateAndMask(maskedDB, dbLen, maskedSeed, seedLen);
 	MGF::GenerateAndMask(maskedSeed, seedLen, maskedDB, dbLen);
 }
 
 template <class H, class MGF, byte *P, unsigned int PLen>
-unsigned int OAEP<H,MGF,P,PLen>::Unpad(const byte *oaepBlock, unsigned int oaepBlockLen, byte *output) const
+DecodingResult OAEP<H,MGF,P,PLen>::Unpad(const byte *oaepBlock, unsigned int oaepBlockLen, byte *output) const
 {
+	bool invalid = false;
+
 	// convert from bit length to byte length
 	if (oaepBlockLen % 8 != 0)
 	{
-		if (oaepBlock[0] != 0)
-			return 0;
+		invalid = (oaepBlock[0] != 0) || invalid;
 		oaepBlock++;
 	}
 	oaepBlockLen /= 8;
@@ -75,8 +76,7 @@ unsigned int OAEP<H,MGF,P,PLen>::Unpad(const byte *oaepBlock, unsigned int oaepB
 	const unsigned int hLen = H::DIGESTSIZE;
 	const unsigned int seedLen = hLen, dbLen = oaepBlockLen-seedLen;
 
-	if (oaepBlockLen < 2*hLen+1)
-		return 0;
+	invalid = (oaepBlockLen < 2*hLen+1) || invalid;
 
 	SecByteBlock t(oaepBlock, oaepBlockLen);
 	byte *const maskedSeed = t;
@@ -88,14 +88,16 @@ unsigned int OAEP<H,MGF,P,PLen>::Unpad(const byte *oaepBlock, unsigned int oaepB
 	// DB = pHash' || 00 ... || 01 || M
 
 	byte *M = std::find(maskedDB+hLen, maskedDB+dbLen, 0x01);
-	if (M!=maskedDB+dbLen && std::find_if(maskedDB+hLen, M, std::bind2nd(std::not_equal_to<byte>(), 0))==M
-		&& memcmp(maskedDB, PHash<H,P,PLen>(), hLen)==0)
-	{
-		M++;
-		memcpy(output, M, maskedDB+dbLen-M);
-		return maskedDB+dbLen-M;
-	}
-	return 0;
+	invalid = (M == maskedDB+dbLen) || invalid;
+	invalid = (std::find_if(maskedDB+hLen, M, std::bind2nd(std::not_equal_to<byte>(), 0)) != M) || invalid;
+	invalid = (memcmp(maskedDB, PHash<H,P,PLen>(), hLen) != 0) || invalid;
+
+	if (invalid)
+		return DecodingResult();
+
+	M++;
+	memcpy(output, M, maskedDB+dbLen-M);
+	return DecodingResult(maskedDB+dbLen-M);
 }
 
 NAMESPACE_END

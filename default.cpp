@@ -2,7 +2,6 @@
 
 #include "pch.h"
 #include "default.h"
-#include "cbc.h"
 #include "queue.h"
 #include <time.h>
 #include <memory>
@@ -11,8 +10,8 @@ NAMESPACE_BEGIN(CryptoPP)
 
 static const unsigned int MASH_ITERATIONS = 200;
 static const unsigned int SALTLENGTH = 8;
-static const unsigned int BLOCKSIZE = Default_ECB_Encryption::BLOCKSIZE;
-static const unsigned int KEYLENGTH = Default_ECB_Encryption::DEFAULT_KEYLENGTH;
+static const unsigned int BLOCKSIZE = Default_BlockCipher::Encryption::BLOCKSIZE;
+static const unsigned int KEYLENGTH = Default_BlockCipher::Encryption::DEFAULT_KEYLENGTH;
 
 // The purpose of this function Mash() is to take an arbitrary length input
 // string and *deterministicly* produce an arbitrary length output string such
@@ -70,26 +69,28 @@ static void GenerateKeyIV(const byte *passphrase, unsigned int passphraseLength,
 
 // ********************************************************
 
-DefaultEncryptor::DefaultEncryptor(const char *passphrase, BufferedTransformation *outQ)
-	: ProxyFilter(NULL, 0, 0, outQ), m_passphrase((const byte *)passphrase, strlen(passphrase))
+DefaultEncryptor::DefaultEncryptor(const char *passphrase, BufferedTransformation *attachment)
+	: ProxyFilter(NULL, 0, 0, attachment), m_passphrase((const byte *)passphrase, strlen(passphrase))
 {
 }
 
-DefaultEncryptor::DefaultEncryptor(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQ)
-	: ProxyFilter(NULL, 0, 0, outQ), m_passphrase(passphrase, passphraseLength)
+DefaultEncryptor::DefaultEncryptor(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *attachment)
+	: ProxyFilter(NULL, 0, 0, attachment), m_passphrase(passphrase, passphraseLength)
 {
 }
+
 
 void DefaultEncryptor::FirstPut(const byte *)
 {
-	assert(SALTLENGTH <= DefaultHashModule::DIGESTSIZE);
-	assert(BLOCKSIZE <= DefaultHashModule::DIGESTSIZE);
+	// VC60 workaround: __LINE__ expansion bug
+	CRYPTOPP_COMPILE_ASSERT_INSTANCE(SALTLENGTH <= DefaultHashModule::DIGESTSIZE, 1);
+	CRYPTOPP_COMPILE_ASSERT_INSTANCE(BLOCKSIZE <= DefaultHashModule::DIGESTSIZE, 2);
 
 	SecByteBlock salt(DefaultHashModule::DIGESTSIZE), keyCheck(DefaultHashModule::DIGESTSIZE);
 	DefaultHashModule hash;
 
 	// use hash(passphrase | time | clock) as salt
-	hash.Update(m_passphrase, m_passphrase.size);
+	hash.Update(m_passphrase, m_passphrase.size());
 	time_t t=time(0);
 	hash.Update((byte *)&t, sizeof(t));
 	clock_t c=clock();
@@ -97,7 +98,7 @@ void DefaultEncryptor::FirstPut(const byte *)
 	hash.Final(salt);
 
 	// use hash(passphrase | salt) as key check
-	hash.Update(m_passphrase, m_passphrase.size);
+	hash.Update(m_passphrase, m_passphrase.size());
 	hash.Update(salt, SALTLENGTH);
 	hash.Final(keyCheck);
 
@@ -106,10 +107,10 @@ void DefaultEncryptor::FirstPut(const byte *)
 	// mash passphrase and salt together into key and IV
 	SecByteBlock key(KEYLENGTH);
 	SecByteBlock IV(BLOCKSIZE);
-	GenerateKeyIV(m_passphrase, m_passphrase.size, salt, SALTLENGTH, key, IV);
+	GenerateKeyIV(m_passphrase, m_passphrase.size(), salt, SALTLENGTH, key, IV);
 
-	m_cipher.reset(new Default_ECB_Encryption(key));
-	SetFilter(new CBCPaddedEncryptor(*m_cipher, IV));
+	m_cipher.SetKeyWithIV(key, key.size(), IV);
+	SetFilter(new StreamTransformationFilter(m_cipher));
 
 	m_filter->Put(keyCheck, BLOCKSIZE);
 }
@@ -121,16 +122,16 @@ void DefaultEncryptor::LastPut(const byte *inString, unsigned int length)
 
 // ********************************************************
 
-DefaultDecryptor::DefaultDecryptor(const char *p, BufferedTransformation *outQ, bool throwException)
-	: ProxyFilter(NULL, SALTLENGTH+BLOCKSIZE, 0, outQ)
+DefaultDecryptor::DefaultDecryptor(const char *p, BufferedTransformation *attachment, bool throwException)
+	: ProxyFilter(NULL, SALTLENGTH+BLOCKSIZE, 0, attachment)
 	, m_state(WAITING_FOR_KEYCHECK)
 	, m_passphrase((const byte *)p, strlen(p))
 	, m_throwException(throwException)
 {
 }
 
-DefaultDecryptor::DefaultDecryptor(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQ, bool throwException)
-	: ProxyFilter(NULL, SALTLENGTH+BLOCKSIZE, 0, outQ)
+DefaultDecryptor::DefaultDecryptor(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *attachment, bool throwException)
+	: ProxyFilter(NULL, SALTLENGTH+BLOCKSIZE, 0, attachment)
 	, m_state(WAITING_FOR_KEYCHECK)
 	, m_passphrase(passphrase, passphraseLength)
 	, m_throwException(throwException)
@@ -162,16 +163,16 @@ void DefaultDecryptor::CheckKey(const byte *salt, const byte *keyCheck)
 	SecByteBlock check(STDMAX((unsigned int)2*BLOCKSIZE, (unsigned int)DefaultHashModule::DIGESTSIZE));
 
 	DefaultHashModule hash;
-	hash.Update(m_passphrase, m_passphrase.size);
+	hash.Update(m_passphrase, m_passphrase.size());
 	hash.Update(salt, SALTLENGTH);
 	hash.Final(check);
 
 	SecByteBlock key(KEYLENGTH);
 	SecByteBlock IV(BLOCKSIZE);
-	GenerateKeyIV(m_passphrase, m_passphrase.size, salt, SALTLENGTH, key, IV);
+	GenerateKeyIV(m_passphrase, m_passphrase.size(), salt, SALTLENGTH, key, IV);
 
-	m_cipher.reset(new Default_ECB_Decryption(key));
-	std::auto_ptr<CBCPaddedDecryptor> decryptor(new CBCPaddedDecryptor(*m_cipher, IV));
+	m_cipher.SetKeyWithIV(key, key.size(), IV);
+	std::auto_ptr<StreamTransformationFilter> decryptor(new StreamTransformationFilter(m_cipher));
 
 	decryptor->Put(keyCheck, BLOCKSIZE);
 	decryptor->ForceNextPut();
@@ -193,22 +194,22 @@ void DefaultDecryptor::CheckKey(const byte *salt, const byte *keyCheck)
 
 static DefaultMAC * NewDefaultEncryptorMAC(const byte *passphrase, unsigned int passphraseLength)
 {
-	unsigned int macKeyLength = DefaultMAC::KeyLength(16);
+	unsigned int macKeyLength = DefaultMAC::StaticGetValidKeyLength(16);
 	SecByteBlock macKey(macKeyLength);
 	// since the MAC is encrypted there is no reason to mash the passphrase for many iterations
 	Mash(passphrase, passphraseLength, macKey, macKeyLength, 1);
 	return new DefaultMAC(macKey, macKeyLength);
 }
 
-DefaultEncryptorWithMAC::DefaultEncryptorWithMAC(const char *passphrase, BufferedTransformation *outQueue)
-	: ProxyFilter(NULL, 0, 0, outQueue)
+DefaultEncryptorWithMAC::DefaultEncryptorWithMAC(const char *passphrase, BufferedTransformation *attachment)
+	: ProxyFilter(NULL, 0, 0, attachment)
 	, m_mac(NewDefaultEncryptorMAC((const byte *)passphrase, strlen(passphrase)))
 {
 	SetFilter(new HashFilter(*m_mac, new DefaultEncryptor(passphrase), true));
 }
 
-DefaultEncryptorWithMAC::DefaultEncryptorWithMAC(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQueue)
-	: ProxyFilter(NULL, 0, 0, outQueue)
+DefaultEncryptorWithMAC::DefaultEncryptorWithMAC(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *attachment)
+	: ProxyFilter(NULL, 0, 0, attachment)
 	, m_mac(NewDefaultEncryptorMAC(passphrase, passphraseLength))
 {
 	SetFilter(new HashFilter(*m_mac, new DefaultEncryptor(passphrase, passphraseLength), true));
@@ -221,16 +222,16 @@ void DefaultEncryptorWithMAC::LastPut(const byte *inString, unsigned int length)
 
 // ********************************************************
 
-DefaultDecryptorWithMAC::DefaultDecryptorWithMAC(const char *passphrase, BufferedTransformation *outQueue, bool throwException)
-	: ProxyFilter(NULL, 0, 0, outQueue)
+DefaultDecryptorWithMAC::DefaultDecryptorWithMAC(const char *passphrase, BufferedTransformation *attachment, bool throwException)
+	: ProxyFilter(NULL, 0, 0, attachment)
 	, m_mac(NewDefaultEncryptorMAC((const byte *)passphrase, strlen(passphrase)))
 	, m_throwException(throwException)
 {
 	SetFilter(new DefaultDecryptor(passphrase, m_hashVerifier=new HashVerifier(*m_mac, NULL, HashVerifier::PUT_MESSAGE), throwException));
 }
 
-DefaultDecryptorWithMAC::DefaultDecryptorWithMAC(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *outQueue, bool throwException)
-	: ProxyFilter(NULL, 0, 0, outQueue)
+DefaultDecryptorWithMAC::DefaultDecryptorWithMAC(const byte *passphrase, unsigned int passphraseLength, BufferedTransformation *attachment, bool throwException)
+	: ProxyFilter(NULL, 0, 0, attachment)
 	, m_mac(NewDefaultEncryptorMAC(passphrase, passphraseLength))
 	, m_throwException(throwException)
 {

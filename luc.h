@@ -7,249 +7,227 @@
 #include "pkcspad.h"
 #include "oaep.h"
 #include "integer.h"
+#include "dh.h"
 
 #include <limits.h>
 
 NAMESPACE_BEGIN(CryptoPP)
 
 //! .
-class LUCFunction : virtual public TrapdoorFunction
+class LUCFunction : public TrapdoorFunction, public PublicKey
 {
+	typedef LUCFunction ThisClass;
+
 public:
-	LUCFunction(const Integer &n, const Integer &e) : n(n), e(e) {}
-	LUCFunction(BufferedTransformation &bt);
+	void Initialize(const Integer &n, const Integer &e)
+		{m_n = n; m_e = e;}
+
+	void BERDecode(BufferedTransformation &bt);
 	void DEREncode(BufferedTransformation &bt) const;
 
 	Integer ApplyFunction(const Integer &x) const;
-	Integer PreimageBound() const {return n;}
-	Integer ImageBound() const {return n;}
+	Integer PreimageBound() const {return m_n;}
+	Integer ImageBound() const {return m_n;}
+
+	bool Validate(RandomNumberGenerator &rng, unsigned int level) const;
+	bool GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const;
+	void AssignFrom(const NameValuePairs &source);
+
+	// non-derived interface
+	const Integer & GetModulus() const {return m_n;}
+	const Integer & GetPublicExponent() const {return m_e;}
+
+	void SetModulus(const Integer &n) {m_n = n;}
+	void SetPublicExponent(const Integer &e) {m_e = e;}
 
 protected:
-	LUCFunction() {}	// to be used only by InvertibleLUCFunction
-	Integer n, e;	// these are only modified in constructors
+	Integer m_n, m_e;
 };
 
 //! .
-class InvertibleLUCFunction : public LUCFunction, public InvertibleTrapdoorFunction
+class InvertibleLUCFunction : public LUCFunction, public TrapdoorFunctionInverse, public PrivateKey
 {
+	typedef InvertibleLUCFunction ThisClass;
+
 public:
-	InvertibleLUCFunction(const Integer &n, const Integer &e,
-						  const Integer &p, const Integer &q, const Integer &u);
-	// generate a random private key
-	InvertibleLUCFunction(RandomNumberGenerator &rng, unsigned int keybits, const Integer &eStart=17);
-	InvertibleLUCFunction(BufferedTransformation &bt);
+	void Initialize(RandomNumberGenerator &rng, unsigned int modulusBits, const Integer &eStart=17);
+	void Initialize(const Integer &n, const Integer &e, const Integer &p, const Integer &q, const Integer &u)
+		{m_n = n; m_e = e; m_p = p; m_q = q; m_u = u;}
+
+	void BERDecode(BufferedTransformation &bt);
 	void DEREncode(BufferedTransformation &bt) const;
 
 	Integer CalculateInverse(const Integer &x) const;
 
+	bool Validate(RandomNumberGenerator &rng, unsigned int level) const;
+	bool GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const;
+	void AssignFrom(const NameValuePairs &source);
+	/*! parameters: (ModulusSize, PublicExponent (default 17)) */
+	void GenerateRandom(RandomNumberGenerator &rng, const NameValuePairs &alg);
+
+	// non-derived interface
+	const Integer& GetPrime1() const {return m_p;}
+	const Integer& GetPrime2() const {return m_q;}
+	const Integer& GetMultiplicativeInverseOfPrime2ModPrime1() const {return m_u;}
+
+	void SetPrime1(const Integer &p) {m_p = p;}
+	void SetPrime2(const Integer &q) {m_q = q;}
+	void SetMultiplicativeInverseOfPrime2ModPrime1(const Integer &u) {m_u = u;}
+
 protected:
-	Integer p, q, u;
+	Integer m_p, m_q, m_u;
 };
 
-//! .
-template <class B>
-class LUCPrivateKeyTemplate : public B
+struct LUC
 {
-public:
-	LUCPrivateKeyTemplate(const Integer &n, const Integer &e, 
-				const Integer &p, const Integer &q, const Integer &u)
-		: PublicKeyBaseTemplate<InvertibleLUCFunction>(
-			InvertibleLUCFunction(n, e, p, q, u)) {}
-
-	LUCPrivateKeyTemplate(RandomNumberGenerator &rng, unsigned int keybits, const Integer &eStart=17)
-		: PublicKeyBaseTemplate<InvertibleLUCFunction>(
-			InvertibleLUCFunction(rng, keybits, eStart)) {}
-
-	LUCPrivateKeyTemplate(BufferedTransformation &bt)
-		: PublicKeyBaseTemplate<InvertibleLUCFunction>(bt) {}
+	static std::string StaticAlgorithmName() {return "LUC";}
+	typedef LUCFunction PublicKey;
+	typedef InvertibleLUCFunction PrivateKey;
 };
 
-//! .
-template <class B, class V>
-class LUCPublicKeyTemplate : public B
+//! LUC cryptosystem
+template <class STANDARD>
+struct LUCES : public TF_ES<STANDARD, LUC>
 {
-public:
-	LUCPublicKeyTemplate(const Integer &n, const Integer &e)
-		: PublicKeyBaseTemplate<LUCFunction>(LUCFunction(n, e)) {}
-
-	LUCPublicKeyTemplate(const V &priv)
-		: PublicKeyBaseTemplate<LUCFunction>(priv.GetTrapdoorFunction()) {}
-
-	LUCPublicKeyTemplate(BufferedTransformation &bt)
-		: PublicKeyBaseTemplate<LUCFunction>(bt) {}
 };
 
-//! analagous to the RSA schemes defined in PKCS #1 v2.0
-typedef LUCPrivateKeyTemplate<DecryptorTemplate<OAEP<SHA>, InvertibleLUCFunction> >
-	LUCES_OAEP_SHA_Decryptor;
-//! .
-typedef LUCPublicKeyTemplate<EncryptorTemplate<OAEP<SHA>, LUCFunction>, LUCES_OAEP_SHA_Decryptor>
-	LUCES_OAEP_SHA_Encryptor;
-//! .
-typedef LUCPrivateKeyTemplate<SignerTemplate<DigestSignerTemplate<PKCS_SignaturePaddingScheme, InvertibleLUCFunction>, PKCS_DecoratedHashModule<SHA> > >
-	LUCSSA_PKCS1v15_SHA_Signer;
-//! .
-typedef LUCPublicKeyTemplate<VerifierTemplate<DigestVerifierTemplate<PKCS_SignaturePaddingScheme, LUCFunction>, PKCS_DecoratedHashModule<SHA> >, LUCSSA_PKCS1v15_SHA_Signer>
-	LUCSSA_PKCS1v15_SHA_Verifier;
+//! LUC signature scheme with appendix
+template <class H, class STANDARD = PKCS1v15>
+struct LUCSSA : public TF_SSA<STANDARD, H, LUC>
+{
+};
+
+// analagous to the RSA schemes defined in PKCS #1 v2.0
+typedef LUCES<OAEP<SHA> >::Decryptor LUCES_OAEP_SHA_Decryptor;
+typedef LUCES<OAEP<SHA> >::Encryptor LUCES_OAEP_SHA_Encryptor;
+
+typedef LUCSSA<SHA>::Signer LUCSSA_PKCS1v15_SHA_Signer;
+typedef LUCSSA<SHA>::Verifier LUCSSA_PKCS1v15_SHA_Verifier;
 
 // ********************************************************
 
-//! .
-class LUCELG_Encryptor : public PK_FixedLengthEncryptor
+// no actual precomputation
+class DL_GroupPrecomputation_LUC : public DL_GroupPrecomputation<Integer>
 {
 public:
-	LUCELG_Encryptor(const Integer &p, const Integer &g, const Integer &y);
-	LUCELG_Encryptor(BufferedTransformation &bt);
+	const AbstractGroup<Element> & GetGroup() const {assert(false); throw 0;}
+	Element BERDecodeElement(BufferedTransformation &bt) const {return Integer(bt);}
+	void DEREncodeElement(BufferedTransformation &bt, const Element &v) const {v.DEREncode(bt);}
 
-	void DEREncode(BufferedTransformation &bt) const;
-
-	void Encrypt(RandomNumberGenerator &rng, const byte *plainText, unsigned int plainTextLength, byte *cipherText);
-
-	unsigned int MaxPlainTextLength() const {return STDMIN(255U, modulusLen-3);}
-	unsigned int CipherTextLength() const {return 2*modulusLen;}
-
-	const Integer & GetPrime() const {return p;}
-	const Integer & GetGenerator() const {return g;}
-	const Integer & GetPublicResidue() const {return y;}
-
-protected:
-	LUCELG_Encryptor() {}
-	void RawEncrypt(const Integer &k, const Integer &m, Integer &a, Integer &b) const;
-	unsigned int ExponentBitLength() const;
-
-	Integer p, g, y;
-	unsigned int modulusLen;
-};
-
-//! .
-class LUCELG_Decryptor : public LUCELG_Encryptor, public PK_FixedLengthDecryptor
-{
-public:
-	LUCELG_Decryptor(const Integer &p, const Integer &g, const Integer &y, const Integer &x);
-	LUCELG_Decryptor(RandomNumberGenerator &rng, unsigned int pbits);
-	// generate a random private key, given p and g
-	LUCELG_Decryptor(RandomNumberGenerator &rng, const Integer &p, const Integer &g);
-
-	LUCELG_Decryptor(BufferedTransformation &bt);
-	void DEREncode(BufferedTransformation &bt) const;
-
-	unsigned int Decrypt(const byte *cipherText, byte *plainText);
-
-protected:
-	void RawDecrypt(const Integer &a, const Integer &b, Integer &m) const;
-
-	Integer x;
-};
-
-// ********************************************************
-
-//! .
-class LUCELG_DigestVerifier : public DigestVerifier
-{
-public:
-	LUCELG_DigestVerifier(const Integer &p, const Integer &q, const Integer &g, const Integer &y);
-	LUCELG_DigestVerifier(BufferedTransformation &bt);
-
-	void DEREncode(BufferedTransformation &bt) const;
-	bool VerifyDigest(const byte *digest, unsigned int digestLen, const byte *signature) const;
-
-	unsigned int MaxDigestLength() const {return UINT_MAX;}
-	unsigned int DigestSignatureLength() const {return p.ByteCount()+q.ByteCount();}
-
-protected:
-	LUCELG_DigestVerifier() {}
-	bool RawVerify(const Integer &m, const Integer &a, const Integer &b) const;
-	Integer EncodeDigest(const byte *digest, unsigned int digestLen) const;
-
-	Integer p, q, g, y;
-};
-
-//! .
-class LUCELG_DigestSigner : public LUCELG_DigestVerifier, public DigestSigner
-{
-public:
-	LUCELG_DigestSigner(const Integer &p, const Integer &q, const Integer &g, const Integer &y, const Integer &x);
-	LUCELG_DigestSigner(RandomNumberGenerator &rng, unsigned int pbits);
-	LUCELG_DigestSigner(RandomNumberGenerator &rng, const Integer &p, const Integer &q, const Integer &g);
-	LUCELG_DigestSigner(BufferedTransformation &bt);
-
-	void DEREncode(BufferedTransformation &bt) const;
-	void SignDigest(RandomNumberGenerator &rng, const byte *digest, unsigned int digestLen, byte *signature) const;
-
-protected:
-	void RawSign(RandomNumberGenerator &rng, const Integer &m, Integer &a, Integer &b) const;
-
-	Integer x;
-};
-
-//! .
-template <class H>
-class LUCELG_Signer : public SignerTemplate<LUCELG_DigestSigner, H>
-{
-	typedef LUCELG_DigestSigner Base;
-public:
-	LUCELG_Signer(const Integer &p, const Integer &q, const Integer &g, const Integer &y, const Integer &x)
-		: Base(p, q, g, y, x) {}
-
-	// generate a random private key
-	LUCELG_Signer(RandomNumberGenerator &rng, unsigned int keybits)
-		: Base(rng, keybits) {}
-
-	// generate a random private key, given p, q, and g
-	LUCELG_Signer(RandomNumberGenerator &rng, const Integer &p, const Integer &q, const Integer &g)
-		: Base(rng, p, q, g) {}
-
-	// load a previously generated key
-	LUCELG_Signer(BufferedTransformation &storedKey)
-		: Base(storedKey) {}
-};
-
-//! .
-template <class H>
-class LUCELG_Verifier : public VerifierTemplate<LUCELG_DigestVerifier, H>
-{
-	typedef LUCELG_DigestVerifier Base;
-public:
-	LUCELG_Verifier(const Integer &p, const Integer &q, const Integer &g, const Integer &y)
-		: Base(p, q, g, y) {}
-
-	// create a matching public key from a private key
-	LUCELG_Verifier(const LUCELG_Signer<H> &priv)
-		: Base(priv) {}
-
-	// load a previously generated key
-	LUCELG_Verifier(BufferedTransformation &storedKey)
-		: Base(storedKey) {}
-};
-
-// ********************************************************
-
-//! .
-class LUCDIF : public PK_SimpleKeyAgreementDomain
-{
-public:
-	LUCDIF(const Integer &p, const Integer &g);
-	LUCDIF(RandomNumberGenerator &rng, unsigned int pbits);
-	LUCDIF(BufferedTransformation &domainParams);
-
-	void DEREncode(BufferedTransformation &domainParams) const;
-
-	bool ValidateDomainParameters(RandomNumberGenerator &rng) const;
-	unsigned int AgreedValueLength() const {return p.ByteCount();}
-	unsigned int PrivateKeyLength() const {return p.ByteCount();}
-	unsigned int PublicKeyLength() const {return p.ByteCount();}
-
-	void GenerateKeyPair(RandomNumberGenerator &rng, byte *secretKey, byte *publicKey) const;
-	bool Agree(byte *agreedValue, const byte *secretKey, const byte *otherPublicKey, bool validateOtherPublicKey=true) const;
-
-	const Integer &Prime() const {return p;}
-	const Integer &Generator() const {return g;}
+	// non-inherited
+	void SetModulus(const Integer &v) {m_p = v;}
+	const Integer & GetModulus() const {return m_p;}
 
 private:
-	unsigned int ExponentBitLength() const;
-
-	Integer p, g;
+	Integer m_p;
 };
+
+//! .
+class DL_BasePrecomputation_LUC : public DL_FixedBasePrecomputation<Integer>
+{
+public:
+	// DL_FixedBasePrecomputation
+	bool IsInitialized() const {return m_g.NotZero();}
+	void SetBase(const DL_GroupPrecomputation<Element> &group, const Integer &base) {m_g = base;}
+	const Integer & GetBase(const DL_GroupPrecomputation<Element> &group) const {return m_g;}
+	void Precompute(const DL_GroupPrecomputation<Element> &group, unsigned int maxExpBits, unsigned int storage) {}
+	void Load(const DL_GroupPrecomputation<Element> &group, BufferedTransformation &storedPrecomputation) {}
+	void Save(const DL_GroupPrecomputation<Element> &group, BufferedTransformation &storedPrecomputation) const {}
+	Integer Exponentiate(const DL_GroupPrecomputation<Element> &group, const Integer &exponent) const;
+	Integer CascadeExponentiate(const DL_GroupPrecomputation<Element> &group, const Integer &exponent, const DL_FixedBasePrecomputation<Integer> &pc2, const Integer &exponent2) const
+		{throw NotImplemented("DL_BasePrecomputation_LUC: CascadeExponentiate not implemented");}	// shouldn't be called
+
+private:
+	Integer m_g;
+};
+
+//! .
+class DL_GroupParameters_LUC : public DL_GroupParameters_IntegerBasedImpl<DL_GroupPrecomputation_LUC, DL_BasePrecomputation_LUC>
+{
+public:
+	// DL_GroupParameters
+	bool IsIdentity(const Integer &element) const {return element == Integer::Two();}
+	void SimultaneousExponentiate(Element *results, const Element &base, const Integer *exponents, unsigned int exponentsCount) const;
+	Element MultiplyElements(const Element &a, const Element &b) const
+		{throw NotImplemented("LUC_GroupParameters: MultiplyElements can not be implemented");}
+	Element CascadeExponentiate(const Element &element1, const Integer &exponent1, const Element &element2, const Integer &exponent2) const
+		{throw NotImplemented("LUC_GroupParameters: MultiplyElements can not be implemented");}
+
+	// NameValuePairs interface
+	bool GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const
+	{
+		return GetValueHelper<DL_GroupParameters_IntegerBased>(this, name, valueType, pValue).Assignable();
+	}
+
+private:
+	int GetFieldType() const {return 2;}
+};
+
+//! .
+class DL_GroupParameters_LUC_DefaultSafePrime : public DL_GroupParameters_LUC
+{
+public:
+	typedef NoCofactorMultiplication DefaultCofactorOption;
+
+protected:
+	unsigned int GetDefaultSubgroupOrderSize(unsigned int modulusSize) const {return modulusSize-1;}
+};
+
+//! .
+class DL_Algorithm_LUC_HMP : public DL_ElgamalLikeSignatureAlgorithm<Integer>
+{
+public:
+	static const char * StaticAlgorithmName() {return "LUC-HMP";}
+
+	Integer EncodeDigest(unsigned int modulusBits, const byte *digest, unsigned int digestLen) const
+		{return DSA_EncodeDigest(modulusBits, digest, digestLen);}
+
+	bool Sign(const DL_GroupParameters<Integer> &params, const Integer &x, const Integer &k, const Integer &e, Integer &r, Integer &s) const;
+	bool Verify(const DL_GroupParameters<Integer> &params, const DL_PublicKey<Integer> &publicKey, const Integer &e, const Integer &r, const Integer &s) const;
+
+	unsigned int RLen(const DL_GroupParameters<Integer> &params) const
+		{return params.GetGroupOrder().ByteCount();}
+};
+
+//! .
+struct DL_SignatureKeys_LUC
+{
+	typedef DL_GroupParameters_LUC GroupParameters;
+	typedef DL_PublicKey_GFP<GroupParameters> PublicKey;
+	typedef DL_PrivateKey_GFP<GroupParameters> PrivateKey;
+};
+
+//! LUC-HMP, based on "Digital signature schemes based on Lucas functions" by Patrick Horster, Markus Michels, Holger Petersen
+template <class H>
+struct LUC_HMP : public DL_SSA<DL_SignatureKeys_LUC, DL_Algorithm_LUC_HMP, H>
+{
+};
+
+//! .
+struct DL_CryptoKeys_LUC
+{
+	typedef DL_GroupParameters_LUC_DefaultSafePrime GroupParameters;
+	typedef DL_PublicKey_GFP<GroupParameters> PublicKey;
+	typedef DL_PrivateKey_GFP<GroupParameters> PrivateKey;
+};
+
+//! LUC-IES
+template <class COFACTOR_OPTION = NoCofactorMultiplication, bool DHAES_MODE = true>
+struct LUC_IES
+	: public DL_ES<
+		DL_CryptoKeys_LUC,
+		DL_KeyAgreementAlgorithm_DH<Integer, COFACTOR_OPTION>,
+		DL_KeyDerivationAlgorithm_P1363<Integer, DHAES_MODE, P1363_KDF2<SHA1> >,
+		DL_EncryptionAlgorithm_Xor<HMAC<SHA1>, DHAES_MODE>,
+		LUC_IES<> >
+{
+	static std::string StaticAlgorithmName() {return "LUC-IES";}	// non-standard name
+};
+
+// ********************************************************
+
+//! LUC-DH
+typedef DH_Domain<DL_GroupParameters_LUC_DefaultSafePrime> LUC_DH;
 
 NAMESPACE_END
 

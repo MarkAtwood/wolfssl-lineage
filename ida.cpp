@@ -17,12 +17,41 @@ using namespace std;
 
 NAMESPACE_BEGIN(CryptoPP)
 
-RawIDA::RawIDA(unsigned int threshold, BufferedTransformation *outQueue)
-	: Filter(outQueue), m_lastMapPosition(m_inputChannelMap.end()), m_threshold(threshold), m_channelsReady(0), m_channelsFinished(0)
-	, m_w(threshold), m_y(threshold)
+void RawIDA::ChannelInitialize(const string &channel, const NameValuePairs &parameters, int propagation)
 {
-	assert(threshold > 0);
-	m_inputQueues.reserve(threshold);
+	if (!channel.empty())
+		throw NotImplemented("RawIDA: can't reinitialize a channel");
+
+	if (!parameters.GetIntValue("RecoveryThreshold", m_threshold))
+		throw InvalidArgument("RawIDA: missing RecoveryThreshold argument");
+
+	if (m_threshold <= 0)
+		throw InvalidArgument("RawIDA: RecoveryThreshold must be greater than 0");
+
+	m_lastMapPosition = m_inputChannelMap.end();
+	m_channelsReady = 0;
+	m_channelsFinished = 0;
+	m_w.New(m_threshold);
+	m_y.New(m_threshold);
+	m_inputQueues.reserve(m_threshold);
+
+	m_outputChannelIds.clear();
+	m_outputChannelIdStrings.clear();
+	m_outputQueues.clear();
+
+	word32 outputChannelID;
+	if (parameters.GetValue("OutputChannelID", outputChannelID))
+		AddOutputChannel(outputChannelID);
+	else
+	{
+		int nShares = parameters.GetIntValueWithDefault("NumberOfShares", m_threshold);
+		for (unsigned int i=0; i<nShares; i++)
+			AddOutputChannel(i);
+	}
+
+	if (propagation)
+		for (unsigned int i=0; i<m_outputChannelIds.size(); i++)
+			AttachedTransformation()->ChannelInitialize(m_outputChannelIdStrings[i], parameters, propagation-1);
 }
 
 unsigned int RawIDA::InsertInputChannel(word32 channelId)
@@ -62,7 +91,7 @@ unsigned int RawIDA::LookupInputChannel(word32 channelId) const
 		return it->second;
 }
 
-void RawIDA::ChannelData(word32 channelId, const byte *inString, unsigned int length)
+void RawIDA::ChannelData(word32 channelId, const byte *inString, unsigned int length, bool messageEnd)
 {
 	unsigned int i = InsertInputChannel(channelId);
 	if (i < m_threshold)
@@ -75,6 +104,22 @@ void RawIDA::ChannelData(word32 channelId, const byte *inString, unsigned int le
 			if (m_channelsReady == m_threshold)
 				ProcessInputQueues();
 		}
+
+		if (messageEnd)
+		{
+			m_inputQueues[i].MessageEnd();
+			if (m_inputQueues[i].NumberOfMessages() == 1)
+			{
+				m_channelsFinished++;
+				if (m_channelsFinished == m_threshold)
+				{
+					m_channelsReady = 0;
+					for (i=0; i<m_threshold; i++)
+						m_channelsReady += m_inputQueues[i].AnyRetrievable();
+					ProcessInputQueues();
+				}
+			}
+		}
 	}
 }
 
@@ -82,26 +127,6 @@ unsigned int RawIDA::InputBuffered(word32 channelId) const
 {
 	unsigned int i = LookupInputChannel(channelId);
 	return i < m_threshold ? m_inputQueues[i].MaxRetrievable() : 0;
-}
-
-void RawIDA::ChannelMessageEnd(const string &channel, int propagation)
-{
-	unsigned int i = InsertInputChannel(StringToWord<word32>(channel));
-	if (i < m_threshold)
-	{
-		m_inputQueues[i].MessageEnd();
-		if (m_inputQueues[i].NumberOfMessages() == 1)
-		{
-			m_channelsFinished++;
-			if (m_channelsFinished == m_threshold)
-			{
-				m_channelsReady = 0;
-				for (i=0; i<m_threshold; i++)
-					m_channelsReady += m_inputQueues[i].AnyRetrievable();
-				ProcessInputQueues();
-			}
-		}
-	}
 }
 
 void RawIDA::ComputeV(unsigned int i)
@@ -115,16 +140,16 @@ void RawIDA::ComputeV(unsigned int i)
 	m_outputToInput[i] = LookupInputChannel(m_outputChannelIds[i]);
 	if (m_outputToInput[i] == m_threshold && i * m_threshold <= 1000*1000)
 	{
-		m_v[i].Resize(m_threshold);
-		PrepareBulkPolynomialInterpolationAt(field, m_v[i].ptr, m_outputChannelIds[i], &m_inputChannelIds[0], m_w.ptr, m_threshold);
+		m_v[i].resize(m_threshold);
+		PrepareBulkPolynomialInterpolationAt(field, m_v[i].begin(), m_outputChannelIds[i], &(m_inputChannelIds[0]), m_w.begin(), m_threshold);
 	}
 }
 
 void RawIDA::AddOutputChannel(word32 channelId)
 {
 	m_outputChannelIds.push_back(channelId);
+	m_outputChannelIdStrings.push_back(WordToString(channelId));
 	m_outputQueues.push_back(ByteQueue());
-	m_channelSwitches.push_back(ChannelSwitch(*AttachedTransformation(), WordToString(channelId)));
 	if (m_inputChannelIds.size() == m_threshold)
 		ComputeV(m_outputChannelIds.size() - 1);
 }
@@ -132,8 +157,7 @@ void RawIDA::AddOutputChannel(word32 channelId)
 void RawIDA::PrepareInterpolation()
 {
 	assert(m_inputChannelIds.size() == m_threshold);
-	PrepareBulkPolynomialInterpolation(field, m_w.ptr, &m_inputChannelIds[0], m_threshold);
-//	polynomialRing.PrepareBulkInterpolation(m_w, m_inputChannelIds.begin(), m_threshold);
+	PrepareBulkPolynomialInterpolation(field, m_w.begin(), &(m_inputChannelIds[0]), m_threshold);
 	for (unsigned int i=0; i<m_outputChannelIds.size(); i++)
 		ComputeV(i);
 }
@@ -161,13 +185,13 @@ void RawIDA::ProcessInputQueues()
 		{
 			if (m_outputToInput[i] != m_threshold)
 				m_outputQueues[i].PutWord32(m_y[m_outputToInput[i]]);
-			else if (m_v[i].size == m_threshold)
-				m_outputQueues[i].PutWord32(BulkPolynomialInterpolateAt(field, m_y.ptr, m_v[i].ptr, m_threshold));
+			else if (m_v[i].size() == m_threshold)
+				m_outputQueues[i].PutWord32(BulkPolynomialInterpolateAt(field, m_y.begin(), m_v[i].begin(), m_threshold));
 			else
 			{
-				m_u.Resize(m_threshold);
-				PrepareBulkPolynomialInterpolationAt(field, m_u.ptr, m_outputChannelIds[i], &m_inputChannelIds[0], m_w.ptr, m_threshold);
-				m_outputQueues[i].PutWord32(BulkPolynomialInterpolateAt(field, m_y.ptr, m_u.ptr, m_threshold));
+				m_u.resize(m_threshold);
+				PrepareBulkPolynomialInterpolationAt(field, m_u.begin(), m_outputChannelIds[i], &(m_inputChannelIds[0]), m_w.begin(), m_threshold);
+				m_outputQueues[i].PutWord32(BulkPolynomialInterpolateAt(field, m_y.begin(), m_u.begin(), m_threshold));
 			}
 		}
 	}
@@ -194,8 +218,7 @@ void RawIDA::ProcessInputQueues()
 		for (i=0; i<m_threshold; i++)
 		{
 			inputQueues[i].GetNextMessage();
-			ChannelSwitch channelSwitch(*this, WordToString(inputChannelIds[i]));
-			inputQueues[i].TransferAllTo(channelSwitch);
+			inputQueues[i].TransferAllTo(*AttachedTransformation(), WordToString(inputChannelIds[i]));
 		}
 	}
 }
@@ -203,7 +226,7 @@ void RawIDA::ProcessInputQueues()
 void RawIDA::FlushOutputQueues()
 {
 	for (unsigned int i=0; i<m_outputChannelIds.size(); i++)
-		m_outputQueues[i].TransferTo(m_channelSwitches[i]);
+		m_outputQueues[i].TransferAllTo(*AttachedTransformation(), m_outputChannelIdStrings[i]);
 }
 
 void RawIDA::OutputMessageEnds()
@@ -211,55 +234,59 @@ void RawIDA::OutputMessageEnds()
 	if (GetAutoSignalPropagation() != 0)
 	{
 		for (unsigned int i=0; i<m_outputChannelIds.size(); i++)
-			m_channelSwitches[i].MessageEnd(GetAutoSignalPropagation()-1);
+			AttachedTransformation()->ChannelMessageEnd(m_outputChannelIdStrings[i], GetAutoSignalPropagation()-1);
 	}
 }
 
 // ****************************************************************
 
-SecretSharing::SecretSharing(RandomNumberGenerator &rng, unsigned int threshold, unsigned int nShares, BufferedTransformation *outQueue, bool addPadding)
-	: Filter(outQueue), m_rng(rng), m_ida(threshold, new OutputProxy(*this, true)), m_pad(addPadding)
+void SecretSharing::Initialize(const NameValuePairs &parameters, int propagation)
 {
-	for (unsigned int i=0; i<nShares; i++)
-		m_ida.AddOutputChannel(i);
+	m_pad = parameters.GetValueWithDefault("AddPadding", true);
+	m_ida.Initialize(parameters, propagation);
 }
 
-void SecretSharing::Put(const byte *inString, unsigned int length)
+unsigned int SecretSharing::Put2(const byte *begin, unsigned int length, int messageEnd, bool blocking)
 {
+	if (!blocking)
+		throw BlockingInputOnly("SecretSharing");
+
 	SecByteBlock buf(STDMIN(length, 256U));
 	unsigned int threshold = m_ida.GetThreshold();
 	while (length > 0)
 	{
-		unsigned int len = STDMIN(length, buf.size);
-		m_ida.ChannelData(0xffffffff, inString, len);
+		unsigned int len = STDMIN(length, (unsigned int)buf.size());
+		m_ida.ChannelData(0xffffffff, begin, len, false);
 		for (unsigned int i=0; i<threshold-1; i++)
 		{
 			m_rng.GenerateBlock(buf, len);
-			m_ida.ChannelData(i, buf, len);
+			m_ida.ChannelData(i, buf, len, false);
 		}
 		length -= len;
-		inString += len;
+		begin += len;
 	}
-}
 
-void SecretSharing::MessageEnd(int propagation)
-{
-	m_ida.SetAutoSignalPropagation(propagation);
-	if (m_pad)
+	if (messageEnd)
 	{
-		SecretSharing::Put(1);
-		while (m_ida.InputBuffered(0xffffffff) > 0)
-			SecretSharing::Put(0);
+		m_ida.SetAutoSignalPropagation(messageEnd-1);
+		if (m_pad)
+		{
+			SecretSharing::Put(1);
+			while (m_ida.InputBuffered(0xffffffff) > 0)
+				SecretSharing::Put(0);
+		}
+		m_ida.ChannelData(0xffffffff, NULL, 0, true);
+		for (unsigned int i=0; i<m_ida.GetThreshold()-1; i++)
+			m_ida.ChannelData(i, NULL, 0, true);
 	}
-	m_ida.ChannelMessageEnd(WordToString<word32>(0xffffffff));
-	for (unsigned int i=0; i<m_ida.GetThreshold()-1; i++)
-		m_ida.ChannelMessageEnd(WordToString<word32>(i));
+
+	return 0;
 }
 
-SecretRecovery::SecretRecovery(unsigned int threshold, BufferedTransformation *outQueue, bool removePadding)
-	: RawIDA(threshold, outQueue), m_pad(removePadding)
+void SecretRecovery::Initialize(const NameValuePairs &parameters, int propagation)
 {
-	AddOutputChannel(0xffffffff);
+	m_pad = parameters.GetValueWithDefault("RemovePadding", true);
+	RawIDA::Initialize(CombinedNameValuePairs(parameters, MakeParameters("OutputChannelID", (word32)0xffffffff)), propagation);
 }
 
 void SecretRecovery::FlushOutputQueues()
@@ -284,39 +311,43 @@ void SecretRecovery::OutputMessageEnds()
 
 // ****************************************************************
 
-InformationDispersal::InformationDispersal(unsigned int threshold, unsigned int nShares, BufferedTransformation *outQueue, bool addPadding)
-	: Filter(outQueue), m_ida(threshold, new OutputProxy(*this, true)), m_pad(addPadding), m_nextChannel(0)
+void InformationDispersal::Initialize(const NameValuePairs &parameters, int propagation)
 {
-	for (unsigned int i=0; i<nShares; i++)
-		m_ida.AddOutputChannel(i);
+	m_nextChannel = 0;
+	m_pad = parameters.GetValueWithDefault("AddPadding", true);
+	m_ida.Initialize(parameters, propagation);
 }
 
-void InformationDispersal::Put(const byte *inString, unsigned int length)
+unsigned int InformationDispersal::Put2(const byte *begin, unsigned int length, int messageEnd, bool blocking)
 {
+	if (!blocking)
+		throw BlockingInputOnly("InformationDispersal");
+	
 	while (length--)
 	{
-		m_ida.ChannelData(m_nextChannel, inString, 1);
-		inString++;
+		m_ida.ChannelData(m_nextChannel, begin, 1, false);
+		begin++;
 		m_nextChannel++;
 		if (m_nextChannel == m_ida.GetThreshold())
 			m_nextChannel = 0;
 	}
+
+	if (messageEnd)
+	{
+		m_ida.SetAutoSignalPropagation(messageEnd-1);
+		if (m_pad)
+			InformationDispersal::Put(1);
+		for (word32 i=0; i<m_ida.GetThreshold(); i++)
+			m_ida.ChannelData(i, NULL, 0, true);
+	}
+
+	return 0;
 }
 
-void InformationDispersal::MessageEnd(int propagation)
+void InformationRecovery::Initialize(const NameValuePairs &parameters, int propagation)
 {
-	m_ida.SetAutoSignalPropagation(propagation);
-	if (m_pad)
-		InformationDispersal::Put(1);
-	for (unsigned int i=0; i<m_ida.GetThreshold(); i++)
-		m_ida.ChannelMessageEnd(WordToString<word32>(i));
-}
-
-InformationRecovery::InformationRecovery(unsigned int threshold, BufferedTransformation *outQueue, bool removePadding)
-	: RawIDA(threshold, outQueue), m_pad(removePadding)
-{
-	for (unsigned int i=0; i<threshold; i++)
-		AddOutputChannel(i);
+	m_pad = parameters.GetValueWithDefault("RemovePadding", true);
+	RawIDA::Initialize(parameters, propagation);
 }
 
 void InformationRecovery::FlushOutputQueues()
@@ -345,35 +376,11 @@ void InformationRecovery::OutputMessageEnds()
 		AttachedTransformation()->MessageEnd(GetAutoSignalPropagation()-1);
 }
 
-void PaddingRemover::Put(byte b)
+unsigned int PaddingRemover::Put2(const byte *begin, unsigned int length, int messageEnd, bool blocking)
 {
-	if (m_possiblePadding)
-	{
-		if (b == 0)
-			m_zeroCount++;
-		else
-		{
-			AttachedTransformation()->Put(1);
-			while (m_zeroCount--)
-				AttachedTransformation()->Put(0);
-			AttachedTransformation()->Put(b);
-			m_possiblePadding = false;
-		}
-	}
-	else
-	{
-		if (b == 1)
-		{
-			m_possiblePadding = true;
-			m_zeroCount = 0;
-		}
-		else
-			AttachedTransformation()->Put(b);
-	}
-}
+	if (!blocking)
+		throw BlockingInputOnly("PaddingRemover");
 
-void PaddingRemover::Put(const byte *begin, unsigned int length)
-{
 	const byte *const end = begin + length;
 
 	if (m_possiblePadding)
@@ -382,11 +389,17 @@ void PaddingRemover::Put(const byte *begin, unsigned int length)
 		m_zeroCount += len;
 		begin += len;
 		if (begin == end)
-			return;
-		PaddingRemover::Put(*begin++);
+			return 0;
+
+		AttachedTransformation()->Put(1);
+		while (m_zeroCount--)
+			AttachedTransformation()->Put(0);
+		AttachedTransformation()->Put(*begin++);
+		m_possiblePadding = false;
 	}
 
-#if defined(_MSC_VER) && !defined(__MWERKS__)		// VC60 workaround
+#if defined(_MSC_VER) && !defined(__MWERKS__)
+	// VC60 workaround: built-in reverse_iterator has two template parameters, Dinkumware only has one
 	typedef reverse_bidirectional_iterator<const byte *, const byte> rit;
 #else
 	typedef reverse_iterator<const byte *> rit;
@@ -400,12 +413,13 @@ void PaddingRemover::Put(const byte *begin, unsigned int length)
 	}
 	else
 		AttachedTransformation()->Put(begin, end-begin);
-}
 
-void PaddingRemover::MessageEnd(int propagation)
-{
-	m_possiblePadding = false;
-	Filter::MessageEnd(propagation);
+	if (messageEnd)
+	{
+		m_possiblePadding = false;
+		Output(0, begin, length, messageEnd, blocking);
+	}
+	return 0;
 }
 
 NAMESPACE_END

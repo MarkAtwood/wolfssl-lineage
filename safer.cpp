@@ -2,10 +2,11 @@
 
 #include "pch.h"
 #include "safer.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-const byte SAFER::exp_tab[256] = 
+const byte SAFER::Base::exp_tab[256] = 
 	{1, 45, 226, 147, 190, 69, 21, 174, 120, 3, 135, 164, 184, 56, 207, 63,
 	8, 103, 9, 148, 235, 38, 168, 107, 189, 24, 52, 27, 187, 191, 114, 247,
 	64, 53, 72, 156, 81, 47, 59, 85, 227, 192, 159, 216, 211, 243, 141, 177,
@@ -23,7 +24,7 @@ const byte SAFER::exp_tab[256] =
 	253, 77, 124, 183, 11, 238, 173, 75, 34, 245, 231, 115, 35, 33, 200, 5,
 	225, 102, 221, 179, 88, 105, 99, 86, 15, 161, 49, 149, 23, 7, 58, 40};
 
-const byte SAFER::log_tab[256] = 
+const byte SAFER::Base::log_tab[256] = 
 	{128, 0, 176, 9, 96, 239, 185, 253, 16, 18, 159, 228, 105, 186, 173, 248,
 	192, 56, 194, 101, 79, 6, 148, 252, 25, 222, 106, 27, 93, 78, 168, 130,
 	112, 237, 232, 236, 114, 179, 21, 195, 255, 171, 182, 71, 68, 1, 172, 37,
@@ -46,9 +47,14 @@ const byte SAFER::log_tab[256] =
 #define PHT(x, y)    { y += x; x += y; }
 #define IPHT(x, y)   { x -= y; y -= x; }
 
-SAFER::SAFER(const byte *userkey_1, const byte *userkey_2, unsigned nof_rounds, bool strengthened)
-	: keySchedule(1 + BLOCKSIZE * (1 + 2 * nof_rounds))
+static const unsigned int BLOCKSIZE = 8;
+static const unsigned int MAX_ROUNDS = 13;
+
+void SAFER::Base::UncheckedSetKey(CipherDir dir, const byte *userkey_1, unsigned int length, unsigned nof_rounds)
 {
+	const byte *userkey_2 = length == 8 ? userkey_1 : userkey_1 + 8;
+	keySchedule.New(1 + BLOCKSIZE * (1 + 2 * nof_rounds));
+
 	unsigned int i, j;
 	byte *key = keySchedule;
 	SecByteBlock ka(BLOCKSIZE + 1), kb(BLOCKSIZE + 1);
@@ -85,14 +91,15 @@ SAFER::SAFER(const byte *userkey_1, const byte *userkey_2, unsigned nof_rounds, 
 	}
 }
 
-void SAFER::Encrypt(const byte *block_in, byte *block_out) const
+typedef BlockGetAndPut<byte, BigEndian> Block;
+
+void SAFER::Enc::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	byte a, b, c, d, e, f, g, h, t;
 	const byte *key = keySchedule+1;
 	unsigned int round = keySchedule[0];
 
-	a = block_in[0]; b = block_in[1]; c = block_in[2]; d = block_in[3];
-	e = block_in[4]; f = block_in[5]; g = block_in[6]; h = block_in[7];
+	Block::Get(inBlock)(a)(b)(c)(d)(e)(f)(g)(h);
 	while(round--)
 	{
 		a ^= key[0]; b += key[1]; c += key[2]; d ^= key[3];
@@ -109,20 +116,16 @@ void SAFER::Encrypt(const byte *block_in, byte *block_out) const
 	}
 	a ^= key[0]; b += key[1]; c += key[2]; d ^= key[3];
 	e ^= key[4]; f += key[5]; g += key[6]; h ^= key[7];
-	block_out[0] = a & 0xFF; block_out[1] = b & 0xFF;
-	block_out[2] = c & 0xFF; block_out[3] = d & 0xFF;
-	block_out[4] = e & 0xFF; block_out[5] = f & 0xFF;
-	block_out[6] = g & 0xFF; block_out[7] = h & 0xFF;
+	Block::Put(xorBlock, outBlock)(a)(b)(c)(d)(e)(f)(g)(h);
 }
 
-void SAFER::Decrypt(const byte *block_in, byte *block_out) const
+void SAFER::Dec::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	byte a, b, c, d, e, f, g, h, t;
 	unsigned int round = keySchedule[0];
 	const byte *key = keySchedule + BLOCKSIZE * (1 + 2 * round) - 7;
 
-	a = block_in[0]; b = block_in[1]; c = block_in[2]; d = block_in[3];
-	e = block_in[4]; f = block_in[5]; g = block_in[6]; h = block_in[7];
+	Block::Get(inBlock)(a)(b)(c)(d)(e)(f)(g)(h);
 	h ^= key[7]; g -= key[6]; f -= key[5]; e ^= key[4];
 	d ^= key[3]; c -= key[2]; b -= key[1]; a ^= key[0];
 	while (round--)
@@ -139,10 +142,7 @@ void SAFER::Decrypt(const byte *block_in, byte *block_out) const
 		d = LOG(d) ^ key[3]; c = EXP(c) - key[2];
 		b = EXP(b) - key[1]; a = LOG(a) ^ key[0];
 	}
-	block_out[0] = a & 0xFF; block_out[1] = b & 0xFF;
-	block_out[2] = c & 0xFF; block_out[3] = d & 0xFF;
-	block_out[4] = e & 0xFF; block_out[5] = f & 0xFF;
-	block_out[6] = g & 0xFF; block_out[7] = h & 0xFF;
+	Block::Put(xorBlock, outBlock)(a)(b)(c)(d)(e)(f)(g)(h);
 }
 
 NAMESPACE_END

@@ -3,41 +3,17 @@
 
 #include "config.h"
 
-#ifndef NO_OS_DEPENDENCE
-
-#ifdef __GNUC__
-#include <_G_config.h>
-#endif
-
-#if defined(_G_HAVE_SYS_SOCKET) && _G_HAVE_SYS_SOCKET
-#define HAS_BERKELEY_STYLE_SOCKETS
-#endif
-
-#if defined(_WIN32)
-#define HAS_WINDOWS_STYLE_SOCKETS
-#endif
-
-#include "hrtimer.h"
-
-#if defined(HIGHRES_TIMER_AVAILABLE) && (defined(HAS_BERKELEY_STYLE_SOCKETS) || defined(HAS_WINDOWS_STYLE_SOCKETS))
-#define SOCKETS_AVAILABLE
-#endif
-
-#endif	// #ifndef NO_OS_DEPENDENCE
-
 #ifdef SOCKETS_AVAILABLE
-
-#if defined(HAS_WINDOWS_STYLE_SOCKETS) && (!defined(HAS_BERKELEY_STYLE_SOCKETS) || defined(PREFER_WINDOWS_STYLE_SOCKETS))
-#define USE_WINDOWS_STYLE_SOCKETS
-#else
-#define USE_BERKELEY_STYLE_SOCKETS
-#endif
 
 #include "network.h"
 #include "queue.h"
 
 #ifdef USE_WINDOWS_STYLE_SOCKETS
+#	if defined(_WINSOCKAPI_) && !defined(_WINSOCK2API_)
+#		error Winsock 1 is not supported by this library. Please include this file or winsock2.h before windows.h.
+#	endif
 #include <winsock2.h>
+#include "winpipes.h"
 #else
 #include <sys/time.h>
 #include <sys/types.h>
@@ -56,14 +32,11 @@ const socket_t INVALID_SOCKET = -1;
 const int SD_RECEIVE = 0;
 const int SD_SEND = 1;
 const int SD_BOTH = 2;
+const int SOCKET_ERROR = -1;
 #endif
 
-#ifndef socklen_t	// "#define socklen_t int" appears in socket.h on cygwin
-#ifdef HAS_WINDOWS_STYLE_SOCKETS	// use HAS_ instead of USE_ because cygwin doesn't have socklen_t
-typedef int socklen_t;
-#else
-typedef ::socklen_t socklen_t;
-#endif
+#ifndef socklen_t
+typedef TYPE_OF_SOCKLEN_T socklen_t;	// see config.h
 #endif
 
 //! wrapper for Windows or Berkeley Sockets
@@ -71,20 +44,14 @@ class Socket
 {
 public:
 	//! exception thrown by Socket class
-	class Err : public Exception
+	class Err : public OS_Error
 	{
 	public:
 		Err(socket_t s, const std::string& operation, int error);
-		~Err() throw() {}	// needed with GCC 3.0.2, not sure why
-
 		socket_t GetSocket() const {return m_s;}
-		const std::string & GetOperation() const {return m_operation;}
-		int GetError() const {return m_error;}
 
 	private:
 		socket_t m_s;
-		std::string m_operation;
-		int m_error;
 	};
 
 	Socket(socket_t s = INVALID_SOCKET, bool own=false) : m_s(s), m_own(own) {}
@@ -95,7 +62,7 @@ public:
 	void SetOwnership(bool own) {m_own = own;}
 
 	operator socket_t() {return m_s;}
-	socket_t GetSocket() {return m_s;}
+	socket_t GetSocket() const {return m_s;}
 	void AttachSocket(socket_t s, bool own=false);
 	socket_t DetachSocket();
 	void CloseSocket();
@@ -118,6 +85,16 @@ public:
 	bool SendReady(const timeval *timeout);
 	bool ReceiveReady(const timeval *timeout);
 
+	virtual void HandleError(const char *operation) const;
+	void CheckAndHandleError_int(const char *operation, int result) const
+		{if (result == SOCKET_ERROR) HandleError(operation);}
+	void CheckAndHandleError(const char *operation, socket_t result) const
+		{if (result == SOCKET_ERROR) HandleError(operation);}
+#ifdef USE_WINDOWS_STYLE_SOCKETS
+	void CheckAndHandleError(const char *operation, BOOL result) const
+		{assert(result==TRUE || result==FALSE); if (!result) HandleError(operation);}
+#endif
+
 	//! look up the port number given its name, returns 0 if not found
 	static unsigned int PortNameToNumber(const char *name, const char *protocol="tcp");
 	//! start Windows Sockets 2
@@ -131,10 +108,6 @@ public:
 
 protected:
 	virtual void SocketChanged() {}
-	virtual void CheckAndHandleError(const char *operation, int result) const;
-#ifdef USE_WINDOWS_STYLE_SOCKETS
-	virtual void CheckAndHandleError(const char *operation, socket_t result) const;
-#endif
 
 	socket_t m_s;
 	bool m_own;
@@ -148,37 +121,94 @@ public:
 	~SocketsInitializer() {try {Socket::ShutdownSockets();} catch (...) {}}
 };
 
-//! .
-class SocketSource : public Socket, public NetworkSource
+class SocketReceiver : public NetworkReceiver
 {
 public:
-	SocketSource(socket_t s = INVALID_SOCKET, bool pumpAndClose = false, BufferedTransformation *outQueue = NULL);
+	SocketReceiver(Socket &s);
 
-	bool ReceiveReady(unsigned long timeout=0);
-	bool Receive(byte* buf, unsigned int bufLen);
-	bool ReceiveResultReady(unsigned long timeout=0) {return true;}
-	unsigned int GetReceiveResult() {return m_lastResult;}
+#ifdef USE_BERKELEY_STYLE_SOCKETS
+	bool MustWaitToReceive() {return true;}
+#else
+	bool MustWaitForResult() {return true;}
+#endif
+	void Receive(byte* buf, unsigned int bufLen);
+	unsigned int GetReceiveResult();
 	bool EofReceived() const {return m_eofReceived;}
 
+	unsigned int GetMaxWaitObjectCount() const {return 1;}
+	void GetWaitObjects(WaitObjectContainer &container);
+
 private:
-	unsigned int m_lastResult;
+	Socket &m_s;
 	bool m_eofReceived;
+
+#ifdef USE_WINDOWS_STYLE_SOCKETS
+	WindowsHandle m_event;
+	OVERLAPPED m_overlapped;
+	bool m_resultPending;
+	DWORD m_lastResult;
+#else
+	unsigned int m_lastResult;
+#endif
+};
+
+class SocketSender : public NetworkSender
+{
+public:
+	SocketSender(Socket &s);
+
+#ifdef USE_BERKELEY_STYLE_SOCKETS
+	bool MustWaitToSend() {return true;}
+#else
+	bool MustWaitForResult() {return true;}
+#endif
+	void Send(const byte* buf, unsigned int bufLen);
+	unsigned int GetSendResult();
+	void SendEof() {m_s.ShutDown(SD_SEND);}
+
+	unsigned int GetMaxWaitObjectCount() const {return 1;}
+	void GetWaitObjects(WaitObjectContainer &container);
+
+private:
+	Socket &m_s;
+#ifdef USE_WINDOWS_STYLE_SOCKETS
+	WindowsHandle m_event;
+	OVERLAPPED m_overlapped;
+	bool m_resultPending;
+	DWORD m_lastResult;
+#else
+	unsigned int m_lastResult;
+#endif
 };
 
 //! .
-class SocketSink : public Socket, public NetworkSink
+class SocketSource : public NetworkSource, public Socket
 {
 public:
-	SocketSink(socket_t s = INVALID_SOCKET, unsigned int maxBufferSize=0, bool autoFlush=false);
+	SocketSource(socket_t s = INVALID_SOCKET, bool pumpAll = false, BufferedTransformation *attachment = NULL)
+		: NetworkSource(attachment), Socket(s), m_receiver(*this)
+	{
+		if (pumpAll)
+			PumpAll();
+	}
 
-	bool SendReady(unsigned long timeout=0);
-	bool Send(const byte* buf, unsigned int bufLen);
-	bool SendResultReady(unsigned long timeout=0) {return true;}
-	unsigned int GetSendResult() {return m_lastResult;}
+private:
+	NetworkReceiver & AccessReceiver() {return m_receiver;}
+	SocketReceiver m_receiver;
+};
+
+//! .
+class SocketSink : public NetworkSink, public Socket
+{
+public:
+	SocketSink(socket_t s = INVALID_SOCKET, unsigned int maxBufferSize=0, bool autoFlush=false)
+		: NetworkSink(maxBufferSize, autoFlush), Socket(s), m_sender(*this) {}
+
 	void SendEof() {ShutDown(SD_SEND);}
 
 private:
-	unsigned int m_lastResult;
+	NetworkSender & AccessSender() {return m_sender;}
+	SocketSender m_sender;
 };
 
 NAMESPACE_END

@@ -93,6 +93,7 @@ template<class T> class counted_ptr
 {
 public:
 	explicit counted_ptr(T *p = 0);
+	counted_ptr(const T &r) : m_p(0) {attach(r);}
 	counted_ptr(const counted_ptr<T>& rhs);
 
 	~counted_ptr();
@@ -101,10 +102,12 @@ public:
 	T& operator*() { return *m_p; }
 
 	const T* operator->() const { return m_p; }
-	T* operator->() { return m_p; }
+	T* operator->() { return get(); }
 
 	const T* get() const { return m_p; }
-	T* get() { return m_p; }
+	T* get();
+
+	void attach(const T &p);
 
 	counted_ptr<T> & operator=(const counted_ptr<T>& rhs);
 
@@ -132,13 +135,44 @@ template <class T> counted_ptr<T>::~counted_ptr()
 		delete m_p;
 }
 
-template <class T> counted_ptr<T> & counted_ptr<T>::operator=(const counted_ptr<T>& rhs)
+template <class T> void counted_ptr<T>::attach(const T &r)
 {
 	if (m_p && --m_p->m_referenceCount == 0)
 		delete m_p;
-	m_p = rhs.m_p;
-	if (m_p)
+	if (r.m_referenceCount == 0)
+	{
+		m_p = r.clone();
+		m_p->m_referenceCount = 1;
+	}
+	else
+	{
+		m_p = const_cast<T *>(&r);
 		m_p->m_referenceCount++;
+	}
+}
+
+template <class T> T* counted_ptr<T>::get()
+{
+	if (m_p && m_p->m_referenceCount > 1)
+	{
+		T *temp = m_p->clone();
+		m_p->m_referenceCount--;
+		m_p = temp;
+		m_p->m_referenceCount = 1;
+	}
+	return m_p;
+}
+
+template <class T> counted_ptr<T> & counted_ptr<T>::operator=(const counted_ptr<T>& rhs)
+{
+	if (m_p != rhs.m_p)
+	{
+		if (m_p && --m_p->m_referenceCount == 0)
+			delete m_p;
+		m_p = rhs.m_p;
+		if (m_p)
+			m_p->m_referenceCount++;
+	}
 	return *this;
 }
 
@@ -174,20 +208,6 @@ private:
 
 	unsigned int _size;
 	member_ptr<T> *ptr;
-};
-
-// ********************************************************
-
-// derive from this class for a temporary variable
-// that can be used during base/member initialization
-template <class T>
-class ConstructorTemp
-{
-protected:
-	ConstructorTemp(const ConstructorTemp &copy) : m_temp(NULL) {}
-	ConstructorTemp(T *t = NULL) : m_temp(t) {}
-	ConstructorTemp(const T &t) : m_temp(new T(t)) {}
-	member_ptr<T> m_temp;
 };
 
 NAMESPACE_END

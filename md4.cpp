@@ -16,15 +16,16 @@
 
 #include "pch.h"
 #include "md4.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
 void MD4::Init()
 {
-	digest[0] = 0x67452301L;
-	digest[1] = 0xefcdab89L;
-	digest[2] = 0x98badcfeL;
-	digest[3] = 0x10325476L;
+	m_digest[0] = 0x67452301L;
+	m_digest[1] = 0xefcdab89L;
+	m_digest[2] = 0x98badcfeL;
+	m_digest[3] = 0x10325476L;
 }
 
 void MD4::Transform (word32 *digest, const word32 *in)

@@ -1,61 +1,34 @@
 #ifndef CRYPTOPP_BASE64_H
 #define CRYPTOPP_BASE64_H
 
-#include "cryptlib.h"
-#include "filters.h"
+#include "basecode.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
 //! Base64 Encoder Class 
-class Base64Encoder : public Filter
+class Base64Encoder : public SimpleProxyFilter
 {
 public:
-	Base64Encoder(BufferedTransformation *outQueue = NULL, bool insertLineBreak = true);
-
-	void Put(byte inByte)
+	Base64Encoder(BufferedTransformation *attachment = NULL, bool insertLineBreaks = true, int maxLineLength = 72)
+		: SimpleProxyFilter(new BaseN_Encoder(new Grouper), attachment)
 	{
-		inBuf[inBufSize++]=inByte;
-		if (inBufSize==3)
-			EncodeQuantum();
+		IsolatedInitialize(MakeParameters("InsertLineBreaks", insertLineBreaks)("MaxLineLength", maxLineLength));
 	}
 
-	void Put(const byte *inString, unsigned int length);
-	void MessageEnd(int propagation=-1);
-
-private:
-	void LineBreak();
-	void EncodeQuantum();
-
-	const bool insertLineBreak;
-	int inBufSize;
-	int lineLength;
-	byte inBuf[3];
+	void IsolatedInitialize(const NameValuePairs &parameters);
 };
 
 //! Base64 Decoder Class 
-class Base64Decoder : public Filter
+class Base64Decoder : public BaseN_Decoder
 {
 public:
-	Base64Decoder(BufferedTransformation *outQueue = NULL);
+	Base64Decoder(BufferedTransformation *attachment = NULL)
+		: BaseN_Decoder(GetDecodingLookupArray(), 6, attachment) {}
 
-	void Put(byte inByte)
-	{
-		int i=ConvToNumber(inByte);
-		if (i >= 0)
-			inBuf[inBufSize++]=(byte) i;
-		if (inBufSize==4)
-			DecodeQuantum();
-	}
-
-	void Put(const byte *inString, unsigned int length);
-	void MessageEnd(int propagation=-1);
+	void IsolatedInitialize(const NameValuePairs &parameters) {}
 
 private:
-	static int ConvToNumber(byte inByte);
-	void DecodeQuantum();
-
-	int inBufSize;
-	byte inBuf[4];
+	static const int *GetDecodingLookupArray();
 };
 
 NAMESPACE_END

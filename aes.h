@@ -9,10 +9,14 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-//! AES Encrypting Class - Rijndael Block Cipher      
-typedef RijndaelEncryption AESEncryption;
+#ifdef CRYPTOPP_DOXYGEN_PROCESSING	// Use inheritance instead of typedef to get a seperate API reference page for AES
+//! AES
+class AES : public Rijndael, public BlockCipherDocumentation {};
+#else
+typedef Rijndael AES;
+#endif
 
-//! AES Decryption Class - Rijndael Block Cipher      
+typedef RijndaelEncryption AESEncryption;
 typedef RijndaelDecryption AESDecryption;
 
 NAMESPACE_END

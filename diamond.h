@@ -4,102 +4,105 @@
 /** \file
 */
 
-#include "cryptlib.h"
-#include "misc.h"
-#include "crc.h"
+#include "seckey.h"
+#include "secblock.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// base class, do not use directly
-class Diamond2Base : public FixedBlockSize<16>, public VariableKeyLength<16, 1, 256>
+struct Diamond2_Info : public FixedBlockSize<16>, public VariableKeyLength<16, 1, 256>, public VariableRounds<10>
 {
-public:
-	Diamond2Base(const byte *key, unsigned int key_size, unsigned int rounds,
-				CipherDir direction);
-
-	enum {DEFAULT_ROUNDS=10};
-
-protected:
-	enum {ROUNDSIZE=4096};
-	inline void substitute(int round, byte *y) const;
-
-	const int numrounds;
-	SecByteBlock s;         // Substitution boxes
-
-	static inline void permute(byte *);
-	static inline void ipermute(byte *);
-#ifdef DIAMOND_USE_PERMTABLE
-	static const word32 permtable[9][256];
-	static const word32 ipermtable[9][256];
-#endif
+	static const char *StaticAlgorithmName() {return "Diamond2";}
 };
 
 /// <a href="http://www.weidai.com/scan-mirror/cs.html#Diamond2">Diamond2</a>
-class Diamond2Encryption : public Diamond2Base
+class Diamond2 : public Diamond2_Info, public BlockCipherDocumentation
 {
-public:
-	Diamond2Encryption(const byte *key, unsigned int key_size=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS)
-		: Diamond2Base(key, key_size, rounds, ENCRYPTION) {}
+	class Base : public BlockCipherBaseTemplate<Diamond2_Info>
+	{
+	public:
+		void UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length, unsigned int rounds);
 
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-	void ProcessBlock(byte * inoutBlock) const;
-};
+	protected:
+		enum {ROUNDSIZE=4096};
+		inline void substitute(int round, byte *x, const byte *y) const;
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#Diamond2">Diamond2</a>
-class Diamond2Decryption : public Diamond2Base
-{
-public:
-	Diamond2Decryption(const byte *key, unsigned int key_size=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS)
-		: Diamond2Base(key, key_size, rounds, DECRYPTION) {}
+		int numrounds;
+		SecByteBlock s;         // Substitution boxes
 
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-	void ProcessBlock(byte * inoutBlock) const;
-};
-
-/// base class, do not use directly
-class Diamond2LiteBase : public FixedBlockSize<8>, public VariableKeyLength<16, 1, 256>
-{
-public:
-	Diamond2LiteBase(const byte *key, unsigned int key_size, unsigned int rounds,
-				CipherDir direction);
-
-	enum {DEFAULT_ROUNDS=8};
-
-protected:
-	enum {ROUNDSIZE=2048};
-	inline void substitute(int round, byte *y) const;
-	const int numrounds;
-	SecByteBlock s;         // Substitution boxes
-
-	static inline void permute(byte *);
-	static inline void ipermute(byte *);
+		static inline void permute(byte *);
+		static inline void ipermute(byte *);
 #ifdef DIAMOND_USE_PERMTABLE
-	static const word32 permtable[8][256];
-	static const word32 ipermtable[8][256];
+		static const word32 permtable[9][256];
+		static const word32 ipermtable[9][256];
 #endif
-};
+	};
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#Diamond2">Diamond2 Lite</a>
-class Diamond2LiteEncryption : public Diamond2LiteBase
-{
+	class Enc : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+	class Dec : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
 public:
-	Diamond2LiteEncryption(const byte *key, unsigned int key_size=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS)
-		: Diamond2LiteBase(key, key_size, rounds, ENCRYPTION) {}
-
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-	void ProcessBlock(byte * inoutBlock) const;
+	typedef BlockCipherTemplate<ENCRYPTION, Enc> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Dec> Decryption;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#Diamond2">Diamond2 Lite</a>
-class Diamond2LiteDecryption : public Diamond2LiteBase
+typedef Diamond2::Encryption Diamond2Encryption;
+typedef Diamond2::Decryption Diamond2Decryption;
+
+struct Diamond2Lite_Info : public FixedBlockSize<8>, public VariableKeyLength<16, 1, 256>, public VariableRounds<8>
 {
-public:
-	Diamond2LiteDecryption(const byte *key, unsigned int key_size=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS)
-		: Diamond2LiteBase(key, key_size, rounds, DECRYPTION) {}
-
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-	void ProcessBlock(byte * inoutBlock) const;
+	static const char *StaticAlgorithmName() {return "Diamond2Lite";}
 };
+
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#Diamond2">Diamond2Lite</a>
+class Diamond2Lite : public Diamond2Lite_Info, public BlockCipherDocumentation
+{
+	class Base : public BlockCipherBaseTemplate<Diamond2Lite_Info>
+	{
+	public:
+		void UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length, unsigned int rounds);
+
+	protected:
+		enum {ROUNDSIZE=2048};
+		inline void substitute(int round, byte *x, const byte *y) const;
+		int numrounds;
+		SecByteBlock s;         // Substitution boxes
+
+		static inline void permute(byte *);
+		static inline void ipermute(byte *);
+	#ifdef DIAMOND_USE_PERMTABLE
+		static const word32 permtable[8][256];
+		static const word32 ipermtable[8][256];
+	#endif
+	};
+
+	class Enc : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+	class Dec : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+public:
+	typedef BlockCipherTemplate<ENCRYPTION, Enc> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Dec> Decryption;
+};
+
+typedef Diamond2Lite::Encryption Diamond2LiteEncryption;
+typedef Diamond2Lite::Decryption Diamond2LiteDecryption;
 
 NAMESPACE_END
 

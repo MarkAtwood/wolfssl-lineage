@@ -18,6 +18,7 @@
 
 #include "pch.h"
 #include "diamond.h"
+#include "crc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -136,39 +137,41 @@ void Diamond2SboxMaker::MakeSbox(byte *s, CipherDir direction)
 	}
 }
 
-Diamond2Base::Diamond2Base(const byte *key, unsigned int key_size,
-				 unsigned int rounds, CipherDir direction)
-	: numrounds(rounds),
-	  s(numrounds * ROUNDSIZE)
+void Diamond2::Base::UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length, unsigned int rounds)
 {
-	Diamond2SboxMaker m(key, key_size, rounds, false);
+	AssertValidKeyLength(length);
+
+	numrounds = rounds;
+	s.New(numrounds * ROUNDSIZE);
+
+	Diamond2SboxMaker m(userKey, length, rounds, false);
 	m.MakeSbox(s, direction);
 }
 
-inline void Diamond2Base::substitute(int round, byte *y) const
+inline void Diamond2::Base::substitute(int round, byte *x, const byte *y) const
 {
 	const byte *sbox = s + (ROUNDSIZE*round);
-	y[0] = sbox[0*256+y[0]];
-	y[1] = sbox[1*256+y[1]];
-	y[2] = sbox[2*256+y[2]];
-	y[3] = sbox[3*256+y[3]];
-	y[4] = sbox[4*256+y[4]];
-	y[5] = sbox[5*256+y[5]];
-	y[6] = sbox[6*256+y[6]];
-	y[7] = sbox[7*256+y[7]];
-	y[8] = sbox[8*256+y[8]];
-	y[9] = sbox[9*256+y[9]];
-	y[10] = sbox[10*256+y[10]];
-	y[11] = sbox[11*256+y[11]];
-	y[12] = sbox[12*256+y[12]];
-	y[13] = sbox[13*256+y[13]];
-	y[14] = sbox[14*256+y[14]];
-	y[15] = sbox[15*256+y[15]];
+	x[0] = sbox[0*256+y[0]];
+	x[1] = sbox[1*256+y[1]];
+	x[2] = sbox[2*256+y[2]];
+	x[3] = sbox[3*256+y[3]];
+	x[4] = sbox[4*256+y[4]];
+	x[5] = sbox[5*256+y[5]];
+	x[6] = sbox[6*256+y[6]];
+	x[7] = sbox[7*256+y[7]];
+	x[8] = sbox[8*256+y[8]];
+	x[9] = sbox[9*256+y[9]];
+	x[10] = sbox[10*256+y[10]];
+	x[11] = sbox[11*256+y[11]];
+	x[12] = sbox[12*256+y[12]];
+	x[13] = sbox[13*256+y[13]];
+	x[14] = sbox[14*256+y[14]];
+	x[15] = sbox[15*256+y[15]];
 }
 
 #ifdef DIAMOND_USE_PERMTABLE
 
-inline void Diamond2Base::permute(byte *a)
+inline void Diamond2::Base::permute(byte *a)
 {
 #ifdef IS_LITTLE_ENDIAN
 	word32 temp0     = (a[0] | (word32(a[10])<<24)) & 0x80000001;
@@ -219,7 +222,7 @@ inline void Diamond2Base::permute(byte *a)
 	((word32 *)a)[2] = temp2;
 }
 
-inline void Diamond2Base::ipermute(byte *a)
+inline void Diamond2::Base::ipermute(byte *a)
 {
 #ifdef IS_LITTLE_ENDIAN
 	word32 temp0     = (a[9] | (word32(a[3])<<24)) & 0x01000080;
@@ -272,7 +275,7 @@ inline void Diamond2Base::ipermute(byte *a)
 
 #else // DIAMOND_USE_PERMTABLE
 
-inline void Diamond2Base::permute(byte *x)
+inline void Diamond2::Base::permute(byte *x)
 {
 	byte y[16];
 
@@ -328,7 +331,7 @@ inline void Diamond2Base::permute(byte *x)
 	memcpy(x, y, 16);
 }
 
-inline void Diamond2Base::ipermute(byte *x)
+inline void Diamond2::Base::ipermute(byte *x)
 {
 	byte y[16];
 
@@ -386,63 +389,69 @@ inline void Diamond2Base::ipermute(byte *x)
 
 #endif // DIAMOND_USE_PERMTABLE
 
-void Diamond2Encryption::ProcessBlock(byte *y) const
+void Diamond2::Enc::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
-	substitute(0, y);
+	const byte *x = inBlock;
+	byte y[16];
+
+	substitute(0, y, x);
 	for (int round=1; round < numrounds; round++)
 	{
 		permute(y);
-		substitute(round, y);
+		substitute(round, y, y);
 	}
+
+	if (xorBlock)
+		xorbuf(outBlock, xorBlock, y, BLOCKSIZE);
+	else
+		memcpy(outBlock, y, BLOCKSIZE);
 }
 
-void Diamond2Encryption::ProcessBlock(const byte *x, byte *y) const
+void Diamond2::Dec::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
-	memcpy(y, x, BLOCKSIZE);
-	Diamond2Encryption::ProcessBlock(y);
-}
+	const byte *x = inBlock;
+	byte y[16];
 
-void Diamond2Decryption::ProcessBlock(byte *y) const
-{
-	substitute(numrounds-1, y);
+	substitute(numrounds-1, y, x);
 	for (int round=numrounds-2; round >= 0; round--)
 	{
 		ipermute(y);
-		substitute(round, y);
+		substitute(round, y, y);
 	}
+
+	if (xorBlock)
+		xorbuf(outBlock, xorBlock, y, BLOCKSIZE);
+	else
+		memcpy(outBlock, y, BLOCKSIZE);
 }
 
-void Diamond2Decryption::ProcessBlock(const byte *x, byte *y) const
+void Diamond2Lite::Base::UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length, unsigned int rounds)
 {
-	memcpy(y, x, BLOCKSIZE);
-	Diamond2Decryption::ProcessBlock(y);
-}
+	AssertValidKeyLength(length);
 
-Diamond2LiteBase::Diamond2LiteBase(const byte *key, unsigned int key_size,
-								 unsigned int rounds, CipherDir direction)
-	: numrounds(rounds),
-	  s(numrounds * ROUNDSIZE)
-{
-	Diamond2SboxMaker m(key, key_size, rounds, true);
+	numrounds = rounds;
+	s.New(numrounds * ROUNDSIZE);
+
+	Diamond2SboxMaker m(userKey, length, rounds, true);
 	m.MakeSbox(s, direction);
 }
 
-inline void Diamond2LiteBase::substitute(int round, byte *y) const
+inline void Diamond2Lite::Base::substitute(int round, byte *x, const byte *y) const
 {
 	const byte *sbox = s + (ROUNDSIZE*round);
-	y[0] = sbox[0*256+y[0]];
-	y[1] = sbox[1*256+y[1]];
-	y[2] = sbox[2*256+y[2]];
-	y[3] = sbox[3*256+y[3]];
-	y[4] = sbox[4*256+y[4]];
-	y[5] = sbox[5*256+y[5]];
-	y[6] = sbox[6*256+y[6]];
-	y[7] = sbox[7*256+y[7]];
+	x[0] = sbox[0*256+y[0]];
+	x[1] = sbox[1*256+y[1]];
+	x[2] = sbox[2*256+y[2]];
+	x[3] = sbox[3*256+y[3]];
+	x[4] = sbox[4*256+y[4]];
+	x[5] = sbox[5*256+y[5]];
+	x[6] = sbox[6*256+y[6]];
+	x[7] = sbox[7*256+y[7]];
 }
 
 #ifdef DIAMOND_USE_PERMTABLE
 
-inline void Diamond2LiteBase::permute(byte *a)
+inline void Diamond2Lite::Base::permute(byte *a)
 {
 	word32 temp      = permtable[0][a[0]] | permtable[1][a[1]] |
 					   permtable[2][a[2]] | permtable[3][a[3]] |
@@ -457,7 +466,7 @@ inline void Diamond2LiteBase::permute(byte *a)
 	((word32 *)a)[0] = temp;
 }
 
-inline void Diamond2LiteBase::ipermute(byte *a)
+inline void Diamond2Lite::Base::ipermute(byte *a)
 {
 	word32 temp      = ipermtable[0][a[0]] | ipermtable[1][a[1]] |
 					   ipermtable[2][a[2]] | ipermtable[3][a[3]] |
@@ -474,7 +483,7 @@ inline void Diamond2LiteBase::ipermute(byte *a)
 
 #else
 
-inline void Diamond2LiteBase::permute(byte *a)
+inline void Diamond2Lite::Base::permute(byte *a)
 {
 	byte b[8];
 
@@ -498,7 +507,7 @@ inline void Diamond2LiteBase::permute(byte *a)
 	memcpy(a, b, 8);
 }
 
-inline void Diamond2LiteBase::ipermute(byte *b)
+inline void Diamond2Lite::Base::ipermute(byte *b)
 {
 	byte a[8];
 
@@ -524,36 +533,40 @@ inline void Diamond2LiteBase::ipermute(byte *b)
 
 #endif // DIAMOND_USE_PERMTABLE
 
-void Diamond2LiteEncryption::ProcessBlock(byte *y) const
+void Diamond2Lite::Enc::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
-	substitute(0, y);
+	const byte *x = inBlock;
+	byte y[8];
+
+	substitute(0, y, x);
 	for (int round=1; round < numrounds; round++)
 	{
 		permute(y);
-		substitute(round, y);
+		substitute(round, y, y);
 	}
+
+	if (xorBlock)
+		xorbuf(outBlock, xorBlock, y, BLOCKSIZE);
+	else
+		memcpy(outBlock, y, BLOCKSIZE);
 }
 
-void Diamond2LiteEncryption::ProcessBlock(const byte *x, byte *y) const
+void Diamond2Lite::Dec::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
-	memcpy(y, x, BLOCKSIZE);
-	Diamond2LiteEncryption::ProcessBlock(y);
-}
+	const byte *x = inBlock;
+	byte y[8];
 
-void Diamond2LiteDecryption::ProcessBlock(byte *y) const
-{
-	substitute(numrounds-1, y);
+	substitute(numrounds-1, y, x);
 	for (int round=numrounds-2; round >= 0; round--)
 	{
 		ipermute(y);
-		substitute(round, y);
+		substitute(round, y, y);
 	}
-}
 
-void Diamond2LiteDecryption::ProcessBlock(const byte *x, byte *y) const
-{
-	memcpy(y, x, BLOCKSIZE);
-	Diamond2LiteDecryption::ProcessBlock(y);
+	if (xorBlock)
+		xorbuf(outBlock, xorBlock, y, BLOCKSIZE);
+	else
+		memcpy(outBlock, y, BLOCKSIZE);
 }
 
 NAMESPACE_END

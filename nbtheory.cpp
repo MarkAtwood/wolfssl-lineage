@@ -3,6 +3,7 @@
 #include "pch.h"
 #include "nbtheory.h"
 #include "modarith.h"
+#include "algparam.h"
 
 #include <math.h>
 #include <vector>
@@ -87,7 +88,7 @@ word primeTable[maxPrimeTableSize] =
 void BuildPrimeTable()
 {
 	unsigned int p=primeTable[primeTableSize-1];
-	for (int i=primeTableSize; i<maxPrimeTableSize; i++)
+	for (unsigned int i=primeTableSize; i<maxPrimeTableSize; i++)
 	{
 		int j;
 		do
@@ -279,9 +280,12 @@ bool IsPrime(const Integer &p)
 		return SmallDivisorsTest(p) && IsStrongProbablePrime(p, 3) && IsStrongLucasProbablePrime(p);
 }
 
-bool VerifyPrime(RandomNumberGenerator &rng, const Integer &p)
+bool VerifyPrime(RandomNumberGenerator &rng, const Integer &p, unsigned int level)
 {
-	return IsPrime(p) && RabinMillerTest(rng, p, 10);
+	bool pass = IsPrime(p) && RabinMillerTest(rng, p, 1);
+	if (level >= 1)
+		pass = pass && RabinMillerTest(rng, p, 10);
+	return pass;
 }
 
 unsigned int PrimeSearchInterval(const Integer &max)
@@ -292,6 +296,28 @@ unsigned int PrimeSearchInterval(const Integer &max)
 static inline bool FastProbablePrimeTest(const Integer &n)
 {
 	return IsStrongProbablePrime(n,2);
+}
+
+AlgorithmParameters<AlgorithmParameters<AlgorithmParameters<NullNameValuePairs, Integer::RandomNumberType>, Integer>, Integer>
+	MakeParametersForTwoPrimesOfEqualSize(unsigned int productBitLength)
+{
+	if (productBitLength < 16)
+		throw InvalidArgument("invalid bit length");
+
+	Integer minP, maxP;
+
+	if (productBitLength%2==0)
+	{
+		minP = Integer(182) << (productBitLength/2-8);
+		maxP = Integer::Power2(productBitLength/2)-1;
+	}
+	else
+	{
+		minP = Integer::Power2((productBitLength-1)/2);
+		maxP = Integer(181) << ((productBitLength+1)/2-8);
+	}
+
+	return MakeParameters("RandomNumberType", Integer::PRIME)("Min", minP)("Max", maxP);
 }
 
 class PrimeSieve
@@ -385,7 +411,7 @@ void PrimeSieve::DoSieve()
 	}
 }
 
-bool FirstPrime(Integer &p, const Integer &max, const Integer &equiv, const Integer &mod)
+bool FirstPrime(Integer &p, const Integer &max, const Integer &equiv, const Integer &mod, const PrimeSelector *pSelector)
 {
 	assert(!equiv.IsNegative() && equiv < mod);
 
@@ -410,7 +436,7 @@ bool FirstPrime(Integer &p, const Integer &max, const Integer &equiv, const Inte
 
 		--p;
 		if (p.IsPositive())
-			pItr = std::upper_bound(primeTable, primeTable+primeTableSize, p.ConvertToLong());
+			pItr = std::upper_bound(primeTable, primeTable+primeTableSize, (word)p.ConvertToLong());
 		else
 			pItr = primeTable;
 
@@ -429,7 +455,7 @@ bool FirstPrime(Integer &p, const Integer &max, const Integer &equiv, const Inte
 	assert(p > primeTable[primeTableSize-1]);
 
 	if (mod.IsOdd())
-		return FirstPrime(p, max, CRT(equiv, mod, 1, 2, 1), mod<<1);
+		return FirstPrime(p, max, CRT(equiv, mod, 1, 2, 1), mod<<1, pSelector);
 
 	p += (equiv-p)%mod;
 
@@ -440,7 +466,7 @@ bool FirstPrime(Integer &p, const Integer &max, const Integer &equiv, const Inte
 
 	while (sieve.NextCandidate(p))
 	{
-		if (FastProbablePrimeTest(p) && IsPrime(p))
+		if ((!pSelector || pSelector->IsAcceptable(p)) && FastProbablePrimeTest(p) && IsPrime(p))
 			return true;
 	}
 
@@ -485,7 +511,7 @@ Integer MihailescuProvablePrime(RandomNumberGenerator &rng, unsigned int pbits)
 		return p;
 	}
 
-	unsigned int qbits = (pbits+2)/3 + 1 + rng.GetLong(0, pbits/36);
+	unsigned int qbits = (pbits+2)/3 + 1 + rng.GenerateWord32(0, pbits/36);
 	Integer q = MihailescuProvablePrime(rng, qbits);
 	Integer q2 = q<<1;
 
@@ -529,7 +555,7 @@ Integer MaurerProvablePrime(RandomNumberGenerator &rng, unsigned int bits)
 		const unsigned margin = bits > 50 ? 20 : (bits-10)/2;
 		double relativeSize;
 		do
-			relativeSize = pow(2.0, double(rng.GetLong())/0xffffffff - 1);
+			relativeSize = pow(2.0, double(rng.GenerateWord32())/0xffffffff - 1);
 		while (bits * relativeSize >= bits - margin);
 
 		Integer a,b;
@@ -801,10 +827,10 @@ Integer Lucas(const Integer &e, const Integer &pIn, const Integer &n)
 {
 	unsigned i = e.BitCount();
 	if (i==0)
-		return 2;
+		return Integer::Two();
 
 	MontgomeryRepresentation m(n);
-	Integer p=m.ConvertIn(pIn%n), two=m.ConvertIn(2);
+	Integer p=m.ConvertIn(pIn%n), two=m.ConvertIn(Integer::Two());
 	Integer v=p, v1=m.Subtract(m.Square(p), two);
 
 	i--;
@@ -1013,92 +1039,88 @@ unsigned int DiscreteLogWorkFactor(unsigned int n)
 
 // ********************************************************
 
-// generate a random prime p of the form 2*q+delta, where delta is 1 or -1 and q is also prime
-// warning: this is takes some time
-PrimeAndGenerator::PrimeAndGenerator(signed int delta, RandomNumberGenerator &rng, unsigned int pbits)
-{
-	// no prime exists for delta = -1 and pbits = 5
-	assert(pbits > 5);
-
-	Integer minP = Integer::Power2(pbits-1);
-	Integer maxP = Integer::Power2(pbits) - 1;
-	bool success = false;
-
-	while (!success)
-	{
-		p.Randomize(rng, minP, maxP, Integer::ANY, 6+5*delta, 12);
-		PrimeSieve sieve(p, STDMIN(p+PrimeSearchInterval(maxP)*12, maxP), 12, delta);
-
-		while (sieve.NextCandidate(p))
-		{
-			assert(IsSmallPrime(p) || SmallDivisorsTest(p));
-			q = (p-delta) >> 1;
-			assert(IsSmallPrime(q) || SmallDivisorsTest(q));
-			if (FastProbablePrimeTest(q) && FastProbablePrimeTest(p) && IsPrime(q) && IsPrime(p))
-			{
-				success = true;
-				break;
-			}
-		}
-	}
-
-	if (delta == 1)
-	{
-		// find g such that g is a quadratic residue mod p, then g has order q
-		// g=4 always works, but this way we get the smallest quadratic residue (other than 1)
-		for (g=2; Jacobi(g, p) != 1; ++g);
-		// contributed by Walt Tuvell: g should be the following according to the Law of Quadratic Reciprocity
-		assert((p%8==1 || p%8==7) ? g==2 : (p%12==1 || p%12==11) ? g==3 : g==4);
-	}
-	else
-	{
-		assert(delta == -1);
-		// find g such that g*g-4 is a quadratic non-residue, 
-		// and such that g has order q
-		for (g=3; ; ++g)
-			if (Jacobi(g*g-4, p)==-1 && Lucas(q, g, p)==2)
-				break;
-	}
-}
-
-// generate a random prime p of the form 2*r*q+delta, where q is also prime
-PrimeAndGenerator::PrimeAndGenerator(signed int delta, RandomNumberGenerator &rng, unsigned int pbits, unsigned int qbits)
+void PrimeAndGenerator::Generate(signed int delta, RandomNumberGenerator &rng, unsigned int pbits, unsigned int qbits)
 {
 	// no prime exists for delta = -1, qbits = 4, and pbits = 5
 	assert(qbits > 4);
 	assert(pbits > qbits);
 
-	Integer minQ = Integer::Power2(qbits-1);
-	Integer maxQ = Integer::Power2(qbits) - 1;
-	Integer minP = Integer::Power2(pbits-1);
-	Integer maxP = Integer::Power2(pbits) - 1;
-
-	do
+	if (qbits+1 == pbits)
 	{
-		q.Randomize(rng, minQ, maxQ, Integer::PRIME);
-	} while (!p.Randomize(rng, minP, maxP, Integer::PRIME, delta%q, q));
+		Integer minP = Integer::Power2(pbits-1);
+		Integer maxP = Integer::Power2(pbits) - 1;
+		bool success = false;
 
-	// find a random g of order q
-	if (delta==1)
-	{
-		do
+		while (!success)
 		{
-			Integer h(rng, 2, p-2, Integer::ANY);
-			g = a_exp_b_mod_c(h, (p-1)/q, p);
-		} while (g <= 1);
-		assert(a_exp_b_mod_c(g, q, p)==1);
+			p.Randomize(rng, minP, maxP, Integer::ANY, 6+5*delta, 12);
+			PrimeSieve sieve(p, STDMIN(p+PrimeSearchInterval(maxP)*12, maxP), 12, delta);
+
+			while (sieve.NextCandidate(p))
+			{
+				assert(IsSmallPrime(p) || SmallDivisorsTest(p));
+				q = (p-delta) >> 1;
+				assert(IsSmallPrime(q) || SmallDivisorsTest(q));
+				if (FastProbablePrimeTest(q) && FastProbablePrimeTest(p) && IsPrime(q) && IsPrime(p))
+				{
+					success = true;
+					break;
+				}
+			}
+		}
+
+		if (delta == 1)
+		{
+			// find g such that g is a quadratic residue mod p, then g has order q
+			// g=4 always works, but this way we get the smallest quadratic residue (other than 1)
+			for (g=2; Jacobi(g, p) != 1; ++g) {}
+			// contributed by Walt Tuvell: g should be the following according to the Law of Quadratic Reciprocity
+			assert((p%8==1 || p%8==7) ? g==2 : (p%12==1 || p%12==11) ? g==3 : g==4);
+		}
+		else
+		{
+			assert(delta == -1);
+			// find g such that g*g-4 is a quadratic non-residue, 
+			// and such that g has order q
+			for (g=3; ; ++g)
+				if (Jacobi(g*g-4, p)==-1 && Lucas(q, g, p)==2)
+					break;
+		}
 	}
 	else
 	{
-		assert(delta==-1);
+		Integer minQ = Integer::Power2(qbits-1);
+		Integer maxQ = Integer::Power2(qbits) - 1;
+		Integer minP = Integer::Power2(pbits-1);
+		Integer maxP = Integer::Power2(pbits) - 1;
+
 		do
 		{
-			Integer h(rng, 3, p-1, Integer::ANY);
-			if (Jacobi(h*h-4, p)==1)
-				continue;
-			g = Lucas((p+1)/q, h, p);
-		} while (g <= 2);
-		assert(Lucas(q, g, p) == 2);
+			q.Randomize(rng, minQ, maxQ, Integer::PRIME);
+		} while (!p.Randomize(rng, minP, maxP, Integer::PRIME, delta%q, q));
+
+		// find a random g of order q
+		if (delta==1)
+		{
+			do
+			{
+				Integer h(rng, 2, p-2, Integer::ANY);
+				g = a_exp_b_mod_c(h, (p-1)/q, p);
+			} while (g <= 1);
+			assert(a_exp_b_mod_c(g, q, p)==1);
+		}
+		else
+		{
+			assert(delta==-1);
+			do
+			{
+				Integer h(rng, 3, p-1, Integer::ANY);
+				if (Jacobi(h*h-4, p)==1)
+					continue;
+				g = Lucas((p+1)/q, h, p);
+			} while (g <= 2);
+			assert(Lucas(q, g, p) == 2);
+		}
 	}
 }
 

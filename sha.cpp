@@ -5,16 +5,17 @@
 
 #include "pch.h"
 #include "sha.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
 void SHA::Init()
 {
-	digest[0] = 0x67452301L;
-	digest[1] = 0xEFCDAB89L;
-	digest[2] = 0x98BADCFEL;
-	digest[3] = 0x10325476L;
-	digest[4] = 0xC3D2E1F0L;
+	m_digest[0] = 0x67452301L;
+	m_digest[1] = 0xEFCDAB89L;
+	m_digest[2] = 0x98BADCFEL;
+	m_digest[3] = 0x10325476L;
+	m_digest[4] = 0xC3D2E1F0L;
 }
 
 // start of Steve Reid's code
@@ -81,14 +82,14 @@ void SHA::Transform(word32 *state, const word32 *data)
 
 void SHA256::Init()
 {
-	digest[0] = 0x6a09e667;
-	digest[1] = 0xbb67ae85;
-	digest[2] = 0x3c6ef372;
-	digest[3] = 0xa54ff53a;
-	digest[4] = 0x510e527f;
-	digest[5] = 0x9b05688c;
-	digest[6] = 0x1f83d9ab;
-	digest[7] = 0x5be0cd19;
+	m_digest[0] = 0x6a09e667;
+	m_digest[1] = 0xbb67ae85;
+	m_digest[2] = 0x3c6ef372;
+	m_digest[3] = 0xa54ff53a;
+	m_digest[4] = 0x510e527f;
+	m_digest[5] = 0x9b05688c;
+	m_digest[6] = 0x1f83d9ab;
+	m_digest[7] = 0x5be0cd19;
 }
 
 #define blk2(i) (W[i&15]+=s1(W[(i-2)&15])+W[(i-7)&15]+s0(W[(i-15)&15]))
@@ -168,16 +169,18 @@ const word32 SHA256::K[64] = {
 
 // *************************************************************
 
+#ifdef WORD64_AVAILABLE
+
 void SHA512::Init()
 {
-	digest[0] = W64LIT(0x6a09e667f3bcc908);
-	digest[1] = W64LIT(0xbb67ae8584caa73b);
-	digest[2] = W64LIT(0x3c6ef372fe94f82b);
-	digest[3] = W64LIT(0xa54ff53a5f1d36f1);
-	digest[4] = W64LIT(0x510e527fade682d1);
-	digest[5] = W64LIT(0x9b05688c2b3e6c1f);
-	digest[6] = W64LIT(0x1f83d9abfb41bd6b);
-	digest[7] = W64LIT(0x5be0cd19137e2179);
+	m_digest[0] = W64LIT(0x6a09e667f3bcc908);
+	m_digest[1] = W64LIT(0xbb67ae8584caa73b);
+	m_digest[2] = W64LIT(0x3c6ef372fe94f82b);
+	m_digest[3] = W64LIT(0xa54ff53a5f1d36f1);
+	m_digest[4] = W64LIT(0x510e527fade682d1);
+	m_digest[5] = W64LIT(0x9b05688c2b3e6c1f);
+	m_digest[6] = W64LIT(0x1f83d9abfb41bd6b);
+	m_digest[7] = W64LIT(0x5be0cd19137e2179);
 }
 
 // for SHA512
@@ -259,14 +262,16 @@ const word64 SHA512::K[80] = {
 
 void SHA384::Init()
 {
-	digest[0] = W64LIT(0xcbbb9d5dc1059ed8);
-	digest[1] = W64LIT(0x629a292a367cd507);
-	digest[2] = W64LIT(0x9159015a3070dd17);
-	digest[3] = W64LIT(0x152fecd8f70e5939);
-	digest[4] = W64LIT(0x67332667ffc00b31);
-	digest[5] = W64LIT(0x8eb44a8768581511);
-	digest[6] = W64LIT(0xdb0c2e0d64f98fa7);
-	digest[7] = W64LIT(0x47b5481dbefa4fa4);
+	m_digest[0] = W64LIT(0xcbbb9d5dc1059ed8);
+	m_digest[1] = W64LIT(0x629a292a367cd507);
+	m_digest[2] = W64LIT(0x9159015a3070dd17);
+	m_digest[3] = W64LIT(0x152fecd8f70e5939);
+	m_digest[4] = W64LIT(0x67332667ffc00b31);
+	m_digest[5] = W64LIT(0x8eb44a8768581511);
+	m_digest[6] = W64LIT(0xdb0c2e0d64f98fa7);
+	m_digest[7] = W64LIT(0x47b5481dbefa4fa4);
 }
+
+#endif
 
 NAMESPACE_END

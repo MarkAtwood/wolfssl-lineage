@@ -10,17 +10,17 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 /// <a href="http://www.weidai.com/scan-mirror/md.html#Tiger">Tiger</a>
-class Tiger : public IteratedHash<word64, false, 64>
+class Tiger : public IteratedHashWithStaticTransform<word64, LittleEndian, 64, Tiger>
 {
 public:
 	enum {DIGESTSIZE = 24};
-	Tiger() : IteratedHash<word64, false, 64>(DIGESTSIZE) {Init();}
+	Tiger() : IteratedHashWithStaticTransform<word64, LittleEndian, 64, Tiger>(DIGESTSIZE) {Init();}
 	static void Transform(word64 *digest, const word64 *data);
 	void TruncatedFinal(byte *hash, unsigned int size);
+	static const char * StaticAlgorithmName() {return "Tiger";}
 
 protected:
 	void Init();
-	void vTransform(const word64 *data) {Transform(digest, data);}
 
 	static const word64 table[4*256];
 };

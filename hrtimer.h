@@ -5,10 +5,6 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-#if !defined(NO_OS_DEPENDENCE) && defined(WORD64_AVAILABLE) && (defined(_WIN32) || defined(__unix__) || defined(macintosh))
-#define HIGHRES_TIMER_AVAILABLE
-#endif
-
 #ifdef HIGHRES_TIMER_AVAILABLE
 
 //! high resolution timer
@@ -16,7 +12,7 @@ class Timer
 {
 public:
 	enum Unit {SECONDS, MILLISECONDS, MICROSECONDS};
-	Timer(Unit unit)	: m_started(false), m_timerUnit(unit) {}
+	Timer(Unit unit, bool stuckAtZero = false)	: m_timerUnit(unit), m_stuckAtZero(stuckAtZero), m_started(false) {}
 
 	static word64 GetCurrentTimerValue();	// GetCurrentTime is a macro in MSVC 6.0
 	static unsigned long ConvertTo(word64 t, Unit unit);
@@ -24,7 +20,7 @@ public:
 	// this is not the resolution, just a conversion factor into milliseconds
 	static inline unsigned int TicksPerMillisecond()
 	{
-#if defined(_WIN32)
+#if defined(CRYPTOPP_WIN32_AVAILABLE)
 		return 10000;
 #elif defined(__unix__) || defined(macintosh)
 		return 1000;
@@ -36,7 +32,7 @@ public:
 
 private:
 	Unit m_timerUnit;	// HPUX workaround: m_unit is a system macro on HPUX
-	bool m_started;
+	bool m_stuckAtZero, m_started;
 	word64 m_start;
 };
 

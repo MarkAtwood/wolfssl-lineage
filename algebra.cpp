@@ -54,7 +54,7 @@ template <class T> const T& AbstractEuclideanDomain<T>::Gcd(const Element &a, co
 	Element g[3]={b, a};
 	unsigned int i0=0, i1=1, i2=2;
 
-	while (!Equal(g[i1], Zero()))
+	while (!Equal(g[i1], Identity()))
 	{
 		g[i2] = Mod(g[i0], g[i1]);
 		unsigned int t = i0; i0 = i1; i1 = i2; i2 = t;
@@ -63,21 +63,21 @@ template <class T> const T& AbstractEuclideanDomain<T>::Gcd(const Element &a, co
 	return result = g[i0];
 }
 
-template <class T> const QuotientRing<T>::Element& QuotientRing<T>::MultiplicativeInverse(const Element &a) const
+template <class T> const typename QuotientRing<T>::Element& QuotientRing<T>::MultiplicativeInverse(const Element &a) const
 {
 	Element g[3]={m_modulus, a};
 #ifdef __BCPLUSPLUS__
     // BC++50 workaround          
 	Element v[3];
-    v[0]=m_domain.Zero();
-    v[1]=m_domain.One();
+    v[0]=m_domain.Identity();
+    v[1]=m_domain.MultiplicativeIdentity();
 #else
-	Element v[3]={m_domain.Zero(), m_domain.One()};
+	Element v[3]={m_domain.Identity(), m_domain.MultiplicativeIdentity()};
 #endif
 	Element y;
 	unsigned int i0=0, i1=1, i2=2;
 
-	while (!Equal(g[i1], Zero()))
+	while (!Equal(g[i1], Identity()))
 	{
 		// y = g[i0] / g[i1];
 		// g[i2] = g[i0] % g[i1];
@@ -87,7 +87,7 @@ template <class T> const QuotientRing<T>::Element& QuotientRing<T>::Multiplicati
 		unsigned int t = i0; i0 = i1; i1 = i2; i2 = t;
 	}
 
-	return m_domain.IsUnit(g[i0]) ? m_domain.Divide(v[i0], g[i0]) : m_domain.Zero();
+	return m_domain.IsUnit(g[i0]) ? m_domain.Divide(v[i0], g[i0]) : m_domain.Identity();
 }
 
 template <class T> T AbstractGroup<T>::ScalarMultiply(const Element &base, const Integer &exponent) const
@@ -101,7 +101,7 @@ template <class T> T AbstractGroup<T>::CascadeScalarMultiply(const Element &x, c
 {
 	const unsigned expLen = STDMAX(e1.BitCount(), e2.BitCount());
 	if (expLen==0)
-		return Zero();
+		return Identity();
 
 	const unsigned w = (expLen <= 46 ? 1 : (expLen <= 260 ? 2 : 3));
 	const unsigned tableSize = 1<<w;
@@ -266,7 +266,7 @@ void AbstractGroup<T>::SimultaneousMultiply(T *results, const T &base, const Int
 		assert(expBegin->NotNegative());
 		exponents.push_back(WindowSlider(*expBegin++, InversionIsFast(), 0));
 		exponents[i].FindNextWindow();
-		buckets[i].resize(1<<(exponents[i].windowSize-1), Zero());
+		buckets[i].resize(1<<(exponents[i].windowSize-1), Identity());
 	}
 
 	unsigned int expBitPosition = 0;

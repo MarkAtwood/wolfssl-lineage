@@ -90,12 +90,14 @@ void MD2::Update(const byte *buf, unsigned int len)
 
 void MD2::TruncatedFinal(byte *hash, unsigned int size)
 {
+	ThrowIfInvalidTruncatedSize(size);
+
 	byte padding[16];
 	word32 padlen;
-	int i;
+	unsigned int i;
 
 	padlen= 16-m_count;
-	for(i=0; i<padlen; i++) padding[i]=padlen;
+	for(i=0; i<padlen; i++) padding[i]=(byte)padlen;
 	Update(padding, padlen);
 	Update(m_C, 16);
 	memcpy(hash, m_X, size);

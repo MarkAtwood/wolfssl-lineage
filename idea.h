@@ -4,50 +4,48 @@
 /** \file
 */
 
-#include "cryptlib.h"
-#include "misc.h"
+#include "seckey.h"
+#include "secblock.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// base class, do not use directly
-class IDEA : public FixedBlockSize<8>, public FixedKeyLength<16>
+struct IDEA_Info : public FixedBlockSize<8>, public FixedKeyLength<16>, public FixedRounds<8>
 {
-public:
-	IDEA(const byte *userKey, CipherDir dir);
-
-	void ProcessBlock(byte * inoutBlock) const
-		{IDEA::ProcessBlock(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-
-private:
-	void EnKey(const byte *);
-	void DeKey();
-	SecBlock<word> key;
-
-#ifdef IDEA_LARGECACHE
-	static inline void LookupMUL(word &a, word b);
-	void LookupKeyLogs();
-	static void BuildLogTables();
-	static bool tablesBuilt;
-	static word16 log[0x10000], antilog[0x10000];
-#endif
+	static const char *StaticAlgorithmName() {return "IDEA";}
 };
 
 /// <a href="http://www.weidai.com/scan-mirror/cs.html#IDEA">IDEA</a>
-class IDEAEncryption : public IDEA
+class IDEA : public IDEA_Info, public BlockCipherDocumentation
 {
+	class Base : public BlockCipherBaseTemplate<IDEA_Info>
+	{
+	public:
+		unsigned int GetAlignment() const {return 2;}
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+
+		void UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length);
+
+	private:
+		void EnKey(const byte *);
+		void DeKey();
+		FixedSizeSecBlock<word, 6*ROUNDS+4> m_key;
+
+	#ifdef IDEA_LARGECACHE
+		static inline void LookupMUL(word &a, word b);
+		void LookupKeyLogs();
+		static void BuildLogTables();
+		static bool tablesBuilt;
+		static word16 log[0x10000], antilog[0x10000];
+	#endif
+	};
+
 public:
-	IDEAEncryption(const byte * userKey, unsigned int = 0)
-		: IDEA (userKey, ENCRYPTION) {}
+	typedef BlockCipherTemplate<ENCRYPTION, Base> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Base> Decryption;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#IDEA">IDEA</a>
-class IDEADecryption : public IDEA
-{
-public:
-	IDEADecryption(const byte * userKey, unsigned int = 0)
-		: IDEA (userKey, DECRYPTION) {}
-};
+typedef IDEA::Encryption IDEAEncryption;
+typedef IDEA::Decryption IDEADecryption;
 
 NAMESPACE_END
 

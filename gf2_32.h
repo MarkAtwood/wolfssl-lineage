@@ -15,12 +15,12 @@ public:
 	GF2_32(word32 modulus=0x0000008D) : m_modulus(modulus) {}
 
 	Element RandomElement(RandomNumberGenerator &rng, int ignored = 0) const
-		{return rng.GetLong();}
+		{return rng.GenerateWord32();}
 
 	bool Equal(Element a, Element b) const
 		{return a==b;}
 
-	Element Zero() const
+	Element Identity() const
 		{return 0;}
 
 	Element Add(Element a, Element b) const
@@ -41,7 +41,7 @@ public:
 	Element Double(Element a) const
 		{return 0;}
 
-	Element One() const
+	Element MultiplicativeIdentity() const
 		{return 1;}
 
 	Element Multiply(Element a, Element b) const;

@@ -28,7 +28,7 @@ byte PublicBlumBlumShub::GenerateByte()
 {
 	byte b=0;
 	for (int i=0; i<8; i++)
-		b = (b << 1) | PublicBlumBlumShub::GetBit();
+		b = (b << 1) | PublicBlumBlumShub::GenerateBit();
 	return b;
 }
 
@@ -39,7 +39,7 @@ BlumBlumShub::BlumBlumShub(const Integer &p, const Integer &q, const Integer &se
 {
 }
 
-void BlumBlumShub::Seek(unsigned long index)
+void BlumBlumShub::Seek(dword index)
 {
 	Integer e = a_exp_b_mod_c (2, ((index*8) / maxBits + 1), (p-1)*(q-1));
 	current = modn.Exponentiate(x0, e);

@@ -2,21 +2,25 @@
 
 #include "pch.h"
 #include "tea.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-const word32 TEA::DELTA = 0x9e3779b9;
+const word32 TEA::Base::DELTA = 0x9e3779b9;
 
-TEA::TEA(const byte *userKey)
-	: k(4)
+void TEA::Base::UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length)
 {
-	GetUserKeyBigEndian(k.ptr, 4, userKey, KEYLENGTH);
+	AssertValidKeyLength(length);
+
+	GetUserKey(BIG_ENDIAN_ORDER, k.begin(), 4, userKey, KEYLENGTH);
 }
 
-void TEAEncryption::ProcessBlock(const byte *in, byte *out) const
+typedef BlockGetAndPut<word32, BigEndian> Block;
+
+void TEA::Enc::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 y, z;
-	GetBlockBigEndian(in, y, z);
+	Block::Get(inBlock)(y)(z);
 
 	word32 sum = 0;
 	for (int i=0; i<ROUNDS; i++)
@@ -26,13 +30,15 @@ void TEAEncryption::ProcessBlock(const byte *in, byte *out) const
 		z += (y << 4) + k[2] ^ y + sum ^ (y >> 5) + k[3];
 	}
 
-	PutBlockBigEndian(out, y, z);
+	Block::Put(xorBlock, outBlock)(y)(z);
 }
 
-void TEADecryption::ProcessBlock(const byte *in, byte *out) const
+typedef BlockGetAndPut<word32, BigEndian> Block;
+
+void TEA::Dec::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 y, z;
-	GetBlockBigEndian(in, y, z);
+	Block::Get(inBlock)(y)(z);
 
 	word32 sum = DELTA << LOG_ROUNDS;
 	for (int i=0; i<ROUNDS; i++)
@@ -42,7 +48,7 @@ void TEADecryption::ProcessBlock(const byte *in, byte *out) const
 		sum -= DELTA;
 	}
 
-	PutBlockBigEndian(out, y, z);
+	Block::Put(xorBlock, outBlock)(y)(z);
 }
 
 NAMESPACE_END

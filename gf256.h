@@ -15,7 +15,7 @@ public:
 	GF256(byte modulus) : m_modulus(modulus) {}
 
 	Element RandomElement(RandomNumberGenerator &rng, int ignored = 0) const
-		{return rng.GetByte();}
+		{return rng.GenerateByte();}
 
 	bool Equal(Element a, Element b) const
 		{return a==b;}

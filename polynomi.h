@@ -23,7 +23,7 @@ public:
 		class DivideByZero : public Exception 
 		{
 		public: 
-			DivideByZero() : Exception("PolynomialOver<T>: division by zero") {}
+			DivideByZero() : Exception(OTHER_ERROR, "PolynomialOver<T>: division by zero") {}
 		};
 
 		//! specify the distribution for randomization functions
@@ -50,7 +50,7 @@ public:
 
 		//!
 		PolynomialOver(const Ring &ring, unsigned int count)
-			: m_coefficients((size_t)count, ring.Zero()) {}
+			: m_coefficients((size_t)count, ring.Identity()) {}
 
 		//! copy constructor
 		PolynomialOver(const PolynomialOver<Ring> &t)
@@ -315,8 +315,8 @@ public:
 	bool Equal(const Element &a, const Element &b) const
 		{return a.Equals(b, m_ring);}
 
-	const Element& Zero() const
-		{static const Element zero; return zero;}
+	const Element& Identity() const
+		{return result = m_ring.Identity();}
 
 	const Element& Add(const Element &a, const Element &b) const
 		{return result = a.Plus(b, m_ring);}
@@ -336,9 +336,8 @@ public:
 	const Element& Double(const Element &a) const
 		{return result = a.Doubled(m_ring);}
 
-// VC50 workaround
-	const Element& One() const
-		{return result = Element(m_ring.One());}
+	const Element& MultiplicativeIdentity() const
+		{return result = m_ring.MultiplicativeIdentity();}
 
 	const Element& Multiply(const Element &a, const Element &b) const
 		{return result = a.Times(b, m_ring);}
@@ -364,7 +363,7 @@ public:
 	class InterpolationFailed : public Exception
 	{
 	public:
-		InterpolationFailed() : Exception("RingOfPolynomialsOver<T>: interpolation failed") {}
+		InterpolationFailed() : Exception(OTHER_ERROR, "RingOfPolynomialsOver<T>: interpolation failed") {}
 	};
 
 	Element Interpolate(const CoefficientType x[], const CoefficientType y[], unsigned int n) const;
@@ -388,11 +387,6 @@ template <class Ring, class Element>
 void PrepareBulkPolynomialInterpolationAt(const Ring &ring, Element *v, const Element &position, const Element x[], const Element w[], unsigned int n);
 template <class Ring, class Element>
 Element BulkPolynomialInterpolateAt(const Ring &ring, const Element y[], const Element v[], unsigned int n);
-
-NAMESPACE_END
-
-// declaring these overloaded operators inside the CryptoPP namespace
-// causes problems with GCC 2.95.2
 
 //!
 template <class T, int instance>
@@ -440,6 +434,8 @@ inline CryptoPP::PolynomialOverFixedRing<T, instance> operator/(const CryptoPP::
 template <class T, int instance>
 inline CryptoPP::PolynomialOverFixedRing<T, instance> operator%(const CryptoPP::PolynomialOverFixedRing<T, instance> &a, const CryptoPP::PolynomialOverFixedRing<T, instance> &b)
 	{return CryptoPP::PolynomialOverFixedRing<T, instance>(a.Modulo(b, fixedRing));}
+
+NAMESPACE_END
 
 NAMESPACE_BEGIN(std)
 template<class T> inline void swap(CryptoPP::PolynomialOver<T> &a, CryptoPP::PolynomialOver<T> &b)

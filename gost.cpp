@@ -1,10 +1,11 @@
 #include "pch.h"
 #include "gost.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
 // these are the S-boxes given in Applied Cryptography 2nd Ed., p. 333
-const byte GOST::sBox[8][16]={
+const byte GOST::Base::sBox[8][16]={
 	{4, 10, 9, 2, 13, 8, 0, 14, 6, 11, 1, 12, 7, 15, 5, 3},
 	{14, 11, 4, 12, 6, 13, 15, 10, 2, 3, 8, 1, 0, 7, 5, 9},
 	{5, 8, 1, 13, 10, 3, 4, 2, 14, 15, 12, 7, 6, 0, 9, 11},
@@ -26,18 +27,19 @@ const byte GOST::sBox[8][16]={
 	{14,  4, 13,  1,  2, 15, 11,  8,  3, 10,  6, 12,  5,  9,  0,  7 }}; 
 */
 
-bool GOST::sTableCalculated = false;
-word32 GOST::sTable[4][256];
+bool GOST::Base::sTableCalculated = false;
+word32 GOST::Base::sTable[4][256];
 
-GOST::GOST(const byte *userKey, CipherDir)
-	: key(8)
+void GOST::Base::UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length)
 {
+	AssertValidKeyLength(length);
+
 	PrecalculateSTable();
 
-	GetUserKeyLittleEndian(key.ptr, 8, userKey, KEYLENGTH);
+	GetUserKey(LITTLE_ENDIAN_ORDER, key.begin(), 8, userKey, KEYLENGTH);
 }
 
-void GOST::PrecalculateSTable()
+void GOST::Base::PrecalculateSTable()
 {
 	if (!sTableCalculated)
 	{
@@ -56,11 +58,13 @@ void GOST::PrecalculateSTable()
 				sTable[3][GETBYTE(t, 3)] ^ sTable[2][GETBYTE(t, 2)]	\
 			  ^ sTable[1][GETBYTE(t, 1)] ^ sTable[0][GETBYTE(t, 0)]	)
 
-void GOSTEncryption::ProcessBlock(const byte *inBlock, byte * outBlock) const
+typedef BlockGetAndPut<word32, LittleEndian> Block;
+
+void GOST::Enc::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 n1, n2, t;
 
-	GetBlockLittleEndian(inBlock, n1, n2);
+	Block::Get(inBlock)(n1)(n2);
 
 	for (unsigned int i=0; i<3; i++)
 	{
@@ -83,14 +87,14 @@ void GOSTEncryption::ProcessBlock(const byte *inBlock, byte * outBlock) const
 	n2 ^= f(n1+key[1]);
 	n1 ^= f(n2+key[0]);
 
-	PutBlockLittleEndian(outBlock, n2, n1);
+	Block::Put(xorBlock, outBlock)(n2)(n1);
 }
 
-void GOSTDecryption::ProcessBlock(const byte *inBlock, byte * outBlock) const
+void GOST::Dec::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 n1, n2, t;
 
-	GetBlockLittleEndian(inBlock, n1, n2);
+	Block::Get(inBlock)(n1)(n2);
 
 	n2 ^= f(n1+key[0]);
 	n1 ^= f(n2+key[1]);
@@ -113,7 +117,7 @@ void GOSTDecryption::ProcessBlock(const byte *inBlock, byte * outBlock) const
 		n1 ^= f(n2+key[0]);
 	}
 
-	PutBlockLittleEndian(outBlock, n2, n1);
+	Block::Put(xorBlock, outBlock)(n2)(n1);
 }
 
 NAMESPACE_END

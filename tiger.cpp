@@ -10,23 +10,25 @@ NAMESPACE_BEGIN(CryptoPP)
 
 void Tiger::Init()
 {
-	digest[0] = W64LIT(0x0123456789ABCDEF);
-	digest[1] = W64LIT(0xFEDCBA9876543210);
-	digest[2] = W64LIT(0xF096A5B4C3B2E187);
+	m_digest[0] = W64LIT(0x0123456789ABCDEF);
+	m_digest[1] = W64LIT(0xFEDCBA9876543210);
+	m_digest[2] = W64LIT(0xF096A5B4C3B2E187);
 }
 
 void Tiger::TruncatedFinal(byte *hash, unsigned int size)
 {
+	ThrowIfInvalidTruncatedSize(size);
+
 	PadLastBlock(56, 0x01);
-	CorrectEndianess(data, data, 56);
+	CorrectEndianess(m_data, m_data, 56);
 
-	data[7] = countLo;
+	m_data[7] = GetBitCountLo();
 
-	Transform(digest, data);
-	CorrectEndianess(digest, digest, DigestSize());
-	memcpy(hash, digest, size);
+	Transform(m_digest, m_data);
+	CorrectEndianess(m_digest, m_digest, DigestSize());
+	memcpy(hash, m_digest, size);
 
-	Reinit();		// reinit for next use
+	Restart();		// reinit for next use
 }
 
 #define t1 (table)

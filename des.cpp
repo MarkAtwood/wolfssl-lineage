@@ -26,7 +26,7 @@ static inline bool CheckParity(byte b)
 	return ((a ^ (a>>1) ^ (a>>2) ^ (a>>3)) & 1) == 1;
 }
 
-bool DES_CheckKeyParityBits(const byte *key)
+bool DES::CheckKeyParityBits(const byte *key)
 {
 	for (unsigned int i=0; i<8; i++)
 		if (!CheckParity(key[i]))
@@ -34,7 +34,7 @@ bool DES_CheckKeyParityBits(const byte *key)
 	return true;
 }
 
-void DES_CorrectKeyParityBits(byte *key)
+void DES::CorrectKeyParityBits(byte *key)
 {
 	for (unsigned int i=0; i<8; i++)
 		if (!CheckParity(key[i]))
@@ -186,47 +186,48 @@ static const int bytebit[] = {
 };
 
 /* Set key (initialize key schedule array) */
-DES::DES(const byte *key, CipherDir dir)
-	: k(32)
+void DES::Base::UncheckedSetKey(CipherDir dir, const byte *key, unsigned int length)
 {
-	   SecByteBlock buffer(56+56+8);
-	   byte *const pc1m=buffer;                 /* place to modify pc1 into */
-	   byte *const pcr=pc1m+56;                 /* place to rotate pc1 into */
-	   byte *const ks=pcr+56;
-	   register int i,j,l;
-	   int m;
+	AssertValidKeyLength(length);
 
-	   for (j=0; j<56; j++) {          /* convert pc1 to bits of key */
-			   l=pc1[j]-1;             /* integer bit location  */
-			   m = l & 07;             /* find bit              */
-			   pc1m[j]=(key[l>>3] &    /* find which key byte l is in */
-					   bytebit[m])     /* and which bit of that byte */
-					   ? 1 : 0;        /* and store 1-bit result */
-	   }
-	   for (i=0; i<16; i++) {          /* key chunk for each iteration */
-			   memset(ks,0,8);         /* Clear key schedule */
-			   for (j=0; j<56; j++)    /* rotate pc1 the right amount */
-					   pcr[j] = pc1m[(l=j+totrot[i])<(j<28? 28 : 56) ? l: l-28];
-					   /* rotate left and right halves independently */
-			   for (j=0; j<48; j++){   /* select bits individually */
-					   /* check bit that goes to ks[j] */
-					   if (pcr[pc2[j]-1]){
-							   /* mask it in if it's there */
-							   l= j % 6;
-							   ks[j/6] |= bytebit[l] >> 2;
-					   }
-			   }
-			   /* Now convert to odd/even interleaved form for use in F */
-			   k[2*i] = ((word32)ks[0] << 24)
-				| ((word32)ks[2] << 16)
-				| ((word32)ks[4] << 8)
-				| ((word32)ks[6]);
-			   k[2*i+1] = ((word32)ks[1] << 24)
-				| ((word32)ks[3] << 16)
-				| ((word32)ks[5] << 8)
-				| ((word32)ks[7]);
-	   }
-
+	SecByteBlock buffer(56+56+8);
+	byte *const pc1m=buffer;                 /* place to modify pc1 into */
+	byte *const pcr=pc1m+56;                 /* place to rotate pc1 into */
+	byte *const ks=pcr+56;
+	register int i,j,l;
+	int m;
+	
+	for (j=0; j<56; j++) {          /* convert pc1 to bits of key */
+		l=pc1[j]-1;             /* integer bit location  */
+		m = l & 07;             /* find bit              */
+		pc1m[j]=(key[l>>3] &    /* find which key byte l is in */
+			bytebit[m])     /* and which bit of that byte */
+			? 1 : 0;        /* and store 1-bit result */
+	}
+	for (i=0; i<16; i++) {          /* key chunk for each iteration */
+		memset(ks,0,8);         /* Clear key schedule */
+		for (j=0; j<56; j++)    /* rotate pc1 the right amount */
+			pcr[j] = pc1m[(l=j+totrot[i])<(j<28? 28 : 56) ? l: l-28];
+		/* rotate left and right halves independently */
+		for (j=0; j<48; j++){   /* select bits individually */
+			/* check bit that goes to ks[j] */
+			if (pcr[pc2[j]-1]){
+				/* mask it in if it's there */
+				l= j % 6;
+				ks[j/6] |= bytebit[l] >> 2;
+			}
+		}
+		/* Now convert to odd/even interleaved form for use in F */
+		k[2*i] = ((word32)ks[0] << 24)
+			| ((word32)ks[2] << 16)
+			| ((word32)ks[4] << 8)
+			| ((word32)ks[6]);
+		k[2*i+1] = ((word32)ks[1] << 24)
+			| ((word32)ks[3] << 16)
+			| ((word32)ks[5] << 8)
+			| ((word32)ks[7]);
+	}
+	
 	if (dir==DECRYPTION)     // reverse key schedule order
 		for (i=0; i<16; i+=2)
 		{
@@ -330,7 +331,7 @@ static inline void FPERM(word32 &left, word32 &right)
 	left = rotrFixed(left^work, 4U);
 }
 
-void DES::RawProcessBlock(word32 &l_, word32 &r_) const
+void DES::Base::RawProcessBlock(word32 &l_, word32 &r_) const
 {
 	word32 l = l_, r = r_;
 	const word32 *kptr=k;
@@ -363,11 +364,13 @@ void DES::RawProcessBlock(word32 &l_, word32 &r_) const
 	l_ = l; r_ = r;
 }
 
+typedef BlockGetAndPut<word32, BigEndian> Block;
+
 // Encrypt or decrypt a block of data in ECB mode
-void DES::ProcessBlock(const byte *inBlock, byte * outBlock) const
+void DES::Base::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 l,r;
-	GetBlockBigEndian(inBlock, l, r);
+	Block::Get(inBlock)(l)(r);
 	IPERM(l,r);
 
 	const word32 *kptr=k;
@@ -398,69 +401,64 @@ void DES::ProcessBlock(const byte *inBlock, byte * outBlock) const
 	}
 
 	FPERM(l,r);
-	PutBlockBigEndian(outBlock, r, l);
+	Block::Put(xorBlock, outBlock)(r)(l);
 }
 
-void DES_EDE2_Encryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
+void DES_EDE2::Base::UncheckedSetKey(CipherDir dir, const byte *key, unsigned int length)
+{
+	AssertValidKeyLength(length);
+
+	m_des1.UncheckedSetKey(dir, key);
+	m_des2.UncheckedSetKey(ReverseCipherDir(dir), key+8);
+}
+
+void DES_EDE2::Base::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 l,r;
-	GetBlockBigEndian(inBlock, l, r);
+	Block::Get(inBlock)(l)(r);
 	IPERM(l,r);
-	e.RawProcessBlock(l, r);
-	d.RawProcessBlock(r, l);
-	e.RawProcessBlock(l, r);
+	m_des1.RawProcessBlock(l, r);
+	m_des2.RawProcessBlock(r, l);
+	m_des1.RawProcessBlock(l, r);
 	FPERM(l,r);
-	PutBlockBigEndian(outBlock, r, l);
+	Block::Put(xorBlock, outBlock)(r)(l);
 }
 
-void DES_EDE2_Decryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
+void DES_EDE3::Base::UncheckedSetKey(CipherDir dir, const byte *key, unsigned int length)
+{
+	AssertValidKeyLength(length);
+
+	m_des1.UncheckedSetKey(dir, key+(dir==ENCRYPTION?0:2*8));
+	m_des2.UncheckedSetKey(ReverseCipherDir(dir), key+8);
+	m_des3.UncheckedSetKey(dir, key+(dir==DECRYPTION?0:2*8));
+}
+
+void DES_EDE3::Base::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 l,r;
-	GetBlockBigEndian(inBlock, l, r);
+	Block::Get(inBlock)(l)(r);
 	IPERM(l,r);
-	d.RawProcessBlock(l, r);
-	e.RawProcessBlock(r, l);
-	d.RawProcessBlock(l, r);
+	m_des1.RawProcessBlock(l, r);
+	m_des2.RawProcessBlock(r, l);
+	m_des3.RawProcessBlock(l, r);
 	FPERM(l,r);
-	PutBlockBigEndian(outBlock, r, l);
+	Block::Put(xorBlock, outBlock)(r)(l);
 }
 
-void DES_EDE3_Encryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
+void DES_XEX3::Base::UncheckedSetKey(CipherDir dir, const byte *key, unsigned int length)
 {
-	word32 l,r;
-	GetBlockBigEndian(inBlock, l, r);
-	IPERM(l,r);
-	e1.RawProcessBlock(l, r);
-	d2.RawProcessBlock(r, l);
-	e3.RawProcessBlock(l, r);
-	FPERM(l,r);
-	PutBlockBigEndian(outBlock, r, l);
+	AssertValidKeyLength(length);
+
+	memcpy(m_x1, key+(dir==ENCRYPTION?0:2*8), BLOCKSIZE);
+	m_des.UncheckedSetKey(dir, key+8);
+	memcpy(m_x3, key+(dir==DECRYPTION?0:2*8), BLOCKSIZE);
 }
 
-void DES_EDE3_Decryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
+void DES_XEX3::Base::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
-	word32 l,r;
-	GetBlockBigEndian(inBlock, l, r);
-	IPERM(l,r);
-	d3.RawProcessBlock(l, r);
-	e2.RawProcessBlock(r, l);
-	d1.RawProcessBlock(l, r);
-	FPERM(l,r);
-	PutBlockBigEndian(outBlock, r, l);
-}
-
-void DES_XEX3_Encryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
-{
-	xorbuf(outBlock, inBlock, x1, BLOCKSIZE);
-	e2.ProcessBlock(outBlock);
-	xorbuf(outBlock, x3, BLOCKSIZE);
-}
-
-void DES_XEX3_Decryption::ProcessBlock(const byte *inBlock, byte *outBlock) const
-{
-	xorbuf(outBlock, inBlock, x3, BLOCKSIZE);
-	d2.ProcessBlock(outBlock);
-	xorbuf(outBlock, x1, BLOCKSIZE);
+	xorbuf(outBlock, inBlock, m_x1, BLOCKSIZE);
+	m_des.ProcessAndXorBlock(outBlock, xorBlock, outBlock);
+	xorbuf(outBlock, m_x3, BLOCKSIZE);
 }
 
 NAMESPACE_END

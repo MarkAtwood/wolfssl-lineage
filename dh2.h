@@ -9,16 +9,14 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 /// <a href="http://www.weidai.com/scan-mirror/ka.html#DH2">Unified Diffie-Hellman</a>
-class DH2 : public PK_AuthenticatedKeyAgreementDomain
+class DH2 : public AuthenticatedKeyAgreementDomain
 {
 public:
-	DH2(const PK_SimpleKeyAgreementDomain &domain)
+	DH2(const SimpleKeyAgreementDomain &domain)
 		: d1(domain), d2(domain) {}
-	DH2(const PK_SimpleKeyAgreementDomain &staticDomain, const PK_SimpleKeyAgreementDomain &ephemeralDomain)
+	DH2(const SimpleKeyAgreementDomain &staticDomain, const SimpleKeyAgreementDomain &ephemeralDomain)
 		: d1(staticDomain), d2(ephemeralDomain) {}
 
-	bool ValidateDomainParameters(RandomNumberGenerator &rng) const
-		{return d1.ValidateDomainParameters(rng) && d2.ValidateDomainParameters(rng);}
 	unsigned int AgreedValueLength() const
 		{return d1.AgreedValueLength() + d2.AgreedValueLength();}
 
@@ -26,6 +24,10 @@ public:
 		{return d1.PrivateKeyLength();}
 	unsigned int StaticPublicKeyLength() const
 		{return d1.PublicKeyLength();}
+	void GenerateStaticPrivateKey(RandomNumberGenerator &rng, byte *privateKey) const
+		{d1.GeneratePrivateKey(rng, privateKey);}
+	void GenerateStaticPublicKey(RandomNumberGenerator &rng, const byte *privateKey, byte *publicKey) const
+		{d1.GeneratePublicKey(rng, privateKey, publicKey);}
 	void GenerateStaticKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const
 		{d1.GenerateKeyPair(rng, privateKey, publicKey);}
 
@@ -33,6 +35,10 @@ public:
 		{return d2.PrivateKeyLength();}
 	unsigned int EphemeralPublicKeyLength() const
 		{return d2.PublicKeyLength();}
+	void GenerateEphemeralPrivateKey(RandomNumberGenerator &rng, byte *privateKey) const
+		{d2.GeneratePrivateKey(rng, privateKey);}
+	void GenerateEphemeralPublicKey(RandomNumberGenerator &rng, const byte *privateKey, byte *publicKey) const
+		{d2.GeneratePublicKey(rng, privateKey, publicKey);}
 	void GenerateEphemeralKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const
 		{d2.GenerateKeyPair(rng, privateKey, publicKey);}
 
@@ -42,7 +48,7 @@ public:
 		bool validateStaticOtherPublicKey=true) const;
 
 protected:
-	const PK_SimpleKeyAgreementDomain &d1, &d2;
+	const SimpleKeyAgreementDomain &d1, &d2;
 };
 
 NAMESPACE_END

@@ -3,35 +3,25 @@
 #include "pch.h"
 #include "wake.h"
 
+#include "strciphr.cpp"
+
 NAMESPACE_BEGIN(CryptoPP)
 
-inline word32 WAKE::M(word32 x, word32 y)
+void WAKE_TestInstantiations()
+{
+	WAKE_CFB<>::Encryption x1;
+	WAKE_CFB<>::Decryption x3;
+	WAKE_OFB<>::Encryption x2;
+	WAKE_OFB<>::Decryption x4;
+}
+
+inline word32 WAKE_Base::M(word32 x, word32 y)
 {
 	word32 w = x+y;
 	return (w>>8) ^ t[(byte)w];
 }
 
-inline word32 WAKE::enc(word32 V)
-{
-	V = V^r6;
-	r3 = M(r3, V);
-	r4 = M(r4, r3);
-	r5 = M(r5, r4);
-	r6 = M(r6, r5);
-	return V;
-}
-
-inline word32 WAKE::dec(word32 V)
-{
-	r3 = M(r3, V);
-	V = V^r6;
-	r4 = M(r4, r3);
-	r5 = M(r5, r4);
-	r6 = M(r6, r5);
-	return V;
-}
-
-void WAKE::genkey(word32 k0, word32 k1, word32 k2, word32 k3)
+void WAKE_Base::GenKey(word32 k0, word32 k1, word32 k2, word32 k3)
 {
 	long x, z;
 	int p ;
@@ -69,100 +59,64 @@ void WAKE::genkey(word32 k0, word32 k1, word32 k2, word32 k3)
 	  t[y]=t[p+1] ;  }
 }
 
-WAKEEncryption::WAKEEncryption(const byte *key, BufferedTransformation *outQueue)
-	: Filter(outQueue), inbuf(INBUFMAX), inbufSize(0)
+template <class B>
+void WAKE_Policy<B>::CipherSetKey(const NameValuePairs &params, const byte *key, unsigned int length)
 {
-	r3 = ((word32)key[0] << 24) | ((word32)key[1] << 16) | ((word32)key[2] << 8) | (word32)key[3];
-	r4 = ((word32)key[4] << 24) | ((word32)key[5] << 16) | ((word32)key[6] << 8) | (word32)key[7];
-	r5 = ((word32)key[8] << 24) | ((word32)key[9] << 16) | ((word32)key[10] << 8) | (word32)key[11];
-	r6 = ((word32)key[12] << 24) | ((word32)key[13] << 16) | ((word32)key[14] << 8) | (word32)key[15];
-
-	word32 k0 = ((word32)key[16] << 24) | ((word32)key[17] << 16) | ((word32)key[18] << 8) | (word32)key[19];
-	word32 k1 = ((word32)key[20] << 24) | ((word32)key[21] << 16) | ((word32)key[22] << 8) | (word32)key[23];
-	word32 k2 = ((word32)key[24] << 24) | ((word32)key[25] << 16) | ((word32)key[26] << 8) | (word32)key[27];
-	word32 k3 = ((word32)key[28] << 24) | ((word32)key[29] << 16) | ((word32)key[30] << 8) | (word32)key[31];
-	genkey(k0, k1, k2, k3);
+	word32 k0, k1, k2, k3;
+	BlockGetAndPut<word32, BigEndian, false>::Get(key)(r3)(r4)(r5)(r6)(k0)(k1)(k2)(k3);
+	GenKey(k0, k1, k2, k3);
 }
 
-void WAKEEncryption::ProcessInbuf()
+// CFB
+template <class B>
+void WAKE_Policy<B>::Iterate(byte *output, const byte *input, CipherDir dir, unsigned int iterationCount)
 {
-	assert((inbufSize % 4) == 0);
+	RegisterOutput<B> registerOutput(output, input, dir);
 
-	word32 *ptr = (word32 *)inbuf.ptr;
-	byte *const end = (byte *)inbuf+inbufSize;
-
-	while (ptr!=(word32 *)end)
+	while (iterationCount--)
 	{
-#ifdef IS_LITTLE_ENDIAN
-		*ptr = byteReverse(enc(byteReverse(*ptr)));
-#else
-		*ptr = enc(*ptr);
-#endif
-		ptr++;
-	}
-
-	AttachedTransformation()->Put(inbuf, inbufSize);
-	inbufSize=0;
-}
-
-void WAKEEncryption::Put(const byte *inString, unsigned int length)
-{
-	while (length)
-	{
-		if (inbufSize==INBUFMAX)
-			ProcessInbuf();
-		unsigned int l = STDMIN(length, INBUFMAX-inbufSize);
-		memcpy(inbuf+inbufSize, inString, l);
-		inString+=l;
-		length-=l;
-		inbufSize+=l;
+		r3 = M(r3, ConditionalByteReverse(B::ToEnum(), r6));
+		r4 = M(r4, r3);
+		r5 = M(r5, r4);
+		r6 = M(r6, r5);
+		registerOutput(r6);
 	}
 }
 
-void WAKEEncryption::MessageEnd(int propagation)
+// OFB
+template <class B>
+void WAKE_Policy<B>::OperateKeystream(KeystreamOperation operation, byte *output, const byte *input, unsigned int iterationCount)
 {
-	if (inbufSize == INBUFMAX)
-		ProcessInbuf();
-	// pad to next multiple of 4
-	memset(inbuf+inbufSize, 4-(inbufSize%4), 4-(inbufSize%4));
-	inbufSize += 4-(inbufSize%4);
-	ProcessInbuf();
-	Filter::MessageEnd(propagation);
-}
+	KeystreamOutput<B> keystreamOperation(operation, output, input);
 
-void WAKEDecryption::ProcessInbuf()
-{
-	assert((inbufSize % 4) == 0);
-
-	word32 *ptr = (word32 *)inbuf.ptr;
-	byte *const end = (byte *)inbuf+inbufSize;
-
-	while (ptr!=(word32 *)end)
+	while (iterationCount--)
 	{
-#ifdef IS_LITTLE_ENDIAN
-		*ptr = byteReverse(dec(byteReverse(*ptr)));
-#else
-		*ptr = dec(*ptr);
-#endif
-		ptr++;
+		keystreamOperation(r6);
+		r3 = M(r3, r6);
+		r4 = M(r4, r3);
+		r5 = M(r5, r4);
+		r6 = M(r6, r5);
 	}
-
-	if (lastBlock)
-	{
-		if (inbuf[inbufSize-1] > 4) inbuf[inbufSize-1]=0;
-		AttachedTransformation()->Put(inbuf, inbufSize-inbuf[inbufSize-1]);
-	}
-	else
-		AttachedTransformation()->Put(inbuf, inbufSize);
-
-	inbufSize=0;
 }
-
-void WAKEDecryption::MessageEnd(int propagation)
+/*
+template <class B>
+void WAKE_ROFB_Policy<B>::Iterate(KeystreamOperation operation, byte *output, const byte *input, unsigned int iterationCount)
 {
-	lastBlock = true;
-	ProcessInbuf();
-	Filter::MessageEnd(propagation);
+	KeystreamOutput<B> keystreamOperation(operation, output, input);
+
+	while (iterationCount--)
+	{
+		keystreamOperation(r6);
+		r3 = M(r3, r6);
+		r4 = M(r4, r3);
+		r5 = M(r5, r4);
+		r6 = M(r6, r5);
+	}
 }
+*/
+template class WAKE_Policy<BigEndian>;
+template class WAKE_Policy<LittleEndian>;
+//template class WAKE_ROFB_Policy<BigEndian>;
+//template class WAKE_ROFB_Policy<LittleEndian>;
 
 NAMESPACE_END

@@ -46,7 +46,7 @@ byte LC_RNG::GenerateByte()
 	else
 		seed = test+ m;
 
-	return (seedBytes[0] ^ seedBytes[1] ^ seedBytes[2] ^ seedBytes[3]);
+	return (GETBYTE(seed, 0) ^ GETBYTE(seed, 1) ^ GETBYTE(seed, 2) ^ GETBYTE(seed, 3));
 }
 
 // ********************************************************

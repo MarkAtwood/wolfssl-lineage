@@ -6,7 +6,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-//! not standard, may change in future version
+// TODO: implement standard variant of PSSR
 template <class H, class MGF=P1363_MGF1<H> >
 class PSSR : public SignatureEncodingMethodWithRecovery
 {
@@ -15,10 +15,11 @@ public:
 	PSSR(const byte *representative, unsigned int representativeBitLen);
 	~PSSR() {}
 	void Update(const byte *input, unsigned int length);
-	unsigned int DigestSize() const {return bitsToBytes(representativeBitLen);}
+	unsigned int DigestSize() const {return BitsToBytes(representativeBitLen);}
+	void Restart() {h.Restart();}
 	void Encode(RandomNumberGenerator &rng, byte *representative);
 	bool Verify(const byte *representative);
-	unsigned int Decode(byte *message);
+	DecodingResult Decode(byte *message);
 	unsigned int MaximumRecoverableLength() const {return MaximumRecoverableLength(representativeBitLen);}
 	static unsigned int MaximumRecoverableLength(unsigned int representativeBitLen);
 	static bool AllowLeftoverMessage() {return true;}
@@ -60,8 +61,8 @@ void PSSR<H,MGF>::Update(const byte *input, unsigned int length)
 template <class H, class MGF>
 void PSSR<H,MGF>::Encode(RandomNumberGenerator &rng, byte *representative)
 {
-	rng.GetBlock(seed, seed.size);
-	h.Update(seed, seed.size);
+	rng.GenerateBlock(seed, seed.size());
+	h.Update(seed, seed.size());
 	h.Final(w);
 	EncodeRepresentative(representative, representativeBitLen, w, seed, m1, m1Len);
 }
@@ -71,24 +72,24 @@ bool PSSR<H,MGF>::Verify(const byte *representative)
 {
 	SecByteBlock m1r(MaximumRecoverableLength()), wr(H::DIGESTSIZE);
 	unsigned int m1rLen = DecodeRepresentative(representative, representativeBitLen, wr, seed, m1r);
-	h.Update(seed, seed.size);
+	h.Update(seed, seed.size());
 	h.Final(w);
 	return m1Len==m1rLen && memcmp(m1, m1r, m1Len)==0 && w==wr;
 }
 
 template <class H, class MGF>
-unsigned int PSSR<H,MGF>::Decode(byte *message)
+DecodingResult PSSR<H,MGF>::Decode(byte *message)
 {
 	SecByteBlock wh(H::DIGESTSIZE);
-	h.Update(seed, seed.size);
+	h.Update(seed, seed.size());
 	h.Final(wh);
 	if (wh == w)
 	{
 		memcpy(message, m1, m1Len);
-		return m1Len;
+		return DecodingResult(m1Len);
 	}
 	else
-		return 0;
+		return DecodingResult();
 }
 
 template <class H, class MGF>

@@ -4,139 +4,97 @@
 /** \file
 */
 
-#include "cryptlib.h"
-#include "misc.h"
+#include "seckey.h"
+#include "secblock.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
 /// base class, do not use directly
-class SAFER : public FixedBlockSize<8>
+class SAFER
 {
 public:
-	enum {MAX_ROUNDS=13};
+	class Base : public BlockCipher
+	{
+	public:
+		unsigned int GetAlignment() const {return 1;}
+		void UncheckedSetKey(CipherDir dir, const byte *userkey, unsigned int length, unsigned nof_rounds);
 
-protected:
-	SAFER(const byte *userkey_1, const byte *userkey_2, unsigned nof_rounds, bool strengthened);
+		bool strengthened;
+		SecByteBlock keySchedule;
+		static const byte exp_tab[256];
+		static const byte log_tab[256];
+	};
 
-	void Encrypt(const byte *inBlock, byte *outBlock) const;
-	void Decrypt(const byte *inBlock, byte *outBlock) const;
+	class Enc : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
 
-	SecByteBlock keySchedule;
-	static const byte exp_tab[256];
-	static const byte log_tab[256];
+	class Dec : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-K">SAFER-K64</a>
-class SAFER_K64_Encryption : public SAFER, public FixedKeyLength<8>
+struct SAFER_K_Info : public FixedBlockSize<8>, public VariableKeyLength<16, 8, 16, 8>, public VariableRounds<10, 1, 13>
 {
-public:
-	enum {DEFAULT_ROUNDS=6};
-	SAFER_K64_Encryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
-		: SAFER(userKey, userKey, rounds, false) {}
-
-	void ProcessBlock(byte * inoutBlock) const
-		{SAFER::Encrypt(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte *outBlock) const
-		{SAFER::Encrypt(inBlock, outBlock);}
+	static const char *StaticAlgorithmName() {return "SAFER-K";}
+	static unsigned int DefaultRounds(unsigned int keylength) {return keylength == 8 ? 6 : 10;}
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-K">SAFER-K64</a>
-class SAFER_K64_Decryption : public SAFER, public FixedKeyLength<8>
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-K">SAFER-K</a>
+class SAFER_K : public SAFER_K_Info, public SAFER, public BlockCipherDocumentation
 {
-public:
-	enum {DEFAULT_ROUNDS=6};
-	SAFER_K64_Decryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
-		: SAFER(userKey, userKey, rounds, false) {}
+	class Enc : public BlockCipherBaseTemplate<SAFER_K_Info, SAFER::Enc>
+	{
+	public:
+		Enc() {strengthened = false;}
+	};
 
-	void ProcessBlock(byte * inoutBlock) const
-		{SAFER::Decrypt(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte *outBlock) const
-		{SAFER::Decrypt(inBlock, outBlock);}
+	class Dec : public BlockCipherBaseTemplate<SAFER_K_Info, SAFER::Dec>
+	{
+	public:
+		Dec() {strengthened = false;}
+	};
+
+public:
+	typedef BlockCipherTemplate<ENCRYPTION, Enc> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Dec> Decryption;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-K">SAFER-K128</a>
-class SAFER_K128_Encryption : public SAFER, public FixedKeyLength<16>
+struct SAFER_SK_Info : public FixedBlockSize<8>, public VariableKeyLength<16, 8, 16, 8>, public VariableRounds<10, 1, 13>
 {
-public:
-	enum {DEFAULT_ROUNDS=10};
-	SAFER_K128_Encryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
-		: SAFER(userKey, userKey+8, rounds, false) {}
-
-	void ProcessBlock(byte * inoutBlock) const
-		{SAFER::Encrypt(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte *outBlock) const
-		{SAFER::Encrypt(inBlock, outBlock);}
+	static const char *StaticAlgorithmName() {return "SAFER-SK";}
+	static unsigned int DefaultRounds(unsigned int keylength) {return keylength == 8 ? 8 : 10;}
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-K">SAFER-K128</a>
-class SAFER_K128_Decryption : public SAFER, public FixedKeyLength<16>
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-SK">SAFER-SK</a>
+class SAFER_SK : public SAFER_SK_Info, public SAFER, public BlockCipherDocumentation
 {
-public:
-	enum {DEFAULT_ROUNDS=10};
-	SAFER_K128_Decryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
-		: SAFER(userKey, userKey+8, rounds, false) {}
+	class Enc : public BlockCipherBaseTemplate<SAFER_SK_Info, SAFER::Enc>
+	{
+	public:
+		Enc() {strengthened = true;}
+	};
 
-	void ProcessBlock(byte * inoutBlock) const
-		{SAFER::Decrypt(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte *outBlock) const
-		{SAFER::Decrypt(inBlock, outBlock);}
+	class Dec : public BlockCipherBaseTemplate<SAFER_SK_Info, SAFER::Dec>
+	{
+	public:
+		Dec() {strengthened = true;}
+	};
+
+public:
+	typedef BlockCipherTemplate<ENCRYPTION, Enc> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Dec> Decryption;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-SK">SAFER-SK64</a>
-class SAFER_SK64_Encryption : public SAFER, public FixedKeyLength<8>
-{
-public:
-	enum {DEFAULT_ROUNDS=8};
-	SAFER_SK64_Encryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
-		: SAFER(userKey, userKey, rounds, true) {}
+typedef SAFER_K::Encryption SAFER_K_Encryption;
+typedef SAFER_K::Decryption SAFER_K_Decryption;
 
-	void ProcessBlock(byte * inoutBlock) const
-		{SAFER::Encrypt(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte *outBlock) const
-		{SAFER::Encrypt(inBlock, outBlock);}
-};
-
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-SK">SAFER-SK64</a>
-class SAFER_SK64_Decryption : public SAFER, public FixedKeyLength<8>
-{
-public:
-	enum {DEFAULT_ROUNDS=8};
-	SAFER_SK64_Decryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
-		: SAFER(userKey, userKey, rounds, true) {}
-
-	void ProcessBlock(byte * inoutBlock) const
-		{SAFER::Decrypt(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte *outBlock) const
-		{SAFER::Decrypt(inBlock, outBlock);}
-};
-
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-SK">SAFER-SK128</a>
-class SAFER_SK128_Encryption : public SAFER, public FixedKeyLength<16>
-{
-public:
-	enum {DEFAULT_ROUNDS=10};
-	SAFER_SK128_Encryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
-		: SAFER(userKey, userKey+8, rounds, true) {}
-
-	void ProcessBlock(byte * inoutBlock) const
-		{SAFER::Encrypt(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte *outBlock) const
-		{SAFER::Encrypt(inBlock, outBlock);}
-};
-
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-SK">SAFER-SK128</a>
-class SAFER_SK128_Decryption : public SAFER, public FixedKeyLength<16>
-{
-public:
-	enum {DEFAULT_ROUNDS=10};
-	SAFER_SK128_Decryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
-		: SAFER(userKey, userKey+8, rounds, true) {}
-
-	void ProcessBlock(byte * inoutBlock) const
-		{SAFER::Decrypt(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte *outBlock) const
-		{SAFER::Decrypt(inBlock, outBlock);}
-};
+typedef SAFER_SK::Encryption SAFER_SK_Encryption;
+typedef SAFER_SK::Decryption SAFER_SK_Decryption;
 
 NAMESPACE_END
 

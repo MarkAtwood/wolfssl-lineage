@@ -2,6 +2,7 @@
 #define CRYPTOPP_ZINFLATE_H
 
 #include "filters.h"
+#include <vector>
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -25,6 +26,8 @@ private:
 	unsigned int m_bitsBuffered;
 };
 
+struct CodeLessThan;
+
 //! Huffman Decoder
 class HuffmanDecoder
 {
@@ -33,21 +36,22 @@ public:
 	typedef unsigned int value_t;
 	enum {MAX_CODE_BITS = sizeof(code_t)*8};
 
-	class Err : public Exception {public: Err(const std::string &what) : Exception("HuffmanDecoder: " + what) {}};
+	class Err : public Exception {public: Err(const std::string &what) : Exception(INVALID_DATA_FORMAT, "HuffmanDecoder: " + what) {}};
 
 	HuffmanDecoder() {}
-	HuffmanDecoder(const unsigned int *codeBits, unsigned int nCodes)	{Initialize(codeBits, nCodes);}
+	HuffmanDecoder(const unsigned int *codeBitLengths, unsigned int nCodes)	{Initialize(codeBitLengths, nCodes);}
 
-	void Initialize(const unsigned int *codeBits, unsigned int nCodes);
+	void Initialize(const unsigned int *codeBitLengths, unsigned int nCodes);
 	unsigned int Decode(code_t code, /* out */ value_t &value) const;
 	bool Decode(LowFirstBitReader &reader, value_t &value) const;
 
 private:
+	friend struct CodeLessThan;
+
 	struct CodeInfo
 	{
 		CodeInfo(code_t code=0, unsigned int len=0, value_t value=0) : code(code), len(len), value(value) {}
-		bool operator<(const CodeInfo &rhs) const {return code < rhs.code;}
-		friend bool CodeLessThan(code_t lhs, const CodeInfo &rhs) {return lhs < rhs.code;}
+		inline bool operator<(const CodeInfo &rhs) const {return code < rhs.code;}
 		code_t code;
 		unsigned int len;
 		value_t value;
@@ -69,22 +73,23 @@ private:
 	};
 
 	static code_t NormalizeCode(code_t code, unsigned int codeBits);
+	void FillCacheEntry(LookupEntry &entry, code_t normalizedCode) const;
 
-	unsigned int m_maxCodeBits, m_cacheBits, m_cacheMask;
-	SecBlock<CodeInfo> m_codeToValue;
-	SecBlock<LookupEntry> m_cache;
+	unsigned int m_maxCodeBits, m_cacheBits, m_cacheMask, m_normalizedCacheMask;
+	std::vector<CodeInfo, AllocatorWithCleanup<CodeInfo> > m_codeToValue;
+	mutable std::vector<LookupEntry, AllocatorWithCleanup<LookupEntry> > m_cache;
 };
 
 //! DEFLATE (RFC 1951) decompressor
 
-class Inflator : public Filter, public BufferedTransformationWithAutoSignal
+class Inflator : public AutoSignaling<Filter>
 {
 public:
-	class Err : public BufferedTransformation::Err
+	class Err : public Exception
 	{
 	public:
 		Err(ErrorType e, const std::string &s)
-			: BufferedTransformation::Err(e, s) {}
+			: Exception(e, s) {}
 	};
 	class UnexpectedEndErr : public Err {public: UnexpectedEndErr() : Err(INVALID_DATA_FORMAT, "Inflator: unexpected end of compressed block") {}};
 	class BadBlockErr : public Err {public: BadBlockErr() : Err(INVALID_DATA_FORMAT, "Inflator: error in compressed block") {}};
@@ -92,12 +97,11 @@ public:
 	/*! \param repeat decompress multiple compressed streams in series
 		\param autoSignalPropagation 0 to turn off MessageEnd signal
 	*/
-	Inflator(BufferedTransformation *outQueue = NULL, bool repeat = false, int autoSignalPropagation = -1);
-	void Put(byte b) {Inflator::Put(&b, 1);}
-	void Put(const byte *inString, unsigned int length);
+	Inflator(BufferedTransformation *attachment = NULL, bool repeat = false, int autoSignalPropagation = -1);
 
-	void Flush(bool completeFlush, int propagation=-1);
-	void MessageEnd(int propagation=-1);
+	void IsolatedInitialize(const NameValuePairs &parameters);
+	unsigned int Put2(const byte *inString, unsigned int length, int messageEnd, bool blocking);
+	bool IsolatedFlush(bool hardFlush, bool blocking);
 
 	virtual unsigned int GetLog2WindowSize() const {return 15;}
 

@@ -17,7 +17,7 @@ NAMESPACE_BEGIN(CryptoPP)
 /**
  * The F-table byte permutation (see description of the G-box permutation)
  */
-const byte SKIPJACK::fTable[256] = { 
+const byte SKIPJACK::Base::fTable[256] = { 
 	0xa3,0xd7,0x09,0x83,0xf8,0x48,0xf6,0xf4,0xb3,0x21,0x15,0x78,0x99,0xb1,0xaf,0xf9,
 	0xe7,0x2d,0x4d,0x8a,0xce,0x4c,0xca,0x2e,0x52,0x95,0xd9,0x1e,0x4e,0x38,0x44,0x28,
 	0x0a,0xdf,0x02,0xa0,0x17,0xf1,0x60,0x68,0x12,0xb7,0x7a,0xc3,0xe9,0xfa,0x3d,0x53,
@@ -43,10 +43,10 @@ const byte SKIPJACK::fTable[256] = {
  */
 #define g(tab, w, i, j, k, l) \
 { \
-	w ^= (word32)tab[i][w & 0xff] << 8; \
-	w ^= (word32)tab[j][w >>   8]; \
-	w ^= (word32)tab[k][w & 0xff] << 8; \
-	w ^= (word32)tab[l][w >>   8]; \
+	w ^= (word)tab[i][w & 0xff] << 8; \
+	w ^= (word)tab[j][w >>   8]; \
+	w ^= (word)tab[k][w & 0xff] << 8; \
+	w ^= (word)tab[l][w >>   8]; \
 }
 
 #define g0(tab, w) g(tab, w, 0, 1, 2, 3)
@@ -60,10 +60,10 @@ const byte SKIPJACK::fTable[256] = {
  */
 #define h(tab, w, i, j, k, l) \
 { \
-	w ^= (word32)tab[l][w >>   8]; \
-	w ^= (word32)tab[k][w & 0xff] << 8; \
-	w ^= (word32)tab[j][w >>   8]; \
-	w ^= (word32)tab[i][w & 0xff] << 8; \
+	w ^= (word)tab[l][w >>   8]; \
+	w ^= (word)tab[k][w & 0xff] << 8; \
+	w ^= (word)tab[j][w >>   8]; \
+	w ^= (word)tab[i][w & 0xff] << 8; \
 }
 
 #define h0(tab, w) h(tab, w, 0, 1, 2, 3)
@@ -75,13 +75,14 @@ const byte SKIPJACK::fTable[256] = {
 /**
  * Preprocess a user key into a table to save an XOR at each F-table access.
  */
-SKIPJACK::SKIPJACK(const byte *key)
-	: tab(10)
+void SKIPJACK::Base::UncheckedSetKey(CipherDir dir, const byte *key, unsigned int length)
 {
+	AssertValidKeyLength(length);
+
 	/* tab[i][c] = fTable[c ^ key[i]] */
 	int i;
 	for (i = 0; i < 10; i++) {
-		byte *t = tab[i], k = key[i];
+		byte *t = tab[i], k = key[9-i];
 		int c;
 		for (c = 0; c < 256; c++) {
 			t[c] = fTable[c ^ k];
@@ -89,17 +90,15 @@ SKIPJACK::SKIPJACK(const byte *key)
 	}
 }
 
+typedef BlockGetAndPut<word16, LittleEndian> Block;
+
 /**
  * Encrypt a single block of data.
  */
-void SKIPJACKEncryption::ProcessBlock(const byte *in, byte * out) const
+void SKIPJACK::Enc::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
-	word32 w1, w2, w3, w4;
-
-	w1 = (word32(in[0]) << 8) | in[1];
-	w2 = (word32(in[2]) << 8) | in[3];
-	w3 = (word32(in[4]) << 8) | in[5];
-	w4 = (word32(in[6]) << 8) | in[7];
+	word w1, w2, w3, w4;
+	Block::Get(inBlock)(w4)(w3)(w2)(w1);
 
 	/* stepping rule A: */
 	g0(tab, w1); w4 ^= w1 ^ 1;
@@ -141,23 +140,16 @@ void SKIPJACKEncryption::ProcessBlock(const byte *in, byte * out) const
 	w4 ^= w3 ^ 31; g0(tab, w3);
 	w3 ^= w2 ^ 32; g1(tab, w2);
 
-	out[0] = (byte)(w1 >> 8); out[1] = (byte)w1;
-	out[2] = (byte)(w2 >> 8); out[3] = (byte)w2;
-	out[4] = (byte)(w3 >> 8); out[5] = (byte)w3;
-	out[6] = (byte)(w4 >> 8); out[7] = (byte)w4;
+	Block::Put(xorBlock, outBlock)(w4)(w3)(w2)(w1);
 }
 
 /**
  * Decrypt a single block of data.
  */
-void SKIPJACKDecryption::ProcessBlock(const byte *in, byte * out) const
+void SKIPJACK::Dec::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
-	word32 w1, w2, w3, w4;
-
-	w1 = (word32(in[0]) << 8) | in[1];
-	w2 = (word32(in[2]) << 8) | in[3];
-	w3 = (word32(in[4]) << 8) | in[5];
-	w4 = (word32(in[6]) << 8) | in[7];
+	word w1, w2, w3, w4;
+	Block::Get(inBlock)(w4)(w3)(w2)(w1);
 
 	/* stepping rule A: */
 	h1(tab, w2); w3 ^= w2 ^ 32;
@@ -199,11 +191,7 @@ void SKIPJACKDecryption::ProcessBlock(const byte *in, byte * out) const
 	w3 ^= w4 ^ 2; h1(tab, w4);
 	w4 ^= w1 ^ 1; h0(tab, w1);
 
-	out[0] = (byte)(w1 >> 8); out[1] = (byte)w1;
-	out[2] = (byte)(w2 >> 8); out[3] = (byte)w2;
-	out[4] = (byte)(w3 >> 8); out[5] = (byte)w3;
-	out[6] = (byte)(w4 >> 8); out[7] = (byte)w4;
-
+	Block::Put(xorBlock, outBlock)(w4)(w3)(w2)(w1);
 }
 
 NAMESPACE_END

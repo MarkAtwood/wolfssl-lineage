@@ -2,13 +2,13 @@
 
 #include "pch.h"
 #include "blowfish.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-Blowfish::Blowfish(const byte *key_string, unsigned int keylength, CipherDir dir)
-	: pbox(ROUNDS+2), sbox(4*256)
+void Blowfish::Base::UncheckedSetKey(CipherDir dir, const byte *key_string, unsigned int keylength)
 {
-	assert(keylength == KeyLength(keylength));
+	AssertValidKeyLength(keylength);
 
 	unsigned i, j=0, k;
 	word32 data, dspace[2] = {0, 0};
@@ -41,7 +41,7 @@ Blowfish::Blowfish(const byte *key_string, unsigned int keylength, CipherDir dir
 }
 
 // this version is only used to make pbox and sbox
-void Blowfish::crypt_block(const word32 in[2], word32 out[2]) const
+void Blowfish::Base::crypt_block(const word32 in[2], word32 out[2]) const
 {
 	word32 left = in[0];
 	word32 right = in[1];
@@ -68,10 +68,12 @@ void Blowfish::crypt_block(const word32 in[2], word32 out[2]) const
 	out[1] = left;
 }
 
-void Blowfish::ProcessBlock(const byte *in, byte *out) const
+void Blowfish::Base::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
+	typedef BlockGetAndPut<word32, BigEndian> Block;
+
 	word32 left, right;
-	GetBlockBigEndian(in, left, right);
+	Block::Get(inBlock)(left)(right);
 
 	const word32 *const s=sbox;
 	const word32 *p=pbox;
@@ -91,7 +93,7 @@ void Blowfish::ProcessBlock(const byte *in, byte *out) const
 
 	right ^= p[ROUNDS+1];
 
-	PutBlockBigEndian(out, right, left);
+	Block::Put(xorBlock, outBlock)(right)(left);
 }
 
 NAMESPACE_END

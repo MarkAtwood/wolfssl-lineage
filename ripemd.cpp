@@ -2,16 +2,17 @@
 
 #include "pch.h"
 #include "ripemd.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
 void RIPEMD160::Init()
 {
-	digest[0] = 0x67452301L;
-	digest[1] = 0xefcdab89L;
-	digest[2] = 0x98badcfeL;
-	digest[3] = 0x10325476L;
-	digest[4] = 0xc3d2e1f0L;
+	m_digest[0] = 0x67452301L;
+	m_digest[1] = 0xefcdab89L;
+	m_digest[2] = 0x98badcfeL;
+	m_digest[3] = 0x10325476L;
+	m_digest[4] = 0xc3d2e1f0L;
 }
 
 void RIPEMD160::Transform (word32 *digest, const word32 *X)

@@ -3,77 +3,76 @@
 
 #include "pch.h"
 #include "md5mac.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-const word32 MD5MAC::T[12] =
+const word32 MD5MAC_Base::T[12] =
 	{ 0xac45ef97,0xcd430f29,0x551b7e45,0x3411801c,
 	  0x96ce77b1,0x7c8e722e,0x0aab5a5f,0x18be4336,
 	  0x21b4219d,0x4db987bc,0xbd279da2,0xc3d75bc7 };
 
-MD5MAC::MD5MAC(const byte *userKey)
-	: IteratedHash<word32, false, 64>(DIGESTSIZE),
-	  key(12)
+void MD5MAC_Base::UncheckedSetKey(const byte *userKey, unsigned int keylength)
 {
 	const word32 zeros[4] = {0,0,0,0};
 
 	for (unsigned i=0, j; i<3; i++)
 	{
-		key[4*i+0] = 0x67452301L;
-		key[4*i+1] = 0xefcdab89L;
-		key[4*i+2] = 0x98badcfeL;
-		key[4*i+3] = 0x10325476L;
+		m_key[4*i+0] = 0x67452301L;
+		m_key[4*i+1] = 0xefcdab89L;
+		m_key[4*i+2] = 0x98badcfeL;
+		m_key[4*i+3] = 0x10325476L;
 
-		memcpy(data, userKey, KEYLENGTH);
-		CorrectEndianess(data, data, KEYLENGTH);
+		memcpy(m_data, userKey, KEYLENGTH);
+		CorrectEndianess(m_data, m_data, KEYLENGTH);
 		for (j=0; j<3; j++)
-			memcpy(data+4+4*j, T+((i+j)%3)*4, 16);
-		Transform(key+4*i, data, zeros);
+			memcpy(m_data+4+4*j, T+((i+j)%3)*4, 16);
+		Transform(m_key+4*i, m_data, zeros);
 
 		for (j=0; j<3; j++)
-			memcpy(data+4*j, T+((i+j)%3)*4, 16);
-		memcpy(data+12, userKey, KEYLENGTH);
-		CorrectEndianess(data+12, data+12, KEYLENGTH);
-		Transform(key+4*i, data, zeros);
+			memcpy(m_data+4*j, T+((i+j)%3)*4, 16);
+		memcpy(m_data+12, userKey, KEYLENGTH);
+		CorrectEndianess(m_data+12, m_data+12, KEYLENGTH);
+		Transform(m_key+4*i, m_data, zeros);
 	}
 
 	Init();
 }
 
-void MD5MAC::Init()
+void MD5MAC_Base::Init()
 {
-	digest[0] = key[0];
-	digest[1] = key[1];
-	digest[2] = key[2];
-	digest[3] = key[3];
+	m_digest[0] = m_key[0];
+	m_digest[1] = m_key[1];
+	m_digest[2] = m_key[2];
+	m_digest[3] = m_key[3];
 }
 
-void MD5MAC::TruncatedFinal(byte *hash, unsigned int size)
+void MD5MAC_Base::TruncatedFinal(byte *hash, unsigned int size)
 {
-	assert(size <= DIGESTSIZE);
+	ThrowIfInvalidTruncatedSize(size);
 
 	PadLastBlock(56);
-	CorrectEndianess(data, data, 56);
+	CorrectEndianess(m_data, m_data, 56);
 
-	data[14] = countLo;
-	data[15] = countHi;
+	m_data[14] = GetBitCountLo();
+	m_data[15] = GetBitCountHi();
 
-	Transform(digest, data, key+4);
+	Transform(m_digest, m_data, m_key+4);
 
 	unsigned i;
 	for (i=0; i<4; i++)
-		data[i] = key[8+i];
+		m_data[i] = m_key[8+i];
 	for (i=0; i<12; i++)
-		data[i+4] = T[i] ^ key[8+i%4];
-	Transform(digest, data, key+4);
+		m_data[i+4] = T[i] ^ m_key[8+i%4];
+	Transform(m_digest, m_data, m_key+4);
 
-	CorrectEndianess(digest, digest, DIGESTSIZE);
-	memcpy(hash, digest, size);
+	CorrectEndianess(m_digest, m_digest, DIGESTSIZE);
+	memcpy(hash, m_digest, size);
 
-	Reinit();		// reinit for next use
+	Restart();		// reinit for next use
 }
 
-void MD5MAC::Transform(word32 *digest, const word32 *in, const word32 *key)
+void MD5MAC_Base::Transform(word32 *digest, const word32 *in, const word32 *key)
 {
 #define F1(x, y, z) ((z ^ (x & (y ^ z))) + key[0])
 #define F2(x, y, z) ((y ^ (z & (x ^ y))) + key[1])

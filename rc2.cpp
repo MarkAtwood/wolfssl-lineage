@@ -2,12 +2,14 @@
 
 #include "pch.h"
 #include "rc2.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-RC2Base::RC2Base(const byte *key, unsigned int keyLen, unsigned int effectiveLen)
-	: K(64)
+void RC2::Base::UncheckedSetKey(CipherDir direction, const byte *key, unsigned int keyLen, unsigned int effectiveLen)
 {
+	AssertValidKeyLength(keyLen);
+
 	static const unsigned char PITABLE[256] = {
 		217,120,249,196, 25,221,181,237, 40,233,253,121, 74,160,216,157,
 		198,126, 55,131, 43,118, 83,142, 98, 76,100,136, 68,139,251,162,
@@ -25,9 +27,6 @@ RC2Base::RC2Base(const byte *key, unsigned int keyLen, unsigned int effectiveLen
 		211,  0,230,207,225,158,168, 44, 99, 22,  1, 63, 88,226,137,169,
 		 13, 56, 52, 27,171, 51,255,176,187, 72, 12, 95,185,177,205, 46,
 		197,243,219, 71,229,165,156,119, 10,166, 32,104,254,127,193,173};
-
-	assert(keyLen == KeyLength(keyLen));
-	assert(effectiveLen <= 1024);
 
 	SecByteBlock L(128);
 	memcpy(L, key, keyLen);
@@ -47,10 +46,19 @@ RC2Base::RC2Base(const byte *key, unsigned int keyLen, unsigned int effectiveLen
 		K[i] = L[2*i] + (L[2*i+1] << 8);
 }
 
-void RC2Encryption::ProcessBlock(const byte *in, byte *out) const
+void RC2::Base::SetKeyWithEffectiveKeyLength(const byte *key, unsigned int length, unsigned int effectiveKeyLength)
+{
+	if (effectiveKeyLength > MAX_EFFECTIVE_KEYLENGTH)
+		throw InvalidArgument("RC2: effective key length parameter exceeds maximum");
+	UncheckedSetKey(ENCRYPTION, key, length, effectiveKeyLength);
+}
+
+typedef BlockGetAndPut<word16, LittleEndian> Block;
+
+void RC2::Enc::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word16 R0, R1, R2, R3;
-	GetBlockLittleEndian(in, R0, R1, R2, R3);
+	Block::Get(inBlock)(R0)(R1)(R2)(R3);
 
 	for (int i = 0; i < 16; i++)
 	{
@@ -75,13 +83,13 @@ void RC2Encryption::ProcessBlock(const byte *in, byte *out) const
 		}
 	}
 
-	PutBlockLittleEndian(out, R0, R1, R2, R3);
+	Block::Put(xorBlock, outBlock)(R0)(R1)(R2)(R3);
 }
 
-void RC2Decryption::ProcessBlock(const byte *in, byte *out) const
+void RC2::Dec::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word16 R0, R1, R2, R3;
-	GetBlockLittleEndian(in, R0, R1, R2, R3);
+	Block::Get(inBlock)(R0)(R1)(R2)(R3);
 
 	for (int i = 15; i >= 0; i--)
 	{
@@ -106,7 +114,7 @@ void RC2Decryption::ProcessBlock(const byte *in, byte *out) const
 		R0 -= (R1 & ~R3) + (R2 & R3) + K[4*i+0];
 	}
 
-	PutBlockLittleEndian(out, R0, R1, R2, R3);
+	Block::Put(xorBlock, outBlock)(R0)(R1)(R2)(R3);
 }
 
 NAMESPACE_END

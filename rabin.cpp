@@ -6,164 +6,209 @@
 #include "asn.h"
 #include "sha.h"
 
-#include "pubkey.cpp"
 #include "oaep.cpp"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-INSTANTIATE_PUBKEY_CRYPTO_TEMPLATES_MACRO(OAEP<SHA>, RabinFunction, InvertibleRabinFunction)
-
-RabinFunction::RabinFunction(const Integer &n, const Integer &r, const Integer &s)
-	: n(n), r(r), s(s)
-{
-}
-
-RabinFunction::RabinFunction(BufferedTransformation &bt)
+void RabinFunction::BERDecode(BufferedTransformation &bt)
 {
 	BERSequenceDecoder seq(bt);
-	n.BERDecode(seq);
-	r.BERDecode(seq);
-	s.BERDecode(seq);
+	m_n.BERDecode(seq);
+	m_r.BERDecode(seq);
+	m_s.BERDecode(seq);
 	seq.MessageEnd();
 }
 
 void RabinFunction::DEREncode(BufferedTransformation &bt) const
 {
 	DERSequenceEncoder seq(bt);
-	n.DEREncode(seq);
-	r.DEREncode(seq);
-	s.DEREncode(seq);
+	m_n.DEREncode(seq);
+	m_r.DEREncode(seq);
+	m_s.DEREncode(seq);
 	seq.MessageEnd();
 }
 
 Integer RabinFunction::ApplyFunction(const Integer &in) const
 {
-	Integer out = in.Squared()%n;
+	DoQuickSanityCheck();
+
+	Integer out = in.Squared()%m_n;
 	if (in.IsOdd())
-		out = out*r%n;
-	if (Jacobi(in, n)==-1)
-		out = out*s%n;
+		out = out*m_r%m_n;
+	if (Jacobi(in, m_n)==-1)
+		out = out*m_s%m_n;
 	return out;
+}
+
+bool RabinFunction::Validate(RandomNumberGenerator &rng, unsigned int level) const
+{
+	bool pass = true;
+	pass = pass && m_n > Integer::One() && m_n%4 == 1;
+	pass = pass && m_r > Integer::One() && m_r < m_n;
+	pass = pass && m_s > Integer::One() && m_s < m_n;
+	if (level >= 1)
+		pass = pass && Jacobi(m_r, m_n) == -1 && Jacobi(m_s, m_n) == -1;
+	return pass;
+}
+
+bool RabinFunction::GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const
+{
+	return GetValueHelper(this, name, valueType, pValue).Assignable()
+		CRYPTOPP_GET_FUNCTION_ENTRY(Modulus)
+		CRYPTOPP_GET_FUNCTION_ENTRY(QuadraticResidueModPrime1)
+		CRYPTOPP_GET_FUNCTION_ENTRY(QuadraticResidueModPrime2)
+		;
+}
+
+void RabinFunction::AssignFrom(const NameValuePairs &source)
+{
+	AssignFromHelper(this, source)
+		CRYPTOPP_SET_FUNCTION_ENTRY(Modulus)
+		CRYPTOPP_SET_FUNCTION_ENTRY(QuadraticResidueModPrime1)
+		CRYPTOPP_SET_FUNCTION_ENTRY(QuadraticResidueModPrime2)
+		;
 }
 
 // *****************************************************************************
 // private key operations:
 
-InvertibleRabinFunction::InvertibleRabinFunction(const Integer &n, const Integer &r, const Integer &s,
-								 const Integer &p, const Integer &q, const Integer &u)
-	: RabinFunction(n, r, s), p(p), q(q), u(u)
-{
-	assert(p*q==n);
-	assert(Jacobi(r, p) == 1);
-	assert(Jacobi(r, q) == -1);
-	assert(Jacobi(s, p) == -1);
-	assert(Jacobi(s, q) == 1);
-	assert(u*q%p==1);
-}
-
 // generate a random private key
-InvertibleRabinFunction::InvertibleRabinFunction(RandomNumberGenerator &rng, unsigned int keybits)
+void InvertibleRabinFunction::GenerateRandom(RandomNumberGenerator &rng, const NameValuePairs &alg)
 {
-	assert(keybits >= 16);
-	// generate 2 random primes of suitable size
-	if (keybits%2==0)
-	{
-		const Integer minP = Integer(182) << (keybits/2-8);
-		const Integer maxP = Integer::Power2(keybits/2)-1;
-		p.Randomize(rng, minP, maxP, Integer::PRIME, 3, 4);
-		q.Randomize(rng, minP, maxP, Integer::PRIME, 3, 4);
-	}
-	else
-	{
-		const Integer minP = Integer::Power2((keybits-1)/2);
-		const Integer maxP = Integer(181) << ((keybits+1)/2-8);
-		p.Randomize(rng, minP, maxP, Integer::PRIME, 3, 4);
-		q.Randomize(rng, minP, maxP, Integer::PRIME, 3, 4);
-	}
+	int modulusSize = 2048;
+	alg.GetIntValue("ModulusSize", modulusSize) || alg.GetIntValue("KeySize", modulusSize);
 
+	if (modulusSize < 16)
+		throw InvalidArgument("InvertibleRabinFunction: specified modulus size is too small");
+
+	// VC70 workaround: putting these after primeParam causes overlapped stack allocation
 	bool rFound=false, sFound=false;
 	Integer t=2;
+
+	const NameValuePairs &primeParam = MakeParametersForTwoPrimesOfEqualSize(modulusSize)
+		("EquivalentTo", 3)("Mod", 4);
+	m_p.GenerateRandom(rng, primeParam);
+	m_q.GenerateRandom(rng, primeParam);
+
 	while (!(rFound && sFound))
 	{
-		int jp = Jacobi(t, p);
-		int jq = Jacobi(t, q);
+		int jp = Jacobi(t, m_p);
+		int jq = Jacobi(t, m_q);
 
 		if (!rFound && jp==1 && jq==-1)
 		{
-			r = t;
+			m_r = t;
 			rFound = true;
 		}
 
 		if (!sFound && jp==-1 && jq==1)
 		{
-			s = t;
+			m_s = t;
 			sFound = true;
 		}
 
 		++t;
 	}
 
-	n = p * q;
-	assert(n.BitCount() == keybits);
-	u = EuclideanMultiplicativeInverse(q, p);
-	assert(u*q%p==1);
+	m_n = m_p * m_q;
+	m_u = m_q.InverseMod(m_p);
 }
 
-InvertibleRabinFunction::InvertibleRabinFunction(BufferedTransformation &bt)
+void InvertibleRabinFunction::BERDecode(BufferedTransformation &bt)
 {
 	BERSequenceDecoder seq(bt);
-	n.BERDecode(seq);
-	r.BERDecode(seq);
-	s.BERDecode(seq);
-	p.BERDecode(seq);
-	q.BERDecode(seq);
-	u.BERDecode(seq);
+	m_n.BERDecode(seq);
+	m_r.BERDecode(seq);
+	m_s.BERDecode(seq);
+	m_p.BERDecode(seq);
+	m_q.BERDecode(seq);
+	m_u.BERDecode(seq);
 	seq.MessageEnd();
 }
 
 void InvertibleRabinFunction::DEREncode(BufferedTransformation &bt) const
 {
 	DERSequenceEncoder seq(bt);
-	n.DEREncode(seq);
-	r.DEREncode(seq);
-	s.DEREncode(seq);
-	p.DEREncode(seq);
-	q.DEREncode(seq);
-	u.DEREncode(seq);
+	m_n.DEREncode(seq);
+	m_r.DEREncode(seq);
+	m_s.DEREncode(seq);
+	m_p.DEREncode(seq);
+	m_q.DEREncode(seq);
+	m_u.DEREncode(seq);
 	seq.MessageEnd();
 }
 
 Integer InvertibleRabinFunction::CalculateInverse(const Integer &in) const
 {
-	Integer cp=in%p, cq=in%q;
+	DoQuickSanityCheck();
 
-	int jp = Jacobi(cp, p);
-	int jq = Jacobi(cq, q);
+	Integer cp=in%m_p, cq=in%m_q;
+
+	int jp = Jacobi(cp, m_p);
+	int jq = Jacobi(cq, m_q);
 
 	if (jq==-1)
 	{
-		cp = cp*EuclideanMultiplicativeInverse(r, p)%p;
-		cq = cq*EuclideanMultiplicativeInverse(r, q)%q;
+		cp = cp*EuclideanMultiplicativeInverse(m_r, m_p)%m_p;
+		cq = cq*EuclideanMultiplicativeInverse(m_r, m_q)%m_q;
 	}
 
 	if (jp==-1)
 	{
-		cp = cp*EuclideanMultiplicativeInverse(s, p)%p;
-		cq = cq*EuclideanMultiplicativeInverse(s, q)%q;
+		cp = cp*EuclideanMultiplicativeInverse(m_s, m_p)%m_p;
+		cq = cq*EuclideanMultiplicativeInverse(m_s, m_q)%m_q;
 	}
 
-	cp = ModularSquareRoot(cp, p);
-	cq = ModularSquareRoot(cq, q);
+	cp = ModularSquareRoot(cp, m_p);
+	cq = ModularSquareRoot(cq, m_q);
 
 	if (jp==-1)
-		cp = p-cp;
+		cp = m_p-cp;
 
-	Integer out = CRT(cq, q, cp, p, u);
+	Integer out = CRT(cq, m_q, cp, m_p, m_u);
 
 	if ((jq==-1 && out.IsEven()) || (jq==1 && out.IsOdd()))
-		out = n-out;
+		out = m_n-out;
 
 	return out;
+}
+
+bool InvertibleRabinFunction::Validate(RandomNumberGenerator &rng, unsigned int level) const
+{
+	bool pass = RabinFunction::Validate(rng, level);
+	pass = pass && m_p > Integer::One() && m_p%4 == 3 && m_p < m_n;
+	pass = pass && m_q > Integer::One() && m_q%4 == 3 && m_q < m_n;
+	pass = pass && m_u.IsPositive() && m_u < m_p;
+	if (level >= 1)
+	{
+		pass = pass && m_p * m_q == m_n;
+		pass = pass && m_u * m_q % m_p == 1;
+		pass = pass && Jacobi(m_r, m_p) == 1;
+		pass = pass && Jacobi(m_r, m_q) == -1;
+		pass = pass && Jacobi(m_s, m_p) == -1;
+		pass = pass && Jacobi(m_s, m_q) == 1;
+	}
+	if (level >= 2)
+		pass = pass && VerifyPrime(rng, m_p, level-2) && VerifyPrime(rng, m_q, level-2);
+	return pass;
+}
+
+bool InvertibleRabinFunction::GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const
+{
+	return GetValueHelper<RabinFunction>(this, name, valueType, pValue).Assignable()
+		CRYPTOPP_GET_FUNCTION_ENTRY(Prime1)
+		CRYPTOPP_GET_FUNCTION_ENTRY(Prime2)
+		CRYPTOPP_GET_FUNCTION_ENTRY(MultiplicativeInverseOfPrime2ModPrime1)
+		;
+}
+
+void InvertibleRabinFunction::AssignFrom(const NameValuePairs &source)
+{
+	AssignFromHelper<RabinFunction>(this, source)
+		CRYPTOPP_SET_FUNCTION_ENTRY(Prime1)
+		CRYPTOPP_SET_FUNCTION_ENTRY(Prime2)
+		CRYPTOPP_SET_FUNCTION_ENTRY(MultiplicativeInverseOfPrime2ModPrime1)
+		;
 }
 
 NAMESPACE_END

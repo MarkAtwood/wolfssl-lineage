@@ -1,13 +1,13 @@
 #ifndef CRYPTOPP_WINPIPES_H
 #define CRYPTOPP_WINPIPES_H
 
-#if !defined(NO_OS_DEPENDENCE) && defined(_WIN32)
+#include "config.h"
+
+#ifdef WINDOWS_PIPES_AVAILABLE
 
 #include "network.h"
 #include "queue.h"
 #include <windows.h>
-
-#define WINDOWS_PIPES_AVAILABLE
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -23,7 +23,7 @@ public:
 	void SetOwnership(bool own) {m_own = own;}
 
 	operator HANDLE() {return m_h;}
-	HANDLE GetHandle() {return m_h;}
+	HANDLE GetHandle() const {return m_h;}
 	bool HandleValid() const;
 	void AttachHandle(HANDLE h, bool own=false);
 	HANDLE DetachHandle();
@@ -37,99 +37,105 @@ protected:
 };
 
 //! Windows Pipe
-class WindowsPipe : public WindowsHandle
+class WindowsPipe
 {
 public:
-	class Err : public Exception
+	class Err : public OS_Error
 	{
 	public:
 		Err(HANDLE h, const std::string& operation, int error);
-		~Err() throw() {} 
-
 		HANDLE GetHandle() const {return m_h;}
-		const std::string & GetOperation() const {return m_operation;}
-		int GetError() const {return m_error;}
 
 	private:
 		HANDLE m_h;
-		std::string m_operation;
-		int m_error;
 	};
 
-	WindowsPipe(HANDLE h=INVALID_HANDLE_VALUE, bool own=false)
-		: WindowsHandle(h, own) {}
-
 protected:
-	virtual void CheckAndHandleError(const char *operation, BOOL result) const;
+	virtual HANDLE GetHandle() const =0;
+	virtual void HandleError(const char *operation) const;
+	void CheckAndHandleError(const char *operation, BOOL result) const
+		{assert(result==TRUE || result==FALSE); if (!result) HandleError(operation);}
 };
 
-//! Windows Read Pipe
-class WindowsReadPipe : public WindowsPipe, virtual public NetworkReceiver
+//! .
+class WindowsPipeReceiver : public WindowsPipe, public NetworkReceiver
 {
 public:
-	WindowsReadPipe(HANDLE h=INVALID_HANDLE_VALUE, bool own=false);
+	WindowsPipeReceiver();
 
-	bool ReceiveReady(unsigned long timeout=0) {return true;}
-	bool Receive(byte* buf, unsigned int bufLen);
-	bool ReceiveResultReady(unsigned long timeout=0);
-	unsigned int GetReceiveResult() {return m_lastResult;}
+	bool MustWaitForResult() {return true;}
+	void Receive(byte* buf, unsigned int bufLen);
+	unsigned int GetReceiveResult();
 	bool EofReceived() const {return m_eofReceived;}
 
-	HANDLE GetEvent() {return m_event;}
+	unsigned int GetMaxWaitObjectCount() const {return 1;}
+	void GetWaitObjects(WaitObjectContainer &container);
 
 private:
-	WindowsReadPipe(const WindowsReadPipe &h);	// no copying
-
-	bool m_inProgress;
 	WindowsHandle m_event;
 	OVERLAPPED m_overlapped;
+	bool m_resultPending;
 	DWORD m_lastResult;
 	bool m_eofReceived;
 };
 
-//! Windows Pipe Source
-class WindowsPipeSource : public WindowsReadPipe, public NetworkSource
+//! .
+class WindowsPipeSender : public WindowsPipe, public NetworkSender
 {
 public:
-	WindowsPipeSource(HANDLE h=INVALID_HANDLE_VALUE, bool pumpAll=false, BufferedTransformation *outQueue=NULL)
-		: WindowsReadPipe(h), NetworkSource(outQueue)
+	WindowsPipeSender();
+
+	bool MustWaitForResult() {return true;}
+	void Send(const byte* buf, unsigned int bufLen);
+	unsigned int GetSendResult();
+	void SendEof() {}
+
+	unsigned int GetMaxWaitObjectCount() const {return 1;}
+	void GetWaitObjects(WaitObjectContainer &container);
+
+private:
+	WindowsHandle m_event;
+	OVERLAPPED m_overlapped;
+	bool m_resultPending;
+	DWORD m_lastResult;
+};
+
+//! Windows Pipe Source
+class WindowsPipeSource : public WindowsHandle, public NetworkSource, public WindowsPipeReceiver
+{
+public:
+	WindowsPipeSource(HANDLE h=INVALID_HANDLE_VALUE, bool pumpAll=false, BufferedTransformation *attachment=NULL)
+		: WindowsHandle(h), NetworkSource(attachment)
 	{
 		if (pumpAll)
 			PumpAll();
 	}
-};
 
-//! Windows Write Pipe
-class WindowsWritePipe : public WindowsPipe, virtual public NetworkSender
-{
-public:
-	WindowsWritePipe(HANDLE h=INVALID_HANDLE_VALUE, bool own=false);
-
-	bool SendReady(unsigned long timeout=0) {return true;}
-	bool Send(const byte* buf, unsigned int bufLen);
-	bool SendResultReady(unsigned long timeout=0);
-	unsigned int GetSendResult() {return m_lastResult;}
-	void SendEof() {}
-
-	HANDLE GetEvent() {return m_event;}
+	NetworkSource::GetMaxWaitObjectCount;
+	NetworkSource::GetWaitObjects;
 
 private:
-	bool m_inProgress;
-	WindowsHandle m_event;
-	OVERLAPPED m_overlapped;
-	DWORD m_lastResult;
+	HANDLE GetHandle() const {return WindowsHandle::GetHandle();}
+	NetworkReceiver & AccessReceiver() {return *this;}
 };
 
 //! Windows Pipe Sink
-class WindowsPipeSink : public WindowsWritePipe, public NetworkSink
+class WindowsPipeSink : public WindowsHandle, public NetworkSink, public WindowsPipeSender
 {
 public:
 	WindowsPipeSink(HANDLE h=INVALID_HANDLE_VALUE, unsigned int maxBufferSize=0, bool autoFlush=false)
-		: WindowsWritePipe(h), NetworkSink(maxBufferSize, autoFlush) {}
+		: WindowsHandle(h), NetworkSink(maxBufferSize, autoFlush) {}
+
+	NetworkSink::GetMaxWaitObjectCount;
+	NetworkSink::GetWaitObjects;
+
+private:
+	HANDLE GetHandle() const {return WindowsHandle::GetHandle();}
+	NetworkSender & AccessSender() {return *this;}
 };
 
 NAMESPACE_END
 
-#endif	// #if !defined(NO_OS_DEPENDENCE) && defined(_WIN32)
+#endif
 
 #endif

@@ -6,189 +6,231 @@
 #include "oids.h"
 #include "nbtheory.h"
 #include "sha.h"
+#include "algparam.h"
+#include "fips140.h"
 
-#include "pubkey.cpp"
 #include "oaep.cpp"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-INSTANTIATE_PUBKEY_TEMPLATES_MACRO(PKCS_EncryptionPaddingScheme, PKCS_SignaturePaddingScheme, RSAFunction, InvertibleRSAFunction)
-template class OAEP<SHA>;
-INSTANTIATE_PUBKEY_CRYPTO_TEMPLATES_MACRO(OAEP<SHA>, RSAFunction, InvertibleRSAFunction)
-
-RSAFunction::RSAFunction(BufferedTransformation &bt)
+void RSA_TestInstantiations()
 {
-	BERSequenceDecoder subjectPublicKeyInfo(bt);
-	if (subjectPublicKeyInfo.PeekByte() == INTEGER)
-	{
-		// for backwards compatibility
-		n.BERDecode(subjectPublicKeyInfo);
-		e.BERDecode(subjectPublicKeyInfo);
-	}
-	else
-	{
-		BERSequenceDecoder algorithm(subjectPublicKeyInfo);
-			ASN1::rsaEncryption().BERDecodeAndCheck(algorithm);
-			if (!algorithm.EndReached())
-				BERDecodeNull(algorithm);
-		algorithm.MessageEnd();
+	RSASSA<PKCS1v15, SHA>::Verifier x1(1, 1);
+	RSASSA<PKCS1v15, SHA>::Signer x2(NullRNG(), 1);
+	RSASSA<PKCS1v15, SHA>::Verifier x3(x2);
+	RSASSA<PKCS1v15, SHA>::Verifier x4(x2.GetKey());
+	RSASSA<PKCS1v15, SHA>::Verifier x5(x3);
+	RSASSA<PKCS1v15, SHA>::Signer x6 = x2;
+	RSAES<PKCS1v15>::Encryptor x7(x2);
+	RSAES<PKCS1v15>::Encryptor x8(x3);
+	RSAES<OAEP<SHA> >::Encryptor x9(x2);
 
-		BERSequenceDecoder subjectPublicKey(subjectPublicKeyInfo, BIT_STRING);
-			subjectPublicKey.CheckByte(0);	// unused bits
-			BERSequenceDecoder seq(subjectPublicKey);
-				n.BERDecode(seq);
-				e.BERDecode(seq);
-			seq.MessageEnd();
-		subjectPublicKey.MessageEnd();
-	}
-	subjectPublicKeyInfo.MessageEnd();
+	x6 = x2;
+#ifndef __MWERKS__
+	x3 = x2;
+#endif
+	x4 = x2.GetKey();
 }
 
-void RSAFunction::DEREncode(BufferedTransformation &bt) const
+template class OAEP<SHA>;
+
+OID RSAFunction::GetAlgorithmID() const
 {
-	DERSequenceEncoder subjectPublicKeyInfo(bt);
+	return ASN1::rsaEncryption();
+}
 
-		DERSequenceEncoder algorithm(subjectPublicKeyInfo);
-			ASN1::rsaEncryption().DEREncode(algorithm);
-			DEREncodeNull(algorithm);
-		algorithm.MessageEnd();
+void RSAFunction::BERDecodeKey(BufferedTransformation &bt)
+{
+	BERSequenceDecoder seq(bt);
+		m_n.BERDecode(seq);
+		m_e.BERDecode(seq);
+	seq.MessageEnd();
+}
 
-		DERGeneralEncoder subjectPublicKey(subjectPublicKeyInfo, BIT_STRING);
-			subjectPublicKey.Put(0);	// unused bits
-			DERSequenceEncoder seq(subjectPublicKey);
-				n.DEREncode(seq);
-				e.DEREncode(seq);
-			seq.MessageEnd();
-		subjectPublicKey.MessageEnd();
-
-	subjectPublicKeyInfo.MessageEnd();
+void RSAFunction::DEREncodeKey(BufferedTransformation &bt) const
+{
+	DERSequenceEncoder seq(bt);
+		m_n.DEREncode(seq);
+		m_e.DEREncode(seq);
+	seq.MessageEnd();
 }
 
 Integer RSAFunction::ApplyFunction(const Integer &x) const
 {
-	return a_exp_b_mod_c(x, e, n);
+	DoQuickSanityCheck();
+	return a_exp_b_mod_c(x, m_e, m_n);
+}
+
+bool RSAFunction::Validate(RandomNumberGenerator &rng, unsigned int level) const
+{
+	bool pass = true;
+	pass = pass && m_n > Integer::One() && m_n.IsOdd();
+	pass = pass && m_e > Integer::One() && m_e.IsOdd() && m_e < m_n;
+	return pass;
+}
+
+bool RSAFunction::GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const
+{
+	return GetValueHelper(this, name, valueType, pValue).Assignable()
+		CRYPTOPP_GET_FUNCTION_ENTRY(Modulus)
+		CRYPTOPP_GET_FUNCTION_ENTRY(PublicExponent)
+		;
+}
+
+void RSAFunction::AssignFrom(const NameValuePairs &source)
+{
+	AssignFromHelper(this, source)
+		CRYPTOPP_SET_FUNCTION_ENTRY(Modulus)
+		CRYPTOPP_SET_FUNCTION_ENTRY(PublicExponent)
+		;
 }
 
 // *****************************************************************************
 
-InvertibleRSAFunction::InvertibleRSAFunction(const Integer &n, const Integer &e, const Integer &d,
-	const Integer &p, const Integer &q, const Integer &dp, const Integer &dq, const Integer &u)
-		: RSAFunction(n, e), d(d), p(p), q(q), dp(dp), dq(dq), u(u)
+class RSAPrimeSelector : public PrimeSelector
 {
-	assert(p*q==n);
-	assert(d*e%LCM(p-1, q-1)==1);
-	assert(dp==d%(p-1));
-	assert(dq==d%(q-1));
-	assert(u*q%p==1);
+public:
+	RSAPrimeSelector(const Integer &e) : m_e(e) {}
+	bool IsAcceptable(const Integer &candidate) const {return RelativelyPrime(m_e, candidate-Integer::One());}
+	Integer m_e;
+};
+
+void InvertibleRSAFunction::GenerateRandom(RandomNumberGenerator &rng, const NameValuePairs &alg)
+{
+	int modulusSize = 2048;
+	alg.GetIntValue("ModulusSize", modulusSize) || alg.GetIntValue("KeySize", modulusSize);
+
+	if (modulusSize < 16)
+		throw InvalidArgument("InvertibleRSAFunction: specified modulus size is too small");
+
+	m_e = alg.GetValueWithDefault("PublicExponent", Integer(17));
+
+	if (m_e < 3 || m_e.IsEven())
+		throw InvalidArgument("InvertibleRSAFunction: invalid public exponent");
+
+	RSAPrimeSelector selector(m_e);
+	const NameValuePairs &primeParam = MakeParametersForTwoPrimesOfEqualSize(modulusSize)
+		("PointerToPrimeSelector", selector.GetSelectorPointer());
+	m_p.GenerateRandom(rng, primeParam);
+	m_q.GenerateRandom(rng, primeParam);
+
+	m_d = EuclideanMultiplicativeInverse(m_e, LCM(m_p-1, m_q-1));
+	assert(m_d.IsPositive());
+
+	m_dp = m_d % (m_p-1);
+	m_dq = m_d % (m_q-1);
+	m_n = m_p * m_q;
+	m_u = m_q.InverseMod(m_p);
+
+	if (FIPS_140_2_ComplianceEnabled())
+	{
+		RSASSA<PKCS1v15, SHA>::Signer signer(*this);
+		RSASSA<PKCS1v15, SHA>::Verifier verifier(signer);
+		SignaturePairwiseConsistencyTest(signer, verifier);
+
+		RSAES<OAEP<SHA> >::Decryptor decryptor(*this);
+		RSAES<OAEP<SHA> >::Encryptor encryptor(decryptor);
+		EncryptionPairwiseConsistencyTest(encryptor, decryptor);
+	}
 }
 
-// generate a random private key
-InvertibleRSAFunction::InvertibleRSAFunction(RandomNumberGenerator &rng, unsigned int keybits, const Integer &eStart)
+void InvertibleRSAFunction::Initialize(RandomNumberGenerator &rng, unsigned int keybits, const Integer &e)
 {
-	assert(keybits >= 16);
-	// generate 2 random primes of suitable size
-	if (keybits%2==0)
-	{
-		const Integer minP = Integer(182) << (keybits/2-8);
-		const Integer maxP = Integer::Power2(keybits/2)-1;
-		p.Randomize(rng, minP, maxP, Integer::PRIME);
-		q.Randomize(rng, minP, maxP, Integer::PRIME);
-	}
-	else
-	{
-		const Integer minP = Integer::Power2((keybits-1)/2);
-		const Integer maxP = Integer(181) << ((keybits+1)/2-8);
-		p.Randomize(rng, minP, maxP, Integer::PRIME);
-		q.Randomize(rng, minP, maxP, Integer::PRIME);
-	}
-
-	// pre-calculate some other data for faster speed
-	const Integer lcm = LCM(p-1, q-1);
-	// make sure e starts odd
-	for (e = eStart+(1-eStart%2); GCD(e, lcm)!=1; ++e, ++e)
-		;
-	d = EuclideanMultiplicativeInverse(e, lcm);
-	dp = d % (p-1);
-	dq = d % (q-1);
-	u = EuclideanMultiplicativeInverse(q, p);
-	n = p * q;
-	assert(n.BitCount() == keybits);
+	GenerateRandom(rng, MakeParameters("ModulusSize", (int)keybits)("PublicExponent", e+e.IsEven()));
 }
 
-InvertibleRSAFunction::InvertibleRSAFunction(BufferedTransformation &bt)
+void InvertibleRSAFunction::BERDecodeKey(BufferedTransformation &bt)
 {
-	BERSequenceDecoder privateKeyInfo(bt);
-	word32 version;
-	BERDecodeUnsigned<word32>(privateKeyInfo, version, INTEGER, 0, 0);	// check version
-
-	if (privateKeyInfo.PeekByte() == INTEGER)
-	{
-		// for backwards compatibility
-		n.BERDecode(privateKeyInfo);
-		e.BERDecode(privateKeyInfo);
-		d.BERDecode(privateKeyInfo);
-		p.BERDecode(privateKeyInfo);
-		q.BERDecode(privateKeyInfo);
-		dp.BERDecode(privateKeyInfo);
-		dq.BERDecode(privateKeyInfo);
-		u.BERDecode(privateKeyInfo);
-	}
-	else
-	{
-		BERSequenceDecoder algorithm(privateKeyInfo);
-			ASN1::rsaEncryption().BERDecodeAndCheck(algorithm);
-			BERDecodeNull(algorithm);
-		algorithm.MessageEnd();
-
-		BERGeneralDecoder octetString(privateKeyInfo, OCTET_STRING);
-			BERSequenceDecoder privateKey(octetString);
-				BERDecodeUnsigned<word32>(privateKey, version, INTEGER, 0, 0);	// check version
-				n.BERDecode(privateKey);
-				e.BERDecode(privateKey);
-				d.BERDecode(privateKey);
-				p.BERDecode(privateKey);
-				q.BERDecode(privateKey);
-				dp.BERDecode(privateKey);
-				dq.BERDecode(privateKey);
-				u.BERDecode(privateKey);
-			privateKey.MessageEnd();
-		octetString.MessageEnd();
-	}
-	privateKeyInfo.MessageEnd();
+	BERSequenceDecoder privateKey(bt);
+		word32 version;
+		BERDecodeUnsigned<word32>(privateKey, version, INTEGER, 0, 0);	// check version
+		m_n.BERDecode(privateKey);
+		m_e.BERDecode(privateKey);
+		m_d.BERDecode(privateKey);
+		m_p.BERDecode(privateKey);
+		m_q.BERDecode(privateKey);
+		m_dp.BERDecode(privateKey);
+		m_dq.BERDecode(privateKey);
+		m_u.BERDecode(privateKey);
+	privateKey.MessageEnd();
 }
 
-void InvertibleRSAFunction::DEREncode(BufferedTransformation &bt) const
+void InvertibleRSAFunction::DEREncodeKey(BufferedTransformation &bt) const
 {
-	DERSequenceEncoder privateKeyInfo(bt);
-		DEREncodeUnsigned<word32>(privateKeyInfo, 0);	// version
-
-		DERSequenceEncoder algorithm(privateKeyInfo);
-			ASN1::rsaEncryption().DEREncode(algorithm);
-			DEREncodeNull(algorithm);
-		algorithm.MessageEnd();
-
-		DERGeneralEncoder octetString(privateKeyInfo, OCTET_STRING);
-			DERSequenceEncoder privateKey(octetString);
-				DEREncodeUnsigned<word32>(privateKey, 0);	// version
-				n.DEREncode(privateKey);
-				e.DEREncode(privateKey);
-				d.DEREncode(privateKey);
-				p.DEREncode(privateKey);
-				q.DEREncode(privateKey);
-				dp.DEREncode(privateKey);
-				dq.DEREncode(privateKey);
-				u.DEREncode(privateKey);
-			privateKey.MessageEnd();
-		octetString.MessageEnd();
-
-	privateKeyInfo.MessageEnd();
+	DERSequenceEncoder privateKey(bt);
+		DEREncodeUnsigned<word32>(privateKey, 0);	// version
+		m_n.DEREncode(privateKey);
+		m_e.DEREncode(privateKey);
+		m_d.DEREncode(privateKey);
+		m_p.DEREncode(privateKey);
+		m_q.DEREncode(privateKey);
+		m_dp.DEREncode(privateKey);
+		m_dq.DEREncode(privateKey);
+		m_u.DEREncode(privateKey);
+	privateKey.MessageEnd();
 }
 
 Integer InvertibleRSAFunction::CalculateInverse(const Integer &x) const 
 {
+	DoQuickSanityCheck();
 	// here we follow the notation of PKCS #1 and let u=q inverse mod p
 	// but in ModRoot, u=p inverse mod q, so we reverse the order of p and q
-	return ModularRoot(x, dq, dp, q, p, u);
+	return ModularRoot(x, m_dq, m_dp, m_q, m_p, m_u);
 }
+
+bool InvertibleRSAFunction::Validate(RandomNumberGenerator &rng, unsigned int level) const
+{
+	bool pass = RSAFunction::Validate(rng, level);
+	pass = pass && m_p > Integer::One() && m_p.IsOdd() && m_p < m_n;
+	pass = pass && m_q > Integer::One() && m_q.IsOdd() && m_q < m_n;
+	pass = pass && m_d > Integer::One() && m_d.IsOdd() && m_d < m_n;
+	pass = pass && m_dp > Integer::One() && m_dp.IsOdd() && m_dp < m_p;
+	pass = pass && m_dq > Integer::One() && m_dq.IsOdd() && m_dq < m_q;
+	pass = pass && m_u.IsPositive() && m_u < m_p;
+	if (level >= 1)
+	{
+		pass = pass && m_p * m_q == m_n;
+		pass = pass && m_e*m_d % LCM(m_p-1, m_q-1) == 1;
+		pass = pass && m_dp == m_d%(m_p-1) && m_dq == m_d%(m_q-1);
+		pass = pass && m_u * m_q % m_p == 1;
+	}
+	if (level >= 2)
+		pass = pass && VerifyPrime(rng, m_p, level-2) && VerifyPrime(rng, m_q, level-2);
+	return pass;
+}
+
+bool InvertibleRSAFunction::GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const
+{
+	return GetValueHelper<RSAFunction>(this, name, valueType, pValue).Assignable()
+		CRYPTOPP_GET_FUNCTION_ENTRY(Prime1)
+		CRYPTOPP_GET_FUNCTION_ENTRY(Prime2)
+		CRYPTOPP_GET_FUNCTION_ENTRY(PrivateExponent)
+		CRYPTOPP_GET_FUNCTION_ENTRY(ModPrime1PrivateExponent)
+		CRYPTOPP_GET_FUNCTION_ENTRY(ModPrime2PrivateExponent)
+		CRYPTOPP_GET_FUNCTION_ENTRY(MultiplicativeInverseOfPrime2ModPrime1)
+		;
+}
+
+void InvertibleRSAFunction::AssignFrom(const NameValuePairs &source)
+{
+	AssignFromHelper<RSAFunction>(this, source)
+		CRYPTOPP_SET_FUNCTION_ENTRY(Prime1)
+		CRYPTOPP_SET_FUNCTION_ENTRY(Prime2)
+		CRYPTOPP_SET_FUNCTION_ENTRY(PrivateExponent)
+		CRYPTOPP_SET_FUNCTION_ENTRY(ModPrime1PrivateExponent)
+		CRYPTOPP_SET_FUNCTION_ENTRY(ModPrime2PrivateExponent)
+		CRYPTOPP_SET_FUNCTION_ENTRY(MultiplicativeInverseOfPrime2ModPrime1)
+		;
+}
+
+/*
+bool RSAFunctionInverse_NonCRT::Validate(RandomNumberGenerator &rng, unsigned int level) const
+{
+	bool pass = true;
+	pass = pass && m_n > Integer::One() && m_n.IsOdd();
+	pass = pass && m_d > Integer::One() && m_d.IsOdd() && m_d < m_n;
+	return pass;
+}
+*/
 
 NAMESPACE_END

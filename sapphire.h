@@ -1,8 +1,8 @@
 #ifndef CRYPTOPP_SAPPHIRE_H
 #define CRYPTOPP_SAPPHIRE_H
 
-#include "cryptlib.h"
-#include "misc.h"
+#include "seckey.h"
+#include "secblock.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -39,7 +39,7 @@ private:
 };
 
 /// <a href="http://www.weidai.com/scan-mirror/cs.html#Sapphire-II">Sapphire-II Cipher</a>
-class SapphireEncryption : public StreamCipher, public SapphireBase
+class SapphireEncryption : public StreamTransformation, public SapphireBase
 {
 public:
 	SapphireEncryption(const byte *userKey, unsigned int keyLength=DEFAULT_KEYLENGTH)
@@ -64,7 +64,7 @@ protected:
 };
 
 /// <a href="http://www.weidai.com/scan-mirror/cs.html#Sapphire-II">Sapphire-II cipher</a>
-class SapphireDecryption : public StreamCipher, public SapphireBase
+class SapphireDecryption : public StreamTransformation, public SapphireBase
 {
 public:
 	SapphireDecryption(const byte *userKey, unsigned int keyLength=DEFAULT_KEYLENGTH)
@@ -97,7 +97,7 @@ public:
 
 //! Sapphire Hash
 /*! Digest Length = 160 bits */
-class SapphireHash : public HashModuleWithTruncation, private SapphireEncryption
+class SapphireHash : public HashTransformation, private SapphireEncryption
 {
 public:
 	SapphireHash(unsigned int hashLength=20);

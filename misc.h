@@ -2,6 +2,7 @@
 #define CRYPTOPP_MISC_H
 
 #include "config.h"
+#include "cryptlib.h"
 #include <assert.h>
 #include <string.h>		// CodeWarrior doesn't have memory.h
 #include <algorithm>
@@ -13,10 +14,70 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+// ************** compile-time assertion ***************
+
+template <bool b>
+struct CompileAssert
+{
+	static char dummy[2*b-1];
+};
+
+#define CRYPTOPP_COMPILE_ASSERT(assertion) CRYPTOPP_COMPILE_ASSERT_INSTANCE(assertion, __LINE__)
+#define CRYPTOPP_COMPILE_ASSERT_INSTANCE(assertion, instance) static CompileAssert<(assertion)> CRYPTOPP_ASSERT_JOIN(cryptopp_assert_, instance)
+#define CRYPTOPP_ASSERT_JOIN(X, Y) CRYPTOPP_DO_ASSERT_JOIN(X, Y)
+#define CRYPTOPP_DO_ASSERT_JOIN(X, Y) X##Y
+
+// ************** misc classes ***************
+
+class Empty
+{
+};
+
+template <class BASE1, class BASE2>
+class TwoBases : public BASE1, public BASE2
+{
+};
+
+template <class BASE1, class BASE2, class BASE3>
+class ThreeBases : public BASE1, public BASE2, public BASE3
+{
+};
+
+template <class T>
+class ObjectHolder
+{
+protected:
+	T m_object;
+};
+
+class NotCopyable
+{
+public:
+	NotCopyable() {}
+private:
+    NotCopyable(const NotCopyable &);
+    void operator=(const NotCopyable &);
+};
+
 // ************** misc functions ***************
 
-#define GETBYTE(x, y) (unsigned int)(((x)>>(8*(y)))&255)
-// this one may be faster on a Pentium
+// can't use std::min or std::max in MSVC60 or Cygwin 1.1.0
+template <class _Tp> inline const _Tp& STDMIN(const _Tp& __a, const _Tp& __b)
+{
+	return __b < __a ? __b : __a;
+}
+
+template <class _Tp> inline const _Tp& STDMAX(const _Tp& __a, const _Tp& __b)
+{
+	return  __a < __b ? __b : __a;
+}
+
+#define RETURN_IF_NONZERO(x) unsigned int returnedValue = x; if (returnedValue) return returnedValue
+
+// this version of the macro is fastest on Pentium 3 and Pentium 4 with MSVC 6 SP5 w/ Processor Pack
+#define GETBYTE(x, y) (unsigned int)byte((x)>>(8*(y)))
+// these may be faster on other CPUs/compilers
+// #define GETBYTE(x, y) (unsigned int)(((x)>>(8*(y)))&255)
 // #define GETBYTE(x, y) (((byte *)&(x))[y])
 
 unsigned int Parity(unsigned long);
@@ -24,17 +85,17 @@ unsigned int BytePrecision(unsigned long);
 unsigned int BitPrecision(unsigned long);
 unsigned long Crop(unsigned long, unsigned int size);
 
-inline unsigned int bitsToBytes(unsigned int bitCount)
+inline unsigned int BitsToBytes(unsigned int bitCount)
 {
 	return ((bitCount+7)/(8));
 }
 
-inline unsigned int bytesToWords(unsigned int byteCount)
+inline unsigned int BytesToWords(unsigned int byteCount)
 {
 	return ((byteCount+WORD_SIZE-1)/WORD_SIZE);
 }
 
-inline unsigned int bitsToWords(unsigned int bitCount)
+inline unsigned int BitsToWords(unsigned int bitCount)
 {
 	return ((bitCount+WORD_BITS-1)/(WORD_BITS));
 }
@@ -42,33 +103,72 @@ inline unsigned int bitsToWords(unsigned int bitCount)
 void xorbuf(byte *buf, const byte *mask, unsigned int count);
 void xorbuf(byte *output, const byte *input, const byte *mask, unsigned int count);
 
-inline unsigned int RoundDownToMultipleOf(unsigned int n, unsigned int m)
+template <class T>
+inline bool IsPowerOf2(T n)
 {
-	return n - n%m;
+	return n > 0 && (n & (n-1)) == 0;
 }
 
-inline unsigned int RoundUpToMultipleOf(unsigned int n, unsigned int m)
+template <class T1, class T2>
+inline T2 ModPowerOf2(T1 a, T2 b)
+{
+	assert(IsPowerOf2(b));
+	return T2(a) & (b-1);
+}
+
+template <class T>
+inline T RoundDownToMultipleOf(T n, T m)
+{
+	return n - (IsPowerOf2(m) ? ModPowerOf2(n, m) : (n%m));
+}
+
+template <class T>
+inline T RoundUpToMultipleOf(T n, T m)
 {
 	return RoundDownToMultipleOf(n+m-1, m);
 }
 
 template <class T>
-inline bool IsAligned(const void *p)
+inline unsigned int GetAlignment(T *dummy=NULL)	// VC60 workaround
 {
-	return (unsigned int)p % sizeof(T) == 0;
-}
-
-inline bool CheckEndianess(bool highFirst)
-{
-#ifdef IS_LITTLE_ENDIAN
-	return !highFirst;
+#if (_MSC_VER >= 1300)
+	return __alignof(T);
+#elif defined(__GNUC__)
+	return __alignof__(T);
 #else
-	return highFirst;
+	return sizeof(T);
 #endif
 }
 
+inline bool IsAlignedOn(const void *p, unsigned int alignment)
+{
+	return IsPowerOf2(alignment) ? ModPowerOf2((unsigned int)p, alignment) == 0 : (unsigned int)p % alignment == 0;
+}
+
+template <class T>
+inline bool IsAligned(const void *p, T *dummy=NULL)	// VC60 workaround
+{
+	return IsAlignedOn(p, GetAlignment<T>());
+}
+
+#ifdef IS_LITTLE_ENDIAN
+	typedef LittleEndian NativeByteOrder;
+#else
+	typedef BigEndian NativeByteOrder;
+#endif
+
+inline ByteOrder GetNativeByteOrder()
+{
+	return NativeByteOrder::ToEnum();
+}
+
+inline bool NativeByteOrderIs(ByteOrder order)
+{
+	return order == GetNativeByteOrder();
+}
+
 template <class T>		// can't use <sstream> because GCC 2.95.2 doesn't have it
-std::string IntToString(T a)
+std::string IntToString(T a, unsigned int base = 10)
 {
 	if (a == 0)
 		return "0";
@@ -76,17 +176,32 @@ std::string IntToString(T a)
 	if (a < 0)
 	{
 		negate = true;
-		a = -a;
+		a = 0-a;	// VC .NET does not like -a
 	}
 	std::string result;
 	while (a > 0)
 	{
-		result = char('0' + a % 10) + result;
-		a = a / 10;
+		T digit = a % base;
+		result = char((digit < 10 ? '0' : ('a' - 10)) + digit) + result;
+		a /= base;
 	}
 	if (negate)
 		result = "-" + result;
 	return result;
+}
+
+template <class T1, class T2>
+inline T1 SaturatingSubtract(T1 a, T2 b)
+{
+	CRYPTOPP_COMPILE_ASSERT_INSTANCE(T1(-1)>0, 0);	// T1 is unsigned type
+	CRYPTOPP_COMPILE_ASSERT_INSTANCE(T2(-1)>0, 1);	// T2 is unsigned type
+	return T1((a > b) ? (a - b) : 0);
+}
+
+template <class T>
+inline CipherDir GetCipherDir(const T &obj)
+{
+	return obj.IsForwardTransformation() ? ENCRYPTION : DECRYPTION;
 }
 
 // ************** rotate functions ***************
@@ -128,6 +243,8 @@ template <class T> inline T rotrMod(T x, unsigned int y)
 }
 
 #ifdef INTEL_INTRINSICS
+
+#pragma intrinsic(_lrotl, _lrotr)
 
 template<> inline word32 rotlFixed<word32>(word32 x, unsigned int y)
 {
@@ -205,12 +322,26 @@ template<> inline word32 rotrMod<word32>(word32 x, unsigned int y)
 
 // ************** endian reversal ***************
 
-inline word16 byteReverse(word16 value)
+template <class T>
+inline unsigned int GetByte(ByteOrder order, T value, unsigned int index)
+{
+	if (order == LITTLE_ENDIAN_ORDER)
+		return GETBYTE(value, index);
+	else
+		return GETBYTE(value, sizeof(T)-index-1);
+}
+
+inline byte ByteReverse(byte value)
+{
+	return value;
+}
+
+inline word16 ByteReverse(word16 value)
 {
 	return rotlFixed(value, 8U);
 }
 
-inline word32 byteReverse(word32 value)
+inline word32 ByteReverse(word32 value)
 {
 #ifdef PPC_INTRINSICS
 	// PPC: load reverse indexed instruction
@@ -226,10 +357,10 @@ inline word32 byteReverse(word32 value)
 }
 
 #ifdef WORD64_AVAILABLE
-inline word64 byteReverse(word64 value)
+inline word64 ByteReverse(word64 value)
 {
 #ifdef SLOW_WORD64
-	return (word64(byteReverse(word32(value))) << 32) | byteReverse(word32(value>>32));
+	return (word64(ByteReverse(word32(value))) << 32) | ByteReverse(word32(value>>32));
 #else
 	value = ((value & W64LIT(0xFF00FF00FF00FF00)) >> 8) | ((value & W64LIT(0x00FF00FF00FF00FF)) << 8);
 	value = ((value & W64LIT(0xFFFF0000FFFF0000)) >> 16) | ((value & W64LIT(0x0000FFFF0000FFFF)) << 16);
@@ -238,57 +369,57 @@ inline word64 byteReverse(word64 value)
 }
 #endif
 
-inline byte bitReverse(byte value)
+inline byte BitReverse(byte value)
 {
 	value = ((value & 0xAA) >> 1) | ((value & 0x55) << 1);
 	value = ((value & 0xCC) >> 2) | ((value & 0x33) << 2);
 	return rotlFixed(value, 4);
 }
 
-inline word16 bitReverse(word16 value)
+inline word16 BitReverse(word16 value)
 {
 	value = ((value & 0xAAAA) >> 1) | ((value & 0x5555) << 1);
 	value = ((value & 0xCCCC) >> 2) | ((value & 0x3333) << 2);
 	value = ((value & 0xF0F0) >> 4) | ((value & 0x0F0F) << 4);
-	return byteReverse(value);
+	return ByteReverse(value);
 }
 
-inline word32 bitReverse(word32 value)
+inline word32 BitReverse(word32 value)
 {
 	value = ((value & 0xAAAAAAAA) >> 1) | ((value & 0x55555555) << 1);
 	value = ((value & 0xCCCCCCCC) >> 2) | ((value & 0x33333333) << 2);
 	value = ((value & 0xF0F0F0F0) >> 4) | ((value & 0x0F0F0F0F) << 4);
-	return byteReverse(value);
+	return ByteReverse(value);
 }
 
 #ifdef WORD64_AVAILABLE
-inline word64 bitReverse(word64 value)
+inline word64 BitReverse(word64 value)
 {
 #ifdef SLOW_WORD64
-	return (word64(bitReverse(word32(value))) << 32) | bitReverse(word32(value>>32));
+	return (word64(BitReverse(word32(value))) << 32) | BitReverse(word32(value>>32));
 #else
 	value = ((value & W64LIT(0xAAAAAAAAAAAAAAAA)) >> 1) | ((value & W64LIT(0x5555555555555555)) << 1);
 	value = ((value & W64LIT(0xCCCCCCCCCCCCCCCC)) >> 2) | ((value & W64LIT(0x3333333333333333)) << 2);
 	value = ((value & W64LIT(0xF0F0F0F0F0F0F0F0)) >> 4) | ((value & W64LIT(0x0F0F0F0F0F0F0F0F)) << 4);
-	return byteReverse(value);
+	return ByteReverse(value);
 #endif
 }
 #endif
 
 template <class T>
-inline T bitReverse(T value)
+inline T BitReverse(T value)
 {
 	if (sizeof(T) == 1)
-		return bitReverse((byte)value);
+		return (T)BitReverse((byte)value);
 	else if (sizeof(T) == 2)
-		return bitReverse((word16)value);
+		return (T)BitReverse((word16)value);
 	else if (sizeof(T) == 4)
-		return bitReverse((word32)value);
+		return (T)BitReverse((word32)value);
 	else
 	{
 #ifdef WORD64_AVAILABLE
 		assert(sizeof(T) == 8);
-		return bitReverse((word64)value);
+		return (T)BitReverse((word64)value);
 #else
 		assert(false);
 		return 0;
@@ -297,398 +428,259 @@ inline T bitReverse(T value)
 }
 
 template <class T>
-void byteReverse(T *out, const T *in, unsigned int byteCount)
+inline T ConditionalByteReverse(ByteOrder order, T value)
 {
-	unsigned int count = (byteCount+sizeof(T)-1)/sizeof(T);
+	return NativeByteOrderIs(order) ? value : ByteReverse(value);
+}
+
+template <class T>
+void ByteReverse(T *out, const T *in, unsigned int byteCount)
+{
+	assert(byteCount % sizeof(T) == 0);
+	unsigned int count = byteCount/sizeof(T);
 	for (unsigned int i=0; i<count; i++)
-		out[i] = byteReverse(in[i]);
+		out[i] = ByteReverse(in[i]);
 }
 
 template <class T>
-inline void GetUserKeyLittleEndian(T *out, unsigned int outlen, const byte *in, unsigned int inlen)
+inline void ConditionalByteReverse(ByteOrder order, T *out, const T *in, unsigned int byteCount)
+{
+	if (!NativeByteOrderIs(order))
+		ByteReverse(out, in, byteCount);
+	else if (in != out)
+		memcpy(out, in, byteCount);
+}
+
+template <class T>
+inline void GetUserKey(ByteOrder order, T *out, unsigned int outlen, const byte *in, unsigned int inlen)
 {
 	const unsigned int U = sizeof(T);
 	assert(inlen <= outlen*U);
 	memcpy(out, in, inlen);
 	memset((byte *)out+inlen, 0, outlen*U-inlen);
-#ifndef IS_LITTLE_ENDIAN
-	byteReverse(out, out, inlen);
-#endif
+	ConditionalByteReverse(order, out, out, RoundUpToMultipleOf(inlen, U));
+}
+
+inline byte UnalignedGetWordNonTemplate(ByteOrder order, const byte *block, byte*)
+{
+	return block[0];
+}
+
+inline word16 UnalignedGetWordNonTemplate(ByteOrder order, const byte *block, word16*)
+{
+	return (order == BIG_ENDIAN_ORDER)
+		? block[1] | (block[0] << 8)
+		: block[0] | (block[1] << 8);
+}
+
+inline word32 UnalignedGetWordNonTemplate(ByteOrder order, const byte *block, word32*)
+{
+	return (order == BIG_ENDIAN_ORDER)
+		? word32(block[3]) | (word32(block[2]) << 8) | (word32(block[1]) << 16) | (word32(block[0]) << 24)
+		: word32(block[0]) | (word32(block[1]) << 8) | (word32(block[2]) << 16) | (word32(block[3]) << 24);
 }
 
 template <class T>
-inline void GetUserKeyBigEndian(T *out, unsigned int outlen, const byte *in, unsigned int inlen)
+inline T UnalignedGetWord(ByteOrder order, const byte *block, T*dummy=NULL)
 {
-	const unsigned int U = sizeof(T);
-	assert(inlen <= outlen*U);
-	memcpy(out, in, inlen);
-	memset((byte *)out+inlen, 0, outlen*U-inlen);
-#ifdef IS_LITTLE_ENDIAN
-	byteReverse(out, out, inlen);
-#endif
+	return UnalignedGetWordNonTemplate(order, block, dummy);
 }
 
-// Fetch 2 words from user's buffer into "a", "b" in LITTLE-endian order
-template <class T>
-inline void GetBlockLittleEndian(const byte *block, T &a, T &b)
+inline void UnalignedPutWord(ByteOrder order, byte *block, byte value, const byte *xorBlock = NULL)
 {
-#ifdef IS_LITTLE_ENDIAN
-	a = ((T *)block)[0];
-	b = ((T *)block)[1];
-#else
-	a = byteReverse(((T *)block)[0]);
-	b = byteReverse(((T *)block)[1]);
-#endif
+	block[0] = xorBlock ? (value ^ xorBlock[0]) : value;
 }
 
-// Put 2 words back into user's buffer in LITTLE-endian order
-template <class T>
-inline void PutBlockLittleEndian(byte *block, T a, T b)
+inline void UnalignedPutWord(ByteOrder order, byte *block, word16 value, const byte *xorBlock = NULL)
 {
-#ifdef IS_LITTLE_ENDIAN
-	((T *)block)[0] = a;
-	((T *)block)[1] = b;
-#else
-	((T *)block)[0] = byteReverse(a);
-	((T *)block)[1] = byteReverse(b);
-#endif
+	if (order == BIG_ENDIAN_ORDER)
+	{
+		block[0] = GETBYTE(value, 1);
+		block[1] = GETBYTE(value, 0);
+	}
+	else
+	{
+		block[0] = GETBYTE(value, 0);
+		block[1] = GETBYTE(value, 1);
+	}
+
+	if (xorBlock)
+	{
+		block[0] ^= xorBlock[0];
+		block[1] ^= xorBlock[1];
+	}
 }
 
-// Fetch 4 words from user's buffer into "a", "b", "c", "d" in LITTLE-endian order
-template <class T>
-inline void GetBlockLittleEndian(const byte *block, T &a, T &b, T &c, T &d)
+inline void UnalignedPutWord(ByteOrder order, byte *block, word32 value, const byte *xorBlock = NULL)
 {
-#ifdef IS_LITTLE_ENDIAN
-	a = ((T *)block)[0];
-	b = ((T *)block)[1];
-	c = ((T *)block)[2];
-	d = ((T *)block)[3];
-#else
-	a = byteReverse(((T *)block)[0]);
-	b = byteReverse(((T *)block)[1]);
-	c = byteReverse(((T *)block)[2]);
-	d = byteReverse(((T *)block)[3]);
-#endif
-}
+	if (order == BIG_ENDIAN_ORDER)
+	{
+		block[0] = GETBYTE(value, 3);
+		block[1] = GETBYTE(value, 2);
+		block[2] = GETBYTE(value, 1);
+		block[3] = GETBYTE(value, 0);
+	}
+	else
+	{
+		block[0] = GETBYTE(value, 0);
+		block[1] = GETBYTE(value, 1);
+		block[2] = GETBYTE(value, 2);
+		block[3] = GETBYTE(value, 3);
+	}
 
-// Put 4 words back into user's buffer in LITTLE-endian order
-template <class T>
-inline void PutBlockLittleEndian(byte *block, T a, T b, T c, T d)
-{
-#ifdef IS_LITTLE_ENDIAN
-	((T *)block)[0] = a;
-	((T *)block)[1] = b;
-	((T *)block)[2] = c;
-	((T *)block)[3] = d;
-#else
-	((T *)block)[0] = byteReverse(a);
-	((T *)block)[1] = byteReverse(b);
-	((T *)block)[2] = byteReverse(c);
-	((T *)block)[3] = byteReverse(d);
-#endif
-}
-
-// Fetch 2 words from user's buffer into "a", "b" in BIG-endian order
-template <class T>
-inline void GetBlockBigEndian(const byte *block, T &a, T &b)
-{
-#ifndef IS_LITTLE_ENDIAN
-	a = ((T *)block)[0];
-	b = ((T *)block)[1];
-#else
-	a = byteReverse(((T *)block)[0]);
-	b = byteReverse(((T *)block)[1]);
-#endif
-}
-
-// Put 2 words back into user's buffer in BIG-endian order
-template <class T>
-inline void PutBlockBigEndian(byte *block, T a, T b)
-{
-#ifndef IS_LITTLE_ENDIAN
-	((T *)block)[0] = a;
-	((T *)block)[1] = b;
-#else
-	((T *)block)[0] = byteReverse(a);
-	((T *)block)[1] = byteReverse(b);
-#endif
-}
-
-// Fetch 4 words from user's buffer into "a", "b", "c", "d" in BIG-endian order
-template <class T>
-inline void GetBlockBigEndian(const byte *block, T &a, T &b, T &c, T &d)
-{
-#ifndef IS_LITTLE_ENDIAN
-	a = ((T *)block)[0];
-	b = ((T *)block)[1];
-	c = ((T *)block)[2];
-	d = ((T *)block)[3];
-#else
-	a = byteReverse(((T *)block)[0]);
-	b = byteReverse(((T *)block)[1]);
-	c = byteReverse(((T *)block)[2]);
-	d = byteReverse(((T *)block)[3]);
-#endif
-}
-
-// Put 4 words back into user's buffer in BIG-endian order
-template <class T>
-inline void PutBlockBigEndian(byte *block, T a, T b, T c, T d)
-{
-#ifndef IS_LITTLE_ENDIAN
-	((T *)block)[0] = a;
-	((T *)block)[1] = b;
-	((T *)block)[2] = c;
-	((T *)block)[3] = d;
-#else
-	((T *)block)[0] = byteReverse(a);
-	((T *)block)[1] = byteReverse(b);
-	((T *)block)[2] = byteReverse(c);
-	((T *)block)[3] = byteReverse(d);
-#endif
+	if (xorBlock)
+	{
+		block[0] ^= xorBlock[0];
+		block[1] ^= xorBlock[1];
+		block[2] ^= xorBlock[2];
+		block[3] ^= xorBlock[3];
+	}
 }
 
 template <class T>
-std::string WordToString(T value, bool highFirst = true)
+inline T GetWord(bool assumeAligned, ByteOrder order, const byte *block)
 {
-	if (!CheckEndianess(highFirst))
-		value = byteReverse(value);
+	if (assumeAligned)
+	{
+		assert(IsAligned<T>(block));
+		return ConditionalByteReverse(order, *reinterpret_cast<const T *>(block));
+	}
+	else
+		return UnalignedGetWord<T>(order, block);
+}
+
+template <class T>
+inline void GetWord(bool assumeAligned, ByteOrder order, T &result, const byte *block)
+{
+	result = GetWord<T>(assumeAligned, order, block);
+}
+
+template <class T>
+inline void PutWord(bool assumeAligned, ByteOrder order, byte *block, T value, const byte *xorBlock = NULL)
+{
+	if (assumeAligned)
+	{
+		assert(IsAligned<T>(block));
+		if (xorBlock)
+			*reinterpret_cast<T *>(block) = ConditionalByteReverse(order, value) ^ *reinterpret_cast<const T *>(xorBlock);
+		else
+			*reinterpret_cast<T *>(block) = ConditionalByteReverse(order, value);
+	}
+	else
+		UnalignedPutWord(order, block, value, xorBlock);
+}
+
+template <class T, class B, bool A=true>
+class GetBlock
+{
+public:
+	GetBlock(const void *block)
+		: m_block((const byte *)block) {}
+
+	template <class U>
+	inline GetBlock<T, B, A> & operator()(U &x)
+	{
+		CRYPTOPP_COMPILE_ASSERT(sizeof(U) >= sizeof(T));
+		x = GetWord<T>(A, B::ToEnum(), m_block);
+		m_block += sizeof(T);
+		return *this;
+	}
+
+private:
+	const byte *m_block;
+};
+
+template <class T, class B, bool A=true>
+class PutBlock
+{
+public:
+	PutBlock(const void *xorBlock, void *block)
+		: m_xorBlock((const byte *)xorBlock), m_block((byte *)block) {}
+
+	template <class U>
+	inline PutBlock<T, B, A> & operator()(U x)
+	{
+		PutWord(A, B::ToEnum(), m_block, (T)x, m_xorBlock);
+		m_block += sizeof(T);
+		if (m_xorBlock)
+			m_xorBlock += sizeof(T);
+		return *this;
+	}
+
+private:
+	const byte *m_xorBlock;
+	byte *m_block;
+};
+
+template <class T, class B, bool A=true>
+struct BlockGetAndPut
+{
+	// function needed because of C++ grammatical ambiguity between expression-statements and declarations
+	static inline GetBlock<T, B, A> Get(const void *block) {return GetBlock<T, B, A>(block);}
+	typedef PutBlock<T, B, A> Put;
+};
+
+template <class T>
+std::string WordToString(T value, ByteOrder order = BIG_ENDIAN_ORDER)
+{
+	if (!NativeByteOrderIs(order))
+		value = ByteReverse(value);
 
 	return std::string((char *)&value, sizeof(value));
 }
 
 template <class T>
-T StringToWord(const std::string &str, bool highFirst = true)
+T StringToWord(const std::string &str, ByteOrder order = BIG_ENDIAN_ORDER)
 {
 	T value = 0;
 	memcpy(&value, str.data(), STDMIN(sizeof(value), str.size()));
-	return CheckEndianess(highFirst) ? value : byteReverse(value);
+	return NativeByteOrderIs(order) ? value : ByteReverse(value);
 }
 
-// ************** key length query ***************
+// ************** help remove warning on g++ ***************
 
-/// support query of fixed key length
-template <unsigned int N>
-class FixedKeyLength
-{
-public:
-	enum {KEYLENGTH=N, MIN_KEYLENGTH=N, MAX_KEYLENGTH=N, DEFAULT_KEYLENGTH=N};
-	/// returns the key length
-	static unsigned int KeyLength(unsigned int) {return KEYLENGTH;}
-};
+template <bool overflow> struct SafeShifter;
 
-/// support query of variable key length, template parameters are default, min, max, multiple (default multiple 1)
-template <unsigned int D, unsigned int N, unsigned int M, unsigned int Q=1>
-class VariableKeyLength
+template<> struct SafeShifter<true>
 {
-public:
-	enum {MIN_KEYLENGTH=N, MAX_KEYLENGTH=M, DEFAULT_KEYLENGTH=D, KEYLENGTH_MULTIPLE=Q};
-	/// returns the smallest valid key length in bytes that is >= min(n, MAX_KEYLENGTH)
-	static unsigned int KeyLength(unsigned int n)
+	template <class T>
+	static inline T RightShift(T value, unsigned int bits)
 	{
-		assert(KEYLENGTH_MULTIPLE > 0 && MIN_KEYLENGTH % KEYLENGTH_MULTIPLE == 0 && MAX_KEYLENGTH % KEYLENGTH_MULTIPLE == 0);
-		if (n < MIN_KEYLENGTH)
-			return MIN_KEYLENGTH;
-		else if (n > MAX_KEYLENGTH)
-			return MAX_KEYLENGTH;
-		else
-			return RoundUpToMultipleOf(n, KEYLENGTH_MULTIPLE);
+		return 0;
+	}
+
+	template <class T>
+	static inline T LeftShift(T value, unsigned int bits)
+	{
+		return 0;
 	}
 };
 
-/// support query of key length that's the same as another class
-template <class T>
-class SameKeyLengthAs
+template<> struct SafeShifter<false>
 {
-public:
-	enum {MIN_KEYLENGTH=T::MIN_KEYLENGTH, MAX_KEYLENGTH=T::MAX_KEYLENGTH, DEFAULT_KEYLENGTH=T::DEFAULT_KEYLENGTH};
-	/// returns the smallest valid key length in bytes that is >= min(n, MAX_KEYLENGTH)
-	static unsigned int KeyLength(unsigned int keylength)
-		{return T::KeyLength(keylength);}
+	template <class T>
+	static inline T RightShift(T value, unsigned int bits)
+	{
+		return value >> bits;
+	}
+
+	template <class T>
+	static inline T LeftShift(T value, unsigned int bits)
+	{
+		return value << bits;
+	}
 };
 
-// ************** secure memory allocation ***************
-
-#ifdef SECALLOC_DEFAULT
-#define SecAlloc(type, number) (new type[(number)])
-#define SecFree(ptr, number) (memset((ptr), 0, (number)*sizeof(*(ptr))), delete [] (ptr))
-#else
-#define SecAlloc(type, number) (new type[(number)])
-#define SecFree(ptr, number) (delete [] (ptr))
-#endif
-
-//! a block of memory allocated using SecAlloc
-template <class T> struct SecBlock
+template <unsigned int bits, class T>
+inline T SafeRightShift(T value)
 {
-	explicit SecBlock(unsigned int size=0)
-		: size(size) {ptr = SecAlloc(T, size);}
-	SecBlock(const SecBlock<T> &t)
-		: size(t.size) {ptr = SecAlloc(T, size); memcpy(ptr, t.ptr, size*sizeof(T));}
-	SecBlock(const T *t, unsigned int len)
-		: size(len) {ptr = SecAlloc(T, len); memcpy(ptr, t, len*sizeof(T));}
-	~SecBlock()
-		{SecFree(ptr, size);}
-
-#if defined(__GNUC__) || defined(__BCPLUSPLUS__)
-	operator const void *() const
-		{return ptr;}
-	operator void *()
-		{return ptr;}
-#endif
-#if defined(__GNUC__)	// reduce warnings
-	operator const void *()
-		{return ptr;}
-#endif
-
-	operator const T *() const
-		{return ptr;}
-	operator T *()
-		{return ptr;}
-#if defined(__GNUC__)	// reduce warnings
-	operator const T *()
-		{return ptr;}
-#endif
-
-// CodeWarrior defines _MSC_VER
-#if !defined(_MSC_VER) || defined(__MWERKS__)
-	template <typename I>
-	T *operator +(I offset)
-		{return ptr+offset;}
-
-	template <typename I>
-	const T *operator +(I offset) const
-		{return ptr+offset;}
-
-	template <typename I>
-	T& operator[](I index)
-		{assert(index<size); return ptr[index];}
-
-	template <typename I>
-	const T& operator[](I index) const
-		{assert(index<size); return ptr[index];}
-#endif
-
-	const T* Begin() const
-		{return ptr;}
-	T* Begin()
-		{return ptr;}
-	const T* End() const
-		{return ptr+size;}
-	T* End()
-		{return ptr+size;}
-
-	unsigned int Size() const {return size;}
-
-	void Assign(const T *t, unsigned int len)
-	{
-		New(len);
-		memcpy(ptr, t, len*sizeof(T));
-	}
-
-	void Assign(const SecBlock<T> &t)
-	{
-		New(t.size);
-		memcpy(ptr, t.ptr, size*sizeof(T));
-	}
-
-	SecBlock& operator=(const SecBlock<T> &t)
-	{
-		Assign(t);
-		return *this;
-	}
-
-	bool operator==(const SecBlock<T> &t) const
-	{
-		return size == t.size && memcmp(ptr, t.ptr, size*sizeof(T)) == 0;
-	}
-
-	bool operator!=(const SecBlock<T> &t) const
-	{
-		return !operator==(t);
-	}
-
-	void New(unsigned int newSize)
-	{
-		if (newSize != size)
-		{
-			T *newPtr = SecAlloc(T, newSize);
-			SecFree(ptr, size);
-			ptr = newPtr;
-			size = newSize;
-		}
-	}
-
-	void CleanNew(unsigned int newSize)
-	{
-		if (newSize != size)
-		{
-			T *newPtr = SecAlloc(T, newSize);
-			SecFree(ptr, size);
-			ptr = newPtr;
-			size = newSize;
-		}
-		memset(ptr, 0, size*sizeof(T));
-	}
-
-	void Grow(unsigned int newSize)
-	{
-		if (newSize > size)
-		{
-			T *newPtr = SecAlloc(T, newSize);
-			memcpy(newPtr, ptr, size*sizeof(T));
-			SecFree(ptr, size);
-			ptr = newPtr;
-			size = newSize;
-		}
-	}
-
-	void CleanGrow(unsigned int newSize)
-	{
-		if (newSize > size)
-		{
-			T *newPtr = SecAlloc(T, newSize);
-			memcpy(newPtr, ptr, size*sizeof(T));
-			memset(newPtr+size, 0, (newSize-size)*sizeof(T));
-			SecFree(ptr, size);
-			ptr = newPtr;
-			size = newSize;
-		}
-	}
-
-	void Resize(unsigned int newSize)
-	{
-		if (newSize != size)
-		{
-			T *newPtr = SecAlloc(T, newSize);
-			memcpy(newPtr, ptr, STDMIN(newSize, size)*sizeof(T));
-			SecFree(ptr, size);
-			ptr = newPtr;
-			size = newSize;
-		}
-	}
-
-	void swap(SecBlock<T> &b);
-
-	unsigned int size;
-	T *ptr;
-};
-
-template <class T> void SecBlock<T>::swap(SecBlock<T> &b)
-{
-	std::swap(size, b.size);
-	std::swap(ptr, b.ptr);
+	return SafeShifter<(bits>=(8*sizeof(T)))>::RightShift(value, bits);
 }
 
-typedef SecBlock<byte> SecByteBlock;
-typedef SecBlock<word> SecWordBlock;
-
-NAMESPACE_END
-
-NAMESPACE_BEGIN(std)
-template <class T>
-inline void swap(CryptoPP::SecBlock<T> &a, CryptoPP::SecBlock<T> &b)
+template <unsigned int bits, class T>
+inline T SafeLeftShift(T value)
 {
-	a.swap(b);
+	return SafeShifter<(bits>=(8*sizeof(T)))>::LeftShift(value, bits);
 }
 
 NAMESPACE_END

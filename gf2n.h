@@ -4,6 +4,7 @@
 /*! \file */
 
 #include "cryptlib.h"
+#include "secblock.h"
 #include "misc.h"
 #include "algebra.h"
 
@@ -22,7 +23,7 @@ public:
 		class DivideByZero : public Exception
 		{
 		public:
-			DivideByZero() : Exception("PolynomialMod2: division by zero") {}
+			DivideByZero() : Exception(OTHER_ERROR, "PolynomialMod2: division by zero") {}
 		};
 
 		typedef unsigned int RandomizationParameter;
@@ -115,7 +116,7 @@ public:
 		unsigned int CoefficientCount() const {return BitCount();}
 		//! return coefficient for x^i
 		int GetCoefficient(unsigned int i) const
-			{return (i/WORD_BITS < reg.size) ? int(reg[i/WORD_BITS] >> (i % WORD_BITS)) & 1 : 0;}
+			{return (i/WORD_BITS < reg.size()) ? int(reg[i/WORD_BITS] >> (i % WORD_BITS)) & 1 : 0;}
 		//! return coefficient for x^i
 		int operator[](unsigned int i) const {return GetCoefficient(i);}
 
@@ -258,7 +259,7 @@ public:
 		{return m;}
 
 	unsigned int MaxElementByteLength() const
-		{return bitsToBytes(MaxElementBitLength());}
+		{return BitsToBytes(MaxElementBitLength());}
 
 	Element SquareRoot(const Element &a) const;
 
@@ -292,7 +293,7 @@ private:
 	const Element& Reduced(const Element &a) const;
 
 	unsigned int t0, t1;
-	PolynomialMod2 result;
+	mutable PolynomialMod2 result;
 };
 
 //! GF(2^n) with Pentanomial Basis
@@ -312,11 +313,6 @@ private:
 
 // construct new GF2NP from the ASN.1 sequence Characteristic-two
 GF2NP * BERDecodeGF2NP(BufferedTransformation &bt);
-
-NAMESPACE_END
-
-// declaring these overloaded operators inside the CryptoPP namespace
-// causes problems with GCC 2.95.2
 
 //!
 inline bool operator==(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b)
@@ -350,6 +346,8 @@ inline CryptoPP::PolynomialMod2 operator*(const CryptoPP::PolynomialMod2 &a, con
 inline CryptoPP::PolynomialMod2 operator/(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b) {return a.DividedBy(b);}
 //!
 inline CryptoPP::PolynomialMod2 operator%(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b) {return a.Modulo(b);}
+
+NAMESPACE_END
 
 NAMESPACE_BEGIN(std)
 template<> inline void swap(CryptoPP::PolynomialMod2 &a, CryptoPP::PolynomialMod2 &b)

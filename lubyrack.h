@@ -5,62 +5,50 @@
 
 /** \file */
 
-#include "cryptlib.h"
-#include "misc.h"
+#include "simple.h"
+#include "secblock.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-//! base class, do not use directly
-template <class T> class LRBase : public BlockTransformation, public VariableKeyLength<16, 0, UINT_MAX, 2>
+template <class T> struct DigestSizeDoubleWorkaround {enum {RESULT = 2*T::DIGESTSIZE};};	// VC60 workaround
+
+//! .
+template <class T>
+struct LR_Info : public VariableKeyLength<16, 0, 2*(UINT_MAX/2), 2>, public FixedBlockSize<DigestSizeDoubleWorkaround<T>::RESULT>
 {
-public:
-	enum {BLOCKSIZE = 2*T::DIGESTSIZE};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-
-protected:
-	LRBase(const byte *userKey, unsigned int keyLen);
-
-	enum {S=T::DIGESTSIZE};
-	const unsigned int L;	// key length / 2
-	SecByteBlock key;
-
-	mutable T hm;
-	mutable SecByteBlock buffer;
+	static std::string StaticAlgorithmName() {return std::string("LR/")+T::StaticAlgorithmName();}
 };
 
-//! Luby-Rackoff Encryptor
-template <class T> class LREncryption : public LRBase<T>
+//! Luby-Rackoff
+template <class T>
+class LR : public LR_Info<T>, public BlockCipherDocumentation
 {
-public:
-	// keyLen must be even
-	LREncryption(const byte *userKey, int keyLen=LRBase<T>::DEFAULT_KEYLENGTH)
-		: LRBase<T>(userKey, keyLen) {}
+	class Base : public BlockCipherBaseTemplate<LR_Info<T> >
+	{
+	public:
+		// VC60 workaround: have to define these functions within class definition
+		void UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length)
+		{
+			AssertValidKeyLength(length);
 
-	void ProcessBlock(byte * inoutBlock) const
-		{LREncryption<T>::ProcessBlock(inoutBlock, inoutBlock);}
+			L = length/2;
+			buffer.New(2*S);
+			digest.New(S);
+			key.Assign(userKey, 2*L);
+		}
 
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-};
+	protected:
+		enum {S=T::DIGESTSIZE};
+		unsigned int L;	// key length / 2
+		SecByteBlock key;
 
-//! Luby-Rackoff Decryptor
-template <class T> class LRDecryption : public LRBase<T>
-{
-public:
-	// keyLen must be even
-	LRDecryption(const byte *userKey, int keyLen=LRBase<T>::DEFAULT_KEYLENGTH)
-		: LRBase<T>(userKey, keyLen) {}
+		mutable T hm;
+		mutable SecByteBlock buffer, digest;
+	};
 
-	void ProcessBlock(byte * inoutBlock) const
-		{LRDecryption<T>::ProcessBlock(inoutBlock, inoutBlock);}
-
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-};
-
-template <class T> LRBase<T>::LRBase(const byte *userKey, unsigned int keyLen)
-	: L(keyLen/2), key(2*L), buffer(2*S)
-{
-	memcpy(key, userKey, 2*L);
-}
+	class Enc : public Base
+	{
+	public:
 
 #define KL key
 #define KR key+L
@@ -71,52 +59,65 @@ template <class T> LRBase<T>::LRBase(const byte *userKey, unsigned int keyLen)
 #define OL outBlock
 #define OR outBlock+S
 
-template <class T> void LREncryption<T>::ProcessBlock(const byte *inBlock, byte * outBlock) const
-{
-	hm.Update(KL, L);
-	hm.Update(IL, S);
-	hm.Final(BR);
-	xorbuf(BR, IR, S);
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
+		{
+			hm.Update(KL, L);
+			hm.Update(IL, S);
+			hm.Final(BR);
+			xorbuf(BR, IR, S);
 
-	hm.Update(KR, L);
-	hm.Update(BR, S);
-	hm.Final(BL);
-	xorbuf(BL, IL, S);
+			hm.Update(KR, L);
+			hm.Update(BR, S);
+			hm.Final(BL);
+			xorbuf(BL, IL, S);
 
-	hm.Update(KL, L);
-	hm.Update(BL, S);
-	hm.Final(OR);
-	xorbuf(OR, BR, S);
+			hm.Update(KL, L);
+			hm.Update(BL, S);
+			hm.Final(digest);
+			xorbuf(BR, digest, S);
 
-	hm.Update(KR, L);
-	hm.Update(OR, S);
-	hm.Final(OL);
-	xorbuf(OL, BL, S);
-}
+			hm.Update(KR, L);
+			hm.Update(OR, S);
+			hm.Final(digest);
+			xorbuf(BL, digest, S);
 
-template <class T> void LRDecryption<T>::ProcessBlock(const byte *inBlock, byte * outBlock) const
-{
-	hm.Update(KR, L);
-	hm.Update(IR, S);
-	hm.Final(BL);
-	xorbuf(BL, IL, S);
+			if (xorBlock)
+				xorbuf(outBlock, xorBlock, buffer, 2*S);
+			else
+				memcpy(outBlock, buffer, 2*S);
+		}
+	};
 
-	hm.Update(KL, L);
-	hm.Update(BL, S);
-	hm.Final(BR);
-	xorbuf(BR, IR, S);
+	class Dec : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
+		{
+			hm.Update(KR, L);
+			hm.Update(IR, S);
+			hm.Final(BL);
+			xorbuf(BL, IL, S);
 
-	hm.Update(KR, L);
-	hm.Update(BR, S);
-	hm.Final(OL);
-	xorbuf(OL, BL, S);
+			hm.Update(KL, L);
+			hm.Update(BL, S);
+			hm.Final(BR);
+			xorbuf(BR, IR, S);
 
-	hm.Update(KL, L);
-	hm.Update(OL, S);
-	hm.Final(OR);
-	xorbuf(OR, BR, S);
-}
+			hm.Update(KR, L);
+			hm.Update(BR, S);
+			hm.Final(digest);
+			xorbuf(BL, digest, S);
 
+			hm.Update(KL, L);
+			hm.Update(OL, S);
+			hm.Final(digest);
+			xorbuf(BR, digest, S);
+
+			if (xorBlock)
+				xorbuf(outBlock, xorBlock, buffer, 2*S);
+			else
+				memcpy(outBlock, buffer, 2*S);
+		}
 #undef KL
 #undef KR
 #undef BL
@@ -125,6 +126,12 @@ template <class T> void LRDecryption<T>::ProcessBlock(const byte *inBlock, byte 
 #undef IR
 #undef OL
 #undef OR
+	};
+
+public:
+	typedef BlockCipherTemplate<ENCRYPTION, Enc> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Dec> Decryption;
+};
 
 NAMESPACE_END
 

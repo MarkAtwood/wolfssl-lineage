@@ -6,7 +6,7 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 //! ADLER-32 checksum calculations 
-class Adler32 : public HashModuleWithTruncation
+class Adler32 : public HashTransformation
 {
 public:
 	enum {DIGESTSIZE = 4};
@@ -15,9 +15,9 @@ public:
 	void TruncatedFinal(byte *hash, unsigned int size);
 	unsigned int DigestSize() const {return DIGESTSIZE;}
 
+private:
 	void Reset() {m_s1 = 1; m_s2 = 0;}
 
-private:
 	word16 m_s1, m_s2;
 };
 

@@ -4,49 +4,49 @@
 /** \file
 */
 
-#include "cryptlib.h"
-#include "misc.h"
+#include "seckey.h"
+#include "secblock.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// base class, do not use directly
-class RC5Base : public FixedBlockSize<8>, public VariableKeyLength<16, 0, 255>
+struct RC5_Info : public FixedBlockSize<8>, public VariableKeyLength<16, 0, 255>, public VariableRounds<16>
 {
-public:
+	static const char *StaticAlgorithmName() {return "RC5";}
 	typedef word32 RC5_WORD;
-
-	enum {DEFAULT_ROUNDS=16};
-
-protected:
-	RC5Base(const byte *key, unsigned int keyLen, unsigned int rounds);
-
-	const unsigned int r;       // number of rounds
-	SecBlock<RC5_WORD> sTable;  // expanded key table
 };
 
 /// <a href="http://www.weidai.com/scan-mirror/cs.html#RC5">RC5</a>
-class RC5Encryption : public RC5Base
+class RC5 : public RC5_Info, public BlockCipherDocumentation
 {
-public:
-	RC5Encryption(const byte *key, unsigned int keyLen=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS)
-		: RC5Base(key, keyLen, rounds) {}
+	class Base : public BlockCipherBaseTemplate<RC5_Info>
+	{
+	public:
+		void UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length, unsigned int rounds);
 
-	void ProcessBlock(byte * inoutBlock) const
-		{RC5Encryption::ProcessBlock(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
+	protected:
+		unsigned int r;       // number of rounds
+		SecBlock<RC5_WORD> sTable;  // expanded key table
+	};
+
+	class Enc : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+	class Dec : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+public:
+	typedef BlockCipherTemplate<ENCRYPTION, Enc> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Dec> Decryption;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#RC5">RC5</a>
-class RC5Decryption : public RC5Base
-{
-public:
-	RC5Decryption(const byte *key, unsigned int keyLen=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS)
-		: RC5Base(key, keyLen, rounds) {}
-
-	void ProcessBlock(byte * inoutBlock) const
-		{RC5Decryption::ProcessBlock(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-};
+typedef RC5::Encryption RC5Encryption;
+typedef RC5::Decryption RC5Decryption;
 
 NAMESPACE_END
 

@@ -8,6 +8,12 @@ NAMESPACE_BEGIN(CryptoPP)
 
 byte OAEP_P_DEFAULT[1];
 
+template<> void ByteReverse(word16 *, const word16 *, unsigned int);
+template<> void ByteReverse(word32 *, const word32 *, unsigned int);
+#ifdef WORD64_AVAILABLE
+template<> void ByteReverse(word64 *, const word64 *, unsigned int);
+#endif
+
 void xorbuf(byte *buf, const byte *mask, unsigned int count)
 {
 	if (((unsigned int)buf | (unsigned int)mask | count) % WORD_SIZE == 0)

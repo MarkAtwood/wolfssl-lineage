@@ -5,7 +5,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class NullHash : public HashModuleWithTruncation
+class NullHash : public HashTransformation
 {
 public:
 	void Update(const byte *input, unsigned int length) {}
@@ -16,7 +16,7 @@ public:
 
 //! construct new HashModule with smaller DigestSize() from existing one
 template <class T>
-class TruncatedHashTemplate : public HashModuleWithTruncation
+class TruncatedHashTemplate : public HashTransformation
 {
 public:
 	TruncatedHashTemplate(T hm, unsigned int digestSize)
@@ -39,7 +39,7 @@ private:
 	unsigned int m_digestSize;
 };
 
-typedef TruncatedHashTemplate<HashModuleWithTruncation &> TruncatedHashModule;
+typedef TruncatedHashTemplate<HashTransformation &> TruncatedHashModule;
 
 NAMESPACE_END
 

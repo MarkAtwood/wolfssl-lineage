@@ -4,54 +4,53 @@
 /** \file
 */
 
-#include "config.h"
-
-#include "cryptlib.h"
-#include "misc.h"
+#include "seckey.h"
+#include "secblock.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// base class, do not use directly
-class SquareBase : public FixedBlockSize<16>, public FixedKeyLength<16>
+struct Square_Info : public FixedBlockSize<16>, public FixedKeyLength<16>, FixedRounds<8>
 {
-public:
-	enum {ROUNDS=8};
-
-protected:
-	SquareBase(const byte *userKey, CipherDir dir);
-
-	SecBlock<word32[4]> roundkeys;
+	static const char *StaticAlgorithmName() {return "Square";}
 };
 
 /// <a href="http://www.weidai.com/scan-mirror/cs.html#Square">Square</a>
-class SquareEncryption : public SquareBase
+class Square : public Square_Info, public BlockCipherDocumentation
 {
+	class Base : public BlockCipherBaseTemplate<Square_Info>
+	{
+	public:
+		void UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length);
+
+	protected:
+		FixedSizeSecBlock<word32[4], ROUNDS+1> roundkeys;
+	};
+
+	class Enc : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	private:
+		static const byte Se[256];
+		static const word32 Te[4][256];
+	};
+
+	class Dec : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	private:
+		static const byte Sd[256];
+		static const word32 Td[4][256];
+	};
+
 public:
-	SquareEncryption(const byte *key, unsigned int = 0) : SquareBase(key, ENCRYPTION) {}
-
-	void ProcessBlock(byte * inoutBlock) const
-		{SquareEncryption::ProcessBlock(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-
-private:
-	static const byte Se[256];
-	static const word32 Te[4][256];
+	typedef BlockCipherTemplate<ENCRYPTION, Enc> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Dec> Decryption;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#Square">Square</a>
-class SquareDecryption : public SquareBase
-{
-public:
-	SquareDecryption(const byte *key, unsigned int = 0) : SquareBase(key, DECRYPTION) {}
-
-	void ProcessBlock(byte * inoutBlock) const
-		{SquareDecryption::ProcessBlock(inoutBlock, inoutBlock);}
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-
-private:
-	static const byte Sd[256];
-	static const word32 Td[4][256];
-};
+typedef Square::Encryption SquareEncryption;
+typedef Square::Decryption SquareDecryption;
 
 NAMESPACE_END
 

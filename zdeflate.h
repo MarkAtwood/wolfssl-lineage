@@ -10,9 +10,10 @@ NAMESPACE_BEGIN(CryptoPP)
 class LowFirstBitWriter : public Filter
 {
 public:
-	LowFirstBitWriter(BufferedTransformation *outQ);
+	LowFirstBitWriter(BufferedTransformation *attachment);
 	void PutBits(unsigned long value, unsigned int length);
 	void FlushBitBuffer();
+	void ClearBitBuffer();
 
 	void StartCounting();
 	unsigned long FinishCounting();
@@ -22,7 +23,7 @@ protected:
 	unsigned long m_bitCount;
 	unsigned long m_buffer;
 	unsigned int m_bitsBuffered, m_bytesBuffered;
-	SecByteBlock m_outputBuffer;
+	FixedSizeSecBlock<byte, 256> m_outputBuffer;
 };
 
 //! Huffman Encoder
@@ -54,18 +55,20 @@ public:
 class Deflator : public LowFirstBitWriter
 {
 public:
-	enum {DEFAULT_DEFLATE_LEVEL = 6, DEFAULT_LOG2_WINDOW_SIZE = 15};
-	Deflator(BufferedTransformation *outQ=NULL, unsigned int deflateLevel=DEFAULT_DEFLATE_LEVEL, unsigned int log2WindowSize=DEFAULT_LOG2_WINDOW_SIZE);
+	enum {MIN_DEFLATE_LEVEL = 0, DEFAULT_DEFLATE_LEVEL = 6, MAX_DEFLATE_LEVEL = 9};
+	enum {MIN_LOG2_WINDOW_SIZE = 9, DEFAULT_LOG2_WINDOW_SIZE = 15, MAX_LOG2_WINDOW_SIZE = 15};
+	Deflator(BufferedTransformation *attachment=NULL, int deflateLevel=DEFAULT_DEFLATE_LEVEL, int log2WindowSize=DEFAULT_LOG2_WINDOW_SIZE);
+	//! possible parameter names: Log2WindowSize, DeflateLevel
+	Deflator(const NameValuePairs &parameters, BufferedTransformation *attachment=NULL);
 
-	void SetDeflateLevel(unsigned int deflateLevel);
-	unsigned int GetDeflateLevel() const {return m_deflateLevel;}
-	unsigned int GetLog2WindowSize() const {return m_log2WindowSize;}
+	//! this function can be used to set the deflate level in the middle of compression
+	void SetDeflateLevel(int deflateLevel);
+	int GetDeflateLevel() const {return m_deflateLevel;}
+	int GetLog2WindowSize() const {return m_log2WindowSize;}
 
-	void Put(byte inByte)
-		{Deflator::Put(&inByte, 1);}
-	void Put(const byte *str, unsigned int length);
-	void Flush(bool completeFlush, int propagation=-1);
-	void MessageEnd(int propagation=-1);
+	void IsolatedInitialize(const NameValuePairs &parameters);
+	unsigned int Put2(const byte *inString, unsigned int length, int messageEnd, bool blocking);
+	bool IsolatedFlush(bool hardFlush, bool blocking);
 
 private:
 	virtual void WritePrestreamHeader() {}
@@ -75,7 +78,8 @@ private:
 	enum {STORED = 0, STATIC = 1, DYNAMIC = 2};
 	enum {MIN_MATCH = 3, MAX_MATCH = 258};
 
-	void Reset();
+	void InitializeStaticEncoders();
+	void Reset(bool forceReset = false);
 	unsigned int FillWindow(const byte *str, unsigned int length);
 	unsigned int ComputeHash(const byte *str) const;
 	unsigned int LongestMatch(unsigned int &bestMatch) const;
@@ -95,14 +99,15 @@ private:
 		unsigned distanceExtra : 13;
 	};
 
-	unsigned int m_deflateLevel, m_log2WindowSize;
+	int m_deflateLevel, m_log2WindowSize;
 	unsigned int DSIZE, DMASK, HSIZE, HMASK, GOOD_MATCH, MAX_LAZYLENGTH, MAX_CHAIN_LENGTH;
 	bool m_headerWritten, m_matchAvailable;
 	unsigned int m_dictionaryEnd, m_stringStart, m_lookahead, m_minLookahead, m_previousMatch, m_previousLength;
 	HuffmanEncoder m_staticLiteralEncoder, m_staticDistanceEncoder, m_dynamicLiteralEncoder, m_dynamicDistanceEncoder;
 	SecByteBlock m_byteBuffer;
 	SecBlock<word16> m_head, m_prev;
-	SecBlock<unsigned int> m_literalCounts, m_distanceCounts;
+	FixedSizeSecBlock<unsigned int, 286> m_literalCounts;
+	FixedSizeSecBlock<unsigned int, 30> m_distanceCounts;
 	SecBlock<EncodedMatch> m_matchBuffer;
 	unsigned int m_matchBufferEnd, m_blockStart, m_blockLength;
 };

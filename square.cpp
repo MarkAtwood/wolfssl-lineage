@@ -3,6 +3,7 @@
 
 #include "pch.h"
 #include "square.h"
+#include "misc.h"
 #include "gf256.h"
 
 NAMESPACE_BEGIN(CryptoPP)
@@ -30,15 +31,16 @@ static void SquareTransform (word32 in[4], word32 out[4])
 	}
 }
 
-SquareBase::SquareBase(const byte *userKey, CipherDir dir)
-	: roundkeys(ROUNDS+1)
+void Square::Base::UncheckedSetKey(CipherDir dir, const byte *userKey, unsigned int length)
 {
+	AssertValidKeyLength(length);
+
 	static const word32 offset[ROUNDS] = {
 	0x01000000UL, 0x02000000UL, 0x04000000UL, 0x08000000UL,
 	0x10000000UL, 0x20000000UL, 0x40000000UL, 0x80000000UL,
 	};
 
-	GetUserKeyBigEndian(roundkeys[0], KEYLENGTH/4, userKey, KEYLENGTH);
+	GetUserKey(BIG_ENDIAN_ORDER, roundkeys[0], KEYLENGTH/4, userKey, KEYLENGTH);
 
 	/* apply the key evolution function */
 	for (int i = 1; i < ROUNDS+1; i++)
@@ -117,10 +119,12 @@ SquareBase::SquareBase(const byte *userKey, CipherDir dir)
 			^ roundkey[3]; \
 } /* squareFinal */
 
-void SquareEncryption::ProcessBlock(const byte *inBlock, byte * outBlock) const
+typedef BlockGetAndPut<word32, BigEndian> Block;
+
+void Square::Enc::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 text[4], temp[4];
-	GetBlockBigEndian(inBlock, text[0], text[1], text[2], text[3]);
+	Block::Get(inBlock)(text[0])(text[1])(text[2])(text[3]);
    
 	/* initial key addition */
 	text[0] ^= roundkeys[0][0];
@@ -139,13 +143,13 @@ void SquareEncryption::ProcessBlock(const byte *inBlock, byte * outBlock) const
 	/* last round (diffusion becomes only transposition) */
 	squareFinal (text, temp, Se, roundkeys[ROUNDS]);
 
-	PutBlockBigEndian(outBlock, text[0], text[1], text[2], text[3]);
+	Block::Put(xorBlock, outBlock)(text[0])(text[1])(text[2])(text[3]);
 }
 
-void SquareDecryption::ProcessBlock(const byte *inBlock, byte * outBlock) const
+void Square::Dec::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	word32 text[4], temp[4];
-	GetBlockBigEndian(inBlock, text[0], text[1], text[2], text[3]);
+	Block::Get(inBlock)(text[0])(text[1])(text[2])(text[3]);
    
 	/* initial key addition */
 	text[0] ^= roundkeys[0][0];
@@ -164,7 +168,7 @@ void SquareDecryption::ProcessBlock(const byte *inBlock, byte * outBlock) const
 	/* last round (diffusion becomes only transposition) */
 	squareFinal (text, temp, Sd, roundkeys[ROUNDS]);
 
-	PutBlockBigEndian(outBlock, text[0], text[1], text[2], text[3]);
+	Block::Put(xorBlock, outBlock)(text[0])(text[1])(text[2])(text[3]);
 }
 
 NAMESPACE_END

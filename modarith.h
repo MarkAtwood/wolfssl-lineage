@@ -19,12 +19,14 @@ public:
 	typedef Integer Element;
 
 	ModularArithmetic(const Integer &modulus = Integer::One())
-		: modulus(modulus), result((word)0, modulus.reg.size) {}
+		: modulus(modulus), result((word)0, modulus.reg.size()) {}
 
 	ModularArithmetic(const ModularArithmetic &ma)
-		: modulus(ma.modulus), result((word)0, modulus.reg.size) {}
+		: modulus(ma.modulus), result((word)0, modulus.reg.size()) {}
 
 	ModularArithmetic(BufferedTransformation &bt);	// construct from BER encoded parameters
+
+	virtual ModularArithmetic * Clone() const {return new ModularArithmetic(*this);}
 
 	void DEREncode(BufferedTransformation &bt) const;
 
@@ -32,7 +34,9 @@ public:
 	void BERDecodeElement(BufferedTransformation &in, Element &a) const;
 
 	const Integer& GetModulus() const {return modulus;}
-	void SetModulus(const Integer &newModulus) {modulus = newModulus; result.reg.Resize(modulus.reg.size);}
+	void SetModulus(const Integer &newModulus) {modulus = newModulus; result.reg.resize(modulus.reg.size());}
+
+	virtual bool IsMontgomeryRepresentation() const {return false;}
 
 	virtual Integer ConvertIn(const Integer &a) const
 		{return a%modulus;}
@@ -45,7 +49,7 @@ public:
 	bool Equal(const Integer &a, const Integer &b) const
 		{return a==b;}
 
-	const Integer& Zero() const
+	const Integer& Identity() const
 		{return Integer::Zero();}
 
 	const Integer& Add(const Integer &a, const Integer &b) const;
@@ -61,7 +65,7 @@ public:
 	const Integer& Double(const Integer &a) const
 		{return Add(a, a);}
 
-	const Integer& One() const
+	const Integer& MultiplicativeIdentity() const
 		{return Integer::One();}
 
 	const Integer& Multiply(const Integer &a, const Integer &b) const
@@ -111,13 +115,17 @@ class MontgomeryRepresentation : public ModularArithmetic
 public:
 	MontgomeryRepresentation(const Integer &modulus);	// modulus must be odd
 
+	virtual ModularArithmetic * Clone() const {return new MontgomeryRepresentation(*this);}
+
+	bool IsMontgomeryRepresentation() const {return true;}
+
 	Integer ConvertIn(const Integer &a) const
-		{return (a<<(WORD_BITS*modulus.reg.size))%modulus;}
+		{return (a<<(WORD_BITS*modulus.reg.size()))%modulus;}
 
 	Integer ConvertOut(const Integer &a) const;
 
-	const Integer& One() const
-		{return result1 = Integer::Power2(WORD_BITS*modulus.reg.size)%modulus;}
+	const Integer& MultiplicativeIdentity() const
+		{return result1 = Integer::Power2(WORD_BITS*modulus.reg.size())%modulus;}
 
 	const Integer& Multiply(const Integer &a, const Integer &b) const;
 
@@ -133,7 +141,7 @@ public:
 
 private:
 	Integer u;
-	SecWordBlock workspace;
+	mutable SecAlignedWordBlock workspace;
 };
 
 NAMESPACE_END

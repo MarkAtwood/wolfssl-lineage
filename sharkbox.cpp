@@ -5,7 +5,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-const byte SHARKEncryption::sbox[256] = {
+const byte SHARK::Enc::sbox[256] = {
 177, 206, 195, 149,  90, 173, 231,   2,  77,  68, 251, 145,  12, 135, 161,  80, 
 203, 103,  84, 221,  70, 143, 225,  78, 240, 253, 252, 235, 249, 196,  26, 110, 
  94, 245, 204, 141,  28,  86,  67, 254,   7,  97, 248, 117,  89, 255,   3,  34, 
@@ -24,7 +24,7 @@ const byte SHARKEncryption::sbox[256] = {
 214, 120, 134, 250, 228,  43, 169,  30, 137,  96, 107, 234,  85,  76, 247, 226, 
 };
 
-const byte SHARKDecryption::sbox[256] = {
+const byte SHARK::Dec::sbox[256] = {
  53, 190,   7,  46,  83, 105, 219,  40, 111, 183, 118, 107,  12, 125,  54, 139, 
 146, 188, 169,  50, 172,  56, 156,  66,  99, 200,  30,  79,  36, 229, 247, 201, 
  97, 141,  47,  63, 179, 101, 127, 112, 175, 154, 234, 245,  91, 152, 144, 177, 
@@ -43,7 +43,7 @@ const byte SHARKDecryption::sbox[256] = {
  24,  94, 106, 213, 166,  33, 222, 254,  42,  28, 243,  10,  26,  25,  39,  45, 
 };
 
-const word64 SHARKEncryption::cbox[8][256] = {
+const word64 SHARK::Enc::cbox[8][256] = {
 /* box 0 */
 W64LIT(0x060d838f16f3a365),
 W64LIT(0xa68857ee5cae56f6),
@@ -2102,7 +2102,7 @@ W64LIT(0xf701ccd602959bab),
 W64LIT(0xe2665106cc5d26e5),
 };
 
-const word64 SHARKDecryption::cbox[8][256] = {
+const word64 SHARK::Dec::cbox[8][256] = {
 /* box 0 */
 W64LIT(0xe6126af05e55aff3),
 W64LIT(0x4b6c893f310b0835),

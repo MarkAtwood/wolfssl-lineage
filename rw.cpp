@@ -5,15 +5,10 @@
 #include "nbtheory.h"
 #include "asn.h"
 
-#include "pubkey.cpp"
-
 NAMESPACE_BEGIN(CryptoPP)
 
 template<> const byte EMSA2DigestDecoration<SHA>::decoration = 0x33;
 template<> const byte EMSA2DigestDecoration<RIPEMD160>::decoration = 0x31;
-
-template class DigestSignerTemplate<EMSA2Pad, InvertibleRWFunction<IFSSA_R> >;
-template class DigestVerifierTemplate<EMSA2Pad, RWFunction<IFSSA_R> >;
 
 void EMSA2Pad::Pad(RandomNumberGenerator &, const byte *input, unsigned int inputLen, byte *emsa2Block, unsigned int emsa2BlockLen) const
 {
@@ -35,68 +30,59 @@ void EMSA2Pad::Pad(RandomNumberGenerator &, const byte *input, unsigned int inpu
 	emsa2Block[emsa2BlockLen-1] = 0xcc;	// make it congruent to 12 mod 16
 }
 
-unsigned int EMSA2Pad::Unpad(const byte *emsa2Block, unsigned int emsa2BlockLen, byte *output) const
+DecodingResult EMSA2Pad::Unpad(const byte *emsa2Block, unsigned int emsa2BlockLen, byte *output) const
 {
 	// convert from bit length to byte length
 	emsa2BlockLen++;
 	if (emsa2BlockLen % 8 > 1)
 	{
 		if (emsa2Block[0] != 0)
-			return 0;
+			return DecodingResult();
 		emsa2Block++;
 	}
 	emsa2BlockLen /= 8;
 
 	// check last byte
 	if (emsa2Block[emsa2BlockLen-1] != 0xcc)
-		return 0;
+		return DecodingResult();
 
 	// skip past the padding until we find the seperator
 	unsigned i=1;
 	while (i<emsa2BlockLen-1 && emsa2Block[i++] != 0xba)
 		if (emsa2Block[i-1] != 0xbb)     // not valid padding
-			return 0;
+			return DecodingResult();
 	assert(i==emsa2BlockLen-1 || emsa2Block[i-1]==0xba);
 
 	unsigned int outputLen = emsa2BlockLen - i;
 	output[0] = emsa2Block[0];
 	memcpy (output+1, emsa2Block+i, outputLen-1);
-	return outputLen;
+	return DecodingResult(outputLen);
 }
 
 // *****************************************************************************
 
 template <word r>
-RWFunction<r>::RWFunction(const Integer &n)
-	: n(n)
-{
-}
-
-template <word r>
-RWFunction<r>::RWFunction(BufferedTransformation &bt)
+void RWFunction<r>::BERDecode(BufferedTransformation &bt)
 {
 	BERSequenceDecoder seq(bt);
-	n.BERDecode(seq);
+	m_n.BERDecode(seq);
 	seq.MessageEnd();
-}
-
-template <word r>
-RWFunction<r>::~RWFunction()
-{
 }
 
 template <word r>
 void RWFunction<r>::DEREncode(BufferedTransformation &bt) const
 {
 	DERSequenceEncoder seq(bt);
-	n.DEREncode(seq);
+	m_n.DEREncode(seq);
 	seq.MessageEnd();
 }
 
 template <word r>
 Integer RWFunction<r>::ApplyFunction(const Integer &in) const
 {
-	Integer out = in.Squared()%n;
+	DoQuickSanityCheck();
+
+	Integer out = in.Squared()%m_n;
 	const word r2 = r/2;
 	const word r3a = (16 + 5 - r) % 16;	// n%16 could be 5 or 13
 	const word r3b = (16 + 13 - r) % 16;
@@ -112,12 +98,12 @@ Integer RWFunction<r>::ApplyFunction(const Integer &in) const
 	case r3a:
 	case r3b:
 		out.Negate();
-		out += n;
+		out += m_n;
 		break;
 	case r4:
 	case r4+8:
 		out.Negate();
-		out += n;
+		out += m_n;
 		out <<= 1;
 		break;
 	default:
@@ -126,88 +112,129 @@ Integer RWFunction<r>::ApplyFunction(const Integer &in) const
 	return out;
 }
 
+template <word r>
+bool RWFunction<r>::Validate(RandomNumberGenerator &rng, unsigned int level) const
+{
+	bool pass = true;
+	pass = pass && m_n > Integer::One() && m_n%8 == 5;
+	return pass;
+}
+
+template <word r>
+bool RWFunction<r>::GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const
+{
+	return GetValueHelper(this, name, valueType, pValue).Assignable()
+		CRYPTOPP_GET_FUNCTION_ENTRY(Modulus)
+		;
+}
+
+template <word r>
+void RWFunction<r>::AssignFrom(const NameValuePairs &source)
+{
+	AssignFromHelper(this, source)
+		CRYPTOPP_SET_FUNCTION_ENTRY(Modulus)
+		;
+}
+
 // *****************************************************************************
 // private key operations:
 
-template <word r>
-InvertibleRWFunction<r>::InvertibleRWFunction(const Integer &n, const Integer &p, const Integer &q, const Integer &u)
-	: RWFunction<r>(n), p(p), q(q), u(u)
-{
-	assert(p*q==n);
-	assert(u*q%p==1);
-}
-
 // generate a random private key
 template <word r>
-InvertibleRWFunction<r>::InvertibleRWFunction(RandomNumberGenerator &rng, unsigned int keybits)
+void InvertibleRWFunction<r>::GenerateRandom(RandomNumberGenerator &rng, const NameValuePairs &alg)
 {
-	assert(keybits >= 16);
-	// generate 2 random primes of suitable size
-	if (keybits%2==0)
-	{
-		const Integer minP = Integer(182) << (keybits/2-8);
-		const Integer maxP = Integer::Power2(keybits/2)-1;
-		p.Randomize(rng, minP, maxP, Integer::PRIME, 3, 8);
-		q.Randomize(rng, minP, maxP, Integer::PRIME, 7, 8);
-	}
-	else
-	{
-		const Integer minP = Integer::Power2((keybits-1)/2);
-		const Integer maxP = Integer(181) << ((keybits+1)/2-8);
-		p.Randomize(rng, minP, maxP, Integer::PRIME, 3, 8);
-		q.Randomize(rng, minP, maxP, Integer::PRIME, 7, 8);
-	}
+	int modulusSize = 2048;
+	alg.GetIntValue("ModulusSize", modulusSize) || alg.GetIntValue("KeySize", modulusSize);
 
-	n = p * q;
-	assert(n.BitCount() == keybits);
-	u = EuclideanMultiplicativeInverse(q, p);
-	assert(u*q%p==1);
+	if (modulusSize < 16)
+		throw InvalidArgument("InvertibleRWFunction: specified modulus length is too small");
+
+	const NameValuePairs &primeParam = MakeParametersForTwoPrimesOfEqualSize(modulusSize);
+	m_p.GenerateRandom(rng, CombinedNameValuePairs(primeParam, MakeParameters("EquivalentTo", 3)("Mod", 8)));
+	m_q.GenerateRandom(rng, CombinedNameValuePairs(primeParam, MakeParameters("EquivalentTo", 7)("Mod", 8)));
+
+	m_n = m_p * m_q;
+	m_u = m_q.InverseMod(m_p);
 }
 
 template <word r>
-InvertibleRWFunction<r>::InvertibleRWFunction(BufferedTransformation &bt)
+void InvertibleRWFunction<r>::BERDecode(BufferedTransformation &bt)
 {
 	BERSequenceDecoder seq(bt);
-	n.BERDecode(seq);
-	p.BERDecode(seq);
-	q.BERDecode(seq);
-	u.BERDecode(seq);
+	m_n.BERDecode(seq);
+	m_p.BERDecode(seq);
+	m_q.BERDecode(seq);
+	m_u.BERDecode(seq);
 	seq.MessageEnd();
-}
-
-template <word r>
-InvertibleRWFunction<r>::~InvertibleRWFunction()
-{
 }
 
 template <word r>
 void InvertibleRWFunction<r>::DEREncode(BufferedTransformation &bt) const
 {
 	DERSequenceEncoder seq(bt);
-	n.DEREncode(seq);
-	p.DEREncode(seq);
-	q.DEREncode(seq);
-	u.DEREncode(seq);
+	m_n.DEREncode(seq);
+	m_p.DEREncode(seq);
+	m_q.DEREncode(seq);
+	m_u.DEREncode(seq);
 	seq.MessageEnd();
 }
 
 template <word r>
 Integer InvertibleRWFunction<r>::CalculateInverse(const Integer &in) const
 {
-	Integer cp=in%p, cq=in%q;
+	DoQuickSanityCheck();
 
-	if (Jacobi(cp, p) * Jacobi(cq, q) != 1)
+	Integer cp=in%m_p, cq=in%m_q;
+
+	if (Jacobi(cp, m_p) * Jacobi(cq, m_q) != 1)
 	{
-		cp = cp%2 ? (cp+p) >> 1 : cp >> 1;
-		cq = cq%2 ? (cq+q) >> 1 : cq >> 1;
+		cp = cp%2 ? (cp+m_p) >> 1 : cp >> 1;
+		cq = cq%2 ? (cq+m_q) >> 1 : cq >> 1;
 	}
 
-	cp = ModularSquareRoot(cp, p);
-	cq = ModularSquareRoot(cq, q);
+	cp = ModularSquareRoot(cp, m_p);
+	cq = ModularSquareRoot(cq, m_q);
 
-	Integer out = CRT(cq, q, cp, p, u);
+	Integer out = CRT(cq, m_q, cp, m_p, m_u);
 
-	return STDMIN(out, n-out);
+	return STDMIN(out, m_n-out);
+}
+
+template <word r>
+bool InvertibleRWFunction<r>::Validate(RandomNumberGenerator &rng, unsigned int level) const
+{
+	bool pass = RWFunction<r>::Validate(rng, level);
+	pass = pass && m_p > Integer::One() && m_p%8 == 3 && m_p < m_n;
+	pass = pass && m_q > Integer::One() && m_q%8 == 7 && m_q < m_n;
+	pass = pass && m_u.IsPositive() && m_u < m_p;
+	if (level >= 1)
+	{
+		pass = pass && m_p * m_q == m_n;
+		pass = pass && m_u * m_q % m_p == 1;
+	}
+	if (level >= 2)
+		pass = pass && VerifyPrime(rng, m_p, level-2) && VerifyPrime(rng, m_q, level-2);
+	return pass;
+}
+
+template <word r>
+bool InvertibleRWFunction<r>::GetVoidValue(const char *name, const std::type_info &valueType, void *pValue) const
+{
+	return GetValueHelper<RWFunction<r> >(this, name, valueType, pValue).Assignable()
+		CRYPTOPP_GET_FUNCTION_ENTRY(Prime1)
+		CRYPTOPP_GET_FUNCTION_ENTRY(Prime2)
+		CRYPTOPP_GET_FUNCTION_ENTRY(MultiplicativeInverseOfPrime2ModPrime1)
+		;
+}
+
+template <word r>
+void InvertibleRWFunction<r>::AssignFrom(const NameValuePairs &source)
+{
+	AssignFromHelper<RWFunction<r> >(this, source)
+		CRYPTOPP_SET_FUNCTION_ENTRY(Prime1)
+		CRYPTOPP_SET_FUNCTION_ENTRY(Prime2)
+		CRYPTOPP_SET_FUNCTION_ENTRY(MultiplicativeInverseOfPrime2ModPrime1)
+		;
 }
 
 template class RWFunction<IFSSA_R>;

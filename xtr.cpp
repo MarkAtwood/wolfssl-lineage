@@ -31,7 +31,7 @@ void XTR_FindPrimesAndGenerator(RandomNumberGenerator &rng, Integer &p, Integer 
 		assert(qFound);
 		bool solutionsExist = SolveModularQuadraticEquation(r1, r2, 1, -1, 1, q);
 		assert(solutionsExist);
-	} while (!p.Randomize(rng, minP, maxP, Integer::PRIME, CRT(rng.GetBit()?r1:r2, q, 2, 3), 3*q));
+	} while (!p.Randomize(rng, minP, maxP, Integer::PRIME, CRT(rng.GenerateBit()?r1:r2, q, 2, 3), 3*q));
 	assert(((p.Squared() - p + 1) % q).IsZero());
 
 	GFP2_ONB<ModularArithmetic> gfp2(p);
@@ -59,7 +59,7 @@ GFP2Element XTR_Exponentiate(const GFP2Element &b, const Integer &e, const Integ
 
 	// find the lowest bit of e that is 1
 	unsigned int lowest1bit;
-	for (lowest1bit=0; e.GetBit(lowest1bit) == 0; lowest1bit++);
+	for (lowest1bit=0; e.GetBit(lowest1bit) == 0; lowest1bit++) {}
 
 	GFP2_ONB<MontgomeryRepresentation> gfp2(p);
 	GFP2Element c = gfp2.ConvertIn(b);
@@ -96,6 +96,6 @@ GFP2Element XTR_Exponentiate(const GFP2Element &b, const Integer &e, const Integ
 }
 
 template class AbstractRing<GFP2Element>;
-template class AbstractGroup<GFP2Element>; // not sure this is needed
+template class AbstractGroup<GFP2Element>;
 
 NAMESPACE_END

@@ -19,28 +19,28 @@ PolynomialMod2::PolynomialMod2()
 }
 
 PolynomialMod2::PolynomialMod2(word value, unsigned int bitLength)
-	: reg(bitsToWords(bitLength))
+	: reg(BitsToWords(bitLength))
 {
-	assert(value==0 || reg.size>0);
+	assert(value==0 || reg.size()>0);
 
-	if (reg.size > 0)
+	if (reg.size() > 0)
 	{
 		reg[0] = value;
-		SetWords(reg+1, 0, reg.size-1);
+		SetWords(reg+1, 0, reg.size()-1);
 	}
 }
 
 PolynomialMod2::PolynomialMod2(const PolynomialMod2& t)
-	: reg(t.reg.size)
+	: reg(t.reg.size())
 {
-	CopyWords(reg, t.reg, reg.size);
+	CopyWords(reg, t.reg, reg.size());
 }
 
 void PolynomialMod2::Randomize(RandomNumberGenerator &rng, unsigned int nbits)
 {
 	const unsigned int nbytes = nbits/8 + 1;
 	SecByteBlock buf(nbytes);
-	rng.GetBlock(buf, nbytes);
+	rng.GenerateBlock(buf, nbytes);
 	buf[0] = (byte)Crop(buf[0], nbits % 8);
 	Decode(buf, nbytes);
 }
@@ -48,9 +48,9 @@ void PolynomialMod2::Randomize(RandomNumberGenerator &rng, unsigned int nbits)
 PolynomialMod2 PolynomialMod2::AllOnes(unsigned int bitLength)
 {
 	PolynomialMod2 result((word)0, bitLength);
-	SetWords(result.reg, ~(word)0, result.reg.size);
+	SetWords(result.reg, ~(word)0, result.reg.size());
 	if (bitLength%WORD_BITS)
-		result.reg[result.reg.size-1] = (word)Crop(result.reg[result.reg.size-1], bitLength%WORD_BITS);
+		result.reg[result.reg.size()-1] = (word)Crop(result.reg[result.reg.size()-1], bitLength%WORD_BITS);
 	return result;
 }
 
@@ -63,14 +63,14 @@ void PolynomialMod2::SetBit(unsigned int n, int value)
 	}
 	else
 	{
-		if (n/WORD_BITS < reg.size)
+		if (n/WORD_BITS < reg.size())
 			reg[n/WORD_BITS] &= ~(word(1) << (n%WORD_BITS));
 	}
 }
 
 byte PolynomialMod2::GetByte(unsigned int n) const
 {
-	if (n/WORD_SIZE >= reg.size)
+	if (n/WORD_SIZE >= reg.size())
 		return 0;
 	else
 		return byte(reg[n/WORD_SIZE] >> ((n%WORD_SIZE)*8));
@@ -78,7 +78,7 @@ byte PolynomialMod2::GetByte(unsigned int n) const
 
 void PolynomialMod2::SetByte(unsigned int n, byte value)
 {
-	reg.CleanGrow(bytesToWords(n+1));
+	reg.CleanGrow(BytesToWords(n+1));
 	reg[n/WORD_SIZE] &= ~(word(0xff) << 8*(n%WORD_SIZE));
 	reg[n/WORD_SIZE] |= (word(value) << 8*(n%WORD_SIZE));
 }
@@ -136,7 +136,7 @@ unsigned int PolynomialMod2::Encode(byte *output, unsigned int outputLen) const
 
 void PolynomialMod2::Decode(BufferedTransformation &bt, unsigned int inputLen)
 {
-	reg.CleanNew(bytesToWords(inputLen));
+	reg.CleanNew(BytesToWords(inputLen));
 
 	for (unsigned int i=inputLen; i > 0; i--)
 	{
@@ -171,7 +171,7 @@ void PolynomialMod2::BERDecodeAsOctetString(BufferedTransformation &bt, unsigned
 
 unsigned int PolynomialMod2::WordCount() const
 {
-	return CountWords(reg, reg.size);
+	return CountWords(reg, reg.size());
 }
 
 unsigned int PolynomialMod2::ByteCount() const
@@ -196,7 +196,7 @@ unsigned int PolynomialMod2::Parity() const
 {
 	unsigned i;
 	word temp=0;
-	for (i=0; i<reg.size; i++)
+	for (i=0; i<reg.size(); i++)
 		temp ^= reg[i];
 	return CryptoPP::Parity(temp);
 }
@@ -209,33 +209,33 @@ PolynomialMod2& PolynomialMod2::operator=(const PolynomialMod2& t)
 
 PolynomialMod2& PolynomialMod2::operator^=(const PolynomialMod2& t)
 {
-	reg.CleanGrow(t.reg.size);
-	XorWords(reg, t.reg, t.reg.size);
+	reg.CleanGrow(t.reg.size());
+	XorWords(reg, t.reg, t.reg.size());
 	return *this;
 }
 
 PolynomialMod2 PolynomialMod2::Xor(const PolynomialMod2 &b) const
 {
-	if (b.reg.size >= reg.size)
+	if (b.reg.size() >= reg.size())
 	{
-		PolynomialMod2 result((word)0, b.reg.size*WORD_BITS);
-		XorWords(result.reg, reg, b.reg, reg.size);
-		CopyWords(result.reg+reg.size, b.reg+reg.size, b.reg.size-reg.size);
+		PolynomialMod2 result((word)0, b.reg.size()*WORD_BITS);
+		XorWords(result.reg, reg, b.reg, reg.size());
+		CopyWords(result.reg+reg.size(), b.reg+reg.size(), b.reg.size()-reg.size());
 		return result;
 	}
 	else
 	{
-		PolynomialMod2 result((word)0, reg.size*WORD_BITS);
-		XorWords(result.reg, reg, b.reg, b.reg.size);
-		CopyWords(result.reg+b.reg.size, reg+b.reg.size, reg.size-b.reg.size);
+		PolynomialMod2 result((word)0, reg.size()*WORD_BITS);
+		XorWords(result.reg, reg, b.reg, b.reg.size());
+		CopyWords(result.reg+b.reg.size(), reg+b.reg.size(), reg.size()-b.reg.size());
 		return result;
 	}
 }
 
 PolynomialMod2 PolynomialMod2::And(const PolynomialMod2 &b) const
 {
-	PolynomialMod2 result((word)0, WORD_BITS*STDMIN(reg.size, b.reg.size));
-	AndWords(result.reg, reg, b.reg, result.reg.size);
+	PolynomialMod2 result((word)0, WORD_BITS*STDMIN(reg.size(), b.reg.size()));
+	AndWords(result.reg, reg, b.reg, result.reg.size());
 	return result;
 }
 
@@ -247,7 +247,7 @@ PolynomialMod2 PolynomialMod2::Times(const PolynomialMod2 &b) const
 	{
 		result <<= 1;
 		if (b[i])
-			XorWords(result.reg, reg, reg.size);
+			XorWords(result.reg, reg, reg.size());
 	}
 	return result;
 }
@@ -256,9 +256,9 @@ PolynomialMod2 PolynomialMod2::Squared() const
 {
 	static const word map[16] = {0, 1, 4, 5, 16, 17, 20, 21, 64, 65, 68, 69, 80, 81, 84, 85};
 
-	PolynomialMod2 result((word)0, 2*reg.size*WORD_BITS);
+	PolynomialMod2 result((word)0, 2*reg.size()*WORD_BITS);
 
-	for (unsigned i=0; i<reg.size; i++)
+	for (unsigned i=0; i<reg.size(); i++)
 	{
 		unsigned j;
 
@@ -279,9 +279,9 @@ void PolynomialMod2::Divide(PolynomialMod2 &remainder, PolynomialMod2 &quotient,
 		throw PolynomialMod2::DivideByZero();
 
 	int degree = divisor.Degree();
-	remainder.reg.CleanNew(bitsToWords(degree+1));
+	remainder.reg.CleanNew(BitsToWords(degree+1));
 	if (dividend.BitCount() >= divisor.BitCount())
-		quotient.reg.CleanNew(bitsToWords(dividend.BitCount() - divisor.BitCount() + 1));
+		quotient.reg.CleanNew(BitsToWords(dividend.BitCount() - divisor.BitCount() + 1));
 	else
 		quotient.reg.CleanNew(0);
 
@@ -313,7 +313,7 @@ PolynomialMod2 PolynomialMod2::Modulo(const PolynomialMod2 &b) const
 
 PolynomialMod2& PolynomialMod2::operator<<=(unsigned int n)
 {
-	if (!reg.size)
+	if (!reg.size())
 		return *this;
 
 	int i;
@@ -323,7 +323,7 @@ PolynomialMod2& PolynomialMod2::operator<<=(unsigned int n)
 
 	if (n==1)	// special case code for most frequent case
 	{
-		i = reg.size;
+		i = reg.size();
 		while (i--)
 		{
 			u = *r;
@@ -334,8 +334,8 @@ PolynomialMod2& PolynomialMod2::operator<<=(unsigned int n)
 
 		if (carry)
 		{
-			reg.Grow(reg.size+1);
-			reg[reg.size-1] = carry;
+			reg.Grow(reg.size()+1);
+			reg[reg.size()-1] = carry;
 		}
 
 		return *this;
@@ -346,7 +346,7 @@ PolynomialMod2& PolynomialMod2::operator<<=(unsigned int n)
 
 	if (shiftBits)
 	{
-		i = reg.size;
+		i = reg.size();
 		while (i--)
 		{
 			u = *r;
@@ -358,15 +358,15 @@ PolynomialMod2& PolynomialMod2::operator<<=(unsigned int n)
 
 	if (carry)
 	{
-		reg.Grow(reg.size+shiftWords+1);
-		reg[reg.size-1] = carry;
+		reg.Grow(reg.size()+shiftWords+1);
+		reg[reg.size()-1] = carry;
 	}
 	else
-		reg.Grow(reg.size+shiftWords);
+		reg.Grow(reg.size()+shiftWords);
 
 	if (shiftWords)
 	{
-		for (i = reg.size-1; i>=shiftWords; i--)
+		for (i = reg.size()-1; i>=shiftWords; i--)
 			reg[i] = reg[i-shiftWords];
 		for (; i>=0; i--)
 			reg[i] = 0;
@@ -377,7 +377,7 @@ PolynomialMod2& PolynomialMod2::operator<<=(unsigned int n)
 
 PolynomialMod2& PolynomialMod2::operator>>=(unsigned int n)
 {
-	if (!reg.size)
+	if (!reg.size())
 		return *this;
 
 	int shiftWords = n / WORD_BITS;
@@ -386,11 +386,11 @@ PolynomialMod2& PolynomialMod2::operator>>=(unsigned int n)
 	unsigned i;
 	word u;
 	word carry=0;
-	word *r=reg+reg.size-1;
+	word *r=reg+reg.size()-1;
 
 	if (shiftBits)
 	{
-		i = reg.size;
+		i = reg.size();
 		while (i--)
 		{
 			u = *r;
@@ -402,9 +402,9 @@ PolynomialMod2& PolynomialMod2::operator>>=(unsigned int n)
 
 	if (shiftWords)
 	{
-		for (i=0; i<reg.size-shiftWords; i++)
+		for (i=0; i<reg.size()-shiftWords; i++)
 			reg[i] = reg[i+shiftWords];
-		for (; i<reg.size; i++)
+		for (; i<reg.size(); i++)
 			reg[i] = 0;
 	}
 
@@ -425,22 +425,22 @@ PolynomialMod2 PolynomialMod2::operator>>(unsigned int n) const
 
 bool PolynomialMod2::operator!() const
 {
-	for (unsigned i=0; i<reg.size; i++)
+	for (unsigned i=0; i<reg.size(); i++)
 		if (reg[i]) return false;
 	return true;
 }
 
 bool PolynomialMod2::Equals(const PolynomialMod2 &rhs) const
 {
-	unsigned i, smallerSize = STDMIN(reg.size, rhs.reg.size);
+	unsigned i, smallerSize = STDMIN(reg.size(), rhs.reg.size());
 
 	for (i=0; i<smallerSize; i++)
 		if (reg[i] != rhs.reg[i]) return false;
 
-	for (i=smallerSize; i<reg.size; i++)
+	for (i=smallerSize; i<reg.size(); i++)
 		if (reg[i] != 0) return false;
 
-	for (i=smallerSize; i<rhs.reg.size; i++)
+	for (i=smallerSize; i<rhs.reg.size(); i++)
 		if (rhs.reg[i] != 0) return false;
 
 	return true;
@@ -498,6 +498,12 @@ std::ostream& operator<<(std::ostream& out, const PolynomialMod2 &a)
 PolynomialMod2 PolynomialMod2::Gcd(const PolynomialMod2 &a, const PolynomialMod2 &b)
 {
 	return EuclideanDomainOf<PolynomialMod2>().Gcd(a, b);
+}
+
+PolynomialMod2 PolynomialMod2::InverseMod(const PolynomialMod2 &modulus) const
+{
+	typedef EuclideanDomainOf<PolynomialMod2> Domain;
+	return QuotientRing<Domain>(Domain(), modulus).MultiplicativeInverse(*this);
 }
 
 bool PolynomialMod2::IsIrreducible() const
@@ -580,19 +586,19 @@ const GF2NT::Element& GF2NT::MultiplicativeInverse(const Element &a) const
 	if (t0-t1 < WORD_BITS)
 		return GF2NP::MultiplicativeInverse(a);
 
-	SecWordBlock T(m_modulus.reg.size * 4);
+	SecWordBlock T(m_modulus.reg.size() * 4);
 	word *b = T;
-	word *c = T+m_modulus.reg.size;
-	word *f = T+2*m_modulus.reg.size;
-	word *g = T+3*m_modulus.reg.size;
-	unsigned int bcLen=1, fgLen=m_modulus.reg.size;
+	word *c = T+m_modulus.reg.size();
+	word *f = T+2*m_modulus.reg.size();
+	word *g = T+3*m_modulus.reg.size();
+	unsigned int bcLen=1, fgLen=m_modulus.reg.size();
 	unsigned int k=0;
 
-	SetWords(T, 0, 3*m_modulus.reg.size);
+	SetWords(T, 0, 3*m_modulus.reg.size());
 	b[0]=1;
-	assert(a.reg.size <= m_modulus.reg.size);
-	CopyWords(f, a.reg, a.reg.size);
-	CopyWords(g, m_modulus.reg, m_modulus.reg.size);
+	assert(a.reg.size() <= m_modulus.reg.size());
+	CopyWords(f, a.reg, a.reg.size());
+	CopyWords(g, m_modulus.reg, m_modulus.reg.size());
 
 	while (1)
 	{
@@ -602,7 +608,7 @@ const GF2NT::Element& GF2NT::MultiplicativeInverse(const Element &a) const
 			ShiftWordsRightByWords(f, fgLen, 1);
 			if (c[bcLen-1])
 				bcLen++;
-			assert(bcLen <= m_modulus.reg.size);
+			assert(bcLen <= m_modulus.reg.size());
 			ShiftWordsLeftByWords(c, bcLen, 1);
 			k+=WORD_BITS;
 			t=f[0];
@@ -633,7 +639,7 @@ const GF2NT::Element& GF2NT::MultiplicativeInverse(const Element &a) const
 		{
 			c[bcLen] = t;
 			bcLen++;
-			assert(bcLen <= m_modulus.reg.size);
+			assert(bcLen <= m_modulus.reg.size());
 		}
 
 		if (f[fgLen-1]==0 && g[fgLen-1]==0)
@@ -653,9 +659,9 @@ const GF2NT::Element& GF2NT::MultiplicativeInverse(const Element &a) const
 	{
 		word temp = b[0];
 		// right shift b
-		for (unsigned i=0; i+1<bitsToWords(m); i++)
+		for (unsigned i=0; i+1<BitsToWords(m); i++)
 			b[i] = b[i+1];
-		b[bitsToWords(m)-1] = 0;
+		b[BitsToWords(m)-1] = 0;
 
 		if (t1 < WORD_BITS)
 			for (unsigned int j=0; j<WORD_BITS-t1; j++)
@@ -680,7 +686,7 @@ const GF2NT::Element& GF2NT::MultiplicativeInverse(const Element &a) const
 	if (k)
 	{
 		word temp = b[0] << (WORD_BITS - k);
-		ShiftWordsRightByBits(b, bitsToWords(m), k);
+		ShiftWordsRightByBits(b, BitsToWords(m), k);
 
 		if (t1 < WORD_BITS)
 			for (unsigned int j=0; j<WORD_BITS-t1; j++)
@@ -700,33 +706,33 @@ const GF2NT::Element& GF2NT::MultiplicativeInverse(const Element &a) const
 			b[t0/WORD_BITS-1] ^= temp;
 	}
 
-	CopyWords(result.reg.ptr, b, result.reg.size);
+	CopyWords(result.reg.begin(), b, result.reg.size());
 	return result;
 }
 
 const GF2NT::Element& GF2NT::Multiply(const Element &a, const Element &b) const
 {
-	unsigned int aSize = STDMIN(a.reg.size, result.reg.size);
+	unsigned int aSize = STDMIN(a.reg.size(), result.reg.size());
 	Element r((word)0, m);
 
 	for (int i=m-1; i>=0; i--)
 	{
 		if (r[m-1])
 		{
-			ShiftWordsLeftByBits(r.reg.ptr, r.reg.size, 1);
-			XorWords(r.reg.ptr, m_modulus.reg, r.reg.size);
+			ShiftWordsLeftByBits(r.reg.begin(), r.reg.size(), 1);
+			XorWords(r.reg.begin(), m_modulus.reg, r.reg.size());
 		}
 		else
-			ShiftWordsLeftByBits(r.reg.ptr, r.reg.size, 1);
+			ShiftWordsLeftByBits(r.reg.begin(), r.reg.size(), 1);
 
 		if (b[i])
-			XorWords(r.reg.ptr, a.reg, aSize);
+			XorWords(r.reg.begin(), a.reg, aSize);
 	}
 
 	if (m%WORD_BITS)
-		r.reg.ptr[r.reg.size-1] = (word)Crop(r.reg[r.reg.size-1], m%WORD_BITS);
+		r.reg.begin()[r.reg.size()-1] = (word)Crop(r.reg[r.reg.size()-1], m%WORD_BITS);
 
-	CopyWords(result.reg.ptr, r.reg.ptr, result.reg.size);
+	CopyWords(result.reg.begin(), r.reg.begin(), result.reg.size());
 	return result;
 }
 
@@ -738,7 +744,7 @@ const GF2NT::Element& GF2NT::Reduced(const Element &a) const
 	SecWordBlock b(a.reg);
 
 	unsigned i;
-	for (i=b.size-1; i>=bitsToWords(t0); i--)
+	for (i=b.size()-1; i>=BitsToWords(t0); i--)
 	{
 		word temp = b[i];
 
@@ -759,7 +765,7 @@ const GF2NT::Element& GF2NT::Reduced(const Element &a) const
 			b[i-(t0-t1)/WORD_BITS] ^= temp;
 	}
 
-	if (i==bitsToWords(t0)-1 && t0%WORD_BITS)
+	if (i==BitsToWords(t0)-1 && t0%WORD_BITS)
 	{
 		word mask = ((word)1<<(t0%WORD_BITS))-1;
 		word temp = b[i] & ~mask;
@@ -779,8 +785,8 @@ const GF2NT::Element& GF2NT::Reduced(const Element &a) const
 			b[i-(t0-t1)/WORD_BITS] ^= temp;
 	}
 
-	SetWords(result.reg.ptr, 0, result.reg.size);
-	CopyWords(result.reg.ptr, b, STDMIN(b.size, result.reg.size));
+	SetWords(result.reg.begin(), 0, result.reg.size());
+	CopyWords(result.reg.begin(), b, STDMIN(b.size(), result.reg.size()));
 	return result;
 }
 
@@ -797,52 +803,68 @@ void GF2NP::BERDecodeElement(BufferedTransformation &in, Element &a) const
 void GF2NT::DEREncode(BufferedTransformation &bt) const
 {
 	DERSequenceEncoder seq(bt);
-	DEREncodeUnsigned(seq, m);
-	ASN1::tpBasis().DEREncode(seq);
-	DEREncodeUnsigned(seq, t1);
+		ASN1::characteristic_two_field().DEREncode(seq);
+		DERSequenceEncoder parameters(seq);
+			DEREncodeUnsigned(parameters, m);
+			ASN1::tpBasis().DEREncode(parameters);
+			DEREncodeUnsigned(parameters, t1);
+		parameters.MessageEnd();
 	seq.MessageEnd();
 }
 
 void GF2NPP::DEREncode(BufferedTransformation &bt) const
 {
 	DERSequenceEncoder seq(bt);
-	DEREncodeUnsigned(seq, m);
-	ASN1::ppBasis().DEREncode(seq);
-	DERSequenceEncoder pentanomial(seq);
-	DEREncodeUnsigned(pentanomial, t3);
-	DEREncodeUnsigned(pentanomial, t2);
-	DEREncodeUnsigned(pentanomial, t1);
-	pentanomial.MessageEnd();
+		ASN1::characteristic_two_field().DEREncode(seq);
+		DERSequenceEncoder parameters(seq);
+			DEREncodeUnsigned(parameters, m);
+			ASN1::ppBasis().DEREncode(parameters);
+			DERSequenceEncoder pentanomial(parameters);
+				DEREncodeUnsigned(pentanomial, t3);
+				DEREncodeUnsigned(pentanomial, t2);
+				DEREncodeUnsigned(pentanomial, t1);
+			pentanomial.MessageEnd();
+		parameters.MessageEnd();
 	seq.MessageEnd();
 }
 
 GF2NP * BERDecodeGF2NP(BufferedTransformation &bt)
 {
+	// VC60 workaround: auto_ptr lacks reset()
+	member_ptr<GF2NP> result;
+
 	BERSequenceDecoder seq(bt);
-	unsigned int m;
-	BERDecodeUnsigned(seq, m);
-	OID oid(seq);
-	if (oid == ASN1::tpBasis())
-	{
-		unsigned int t1;
-		BERDecodeUnsigned(seq, t1);
-		return new GF2NT(m, t1, 0);
-	}
-	else if (oid == ASN1::ppBasis())
-	{
-		unsigned int t1, t2, t3;
-		BERSequenceDecoder pentanomial(seq);
-		BERDecodeUnsigned(pentanomial, t3);
-		BERDecodeUnsigned(pentanomial, t2);
-		BERDecodeUnsigned(pentanomial, t1);
-		pentanomial.MessageEnd();
-		return new GF2NPP(m, t3, t2, t1, 0);
-	}
-	else
-	{
-		BERDecodeError();
-		return NULL;
-	}
+		if (OID(seq) != ASN1::characteristic_two_field())
+			BERDecodeError();
+		BERSequenceDecoder parameters(seq);
+			unsigned int m;
+			BERDecodeUnsigned(parameters, m);
+			OID oid(parameters);
+			if (oid == ASN1::tpBasis())
+			{
+				unsigned int t1;
+				BERDecodeUnsigned(parameters, t1);
+				result.reset(new GF2NT(m, t1, 0));
+			}
+			else if (oid == ASN1::ppBasis())
+			{
+				unsigned int t1, t2, t3;
+				BERSequenceDecoder pentanomial(parameters);
+				BERDecodeUnsigned(pentanomial, t3);
+				BERDecodeUnsigned(pentanomial, t2);
+				BERDecodeUnsigned(pentanomial, t1);
+				pentanomial.MessageEnd();
+				result.reset(new GF2NPP(m, t3, t2, t1, 0));
+			}
+			else
+			{
+				BERDecodeError();
+				return NULL;
+			}
+		parameters.MessageEnd();
+	seq.MessageEnd();
+
+	return result.release();
 }
 
 NAMESPACE_END

@@ -4,8 +4,8 @@
 /** \file
 */
 
-#include "cryptlib.h"
-#include "misc.h"
+#include "seckey.h"
+#include "secblock.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -15,75 +15,76 @@ protected:
 	static const word32 S[8][256];
 };
 
-/// base class, do not use directly
-class CAST128 : public FixedBlockSize<8>, public CAST, public VariableKeyLength<16, 5, 16>
+//! .
+struct CAST128_Info : public FixedBlockSize<8>, public VariableKeyLength<16, 5, 16>
 {
-protected:
-	// keylength should be between 5 and 16
-	CAST128(const byte *userKey, unsigned int keylength);
-
-	bool reduced;
-	SecBlock<word32> K;
+	static const char *StaticAlgorithmName() {return "CAST-128";}
 };
 
 /// <a href="http://www.weidai.com/scan-mirror/cs.html#CAST-128">CAST-128</a>
-class CAST128Encryption : public CAST128
+class CAST128 : public CAST128_Info, public BlockCipherDocumentation
 {
-public:
-	CAST128Encryption(const byte *userKey, unsigned int keylength=DEFAULT_KEYLENGTH)
-		: CAST128(userKey, keylength) {}
+	class Base : public CAST, public BlockCipherBaseTemplate<CAST128_Info>
+	{
+	public:
+		void UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length);
 
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-	void ProcessBlock(byte * inoutBlock) const
-		{CAST128Encryption::ProcessBlock(inoutBlock, inoutBlock);}
+	protected:
+		bool reduced;
+		FixedSizeSecBlock<word32, 32> K;
+	};
+
+	class Enc : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+	class Dec : public Base
+	{
+	public:
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+	};
+
+public:
+	typedef BlockCipherTemplate<ENCRYPTION, Enc> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Dec> Decryption;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#CAST-128">CAST-128</a>
-class CAST128Decryption : public CAST128
+//! .
+struct CAST256_Info : public FixedBlockSize<16>, public VariableKeyLength<16, 16, 32>
 {
-public:
-	CAST128Decryption(const byte *userKey, unsigned int keylength=DEFAULT_KEYLENGTH)
-		: CAST128(userKey, keylength) {}
-
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-	void ProcessBlock(byte * inoutBlock) const
-		{CAST128Decryption::ProcessBlock(inoutBlock, inoutBlock);}
+	static const char *StaticAlgorithmName() {return "CAST-256";}
 };
 
-/// base class, do not use directly
-class CAST256 : public FixedBlockSize<16>, public CAST, public VariableKeyLength<16, 16, 32>
+//! <a href="http://www.weidai.com/scan-mirror/cs.html#CAST-256">CAST-256</a>
+class CAST256 : public CAST256_Info, public BlockCipherDocumentation
 {
+	class Base : public CAST, public BlockCipherBaseTemplate<CAST256_Info>
+	{
+	public:
+		void UncheckedSetKey(CipherDir direction, const byte *userKey, unsigned int length = 8);
+		void ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const;
+
+	protected:
+		static const word32 t_m[8][24];
+		static const unsigned int t_r[8][24];
+
+		static void Omega(int i, word32 kappa[8]);
+
+		FixedSizeSecBlock<word32, 8*12> K;
+	};
+
 public:
-	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-	void ProcessBlock(byte * inoutBlock) const
-		{CAST256::ProcessBlock(inoutBlock, inoutBlock);}
-
-protected:
-	CAST256(const byte *userKey, unsigned int keylength);
-
-	SecBlock<word32> K;
-
-private:
-	static const word32 t_m[8][24];
-	static const unsigned int t_r[8][24];
-
-	static void Omega(int i, word32 kappa[8]);
+	typedef BlockCipherTemplate<ENCRYPTION, Base> Encryption;
+	typedef BlockCipherTemplate<DECRYPTION, Base> Decryption;
 };
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#CAST-256">CAST-256</a>
-class CAST256Encryption : public CAST256
-{
-public:
-	CAST256Encryption(const byte *userKey, unsigned int keylength=DEFAULT_KEYLENGTH)
-		: CAST256(userKey, keylength) {}
-};
+typedef CAST128::Encryption CAST128Encryption;
+typedef CAST128::Decryption CAST128Decryption;
 
-/// <a href="http://www.weidai.com/scan-mirror/cs.html#CAST-256">CAST-256</a>
-class CAST256Decryption : public CAST256
-{
-public:
-	CAST256Decryption(const byte *userKey, unsigned int keylength=DEFAULT_KEYLENGTH);
-};
+typedef CAST256::Encryption CAST256Encryption;
+typedef CAST256::Decryption CAST256Decryption;
 
 NAMESPACE_END
 

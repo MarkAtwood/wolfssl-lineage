@@ -3,13 +3,17 @@
 
 #include "pch.h"
 #include "rc6.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-RC6Base::RC6Base(const byte *k, unsigned int keylen, unsigned int rounds)
-	: r(rounds), sTable((2*r)+4)
+void RC6::Base::UncheckedSetKey(CipherDir direction, const byte *k, unsigned int keylen, unsigned int rounds)
 {
-	assert(keylen == KeyLength(keylen));
+	AssertValidKeyLength(keylen);
+	AssertValidRounds(rounds);
+
+	r = rounds;
+	sTable.New(2*(r+2));
 
 	static const RC6_WORD MAGIC_P = 0xb7e15163L;    // magic constant P for wordsize
 	static const RC6_WORD MAGIC_Q = 0x9e3779b9L;    // magic constant Q for wordsize
@@ -18,28 +22,30 @@ RC6Base::RC6Base(const byte *k, unsigned int keylen, unsigned int rounds)
 	const unsigned int c = STDMAX((keylen+U-1)/U, 1U);	// RC6 paper says c=1 if keylen==0
 	SecBlock<RC6_WORD> l(c);
 
-	GetUserKeyLittleEndian(l.ptr, c, k, keylen);
+	GetUserKey(LITTLE_ENDIAN_ORDER, l.begin(), c, k, keylen);
 
 	sTable[0] = MAGIC_P;
-	for (unsigned j=1; j<sTable.size;j++)
+	for (unsigned j=1; j<sTable.size();j++)
 		sTable[j] = sTable[j-1] + MAGIC_Q;
 
 	RC6_WORD a=0, b=0;
-	const unsigned n = 3*STDMAX(sTable.size,c);
+	const unsigned n = 3*STDMAX((unsigned int)sTable.size(), c);
 
 	for (unsigned h=0; h < n; h++)
 	{
-		a = sTable[h % sTable.size] = rotlFixed((sTable[h % sTable.size] + a + b), 3);
+		a = sTable[h % sTable.size()] = rotlFixed((sTable[h % sTable.size()] + a + b), 3);
 		b = l[h % c] = rotlMod((l[h % c] + a + b), (a+b));
 	}
 }
 
-void RC6Encryption::ProcessBlock(const byte *in, byte *out) const
+typedef BlockGetAndPut<RC6::RC6_WORD, LittleEndian> Block;
+
+void RC6::Enc::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
 	const RC6_WORD *sptr = sTable;
 	RC6_WORD a, b, c, d, t, u;
 
-	GetBlockLittleEndian(in, a, b, c, d);
+	Block::Get(inBlock)(a)(b)(c)(d);
 	b += sptr[0];
 	d += sptr[1];
 	sptr += 2;
@@ -57,15 +63,15 @@ void RC6Encryption::ProcessBlock(const byte *in, byte *out) const
 	a += sptr[0];
 	c += sptr[1];
 
-	PutBlockLittleEndian(out, a, b, c, d);
+	Block::Put(xorBlock, outBlock)(a)(b)(c)(d);
 }
 
-void RC6Decryption::ProcessBlock(const byte *in, byte *out) const
+void RC6::Dec::ProcessAndXorBlock(const byte *inBlock, const byte *xorBlock, byte *outBlock) const
 {
-	const RC6_WORD *sptr = sTable+sTable.size;
+	const RC6_WORD *sptr = sTable.end();
 	RC6_WORD a, b, c, d, t, u;
 
-	GetBlockLittleEndian(in, a, b, c, d);
+	Block::Get(inBlock)(a)(b)(c)(d);
 
 	sptr -= 2;
 	c -= sptr[1];
@@ -85,7 +91,7 @@ void RC6Decryption::ProcessBlock(const byte *in, byte *out) const
 	d -= sTable[1];
 	b -= sTable[0];
 
-	PutBlockLittleEndian(out, a, b, c, d);
+	Block::Put(xorBlock, outBlock)(a)(b)(c)(d);
 }
 
 NAMESPACE_END
