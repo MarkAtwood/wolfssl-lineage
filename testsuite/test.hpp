@@ -55,35 +55,56 @@ typedef THREAD_RETURN YASSL_API THREAD_FUNC(void*);
 void start_thread(THREAD_FUNC, func_args*, THREAD_TYPE*);
 void join_thread(THREAD_TYPE);
 
+// yaSSL
 const char* const loopback  = "127.0.0.1";
-const short yasslPort = 11111; 
+const short yasslPort = 11111;
+
+// keybank test NSS
+//const char* const loopback  = "156.77.66.219";
+//const short yasslPort = 443;
+
+// www.gnutls.org
+//const char* const loopback  = "62.1.205.36";
+//const short yasslPort = 5555;
+
 
 
 // client
-const char* const cert = "../../certs/client-cert.pem";
-const char* const key  = "../../certs/client-key.pem";
+const char* const cert = "../certs/client-cert.pem";
+const char* const key  = "../certs/client-key.pem";
 
-const char* const certSuite = "../certs/client-cert.pem";
-const char* const keySuite  = "../certs/client-key.pem";
+const char* const certSuite = "../../certs/client-cert.pem";
+const char* const keySuite  = "../../certs/client-key.pem";
 
 const char* const certDebug = "../../../certs/client-cert.pem";
 const char* const keyDebug  = "../../../certs/client-key.pem";
 
 
 // server
-const char* const svrCert = "../../certs/server-cert.pem";
-const char* const svrKey  = "../../certs/server-key.pem";
+const char* const svrCert = "../certs/server-cert.pem";
+const char* const svrKey  = "../certs/server-key.pem";
 
-const char* const svrCert2 = "../certs/server-cert.pem";
-const char* const svrKey2  = "../certs/server-key.pem";
+const char* const svrCert2 = "../../certs/server-cert.pem";
+const char* const svrKey2  = "../../certs/server-key.pem";
 
 const char* const svrCert3 = "../../../certs/server-cert.pem";
 const char* const svrKey3  = "../../../certs/server-key.pem";
 
 
+// server dsa
+const char* const dsaCert = "../certs/dsa-cert.pem";
+const char* const dsaKey  = "../certs/dsa512.der";
+
+const char* const dsaCert2 = "../../certs/dsa-cert.pem";
+const char* const dsaKey2  = "../../certs/dsa512.der";
+
+const char* const dsaCert3 = "../../../certs/dsa-cert.pem";
+const char* const dsaKey3  = "../../../certs/dsa512.der";
+
+
 // CA 
-const char* const caCert  = "../../certs/ca-cert.pem";
-const char* const caCert2 = "../certs/ca-cert.pem";
+const char* const caCert  = "../certs/ca-cert.pem";
+const char* const caCert2 = "../../certs/ca-cert.pem";
 const char* const caCert3 = "../../../certs/ca-cert.pem";
 
 
@@ -92,7 +113,7 @@ using namespace yaSSL;
 
 inline void err_sys(const char* msg)
 {
-    printf("yassl server error: %s\n", msg);
+    printf("yassl error: %s\n", msg);
     exit(EXIT_FAILURE);
 }
 
@@ -157,6 +178,31 @@ inline void set_serverCerts(SSL_CTX* ctx)
 }
 
 
+// dsa server
+inline void set_dsaServerCerts(SSL_CTX* ctx)
+{
+    store_ca(ctx);
+
+    // To allow testing from serveral dirs
+    if (SSL_CTX_use_certificate_file(ctx, dsaCert, SSL_FILETYPE_PEM)
+        != SSL_SUCCESS)
+        if (SSL_CTX_use_certificate_file(ctx, dsaCert2, SSL_FILETYPE_PEM)
+            != SSL_SUCCESS)
+            if (SSL_CTX_use_certificate_file(ctx, dsaCert3, SSL_FILETYPE_PEM)
+                != SSL_SUCCESS)
+                err_sys("failed to use certificate: certs/server-cert.pem");
+    
+    // To allow testing from several dirs
+    if (SSL_CTX_use_PrivateKey_file(ctx, dsaKey, SSL_FILETYPE_ASN1)
+         != SSL_SUCCESS) 
+         if (SSL_CTX_use_PrivateKey_file(ctx, dsaKey2, SSL_FILETYPE_ASN1)
+            != SSL_SUCCESS) 
+                if (SSL_CTX_use_PrivateKey_file(ctx, dsaKey3,SSL_FILETYPE_ASN1)
+                    != SSL_SUCCESS) 
+                    err_sys("failed to use key file: certs/dsa512.der");
+}
+
+
 inline void set_args(int& argc, char**& argv, func_args& args)
 {
     argc = args.argc;
@@ -209,6 +255,57 @@ inline void tcp_accept(SOCKET_T& sockfd, int& clientfd)
     if (clientfd == -1)
         err_sys("tcp accept failed");
 }
+
+
+inline void showPeer(SSL* ssl)
+{
+    X509* peer = SSL_get_peer_certificate(ssl);
+    if (peer) {
+        char* issuer  = X509_NAME_oneline(X509_get_issuer_name(peer), 0, 0);
+        char* subject = X509_NAME_oneline(X509_get_subject_name(peer), 0, 0);
+
+        printf("peer's cert info:\n");
+        printf("issuer  is: %s\n", issuer);
+        printf("subject is: %s\n", subject);
+
+        free(subject);
+        free(issuer);
+    }
+    else
+        printf("peer has no cert!\n");
+}
+
+
+
+inline void set_tmpDH(SSL_CTX* ctx)
+{
+    static unsigned char dh512_p[] =
+    {
+      0xDA,0x58,0x3C,0x16,0xD9,0x85,0x22,0x89,0xD0,0xE4,0xAF,0x75,
+      0x6F,0x4C,0xCA,0x92,0xDD,0x4B,0xE5,0x33,0xB8,0x04,0xFB,0x0F,
+      0xED,0x94,0xEF,0x9C,0x8A,0x44,0x03,0xED,0x57,0x46,0x50,0xD3,
+      0x69,0x99,0xDB,0x29,0xD7,0x76,0x27,0x6B,0xA2,0xD3,0xD4,0x12,
+      0xE2,0x18,0xF4,0xDD,0x1E,0x08,0x4C,0xF6,0xD8,0x00,0x3E,0x7C,
+      0x47,0x74,0xE8,0x33,
+    };
+
+    static unsigned char dh512_g[] =
+    {
+      0x02,
+    };
+
+    DH* dh;
+    if ( (dh = DH_new()) ) {
+        dh->p = BN_bin2bn(dh512_p, sizeof(dh512_p), 0);
+        dh->g = BN_bin2bn(dh512_g, sizeof(dh512_g), 0);
+    }
+    if (!dh->p || !dh->g) {
+        DH_free(dh);
+        dh = 0;
+    }
+    SSL_CTX_set_tmp_dh(ctx, dh);
+}
+
 
 #endif // yaSSL_TEST_HPP
 

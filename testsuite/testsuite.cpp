@@ -28,6 +28,9 @@ int main(int argc, char** argv)
     THREAD_TYPE thread;
 
     start_thread(server_test, &server_args, &thread);
+#ifdef __GNUC__
+    usleep(1000);   // let server start first
+#endif
     client_test(&args);
 
     assert(args.return_code == 0);
@@ -37,6 +40,9 @@ int main(int argc, char** argv)
 
     // *** Echo input yaSSL client server test ***
     start_thread(echoserver_test, &server_args, &thread);
+#ifdef __GNUC__
+    usleep(1);
+#endif
     func_args echo_args;
 
             // setup args
@@ -104,4 +110,25 @@ void join_thread(THREAD_TYPE thread)
 #else
     pthread_join(thread, 0);
 #endif
+}
+
+
+
+int test_openSSL_des()
+{
+    /* test des encrypt/decrypt */
+    char data[] = "this is my data ";
+    int  dataSz = strlen(data);
+    DES_key_schedule key[3];
+    byte iv[8];
+    EVP_BytesToKey(EVP_des_ede3_cbc(), EVP_md5(), NULL, (byte*)data, dataSz, 1,
+                   (byte*)key, iv);
+
+    byte cipher[16];
+    DES_ede3_cbc_encrypt((byte*)data, cipher, dataSz, &key[0], &key[8], &key[16],
+                         &iv, true);
+    byte plain[16];
+    DES_ede3_cbc_encrypt(cipher, plain, 16, &key[0], &key[8], &key[16],
+                         &iv, false);
+    return 0;
 }

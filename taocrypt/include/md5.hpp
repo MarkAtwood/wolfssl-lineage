@@ -31,12 +31,12 @@ namespace TaoCrypt {
 
 
 // MD5 digest
-class MD5 : public HASH {
+class MD5 : public HASHwithTransform {
 public:
     enum { BLOCK_SIZE = 64, DIGEST_SIZE = 16, PAD_SIZE = 56,
            TAO_BYTE_ORDER = LittleEndianOrder };   // in Bytes
-    MD5() : HASH(DIGEST_SIZE / sizeof(word32), BLOCK_SIZE) { Init(); }
-
+    MD5() : HASHwithTransform(DIGEST_SIZE / sizeof(word32), BLOCK_SIZE) 
+                { Init(); }
     ByteOrder getByteOrder()  const { return ByteOrder(TAO_BYTE_ORDER); }
     word32    getBlockSize()  const { return BLOCK_SIZE; }
     word32    getDigestSize() const { return DIGEST_SIZE; }

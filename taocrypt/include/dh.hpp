@@ -32,7 +32,7 @@
 namespace TaoCrypt {
 
 
-class Sink;
+class Source;
 
 
 // Diffie-Hellman
@@ -40,7 +40,7 @@ class DH {
 public:
     DH() {}
     DH(Integer& p, Integer& g) : p_(p), g_(g) {}
-    explicit DH(Sink&);
+    explicit DH(Source&);
 
     DH(const DH& that) : p_(that.p_), g_(that.g_) {}
     DH& operator=(const DH& that) 
@@ -56,7 +56,7 @@ public:
         g_.swap(other.g_);
     }
 
-    void Initialize(Sink&);
+    void Initialize(Source&);
     void Initialize(Integer& p, Integer& g)
     {
         SetP(p);

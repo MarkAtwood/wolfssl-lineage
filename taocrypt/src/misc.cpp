@@ -37,7 +37,7 @@ inline void XorWords(word* r, const word* a, unsigned int n)
 
 void xorbuf(byte* buf, const byte* mask, unsigned int count)
 {
-    if (((unsigned int)buf | (unsigned int)mask | count) % WORD_SIZE == 0)
+    if (((size_t)buf | (size_t)mask | count) % WORD_SIZE == 0)
         XorWords((word *)buf, (const word *)mask, count/WORD_SIZE);
     else
     {

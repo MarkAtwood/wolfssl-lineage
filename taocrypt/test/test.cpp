@@ -6,10 +6,12 @@
 
 #include "sha.hpp"
 #include "md5.hpp"
+#include "md2.hpp"
 #include "hmac.hpp"
 #include "arc4.hpp"
 #include "des.hpp"
 #include "rsa.hpp"
+#include "dsa.hpp"
 #include "aes.hpp"
 #include "asn.hpp"
 #include "dh.hpp"
@@ -18,8 +20,10 @@
 
 
 using TaoCrypt::byte;
+using TaoCrypt::word32;
 using TaoCrypt::SHA;
 using TaoCrypt::MD5;
+using TaoCrypt::MD2;
 using TaoCrypt::HMAC;
 using TaoCrypt::ARC4;
 using TaoCrypt::DES_EDE3_CBC_Encryption;
@@ -34,17 +38,23 @@ using TaoCrypt::AES_ECB_Encryption;
 using TaoCrypt::AES_ECB_Decryption;
 using TaoCrypt::RSA_PrivateKey;
 using TaoCrypt::RSA_PublicKey;
+using TaoCrypt::DSA_PrivateKey;
+using TaoCrypt::DSA_PublicKey;
+using TaoCrypt::DSA_Signer;
+using TaoCrypt::DSA_Verifier;
 using TaoCrypt::RSAES_Encryptor;
 using TaoCrypt::RSAES_Decryptor;
-using TaoCrypt::Sink;
+using TaoCrypt::Source;
 using TaoCrypt::FileSource;
-using TaoCrypt::FileSink;
+using TaoCrypt::FileSource;
 using TaoCrypt::HexDecoder;
 using TaoCrypt::HexEncoder;
 using TaoCrypt::Base64Decoder;
 using TaoCrypt::Base64Encoder;
 using TaoCrypt::CertDecoder;
 using TaoCrypt::DH;
+using TaoCrypt::EncodeDSA_Signature;
+using TaoCrypt::DecodeDSA_Signature;
 
 
 
@@ -61,11 +71,13 @@ struct testVector {
 void file_test(int, char**);
 int  sha_test();
 int  md5_test();
+int  md2_test();
 int  hmac_test();
 int  arc4_test();
 int  des_test();
 int  aes_test();
 int  rsa_test();
+int  dsa_test();
 int  dh_test();
 
 TaoCrypt::RandomNumberGenerator rng;
@@ -101,6 +113,11 @@ void taocrypt_test(void* args)
     else
         printf( "MD5  test passed!\n");
 
+    if ( (ret = md2_test()) ) 
+        err_sys("MD2  test failed!\n", ret);
+    else
+        printf( "MD2  test passed!\n");
+
     if ( ( ret = hmac_test()) )
         err_sys("HMAC test failed!\n", ret);
     else
@@ -130,6 +147,11 @@ void taocrypt_test(void* args)
         err_sys("DH   test failed!\n", ret);
     else
         printf( "DH   test passed!\n");
+
+    if ( (ret = dsa_test()) )
+        err_sys("DSA  test failed!\n", ret);
+    else
+        printf( "DSA  test passed!\n");
 
     ((func_args*)args)->return_code = ret;
 }
@@ -246,6 +268,51 @@ int md5_test()
         md5.Final(hash);
 
         if (memcmp(hash, test_md5[i].output_, MD5::DIGEST_SIZE) != 0)
+            return -5 - i;
+    }
+
+    return 0;
+}
+
+
+int md2_test()
+{
+    MD2  md5;
+    byte hash[MD2::DIGEST_SIZE];
+
+    testVector test_md2[] =
+    {
+		testVector("",
+                   "\x83\x50\xe5\xa3\xe2\x4c\x15\x3d\xf2\x27\x5c\x9f\x80\x69"
+                   "\x27\x73"),
+		testVector("a",
+                   "\x32\xec\x01\xec\x4a\x6d\xac\x72\xc0\xab\x96\xfb\x34\xc0"
+                   "\xb5\xd1"),
+		testVector("abc",
+                   "\xda\x85\x3b\x0d\x3f\x88\xd9\x9b\x30\x28\x3a\x69\xe6\xde"
+                   "\xd6\xbb"),
+		testVector("message digest",
+                   "\xab\x4f\x49\x6b\xfb\x2a\x53\x0b\x21\x9f\xf3\x30\x31\xfe"
+                   "\x06\xb0"),
+		testVector("abcdefghijklmnopqrstuvwxyz",
+                   "\x4e\x8d\xdf\xf3\x65\x02\x92\xab\x5a\x41\x08\xc3\xaa\x47"
+                   "\x94\x0b"),
+		testVector("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+                   "0123456789",
+                   "\xda\x33\xde\xf2\xa4\x2d\xf1\x39\x75\x35\x28\x46\xc3\x03"
+                   "\x38\xcd"),
+		testVector("12345678901234567890123456789012345678901234567890123456"
+                   "789012345678901234567890",
+                   "\xd5\x97\x6f\x79\xd8\x3d\x3a\x0d\xc9\x80\x6c\x3c\x66\xf3"
+                   "\xef\xd8")
+    };
+
+    int times( sizeof(test_md2) / sizeof(testVector) );
+    for (int i = 0; i < times; ++i) {
+        md5.Update(test_md2[i].input_, test_md2[i].inLen_);
+        md5.Final(hash);
+
+        if (memcmp(hash, test_md2[i].output_, MD2::DIGEST_SIZE) != 0)
             return -10 - i;
     }
 
@@ -349,10 +416,11 @@ int des_test()
     DES_ECB_Encryption enc;
     DES_ECB_Decryption dec;
 
+ 
     const byte key[] = { 0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef };
     const byte iv[] =  { 0x12,0x34,0x56,0x78,0x90,0xab,0xcd,0xef };
 
-    const char* vector = "Now is the time for all ";  // strlen == 24
+    const char vector[] = "Now is the time for all ";  // strlen == 24
     byte plain[24];
     byte cipher[24];
 
@@ -493,18 +561,18 @@ int aes_test()
 
 int rsa_test()
 {
-    std::string name = "../../certs/client-key.der";
-	Sink sink;
-    FileSource(name, sink);
-    if (sink.size() == 0) {
-        FileSource("../certs/client-key.der", sink);  // for testsuite
-        if (sink.size() == 0) {
-            FileSource("../../../certs/client-key.der", sink); // Debug dir
-            if (sink.size() == 0)
+    std::string name = "../certs/client-key.der";
+	Source source;
+    FileSource(name, source);
+    if (source.size() == 0) {
+        FileSource("../../certs/client-key.der", source);  // for testsuite
+        if (source.size() == 0) {
+            FileSource("../../../certs/client-key.der", source); // Debug dir
+            if (source.size() == 0)
                 err_sys("where's your certs dir?", -79);
         }
     }
-    RSA_PrivateKey priv(sink);
+    RSA_PrivateKey priv(source);
 
     RSAES_Encryptor enc(priv);
     byte message[] = "Everyone gets Friday off.";
@@ -525,20 +593,20 @@ int rsa_test()
 
 
     // test decode   
-    name = "../../certs/client-cert.der";
-    Sink sink2;
-    FileSource(name, sink2);
-    if (sink2.size() == 0) {
-        FileSource("../certs/client-cert.der", sink2);  // for testsuite
-        if (sink2.size() == 0) {
-            FileSource("../../../certs/client-cert.der", sink2); // Debug dir
-            if (sink2.size() == 0)
+    name = "../certs/client-cert.der";
+    Source source2;
+    FileSource(name, source2);
+    if (source2.size() == 0) {
+        FileSource("../../certs/client-cert.der", source2);  // for testsuite
+        if (source2.size() == 0) {
+            FileSource("../../../certs/client-cert.der", source2); // Debug dir
+            if (source2.size() == 0)
                 err_sys("where's your certs dir?", -79);
         }
     }
-    CertDecoder cd(sink2);
-    Sink sink3(cd.GetPublicKey().GetKey(), cd.GetPublicKey().size());
-    RSA_PublicKey pub(sink3);
+    CertDecoder cd(source2);
+    Source source3(cd.GetPublicKey().GetKey(), cd.GetPublicKey().size());
+    RSA_PublicKey pub(source3);
  
     return 0;
 }
@@ -546,20 +614,20 @@ int rsa_test()
 
 int dh_test()
 {
-    std::string name = "../../certs/dh1024.dat";
-    Sink sink;
-    FileSource(name, sink);
-    if (sink.size() == 0) {
-        FileSource("../certs/dh1024.dat", sink);  // for testsuite
-        if (sink.size() == 0) {
-            FileSource("../../../certs/dh1024.dat", sink); // win32 Debug dir
-            if (sink.size() == 0)
+    std::string name = "../certs/dh1024.dat";
+    Source source;
+    FileSource(name, source);
+    if (source.size() == 0) {
+        FileSource("../../certs/dh1024.dat", source);  // for testsuite
+        if (source.size() == 0) {
+            FileSource("../../../certs/dh1024.dat", source); // win32 Debug dir
+            if (source.size() == 0)
                 err_sys("where's your certs dir?", -79);
         }
     }
-    HexDecoder hDec(sink);
+    HexDecoder hDec(source);
 
-    DH dh(sink);
+    DH dh(source);
 
     byte pub[128];
     byte priv[128];
@@ -578,6 +646,45 @@ int dh_test()
     
     if ( memcmp(agree, agree2, dh.GetByteLength()) )
         return -80;
+
+    return 0;
+}
+
+
+int dsa_test()
+{
+    std::string name = "../certs/dsa512.der";
+    Source source;
+    FileSource(name, source);
+    if (source.size() == 0) {
+        FileSource("../../certs/dsa512.der", source);  // for testsuite
+        if (source.size() == 0) {
+            FileSource("../../../certs/dsa512.der", source); // win32 Debug dir
+            if (source.size() == 0)
+                err_sys("where's your certs dir?", -89);
+        }
+    }
+
+    const char msg[] = "this is the message";
+    byte signature[80];
+
+    DSA_PrivateKey priv(source);
+    DSA_Signer signer(priv);
+    word32 signLen = signer.Sign((byte*)msg, sizeof(msg), signature, rng);
+
+    byte encoded[sizeof(signature) + 16];
+    byte decoded[sizeof(encoded)];
+
+    word32 encSz = EncodeDSA_Signature(signer.GetR(), signer.GetS(), encoded);
+    DecodeDSA_Signature(decoded, encoded, encSz);
+
+    assert(memcmp(decoded, signature, signLen) == 0);
+
+    DSA_PublicKey pub(priv);
+    DSA_Verifier verifier(pub);
+
+    if (!verifier.Verify((byte*)msg, sizeof(msg), signature))
+        return -90;
 
     return 0;
 }

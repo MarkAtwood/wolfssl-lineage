@@ -6,5 +6,5 @@ testsuite_SOURCES  = testsuite.cpp ../taocrypt/test/test.cpp \
 	../examples/echoserver/echoserver.cpp
 testsuite_LDFLAGS  = -L../src/ -L../taocrypt/src
 testsuite_CXXFLAGS = -DNO_MAIN_DRIVER
-testsuite_LDADD    = -lyassl -ltaocrypt -lpthread
+testsuite_LDADD    = -lyassl -ltaocrypt -lpthread $(EXTRA_SOCKET)
 EXTRA_DIST = testsuite.dsp test.hpp input quit

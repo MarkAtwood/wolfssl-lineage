@@ -2759,48 +2759,33 @@ Integer::Integer(const byte *encodedInteger, unsigned int byteCount,
 
 class BadBER {};
 
-// BER Decode Sink
-Integer::Integer(Sink& sink)
+// BER Decode Source
+Integer::Integer(Source& source)
     : reg_(2), sign_(POSITIVE)
 {
-    Decode(sink);
+    Decode(source);
 }
 
-void Integer::Decode(Sink& sink)
+void Integer::Decode(Source& source)
 {
-    byte b = sink.next();
+    byte b = source.next();
     if (b != INTEGER)  
         throw BadBER();
 
-    /*
-    unsigned int length(0);
-    b = sink.next();
+    word32 length = GetLength(source);
 
-    if (b >= LONG_LENGTH) {        
-        unsigned int bytes = b & 0x7F;
-
-        while (bytes--) {
-            b = sink.next();
-            length = (length << 8) | b;
-        }
-    }
-    else
-        length = b;
-    */
-    word32 length = GetLength(sink);
-
-    if ( (b = sink.next()) == 0x00)
+    if ( (b = source.next()) == 0x00)
         length--;
     else
-        sink.prev();
+        source.prev();
  
     unsigned int words = (length + WORD_SIZE - 1) / WORD_SIZE;
     words = RoundupSize(words);
     if (words > reg_.size()) reg_.CleanNew(words);
 
     for (int j = length; j > 0; j--) {
-        b = sink.next();
-        reg_ [(j-1) / WORD_SIZE] |= b << ((j-1) % WORD_SIZE) * 8;
+        b = source.next();
+        reg_ [(j-1) / WORD_SIZE] |= (word)b << ((j-1) % WORD_SIZE) * 8;
     }
 }
 
@@ -2823,13 +2808,13 @@ void Integer::Decode(const byte* input, unsigned int inputLen, Signedness s)
     for (unsigned int i=inputLen; i > 0; i--)
     {
         b = input[idx++];
-        reg_[(i-1)/WORD_SIZE] |= b << ((i-1)%WORD_SIZE)*8;
+        reg_[(i-1)/WORD_SIZE] |= (word)b << ((i-1)%WORD_SIZE)*8;
     }
 
     if (sign_ == NEGATIVE)
     {
         for (unsigned i=inputLen; i<reg_.size()*WORD_SIZE; i++)
-            reg_[i/WORD_SIZE] |= 0xff << (i%WORD_SIZE)*8;
+            reg_[i/WORD_SIZE] |= (word)0xff << (i%WORD_SIZE)*8;
         TwosComplement(reg_.get_buffer(), reg_.size());
     }
 }

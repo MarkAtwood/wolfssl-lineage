@@ -68,15 +68,15 @@ void DH::Agree(byte* agree, const byte* priv, const byte* otherPub)
 }
 
 
-DH::DH(Sink& sink)
+DH::DH(Source& source)
 {
-    Initialize(sink);
+    Initialize(source);
 }
 
 
-void DH::Initialize(Sink& sink)
+void DH::Initialize(Source& source)
 {
-    DH_Decoder decoder(sink);
+    DH_Decoder decoder(source);
     decoder.Decode(*this);
 }
 

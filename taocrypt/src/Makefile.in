@@ -35,6 +35,9 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+build_triplet = @build@
+host_triplet = @host@
+target_triplet = @target@
 ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
@@ -54,6 +57,7 @@ ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EXEEXT = @EXEEXT@
+EXTRA_SOCKET = @EXTRA_SOCKET@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
@@ -85,10 +89,18 @@ am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
 bindir = @bindir@
+build = @build@
 build_alias = @build_alias@
+build_cpu = @build_cpu@
+build_os = @build_os@
+build_vendor = @build_vendor@
 datadir = @datadir@
 exec_prefix = @exec_prefix@
+host = @host@
 host_alias = @host_alias@
+host_cpu = @host_cpu@
+host_os = @host_os@
+host_vendor = @host_vendor@
 includedir = @includedir@
 infodir = @infodir@
 install_sh = @install_sh@
@@ -102,13 +114,17 @@ program_transform_name = @program_transform_name@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
+target = @target@
 target_alias = @target_alias@
+target_cpu = @target_cpu@
+target_os = @target_os@
+target_vendor = @target_vendor@
 INCLUDES = -I../include
 
 lib_LIBRARIES = libtaocrypt.a
 libtaocrypt_a_SOURCES = aes.cpp aestables.cpp algebra.cpp arc4.cpp asn.cpp \
-	coding.cpp dh.cpp des.cpp file.cpp hash.cpp integer.cpp md5.cpp \
-	misc.cpp random.cpp rsa.cpp sha.cpp
+	coding.cpp dh.cpp des.cpp dsa.cpp file.cpp hash.cpp integer.cpp \
+	md2.cpp md5.cpp misc.cpp random.cpp rsa.cpp sha.cpp
 
 EXTRA_DIST = ../include ../test/memory.cpp
 subdir = taocrypt/src
@@ -121,9 +137,9 @@ libtaocrypt_a_AR = $(AR) cru
 libtaocrypt_a_LIBADD =
 am_libtaocrypt_a_OBJECTS = aes.$(OBJEXT) aestables.$(OBJEXT) \
 	algebra.$(OBJEXT) arc4.$(OBJEXT) asn.$(OBJEXT) coding.$(OBJEXT) \
-	dh.$(OBJEXT) des.$(OBJEXT) file.$(OBJEXT) hash.$(OBJEXT) \
-	integer.$(OBJEXT) md5.$(OBJEXT) misc.$(OBJEXT) random.$(OBJEXT) \
-	rsa.$(OBJEXT) sha.$(OBJEXT)
+	dh.$(OBJEXT) des.$(OBJEXT) dsa.$(OBJEXT) file.$(OBJEXT) \
+	hash.$(OBJEXT) integer.$(OBJEXT) md2.$(OBJEXT) md5.$(OBJEXT) \
+	misc.$(OBJEXT) random.$(OBJEXT) rsa.$(OBJEXT) sha.$(OBJEXT)
 libtaocrypt_a_OBJECTS = $(am_libtaocrypt_a_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir)
@@ -133,8 +149,9 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/algebra.Po ./$(DEPDIR)/arc4.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/asn.Po ./$(DEPDIR)/coding.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/des.Po ./$(DEPDIR)/dh.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/file.Po ./$(DEPDIR)/hash.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/integer.Po ./$(DEPDIR)/md5.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/dsa.Po ./$(DEPDIR)/file.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/hash.Po ./$(DEPDIR)/integer.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/md2.Po ./$(DEPDIR)/md5.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/misc.Po ./$(DEPDIR)/random.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/rsa.Po ./$(DEPDIR)/sha.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -206,9 +223,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/coding.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/des.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dh.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dsa.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/integer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/random.Po@am__quote@

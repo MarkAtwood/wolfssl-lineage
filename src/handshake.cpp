@@ -39,7 +39,7 @@ void buildClientHello(SSL& ssl, ClientHello& hello,
     ssl.getCrypto().get_random().Fill(hello.random_, RAN_LEN);
     if (ssl.getSecurity().get_resuming()) {
         hello.id_len_ = ID_LEN;
-        memcpy(hello.session_id_, ssl.getSecurity().get_resume().getID(),
+        memcpy(hello.session_id_, ssl.getSecurity().get_resume().GetID(),
                ID_LEN);
     }
     else 
@@ -64,7 +64,7 @@ void buildServerHello(SSL& ssl, ServerHello& hello)
     if (ssl.getSecurity().get_resuming()) {
         memcpy(hello.random_,ssl.getSecurity().get_connection().server_random_,
                RAN_LEN);
-        memcpy(hello.session_id_, ssl.getSecurity().get_resume().getID(),
+        memcpy(hello.session_id_, ssl.getSecurity().get_resume().GetID(),
                ID_LEN);
     }
     else {
@@ -359,12 +359,16 @@ void p_hash(output_buffer& result, const output_buffer& secret,
 
     if (lastLen) times += 1;
 
-    if (hash == md5)
-        hmac = std::auto_ptr<Digest>(new HMAC_MD5(secret.get_buffer(),
+    if (hash == md5) {
+        std::auto_ptr<Digest> tmp(new HMAC_MD5(secret.get_buffer(),
                                                secret.get_size()));
-    else
-        hmac = std::auto_ptr<Digest>(new HMAC_SHA(secret.get_buffer(),
+        hmac = tmp;
+    }
+    else {
+        std::auto_ptr<Digest> tmp(new HMAC_SHA(secret.get_buffer(),
                                                secret.get_size()));
+        hmac = tmp;
+    }
                                                                    // A0 = seed
     hmac->get_digest(previous, seed.get_buffer(), seed.get_size());// A1
     uint lastTime = times - 1;
@@ -522,12 +526,16 @@ void TLS_hmac(SSL& ssl, byte* digest, const byte* buffer, uint sz,
     c16toa(sz, length);
     c32toa(ssl.get_SEQIncrement(verify), &seq[sizeof(uint32)]);
 
-    if (ssl.getSecurity().get_parms().mac_algorithm_ == sha)
-        hmac = std::auto_ptr<Digest>(new HMAC_SHA(ssl.get_macSecret(verify),
+    if (ssl.getSecurity().get_parms().mac_algorithm_ == sha) {
+        std::auto_ptr<Digest> tmp(new HMAC_SHA(ssl.get_macSecret(verify),
                                   SHA_LEN));
-    else
-        hmac = std::auto_ptr<Digest>(new HMAC_MD5(ssl.get_macSecret(verify),
+        hmac = tmp;
+    }
+    else {
+        std::auto_ptr<Digest> tmp(new HMAC_MD5(ssl.get_macSecret(verify),
                                   MD5_LEN));
+        hmac = tmp;
+    }
     hmac->update(seq, SEQ_SZ);                                       // seq_num
     inner[0] = content;                                              // type
     inner[SIZEOF_ENUM] = ssl.getSecurity().get_connection().version_.major_;  
@@ -588,16 +596,24 @@ void build_certHashes(SSL& ssl, Hashes& hashes)
 }
 
 
-// process input requests
-void processReply(SSL& ssl)
-{
-    ssl.getSocket().wait();                  // wait for input
-    uint ready = ssl.getSocket().get_ready();
-    if (!ready) return;
+std::auto_ptr<input_buffer> null_buffer;
 
-    input_buffer buffer(ready);
-    uint read  = ssl.getSocket().receive(buffer.get_buffer(),
-                                         buffer.get_capacity());
+// do process input requests
+std::auto_ptr<input_buffer>
+DoProcessReply(SSL& ssl, std::auto_ptr<input_buffer> buffered)
+{
+    ssl.getSocket().wait();                  // wait for input if blocking
+    uint ready = ssl.getSocket().get_ready();
+    if (!ready) return buffered;
+
+    uint buffSz = buffered.get() ? buffered.get()->get_size() : 0;
+    input_buffer buffer(buffSz + ready);
+    if (buffSz) {
+        buffer.assign(buffered.get()->get_buffer(), buffSz);
+        buffered = null_buffer;
+    }
+
+    uint read  = ssl.getSocket().receive(buffer.get_buffer() + buffSz, ready);
     buffer.add_size(read);
     uint offset = 0;
     const MessageFactory& mf = ssl.getFactory().getMessage();
@@ -607,6 +623,15 @@ void processReply(SSL& ssl)
         RecordLayerHeader hdr;
         buffer >> hdr;
         ssl.verifyState(hdr);
+
+        // make sure we have enough input in buffer to process this record
+        if (hdr.length_ > buffer.get_remaining()) { 
+            uint sz = buffer.get_remaining() + RECORD_HEADER;
+            std::auto_ptr<input_buffer> tmp(new input_buffer(sz,
+              buffer.get_buffer() + buffer.get_current() - RECORD_HEADER, sz));
+            buffered = tmp;
+            break;
+        }
 
         while (buffer.get_current() < hdr.length_ + RECORD_HEADER + offset) {
             // each message in record
@@ -618,6 +643,17 @@ void processReply(SSL& ssl)
         }
         offset += hdr.length_ + RECORD_HEADER;
     }
+    return buffered;  // done, don't call again
+}
+
+
+// process input requests
+void processReply(SSL& ssl)
+{   
+    std::auto_ptr<input_buffer> buffered;
+
+    while ( (buffered = DoProcessReply(ssl, buffered)).get() )
+        ; // keep procssing
 }
 
 

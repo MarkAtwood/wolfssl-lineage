@@ -30,7 +30,7 @@
 #include <algorithm>        // std::swap
 #include <stdexcept>        // std::runtime_error
 #include <string.h>         // memcpy
-#include <limits>           // std::numeric_limits
+//#include <limits>           // std::numeric_limits some std_libs don't have
 #include "misc.hpp"
 
 
@@ -63,8 +63,9 @@ public:
     const_pointer address(const_reference r) const {return (&r); }
     void          construct(pointer p, const T& val) {new (p) T(val);}
     void          destroy(pointer p) {p->~T();}
-    size_type     max_size() const {return std::numeric_limits<T>::max();}
-   
+    size_type     max_size() const {return ~size_type(0)/sizeof(T);}
+    //size_type     max_size() const {return std::numeric_limits<T>::max();}
+    // will use numeric_limits when better supported    
 protected:
     static void CheckSize(size_t n)
     {
@@ -204,8 +205,9 @@ private:
 };
 
 
-typedef Block<byte> ByteBlock;
-typedef Block<word> WordBlock;
+typedef Block<byte>   ByteBlock;
+typedef Block<word>   WordBlock;
+typedef Block<word32> Word32Block;
 
 
 } // namespace

@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 namespace TaoCrypt {
 
@@ -542,8 +543,7 @@ inline T GetWord(bool assumeAligned, ByteOrder order, const byte *block)
 {
     if (assumeAligned)
     {
-        //assert(IsAligned<T>(block)); // only now for DES and AES
-                                       // gcc may not align, works anyway TODO: 
+        assert(IsAligned<T>(block));
         return ByteReverseIf(*reinterpret_cast<const T *>(block), order);
     }
     else

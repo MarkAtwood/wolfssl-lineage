@@ -1,4 +1,4 @@
-/* sha.hpp                                
+/* md5.hpp                                
  *
  * Copyright (C) 2003 Sawtooth Consulting Ltd.
  *
@@ -19,47 +19,49 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-/* sha.hpp provides SHA-1 digests, see RFC 3174
+/* md2.hpp provides MD2 digest support, see RFC 1319
 */
 
-#ifndef TAO_CRYPT_SHA_HPP
-#define TAO_CRYPT_SHA_HPP
+#ifndef TAO_CRYPT_MD2_HPP
+#define TAO_CRYPT_MD2_HPP
+
 
 #include "hash.hpp"
+#include "block.hpp"
+
 
 namespace TaoCrypt {
 
 
-// SHA-1 digest
-class SHA : public HASHwithTransform {
+// MD2 digest
+class MD2 : public HASH {
 public:
-    enum { BLOCK_SIZE = 64, DIGEST_SIZE = 20, PAD_SIZE = 56,
-           TAO_BYTE_ORDER = BigEndianOrder};   // in Bytes
-    SHA() : HASHwithTransform(DIGEST_SIZE / sizeof(word32), BLOCK_SIZE)
-                { Init(); }
-    ByteOrder getByteOrder()  const { return ByteOrder(TAO_BYTE_ORDER); }
-    word32    getBlockSize()  const { return BLOCK_SIZE; }
-    word32    getDigestSize() const { return DIGEST_SIZE; }
-    word32    getPadSize()    const { return PAD_SIZE; }
+    enum { BLOCK_SIZE = 16, DIGEST_SIZE = 16, PAD_SIZE = 16, X_SIZE = 48 };
+    MD2();
+
+    word32 getBlockSize()  const { return BLOCK_SIZE; }
+    word32 getDigestSize() const { return DIGEST_SIZE; }
+
+    void Update(const byte*, word32);
+    void Final(byte*);
 
     void Init();
-
-    SHA(const SHA&);
-    SHA& operator= (const SHA&);
-
-    void Swap(SHA&);
+    void Swap(MD2&);
 private:
-    void Transform();
+    ByteBlock X_, C_, buffer_;
+    word32    count_;           // bytes % PAD_SIZE
+
+    MD2(const MD2&);
+    MD2& operator=(const MD2&);
 };
 
-
-inline void swap(SHA& a, SHA& b)
+inline void swap(MD2& a, MD2& b)
 {
     a.Swap(b);
 }
 
+
 } // namespace
 
-
-#endif // TAO_CRYPT_SHA_HPP
+#endif // TAO_CRYPT_MD2_HPP
 

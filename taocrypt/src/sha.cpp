@@ -63,7 +63,8 @@ void SHA::Init()
 }
 
 
-SHA::SHA(const SHA& that) : HASH(DIGEST_SIZE / sizeof(word32), BLOCK_SIZE) 
+SHA::SHA(const SHA& that) : HASHwithTransform(DIGEST_SIZE / sizeof(word32),
+                                              BLOCK_SIZE) 
 { 
     buffLen_ = that.buffLen_;
     length_  = that.length_;

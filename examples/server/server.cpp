@@ -30,11 +30,14 @@ THREAD_RETURN YASSL_API server_test(void* args)
 
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
     set_serverCerts(ctx);
+    //set_dsaServerCerts(ctx);
+    set_tmpDH(ctx);
 
     SSL* ssl = SSL_new(ctx);
     SSL_set_fd(ssl, clientfd);
    
     if (SSL_accept(ssl) != SSL_SUCCESS) err_sys("SSL_accept failed");
+    showPeer(ssl);
     printf("Using Cipher Suite %s\n", SSL_get_cipher(ssl));
 
     char command[1024];

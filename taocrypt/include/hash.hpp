@@ -34,16 +34,28 @@ namespace TaoCrypt {
 // HASH
 class HASH {
 public:
-    HASH(word32 digSz, word32 buffSz) 
-        : digest_(new word32[digSz]), buffer_(new byte[buffSz]) {}
-    virtual ~HASH() { delete[] buffer_; delete[] digest_; }
+    virtual ~HASH() {}
 
-    virtual ByteOrder getByteOrder()  const = 0;
-    virtual word32    getBlockSize()  const = 0;
-    virtual word32    getDigestSize() const = 0;
-    virtual word32    getPadSize()    const = 0;
+    virtual void Update(const byte*, word32) = 0;
+    virtual void Final(byte*)                = 0;
 
     virtual void Init() = 0;
+
+    virtual word32 getBlockSize()  const = 0;
+    virtual word32 getDigestSize() const = 0;
+};
+
+
+// HASH with Transform
+class HASHwithTransform : public HASH {
+public:
+    HASHwithTransform(word32 digSz, word32 buffSz) 
+        : digest_(new word32[digSz]), buffer_(new byte[buffSz]) {}
+    virtual ~HASHwithTransform() { delete[] buffer_; delete[] digest_; }
+
+    virtual ByteOrder getByteOrder()  const = 0;
+    virtual word32    getPadSize()    const = 0;
+
     virtual void Update(const byte*, word32);
     virtual void Final(byte*);
 protected:

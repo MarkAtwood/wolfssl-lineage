@@ -1,6 +1,25 @@
 AC_INIT
-AM_INIT_AUTOMAKE(yassl,0.9.2)
+AC_CANONICAL_SYSTEM
+AM_INIT_AUTOMAKE(yassl,0.9.5)
+
+
 AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_RANLIB
+
+
+
+CXXFLAGS="-g -Wall"
+AC_SUBST(CXXFLAGS)
+
+if expr "$host_os" : "solaris" > /dev/null
+then
+    EXTRA_SOCKET="-lnsl -lsocket"
+else
+    EXTRA_SOCKET=""
+fi
+AC_SUBST(EXTRA_SOCKET)
+
+
+
 AC_OUTPUT(Makefile taocrypt/Makefile taocrypt/src/Makefile taocrypt/test/Makefile src/Makefile examples/Makefile examples/client/Makefile examples/server/Makefile examples/echoclient/Makefile examples/echoserver/Makefile testsuite/Makefile)

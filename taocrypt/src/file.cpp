@@ -20,7 +20,6 @@
  */
 
 /* file.cpp implements File Sources and Sinks
-   and a general pupose Sink also usuable as a Source
 */
 
 #include "file.hpp"
@@ -55,28 +54,29 @@ word32 FileSource::size_left()
 }
 
 
-// fill file source from sink
-word32 FileSource::get(Sink& sink)
+// fill file source from source
+word32 FileSource::get(Source& source)
 {
     word32 sz(size());
-    if (sink.size() < sz)
-        sink.grow(sz);
+    if (source.size() < sz)
+        source.grow(sz);
 
-    file_.read(reinterpret_cast<char*>(sink.buffer_.get_buffer()), sz);
+    file_.read(reinterpret_cast<char*>(source.buffer_.get_buffer()), sz);
 
     return sz;
 }
 
 
-// fill file sink from input (sink which is a source, maybe change naming??)
-void FileSink::put(Sink& sink)
+// fill source from file sink
+void FileSink::put(Source& source)
 {
-    file_.write(reinterpret_cast<const char*>(sink.get_buffer()), sink.size());
+    file_.write(reinterpret_cast<const char*>(source.get_buffer()),
+                                              source.size());
 }
 
 
 // swap with other and reset to beginning
-void Sink::reset(ByteBlock& otherBlock)
+void Source::reset(ByteBlock& otherBlock)
 {
     buffer_.swap(otherBlock);   
     current_ = 0;

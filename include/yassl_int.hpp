@@ -125,15 +125,33 @@ private:
 };
 
 
-// openSSL X509
-struct X509 {
-    // TODO: add NAME elements and CTX
+// openSSL X509 names
+class X509_NAME {
+    char* name_;
+public:
+    X509_NAME(const char*, size_t sz);
+    ~X509_NAME();
+
+    char* GetName();
+private:
+    X509_NAME(const X509_NAME&);                // hide copy
+    X509_NAME& operator=(const X509_NAME&);     // and assign
 };
 
 
-// openSSL X509 names
-struct X509_NAME {
-    // TODO: name part
+// openSSL X509
+class X509 {
+    X509_NAME issuer_;
+    X509_NAME subject_;
+public:
+    X509(const char* i, size_t, const char* s, size_t);
+    ~X509() {}
+
+    X509_NAME* GetIssuer();
+    X509_NAME* GetSubject();
+private:
+    X509(const X509&);              // hide copy
+    X509& operator=(const X509&);   // and assign
 };
 
 
@@ -157,11 +175,12 @@ public:
     SSL_SESSION(const SSL&, RandomPool&);
     ~SSL_SESSION();
 
-    const opaque* getID()      const;
-    const opaque* getSecret()  const;
-    const Cipher* getSuite()   const;
-          uint    getBornOn()  const;
-          uint    getTimeOut() const;
+    const opaque* GetID()      const;
+    const opaque* GetSecret()  const;
+    const Cipher* GetSuite()   const;
+          uint    GetBornOn()  const;
+          uint    GetTimeOut() const;
+          void    SetTimeOut(uint);
 
     SSL_SESSION& operator=(const SSL_SESSION&); // allow assign for resumption
 private:
@@ -174,15 +193,12 @@ class Sessions {
     std::list<SSL_SESSION*> list_;
     RandomPool random_;                 // for session cleaning
     Mutex      mutex_;                  // no-op for single threaded
-    uint       timeout_;                // in seconds from creation
 
     Sessions() {}                       // only GetSessions can create
 public: 
     SSL_SESSION* lookup(const opaque*, SSL_SESSION* copy = 0);
     void         add(const SSL&);
     void         remove(const opaque*);
-
-    uint get_timeOut() const;
 
     ~Sessions();
 
@@ -220,6 +236,28 @@ private:
 };
 
 
+struct Ciphers {
+    bool        setSuites_;             // user set suites from default
+    byte        suites_[MAX_SUITE_SZ];  // new suites
+    int         suiteSz_;               // suite length in bytes
+
+    Ciphers() : setSuites_(false), suiteSz_(0) {}
+};
+
+
+struct DH;  // forward
+
+
+// save for SSL construction
+struct DH_Parms {
+    Integer p_;
+    Integer g_;
+    bool set_;   // if set by user
+
+    DH_Parms() : set_(false) {}
+};
+
+
 // the SSL context
 class SSL_CTX {
 public:
@@ -229,16 +267,22 @@ private:
     x509*       certificate_;
     x509*       privateKey_;
     CertList    caList_;
+    Ciphers     ciphers_;
+    DH_Parms    dhParms_;
 public:
     explicit SSL_CTX(SSL_METHOD* meth);
     ~SSL_CTX();
 
-    const x509*       getCert()   const;
-    const x509*       getKey()    const;
-    const SSL_METHOD* getMethod() const;
+    const x509*       getCert()     const;
+    const x509*       getKey()      const;
+    const SSL_METHOD* getMethod()   const;
+    const Ciphers&    GetCiphers()  const;
+    const DH_Parms&   GetDH_Parms() const;
 
     void setVerifyPeer();
     void setFailNoCert();
+    bool SetCipherList(const char*);
+    bool SetDH(const DH&);
 
     void            AddCA(x509* ca);
     const CertList& GetCA_List() const;
@@ -254,11 +298,11 @@ private:
 class Crypto {
     Digest*             digest_;                // agreed upon digest
     BulkCipher*         cipher_;                // agreed upon cipher
-    DiffieHellman*      dh_;                    // server dh parms
+    DiffieHellman*      dh_;                    // dh parms
     RandomPool          random_;                // random number generator
     CertManager         cert_;                  // manages certificates
 public:
-    Crypto();
+    explicit Crypto();
     ~Crypto();
 
     const Digest&        get_digest()      const;
@@ -273,9 +317,12 @@ public:
     RandomPool&    use_random();
     CertManager&   use_certManager();
 
-    void setDH(DiffieHellman*);
+    void SetDH(DiffieHellman*);
+    void SetDH(const DH_Parms&);
     void setDigest(Digest*);
     void setCipher(BulkCipher*);
+
+    bool DhSet();
 private:
     Crypto(const Crypto&);              // hide copy
     Crypto& operator=(const Crypto&);   // and assign
@@ -311,8 +358,8 @@ class Buffers {
     typedef std::list<input_buffer*>  inputList;
     typedef std::list<output_buffer*> outputList;
 
-    inputList  dataList_;                           // list of users app data
-    outputList handShakeList_;                      // buffered handshake msgs
+    inputList  dataList_;                // list of users app data / handshake
+    outputList handShakeList_;           // buffered handshake msgs
 public:
     Buffers() {}
     ~Buffers();
@@ -335,7 +382,7 @@ class Security {
     SSL_SESSION   resumeSession_;                 // if resuming
     bool          resuming_;                      // trying to resume
 public:
-    Security(ProtocolVersion pv, RandomPool& ran, ConnectionEnd ce);
+    Security(ProtocolVersion, RandomPool&, ConnectionEnd, const Ciphers&);
 
     const Connection&  get_connection() const;
     const Parameters&  get_parms()      const;

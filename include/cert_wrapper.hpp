@@ -42,6 +42,7 @@
 namespace yaSSL {
    
 typedef unsigned char opaque;
+class X509;                     // forward openSSL type
 
 using TaoCrypt::SignerList;
 
@@ -74,6 +75,7 @@ class CertManager {
 
     CertList     peerList_;         // peer
     input_buffer peerPublicKey_;
+    X509*        peerX509_;         // peer's openSSL X509
 
     SignerList   signers_;          // decoded CA keys and names
                                     //    plus verified chained certs
@@ -94,6 +96,7 @@ public:
     const x509*   get_cert()       const;
     const opaque* get_peerKey()    const;
     const opaque* get_privateKey() const;
+          X509*   get_peerX509()   const;
 
     uint get_peerKeyLength()       const;
     uint get_privateKeyLength()    const;

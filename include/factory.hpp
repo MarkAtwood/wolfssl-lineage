@@ -35,6 +35,15 @@
 #include "yassl_error.hpp"
 
 
+
+// VC60 workaround: it doesn't allow typename in some places
+#if defined(_MSC_VER) && (_MSC_VER < 1300)
+    #define CPP_TYPENAME
+#else
+    #define CPP_TYPENAME typename
+#endif
+
+
 namespace yaSSL {
 
 
@@ -53,7 +62,8 @@ public:
                                   ProductCreator>&)) { init(*this); }
     // return true if registration succeeds
     bool Register(const IdentifierType& id, ProductCreator pc)
-        { return callbacks_.insert(CallBackMap::value_type(id, pc)).second; }
+        { return callbacks_.insert(
+                        CPP_TYPENAME CallBackMap::value_type(id, pc)).second; }
 
     // return true if message id was previously registered
     bool UnRegister(const IdentifierType& id) 

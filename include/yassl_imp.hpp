@@ -292,8 +292,8 @@ private:
 
 // RSA Public Key
 struct ServerRSAParams {
-    opaque rsa_modulus_[RSA_MOD];
-    opaque rsa_exponent_[RSA_EXP];
+    opaque* rsa_modulus_;
+    opaque* rsa_exponent_;
 };
 
 
@@ -367,7 +367,7 @@ struct dsa_sa : public SignatureBase {
 // Server's Diffie-Hellman exchange
 class DH_Server : public ServerKeyBase {
     ServerDHParams  parms_;
-    opaque          signature_[RSA_KEA_SIG];   // signed rsa_sa hashes MAX size
+    opaque*         signature_;
 
     int             length_;                // total length of message
     opaque*         keyMessage_;            // total exchange message
@@ -388,7 +388,7 @@ private:
 // Server's RSA exchange
 struct RSA_Server : public ServerKeyBase {
     ServerRSAParams params_;
-    opaque          signature_[RSA_KEA_SIG];   // signed rsa_sa hashes
+    opaque*         signature_;   // signed rsa_sa hashes
 };
 
 
@@ -420,10 +420,9 @@ private:
 
 
 class CertificateRequest : public HandShakeBase  {
-    ClientCertificateType certificate_types_[CERT_TYPES];
-    int                   typeTotal_;
-    DistinguishedName*    certificate_authorities_;
-    int                   authTotal_;
+    ClientCertificateType         certificate_types_[CERT_TYPES];
+    int                           typeTotal_;
+    std::list<DistinguishedName>  certificate_authorities_;
 public:
     CertificateRequest();
     ~CertificateRequest();
@@ -639,6 +638,9 @@ private:
 };
 
 
+struct Ciphers;   // forward
+
+
 // TLSv1 Security Spec, defined on page 56 of RFC 2246
 struct Parameters {
     ConnectionEnd        entity_;
@@ -650,16 +652,18 @@ struct Parameters {
     MACAlgorithm         mac_algorithm_;
     uint8                hash_size_;
     CompressionMethod    compression_algorithm_;
-    KeyExchangeAlgorithm kea_;                        // yassl additions  
-    bool                 pending_; 
+    KeyExchangeAlgorithm kea_;                        // yassl additions
+    SignatureAlgorithm   sig_algo_;                   // signature auth type
+    bool                 pending_;                  
     bool                 resumable_;                  // new conns by session
     uint16               encrypt_size_;               // current msg encrypt sz
     Cipher               suite_[SUITE_LEN];           // choosen suite
     uint8                suites_size_;
     Cipher               suites_[MAX_SUITE_SZ];
     char                 cipher_name_[MAX_SUITE_NAME];
+    char                 cipher_list_[MAX_CIPHER_LIST];
 
-    Parameters(ConnectionEnd);
+    Parameters(ConnectionEnd, const Ciphers&);
 private:
     Parameters(const Parameters&);              // hide copy
     Parameters& operator=(const Parameters&);   // and assing

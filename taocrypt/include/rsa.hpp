@@ -32,7 +32,7 @@
 
 namespace TaoCrypt {
 
-class Sink;
+class Source;
 
 
 // Public Key Length helper
@@ -58,10 +58,10 @@ protected:
     Integer e_;
 public:
     RSA_PublicKey() {}
-    explicit RSA_PublicKey(Sink&);
+    explicit RSA_PublicKey(Source&);
 
     void Initialize(const Integer& n, const Integer& e) {n_ = n; e_ = e;}
-    void Initialize(Sink&);
+    void Initialize(Source&);
 
     Integer ApplyFunction(const Integer& x) const;
 
@@ -102,13 +102,13 @@ class RSA_PrivateKey : public RSA_PublicKey {
     Integer u_;
 public:
     RSA_PrivateKey() {}
-    explicit RSA_PrivateKey(Sink&);
+    explicit RSA_PrivateKey(Source&);
 
     void Initialize(const Integer& n,  const Integer& e, const Integer& d,
                     const Integer& p,  const Integer& q, const Integer& dp, 
                     const Integer& dq, const Integer& u)
         {n_ = n; e_ = e; d_ = d; p_ = p; q_ = q; dp_ = dp; dq_ = dq; u_ = u;}
-    void Initialize(Sink&);
+    void Initialize(Source&);
 
     Integer CalculateInverse(RandomNumberGenerator&, const Integer&) const;
 
@@ -153,10 +153,10 @@ public:
 // RSA Encryptor, can use any padding
 template<class Pad = RSA_BlockType2>
 class RSA_Encryptor {
-    RSA_PublicKey& key_;
-    Pad            padding_;
+    const RSA_PublicKey& key_;
+    Pad                  padding_;
 public:
-    explicit RSA_Encryptor(RSA_PublicKey& k) : key_(k) {}
+    explicit RSA_Encryptor(const RSA_PublicKey& k) : key_(k) {}
 
     void Encrypt(const byte*, word32, byte*, RandomNumberGenerator&);
     bool SSL_Verify(const byte* msg, word32 sz, const byte* sig);
@@ -166,10 +166,10 @@ public:
 // RSA Decryptor, can use any padding
 template<class Pad = RSA_BlockType2>
 class RSA_Decryptor {
-    RSA_PrivateKey& key_;
-    Pad             padding_;
+    const RSA_PrivateKey& key_;
+    Pad                   padding_;
 public:
-    explicit RSA_Decryptor(RSA_PrivateKey& k) : key_(k) {}
+    explicit RSA_Decryptor(const RSA_PrivateKey& k) : key_(k) {}
 
     word32 Decrypt(const byte*, word32, byte*, RandomNumberGenerator&);
     void   SSL_Sign(const byte*, word32, byte*, RandomNumberGenerator&);
@@ -216,7 +216,7 @@ word32 RSA_Decryptor<Pad>::Decrypt(const byte* cipher, word32 sz, byte* plain,
 }
 
 
-// Public SSL type (block 1) Encrypt
+// Private SSL type (block 1) Encrypt
 template<class Pad>
 void RSA_Decryptor<Pad>::SSL_Sign(const byte* message, word32 sz, byte* sig,
                                   RandomNumberGenerator& rng)
@@ -228,10 +228,10 @@ void RSA_Decryptor<Pad>::SSL_Sign(const byte* message, word32 sz, byte* sig,
 }
 
 
-word32 SSL_Decrypt(RSA_PublicKey& key, const byte* sig, byte* plain);
+word32 SSL_Decrypt(const RSA_PublicKey& key, const byte* sig, byte* plain);
 
 
-// Private SSL type (block 1) Decrypt
+// Public SSL type (block 1) Decrypt
 template<class Pad>
 bool RSA_Encryptor<Pad>::SSL_Verify(const byte* message, word32 sz,
                                     const byte* sig)

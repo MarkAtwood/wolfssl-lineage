@@ -49,7 +49,7 @@ void AES::SetKey(const byte* userKey, word32 keylen, CipherDir /*dummy*/)
     rounds_ = keylen/4 + 6;
     key_.New(4*(rounds_+1));
 
-    word temp, *rk = key_.get_buffer();
+    word32 temp, *rk = key_.get_buffer();
     unsigned int i=0;
 
     GetUserKey(BigEndianOrder, rk, keylen/4, userKey, keylen);
@@ -182,7 +182,7 @@ void AES::encrypt(const byte* inBlock, const byte* xorBlock,
                   byte* outBlock) const
 {
     word32 s0, s1, s2, s3, t0, t1, t2, t3;
-    const word *rk = key_.get_buffer();
+    const word32 *rk = key_.get_buffer();
 
     /*
      * map byte array block to cipher state
@@ -292,7 +292,7 @@ void AES::decrypt(const byte* inBlock, const byte* xorBlock,
                   byte* outBlock) const
 {
     word32 s0, s1, s2, s3, t0, t1, t2, t3;
-    const word* rk = key_.get_buffer();
+    const word32* rk = key_.get_buffer();
 
     /*
      * map byte array block to cipher state

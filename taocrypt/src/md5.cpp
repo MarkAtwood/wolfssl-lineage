@@ -39,7 +39,8 @@ void MD5::Init()
 }
 
 
-MD5::MD5(const MD5& that) : HASH(DIGEST_SIZE / sizeof(word32), BLOCK_SIZE) 
+MD5::MD5(const MD5& that) : HASHwithTransform(DIGEST_SIZE / sizeof(word32),
+                                              BLOCK_SIZE) 
 { 
     buffLen_ = that.buffLen_;
     length_  = that.length_;

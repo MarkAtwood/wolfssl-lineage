@@ -28,6 +28,7 @@
 #define yaSSL_BUFFER_HPP
 
 #include <cassert>              // assert
+#include <memory>            
 #include "yassl_error.hpp"      // Error
 
 

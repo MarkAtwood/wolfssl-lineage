@@ -23,7 +23,11 @@
  *
  *  TODO: notes are mostly api additions to allow compilation with mysql
  *  they don't affect normal modes but should be provided for completeness
+
+ *  stunnel functions at end of file
  */
+
+
 
 
 /*  see man pages for function descriptions */
@@ -39,6 +43,55 @@
 namespace yaSSL {
 
 
+SSL_METHOD* SSLv3_method()
+{
+    return SSLv3_client_method();
+}
+
+
+SSL_METHOD* SSLv3_server_method()
+{
+    return new SSL_METHOD(server_end, ProtocolVersion(3,0));
+}
+
+
+SSL_METHOD* SSLv3_client_method()
+{
+    return new SSL_METHOD(client_end, ProtocolVersion(3,0));
+}
+
+
+SSL_METHOD* TLSv1_server_method()
+{
+    return new SSL_METHOD(server_end, ProtocolVersion(3,1));
+}
+
+
+SSL_METHOD* TLSv1_client_method()
+{
+    return new SSL_METHOD(client_end, ProtocolVersion(3,1));
+}
+
+
+SSL_METHOD* SSLv23_server_method()
+{
+    // compatibility only, no version 2 support
+    return SSLv3_server_method();
+}
+
+
+SSL_CTX* SSL_CTX_new(SSL_METHOD* method)
+{
+    return new SSL_CTX(method);
+}
+
+
+void SSL_CTX_free(SSL_CTX* ctx)
+{
+    delete ctx;
+}
+
+
 SSL* SSL_new(SSL_CTX* ctx)
 {
     try {
@@ -47,6 +100,12 @@ SSL* SSL_new(SSL_CTX* ctx)
     catch (...) {
         return 0;
     }
+}
+
+
+void SSL_free(SSL* ssl)
+{
+    delete ssl;
 }
 
 
@@ -135,7 +194,8 @@ int SSL_accept(SSL* ssl)
 
             if (ssl->getSecurity().get_connection().send_server_key_)
                 sendServerKeyExchange(*ssl);
-            else if(ssl->getCrypto().get_certManager().verifyPeer())
+
+            if(ssl->getCrypto().get_certManager().verifyPeer())
                 sendCertificateRequest(*ssl);
 
             sendServerHelloDone(*ssl);
@@ -171,12 +231,6 @@ int SSL_do_handshake(SSL* ssl)
 }
 
 
-void SSL_free(SSL* ssl)
-{
-    delete ssl;
-}
-
-
 int SSL_clear(SSL* ssl)
 {
     ssl->useSocket().closeSocket();
@@ -187,7 +241,8 @@ int SSL_clear(SSL* ssl)
 int SSL_shutdown(SSL* ssl)
 {
     try {
-        sendAlert(*ssl, Alert(warning, close_notify));
+        Alert alert(warning, close_notify);
+        sendAlert(*ssl, alert);
         ssl->useLog().ShowTCP(ssl->getSocket().get_fd(), true);
         ssl->useSocket().closeSocket();
 
@@ -217,15 +272,16 @@ int SSL_set_session(SSL* ssl, SSL_SESSION* session)
 }
 
 
-long SSL_SESSION_set_timeout(SSL_SESSION*, long)
+int SSL_session_reused(SSL* ssl)
 {
-    return SSL_NOT_IMPLEMENTED;  // TODO
+    return ssl->getSecurity().get_resuming();
 }
 
 
-long SSL_CTX_get_session_cache_mode(SSL_CTX*)
+long SSL_SESSION_set_timeout(SSL_SESSION* sess, long t)
 {
-    return SSL_NOT_IMPLEMENTED;  // TODO:
+    sess->SetTimeOut(t);
+    return SSL_SUCCESS;
 }
 
 
@@ -247,28 +303,39 @@ const char* SSL_get_cipher(SSL* ssl)
 }
 
 
+// SSLv2 only, not implemented
 char* SSL_get_shared_ciphers(SSL* /*ssl*/, char* buf, int len)
 {
     return strncpy(buf, "Not Implemented, SSLv2 only", len);
 }
 
 
-const char* SSL_get_cipher_list(SSL* /* ssl */, int /* priority */)
+const char* SSL_get_cipher_list(SSL* ssl, int /*priority */)
 {
-    return 0;  // TODO:
+    return ssl->getSecurity().get_parms().cipher_list_;
 }
 
 
-
-const char* SSL_get_version(SSL*)
+int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 {
-    static const char* version = "SSLv3";
-    return version;
+    if (ctx->SetCipherList(list))
+        return SSL_SUCCESS;
+    else
+        return SSL_FAILURE;
+}
+
+
+const char* SSL_get_version(SSL* ssl)
+{
+    static const char* version3 =  "SSLv3";
+    static const char* version31 = "TLSv1";
+
+    return ssl->isTLS() ? version31 : version3;
 }
 
 const char* SSLeay_version(int)
 {
-    static const char* version = "SSLeay yassl compatibility";
+    static const char* version = "SSLeay yaSSL compatibility";
     return version;
 }
 
@@ -279,17 +346,16 @@ int SSL_get_error(SSL* ssl, int /*previous*/)
 }
 
 
-X509* SSL_get_peer_certificate(SSL* /*ssl*/)
+X509* SSL_get_peer_certificate(SSL* ssl)
 {
-    // TODO: return peer cert from manager in X509
-    //ssl->getCrypto().get_certManager().getPeerCert in X509
-    return 0;
+    return ssl->getCrypto().get_certManager().get_peerX509();
 }
 
 
-void X509_free(X509* x)
+void X509_free(X509* /*x*/)
 {
-    delete x;
+    // peer cert set for deletion during destruction
+    // no need to delete now
 }
 
 
@@ -305,124 +371,61 @@ int X509_STORE_CTX_get_error(X509_STORE_CTX* ctx)
 }
 
 
-int X509_STORE_CTX_get_error_depth(X509_STORE_CTX* /*ctx*/)
+int X509_STORE_CTX_get_error_depth(X509_STORE_CTX* ctx)
 {
-    // TODO: add depth
-    return 0;
+    return ctx->error_depth;
 }
 
 
-char* X509_NAME_oneline(X509_NAME* /*name*/, char* buffer, int /*sz*/)
+#ifdef min
+    #undef min
+#endif 
+
+template<typename T>
+inline T min(T a, T b)
 {
-    // TODO: return first line in buffer of size sz, may need to creat
-    // !!!  malloc or new, caller responsible for freeing???
+    return a < b ? a : b;
+}
+
+
+// copy name into buffer, at most sz bytes, if buffer is null
+// will malloc buffer, caller responsible for freeing
+char* X509_NAME_oneline(X509_NAME* name, char* buffer, int sz)
+{
+    if (!name->GetName()) return buffer;
+
+    int len    = strlen(name->GetName()) + 1;
+    int copySz = min(len, sz);
+
+    if (!buffer) {
+        buffer = (char*)malloc(len);
+        copySz = len;
+    }
+
+    if (copySz == 0)
+        return buffer;
+
+    memcpy(buffer, name->GetName(), copySz - 1);
+    buffer[copySz - 1] = 0;
+
     return buffer;
 }
 
 
-X509_NAME* X509_get_issuer_name(X509*)
+X509_NAME* X509_get_issuer_name(X509* x)
 {
-    // TODO: return issue name in X509_NAME format
-    return 0;
+    return  x->GetIssuer();
 }
 
 
-X509_NAME* X509_get_subject_name(X509*)
+X509_NAME* X509_get_subject_name(X509* x)
 {
-    // TODO: return subject name in X509_NAME format
-    return 0;
-}
-
-
-int X509_LOOKUP_add_dir(X509_LOOKUP*, const char*, long)
-{
-    // TODO:
-    return SSL_SUCCESS;
-}
-
-
-int X509_LOOKUP_load_file(X509_LOOKUP*, const char*, long)
-{
-    // TODO:
-    return SSL_SUCCESS;
-}
-
-
-X509_LOOKUP_METHOD* X509_LOOKUP_hash_dir(void)
-{
-    // TODO:
-    return 0;
-}
-
-
-X509_LOOKUP_METHOD* X509_LOOKUP_file(void)
-{
-    // TODO:
-    return 0;
-}
-
-
-X509_LOOKUP* X509_STORE_add_lookup(X509_STORE*, X509_LOOKUP_METHOD*)
-{
-    // TODO:
-    return 0;
-}
-
-
-X509_STORE* X509_STORE_new(void)
-{
-    // TODO:
-    return 0;
-}
-
-
-int X509_STORE_get_by_subject(X509_STORE_CTX*, int, X509_NAME*, X509_OBJECT*)
-{
-    // TODO:
-    return SSL_SUCCESS;
+    return x->GetSubject();
 }
 
 
 void SSL_load_error_strings()   // compatibility only 
-{
-}
-
-
-SSL_METHOD* SSLv3_method()
-{
-    return SSLv3_client_method();
-}
-
-
-SSL_METHOD* SSLv3_server_method()
-{
-    return new SSL_METHOD(server_end, ProtocolVersion(3,0));
-}
-
-
-SSL_METHOD* SSLv3_client_method()
-{
-    return new SSL_METHOD(client_end, ProtocolVersion(3,0));
-}
-
-
-SSL_METHOD* TLSv1_server_method()
-{
-    return new SSL_METHOD(server_end, ProtocolVersion(3,1));
-}
-
-
-SSL_METHOD* TLSv1_client_method()
-{
-    return new SSL_METHOD(client_end, ProtocolVersion(3,1));
-}
-
-
-SSL_METHOD* SSLv23_server_method()
-{
-    // compatibility only, no version 2 support
-    return SSLv3_server_method();
-}
+{}
 
 
 void SSL_set_connect_state(SSL*)
@@ -436,63 +439,34 @@ void SSL_set_accept_state(SSL* ssl)
     ssl->useSecurity().use_parms().entity_ = server_end;
 }
 
+
 long SSL_get_verify_result(SSL*)
 {
-    // TODO: verify if peer checked
+    // won't get here if not OK
     return X509_V_OK;
-}
-
-
-int SSL_session_reused(SSL*)
-{
-    return 0;  // TODO:
-}
-
-
-SSL_CTX* SSL_CTX_new(SSL_METHOD* method)
-{
-    return new SSL_CTX(method);
-}
-
-
-void SSL_CTX_free(SSL_CTX* ctx)
-{
-    delete ctx;
 }
 
 
 long SSL_CTX_sess_set_cache_size(SSL_CTX* /*ctx*/, long /*sz*/)
 {
-    // TODO:
-    return SSL_NOT_IMPLEMENTED;
-}
-
-
-long SSL_CTX_set_tmp_dh(SSL_CTX*, DH*)
-{
-    // TODO:
-    return SSL_NOT_IMPLEMENTED;
-}
-
-
-char* SSL_alert_type_string_long(int)
-{
-    // TODO:
+    // unlimited size, can't set for now
     return 0;
 }
 
 
-char* SSL_alert_desc_string_long(int)
+long SSL_CTX_get_session_cache_mode(SSL_CTX*)
 {
-    // TODO:
+    // always 0, unlimited size for now
     return 0;
 }
 
 
-char* SSL_state_string_long(SSL*)
+long SSL_CTX_set_tmp_dh(SSL_CTX* ctx, DH* dh)
 {
-    // TODO:
-    return 0;
+    if (ctx->SetDH(*dh))
+        return SSL_SUCCESS;
+    else
+        return SSL_FAILURE;
 }
 
 
@@ -545,12 +519,6 @@ int SSL_CTX_use_PrivateKey_file(SSL_CTX* ctx, const char* file, int format)
 }
 
 
-int SSL_CTX_set_cipher_list(SSL_CTX* /*ctx*/, const char* /*list*/)
-{
-    return SSL_SUCCESS; 
-}
-
-
 void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback /*vc*/)
 {
     if (mode & SSL_VERIFY_PEER)
@@ -564,13 +532,14 @@ void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback /*vc*/)
 int SSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file,
                                   const char* /*path*/)
 {
+    // just files for now
     return read_file(ctx, file, SSL_FILETYPE_PEM, CA);
 }
 
 
 int SSL_CTX_set_default_verify_paths(SSL_CTX* /*ctx*/)
 {
-    // TODO: figure out?, implement
+    // TODO: figure out way to set/store default path, then call load_verify
     return SSL_NOT_IMPLEMENTED;
 }
 
@@ -578,8 +547,8 @@ int SSL_CTX_set_default_verify_paths(SSL_CTX* /*ctx*/)
 int SSL_CTX_set_session_id_context(SSL_CTX*, const unsigned char*,
                                     unsigned int)
 {
-    // TODO: create and store session id for reuse and verify
-    return SSL_NOT_IMPLEMENTED;
+    // No application specific context needed for yaSSL
+    return SSL_SUCCESS;
 }
 
 
@@ -694,47 +663,7 @@ int SSL_get_verify_depth(SSL*)
 }
 
 
-void SSL_CTX_set_tmp_rsa_callback(SSL_CTX*, RSA*(*)(SSL*, int, int))
-{
-    // TDOD:
-}
-
-
 long SSL_CTX_set_options(SSL_CTX*, long)
-{
-    // TDOD:
-    return SSL_SUCCESS;
-}
-
-
-long SSL_CTX_set_session_cache_mode(SSL_CTX*, long)
-{
-    // TDOD:
-    return SSL_SUCCESS;
-}
-
-
-long SSL_CTX_set_timeout(SSL_CTX*, long)
-{
-    // TDOD:
-    return SSL_SUCCESS;
-}
-
-
-int SSL_CTX_use_certificate_chain_file(SSL_CTX*, const char*)
-{
-    // TDOD:
-    return SSL_SUCCESS;
-}
-
-
-void SSL_CTX_set_default_passwd_cb(SSL_CTX*, pem_password_cb)
-{
-    // TDOD:
-}
-
-
-int SSL_CTX_use_RSAPrivateKey_file(SSL_CTX*, const char*, int)
 {
     // TDOD:
     return SSL_SUCCESS;
@@ -747,63 +676,8 @@ void SSL_CTX_set_info_callback(SSL_CTX*, void (*)())
 }
 
 
-int SSL_set_rfd(SSL*, int)
-{
-    return SSL_SUCCESS; // TODO:
-}
-
-
-int SSL_set_wfd(SSL*, int)
-{
-    return SSL_SUCCESS; // TODO:
-}
-
-
-int SSL_pending(SSL*)
-{
-    return SSL_SUCCESS; // TODO:
-}
-
-
-int SSL_want_read(SSL*)
-{
-    return 0; // TODO:
-}
-
-
-int SSL_want_write(SSL*)
-{
-    return 0; // TODO:
-}
-
-
-void SSL_set_shutdown(SSL*, int)
-{
-    // TODO:
-}
-
-
-SSL_CIPHER* SSL_get_current_cipher(SSL*)
-{
-    // TODO:
-    return 0;
-}
-
-
-char* SSL_CIPHER_description(SSL_CIPHER*, char*, int)
-{
-    // TODO:
-    return 0;
-}
-
-
 void OpenSSL_add_all_algorithms()  // compatibility only
-{
-}
-
-void SSLeay_add_ssl_algorithms()  // compatibility only
-{
-}
+{}
 
 
 DH* DH_new(void)
@@ -832,7 +706,8 @@ BIGNUM* BN_bin2bn(const unsigned char* num, int sz, BIGNUM* retVal)
 
     if (!retVal) {
         created = true;
-        bn = auto_ptr<BIGNUM>(new BIGNUM);
+        auto_ptr<BIGNUM> tmp(new BIGNUM);
+        bn = tmp;
         retVal = bn.get();
     }
 
@@ -869,33 +744,6 @@ char* ERR_error_string(unsigned long /*err*/, char* buffer)
     return msg;
 }
 
-void ERR_remove_state(unsigned long)
-{
-    // TODO:
-}
-
-
-int ERR_GET_REASON(int l)
-{
-    return l & 0xfff;
-}
-
-
-unsigned long ERR_peek_error()
-{
-    return 0;  // TODO:
-}
-
-
-unsigned long ERR_get_error()
-{
-    return ERR_peek_error();
-}
-
-
-
-
-
 
 const char* X509_verify_cert_error_string(long /* error */)
 {
@@ -907,84 +755,329 @@ const char* X509_verify_cert_error_string(long /* error */)
 
 const EVP_MD* EVP_md5(void)
 {
-    // TODO: fix this impl
-    // return new MD5;
-    return 0;
+    // TODO: FIX add to some list for destruction
+    return new MD5;
 }
 
 
 const EVP_CIPHER* EVP_des_ede3_cbc(void)
 {
-    // TODO: fix this impl
-    // return new DES_EDE;
-    return 0;
+    // TODO: FIX add to some list for destruction
+    return new DES_EDE;
 }
 
 
-int EVP_BytesToKey(const EVP_CIPHER* /*type*/, const EVP_MD* /*md*/,
-                   const byte* /*salt*/, const byte* /*data*/, int /*sz*/,
-                   int /*count*/, byte* /*key*/, byte* /*iv*/)
+int EVP_BytesToKey(const EVP_CIPHER* type, const EVP_MD* md, const byte* salt,
+                   const byte* data, int sz, int count, byte* key, byte* iv)
 {
-    // TODO: create key and iv from possible salt, and data using type and md
-    return SSL_NOT_IMPLEMENTED;
+    EVP_MD* myMD = const_cast<EVP_MD*>(md);
+    uint digestSz = myMD->get_digestSize();
+    byte digest[SHA_LEN];                   // max size
+
+    int keyLen    = type->get_keySize();
+    int ivLen     = type->get_ivSize();
+    int keyLeft   = keyLen;
+    int ivLeft    = ivLen;
+    int keyOutput = 0;
+
+    while (keyOutput < (keyLen + ivLen)) {
+        int digestLeft = digestSz;
+        // D_(i - 1)
+        if (keyOutput)                      // first time D_0 is empty
+            myMD->update(digest, digestSz);
+        // data
+        myMD->update(data, sz);
+        // salt
+        if (salt)
+            myMD->update(salt, EVP_SALT_SZ);
+        myMD->get_digest(digest);
+        // count
+        for (int j = 1; j < count; j++) {
+            myMD->update(digest, digestSz);
+            myMD->get_digest(digest);
+        }
+
+        if (keyLeft) {
+            int store = min(keyLeft, static_cast<int>(digestSz));
+            memcpy(&key[keyLen - keyLeft], digest, store);
+
+            keyOutput  += store;
+            keyLeft    -= store;
+            digestLeft -= store;
+        }
+
+        if (ivLeft && digestLeft) {
+            int store = min(ivLeft, digestLeft);
+            memcpy(&iv[ivLen - ivLeft], digest, store);
+
+            keyOutput += store;
+            ivLeft    -= store;
+        }
+    }
+    assert(keyOutput == (keyLen + ivLen));
+    return keyOutput;
 }
 
 
 
-void DES_set_key_unchecked(const_DES_cblock* /*key*/,
-                           DES_key_schedule* /*schedule*/)
+void DES_set_key_unchecked(const_DES_cblock* key, DES_key_schedule* schedule)
 {
-    // TODO: create schedule from key without checking strength
+    memcpy(schedule, key, sizeof(const_DES_cblock));
 }
 
 
-void DES_ede3_cbc_encrypt(const byte* /*input*/, byte* /*output*/, long /*sz*/,
-                          DES_key_schedule* /*ks1*/, DES_key_schedule* /*ks2*/,
-                          DES_key_schedule* /*ks3*/, DES_cblock* /*ivec*/, 
-                          int /*enc*/)
+void DES_ede3_cbc_encrypt(const byte* input, byte* output, long sz,
+                          DES_key_schedule* ks1, DES_key_schedule* ks2,
+                          DES_key_schedule* ks3, DES_cblock* ivec, int enc)
 {
-    // TODO: cipher input into output with keys and IV
+    DES_EDE des;
+    byte key[DES_EDE_KEY_SZ];
+
+    memcpy(key, *ks1, DES_BLOCK);
+    memcpy(&key[DES_BLOCK], *ks2, DES_BLOCK);
+    memcpy(&key[DES_BLOCK * 2], *ks3, DES_BLOCK);
+
+    if (enc) {
+        des.set_encryptKey(key, *ivec);
+        des.encrypt(output, input, sz);
+    }
+    else {
+        des.set_decryptKey(key, *ivec);
+        des.decrypt(output, input, sz);
+    }
 }
 
 
-void RAND_screen()
-{
-    // TODO:
-}
+    // functions for stunnel
+
+    void RAND_screen()
+    {
+        // TODO:
+    }
 
 
-const char* RAND_file_name(char*, size_t)
-{
-    // TODO:
-    return 0;
-}
+    const char* RAND_file_name(char*, size_t)
+    {
+        // TODO:
+        return 0;
+    }
 
 
-int RAND_write_file(const char*)
-{
-    // TODO:
-    return 0;
-}
+    int RAND_write_file(const char*)
+    {
+        // TODO:
+        return 0;
+    }
 
 
-int RAND_load_file(const char*, long)
-{
-    // TODO:
-    return 0;
-}
+    int RAND_load_file(const char*, long)
+    {
+        // TODO:
+        return 0;
+    }
 
 
-void RSA_free(RSA*)
-{
-    // TODO:
-}
+    void RSA_free(RSA*)
+    {
+        // TODO:
+    }
 
 
-RSA* RSA_generate_key(int, unsigned long, void(*)(int, int, void*), void*)
-{
-    //  TODO:
-    return 0;
-}
+    RSA* RSA_generate_key(int, unsigned long, void(*)(int, int, void*), void*)
+    {
+        //  TODO:
+        return 0;
+    }
+
+
+    int X509_LOOKUP_add_dir(X509_LOOKUP*, const char*, long)
+    {
+        // TODO:
+        return SSL_SUCCESS;
+    }
+
+
+    int X509_LOOKUP_load_file(X509_LOOKUP*, const char*, long)
+    {
+        // TODO:
+        return SSL_SUCCESS;
+    }
+
+
+    X509_LOOKUP_METHOD* X509_LOOKUP_hash_dir(void)
+    {
+        // TODO:
+        return 0;
+    }
+
+
+    X509_LOOKUP_METHOD* X509_LOOKUP_file(void)
+    {
+        // TODO:
+        return 0;
+    }
+
+
+    X509_LOOKUP* X509_STORE_add_lookup(X509_STORE*, X509_LOOKUP_METHOD*)
+    {
+        // TODO:
+        return 0;
+    }
+
+
+    int X509_STORE_get_by_subject(X509_STORE_CTX*, int, X509_NAME*, X509_OBJECT*)
+    {
+        // TODO:
+        return SSL_SUCCESS;
+    }
+
+
+    X509_STORE* X509_STORE_new(void)
+    {
+        // TODO:
+        return 0;
+    }
+
+    char* SSL_alert_type_string_long(int)
+    {
+        // TODO:
+        return 0;
+    }
+
+
+    char* SSL_alert_desc_string_long(int)
+    {
+        // TODO:
+        return 0;
+    }
+
+
+    char* SSL_state_string_long(SSL*)
+    {
+        // TODO:
+        return 0;
+    }
+
+
+    void SSL_CTX_set_tmp_rsa_callback(SSL_CTX*, RSA*(*)(SSL*, int, int))
+    {
+        // TDOD:
+    }
+
+
+    long SSL_CTX_set_session_cache_mode(SSL_CTX*, long)
+    {
+        // TDOD:
+        return SSL_SUCCESS;
+    }
+
+
+    long SSL_CTX_set_timeout(SSL_CTX*, long)
+    {
+        // TDOD:
+        return SSL_SUCCESS;
+    }
+
+
+    int SSL_CTX_use_certificate_chain_file(SSL_CTX*, const char*)
+    {
+        // TDOD:
+        return SSL_SUCCESS;
+    }
+
+
+    void SSL_CTX_set_default_passwd_cb(SSL_CTX*, pem_password_cb)
+    {
+        // TDOD:
+    }
+
+
+    int SSL_CTX_use_RSAPrivateKey_file(SSL_CTX*, const char*, int)
+    {
+        // TDOD:
+        return SSL_SUCCESS;
+    }
+
+
+    int SSL_set_rfd(SSL*, int)
+    {
+        return SSL_SUCCESS; // TODO:
+    }
+
+
+    int SSL_set_wfd(SSL*, int)
+    {
+        return SSL_SUCCESS; // TODO:
+    }
+
+
+    int SSL_pending(SSL*)
+    {
+        return SSL_SUCCESS; // TODO:
+    }
+
+
+    int SSL_want_read(SSL*)
+    {
+        return 0; // TODO:
+    }
+
+
+    int SSL_want_write(SSL*)
+    {
+        return 0; // TODO:
+    }
+
+
+    void SSL_set_shutdown(SSL*, int)
+    {
+        // TODO:
+    }
+
+
+    SSL_CIPHER* SSL_get_current_cipher(SSL*)
+    {
+        // TODO:
+        return 0;
+    }
+
+
+    char* SSL_CIPHER_description(SSL_CIPHER*, char*, int)
+    {
+        // TODO:
+        return 0;
+    }
+
+
+    void SSLeay_add_ssl_algorithms()  // compatibility only
+    {}
+
+
+    void ERR_remove_state(unsigned long)
+    {
+        // TODO:
+    }
+
+
+    int ERR_GET_REASON(int l)
+    {
+        return l & 0xfff;
+    }
+
+
+    unsigned long ERR_peek_error()
+    {
+        return 0;  // TODO:
+    }
+
+
+    unsigned long ERR_get_error()
+    {
+        return ERR_peek_error();
+    }
+
+
+    // end stunnel needs
 
 
 } // namespace

@@ -131,8 +131,8 @@ public:
         explicit Integer(const char* str);
         explicit Integer(const wchar_t* str);
 
-        // BER Decode Sink
-        explicit Integer(Sink&);
+        // BER Decode Source
+        explicit Integer(Source&);
 
         Integer(const byte* encodedInteger, unsigned int byteCount,
                 Signedness s = UNSIGNED);
@@ -156,7 +156,7 @@ public:
 
         void Decode(const byte* input, unsigned int inputLen,
                     Signedness = UNSIGNED);
-        void Decode(Sink&);
+        void Decode(Source&);
 
         bool  IsConvertableToLong() const;
         signed long ConvertToLong() const;

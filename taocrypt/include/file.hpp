@@ -20,7 +20,6 @@
  */
 
 /* file.hpp provies File Sources and Sinks
-   and a general pupose Sink also usuable as a Source
 */
 
 
@@ -34,13 +33,12 @@
 namespace TaoCrypt {
 
 
-// Sink (w/ Source functionality builtin) as bytes 
-class Sink {
+class Source {
     ByteBlock buffer_;
     word32    current_;
 public:
-    explicit Sink(word32 sz = 0) : buffer_(sz), current_(0) {}
-    Sink(const byte* b, word32 sz) : buffer_(b, sz), current_(0) {}
+    explicit Source(word32 sz = 0) : buffer_(sz), current_(0) {}
+    Source(const byte* b, word32 sz) : buffer_(b, sz), current_(0) {}
 
     word32 size() const        { return buffer_.size(); }
     void   grow(word32 sz)     { buffer_.CleanGrow(sz); }
@@ -54,20 +52,26 @@ public:
     byte next() { return buffer_[current_++]; }
     byte prev() { return buffer_[--current_]; }
 
+    void add(const byte* data, word32 len)
+    {
+        memcpy(buffer_.get_buffer() + current_, data, len);
+        current_ += len;
+    }
+
     void advance(word32 i) { current_ += i; }
     void reset(ByteBlock&);
 
     friend class FileSource;  // for get()
 private:
-    Sink(const Sink& that) : buffer_(that.buffer_), current_(that.current_) {}
-    Sink& operator=(const Sink& that)
+    Source(const Source& that) : buffer_(that.buffer_), current_(that.current_) {}
+    Source& operator=(const Source& that)
     {
-        Sink tmp(that);
+        Source tmp(that);
         swap(tmp);
         return *this;
     }
 
-    void swap(Sink& other) 
+    void swap(Source& other) 
     {
         buffer_.swap(other.buffer_);
         std::swap(current_, other.current_);
@@ -80,13 +84,13 @@ private:
 class FileSource {
     std::ifstream file_;
 public:
-    FileSource(const std::string& fname, Sink& sink)
+    FileSource(const std::string& fname, Source& source)
         : file_(fname.c_str(), std::ios::in | std::ios::binary)
-        { get(sink); }
+        { get(source); }
    
     word32   size(bool use_current = false);
 private:
-    word32   get(Sink&);
+    word32   get(Source&);
     word32   size_left();                     
 
     FileSource(const FileSource&);            // hide
@@ -98,13 +102,13 @@ private:
 class FileSink {
     std::ofstream file_;
 public:
-    FileSink(const std::string& fname, Sink& sink)
+    FileSink(const std::string& fname, Source& source)
         : file_(fname.c_str(), std::ios::out | std::ios::binary)
-        { put(sink); }
+        { put(source); }
 
     word32 size(bool use_current = false);
 private:
-    void put(Sink&);
+    void put(Source&);
 
     FileSink(const FileSink&);            // hide
     FileSink& operator=(const FileSink&); // hide

@@ -40,7 +40,7 @@
     #include <string.h>
 #endif // WIN32
 
-#ifdef __solaris__
+#ifdef __sun
     #include <sys/filio.h>
 #endif
 

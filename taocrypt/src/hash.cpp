@@ -31,7 +31,7 @@ namespace TaoCrypt {
 
 
 // Update digest with data of size len, do in blocks
-void HASH::Update(const byte* data, word32 len)
+void HASHwithTransform::Update(const byte* data, word32 len)
 {
     // do block size increments
     word32 blockSz = getBlockSize();
@@ -52,7 +52,7 @@ void HASH::Update(const byte* data, word32 len)
 
 
 // Final process, place digest in hash
-void HASH::Final(byte* hash)
+void HASHwithTransform::Final(byte* hash)
 {
     word32    blockSz   = getBlockSize();
     word32    digestSz  = getDigestSize();

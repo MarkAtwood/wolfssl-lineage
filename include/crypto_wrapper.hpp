@@ -146,6 +146,8 @@ struct BulkCipher {
     virtual void   set_encryptKey(const byte*, const byte* = 0) = 0;
     virtual void   set_decryptKey(const byte*, const byte* = 0) = 0;
     virtual uint   get_blockSize() const = 0;
+    virtual int    get_keySize()   const = 0;
+    virtual int    get_ivSize()    const = 0;
     virtual ~BulkCipher() {}
 };
 
@@ -157,6 +159,8 @@ struct NO_Cipher : public BulkCipher {
     void   set_encryptKey(const byte*, const byte*)  {}
     void   set_decryptKey(const byte*, const byte*)  {}
     uint   get_blockSize() const { return 0; }
+    int    get_keySize()   const { return 0; }
+    int    get_ivSize()    const { return 0; }
 };
 
 
@@ -168,6 +172,8 @@ public:
     void   set_encryptKey(const byte*, const byte*);
     void   set_decryptKey(const byte*, const byte*);
     uint   get_blockSize() const { return DES_BLOCK; }
+    int    get_keySize()   const { return DES_KEY_SZ; }
+    int    get_ivSize()    const { return DES_IV_SZ; }
     DES();
     ~DES();
 private:
@@ -187,6 +193,8 @@ public:
     void   set_encryptKey(const byte*, const byte*);
     void   set_decryptKey(const byte*, const byte*);
     uint   get_blockSize() const { return DES_BLOCK; }
+    int    get_keySize()   const { return DES_EDE_KEY_SZ; }
+    int    get_ivSize()    const { return DES_IV_SZ; }
     DES_EDE();
     ~DES_EDE();
 private:
@@ -206,6 +214,8 @@ public:
     void set_encryptKey(const byte*, const byte*);
     void set_decryptKey(const byte*, const byte*);
     uint get_blockSize() const { return 0; }
+    int  get_keySize()   const { return RC4_KEY_SZ; }
+    int  get_ivSize()    const { return 0; }
     RC4();
     ~RC4();
 private:
@@ -225,6 +235,8 @@ public:
     void set_encryptKey(const byte*, const byte*);
     void set_decryptKey(const byte*, const byte*);
     uint get_blockSize() const { return AES_BLOCK_SZ; }
+    int  get_keySize()   const;
+    int  get_ivSize()    const { return AES_IV_SZ; }
     explicit AES(unsigned int = AES_128_KEY_SZ);
     ~AES();
 private:
@@ -257,9 +269,10 @@ private:
 
 // Authentication policy should implement sign, and verify
 struct Auth {
-    virtual void  sign(byte*, const byte*, unsigned int, const RandomPool&) =0;
-    virtual bool  verify(const byte*, unsigned int, const byte*,
-                          unsigned int) = 0;
+    virtual void sign(byte*, const byte*, unsigned int, const RandomPool&) = 0;
+    virtual bool verify(const byte*, unsigned int, const byte*,
+                        unsigned int) = 0;
+    virtual uint get_signatureLength() const = 0;
     virtual ~Auth() {}
 };
 
@@ -277,6 +290,7 @@ class DSS : public Auth {
 public:
     void sign(byte*, const byte*, unsigned int, const RandomPool&);
     bool verify(const byte*, unsigned int, const byte*, unsigned int);
+    uint get_signatureLength() const;
     DSS(const byte*, unsigned int, bool publicKey = true);
     ~DSS();
 private:
@@ -295,6 +309,7 @@ public:
     bool   verify(const byte*, unsigned int, const byte*, unsigned int);
     void   encrypt(byte*, const byte*, unsigned int, const RandomPool&);
     void   decrypt(byte*, const byte*, unsigned int, const RandomPool&);
+    uint   get_signatureLength() const;
     uint   get_cipherLength() const;
     RSA(const byte*, unsigned int, bool publicKey = true);
     ~RSA();
@@ -307,6 +322,8 @@ private:
 };
 
 
+class Integer;
+
 // Diffie-Hellman agreement
 // hide for now TODO: figure out a way to give access to C clients p and g args
 class DiffieHellman  {
@@ -314,6 +331,7 @@ public:
     DiffieHellman(const byte*, unsigned int, const byte*, unsigned int,
                   const byte*, unsigned int, const RandomPool& random);
     DiffieHellman(const char*, const RandomPool&);
+    DiffieHellman(const Integer&, const Integer&, const RandomPool&);
     ~DiffieHellman();
 
     DiffieHellman(const DiffieHellman&);  
@@ -337,13 +355,16 @@ class Integer {
 public:
     Integer();
     ~Integer();
-    void assign(const byte*, unsigned int);
-private:
-    struct IntegerImpl;
-    IntegerImpl* pimpl_;
 
     Integer(const Integer&);
     Integer& operator=(const Integer&);
+
+    void assign(const byte*, unsigned int);
+
+    friend class DiffieHellman;
+private:
+    struct IntegerImpl;
+    IntegerImpl* pimpl_;
 };
 
 

@@ -65,8 +65,8 @@ private:
 
     static const word32 rcon_[];
 
-    word32    rounds_;
-    WordBlock key_;
+    word32      rounds_;
+    Word32Block key_;
 
     void encrypt(const byte*, const byte*, byte*) const;
     void decrypt(const byte*, const byte*, byte*) const;

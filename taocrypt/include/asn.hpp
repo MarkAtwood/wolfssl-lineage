@@ -84,14 +84,21 @@ enum DNTags
 
 enum Constants
 {
-    MIN_DATE_SZ = 13,
-    MAX_DATE_SZ = 15,
+    MIN_DATE_SZ   = 13,
+    MAX_DATE_SZ   = 15,
+    MAX_ALGO_SZ   = 16,
+    MAX_LENGTH_SZ =  5,    
+    MAX_SEQ_SZ    =  5,    // enum(seq|con) + length(4)
+    MAX_ALGO_SIZE =  9,
+    MAX_DIGEST_SZ = 25,    // SHA + enum(Bit or Octet) + length(4)
 };
 
 
-class Sink;
+class Source;
 class RSA_PublicKey;
 class RSA_PrivateKey;
+class DSA_PublicKey;
+class DSA_PrivateKey;
 class Integer;
 class DH;
 
@@ -99,9 +106,9 @@ class DH;
 // General BER decoding
 class BER_Decoder {
 protected:
-    Sink& sink_;
+    Source& source_;
 public:
-    explicit BER_Decoder(Sink& s) : sink_(s) {}
+    explicit BER_Decoder(Source& s) : source_(s) {}
     virtual ~BER_Decoder() {}
 
     Integer& GetInteger(Integer&);
@@ -120,7 +127,7 @@ private:
 // RSA Private Key BER Decoder
 class RSA_Private_Decoder : public BER_Decoder {
 public:
-    explicit RSA_Private_Decoder(Sink& s) : BER_Decoder(s) {}
+    explicit RSA_Private_Decoder(Source& s) : BER_Decoder(s) {}
     void Decode(RSA_PrivateKey&);
 private:
     void ReadHeader();
@@ -130,8 +137,28 @@ private:
 // RSA Public Key BER Decoder
 class RSA_Public_Decoder : public BER_Decoder {
 public:
-    explicit RSA_Public_Decoder(Sink& s) : BER_Decoder(s) {}
+    explicit RSA_Public_Decoder(Source& s) : BER_Decoder(s) {}
     void Decode(RSA_PublicKey&);
+private:
+    void ReadHeader();
+};
+
+
+// DSA Private Key BER Decoder
+class DSA_Private_Decoder : public BER_Decoder {
+public:
+    explicit DSA_Private_Decoder(Source& s) : BER_Decoder(s) {}
+    void Decode(DSA_PrivateKey&);
+private:
+    void ReadHeader();
+};
+
+
+// DSA Public Key BER Decoder
+class DSA_Public_Decoder : public BER_Decoder {
+public:
+    explicit DSA_Public_Decoder(Source& s) : BER_Decoder(s) {}
+    void Decode(DSA_PublicKey&);
 private:
     void ReadHeader();
 };
@@ -140,7 +167,7 @@ private:
 // DH Key BER Decoder
 class DH_Decoder : public BER_Decoder {
 public:
-    explicit DH_Decoder(Sink& s) : BER_Decoder(s) {}
+    explicit DH_Decoder(Source& s) : BER_Decoder(s) {}
     void Decode(DH&);
 private:
     void ReadHeader();
@@ -160,6 +187,8 @@ public:
 
     void SetKey(const byte*);
     void SetSize(word32 s);
+
+    void AddToEnd(const byte*, word32);
 private:
     PublicKey(const PublicKey&);            // hide copy
     PublicKey& operator=(const PublicKey&); // and assign
@@ -191,24 +220,31 @@ private:
 typedef std::list<Signer*> SignerList;
 
 
+enum SigType  { SHAwDSA = 517, MD2wRSA = 646, MD5wRSA = 648, SHAwRSA =649};
+enum HashType { MD2h = 646, MD5h = 649, SHAh = 88 };
+enum KeyType  { DSA = 515, RSA = 645 };     // sums of algo OID
+
+
 // an x509v Certificate BER Decoder
 class CertDecoder : public BER_Decoder {
 public:
-    explicit CertDecoder(Sink&, bool decode = true, SignerList* = 0);
+    explicit CertDecoder(Source&, bool decode = true, SignerList* = 0);
     ~CertDecoder();
 
     const PublicKey& GetPublicKey()  const { return key_; }
+    const char*      GetIssuer()     const { return issuer_; }
     const char*      GetCommonName() const { return subject_; }
     const byte*      GetHash()       const { return subjectHash_; }
 
     enum DateType { BEFORE, AFTER };   
     enum NameType { ISSUER, SUBJECT };
-    enum SigType  { MD5wRSA = 648, SHAwRSA = 649 }; // sum of algo OID
 private:
     PublicKey key_;
     word32    certBegin_;               // offset to start of cert
     word32    sigIndex_;                // offset to start of signature
+    word32    sigLength_;               // length of signature
     word32    signatureOID_;            // sum of algorithm object id
+    word32    keyOID_;                  // sum of key algo  object id
     byte      subjectHash_[SHA_SIZE];   // hash of all Names
     byte      issuerHash_[SHA_SIZE];    // hash of all Names
     byte*     signature_;
@@ -218,9 +254,10 @@ private:
     void   ReadHeader();
     void   Decode(SignerList*);
     void   StoreKey();
+    void   AddDSA();
     void   ValidateSelfSignature();
     void   ValidateSignature(SignerList*);
-    void   ConfirmSignature(Sink&);
+    void   ConfirmSignature(Source&);
     void   GetKey();
     void   GetName(NameType);
     void   GetValidity();
@@ -228,11 +265,54 @@ private:
     void   GetCompareHash(const byte*, word32, byte*, word32);
     word32 GetAlgoId();
     word32 GetSignature();
+    word32 GetDigest();
+};
+
+
+word32 GetLength(Source&);
+
+word32 SetLength(word32, byte*);
+word32 SetSequence(word32, byte*);
+
+word32 EncodeDSA_Signature(const Integer& r, const Integer& s, byte* output);
+word32 DecodeDSA_Signature(byte* decoded, const byte* encoded, word32 sz);
+
+
+// General DER encoding
+class DER_Encoder {
+public:
+    DER_Encoder() {}
+    virtual ~DER_Encoder() {}
+
+    //Integer& SetInteger(Integer&);
+    //word32 SetAlgoID(SigType, byte*);
+    word32   SetAlgoID(HashType, byte*);
+    //void   SetSet();
+    //void   SetVersion();
+    //void   SetExplicitVersion();
+private:
+    //virtual void WriteHeader() = 0;
+
+    DER_Encoder(const DER_Encoder&);            // hide copy
+    DER_Encoder& operator=(const DER_Encoder&); // and assign
 };
 
 
 
-word32 GetLength(Sink&);
+class Signature_Encoder : public DER_Encoder {
+    const byte* digest_;
+    word32      digestSz_;
+    SigType     digestOID_;
+public:
+    explicit Signature_Encoder(const byte*, word32, HashType, Source&);
+
+private:
+    void   WriteHeader();
+    word32 SetDigest(const byte*, word32, byte*);
+
+    Signature_Encoder(const Signature_Encoder&);            // hide copy
+    Signature_Encoder& operator=(const Signature_Encoder&); // and assign
+};
 
 
 } // namespace

@@ -78,11 +78,16 @@ RSA* RSA_generate_key(int, unsigned long, void(*)(int, int, void*), void*);
 
 
 /* X509 stuff, different file? */
-typedef struct X509               X509;
+#ifdef __cplusplus
+    class  X509;
+    class  X509_NAME;
+#else
+    typedef struct X509       X509;
+    typedef struct X509_NAME  X509_NAME;
+#endif
 typedef struct X509_STORE         X509_STORE;
 typedef struct X509_LOOKUP        X509_LOOKUP;
 typedef struct X509_OBJECT { char c; } X509_OBJECT;
-typedef struct X509_NAME          X509_NAME;
 typedef struct X509_CRL           X509_CRL;
 typedef struct X509_REVOKED       X509_REVOKED;
 typedef struct X509_LOOKUP_METHOD X509_LOOKUP_METHOD;
@@ -107,8 +112,6 @@ typedef struct X509_STORE_CTX {
     X509* current_cert;
 } X509_STORE_CTX;
 
-
-typedef struct X509_NAME X509_NAME;
 
 
 X509* X509_STORE_CTX_get_current_cert(X509_STORE_CTX*);
@@ -261,7 +264,8 @@ enum { /* ssl Constants */
     SSL_UNKNOWN         = -2,
     SSL_FATAL_ERROR     = -1,
     SSL_NORMAL_SHUTDOWN =  0,
-    SSL_ERROR_NONE      =  0,
+    SSL_ERROR_NONE      =  0,   // for most functions
+    SSL_FAILURE         =  0,   // for some functions
     SSL_SUCCESS	        =  1,
 
     SSL_FILETYPE_ASN1    = 10,
@@ -350,8 +354,8 @@ char* SSL_state_string_long(SSL*);
 
 
 /* EVP stuff, des and md5, different file? */
-typedef struct MAC MAC;
-typedef MAC EVP_MD;
+typedef struct Digest Digest;
+typedef Digest EVP_MD;
 
 typedef struct BulkCipher BulkCipher;
 typedef BulkCipher EVP_CIPHER;
@@ -360,8 +364,8 @@ typedef struct EVP_PKEY EVP_PKEY;
 
 typedef unsigned char DES_cblock[8];
 typedef const  DES_cblock const_DES_cblock;
-typedef struct DES_key_schedule{int x;} DES_key_schedule; /* msvc in c mode   */
-                                                          /* won't take empty */
+typedef DES_cblock DES_key_schedule;
+                                                          
                                                              
 const EVP_MD*     EVP_md5(void);
 const EVP_CIPHER* EVP_des_ede3_cbc(void);

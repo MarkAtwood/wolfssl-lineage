@@ -35,15 +35,15 @@ Integer RSA_PublicKey::ApplyFunction(const Integer& x) const
 }
 
 
-RSA_PublicKey::RSA_PublicKey(Sink& sink)
+RSA_PublicKey::RSA_PublicKey(Source& source)
 {
-    Initialize(sink);
+    Initialize(source);
 }
 
 
-void RSA_PublicKey::Initialize(Sink& sink)
+void RSA_PublicKey::Initialize(Source& source)
 {
-    RSA_Public_Decoder decoder(sink);
+    RSA_Public_Decoder decoder(source);
     decoder.Decode(*this);
 }
 
@@ -66,15 +66,15 @@ Integer RSA_PrivateKey::CalculateInverse(RandomNumberGenerator& rng,
 }
 
 
-RSA_PrivateKey::RSA_PrivateKey(Sink& sink)
+RSA_PrivateKey::RSA_PrivateKey(Source& source)
 {
-    Initialize(sink);
+    Initialize(source);
 }
 
 
-void RSA_PrivateKey::Initialize(Sink& sink)
+void RSA_PrivateKey::Initialize(Source& source)
 {
-    RSA_Private_Decoder decoder(sink);
+    RSA_Private_Decoder decoder(source);
     decoder.Decode(*this);
 }
 
@@ -191,7 +191,7 @@ word32 RSA_BlockType1::UnPad(const byte* pkcsBlock, word32 pkcsBlockLen,
 }
 
 
-word32 SSL_Decrypt(RSA_PublicKey& key, const byte* sig, byte* plain)
+word32 SSL_Decrypt(const RSA_PublicKey& key, const byte* sig, byte* plain)
 {
     PK_Lengths lengths(key.GetModulus());
    

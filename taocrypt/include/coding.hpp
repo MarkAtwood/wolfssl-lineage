@@ -30,15 +30,15 @@
 
 namespace TaoCrypt {
 
-class Sink;
+class Source;
 
 
 // Hex Encoding, see RFC 3548
 class HexEncoder {
     ByteBlock encoded_;
-    Sink&     plain_;
+    Source&     plain_;
 public:
-    explicit HexEncoder(Sink& s) : plain_(s) { Encode(); }
+    explicit HexEncoder(Source& s) : plain_(s) { Encode(); }
 private:
     void Encode();
 
@@ -50,9 +50,9 @@ private:
 // Hex Decoding, see RFC 3548
 class HexDecoder {
     ByteBlock decoded_;
-    Sink&     coded_;
+    Source&     coded_;
 public:
-    explicit HexDecoder(Sink& s) : coded_(s) { Decode(); }
+    explicit HexDecoder(Source& s) : coded_(s) { Decode(); }
 private:
     void Decode();
 
@@ -64,9 +64,9 @@ private:
 // Base 64 encoding, see RFC 3548
 class Base64Encoder {
     ByteBlock encoded_;
-    Sink&     plain_;
+    Source&     plain_;
 public:
-    explicit Base64Encoder(Sink& s) : plain_(s) { Encode(); }
+    explicit Base64Encoder(Source& s) : plain_(s) { Encode(); }
 private:
     void Encode();
 
@@ -78,9 +78,9 @@ private:
 // Base 64 decoding, see RFC 3548
 class Base64Decoder {
     ByteBlock decoded_;
-    Sink&     coded_;
+    Source&     coded_;
 public:
-    explicit Base64Decoder(Sink& s) : coded_(s) { Decode(); }
+    explicit Base64Decoder(Source& s) : coded_(s) { Decode(); }
 private:
     void Decode();
 

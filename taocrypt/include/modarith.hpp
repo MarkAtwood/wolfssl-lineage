@@ -161,7 +161,7 @@ public:
 
 private:
     Integer u;
-    mutable WordBlock workspace;
+    mutable AlignedWordBlock workspace;
 };
 
 

@@ -97,7 +97,6 @@ void ClientDiffieHellmanPublic::build(SSL& ssl)
 
 
 // build server exhange, server side
-// RSA auth now, future add TODO: DSA
 void DH_Server::build(SSL& ssl)
 {
     DiffieHellman& dhServer = ssl.useCrypto().use_dh();
@@ -107,8 +106,24 @@ void DH_Server::build(SSL& ssl)
     dhServer.get_parms(parms_.alloc_p(pSz), parms_.alloc_g(gSz),
                        parms_.alloc_pub(pubSz));
 
+    std::auto_ptr<Auth> auth;
+    const CertManager& cert = ssl.getCrypto().get_certManager();
+    
+    if (ssl.getSecurity().get_parms().sig_algo_ == rsa_sa_algo) {
+        std::auto_ptr<Auth> tmp(new RSA(cert.get_privateKey(),
+                                   cert.get_privateKeyLength(), false));
+        auth = tmp;
+    }
+    else {
+        std::auto_ptr<Auth> tmp(new DSS(cert.get_privateKey(),
+                                   cert.get_privateKeyLength(), false));
+        auth = tmp;
+    }
+
+    short sigSz = auth->get_signatureLength();
+
     length_ = 8; // pLen + gLen + YsLen + SigLen
-    length_ += pSz + gSz + pubSz + RSA_KEA_SIG;  // fix 3X for DSA
+    length_ += pSz + gSz + pubSz + sigSz;
 
     output_buffer tmp(length_);
     byte len[2];
@@ -126,34 +141,32 @@ void DH_Server::build(SSL& ssl)
     tmp.write(parms_.get_pub(), pubSz);
 
     // Sig
-    byte sig[RSA_KEA_SIG];
     byte hash[FINISHED_SZ];
     MD5  md5;
     SHA  sha;
+    signature_ = new byte[sigSz];
 
+    const Connection& conn = ssl.getSecurity().get_connection();
     // md5
-    md5.update(ssl.getSecurity().get_connection().client_random_, RAN_LEN);
-    md5.update(ssl.getSecurity().get_connection().server_random_, RAN_LEN);
+    md5.update(conn.client_random_, RAN_LEN);
+    md5.update(conn.server_random_, RAN_LEN);
     md5.update(tmp.get_buffer(), tmp.get_size());
     md5.get_digest(hash);
 
     // sha
-    sha.update(ssl.getSecurity().get_connection().client_random_, RAN_LEN);
-    sha.update(ssl.getSecurity().get_connection().server_random_, RAN_LEN);
+    sha.update(conn.client_random_, RAN_LEN);
+    sha.update(conn.server_random_, RAN_LEN);
     sha.update(tmp.get_buffer(), tmp.get_size());
     sha.get_digest(&hash[MD5_LEN]);
 
-    const CertManager& cert = ssl.getCrypto().get_certManager();
-    RSA   rsa(cert.get_privateKey(), cert.get_privateKeyLength(), false);
+    auth->sign(signature_, hash, sizeof(hash), ssl.getCrypto().get_random());
 
-    rsa.sign(sig, hash, sizeof(hash), ssl.getCrypto().get_random());
+    bool test = auth->verify(hash, sizeof(hash), signature_, sigSz);  // TODO:
+    assert(test);                                                     // remove
 
-    bool test = rsa.verify(hash, sizeof(hash), sig, 64);  // test
-    assert(test);
-
-    c16toa(RSA_KEA_SIG, len);
+    c16toa(sigSz, len);
     tmp.write(len, sizeof(len));
-    tmp.write(sig, sizeof(sig));
+    tmp.write(signature_, sigSz);
 
     // key message
     keyMessage_ = new opaque[length_];
@@ -265,7 +278,6 @@ void ClientDiffieHellmanPublic::alloc(int sz, bool offset)
 
 
 // read server's p, g, public key and sig, client side
-// RSA auth for now, future add TODO: DSA
 void DH_Server::read(SSL& ssl, input_buffer& input)
 {
     uint16 length, messageTotal = 6; // pSz + gSz + pubSz
@@ -301,11 +313,12 @@ void DH_Server::read(SSL& ssl, input_buffer& input)
     input.read(message.get_buffer(), messageTotal);
     message.add_size(messageTotal);
 
-    // signature  fix for DSA
+    // signature
     tmp[0] = input[AUTO];
     tmp[1] = input[AUTO];
     ato16(tmp, length);
 
+    signature_ = new byte[length];
     input.read(signature_, length);
 
     // verify signature
@@ -313,39 +326,51 @@ void DH_Server::read(SSL& ssl, input_buffer& input)
     MD5  md5;
     SHA  sha;
 
+    const Connection& conn = ssl.getSecurity().get_connection();
     // md5
-    md5.update(ssl.getSecurity().get_connection().client_random_, RAN_LEN);
-    md5.update(ssl.getSecurity().get_connection().server_random_, RAN_LEN);
+    md5.update(conn.client_random_, RAN_LEN);
+    md5.update(conn.server_random_, RAN_LEN);
     md5.update(message.get_buffer(), message.get_size());
     md5.get_digest(hash);
 
     // sha
-    sha.update(ssl.getSecurity().get_connection().client_random_, RAN_LEN);
-    sha.update(ssl.getSecurity().get_connection().server_random_, RAN_LEN);
+    sha.update(conn.client_random_, RAN_LEN);
+    sha.update(conn.server_random_, RAN_LEN);
     sha.update(message.get_buffer(), message.get_size());
     sha.get_digest(&hash[MD5_LEN]);
 
     const CertManager& cert = ssl.getCrypto().get_certManager();
-    RSA   rsa(cert.get_peerKey(), cert.get_peerKeyLength());
+    std::auto_ptr<Auth> auth;
 
-    bool verify = rsa.verify(hash, sizeof(hash), signature_, length);
+    if (ssl.getSecurity().get_parms().sig_algo_ == rsa_sa_algo) {
+        std::auto_ptr<Auth> tmp(new RSA(cert.get_peerKey(),
+                                   cert.get_peerKeyLength()));
+        auth = tmp;
+    }
+    else {
+        std::auto_ptr<Auth> tmp(new DSS(cert.get_peerKey(),
+                                   cert.get_peerKeyLength()));
+        auth = tmp;
+    }
+    bool verify = auth->verify(hash, sizeof(hash), signature_, length);
     assert(verify);
 
     // save input
-    ssl.useCrypto().setDH(new DiffieHellman(parms_.get_p(), parms_.get_pSize(),
+    ssl.useCrypto().SetDH(new DiffieHellman(parms_.get_p(), parms_.get_pSize(),
                parms_.get_g(), parms_.get_gSize(), parms_.get_pub(),
                parms_.get_pubSize(), ssl.getCrypto().get_random()));
 }
 
 
 DH_Server::DH_Server()
-    : length_(0), keyMessage_(0)
+    : signature_(0), length_(0), keyMessage_(0)
 {}
 
 
 DH_Server::~DH_Server()
 {
     delete[] keyMessage_;
+    delete[] signature_;
 }
 
 
@@ -362,34 +387,55 @@ opaque* DH_Server::get_serverKey() const
 
 
 // set available suites
-Parameters::Parameters(ConnectionEnd ce) : entity_(ce)
+Parameters::Parameters(ConnectionEnd ce, const Ciphers& ciphers) : entity_(ce)
 {
     pending_ = true;	// suite not set yet
 
-    int i = 0;
-    // available suites, best first
+    if (ciphers.setSuites_) {   // use user set list
+        suites_size_ = ciphers.suiteSz_;
+        memcpy(suites_, ciphers.suites_, ciphers.suiteSz_);
+    }
+    else {  // defaults
+        int i = 0;
+        // available suites, best first
+        // when adding more, make sure cipher_names is updated and
+        //      MAX_CIPHER_LIST is big enough
 
-    suites_[i++] = 0x00;
-    suites_[i++] = TLS_RSA_WITH_AES_256_CBC_SHA;
-    suites_[i++] = 0x00;
-    suites_[i++] = TLS_RSA_WITH_AES_128_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_RSA_WITH_AES_256_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_RSA_WITH_AES_128_CBC_SHA;
 
-    suites_[i++] = 0x00;
-    suites_[i++] = SSL_RSA_WITH_3DES_EDE_CBC_SHA;
-    suites_[i++] = 0x00;
-    suites_[i++] = SSL_RSA_WITH_DES_CBC_SHA;
-    suites_[i++] = 0x00;
+        suites_[i++] = 0x00;
+        suites_[i++] = SSL_RSA_WITH_3DES_EDE_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = SSL_RSA_WITH_DES_CBC_SHA;
+  
+        suites_[i++] = 0x00;
+        suites_[i++] = SSL_DHE_RSA_WITH_DES_CBC_SHA;  
+        suites_[i++] = 0x00;
+        suites_[i++] = SSL_DHE_DSS_WITH_DES_CBC_SHA; 
 
-    suites_[i++] = SSL_DHE_RSA_WITH_DES_CBC_SHA;  
-    suites_[i++] = 0x00;
-    suites_[i++] = SSL_DHE_DSS_WITH_DES_CBC_SHA;  
-    suites_[i++] = 0x00;
-
-    suites_[i++] = SSL_RSA_WITH_RC4_128_SHA;  
-    suites_[i++] = 0x00;
-    suites_[i++] = SSL_RSA_WITH_RC4_128_MD5;
+        suites_[i++] = 0x00;
+        suites_[i++] = SSL_RSA_WITH_RC4_128_SHA;  
+        suites_[i++] = 0x00;
+        suites_[i++] = SSL_RSA_WITH_RC4_128_MD5;
    
-    suites_size_ = i;
+        suites_size_ = i;
+    }
+
+    const int suites = suites_size_ / 2;
+    int pos = 0;
+
+    for (int j = 0; j < suites; j++) {
+        int index = suites_[j*2 + 1];  // every other suite is suite id
+        int len = strlen(cipher_names[index]);
+        memcpy(&cipher_list_[pos], cipher_names[index], len);
+        pos += len;
+        cipher_list_[pos++] = ':';
+    }
+    if (suites)
+        cipher_list_[--pos] = 0;
 }
 
 
@@ -1065,9 +1111,9 @@ void ServerHello::Process(input_buffer&, SSL& ssl)
     ssl.set_sessionID(session_id_);
 
     if (ssl.getSecurity().get_resuming())
-        if (memcmp(session_id_, ssl.getSecurity().get_resume().getID(),
+        if (memcmp(session_id_, ssl.getSecurity().get_resume().GetID(),
                    ID_LEN) == 0) {
-            ssl.set_masterSecret(ssl.getSecurity().get_resume().getSecret());
+            ssl.set_masterSecret(ssl.getSecurity().get_resume().GetSecret());
             if (ssl.isTLS())
                 ssl.deriveTLSKeys();
             else
@@ -1226,9 +1272,9 @@ void ClientHello::Process(input_buffer&, SSL& ssl)
         }
         ssl.set_session(session);
         ssl.useSecurity().set_resuming(true);
-        ssl.matchSuite(session->getSuite(), SUITE_LEN);
+        ssl.matchSuite(session->GetSuite(), SUITE_LEN);
         ssl.set_pending(ssl.getSecurity().get_parms().suite_[1]);
-        ssl.set_masterSecret(session->getSecret());
+        ssl.set_masterSecret(session->GetSecret());
 
         opaque serverRandom[RAN_LEN];
         ssl.getCrypto().get_random().Fill(serverRandom, sizeof(serverRandom));
@@ -1353,7 +1399,7 @@ HandShakeType ServerKeyExchange::get_type() const
 
 // CertificateRequest 
 CertificateRequest::CertificateRequest()
-    : typeTotal_(0), certificate_authorities_(0), authTotal_(0)
+    : typeTotal_(0)
 {
     memset(certificate_types_, 0, sizeof(certificate_types_));
 }
@@ -1361,10 +1407,10 @@ CertificateRequest::CertificateRequest()
 
 CertificateRequest::~CertificateRequest()
 {
-    for (int i = authTotal_ - 1; i >= 0; i--)
-        delete[] certificate_authorities_[i];
 
-    delete[] certificate_authorities_;
+    std::for_each(certificate_authorities_.begin(),
+                  certificate_authorities_.end(),
+                  del_ptr_zero()) ;
 }
 
 
@@ -1373,29 +1419,24 @@ void CertificateRequest::Build()
     certificate_types_[0] = rsa_sign;
     typeTotal_ = MIN_CERT_TYPES;
 
-    authTotal_ = MIN_DIS_NAMES;
-    certificate_authorities_ = new DistinguishedName[authTotal_];
-
-    for (int i = 0; i < authTotal_; i++)
-        certificate_authorities_[i] = 0;  // for Destructor cleanup on error
-
+    uint16 authCount = 0;
     uint16 authSz = 0;
   
-    for (int j = 0; j < authTotal_; j++) {
+    for (int j = 0; j < authCount; j++) {
         int sz = REQUEST_HEADER + MIN_DIS_SIZE;
-        certificate_authorities_[j] = new byte[sz];
+        DistinguishedName dn;
+        certificate_authorities_.push_back(dn = new byte[sz]);
 
         opaque tmp[REQUEST_HEADER];
         c16toa(MIN_DIS_SIZE, tmp);
-        memcpy(certificate_authorities_[j], tmp, sizeof(tmp));
+        memcpy(dn, tmp, sizeof(tmp));
   
         // fill w/ junk for now
-        memcpy(&certificate_authorities_[j][REQUEST_HEADER], tmp,MIN_DIS_SIZE);
+        memcpy(dn, tmp, MIN_DIS_SIZE);
         authSz += sz;
     }
 
-    set_length(REQUEST_HEADER + SIZEOF_ENUM + typeTotal_ + REQUEST_HEADER +
-               authSz);
+    set_length(SIZEOF_ENUM + typeTotal_ + REQUEST_HEADER + authSz);
 }
 
 
@@ -1414,37 +1455,29 @@ output_buffer& CertificateRequest::get(output_buffer& out) const
 // input operator for CertificateRequest
 input_buffer& operator>>(input_buffer& input, CertificateRequest& request)
 {
-    byte tmp[REQUEST_HEADER];
-    input.read(tmp, sizeof(tmp));
-
-    uint16 totalSz = 0;
-    ato16(tmp, totalSz);
-
     // types
     request.typeTotal_ = input[AUTO];
     for (int i = 0; i < request.typeTotal_; i++)
         request.certificate_types_[i] = ClientCertificateType(input[AUTO]);
 
+    byte tmp[REQUEST_HEADER];
     input.read(tmp, sizeof(tmp));
-    uint16 sz = 0;
+    uint16 sz;
     ato16(tmp, sz);
-    request.authTotal_ = sz;
-
-    request.certificate_authorities_ =
-        new DistinguishedName[request.authTotal_];
-
-    for (int j = 0; j < request.authTotal_; j++)
-        request.certificate_authorities_[j] = 0;  // for Destructor cleanup
 
     // authorities
-    for (int k = 0; k < request.authTotal_; k++) {
+    while (sz) {
+        uint16 dnSz;
         input.read(tmp, sizeof(tmp));
-        ato16(tmp, sz);
+        ato16(tmp, dnSz);
         
-        request.certificate_authorities_[k] = new byte[REQUEST_HEADER + sz];
+        DistinguishedName dn;
+        request.certificate_authorities_.push_back(dn = new byte[REQUEST_HEADER
+                                                                 + dnSz]);
+        memcpy(dn, tmp, REQUEST_HEADER);
+        input.read(&dn[REQUEST_HEADER], dnSz);
 
-        memcpy(request.certificate_authorities_[k], tmp, REQUEST_HEADER);
-        input.read(&request.certificate_authorities_[k][REQUEST_HEADER], sz);
+        sz -= dnSz + REQUEST_HEADER;
     }
 
     return input;
@@ -1455,25 +1488,27 @@ input_buffer& operator>>(input_buffer& input, CertificateRequest& request)
 output_buffer& operator<<(output_buffer& output,
                           const CertificateRequest& request)
 {
-    opaque tmp[REQUEST_HEADER];
-
-    // overall length
-    c16toa(request.get_length() - REQUEST_HEADER, tmp);
-    output.write(tmp, sizeof(tmp));
-
     // types
     output[AUTO] = request.typeTotal_;
     for (int i = 0; i < request.typeTotal_; i++)
         output[AUTO] = request.certificate_types_[i];
 
     // authorities
-    c16toa(request.authTotal_, tmp);
+    opaque tmp[REQUEST_HEADER];
+    c16toa(request.get_length() - SIZEOF_ENUM -
+           request.typeTotal_ - REQUEST_HEADER, tmp);
     output.write(tmp, sizeof(tmp));
 
-    for (int j = 0; j < request.authTotal_; j++) {
-        uint16 sz = 0;
-        ato16(request.certificate_authorities_[j], sz);
-        output.write(request.certificate_authorities_[j], sz + REQUEST_HEADER);
+    std::list<DistinguishedName>::const_iterator first =
+                                    request.certificate_authorities_.begin();
+    std::list<DistinguishedName>::const_iterator last =
+                                    request.certificate_authorities_.end();
+    while (first != last) {
+        uint16 sz;
+        ato16(*first, sz);
+        output.write(*first, sz + REQUEST_HEADER);
+
+        ++first;
     }
 
     return output;

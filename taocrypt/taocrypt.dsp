@@ -117,6 +117,10 @@ SOURCE=.\src\dh.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\dsa.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\file.cpp
 # End Source File
 # Begin Source File
@@ -126,6 +130,10 @@ SOURCE=.\src\hash.cpp
 # Begin Source File
 
 SOURCE=.\src\integer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\md2.cpp
 # End Source File
 # Begin Source File
 
@@ -185,6 +193,10 @@ SOURCE=.\include\dh.hpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\include\dsa.hpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\include\file.hpp
 # End Source File
 # Begin Source File
@@ -198,6 +210,10 @@ SOURCE=.\include\hmac.hpp
 # Begin Source File
 
 SOURCE=.\include\integer.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\md2.hpp
 # End Source File
 # Begin Source File
 

@@ -21,12 +21,19 @@ void client_test(void* args)
 
     SSL_METHOD* method = TLSv1_client_method();
     SSL_CTX*    ctx = SSL_CTX_new(method);
+
+    //SSL_CTX_set_cipher_list(ctx, "EDH-DSS-DES-CBC-SHA");
     set_certs(ctx);
-    SSL*        ssl = SSL_new(ctx);
+    SSL* ssl = SSL_new(ctx);
 
     SSL_set_fd(ssl, sockfd);
 
     if (SSL_connect(ssl) != SSL_SUCCESS) err_sys("SSL_connect failed");
+    showPeer(ssl);
+
+    printf("cipherlist: %s\n", SSL_get_cipher_list(ssl, 0));
+    printf("Using Cipher Suite %s\n", SSL_get_cipher(ssl));
+
     char msg[] = "hello yassl!";
     if (SSL_write(ssl, msg, sizeof(msg)) != sizeof(msg))
         err_sys("SSL_write failed");

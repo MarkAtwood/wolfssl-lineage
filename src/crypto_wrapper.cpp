@@ -38,6 +38,7 @@
 #include "arc4.hpp"
 #include "aes.hpp"
 #include "rsa.hpp"
+#include "dsa.hpp"
 #include "dh.hpp"
 #include "random.hpp"
 #include "file.hpp"
@@ -389,6 +390,12 @@ AES::AES(unsigned int ks) : pimpl_(new AESImpl(ks)) {}
 AES::~AES() { delete pimpl_; }
 
 
+int AES::get_keySize() const
+{
+    return pimpl_->keySz_;
+}
+
+
 void AES::set_encryptKey(const byte* k, const byte* iv)
 {
     pimpl_->encryption.SetKey(k, pimpl_->keySz_, iv);
@@ -429,32 +436,30 @@ void RandomPool::Fill(opaque* dst, uint sz) const
 }
 
 
-/*
 // Implementation of DSS Authentication
 struct DSS::DSSImpl {
     void SetPublic (const byte*, unsigned int);
     void SetPrivate(const byte*, unsigned int);
-    TaoCrypt::DSA::PublicKey publicKey_;
-    TaoCrypt::DSA::PrivateKey privateKey_;
+    TaoCrypt::DSA_PublicKey publicKey_;
+    TaoCrypt::DSA_PrivateKey privateKey_;
 };
 
 
 // Decode and store the public key
 void DSS::DSSImpl::SetPublic(const byte* key, unsigned int sz)
 {
-    TaoCrypt::StringSource public_str(key, sz, true);
-    publicKey_.BERDecodeKey(public_str);
+    TaoCrypt::Source source(key, sz);
+    publicKey_.Initialize(source);
 }
 
 
 // Decode and store the public key
 void DSS::DSSImpl::SetPrivate(const byte* key, unsigned int sz)
 {
-    TaoCrypt::StringSource private_str(key, sz, true);
-    privateKey_.BERDecodeKey(private_str);
-    TaoCrypt::DSA::Signer   priv(privateKey_);
-    TaoCrypt::DSA::Verifier pub(priv);
-    publicKey_ = pub.GetKey();
+    TaoCrypt::Source source(key, sz);
+    privateKey_.Initialize(source);
+    publicKey_ = TaoCrypt::DSA_PublicKey(privateKey_);
+
 }
 
 
@@ -475,27 +480,33 @@ DSS::~DSS()
 }
 
 
+uint DSS::get_signatureLength() const
+{
+    return pimpl_->publicKey_.SignatureLength();
+}
+
+
 // DSS Sign message of length sz into sig
 void DSS::sign(byte* sig,  const byte* message, unsigned int sz,
                const RandomPool& random)
 {
     using namespace TaoCrypt;
 
-    DSA::Signer signer(pimpl_->privateKey_);
-    signer.SignMessage(random.pimpl_->RNG_, message, sz, sig);
+    DSA_Signer signer(pimpl_->privateKey_);
+    signer.Sign(message, sz, sig, random.pimpl_->RNG_);
 }
 
 
 // DSS Verify message of length sz against sig, is it correct?
 bool DSS::verify(const byte* message, unsigned int sz, const byte* sig,
-                 unsigned int sig_sz)
+                 unsigned int)
 {
     using namespace TaoCrypt;
 
-    DSA::Verifier ver(pimpl_->publicKey_);
-    return ver.VerifyMessage(message, sz, sig, sig_sz);
+    DSA_Verifier ver(pimpl_->publicKey_);
+    return ver.Verify(message, sz, sig);
 }
-*/
+
 
 // Implementation of RSA key interface
 struct RSA::RSAImpl {
@@ -509,16 +520,16 @@ struct RSA::RSAImpl {
 // Decode and store the public key
 void RSA::RSAImpl::SetPublic(const byte* key, unsigned int sz)
 {
-    TaoCrypt::Sink sink(key, sz);
-    publicKey_.Initialize(sink);
+    TaoCrypt::Source source(key, sz);
+    publicKey_.Initialize(source);
 }
 
 
 // Decode and store the private key
 void RSA::RSAImpl::SetPrivate(const byte* key, unsigned int sz)
 {
-    TaoCrypt::Sink sink(key, sz);
-    privateKey_.Initialize(sink);
+    TaoCrypt::Source source(key, sz);
+    privateKey_.Initialize(source);
     publicKey_ = TaoCrypt::RSA_PublicKey(privateKey_);
 }
 
@@ -543,6 +554,13 @@ RSA::~RSA()
 unsigned int RSA::get_cipherLength() const
 {
     return pimpl_->publicKey_.FixedCiphertextLength();
+}
+
+
+// get signautre length, varies on key size
+unsigned int RSA::get_signatureLength() const
+{
+    return get_cipherLength();
 }
 
 
@@ -583,6 +601,37 @@ void RSA::decrypt(byte* plain, const byte* cipher, unsigned int sz,
 }
 
 
+struct Integer::IntegerImpl {
+    TaoCrypt::Integer int_;
+
+    IntegerImpl() {}
+    explicit IntegerImpl(const TaoCrypt::Integer& i) : int_(i) {}
+};
+
+Integer::Integer() : pimpl_(new IntegerImpl) {}
+
+Integer::~Integer() { delete pimpl_; }
+
+
+
+Integer::Integer(const Integer& other) : pimpl_(new IntegerImpl(other.pimpl_->int_))
+{}
+
+
+Integer& Integer::operator=(const Integer& that)
+{
+    pimpl_->int_ = that.pimpl_->int_;
+
+    return *this;
+}
+
+
+void Integer::assign(const byte* num, unsigned int sz)
+{
+    pimpl_->int_ = TaoCrypt::Integer(num, sz);
+}
+
+
 struct DiffieHellman::DHImpl {
     TaoCrypt::DH                     dh_;
     TaoCrypt::RandomNumberGenerator& ranPool_;
@@ -615,11 +664,13 @@ DiffieHellman::DiffieHellman(const char* file, const RandomPool& random)
     : pimpl_(new DHImpl(random.pimpl_->RNG_))
 {
     using namespace TaoCrypt;
-    Sink sink;
-    FileSource(file, sink);
-    HexDecoder hd(sink);
+    Source source;
+    FileSource(file, source);
+    if (source.size() == 0)
+        throw Error("bad dh init file");
+    HexDecoder hd(source);
 
-    pimpl_->dh_.Initialize(sink);
+    pimpl_->dh_.Initialize(source);
 
     uint length = pimpl_->dh_.GetByteLength();
 
@@ -639,6 +690,23 @@ DiffieHellman::DiffieHellman(const byte* p, unsigned int pSz, const byte* g,
     pimpl_->dh_.Initialize(Integer(p, pSz).Ref(), Integer(g, gSz).Ref());
     pimpl_->publicKey_ = new opaque[pubSz];
     memcpy(pimpl_->publicKey_, pub, pubSz);
+}
+
+
+// Server Side DH, server's view
+DiffieHellman::DiffieHellman(const Integer& p, const Integer& g,
+                             const RandomPool& random)
+: pimpl_(new DHImpl(random.pimpl_->RNG_))
+{
+    using TaoCrypt::Integer;
+
+    pimpl_->dh_.Initialize(p.pimpl_->int_, g.pimpl_->int_);
+
+    uint length = pimpl_->dh_.GetByteLength();
+
+    pimpl_->AllocKeys(length, length, length);
+    pimpl_->dh_.GenerateKeyPair(pimpl_->ranPool_, pimpl_->privateKey_,
+                                                  pimpl_->publicKey_);
 }
 
 DiffieHellman::~DiffieHellman() { delete pimpl_; }
@@ -710,21 +778,6 @@ void DiffieHellman::get_parms(byte* bp, byte* bg, byte* bpub) const
 }
 
 
-struct Integer::IntegerImpl {
-    TaoCrypt::Integer int_;
-};
-
-Integer::Integer() : pimpl_(new IntegerImpl) {}
-
-Integer::~Integer() { delete pimpl_; }
-
-
-void Integer::assign(const byte* num, unsigned int sz)
-{
-    pimpl_->int_ = TaoCrypt::Integer(num, sz);
-}
-
-
 // convert PEM file to DER x509 type
 x509* PemToDer(const char* file, CertType type)
 {
@@ -742,9 +795,9 @@ x509* PemToDer(const char* file, CertType type)
         footer = "-----END RSA PRIVATE KEY-----\r\n";
     }
 
-    Sink sink;
-    FileSource(file, sink);
-    string pem((const char*)sink.get_buffer(), sink.size());
+    Source source;
+    FileSource(file, source);
+    string pem((const char*)source.get_buffer(), source.size());
 
     if (pem.find(header) == std::string::npos) {
         header.replace(header.find("\r\n"), 2, "\n");
@@ -756,7 +809,7 @@ x509* PemToDer(const char* file, CertType type)
     pem.erase(0, pem.find(header) + header.length());
     pem.erase(pem.find(footer), footer.length());
 
-    Sink der((const unsigned char*)pem.c_str(), pem.size());
+    Source der((const unsigned char*)pem.c_str(), pem.size());
     Base64Decoder b64Dec(der);
 
     uint sz = der.size();
