@@ -42,7 +42,7 @@
 
 
 #ifdef __DECCXX
-    #include <c_asm.h>  // for asm multiply overflow
+    #include <c_asm.h>  // for asm overflow assembly
 #endif
 
 
@@ -178,7 +178,7 @@ DWord() {}
             #elif defined(__DECCXX)
                 r.halfs_.high = asm("umulh %a0, %a1, %v0", a, b);
             #else
-                #error unsupported alpha compiler for asm multiply overflow
+                #error can not implement multiply overflow
             #endif
         #elif defined(__ia64__)
             r.halfs_.low = a*b;

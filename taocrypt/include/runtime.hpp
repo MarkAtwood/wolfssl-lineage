@@ -25,7 +25,7 @@
 
 
 
-#if !defined(yaSSL_NEW_HPP) && defined(DEFINE_CXA_PURE_VIRTUAL)
+#if !defined(yaSSL_NEW_HPP) && defined(YASSL_PURE_C)
 
 #define yaSSL_NEW_HPP
 

@@ -1,0 +1,46 @@
+AC_INIT
+AC_CANONICAL_SYSTEM
+AM_INIT_AUTOMAKE(yassl,0.9.8)
+
+
+AC_PROG_CXX
+AC_PROG_INSTALL
+AC_PROG_RANLIB
+
+
+
+CXXFLAGS="-g -fno-exceptions -fno-rtti -D_REENTRANT"
+AC_SUBST(CXXFLAGS)
+
+if expr "$host_os" : "solaris" > /dev/null
+then
+    EXTRA_SOCKET="-lnsl -lsocket"
+else
+    EXTRA_SOCKET=""
+fi
+AC_SUBST(EXTRA_SOCKET)
+
+
+if expr "$host_os" : ".*bsd.*" > /dev/null
+then
+    EXTRA_PTHREAD="-pthread"
+else
+    EXTRA_PTHREAD="-lpthread"
+fi
+AC_SUBST(EXTRA_PTHREAD)
+
+
+
+AC_CONFIG_FILES(Makefile dnl
+        taocrypt/Makefile dnl
+        taocrypt/src/Makefile dnl
+        src/Makefile dnl
+        taocrypt/test/Makefile dnl
+        examples/Makefile dnl
+        examples/client/Makefile dnl
+        examples/server/Makefile dnl
+        examples/echoclient/Makefile dnl
+        examples/echoserver/Makefile dnl
+        testsuite/Makefile)
+
+AC_OUTPUT

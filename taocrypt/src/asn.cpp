@@ -480,7 +480,7 @@ void CertDecoder::Decode(SignerList* signers)
     }
     else
         if (!ValidateSignature(signers))
-            source_.SetError(SIG_CONFIRM_E);
+            source_.SetError(SIG_OTHER_E);
 }
 
 
