@@ -15,8 +15,12 @@ public:
 	void DEREncode(BufferedTransformation &bt) const;
 
 	Integer ApplyFunction(const Integer &x) const;
-	Integer MaxPreimage() const {return n-1;}
-	Integer MaxImage() const {return n-1;}
+	Integer PreimageBound() const {return n;}
+	Integer ImageBound() const {return n;}
+
+	const Integer& GetModulus() const {return n;}
+	const Integer& GetQuadraticResidueModPrime1() const {return r;}
+	const Integer& GetQuadraticResidueModPrime2() const {return s;}
 
 protected:
 	RabinFunction() {}	// to be used only by InvertibleRabinFunction
@@ -34,6 +38,9 @@ public:
 	void DEREncode(BufferedTransformation &bt) const;
 
 	Integer CalculateInverse(const Integer &x) const;
+
+	const Integer& GetPrime1() const {return p;}
+	const Integer& GetPrime2() const {return q;}
 
 protected:
 	Integer p, q, u;

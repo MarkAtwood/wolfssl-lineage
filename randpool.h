@@ -21,8 +21,6 @@ public:
 	byte GenerateByte();
 	void GenerateBlock(byte *output, unsigned int size);
 
-	void MessageEnd(int) {}
-
 /*	// help compiler disambiguate
 	word16 GetShort(word16 min=0, word16 max=0xffff)
 		{return RandomNumberGenerator::GetShort(min, max);}

@@ -2,30 +2,23 @@
 
 #include "pch.h"
 
-#include "asn.h"
-#include "md2.h"
 #include "md5.h"
 #include "sha.h"
 #include "ripemd.h"
 #include "files.h"
-#include "validate.h"
 #include "rng.h"
-#include "secshare.h"
 #include "hex.h"
-#include "bench.h"
 #include "gzip.h"
 #include "default.h"
-#include "modes.h"
-#include "rabin.h"
 #include "rsa.h"
 #include "randpool.h"
+#include "ida.h"
+#include "socketft.h"
 
-#include <stdlib.h>
-#include <time.h>
+#include "validate.h"
+#include "bench.h"
+
 #include <iostream>
-#include <memory>
-#include <exception>
-#include <list>
 
 #if (_MSC_VER >= 1000)
 #include <crtdbg.h>		// for the debug heap
@@ -54,11 +47,16 @@ string DecryptString(const char *ciphertext, const char *passPhrase);
 void EncryptFile(const char *in, const char *out, const char *passPhrase);
 void DecryptFile(const char *in, const char *out, const char *passPhrase);
 
-void ShareFile(int n, int m, const char *filename);
-void AssembleFile(char *outfile, char **infiles, int n);
+void SecretShareFile(int threshold, int nShares, const char *filename, const char *seed);
+void SecretRecoverFile(int threshold, const char *outFilename, char *const *inFilenames);
+
+void InformationDisperseFile(int threshold, int nShares, const char *filename);
+void InformationRecoverFile(int threshold, const char *outFilename, char *const *inFilenames);
 
 void GzipFile(const char *in, const char *out, int deflate_level);
 void GunzipFile(const char *in, const char *out);
+
+void ForwardTcpPort(const char *sourcePort, const char *destinationHost, const char *destinationPort);
 
 bool Validate(int);
 
@@ -104,7 +102,7 @@ int main(int argc, char *argv[])
 			cout << "\nSave public key to file: ";
 			cin >> pubFilename;
 
-			cout << "\nSeed: ";
+			cout << "\nRandom Seed: ";
 			ws(cin);
 			cin.getline(seed, 1024);
 
@@ -135,7 +133,7 @@ int main(int argc, char *argv[])
 				cout << "\nPublic key file: ";
 				cin >> pubFilename;
 
-				cout << "\nSeed: ";
+				cout << "\nRandom Seed: ";
 				ws(cin);
 				cin.getline(seed, 1024);
 
@@ -188,10 +186,22 @@ int main(int argc, char *argv[])
 			return 0;
 		  }
 		case 's':
-			ShareFile(atoi(argv[2]), atoi(argv[3]), argv[4]);
+			if (argv[1][1] == 's')
+			{
+				char seed[1024];
+				cout << "\nRandom Seed: ";
+				ws(cin);
+				cin.getline(seed, 1024);
+				SecretShareFile(atoi(argv[2]), atoi(argv[3]), argv[4], seed);
+			}
+			else
+				SecretRecoverFile(argc-3, argv[2], argv+3);
 			return 0;
-		case 'j':
-			AssembleFile(argv[2], argv+3, argc-3);
+		case 'i':
+			if (argv[1][1] == 'd')
+				InformationDisperseFile(atoi(argv[2]), atoi(argv[3]), argv[4]);
+			else
+				InformationRecoverFile(argc-3, argv[2], argv+3);
 			return 0;
 		case 'v':
 			return !Validate(argc>2 ? atoi(argv[2]) : 0);
@@ -206,6 +216,9 @@ int main(int argc, char *argv[])
 			return 0;
 		case 'u':
 			GunzipFile(argv[2], argv[3]);
+			return 0;
+		case 'f':
+			ForwardTcpPort(argv[2], argv[3], argv[4]);
 			return 0;
 		default:
 			FileSource usage("usage.dat", true, new FileSink(cout));
@@ -319,20 +332,30 @@ bool RSAVerifyFile(const char *pubFilename, const char *messageFilename, const c
 void DigestFile(const char *filename)
 {
 	MD5 md5;
-	SHA shs;
+	HashFilter md5Filter(md5, new HexEncoder);
+	SHA sha;
+	HashFilter shaFilter(sha, new HexEncoder);
 	RIPEMD160 ripemd;
-	BufferedTransformation *outputs[]={new HashFilter(md5), new HashFilter(shs), new HashFilter(ripemd)};
-	FileSource file(filename, true, new Fork(3, outputs));
+	HashFilter ripemdFilter(ripemd, new HexEncoder);
+	SHA256 sha256;
+	HashFilter sha256Filter(sha256, new HexEncoder);
 
-	cout << "MD5:        ";
-	outputs[0]->Attach(new HexEncoder(new FileSink(cout)));
-	cout << endl;
-	cout << "SHA:        ";
-	outputs[1]->Attach(new HexEncoder(new FileSink(cout)));
-	cout << endl;
-	cout << "RIPEMD-160: ";
-	outputs[2]->Attach(new HexEncoder(new FileSink(cout)));
-	cout << endl;
+	ChannelSwitch *channelSwitch;
+	FileSource file(filename, false, channelSwitch = new ChannelSwitch);
+	channelSwitch->AddDefaultRoute(md5Filter);
+	channelSwitch->AddDefaultRoute(shaFilter);
+	channelSwitch->AddDefaultRoute(ripemdFilter);
+	channelSwitch->AddDefaultRoute(sha256Filter);
+	file.PumpAll();
+
+	cout << "\nMD5: ";
+	md5Filter.TransferTo(FileSink(cout));
+	cout << "\nSHA-1: ";
+	shaFilter.TransferTo(FileSink(cout));
+	cout << "\nRIPEMD-160: ";
+	ripemdFilter.TransferTo(FileSink(cout));
+	cout << "\nSHA-256: ";
+	sha256Filter.TransferTo(FileSink(cout));
 }
 
 string EncryptString(const char *instr, const char *passPhrase)
@@ -367,98 +390,180 @@ void DecryptFile(const char *in, const char *out, const char *passPhrase)
 	FileSource f(in, true, new DefaultDecryptorWithMAC(passPhrase, new FileSink(out)));
 }
 
-void ShareFile(int n, int m, const char *filename)
+void SecretShareFile(int threshold, int nShares, const char *filename, const char *seed)
 {
-	assert(n<=100);
+	assert(nShares<=1000);
 
-	SecByteBlock key(16), IV(16);
+	RandomPool rng;
+	rng.Put((byte *)seed, strlen(seed));
 
-	{   // use braces to force file to close
-		MD5 md5;
-		FileSource file(filename, true, new HashFilter(md5));
-		file.Get(key, 16);
-	}
+	ChannelSwitch *channelSwitch;
+	FileSource source(filename, false, new SecretSharing(rng, threshold, nShares, channelSwitch = new ChannelSwitch));
 
-	X917RNG rng(new Default_ECB_Encryption(key), key);
-	rng.GetBlock(key, 16);
-	ShareFork pss(rng, m, n);
-	pss.Put(key, 16);
-	pss.MessageEnd();
-
-	char outname[256];
-	strcpy(outname, filename);
-	int inFilenameLength = strlen(filename);
-	outname[inFilenameLength] = '.';
-
-	BufferedTransformation *outFiles[100];
-	for (int i=0; i<n; i++)
+	vector_member_ptrs<FileSink> fileSinks(nShares);
+	string channel;
+	for (unsigned int i=0; i<nShares; i++)
 	{
-		outname[inFilenameLength+1]='0'+byte(i/10);
-		outname[inFilenameLength+2]='0'+byte(i%10);
-		outname[inFilenameLength+3]='\0';
-		outFiles[i] = new FileSink(outname);
+		char extension[5] = ".000";
+		extension[1]='0'+byte(i/100);
+		extension[2]='0'+byte((i/10)%10);
+		extension[3]='0'+byte(i%10);
+		fileSinks[i].reset(new FileSink((string(filename)+extension).c_str()));
 
-		pss.SelectOutPort(i);
-		pss.TransferTo(*outFiles[i]);
+		channel = WordToString<word32>(i);
+		fileSinks[i]->Put((byte *)channel.data(), 4);
+		channelSwitch->AddRoute(channel, *fileSinks[i], BufferedTransformation::NULL_CHANNEL);
 	}
 
-	MD5 md5;
-	md5.CalculateDigest(IV, key, 16);
-
-	Default_ECB_Encryption ecb(key);
-	CFBEncryption cipher(ecb, IV);
-
-	FileSource file(filename, true,
-					new StreamCipherFilter(cipher, 
-					new DisperseFork(m, n, outFiles)));
+	source.PumpAll();
 }
 
-void AssembleFile(char *out, char **filenames, int n)
+void SecretRecoverFile(int threshold, const char *outFilename, char *const *inFilenames)
 {
-	assert(n<=100);
+	assert(threshold<=1000);
 
-	auto_ptr<FileSource> inFiles[100];
-	ShareJoin pss(n);
-	int i;
+	SecretRecovery recovery(threshold, new FileSink(outFilename));
 
-	for (i=0; i<n; i++)
+	vector_member_ptrs<FileSource> fileSources(threshold);
+	SecByteBlock channel(4);
+	unsigned int i;
+	for (i=0; i<threshold; i++)
 	{
-		// VC60 workaround: auto_ptr lacks reset()
-		inFiles[i] = (auto_ptr<FileSource>&) auto_ptr<FileSource>(new FileSource(filenames[i], false, pss.ReleaseInterface(i)));
-		inFiles[i]->Pump(28);
-		inFiles[i]->Detach();
+		fileSources[i].reset(new FileSource(inFilenames[i], false));
+		fileSources[i]->Pump(4);
+		fileSources[i]->Get(channel, 4);
+		fileSources[i]->Attach(new ChannelSwitch(recovery, string((char *)channel.ptr, 4)));
 	}
 
-	SecByteBlock key(16), IV(16);
-	inFiles[n-1]->Get(key, 16);
-	Default_ECB_Encryption ecb(key);
-	MD5 md5;
-	md5.CalculateDigest(IV, key, 16);
-	CFBDecryption cfb(ecb, IV);
-	DisperseJoin j(n, new StreamCipherFilter(cfb, new FileSink(out)));
+	while (fileSources[0]->Pump(256))
+		for (i=1; i<threshold; i++)
+			fileSources[i]->Pump(256);
 
-	for (i=0; i<n; i++)
-		inFiles[i]->Attach(j.ReleaseInterface(i));
+	for (i=0; i<threshold; i++)
+		fileSources[i]->PumpAll();
+}
 
-	while (inFiles[0]->Pump(256))
-		for (i=1; i<n; i++)
-			inFiles[i]->Pump(256);
+void InformationDisperseFile(int threshold, int nShares, const char *filename)
+{
+	assert(nShares<=1000);
 
-	for (i=0; i<n; i++)
+	ChannelSwitch *channelSwitch;
+	FileSource source(filename, false, new InformationDispersal(threshold, nShares, channelSwitch = new ChannelSwitch));
+
+	vector_member_ptrs<FileSink> fileSinks(nShares);
+	string channel;
+	for (unsigned int i=0; i<nShares; i++)
 	{
-		inFiles[i]->PumpAll();
-		inFiles[i]->MessageEnd();
+		char extension[5] = ".000";
+		extension[1]='0'+byte(i/100);
+		extension[2]='0'+byte((i/10)%10);
+		extension[3]='0'+byte(i%10);
+		fileSinks[i].reset(new FileSink((string(filename)+extension).c_str()));
+
+		channel = WordToString<word32>(i);
+		fileSinks[i]->Put((byte *)channel.data(), 4);
+		channelSwitch->AddRoute(channel, *fileSinks[i], BufferedTransformation::NULL_CHANNEL);
 	}
+
+	source.PumpAll();
+}
+
+void InformationRecoverFile(int threshold, const char *outFilename, char *const *inFilenames)
+{
+	assert(threshold<=1000);
+
+	InformationRecovery recovery(threshold, new FileSink(outFilename));
+
+	vector_member_ptrs<FileSource> fileSources(threshold);
+	SecByteBlock channel(4);
+	unsigned int i;
+	for (i=0; i<threshold; i++)
+	{
+		fileSources[i].reset(new FileSource(inFilenames[i], false));
+		fileSources[i]->Pump(4);
+		fileSources[i]->Get(channel, 4);
+		fileSources[i]->Attach(new ChannelSwitch(recovery, string((char *)channel.ptr, 4)));
+	}
+
+	while (fileSources[0]->Pump(256))
+		for (i=1; i<threshold; i++)
+			fileSources[i]->Pump(256);
+
+	for (i=0; i<threshold; i++)
+		fileSources[i]->PumpAll();
 }
 
 void GzipFile(const char *in, const char *out, int deflate_level)
 {
-	FileSource(in, true, new Gzip(deflate_level, new FileSink(out)));
+	FileSource(in, true, new Gzip(new FileSink(out), deflate_level));
 }
 
 void GunzipFile(const char *in, const char *out)
 {
 	FileSource(in, true, new Gunzip(new FileSink(out)));
+}
+
+void ForwardTcpPort(const char *sourcePortName, const char *destinationHost, const char *destinationPortName)
+{
+#ifdef SOCKETS_AVAILABLE
+	Socket::StartSockets();
+
+	Socket sockListen, sockSource, sockDestination;
+
+	int sourcePort = Socket::PortNameToNumber(sourcePortName);
+	int destinationPort = Socket::PortNameToNumber(destinationPortName);
+
+	sockListen.Create();
+	sockListen.Bind(sourcePort);
+
+	cout << "Listing on port " << sourcePort << ".\n";
+	sockListen.Listen();
+
+	sockListen.Accept(sockSource);
+	cout << "Connection accepted on port " << sourcePort << ".\n";
+
+	cout << "Making connection to " << destinationHost << ", port " << destinationPort << ".\n";
+	sockDestination.Create();
+	sockDestination.Connect(destinationHost, destinationPort);
+
+	cout << "Connection made to " << destinationHost << ", starting to forward.\n";
+
+	SocketSource out(sockSource, false, new SocketSink(sockDestination));
+	SocketSource in(sockDestination, false, new SocketSink(sockSource));
+
+	while (!(out.EofReceived() && in.EofReceived()))
+	{
+		fd_set fds;
+		FD_ZERO(&fds);
+		if (!out.EofReceived())
+			FD_SET(out, &fds);
+		if (!in.EofReceived())
+			FD_SET(in, &fds);
+		select(FD_SETSIZE, &fds, NULL, NULL, NULL);
+
+		if (FD_ISSET(out, &fds))
+		{
+			out.TimedPump(0);
+			if (out.EofReceived())
+			{
+				cout << "EOF received on source socket.\n";
+				out.PumpAll();	// this will shutdown the attached SocketSink
+			}
+		}
+		if (FD_ISSET(in, &fds))
+		{
+			in.TimedPump(0);
+			if (in.EofReceived())
+			{
+				cout << "EOF received on destination socket.\n";
+				in.PumpAll();	// this will shutdown the attached SocketSink
+			}
+		}
+	}
+#else
+	cout << "Sockets not available on this system.\n";
+	exit(-1);
+#endif
 }
 
 bool Validate(int alg)
@@ -514,6 +619,7 @@ bool Validate(int alg)
 	case 49: return ECDSAValidate();
 	case 50: return XTRDHValidate();
 	case 51: return SKIPJACKValidate();
+	case 52: return SHA2Validate();
 	default: return ValidateAll();
 	}
 }

@@ -21,22 +21,16 @@ public:
 	typedef T Element;
 	typedef AbstractGroup<T> Group;
 
-	ExponentiationPrecomputation(const Group &group) : group(group) {}
+	ExponentiationPrecomputation() : m_group(NULL) {}
 
-	ExponentiationPrecomputation(const Group &group, const Element &base, unsigned int maxExpBits, unsigned int storage)
-		: group(group), storage(storage), g(storage) {Precompute(base, maxExpBits);}
-
-	ExponentiationPrecomputation(const Group &group, const ExponentiationPrecomputation &pc)
-		: group(group), storage(pc.storage), exponentBase(pc.exponentBase), g(pc.g)	{}
-
-	void Precompute(const Element &base, unsigned int maxExpBits);
+	void SetGroupAndBase(const Group &group, const Element &base);
+	void Precompute(unsigned int maxExpBits, unsigned int storage);
 	Element Exponentiate(const Integer &exponent) const;
 	Element CascadeExponentiate(const Integer &exponent, const ExponentiationPrecomputation<T> &pc2, const Integer &exponent2) const;
 
-	const Group &group;
-	unsigned int storage;	// number of precalculated bases
-	Integer exponentBase;	// what base to represent the exponent in
-	std::vector<Element> g;		// precalculated bases
+	const Group *m_group;
+	Integer m_exponentBase;			// what base to represent the exponent in
+	std::vector<Element> m_bases;	// precalculated bases
 };
 
 NAMESPACE_END

@@ -152,9 +152,11 @@ void Deflator::init_hash()
 }
 
 /* Initialize the "longest match" routines for a new file */
-Deflator::Deflator(int deflate_level, BufferedTransformation *outQ)
-	: CodeTree(deflate_level, outQ),
-	  window(WINDOW_SIZE), prev(WSIZE), head(HASH_SIZE)
+Deflator::Deflator(BufferedTransformation *outQ, unsigned int deflateLevel, unsigned int log2WindowSize)
+	: CodeTree(outQ, deflateLevel, log2WindowSize)
+	, HASH_BITS(log2WindowSize), HASH_SIZE(1<<HASH_BITS), HASH_MASK(HASH_SIZE-1)
+	, WINDOW_SIZE(2*WSIZE), WMASK(WSIZE-1)
+	, window(WINDOW_SIZE), prev(WSIZE), head(HASH_SIZE), m_eof(false)
 {
    match_available = 0;
    match_length = MIN_MATCH-1;
@@ -184,10 +186,24 @@ void Deflator::Put(const byte *inString, unsigned int length)
 		lazy_deflate(inString, length);
 }
 
-void Deflator::MessageEnd(int propagation)
+void Deflator::Flush(bool completeFlush, int propagation)
 {
 	minlookahead = 0;
 	Put(NULL, 0);
+	// send empty store block
+	send_bits(STORED_BLOCK<<1, 3);
+	copy_block(NULL, 0, 1);
+	minlookahead = MIN_LOOKAHEAD-1;
+	Filter::Flush(completeFlush, propagation);
+}
+
+void Deflator::MessageEnd(int propagation)
+{
+	minlookahead = 0;
+	m_eof = true;
+	Put(NULL, 0);
+	minlookahead = MIN_LOOKAHEAD-1;
+	m_eof = false;
 	Filter::MessageEnd(propagation);
 }
 
@@ -480,7 +496,8 @@ int Deflator::fast_deflate(const byte *buffer, unsigned int length)
 	  }
    } while (accepted < length);
    if (!minlookahead) {/* eof achieved */
-	  FLUSH_BLOCK(1);
+		FLUSH_BLOCK(m_eof);
+		block_start = strstart;
    }
    return accepted;
 }
@@ -588,8 +605,13 @@ int Deflator::lazy_deflate(const byte *buffer, unsigned int length)
 	  }
    } while (accepted < length);
    if (!minlookahead) {/* eof achieved */
-	  if (match_available) ct_tally (0, window[strstart-1]);
-	  FLUSH_BLOCK(1);
+	  if (match_available)
+	  {
+		  ct_tally (0, window[strstart-1]);
+		  match_available = false;
+	  }
+	  FLUSH_BLOCK(m_eof);
+      block_start = strstart;
    }
    match_length = ml;
    return accepted;

@@ -3,8 +3,29 @@
 #include "ec2n.h"
 #include "ecp.h"
 #include "nbtheory.h"
+#include "oids.h"
+
+#include "algebra.cpp"
 
 NAMESPACE_BEGIN(CryptoPP)
+
+template void SimultaneousMultiplication<EC2NPoint, EC2NPoint *, const Integer *>(EC2NPoint * result, const AbstractGroup<EC2NPoint> &group, const EC2NPoint &base, const Integer * expBegin, const Integer * expEnd);
+template void SimultaneousMultiplication<ECPPoint, ECPPoint *, const Integer *>(ECPPoint * result, const AbstractGroup<ECPPoint> &group, const ECPPoint &base, const Integer * expBegin, const Integer * expEnd);
+
+template class ECPrivateKey<EC2N>;
+template class ECPrivateKey<ECP>;
+template class ECDigestVerifier<EC2N, ECDSA>;
+template class ECDigestVerifier<ECP, ECDSA>;
+template class ECDigestSigner<EC2N, ECDSA>;
+template class ECDigestSigner<ECP, ECDSA>;
+template class ECDigestVerifier<EC2N, ECNR>;
+template class ECDigestVerifier<ECP, ECNR>;
+template class ECDigestSigner<EC2N, ECNR>;
+template class ECDigestSigner<ECP, ECNR>;
+template class ECDHC<EC2N>;
+template class ECDHC<ECP>;
+template class ECMQVC<EC2N>;
+template class ECMQVC<ECP>;
 
 // VC60 workaround: complains when these functions are put into an anonymous namespace
 static Integer ConvertToInteger(const PolynomialMod2 &x)
@@ -36,256 +57,294 @@ static bool CheckMOVCondition(const Integer &q, const Integer &r)
 
 // ******************************************************************
 
-template <class EC, ECSignatureScheme SS> ECPublicKey<EC, SS>::ECPublicKey(const EC &E, const Point &P, const Point &Q, const Integer &orderP)
-	: ec(E), P(P), Q(Q), n(orderP), 
-	  Ppc(E, P, ExponentBitLength(), 1), Qpc(E, Q, ExponentBitLength(), 1)
+template <class EC>
+void ECParameters<EC>::BERDecode(BufferedTransformation &bt)
 {
-	l = ec.GetField().MaxElementByteLength();
-	f = n.ByteCount();
+	BERSequenceDecoder seq(bt);
+	m_ec.reset(new EC(seq));
+	m_G = m_ec->BERDecodePoint(seq);
+	m_n.BERDecode(seq);
+	m_cofactorPresent = !seq.EndReached();
+	if (m_cofactorPresent)
+		m_k.BERDecode(seq);
+	seq.MessageEnd();
+
+	m_Gpc.SetCurveAndBase(GetCurve(), m_G);
 }
 
-template <class EC, ECSignatureScheme SS> ECPublicKey<EC, SS>::~ECPublicKey()
+template <class EC>
+void ECParameters<EC>::DEREncode(BufferedTransformation &bt) const
 {
+	DERSequenceEncoder seq(bt);
+	m_ec->DEREncode(seq);
+	m_ec->DEREncodePoint(seq, m_G, m_compress);
+	m_n.DEREncode(seq);
+	if (m_cofactorPresent)
+		m_k.DEREncode(seq);
+	seq.MessageEnd();
 }
 
-template <class EC, ECSignatureScheme SS> void ECPublicKey<EC, SS>::Precompute(unsigned int precomputationStorage)
+template <class EC>
+bool ECParameters<EC>::ValidateParameters(RandomNumberGenerator &rng) const
 {
-	Ppc.Precompute(P, ExponentBitLength(), precomputationStorage);
-	Qpc.Precompute(Q, ExponentBitLength(), precomputationStorage);
+	Integer q = m_ec->FieldSize(), qSqrt = q.SquareRoot();
+
+	return m_ec->ValidateParameters(rng) && m_n!=q && m_n>4*qSqrt && VerifyPrime(rng, m_n)
+		&& m_ec->VerifyPoint(m_G) && !m_G.identity && m_ec->Multiply(m_n, m_G).identity
+		&& m_k==(q+2*qSqrt+1)/m_n && CheckMOVCondition(q, m_n);
 }
 
-template <class EC, ECSignatureScheme SS> void ECPublicKey<EC, SS>::LoadPrecomputation(BufferedTransformation &bt)
+template <class EC>
+void ECParameters<EC>::Precompute(unsigned int precomputationStorage)
 {
-	Ppc.Load(bt);
-	Qpc.Load(bt);
+	m_Gpc.Precompute(ExponentBitLength(), precomputationStorage);
 }
 
-template <class EC, ECSignatureScheme SS> void ECPublicKey<EC, SS>::SavePrecomputation(BufferedTransformation &bt) const
+template <class EC>
+void ECParameters<EC>::LoadPrecomputation(BufferedTransformation &bt)
 {
-	Ppc.Save(bt);
-	Qpc.Save(bt);
+	m_Gpc.Load(bt);
 }
 
-template <class EC, ECSignatureScheme SS>
-Integer ECPublicKey<EC, SS>::EncodeDigest(const byte *digest, unsigned int digestLen) const
+template <class EC>
+void ECParameters<EC>::SavePrecomputation(BufferedTransformation &bt) const
 {
-	Integer h;
-	if (SS == ECNR)
-	{
-		if (digestLen*8 < n.BitCount())
-			h.Decode(digest, digestLen);
-		else
-		{
-			h.Decode(digest, n.ByteCount());
-			h >>= n.ByteCount()*8 - n.BitCount() + 1;
-		}
-		assert(h < n);
-	}
+	m_Gpc.Save(bt);
+}
+
+// ******************************************************************
+
+template <class EC>
+ECPublicKey<EC>::ECPublicKey(BufferedTransformation &bt)
+{
+	BERSequenceDecoder seq(bt);
+	BERSequenceDecoder algorithm(seq);
+	if (OID(algorithm) != ASN1::id_ecPublicKey())
+		BERDecodeError();
+	ECParameters<EC>::BERDecode(algorithm);
+	algorithm.MessageEnd();
+	SecByteBlock subjectPublicKey;
+	unsigned int unusedBits;
+	BERDecodeBitString(seq, subjectPublicKey, unusedBits);
+	if (!(unusedBits == 0 && m_ec->DecodePoint(m_Q, subjectPublicKey, subjectPublicKey.size)))
+		BERDecodeError();
+	seq.MessageEnd();
+
+	m_Qpc.SetCurveAndBase(GetCurve(), m_Q);
+}
+
+template <class EC>
+void ECPublicKey<EC>::DEREncode(BufferedTransformation &bt) const
+{
+	DERSequenceEncoder seq(bt);
+	DERSequenceEncoder algorithm(seq);
+	ASN1::id_ecPublicKey().DEREncode(algorithm);
+	ECParameters<EC>::DEREncode(algorithm);
+	algorithm.MessageEnd();
+	SecByteBlock subjectPublicKey(EncodedPointSize());
+	EncodePoint(subjectPublicKey, m_Q);
+	DEREncodeBitString(seq, subjectPublicKey.ptr, subjectPublicKey.size);
+	seq.MessageEnd();
+}
+
+template <class EC>
+void ECPublicKey<EC>::Precompute(unsigned int precomputationStorage)
+{
+	m_Gpc.Precompute(ExponentBitLength(), precomputationStorage);
+	m_Qpc.Precompute(ExponentBitLength(), precomputationStorage);
+}
+
+template <class EC>
+void ECPublicKey<EC>::LoadPrecomputation(BufferedTransformation &bt)
+{
+	m_Gpc.Load(bt);
+	m_Qpc.Load(bt);
+}
+
+template <class EC>
+void ECPublicKey<EC>::SavePrecomputation(BufferedTransformation &bt) const
+{
+	m_Gpc.Save(bt);
+	m_Qpc.Save(bt);
+}
+
+template <class EC>
+Integer ECPublicKey<EC>::EncodeDigest(ECSignatureScheme ss, const byte *digest, unsigned int digestLen) const
+{
+	if (ss == ECNR)
+		return NR_EncodeDigest(m_n.BitCount(), digest, digestLen);
 	else
 	{
-		assert(SS == ECDSA);
-		if (digestLen*8 <= n.BitCount())
-			h.Decode(digest, digestLen);
-		else
-		{
-			h.Decode(digest, n.ByteCount());
-			h >>= n.ByteCount()*8 - n.BitCount();
-		}
+		assert(ss == ECDSA);
+		return DSA_EncodeDigest(m_n.BitCount(), digest, digestLen);
 	}
-	return h;
 }
 
-template <class EC, ECSignatureScheme SS> void ECPublicKey<EC, SS>::Encrypt(RandomNumberGenerator &rng, const byte *plainText, unsigned int plainTextLength, byte *cipherText)
+// ******************************************************************
+
+template <class EC>
+ECPrivateKey<EC>::ECPrivateKey(BufferedTransformation &bt)
 {
-	assert (plainTextLength <= MaxPlainTextLength());
+	BERSequenceDecoder seq(bt);
+	word32 version;
+	BERDecodeUnsigned<word32>(seq, version, INTEGER, 1, 1);	// check version
+	// SEC 1 ver 1.0 says privateKey (m_d) has the same length as order of the curve
+	// but there is some confusion so I'll allow any length
+	BERGeneralDecoder dec(bt, OCTET_STRING);
+	if (!dec.IsDefiniteLength())
+		BERDecodeError();
+	m_d.Decode(dec, dec.RemainingLength());
+	dec.MessageEnd();
+	// parameters is optional according to SEC 1, but we need it here
+	BERGeneralDecoder parameters(seq, CONTEXT_SPECIFIC | CONSTRUCTED | 0);
+	ECParameters<EC>::BERDecode(parameters);
+	parameters.MessageEnd();
+	if (seq.EndReached())
+		m_Q = m_Gpc.Multiply(m_d);
+	{
+		SecByteBlock subjectPublicKey;
+		unsigned int unusedBits;
+		BERGeneralDecoder publicKey(seq, CONTEXT_SPECIFIC | CONSTRUCTED | 1);
+		BERDecodeBitString(publicKey, subjectPublicKey, unusedBits);
+		publicKey.MessageEnd();
+		if (!(unusedBits == 0 && m_ec->DecodePoint(m_Q, subjectPublicKey, subjectPublicKey.size)))
+			BERDecodeError();
+	}
+	seq.MessageEnd();
 
-	Integer k(rng, 2, n-2, Integer::ANY);
-	Point kP = Ppc.Multiply(k);
-	Point kQ = Qpc.Multiply(k);
-
-	cipherText[0] = 0;
-	kP.x.Encode(cipherText+1, l);
-	kP.y.Encode(cipherText+l+1, l);
-	kQ.x.Encode(cipherText+2*l+1, l);
-
-	SecByteBlock paddedBlock(l-1);
-	// pad with non-zero random bytes
-	for (unsigned i = 0; i < l-2-plainTextLength; i++)
-		while ((paddedBlock[i] = rng.GetByte()) == 0);
-	paddedBlock[l-2-plainTextLength] = 0;
-	memcpy(paddedBlock+l-1-plainTextLength, plainText, plainTextLength);
-	xorbuf(cipherText+2*l+2, paddedBlock, l-1);
+	m_Qpc.SetCurveAndBase(GetCurve(), m_Q);
 }
 
-template <class EC, ECSignatureScheme SS> bool ECPublicKey<EC, SS>::RawVerify(const Integer &e, const Integer &r, const Integer &s) const
+template <class EC>
+void ECPrivateKey<EC>::DEREncode(BufferedTransformation &bt) const
+{
+	DERSequenceEncoder seq(bt);
+	DEREncodeUnsigned<word32>(seq, 1);	// version
+	// SEC 1 ver 1.0 says privateKey (m_d) has the same length as order of the curve
+	// this will be changed to order of base point in a future version
+	m_d.DEREncodeAsOctetString(seq, m_n.ByteCount());
+
+	DERGeneralEncoder parameters(seq, CONTEXT_SPECIFIC | CONSTRUCTED | 0);
+	ECParameters<EC>::DEREncode(parameters);
+	parameters.MessageEnd();
+
+	DERGeneralEncoder publicKey(seq, CONTEXT_SPECIFIC | CONSTRUCTED | 1);
+	SecByteBlock subjectPublicKey(EncodedPointSize());
+	EncodePoint(subjectPublicKey, m_Q);
+	DEREncodeBitString(publicKey, subjectPublicKey.ptr, subjectPublicKey.size);
+	publicKey.MessageEnd();
+
+	seq.MessageEnd();
+}
+
+template <class EC>
+void ECPrivateKey<EC>::Randomize(RandomNumberGenerator &rng)
+{
+	m_d.Randomize(rng, 1, m_n-1, Integer::ANY);
+	m_Q = m_Gpc.Multiply(m_d);
+	m_Qpc.SetCurveAndBase(GetCurve(), m_Q);
+}
+
+// ******************************************************************
+
+template <class EC, ECSignatureScheme SS>
+bool ECDigestVerifier<EC, SS>::RawVerify(const Integer &e, const Integer &r, const Integer &s) const
 {
 	if (SS == ECNR)
 	{
-		if (r>=n || r<1 || s>=n)
+		if (r>=m_n || r<1 || s>=m_n)
 			return false;
 
-		// check r == ((r*P + s*P).x + e) % n
-		Integer x = ConvertToInteger(Ppc.CascadeMultiply(s, Qpc, r).x);
-		return r == (x+e)%n;
+		// check r == ((r*P + s*P).x + e) % m_n
+		Integer x = ConvertToInteger(m_Gpc.CascadeMultiply(s, m_Qpc, r).x);
+		return r == (x+e) % m_n;
 	}
 	else	// ECDSA
 	{
-		if (r>=n || r<1 || s>=n || s<1)
+		if (r>=m_n || r<1 || s>=m_n || s<1)
 			return false;
 
-		Integer w = EuclideanMultiplicativeInverse(s, n);
-		Integer u1 = (e * w) % n;
-		Integer u2 = (r * w) % n;
+		Integer w = EuclideanMultiplicativeInverse(s, m_n);
+		Integer u1 = (e * w) % m_n;
+		Integer u2 = (r * w) % m_n;
 		// check r == (u1*P + u2*P).x % n
-		return r == ConvertToInteger(Ppc.CascadeMultiply(u1, Qpc, u2).x) % n;
+		return r == ConvertToInteger(m_Gpc.CascadeMultiply(u1, m_Qpc, u2).x) % m_n;
 	}
 }
 
-template <class EC, ECSignatureScheme SS> bool ECPublicKey<EC, SS>::VerifyDigest(const byte *digest, unsigned int digestLen, const byte *signature) const
+template <class EC, ECSignatureScheme SS>
+bool ECDigestVerifier<EC, SS>::VerifyDigest(const byte *digest, unsigned int digestLen, const byte *signature) const
 {
 	assert (digestLen <= MaxDigestLength());
 
-	Integer e = EncodeDigest(digest, digestLen);
-	Integer r(signature, f);
-	Integer s(signature+f, f);
+	Integer e = EncodeDigest(SS, digest, digestLen);
+	Integer r(signature, ExponentLength());
+	Integer s(signature+ExponentLength(), ExponentLength());
 
 	return RawVerify(e, r, s);
 }
 
 // ******************************************************************
 
-template <class EC, ECSignatureScheme SS> ECPrivateKey<EC, SS>::~ECPrivateKey()
-{
-}
-
-template <class EC, ECSignatureScheme SS> void ECPrivateKey<EC, SS>::Randomize(RandomNumberGenerator &rng)
-{
-	d.Randomize(rng, 2, n-2, Integer::ANY);
-	Q = Ppc.Multiply(d);
-	Qpc.Precompute(Q, ExponentBitLength(), 1);
-}
-
-template <class EC, ECSignatureScheme SS> unsigned int ECPrivateKey<EC, SS>::Decrypt(const byte *cipherText, byte *plainText)
-{
-	if (cipherText[0]!=0)	// TODO: no support for point compression yet
-		return 0;
-
-	FieldElement kPx(cipherText+1, l);
-	FieldElement kPy(cipherText+l+1, l);
-	Point kP(kPx, kPy);
-	Point kQ(ec.Multiply(d, kP));
-
-	SecByteBlock paddedBlock(l-1);
-	kQ.x.Encode(paddedBlock, l-1);
-	xorbuf(paddedBlock, cipherText+2*l+2, l-1);
-
-	unsigned i;
-	// remove padding
-	for (i=0; i<l-1; i++)
-		if (paddedBlock[i] == 0)			// end of padding reached
-		{
-			i++;
-			break;
-		}
-
-	memcpy(plainText, paddedBlock+i, l-1-i);
-	return l-1-i;
-}
-
-template <class EC, ECSignatureScheme SS> void ECPrivateKey<EC, SS>::RawSign(const Integer &k, const Integer &e, Integer &r, Integer &s) const
+template <class EC, ECSignatureScheme SS>
+void ECDigestSigner<EC, SS>::RawSign(const Integer &k, const Integer &e, Integer &r, Integer &s) const
 {
 	if (SS == ECNR)
 	{
 		do
 		{
 			// convert kP.x into an Integer
-			Integer x = ConvertToInteger(Ppc.Multiply(k).x);
-			r = (x+e)%n;
-			s = (k-d*r)%n;
+			Integer x = ConvertToInteger(m_Gpc.Multiply(k).x);
+			r = (x+e) % m_n;
+			s = (k-m_d*r) % m_n;
 		} while (!r);
 	}
 	else
 	{
 		do
 		{
-			r = ConvertToInteger(Ppc.Multiply(k).x) % n;
-			Integer kInv = EuclideanMultiplicativeInverse(k, n);
-			s = (kInv * (d*r + e)) % n;
+			r = ConvertToInteger(m_Gpc.Multiply(k).x) % m_n;
+			Integer kInv = EuclideanMultiplicativeInverse(k, m_n);
+			s = (kInv * (m_d*r + e)) % m_n;
 		} while (!r || !s);
 	}
 }
 
-template <class EC, ECSignatureScheme SS> void ECPrivateKey<EC, SS>::SignDigest(RandomNumberGenerator &rng, const byte *digest, unsigned int digestLen, byte *signature) const
+template <class EC, ECSignatureScheme SS>
+void ECDigestSigner<EC, SS>::SignDigest(RandomNumberGenerator &rng, const byte *digest, unsigned int digestLen, byte *signature) const
 {
 	Integer r, s;
-	Integer e = EncodeDigest(digest, digestLen);
-	Integer k(rng, 2, n-2, Integer::ANY);
+	Integer e = EncodeDigest(SS, digest, digestLen);
+	Integer k(rng, 1, m_n-1, Integer::ANY);
 
 	RawSign(k, e, r, s);
 
-	r.Encode(signature, f);
-	s.Encode(signature+f, f);
+	r.Encode(signature, ExponentLength());
+	s.Encode(signature+ExponentLength(), ExponentLength());
 }
 
 // ******************************************************************
 
 template <class EC>
-ECDHC<EC>::ECDHC(const EC &ec, const Point &G, const Integer &r, const Integer &k)
-	: ec(ec), G(G), r(r), k(k), Gpc(ec, G, r.BitCount(), 1)
-{
-}
-
-template <class EC>
-ECDHC<EC>::~ECDHC()
-{
-}
-
-template <class EC>
-void ECDHC<EC>::Precompute(unsigned int precomputationStorage)
-{
-	Gpc.Precompute(G, r.BitCount(), precomputationStorage);
-}
-
-template <class EC>
-void ECDHC<EC>::LoadPrecomputation(BufferedTransformation &bt)
-{
-	Gpc.Load(bt);
-}
-
-template <class EC>
-void ECDHC<EC>::SavePrecomputation(BufferedTransformation &bt) const
-{
-	Gpc.Save(bt);
-}
-
-template <class EC>
-bool ECDHC<EC>::ValidateDomainParameters(RandomNumberGenerator &rng) const
-{
-	Integer q = ec.FieldSize(), qSqrt = q.SquareRoot();
-
-	return ec.ValidateParameters(rng) && r!=q && r>4*qSqrt && VerifyPrime(rng, r)
-		&& ec.VerifyPoint(G) && !G.identity && ec.Multiply(r, G).identity
-		&& k==(q+2*qSqrt+1)/r && CheckMOVCondition(q, r);
-}
-
-template <class EC>
 void ECDHC<EC>::GenerateKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const
 {
-	Integer x(rng, 1, r-1);
-	Point Q = Gpc.Multiply(x);
+	Integer x(rng, 1, m_n-1);
+	Point Q = m_Gpc.Multiply(x);
 	x.Encode(privateKey, PrivateKeyLength());
-	ec.EncodePoint(publicKey, Q);
+	EncodePoint(publicKey, Q);
 }
 
 template <class EC>
 bool ECDHC<EC>::Agree(byte *agreedValue, const byte *privateKey, const byte *otherPublicKey, bool validateOtherPublicKey) const
 {
-	Point W(ec.DecodePoint(otherPublicKey));
-	if (validateOtherPublicKey && !ec.VerifyPoint(W))
+	Point W;
+	if (!GetCurve().DecodePoint(W, otherPublicKey, PublicKeyLength()))
+		return false;
+	if (validateOtherPublicKey && !GetCurve().VerifyPoint(W))
 		return false;
 
 	Integer s(privateKey, PrivateKeyLength());
-	Point Q = ec.Multiply(k*s, W);
+	Point Q = GetCurve().Multiply(m_k*s, W);
 	if (Q.identity)
 		return false;
 	Q.x.Encode(agreedValue, AgreedValueLength());
@@ -295,95 +354,47 @@ bool ECDHC<EC>::Agree(byte *agreedValue, const byte *privateKey, const byte *oth
 // ******************************************************************
 
 template <class EC>
-ECMQVC<EC>::ECMQVC(const EC &ec, const Point &G, const Integer &r, const Integer &k)
-	: ec(ec), G(G), r(r), k(k), Gpc(ec, G, r.BitCount(), 1)
-{
-}
-
-template <class EC>
-ECMQVC<EC>::~ECMQVC()
-{
-}
-
-template <class EC>
-void ECMQVC<EC>::Precompute(unsigned int precomputationStorage)
-{
-	Gpc.Precompute(G, r.BitCount(), precomputationStorage);
-}
-
-template <class EC>
-void ECMQVC<EC>::LoadPrecomputation(BufferedTransformation &bt)
-{
-	Gpc.Load(bt);
-}
-
-template <class EC>
-void ECMQVC<EC>::SavePrecomputation(BufferedTransformation &bt) const
-{
-	Gpc.Save(bt);
-}
-
-template <class EC>
-bool ECMQVC<EC>::ValidateDomainParameters(RandomNumberGenerator &rng) const
-{
-	Integer q = ec.FieldSize(), qSqrt = q.SquareRoot();
-
-	return ec.ValidateParameters(rng) && r!=q && r>4*qSqrt && VerifyPrime(rng, r)
-		&& ec.VerifyPoint(G) && !G.identity && ec.Multiply(r, G).identity
-		&& k==(q+2*qSqrt+1)/r && CheckMOVCondition(q, r);
-}
-
-template <class EC>
 void ECMQVC<EC>::GenerateStaticKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const
 {
-	Integer x(rng, 1, r-1);
-	Point Q = Gpc.Multiply(x);
+	Integer x(rng, 1, m_n-1);
+	Point Q = m_Gpc.Multiply(x);
 	x.Encode(privateKey, StaticPrivateKeyLength());
-	ec.EncodePoint(publicKey, Q);
+	EncodePoint(publicKey, Q);
 }
 
 template <class EC>
 void ECMQVC<EC>::GenerateEphemeralKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const
 {
-	Integer x(rng, 1, r-1);
-	Point Q = Gpc.Multiply(x);
-	x.Encode(privateKey, r.ByteCount());
-	ec.EncodePoint(privateKey+r.ByteCount(), Q);
-	ec.EncodePoint(publicKey, Q);
+	Integer x(rng, 1, m_n-1);
+	Point Q = m_Gpc.Multiply(x);
+	x.Encode(privateKey, ExponentLength());
+	EncodePoint(privateKey+ExponentLength(), Q);
+	EncodePoint(publicKey, Q);
 }
 
 template <class EC>
 bool ECMQVC<EC>::Agree(byte *agreedValue, const byte *staticPrivateKey, const byte *ephemeralPrivateKey, const byte *staticOtherPublicKey, const byte *ephemeralOtherPublicKey, bool validateStaticOtherPublicKey) const
 {
-	Point WW(ec.DecodePoint(staticOtherPublicKey));
-	Point VV(ec.DecodePoint(ephemeralOtherPublicKey));
-	if (!ec.VerifyPoint(VV) || (validateStaticOtherPublicKey && !ec.VerifyPoint(WW)))
+	Point WW, VV;
+	if (!(GetCurve().DecodePoint(WW, staticOtherPublicKey, StaticPublicKeyLength())
+		  && GetCurve().DecodePoint(VV, ephemeralOtherPublicKey, EphemeralPublicKeyLength())))
+		return false;
+	if (!GetCurve().VerifyPoint(VV) || (validateStaticOtherPublicKey && !GetCurve().VerifyPoint(WW)))
 		return false;
 
 	Integer s(staticPrivateKey, StaticPrivateKeyLength());
-	Integer u(ephemeralPrivateKey, r.ByteCount());
-	Point V(ec.DecodePoint(ephemeralPrivateKey+r.ByteCount()));
+	Integer u(ephemeralPrivateKey, ExponentLength());
+	Point V;
+	if (!GetCurve().DecodePoint(V, ephemeralPrivateKey+ExponentLength(), EncodedPointSize()))
+		return false;
 
-	Integer h2 = Integer::Power2((r.BitCount()+1)/2);
-	Integer e = ((h2+ConvertToInteger(V.x)%h2)*s+u) % r;
-	Point Q = ec.CascadeMultiply(k*e, VV, k*(e*(h2+ConvertToInteger(VV.x)%h2)%r), WW);
+	Integer h2 = Integer::Power2((m_n.BitCount()+1)/2);
+	Integer e = ((h2+ConvertToInteger(V.x)%h2)*s+u) % m_n;
+	Point Q = GetCurve().CascadeMultiply(m_k*e, VV, m_k*(e*(h2+ConvertToInteger(VV.x)%h2)%m_n), WW);
 	if (Q.identity)
 		return false;
 	Q.x.Encode(agreedValue, AgreedValueLength());
 	return true;
 }
-
-template class ECPublicKey<EC2N, ECDSA>;
-template class ECPublicKey<ECP, ECDSA>;
-template class ECPrivateKey<EC2N, ECDSA>;
-template class ECPrivateKey<ECP, ECDSA>;
-template class ECPublicKey<EC2N, ECNR>;
-template class ECPublicKey<ECP, ECNR>;
-template class ECPrivateKey<EC2N, ECNR>;
-template class ECPrivateKey<ECP, ECNR>;
-template class ECDHC<EC2N>;
-template class ECDHC<ECP>;
-template class ECMQVC<EC2N>;
-template class ECMQVC<ECP>;
 
 NAMESPACE_END

@@ -5,46 +5,13 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-RIPEMD160::RIPEMD160()
-	: IteratedHash<word32>(DATASIZE, DIGESTSIZE)
-{
-	Init();
-}
-
 void RIPEMD160::Init()
 {
-	countLo = countHi = 0;
-
 	digest[0] = 0x67452301L;
 	digest[1] = 0xefcdab89L;
 	digest[2] = 0x98badcfeL;
 	digest[3] = 0x10325476L;
 	digest[4] = 0xc3d2e1f0L;
-}
-
-void RIPEMD160::HashBlock(const word32 *input)
-{
-#ifdef IS_LITTLE_ENDIAN
-	Transform(digest, input);
-#else
-	byteReverse(data.ptr, input, (unsigned int)DATASIZE);
-	Transform(digest, data);
-#endif
-}
-
-void RIPEMD160::Final (byte *hash)
-{
-	PadLastBlock(56);
-	CorrectEndianess(data, data, 56);
-
-	data[14] = countLo;
-	data[15] = countHi;
-
-	Transform(digest, data);
-	CorrectEndianess(digest, digest, DIGESTSIZE);
-	memcpy(hash, digest, DIGESTSIZE);
-
-	Init();		// reinit for next use
 }
 
 void RIPEMD160::Transform (word32 *digest, const word32 *X)

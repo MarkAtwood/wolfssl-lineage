@@ -38,7 +38,7 @@ public:
 	static const unsigned int KEYLENGTH=T::DATASIZE;
     static const unsigned int BLOCKSIZE=T::DIGESTSIZE;
 #else
-	enum {KEYLENGTH=T::DATASIZE, BLOCKSIZE=T::DIGESTSIZE};
+	enum {KEYLENGTH=T::BLOCKSIZE, BLOCKSIZE=T::DIGESTSIZE};
 #endif
 
 private:

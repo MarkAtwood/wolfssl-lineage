@@ -12,7 +12,7 @@ const word32 MD5MAC::T[12] =
 	  0x21b4219d,0x4db987bc,0xbd279da2,0xc3d75bc7 };
 
 MD5MAC::MD5MAC(const byte *userKey)
-	: IteratedHash<word32>(DATASIZE, DIGESTSIZE),
+	: IteratedHash<word32, false, 64>(DIGESTSIZE),
 	  key(12)
 {
 	const word32 zeros[4] = {0,0,0,0};
@@ -42,32 +42,10 @@ MD5MAC::MD5MAC(const byte *userKey)
 
 void MD5MAC::Init()
 {
-	countLo = countHi = 0;
-
 	digest[0] = key[0];
 	digest[1] = key[1];
 	digest[2] = key[2];
 	digest[3] = key[3];
-}
-
-void MD5MAC::CorrectEndianess(word32 *out, const word32 *in, unsigned int byteCount)
-{
-#ifndef IS_LITTLE_ENDIAN
-	byteReverse(out, in, byteCount);
-#else
-	if (in!=out)
-		memcpy(out, in, byteCount);
-#endif
-}
-
-void MD5MAC::HashBlock(const word32 *input)
-{
-#ifdef IS_LITTLE_ENDIAN
-	Transform(digest, input, key+4);
-#else
-	byteReverse(data.ptr, input, (unsigned int)DATASIZE);
-	Transform(digest, data, key+4);
-#endif
 }
 
 void MD5MAC::Final (byte *hash)
@@ -90,7 +68,7 @@ void MD5MAC::Final (byte *hash)
 	CorrectEndianess(digest, digest, DIGESTSIZE);
 	memcpy(hash, digest, DIGESTSIZE);
 
-	Init();		// reinit for next use
+	Reinit();		// reinit for next use
 }
 
 void MD5MAC::Transform (word32 *digest, const word32 *X, const word32 *key)

@@ -57,7 +57,7 @@ public:
 	GFP2Element ConvertOut(const GFP2Element &a) const
 		{return GFP2Element(modp.ConvertOut(a.c1), modp.ConvertOut(a.c2));}
 
-	bool Equal(const Element &a, const Element &b) const
+	bool Equal(const GFP2Element &a, const GFP2Element &b) const
 	{
 		return modp.Equal(a.c1, b.c1) && modp.Equal(a.c2, b.c2);
 	}

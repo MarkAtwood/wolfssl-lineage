@@ -82,16 +82,6 @@ public:
 
 	//@Man: ACCESSORS
 	//@{
-		/// encode polynomial as a big-endian byte array, returns size of output
-		unsigned int Encode(byte *output) const;
-		/// use this to make sure output size is exactly outputLen
-		unsigned int Encode(byte *output, unsigned int outputLen) const;
-
-		/// encode polynomial using Distinguished Encoding Rules, returns size of output
-		unsigned int DEREncode(byte *output) const;
-		/// encode using DER, put result into a BufferedTransformation object
-		unsigned int DEREncode(BufferedTransformation &bt) const;
-
 		/// the zero polynomial will return a degree of -1
 		int Degree(const Ring &ring) const {return int(CoefficientCount(ring))-1;}
 		///
@@ -104,10 +94,6 @@ public:
 	//@{
 		///
 		PolynomialOver<Ring>&  operator=(const PolynomialOver<Ring>& t);
-
-		void Decode(const byte *input, unsigned int inputLen);
-		void BERDecode(const byte *input);
-		void BERDecode(BufferedTransformation &bt);
 
 		///
 		void Randomize(RandomNumberGenerator &rng, const RandomizationParameter &parameter, const Ring &ring);
@@ -216,9 +202,6 @@ public:
 
 	//@Man: ACCESSORS
 	//@{
-		B::Encode;
-		B::DEREncode;
-
 		/// the zero polynomial will return a degree of -1
 		int Degree() const {return B::Degree(fixedRing);}
 		/// degree + 1
@@ -249,9 +232,6 @@ public:
 		///
 		ThisType&  operator>>=(unsigned int n) {ShiftRight(n, fixedRing); return *this;}
 
-		B::Decode;
-		B::BERDecode;
-
 		/// set the coefficient for x^i to value
 		void SetCoefficient(unsigned int i, const CoefficientType &value) {B::SetCoefficient(i, value, fixedRing);}
 
@@ -277,45 +257,9 @@ public:
 	//@Man: BINARY OPERATORS
 	//@{
 		///
-		friend ThisType operator+(const ThisType &a, const ThisType &b)
-			{return ThisType(a.Plus(b, fixedRing));}
-		///
-		friend ThisType operator-(const ThisType &a, const ThisType &b)
-			{return ThisType(a.Minus(b, fixedRing));}
-		///
-		friend ThisType operator*(const ThisType &a, const ThisType &b)
-			{return ThisType(a.Times(b, fixedRing));}
-		///
-		friend ThisType operator/(const ThisType &a, const ThisType &b)
-			{return ThisType(a.DividedBy(b, fixedRing));}
-		///
-		friend ThisType operator%(const ThisType &a, const ThisType &b)
-			{return ThisType(a.Modulo(b, fixedRing));}
-
-		///
 		friend ThisType operator>>(ThisType a, unsigned int n)	{return ThisType(a>>=n);}
 		///
 		friend ThisType operator<<(ThisType a, unsigned int n)	{return ThisType(a<<=n);}
-
-		///
-		friend bool operator==(const ThisType &a, const ThisType &b)
-			{return a.Equals(b, fixedRing);}
-		///
-		friend bool operator!=(const ThisType &a, const ThisType &b)
-			{return !(a==b);}
-
-		///
-		friend bool operator> (const ThisType &a, const ThisType &b)
-			{return a.Degree() > b.Degree();}
-		///
-		friend bool operator>=(const ThisType &a, const ThisType &b)
-			{return a.Degree() >= b.Degree();}
-		///
-		friend bool operator< (const ThisType &a, const ThisType &b)
-			{return a.Degree() < b.Degree();}
-		///
-		friend bool operator<=(const ThisType &a, const ThisType &b)
-			{return a.Degree() <= b.Degree();}
 	//@}
 
 	//@Man: OTHER ARITHMETIC FUNCTIONS
@@ -424,6 +368,10 @@ public:
 	// a faster version of Interpolate(x, y, n).EvaluateAt(position)
 	CoefficientType InterpolateAt(const CoefficientType &position, const CoefficientType x[], const CoefficientType y[], unsigned int n) const;
 
+	void PrepareBulkInterpolation(CoefficientType *w, const CoefficientType x[], unsigned int n) const;
+	void PrepareBulkInterpolationAt(CoefficientType *v, const CoefficientType &position, const CoefficientType x[], const CoefficientType w[], unsigned int n) const;
+	CoefficientType BulkInterpolateAt(const CoefficientType y[], const CoefficientType v[], unsigned int n) const;
+
 protected:
 	void CalculateAlpha(std::vector<CoefficientType> &alpha, const CoefficientType x[], const CoefficientType y[], unsigned int n) const;
 
@@ -431,6 +379,56 @@ protected:
 };
 
 NAMESPACE_END
+
+// declaring these overloaded operators inside the CryptoPP namespace
+// causes problems with GCC 2.95.2
+
+///
+template <class T, int instance>
+inline bool operator==(const CryptoPP::PolynomialOverFixedRing<T, instance> &a, const CryptoPP::PolynomialOverFixedRing<T, instance> &b)
+	{return a.Equals(b, fixedRing);}
+///
+template <class T, int instance>
+inline bool operator!=(const CryptoPP::PolynomialOverFixedRing<T, instance> &a, const CryptoPP::PolynomialOverFixedRing<T, instance> &b)
+	{return !(a==b);}
+
+///
+template <class T, int instance>
+inline bool operator> (const CryptoPP::PolynomialOverFixedRing<T, instance> &a, const CryptoPP::PolynomialOverFixedRing<T, instance> &b)
+	{return a.Degree() > b.Degree();}
+///
+template <class T, int instance>
+inline bool operator>=(const CryptoPP::PolynomialOverFixedRing<T, instance> &a, const CryptoPP::PolynomialOverFixedRing<T, instance> &b)
+	{return a.Degree() >= b.Degree();}
+///
+template <class T, int instance>
+inline bool operator< (const CryptoPP::PolynomialOverFixedRing<T, instance> &a, const CryptoPP::PolynomialOverFixedRing<T, instance> &b)
+	{return a.Degree() < b.Degree();}
+///
+template <class T, int instance>
+inline bool operator<=(const CryptoPP::PolynomialOverFixedRing<T, instance> &a, const CryptoPP::PolynomialOverFixedRing<T, instance> &b)
+	{return a.Degree() <= b.Degree();}
+
+///
+template <class T, int instance>
+inline CryptoPP::PolynomialOverFixedRing<T, instance> operator+(const CryptoPP::PolynomialOverFixedRing<T, instance> &a, const CryptoPP::PolynomialOverFixedRing<T, instance> &b)
+	{return CryptoPP::PolynomialOverFixedRing<T, instance>(a.Plus(b, fixedRing));}
+///
+template <class T, int instance>
+inline CryptoPP::PolynomialOverFixedRing<T, instance> operator-(const CryptoPP::PolynomialOverFixedRing<T, instance> &a, const CryptoPP::PolynomialOverFixedRing<T, instance> &b)
+	{return CryptoPP::PolynomialOverFixedRing<T, instance>(a.Minus(b, fixedRing));}
+///
+template <class T, int instance>
+inline CryptoPP::PolynomialOverFixedRing<T, instance> operator*(const CryptoPP::PolynomialOverFixedRing<T, instance> &a, const CryptoPP::PolynomialOverFixedRing<T, instance> &b)
+	{return CryptoPP::PolynomialOverFixedRing<T, instance>(a.Times(b, fixedRing));}
+///
+template <class T, int instance>
+inline CryptoPP::PolynomialOverFixedRing<T, instance> operator/(const CryptoPP::PolynomialOverFixedRing<T, instance> &a, const CryptoPP::PolynomialOverFixedRing<T, instance> &b)
+	{return CryptoPP::PolynomialOverFixedRing<T, instance>(a.DividedBy(b, fixedRing));}
+///
+template <class T, int instance>
+inline CryptoPP::PolynomialOverFixedRing<T, instance> operator%(const CryptoPP::PolynomialOverFixedRing<T, instance> &a, const CryptoPP::PolynomialOverFixedRing<T, instance> &b)
+	{return CryptoPP::PolynomialOverFixedRing<T, instance>(a.Modulo(b, fixedRing));}
 
 NAMESPACE_BEGIN(std)
 template<class T> void swap(CryptoPP::PolynomialOver<T> &a, CryptoPP::PolynomialOver<T> &b)

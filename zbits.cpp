@@ -31,10 +31,11 @@ void BitOutput::send_bits(unsigned int value, int length) /* Send a value on a g
 {
 #ifdef DEBUG
    Tracevv((stderr," l %2d v %4x ", length, value));
-   Assert(length > 0 && length <= 15, "invalid length");
-   Assert(boffset < 8, "bad offset");
    bits_sent += (ulg)length;
 #endif
+   assert(length > 0 && length <= 15);
+   assert(boffset < 8);
+
    bitbuff |= value << boffset;
    if ((boffset += length) >= 8) {
 	  AttachedTransformation()->Put(bitbuff);

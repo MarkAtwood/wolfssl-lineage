@@ -6,45 +6,12 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-MD5::MD5()
-	: IteratedHash<word32>(DATASIZE, DIGESTSIZE)
-{
-	Init();
-}
-
 void MD5::Init()
 {
-	countLo = countHi = 0;
-
 	digest[0] = 0x67452301L;
 	digest[1] = 0xefcdab89L;
 	digest[2] = 0x98badcfeL;
 	digest[3] = 0x10325476L;
-}
-
-void MD5::HashBlock(const word32 *input)
-{
-#ifdef IS_LITTLE_ENDIAN
-	Transform(digest, input);
-#else
-	byteReverse(data.ptr, input, (unsigned int)DATASIZE);
-	Transform(digest, data);
-#endif
-}
-
-void MD5::Final (byte *hash)
-{
-	PadLastBlock(56);
-	CorrectEndianess(data, data, 56);
-
-	data[14] = countLo;
-	data[15] = countHi;
-
-	Transform(digest, data);
-	CorrectEndianess(digest, digest, DIGESTSIZE);
-	memcpy(hash, digest, DIGESTSIZE);
-
-	Init();		// reinit for next use
 }
 
 void MD5::Transform (word32 *digest, const word32 *X)

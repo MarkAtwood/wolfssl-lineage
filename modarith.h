@@ -15,13 +15,20 @@ class ModularArithmetic : public AbstractRing<Integer>
 public:
 
 	typedef int RandomizationParameter;
-	typedef Integer Element ;
+	typedef Integer Element;
 
 	ModularArithmetic(const Integer &modulus = Integer::One())
 		: modulus(modulus), result((word)0, modulus.reg.size) {}
 
 	ModularArithmetic(const ModularArithmetic &ma)
 		: modulus(ma.modulus), result((word)0, modulus.reg.size) {}
+
+	ModularArithmetic(BufferedTransformation &bt);	// construct from BER encoded parameters
+
+	void DEREncode(BufferedTransformation &bt) const;
+
+	void DEREncodeElement(BufferedTransformation &out, const Element &a) const;
+	void BERDecodeElement(BufferedTransformation &in, Element &a) const;
 
 	const Integer& GetModulus() const {return modulus;}
 	void SetModulus(const Integer &newModulus) {modulus = newModulus; result.reg.Resize(modulus.reg.size);}

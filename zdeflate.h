@@ -11,30 +11,26 @@ NAMESPACE_BEGIN(CryptoPP)
 class Deflator : public CodeTree
 {
 public:
-	// deflate_level can be from 1 to 9, 1 being fastest, 9 being most compression
+	// deflateLevel can be from 0 to 9, 0 being store, 1 being fastest, 9 being most compression
 	// default for the gzip program is 6
-	Deflator(int deflate_level, BufferedTransformation *outQ = NULL);
+	// log2WindowSize controls how much memory is used, can be from 8 to 15
+	enum {DEFAULT_DEFLATE_LEVEL = 6, DEFAULT_LOG2_WINDOW_SIZE = 15};
+	Deflator(BufferedTransformation *outQ=NULL, unsigned int deflateLevel=DEFAULT_DEFLATE_LEVEL, unsigned int log2WindowSize=DEFAULT_LOG2_WINDOW_SIZE);
 
 	void Put(byte inByte)
 		{Deflator::Put(&inByte, 1);}
 	void Put(const byte *inString, unsigned int length);
 
+	void Flush(bool completeFlush, int propagation=-1);
 	void MessageEnd(int propagation=-1);
 
-private:
-#ifdef SMALL_MEM
-	enum {HASH_BITS=13};
-#else
-#  ifdef MEDIUM_MEM
-	enum {HASH_BITS=14};
-#  else
-	enum {HASH_BITS=15};
-#  endif
-#endif
+	unsigned int GetLog2WindowSize() const {return HASH_BITS;}
+	unsigned int GetDeflateLevel() const {return deflate_level;}
 
-	enum {HASH_SIZE = 1<<HASH_BITS, HASH_MASK = HASH_SIZE-1,
-		  WINDOW_SIZE = 2*WSIZE, WMASK = WSIZE-1,
-		  NIL = 0,  // Tail of hash chains
+private:
+	const unsigned int HASH_BITS, HASH_SIZE, HASH_MASK, WINDOW_SIZE, WMASK;
+
+	enum {NIL = 0,  // Tail of hash chains
 		  // Matches of length 3 are discarded if their distance exceeds TOO_FAR
 		  TOO_FAR = 4096};
 
@@ -90,6 +86,8 @@ private:
 	 * sequential calls to deflate functions */
 	int match_available; /* set if previous match exists */
 	unsigned match_length; /* length of best match */
+
+	bool m_eof;
 };
 
 NAMESPACE_END

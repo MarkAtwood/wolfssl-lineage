@@ -2,19 +2,19 @@
 
 #include "pch.h"
 #include "filters.h"
-#include "queue.h"
+#include "mqueue.h"
 #include <memory>
 
 NAMESPACE_BEGIN(CryptoPP)
 
 Filter::Filter(BufferedTransformation *outQ)
-	: m_outQueue(outQ ? outQ : new ByteQueue) 
+	: m_outQueue(outQ ? outQ : new MessageQueue)
 {
 }
 
 void Filter::Detach(BufferedTransformation *newOut)
 {
-	m_outQueue.reset(newOut ? newOut : new ByteQueue);
+	m_outQueue.reset(newOut ? newOut : new MessageQueue);
 	NotifyAttachmentChange();
 }
 
@@ -201,15 +201,33 @@ ProxyFilter::ProxyFilter(Filter *filter, unsigned int firstSize, unsigned int la
 	: FilterWithBufferedInput(firstSize, 1, lastSize, outQ), m_filter(filter), m_proxy(NULL)
 {
 	if (m_filter.get())
-		m_filter->Attach(m_proxy = new OutputProxy(*this));
+		m_filter->Attach(m_proxy = new OutputProxy(*this, false));
+}
+
+void ProxyFilter::Flush(bool completeFlush, int propagation)
+{
+	if (m_filter.get())
+	{
+		bool passSignal = m_proxy->GetPassSignal();
+		m_proxy->SetPassSignal(false);
+		m_filter->Flush(completeFlush, -1);
+		m_proxy->SetPassSignal(passSignal);
+	}
+	Filter::Flush(completeFlush, propagation);
 }
 
 void ProxyFilter::SetFilter(Filter *filter)
 {
+	bool passSignal = m_proxy ? m_proxy->GetPassSignal() : false;
 	m_filter.reset(filter);
-	m_proxy=NULL;
-	if (m_filter.get())
-		m_filter->Attach(m_proxy = new OutputProxy(*this));
+	if (filter)
+	{
+		std::auto_ptr<OutputProxy> temp(m_proxy = new OutputProxy(*this, passSignal));
+		m_filter->TransferAllTo(*m_proxy);
+		m_filter->Attach(temp.release());
+	}
+	else
+		m_proxy=NULL;
 }
 
 void ProxyFilter::NextPut(const byte *s, unsigned int len) 
@@ -300,129 +318,112 @@ void HashVerifier::LastPut(const byte *inString, unsigned int length)
 
 void SignerFilter::MessageEnd(int propagation)
 {
-	SecByteBlock buf(signer.SignatureLength());
-	signer.Sign(rng, messageAccumulator.release(), buf);
+	SecByteBlock buf(m_signer.SignatureLength());
+	m_signer.Sign(m_rng, m_messageAccumulator.release(), buf);
 	AttachedTransformation()->Put(buf, buf.size);
 	Filter::MessageEnd(propagation);
+	m_messageAccumulator.reset(m_signer.NewMessageAccumulator());
 }
 
 void VerifierFilter::PutSignature(const byte *sig)
 {
-	memcpy(signature.ptr, sig, signature.size);
+	memcpy(m_signature.ptr, sig, m_signature.size);
 }
 
 void VerifierFilter::MessageEnd(int propagation)
 {
-	AttachedTransformation()->Put((byte)verifier.Verify(messageAccumulator.release(), signature));
+	AttachedTransformation()->Put((byte)m_verifier.Verify(m_messageAccumulator.release(), m_signature));
 	Filter::MessageEnd(propagation);
+	m_messageAccumulator.reset(m_verifier.NewMessageAccumulator());
 }
 
-StringSource::StringSource(const char *source, bool pumpAndClose, BufferedTransformation *outQueue)
-	: Source(outQueue), m_source((const byte *)source), m_length(strlen(source)), m_count(0)
+// *************************************************************
+
+void Source::PumpAll()
 {
-	if (pumpAndClose)
-	{
+	while (PumpMessages()) {}
+	while (Pump()) {}
+}
+
+StringSource::StringSource(const char *string, bool pumpAll, BufferedTransformation *outQueue)
+	: Source(outQueue), m_store(string)
+{
+	if (pumpAll)
 		PumpAll();
-		MessageEnd();
-	}
 }
 
-StringSource::StringSource(const byte *source, unsigned int length, bool pumpAndClose, BufferedTransformation *outQueue)
-	: Source(outQueue), m_source(source), m_length(length), m_count(0)
+StringSource::StringSource(const byte *string, unsigned int length, bool pumpAll, BufferedTransformation *outQueue)
+	: Source(outQueue), m_store(string, length)
 {
-	if (pumpAndClose)
-	{
+	if (pumpAll)
 		PumpAll();
-		MessageEnd();
-	}
 }
 
-StringSource::StringSource(const std::string &source, bool pumpAndClose, BufferedTransformation *outQueue)
-	: Source(outQueue), m_source((byte *)source.data()), m_length(source.length()), m_count(0)
+StringSource::StringSource(const std::string &string, bool pumpAll, BufferedTransformation *outQueue)
+	: Source(outQueue), m_store(string)
 {
-	if (pumpAndClose)
-	{
+	if (pumpAll)
 		PumpAll();
-		MessageEnd();
-	}
 }
 
-unsigned int StringSource::Pump(unsigned int pumpMax)
+bool Store::GetNextMessage()
 {
-	pumpMax = STDMIN(pumpMax, m_length-m_count);
-	AttachedTransformation()->Put(m_source, pumpMax);
-	m_count += pumpMax;
-	return pumpMax;
-}
-
-unsigned long StringSource::PumpAll()
-{
-	return Pump(m_length-m_count);
-}
-
-unsigned long StringStore::MaxRetrievable() const
-{
-	return m_length - m_count;
-}
-
-unsigned int StringStore::Get(byte &outByte)
-{
-	unsigned int len = Peek(outByte);
-	m_count += len;
-	return len;
-}
-
-unsigned int StringStore::Get(byte *outString, unsigned int getMax)
-{
-	unsigned int len = Peek(outString, getMax);
-	m_count += len;
-	return len;
-}
-
-unsigned int StringStore::Peek(byte &outByte) const
-{
-	if (m_count < m_length)
+	if (!m_messageEnd && !AnyRetrievable())
 	{
-		outByte = m_store[m_count];
-		return 1;
+		m_messageEnd=true;
+		return true;
 	}
 	else
+		return false;
+}
+
+unsigned int Store::CopyMessagesTo(BufferedTransformation &target, unsigned int count) const
+{
+	if (m_messageEnd || count == 0)
 		return 0;
+	else
+	{
+		CopyTo(target);
+		if (GetAutoSignalPropagation())
+			target.MessageEnd(GetAutoSignalPropagation()-1);
+		return 1;
+	}
 }
 
-unsigned int StringStore::Peek(byte *outString, unsigned int peekMax) const
+unsigned long StringStore::TransferTo(BufferedTransformation &target, unsigned long transferMax)
 {
-	peekMax = STDMIN(peekMax, m_length-m_count);
-	memcpy(outString, m_store+m_count, peekMax);
-	return peekMax;
+	unsigned long result = CopyTo(target, transferMax);
+	m_count += result;
+	return result;
 }
 
-unsigned long StringStore::CopyTo(BufferedTransformation &target) const
+unsigned long StringStore::CopyTo(BufferedTransformation &target, unsigned long copyMax) const
 {
-	unsigned len = m_length-m_count;
+	unsigned int len = (unsigned int)STDMIN((unsigned long)(m_length-m_count), copyMax);
 	target.Put(m_store+m_count, len);
 	return len;
 }
 
-unsigned int StringStore::CopyTo(BufferedTransformation &target, unsigned int copyMax) const
+unsigned long RandomNumberStore::CopyTo(BufferedTransformation &target, unsigned long copyMax) const
 {
-	unsigned len = STDMIN(m_length-m_count, copyMax);
-	target.Put(m_store+m_count, len);
+	unsigned int len = (unsigned int)STDMIN((unsigned long)(m_length-m_count), copyMax);
+	for (unsigned int i=0; i<len; i++)
+		target.Put(m_rng.GenerateByte());
 	return len;
 }
 
-/*
-BufferedTransformation *Insert(const byte *in, unsigned int length, BufferedTransformation *outQueue)
+unsigned long RandomNumberStore::TransferTo(BufferedTransformation &target, unsigned long transferMax)
 {
-	outQueue->Put(in, length);
-	return outQueue;
+	unsigned long len = RandomNumberStore::CopyTo(target, transferMax);
+	m_count += len;
+	return len;
 }
 
-unsigned int Extract(Source *source, byte *out, unsigned int length)
+RandomNumberSource::RandomNumberSource(RandomNumberGenerator &rng, unsigned int length, bool pumpAll, BufferedTransformation *outQueue)
+	: Source(outQueue), m_store(rng, length)
 {
-	while (source->MaxRetrievable() < length && source->Pump(1));
-	return source->Get(out, length);
+	if (pumpAll)
+		PumpAll();
 }
-*/
 
 NAMESPACE_END

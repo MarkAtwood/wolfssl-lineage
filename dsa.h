@@ -9,6 +9,14 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+// The DSA signature format used by Crypto++ is as defined by IEEE P1363.
+// Java uses the DER format, and OpenPGP uses the OpenPGP format.
+enum DSASignatureFormat {DSA_P1363, DSA_DER, DSA_OPENPGP};
+// This function converts between these formats, and returns length of signature in the target format.
+// If toFormat == DSA_P1363, bufferSize must equal publicKey.SignatureLength()
+unsigned int DSAConvertSignatureFormat(byte *buffer, unsigned int bufferSize, DSASignatureFormat toFormat, 
+	const byte *signature, unsigned int signatureLen, DSASignatureFormat fromFormat);
+
 // GDSA stands for generalized DSA, where the key length is allowed
 // to be greater than 1024 and any message digest function can be used.
 // Standard DSA is at the bottom of this file.

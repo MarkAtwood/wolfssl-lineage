@@ -7,30 +7,11 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-Tiger::Tiger(unsigned int digestSize)
-	: IteratedHash<word64>(DATASIZE, DIGESTSIZE),
-	  digestSize(digestSize)
-{
-	Init();
-}
-
 void Tiger::Init()
 {
-	countLo = countHi = 0;
-
 	digest[0] = W64LIT(0x0123456789ABCDEF);
 	digest[1] = W64LIT(0xFEDCBA9876543210);
 	digest[2] = W64LIT(0xF096A5B4C3B2E187);
-}
-
-void Tiger::HashBlock(const word64 *input)
-{
-#ifdef IS_LITTLE_ENDIAN
-	Transform(digest, input);
-#else
-	byteReverse(data.ptr, input, (unsigned int)DATASIZE);
-	Transform(digest, data);
-#endif
 }
 
 void Tiger::Final(byte *hash)
@@ -38,13 +19,13 @@ void Tiger::Final(byte *hash)
 	PadLastBlock(56, 0x01);
 	CorrectEndianess(data, data, 56);
 
-	data[7] = (word64(countHi)<<32) + countLo;
+	data[7] = countLo;
 
 	Transform(digest, data);
-	CorrectEndianess(digest, digest, DIGESTSIZE);
-	memcpy(hash, digest, digestSize);
+	CorrectEndianess(digest, digest, DigestSize());
+	memcpy(hash, digest, DigestSize());
 
-	Init();		// reinit for next use
+	Reinit();		// reinit for next use
 }
 
 #define t1 (table)

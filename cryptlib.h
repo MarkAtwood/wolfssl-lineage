@@ -7,6 +7,7 @@
 #define CRYPTOPP_CRYPTLIB_H
 
 #include "config.h"
+#include <limits.h>
 #include <exception>
 #include <string>
 
@@ -234,9 +235,12 @@ public:
 		/** There should be a MessageEnd immediately before MessageSeriesEnd. */
 		virtual void MessageSeriesEnd(int propagation=-1);
 
-		/// set propagation of automatically generated signals
+		/// set propagation of automatically generated and transfered signals
 		/** propagation == 0 means do not automaticly generate signals */
 		virtual void SetAutoSignalPropagation(int propagation) {}
+
+		///
+		virtual int GetAutoSignalPropagation() const {return 0;}
 
 		// for backwards compatibility
 		void Close() {MessageEnd();}
@@ -289,44 +293,76 @@ public:
 		/// try to retrieve multiple bytes
 		virtual unsigned int Get(byte *outString, unsigned int getMax);
 
-		/// try to retrieve a 16-bit word, big-endian or little-endian depending on highFirst
-		unsigned int GetWord16(word16 &value, bool highFirst=true);
-		/// try to retrieve a 32-bit word
-		unsigned int GetWord32(word32 &value, bool highFirst=true);
-
-		/// move all of the buffered output to target as input
-		virtual unsigned long TransferTo(BufferedTransformation &target);
-		/// same as above but only transfer up to transferMax bytes
-		virtual unsigned int TransferTo(BufferedTransformation &target, unsigned int transferMax);
-
-		/// discard all bytes from the output buffer
-		virtual unsigned long Skip();
-		/// discard some bytes from the output buffer
-		virtual unsigned int Skip(unsigned int skipMax);
-
 		/// peek at the next byte without removing it from the output buffer
 		virtual unsigned int Peek(byte &outByte) const;
 		/// peek at multiple bytes without removing them from the output buffer
 		virtual unsigned int Peek(byte *outString, unsigned int peekMax) const;
 
-		/// copy all of the buffered output to target as input
-		virtual unsigned long CopyTo(BufferedTransformation &target) const;
-		/// same as above but only copy up to copyMax bytes
-		virtual unsigned int CopyTo(BufferedTransformation &target, unsigned int copyMax) const;
+		/// try to retrieve a 16-bit word, big-endian or little-endian depending on highFirst
+		unsigned int GetWord16(word16 &value, bool highFirst=true);
+		/// try to retrieve a 32-bit word
+		unsigned int GetWord32(word32 &value, bool highFirst=true);
+
+		/// try to peek at a 16-bit word, big-endian or little-endian depending on highFirst
+		unsigned int PeekWord16(word16 &value, bool highFirst=true);
+		/// try to peek at a 32-bit word
+		unsigned int PeekWord32(word32 &value, bool highFirst=true);
+
+		/// move transferMax bytes of the buffered output to target as input
+		virtual unsigned long TransferTo(BufferedTransformation &target, unsigned long transferMax=ULONG_MAX);
+
+		/// discard skipMax bytes from the output buffer
+		virtual unsigned long Skip(unsigned long skipMax=ULONG_MAX);
+
+		/// copy copyMax bytes of the buffered output to target as input
+		virtual unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax=ULONG_MAX) const;
 	//@}
 
 	//@Man: RETRIEVAL OF MULTIPLE MESSAGES
 	//@{
+		///
 		virtual unsigned long TotalBytesRetrievable() const;
+		/// number of times MessageEnd() has been received minus messages retrieved or skipped
 		virtual unsigned int NumberOfMessages() const;
-		virtual bool CurrentMessageIsComplete() const;
-		virtual bool RetrieveNextMessage();
-		virtual unsigned int SkipMessages();
-		virtual unsigned int SkipMessages(unsigned int count);
-		virtual unsigned int TransferMessagesTo(BufferedTransformation &target);
-		virtual unsigned int TransferMessagesTo(BufferedTransformation &target, unsigned int count);
-		virtual unsigned int CopyMessagesTo(BufferedTransformation &target) const;
-		virtual unsigned int CopyMessagesTo(BufferedTransformation &target, unsigned int count) const;
+		/// returns true if NumberOfMessages() > 0
+		virtual bool AnyMessages() const;
+		/// start retrieving the next message
+		/**
+			Returns false if no more messages exist or this message 
+			is not completely retrieved.
+		*/
+		virtual bool GetNextMessage();
+		/// skip count number of messages
+		virtual unsigned int SkipMessages(unsigned int count=UINT_MAX);
+		///
+		virtual unsigned int TransferMessagesTo(BufferedTransformation &target, unsigned int count=UINT_MAX);
+		///
+		virtual unsigned int CopyMessagesTo(BufferedTransformation &target, unsigned int count=UINT_MAX) const;
+
+		///
+		virtual void SkipAll();
+		///
+		virtual void TransferAllTo(BufferedTransformation &target);
+		///
+		virtual void CopyAllTo(BufferedTransformation &target) const;
+	//@}
+
+	//@Man: CHANNELS
+	//@{
+		virtual void ChannelPut(const std::string &channel, byte inByte);
+		virtual void ChannelPut(const std::string &channel, const byte *inString, unsigned int length);
+
+		void ChannelPutWord16(const std::string &channel, word16 value, bool highFirst=true);
+		void ChannelPutWord32(const std::string &channel, word32 value, bool highFirst=true);
+
+		virtual void ChannelFlush(const std::string &channel, bool completeFlush, int propagation=-1);
+		virtual void ChannelMessageEnd(const std::string &channel, int propagation=-1);
+		virtual void ChannelPutMessageEnd(const std::string &channel, const byte *inString, unsigned int length, int propagation=-1);
+		virtual void ChannelMessageSeriesEnd(const std::string &channel, int propagation=-1);
+
+		virtual void SetRetrievalChannel(const std::string &channel);
+
+		static const std::string NULL_CHANNEL;
 	//@}
 
 	//@Man: ATTACHMENT

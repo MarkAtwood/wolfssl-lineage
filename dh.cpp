@@ -8,7 +8,7 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 DH::DH(const Integer &p, const Integer &g)
-	: p(p), g(g), gpc(p, g, ExponentBitLength(), 1)
+	: p(p), g(g), gpc(p, g)
 {
 }
 
@@ -17,7 +17,7 @@ DH::DH(RandomNumberGenerator &rng, unsigned int pbits)
 	PrimeAndGenerator pg(1, rng, pbits);
 	p = pg.Prime();
 	g = pg.Generator();
-	gpc.Precompute(p, g, ExponentBitLength(), 1);
+	gpc.SetModulusAndBase(p, g);
 }
 
 DH::DH(BufferedTransformation &bt)
@@ -27,7 +27,7 @@ DH::DH(BufferedTransformation &bt)
 	g.BERDecode(seq);
 	seq.MessageEnd();
 
-	gpc.Precompute(p, g, ExponentBitLength(), 1);
+	gpc.SetModulusAndBase(p, g);
 }
 
 void DH::DEREncode(BufferedTransformation &bt) const
@@ -40,12 +40,12 @@ void DH::DEREncode(BufferedTransformation &bt) const
 
 void DH::Precompute(unsigned int precomputationStorage)
 {
-	gpc.Precompute(p, g, ExponentBitLength(), precomputationStorage);
+	gpc.Precompute(ExponentBitLength(), precomputationStorage);
 }
 
 void DH::LoadPrecomputation(BufferedTransformation &bt)
 {
-	gpc.Load(p, bt);
+	gpc.Load(bt);
 }
 
 void DH::SavePrecomputation(BufferedTransformation &bt) const

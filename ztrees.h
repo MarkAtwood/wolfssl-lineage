@@ -9,29 +9,19 @@ NAMESPACE_BEGIN(CryptoPP)
 class CodeTree : public BitOutput
 {
 protected:
-	CodeTree(int deflate_level, BufferedTransformation *outQ);
+	CodeTree(BufferedTransformation *outQ, unsigned int deflateLevel, unsigned int log2WindowSize);
 
 	int  ct_tally (int dist, int lc);
 	word32  flush_block (byte *buf, word32 stored_len, int eof);
 
 	long block_start;       /* window offset of current block */
 	unsigned int strstart; /* window offset of current string */
-	const int deflate_level;
+	const unsigned int deflate_level, m_log2WindowSize, WSIZE, MAX_DIST;
 
 	enum {
-#ifdef SMALL_MEM
-		WSIZE = 0x2000,
-#else
-#  ifdef MEDIUM_MEM
-		WSIZE = 0x4000,
-#  else
-		WSIZE = 0x8000,
-#  endif
-#endif
 		MIN_MATCH = 3,
 		MAX_MATCH = 258,
-		MIN_LOOKAHEAD = (MAX_MATCH+MIN_MATCH+1),
-		MAX_DIST = (WSIZE-MIN_LOOKAHEAD)
+		MIN_LOOKAHEAD = (MAX_MATCH+MIN_MATCH+1)
 	};
 
 	enum {
@@ -46,7 +36,7 @@ protected:
 		HEAP_SIZE=(2*L_CODES+1)
 	};
 
-private:
+protected:
 	enum {
 		STORED_BLOCK=0,
 		STATIC_TREES=1,

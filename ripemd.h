@@ -5,30 +5,16 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class RIPEMD160 : public IteratedHash<word32>
+class RIPEMD160 : public IteratedHash<word32, false, 64>
 {
 public:
-	RIPEMD160();
-	void Final(byte *hash);
-	unsigned int DigestSize() const {return DIGESTSIZE;}
-
-	static void CorrectEndianess(word32 *out, const word32 *in, unsigned int byteCount)
-	{
-#ifndef IS_LITTLE_ENDIAN
-		byteReverse(out, in, byteCount);
-#else
-		if (in!=out)
-			memcpy(out, in, byteCount);
-#endif
-	}
-
+	enum {DIGESTSIZE = 20};
+	RIPEMD160() : IteratedHash<word32, false, 64>(DIGESTSIZE) {Init();}
 	static void Transform(word32 *digest, const word32 *data);
 
-	enum {DIGESTSIZE = 20, DATASIZE = 64};
-
-private:
+protected:
 	void Init();
-	void HashBlock(const word32 *input);
+	void vTransform(const word32 *data) {Transform(digest, data);}
 };
 
 NAMESPACE_END

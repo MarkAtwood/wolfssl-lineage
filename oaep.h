@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(CryptoPP)
 extern byte OAEP_P_DEFAULT[];
 
 // EME-OAEP
-template <class H, class MGF=MGF1<H>, byte *P=OAEP_P_DEFAULT, unsigned int PLen=0>
+template <class H, class MGF=P1363_MGF1<H>, byte *P=OAEP_P_DEFAULT, unsigned int PLen=0>
 class OAEP
 {
 public:

@@ -22,8 +22,8 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 HAVAL::HAVAL(unsigned int digestSize, unsigned int pass)
-	: IteratedHash<word32>(DATASIZE, DIGESTSIZE),
-	  digestSize(digestSize), pass(pass)
+	: IteratedHash<word32, false, 128>(DIGESTSIZE)
+	, digestSize(digestSize), pass(pass)
 {
 	assert(digestSize >= 16 && digestSize <= 32 && digestSize%4==0);
 	assert(pass >= 3 && pass <= 5);
@@ -33,8 +33,6 @@ HAVAL::HAVAL(unsigned int digestSize, unsigned int pass)
 
 void HAVAL::Init()
 {
-	countLo = countHi = 0;
-
 	digest[0] = 0x243F6A88;
 	digest[1] = 0x85A308D3;
 	digest[2] = 0x13198A2E;
@@ -45,24 +43,14 @@ void HAVAL::Init()
 	digest[7] = 0xEC4E6C89;
 }
 
-inline void HAVAL::vTransform(word32 *buf, const word32 *in)
+inline void HAVAL::vTransform(const word32 *in)
 {
 	if (pass==3)
-		HAVAL3::Transform(buf, in);
+		HAVAL3::Transform(digest, in);
 	else if (pass==4)
-		HAVAL4::Transform(buf, in);
+		HAVAL4::Transform(digest, in);
 	else
-		HAVAL5::Transform(buf, in);
-}
-
-void HAVAL::HashBlock(const word32 *input)
-{
-#ifdef IS_LITTLE_ENDIAN
-	vTransform(digest, input);
-#else
-	byteReverse(data.ptr, input, (unsigned int)DATASIZE);
-	vTransform(digest, data);
-#endif
+		HAVAL5::Transform(digest, in);
 }
 
 void HAVAL::Final (byte *hash)
@@ -75,12 +63,12 @@ void HAVAL::Final (byte *hash)
 	data[30] = countLo;
 	data[31] = countHi;
 
-	vTransform(digest, data);
+	vTransform(data);
 	Tailor(digestSize*8);
 	CorrectEndianess(digest, digest, digestSize);
 	memcpy(hash, digest, digestSize);
 
-	Init();		// reinit for next use
+	Reinit();		// reinit for next use
 }
 
 // tailor the last output

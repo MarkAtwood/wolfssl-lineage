@@ -1,73 +1,131 @@
 #ifndef CRYPTOPP_ZINFLATE_H
 #define CRYPTOPP_ZINFLATE_H
 
-#include "forkjoin.h"
-#include "misc.h"
-#include "queue.h"
+#include "filters.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class Inflator : public Filter
+class LowFirstBitReader
+{
+public:
+	LowFirstBitReader(BufferedTransformation &store)
+		: m_store(store), m_buffer(0), m_bitsBuffered(0) {}
+	unsigned long BitsLeft() const {return m_store.MaxRetrievable() * 8 + m_bitsBuffered;}
+	unsigned int BitsBuffered() const {return m_bitsBuffered;}
+	unsigned long PeekBuffer() const {return m_buffer;}
+	bool FillBuffer(unsigned int length);
+	unsigned long PeekBits(unsigned int length);
+	void SkipBits(unsigned int length);
+	unsigned long GetBits(unsigned int length);
+
+private:
+	BufferedTransformation &m_store;
+	unsigned long m_buffer;
+	unsigned int m_bitsBuffered;
+};
+
+class HuffmanDecoder
+{
+public:
+	typedef unsigned int code_t;
+	typedef unsigned int value_t;
+	enum {MAX_CODE_BITS = sizeof(code_t)*8};
+
+	class Err : public Exception {public: Err(const std::string &what) : Exception("HuffmanDecoder: " + what) {}};
+
+	HuffmanDecoder() {}
+	HuffmanDecoder(unsigned int *codeBits, unsigned int nCodes)	{Initialize(codeBits, nCodes);}
+
+	void Initialize(unsigned int *codeBits, unsigned int nCodes);
+	unsigned int Decode(code_t code, /* out */ value_t &value) const;
+	bool Decode(LowFirstBitReader &reader, value_t &value) const;
+
+private:
+	struct CodeInfo
+	{
+		CodeInfo(code_t code=0, unsigned int len=0, value_t value=0) : code(code), len(len), value(value) {}
+		bool operator<(const CodeInfo &rhs) const {return code < rhs.code;}
+		friend bool CodeLessThan(code_t lhs, const CodeInfo &rhs) {return lhs < rhs.code;}
+		code_t code;
+		unsigned int len;
+		value_t value;
+	};
+
+	struct LookupEntry
+	{
+		unsigned int type;
+		union
+		{
+			value_t value;
+			const CodeInfo *begin;
+		};
+		union
+		{
+			unsigned int len;
+			const CodeInfo *end;
+		};
+	};
+
+	static code_t NormalizeCode(code_t code, unsigned int codeBits);
+
+	unsigned int m_maxCodeBits, m_cacheBits, m_cacheMask;
+	SecBlock<CodeInfo> m_codeToValue;
+	SecBlock<LookupEntry> m_cache;
+};
+
+// decompressor for the DEFLATE algorithm, as defined in RFC 1591
+
+class Inflator : public Filter, public BufferedTransformationWithAutoSignal
 {
 public:
 	class Err : public BufferedTransformation::Err
 	{
 	public:
-		Err(const std::string &s)
-			: BufferedTransformation::Err(INVALID_DATA_FORMAT, s) {}
+		Err(ErrorType e, const std::string &s)
+			: BufferedTransformation::Err(e, s) {}
 	};
-	class UnexpectedEndErr : public Err {public: UnexpectedEndErr() : Err("Inflator: unexpected end of compressed block") {}};
-	class BadBlockErr : public Err {public: BadBlockErr() : Err("Inflator: error in compress block") {}};
+	class UnexpectedEndErr : public Err {public: UnexpectedEndErr() : Err(INVALID_DATA_FORMAT, "Inflator: unexpected end of compressed block") {}};
+	class BadBlockErr : public Err {public: BadBlockErr() : Err(INVALID_DATA_FORMAT, "Inflator: error in compressed block") {}};
 
 	Inflator(BufferedTransformation *outQueue = NULL, bool repeat = false);
-
 	void Put(byte b) {Inflator::Put(&b, 1);}
 	void Put(const byte *inString, unsigned int length);
-	void MessageEnd(int propagation=-1);
-	void SetAutoSignalPropagation(int propagation) {m_autoSignalPropagation = propagation;}
 
-	void Reset(bool repeat = false);
+	void Flush(bool completeFlush, int propagation=-1);
+	void MessageEnd(int propagation=-1);
+
+protected:
+	virtual unsigned int GetLog2WindowSize() const {return 15;}
+	virtual unsigned int MaxPrestreamHeaderSize() const {return 0;}
+	virtual void ProcessPrestreamHeader() {}
+	virtual void ProcessDecompressedData(const byte *string, unsigned int length)
+		{AttachedTransformation()->Put(string, length);}
+	virtual unsigned int MaxPoststreamTailSize() const {return 0;}
+	virtual void ProcessPoststreamTail() {}
+
+	ByteQueue m_inQueue;
 
 private:
-	void Inflator::InflateBlock();
+	void ProcessInput(bool flush);
+	void DecodeHeader();
+	void DecodeBody();
+	void FlushOutput();
+	void OutputByte(byte b);
+	void OutputString(const byte *string, unsigned int length);
+	void OutputPast(unsigned int length, unsigned int distance);
 
-	struct huft {
-	  byte e;                /* number of extra bits or operation */
-	  byte b;                /* number of bits in this code or subcode */
-	  union {
-		word16 n;              /* literal, length base, or distance base */
-		struct huft *t;     /* pointer to next level of table */
-	  } v;
-	};
-
-	int huft_build (unsigned *, unsigned, unsigned, const word16 *, const word16 *,
-					   huft **, int *);
-	int huft_free (huft *);
-	int inflate_codes (huft *, huft *, int, int);
-	int inflate_stored (void);
-	int inflate_fixed (void);
-	int inflate_dynamic (void);
-	int inflate_block (bool &);
-	void flush_output(unsigned int w);
-
-	static const word16 border[19];
-	static const word16 cplens[31];
-	static const word16 cplext[31];
-	static const word16 cpdist[31];
-	static const word16 cpdext[31];
-
-	static const word16 mask_bits[18];
-
-	ByteQueue inQueue;
-	byte NEXTBYTE();
-
-	SecByteBlock slide;
-	unsigned int wp;
-	word32 bb;                         /* bit buffer */
-	unsigned bk;                    /* bits in bit buffer */
-
-	bool m_repeat, m_afterEnd;
-	int m_autoSignalPropagation;
+	enum State {PRE_STREAM, WAIT_HEADER, DECODING_BODY, POST_STREAM, AFTER_END};
+	State m_state;
+	bool m_repeat, m_eof, m_decodersInitializedWithFixedCodes;
+	byte m_blockType;
+	word16 m_storedLen;
+	enum NextDecode {LITERAL, LENGTH_BITS, DISTANCE, DISTANCE_BITS};
+	NextDecode m_nextDecode;
+	unsigned int m_literal, m_distance;	// for LENGTH_BITS or DISTANCE_BITS
+	HuffmanDecoder m_literalDecoder, m_distanceDecoder;
+	LowFirstBitReader m_reader;
+	SecByteBlock m_window;
+	unsigned int m_maxDistance, m_current, m_lastFlush;
 };
 
 NAMESPACE_END

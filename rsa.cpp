@@ -3,6 +3,7 @@
 #include "pch.h"
 #include "rsa.h"
 #include "asn.h"
+#include "oids.h"
 #include "nbtheory.h"
 #include "sha.h"
 
@@ -17,18 +18,49 @@ INSTANTIATE_PUBKEY_CRYPTO_TEMPLATES_MACRO(OAEP<SHA>, RSAFunction, InvertibleRSAF
 
 RSAFunction::RSAFunction(BufferedTransformation &bt)
 {
-	BERSequenceDecoder seq(bt);
-	n.BERDecode(seq);
-	e.BERDecode(seq);
-	seq.MessageEnd();
+	BERSequenceDecoder subjectPublicKeyInfo(bt);
+	if (subjectPublicKeyInfo.PeekByte() == INTEGER)
+	{
+		// for backwards compatibility
+		n.BERDecode(subjectPublicKeyInfo);
+		e.BERDecode(subjectPublicKeyInfo);
+	}
+	else
+	{
+		BERSequenceDecoder algorithm(subjectPublicKeyInfo);
+			ASN1::rsaEncryption().BERDecodeAndCheck(algorithm);
+			BERDecodeNull(algorithm);
+		algorithm.MessageEnd();
+
+		BERSequenceDecoder subjectPublicKey(subjectPublicKeyInfo, BIT_STRING);
+			subjectPublicKey.CheckByte(0);	// unused bits
+			BERSequenceDecoder seq(subjectPublicKey);
+				n.BERDecode(seq);
+				e.BERDecode(seq);
+			seq.MessageEnd();
+		subjectPublicKey.MessageEnd();
+	}
+	subjectPublicKeyInfo.MessageEnd();
 }
 
 void RSAFunction::DEREncode(BufferedTransformation &bt) const
 {
-	DERSequenceEncoder seq(bt);
-	n.DEREncode(seq);
-	e.DEREncode(seq);
-	seq.MessageEnd();
+	DERSequenceEncoder subjectPublicKeyInfo(bt);
+
+		DERSequenceEncoder algorithm(subjectPublicKeyInfo);
+			ASN1::rsaEncryption().DEREncode(algorithm);
+			DEREncodeNull(algorithm);
+		algorithm.MessageEnd();
+
+		DERGeneralEncoder subjectPublicKey(subjectPublicKeyInfo, BIT_STRING);
+			subjectPublicKey.Put(0);	// unused bits
+			DERSequenceEncoder seq(subjectPublicKey);
+				n.DEREncode(seq);
+				e.DEREncode(seq);
+			seq.MessageEnd();
+		subjectPublicKey.MessageEnd();
+
+	subjectPublicKeyInfo.MessageEnd();
 }
 
 Integer RSAFunction::ApplyFunction(const Integer &x) const
@@ -100,7 +132,7 @@ InvertibleRSAFunction::InvertibleRSAFunction(BufferedTransformation &bt)
 void InvertibleRSAFunction::DEREncode(BufferedTransformation &bt) const
 {
 	DERSequenceEncoder seq(bt);
-	DEREncodeUnsigned<word32>(0, seq);	// version
+	DEREncodeUnsigned<word32>(seq, 0);	// version
 	n.DEREncode(seq);
 	e.DEREncode(seq);
 	d.DEREncode(seq);

@@ -22,28 +22,108 @@ static inline ECP::Point FromMontgomery(const MontgomeryRepresentation &mr, cons
 }
 NAMESPACE_END
 
-ECP::Point ECP::DecodePoint(const byte *encodedPoint) const
+ECP::ECP(BufferedTransformation &bt)
+	: fieldPtr(new Field(bt)), field(*fieldPtr)
 {
-	if (encodedPoint[0] != 4)	// TODO: handle compressed points
-		return Point();
-	else
+	BERSequenceDecoder seq(bt);
+	field.BERDecodeElement(seq, a);
+	field.BERDecodeElement(seq, b);
+	// skip optional seed
+	if (!seq.EndReached())
+		BERDecodeOctetString(seq, BitBucket());
+	seq.MessageEnd();
+}
+
+void ECP::DEREncode(BufferedTransformation &bt) const
+{
+	field.DEREncode(bt);
+	DERSequenceEncoder seq(bt);
+	field.DEREncodeElement(seq, a);
+	field.DEREncodeElement(seq, b);
+	seq.MessageEnd();
+}
+
+bool ECP::DecodePoint(ECP::Point &P, const byte *encodedPoint, unsigned int encodedPointLen) const
+{
+	if (encodedPointLen < 1)
+		return false;
+
+	switch (encodedPoint[0])
 	{
+	case 0:
+		P.identity = true;
+		return true;
+	case 2:
+	case 3:
+	{
+		if (encodedPointLen != EncodedPointSize(true))
+			return false;
+
+		Integer p = FieldSize();
+
+		P.identity = false;
+		P.x.Decode(encodedPoint+1, field.MaxElementByteLength()); 
+		P.y = ((P.x*P.x+a)*P.x+b) % p;
+
+		if (Jacobi(P.y, p) !=1)
+			return false;
+
+		P.y = ModularSquareRoot(P.y, p);
+
+		if ((encodedPoint[0] & 1) != P.y.GetBit(0))
+			P.y = p-P.y;
+
+		return true;
+	}
+	case 4:
+	{
+		if (encodedPointLen != EncodedPointSize(false))
+			return false;
+
 		unsigned int len = field.MaxElementByteLength();
-		return Point(FieldElement(encodedPoint+1, len), FieldElement(encodedPoint+1+len, len));
+		P.identity = false;
+		P.x.Decode(encodedPoint+1, len);
+		P.y.Decode(encodedPoint+1+len, len);
+		return true;
+	}
+	default:
+		return false;
 	}
 }
 
-void ECP::EncodePoint(byte *encodedPoint, const Point &P) const
+void ECP::EncodePoint(byte *encodedPoint, const Point &P, bool compressed) const
 {
 	if (P.identity)
-		memset(encodedPoint, 0, EncodedPointSize());
+		memset(encodedPoint, 0, EncodedPointSize(compressed));
+	else if (compressed)
+	{
+		encodedPoint[0] = 2 + P.y.GetBit(0);
+		P.x.Encode(encodedPoint+1, field.MaxElementByteLength());
+	}
 	else
 	{
-		encodedPoint[0] = 4;	// uncompressed
 		unsigned int len = field.MaxElementByteLength();
+		encodedPoint[0] = 4;	// uncompressed
 		P.x.Encode(encodedPoint+1, len);
 		P.y.Encode(encodedPoint+1+len, len);
 	}
+}
+
+ECP::Point ECP::BERDecodePoint(BufferedTransformation &bt)
+{
+	SecByteBlock str;
+	BERDecodeOctetString(bt, str);
+	Point P;
+	if (!DecodePoint(P, str, str.size))
+		BERDecodeError();
+	return P;
+}
+
+void ECP::DEREncodePoint(BufferedTransformation &bt, const Point &P, bool compressed) const
+{
+	SecByteBlock str(EncodedPointSize(compressed));
+	EncodePoint(str, P, compressed);
+	DEREncodeOctetString(bt, str);
 }
 
 bool ECP::ValidateParameters(RandomNumberGenerator &rng) const
@@ -270,20 +350,20 @@ ECP::Point ECP::ScalarMultiply(const Point &P, const Integer &k) const
 		futureDoublings = windowSize;
 	}
 
-	std::vector<std::pair<Integer, Point> > finalCascade(bases.size());
+	std::vector<BaseAndExponent<Point> > finalCascade(bases.size());
 
 	ParallelInvert(field, ZIterator(bases.begin()), ZIterator(bases.end()));
 
 	for (int i=0; i<finalCascade.size(); i++)
 	{
-		finalCascade[i].first = exponents[i];
+		finalCascade[i].exponent = exponents[i];
 		if (!!bases[i].z)
 		{
-			finalCascade[i].second.identity = false;
-			finalCascade[i].second.x = field.Square(bases[i].z);
-			finalCascade[i].second.y = field.Multiply(finalCascade[i].second.x, bases[i].z);
-			finalCascade[i].second.x = field.Multiply(finalCascade[i].second.x, bases[i].x);
-			finalCascade[i].second.y = field.Multiply(finalCascade[i].second.y, bases[i].y);
+			finalCascade[i].base.identity = false;
+			finalCascade[i].base.x = field.Square(bases[i].z);
+			finalCascade[i].base.y = field.Multiply(finalCascade[i].base.x, bases[i].z);
+			finalCascade[i].base.x = field.Multiply(finalCascade[i].base.x, bases[i].x);
+			finalCascade[i].base.y = field.Multiply(finalCascade[i].base.y, bases[i].y);
 		}
 	}
 
@@ -308,76 +388,57 @@ ECP::Point ECP::CascadeMultiply(const Integer &k1, const Point &P, const Integer
 
 // ********************************************************
 
-EcPrecomputation<ECP>::EcPrecomputation()
+EcPrecomputation<ECP>& EcPrecomputation<ECP>::operator=(const EcPrecomputation<ECP> &rhs)
 {
+	m_mr = rhs.m_mr;
+	m_ec.reset(new ECP(*m_mr, rhs.m_ec->GetA(), rhs.m_ec->GetB()));
+	m_ep = rhs.m_ep;
+	m_ep.m_group = m_ec.get();
+	return *this;
 }
 
-EcPrecomputation<ECP>::EcPrecomputation(const EcPrecomputation<ECP> &ecp)
-	: mr(new MontgomeryRepresentation(*ecp.mr))
-	, ec(new ECP(*mr, ecp.ec->GetA(), ecp.ec->GetB()))
-	, ep(new ExponentiationPrecomputation<ECP::Point>(*ec, *ecp.ep))
+void EcPrecomputation<ECP>::SetCurveAndBase(const ECP &ec, const ECP::Point &base)
 {
+	m_mr.reset(new MontgomeryRepresentation(ec.GetField().GetModulus()));
+	m_ec.reset(new ECP(*m_mr, m_mr->ConvertIn(ec.GetA()), m_mr->ConvertIn(ec.GetB())));
+	m_ep.SetGroupAndBase(*m_ec, ToMontgomery(*m_mr, base));
 }
 
-EcPrecomputation<ECP>::EcPrecomputation(const ECP &ecIn, const ECP::Point &base, unsigned int maxExpBits, unsigned int storage)
-	: mr(new MontgomeryRepresentation(ecIn.GetField().GetModulus()))
-	, ec(new ECP(*mr, mr->ConvertIn(ecIn.GetA()), mr->ConvertIn(ecIn.GetB())))
-	, ep(NULL)
+void EcPrecomputation<ECP>::Precompute(unsigned int maxExpBits, unsigned int storage)
 {
-	Precompute(base, maxExpBits, storage);
-}
-
-EcPrecomputation<ECP>::~EcPrecomputation()
-{
-}
-
-void EcPrecomputation<ECP>::Precompute(const ECP::Point &base, unsigned int maxExpBits, unsigned int storage)
-{
-	ep.reset(new ExponentiationPrecomputation<ECP::Point>(*ec, ToMontgomery(*mr, base), maxExpBits, storage));
+	m_ep.Precompute(maxExpBits, storage);
 }
 
 void EcPrecomputation<ECP>::Load(BufferedTransformation &bt)
 {
-	ep.reset(new ExponentiationPrecomputation<ECP::Point>(*ec));
 	BERSequenceDecoder seq(bt);
-	ep->storage = (unsigned int)(Integer(seq).ConvertToLong());
-	ep->exponentBase.BERDecode(seq);
-	ep->g.resize(ep->storage);
-
-	for (unsigned i=0; i<ep->storage; i++)
-	{
-		ep->g[i].identity = false;
-		ep->g[i].x.BERDecode(seq);
-		ep->g[i].y.BERDecode(seq);
-	}
+	word32 version;
+	BERDecodeUnsigned<word32>(seq, version, INTEGER, 1, 1);
+	m_ep.m_exponentBase.BERDecode(seq);
+	m_ep.m_bases.clear();
+	while (!seq.EndReached())
+		m_ep.m_bases.push_back(m_ec->BERDecodePoint(seq));
 	seq.MessageEnd();
 }
 
 void EcPrecomputation<ECP>::Save(BufferedTransformation &bt) const
 {
-	assert(ep.get());
 	DERSequenceEncoder seq(bt);
-	Integer(ep->storage).DEREncode(seq);
-	ep->exponentBase.DEREncode(seq);
-
-	for (unsigned i=0; i<ep->storage; i++)
-	{
-		ep->g[i].x.DEREncode(seq);
-		ep->g[i].y.DEREncode(seq);
-	}
+	DEREncodeUnsigned<word32>(seq, 1);	// version
+	m_ep.m_exponentBase.DEREncode(seq);
+	for (unsigned i=0; i<m_ep.m_bases.size(); i++)
+		m_ec->DEREncodePoint(seq, m_ep.m_bases[i]);
 	seq.MessageEnd();
 }
 
 ECP::Point EcPrecomputation<ECP>::Multiply(const Integer &exponent) const
 {
-	assert(ep.get());
-	return FromMontgomery(*mr, ep->Exponentiate(exponent));
+	return FromMontgomery(*m_mr, m_ep.Exponentiate(exponent));
 }
 
 ECP::Point EcPrecomputation<ECP>::CascadeMultiply(const Integer &exponent, const EcPrecomputation<ECP> &pc2, const Integer &exponent2) const
 {
-	assert(ep.get());
-	return FromMontgomery(*mr, ep->CascadeExponentiate(exponent, *pc2.ep, exponent2));
+	return FromMontgomery(*m_mr, m_ep.CascadeExponentiate(exponent, pc2.m_ep, exponent2));
 }
 
 NAMESPACE_END

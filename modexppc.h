@@ -11,22 +11,24 @@ class ModExpPrecomputation
 {
 public:
 	ModExpPrecomputation() {}
-	ModExpPrecomputation(const ModExpPrecomputation &mep);
-	ModExpPrecomputation(const Integer &modulus, const Integer &base, unsigned int maxExpBits, unsigned int storage);
-	~ModExpPrecomputation();
+	ModExpPrecomputation(const ModExpPrecomputation &a)
+		{operator=(a);}
+	ModExpPrecomputation(const Integer &modulus, const Integer &base)
+		{SetModulusAndBase(modulus, base);}
 
-	ModExpPrecomputation& operator=(const ModExpPrecomputation &mep);
+	ModExpPrecomputation& operator=(const ModExpPrecomputation &rhs);
 
-	void Precompute(const Integer &modulus, const Integer &base, unsigned int maxExpBits, unsigned int storage);
-	void Load(const Integer &modulus, BufferedTransformation &storedPrecomputation);
+	void SetModulusAndBase(const Integer &modulus, const Integer &base);
+	void Precompute(unsigned int maxExpBits, unsigned int storage);
+	void Load(BufferedTransformation &storedPrecomputation);
 	void Save(BufferedTransformation &storedPrecomputation) const;
 
 	Integer Exponentiate(const Integer &exponent) const;
 	Integer CascadeExponentiate(const Integer &exponent, const ModExpPrecomputation &pc2, const Integer &exponent2) const;
 
 private:
-	member_ptr<MontgomeryRepresentation> mr;
-	member_ptr< ExponentiationPrecomputation<Integer> > ep;
+	value_ptr<MontgomeryRepresentation> m_mr;
+	ExponentiationPrecomputation<Integer> m_ep;
 };
 
 NAMESPACE_END

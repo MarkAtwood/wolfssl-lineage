@@ -2,71 +2,48 @@
 #define CRYPTOPP_MQUEUE_H
 
 #include "queue.h"
-#include <list>
+#include "filters.h"
+#include <deque>
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class MessageQueue : public BufferedTransformation
+class MessageQueue : public BufferedTransformationWithAutoSignal
 {
 public:
 	MessageQueue(unsigned int nodeSize=256);
 
-	ByteQueue & Head() {return m_qv.front();}
-	const ByteQueue & Head() const {return m_qv.front();}
-	ByteQueue & Tail() {return m_qv.back();}
-	const ByteQueue & Tail() const {return m_qv.back();}
-
 	void Put(byte inByte)
-		{Tail().Put(inByte);}
+		{m_queue.Put(inByte); m_lengths.back()++;}
 	void Put(const byte *inString, unsigned int length)
-		{Tail().Put(inString, length);}
+		{m_queue.Put(inString, length); m_lengths.back()+=length;}
 
 	unsigned long MaxRetrievable() const
-		{return Head().MaxRetrievable();}
+		{return m_lengths.front();}
 	bool AnyRetrievable() const
-		{return Head().AnyRetrievable();}
+		{return m_lengths.front() > 0;}
 
-	unsigned int Get(byte &outByte)
-		{return Head().Get(outByte);}
-	unsigned int Get(byte *outString, unsigned int getMax)
-		{return Head().Get(outString, getMax);}
+	unsigned long TransferTo(BufferedTransformation &target, unsigned long transferMax=ULONG_MAX)
+		{return Got(m_queue.TransferTo(target, STDMIN(MaxRetrievable(), transferMax)));}
+	unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax=ULONG_MAX) const
+		{return m_queue.CopyTo(target, STDMIN(MaxRetrievable(), copyMax));}
 
-	unsigned long TransferTo(BufferedTransformation &target)
-		{return Head().TransferTo(target);}
-	unsigned int TransferTo(BufferedTransformation &target, unsigned int transferMax)
-		{return Head().TransferTo(target, transferMax);}
+	void MessageEnd(int=-1)
+		{m_lengths.push_back(0);}
 
-	unsigned int Skip(unsigned int skipMax)
-		{return Head().Skip(skipMax);}
-
-	unsigned int Peek(byte &outByte) const
-		{return Head().Peek(outByte);}
-	unsigned int Peek(byte *outString, unsigned int peekMax) const
-		{return Head().Peek(outString, peekMax);}
-
-	unsigned long CopyTo(BufferedTransformation &target) const
-		{return Head().CopyTo(target);}
-	unsigned int CopyTo(BufferedTransformation &target, unsigned int copyMax) const
-		{return Head().CopyTo(target, copyMax);}
-
-	void MessageEnd(int propagate=-1);
-	void SetAutoSignalPropagation(int propagation) {m_autoSignalPropagation = propagation;}
-
-	unsigned long TotalBytesRetrievable() const;
-	unsigned int NumberOfMessages() const;
-	bool CurrentMessageIsComplete() const;
+	unsigned long TotalBytesRetrievable() const
+		{return m_queue.MaxRetrievable();}
+	unsigned int NumberOfMessages() const
+		{return m_lengths.size()-1;}
 	bool RetrieveNextMessage();
-	unsigned int SkipMessages();
-	unsigned int SkipMessages(unsigned int count);
-	unsigned int TransferMessagesTo(BufferedTransformation &target);
-	unsigned int TransferMessagesTo(BufferedTransformation &target, unsigned int count);
-	unsigned int CopyMessagesTo(BufferedTransformation &target) const;
-	unsigned int CopyMessagesTo(BufferedTransformation &target, unsigned int count) const;
+
+	unsigned int CopyMessagesTo(BufferedTransformation &target, unsigned int count=UINT_MAX) const;
 
 private:
-	int m_autoSignalPropagation;
-	unsigned int m_nodeSize;
-	std::list<ByteQueue> m_qv;
+	unsigned long Got(unsigned long length)
+		{assert(m_lengths.front() >= length); m_lengths.front() -= length; return length;}
+
+	ByteQueue m_queue;
+	std::deque<unsigned long> m_lengths;
 };
 
 NAMESPACE_END

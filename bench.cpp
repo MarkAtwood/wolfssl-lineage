@@ -3,6 +3,7 @@
 #include "pch.h"
 
 #include "crc.h"
+#include "adler32.h"
 #include "md2.h"
 #include "md5.h"
 #include "md5mac.h"
@@ -139,8 +140,10 @@ void BenchMark(const char *name, StreamCipher &cipher, float timeTotal)
 
 void BenchMark(const char *name, HashModule &hash, float timeTotal)
 {
-	const int BUF_SIZE=128; // update 128 bytes at a time
+	const int BUF_SIZE=1024; // update 1024 bytes at a time
 	SecByteBlock buf(BUF_SIZE);
+	LC_RNG rng(time(NULL));
+	rng.GenerateBlock(buf, BUF_SIZE);
 	clock_t start = clock();
 
 	unsigned long i=0, length=BUF_SIZE;
@@ -166,8 +169,10 @@ void BenchMark(const char *name, HashModule &hash, float timeTotal)
 
 void BenchMark(const char *name, BufferedTransformation &bt, float timeTotal)
 {
-	const int BUF_SIZE=128; // update 128 bytes at a time
+	const int BUF_SIZE=1024; // update 1024 bytes at a time
 	SecByteBlock buf(BUF_SIZE);
+	LC_RNG rng(time(NULL));
+	rng.GenerateBlock(buf, BUF_SIZE);
 	clock_t start = clock();
 
 	unsigned long i=0, length=BUF_SIZE;
@@ -472,9 +477,12 @@ void BenchMarkAll(float t)
 	cout << "<THEAD><TR><TH>Cipher<TH>Total Bytes<TH>Time<TH>Bytes/Second\n<TBODY>" << endl;
 
 	BenchMarkKeyless<CRC32>("CRC-32", t);
+	BenchMarkKeyless<Adler32>("Adler-32", t);
 	BenchMarkKeyless<MD2>("MD2", t);
 	BenchMarkKeyless<MD5>("MD5", t);
 	BenchMarkKeyless<SHA>("SHA-1", t);
+	BenchMarkKeyless<SHA256>("SHA-256", t);
+	BenchMarkKeyless<SHA512>("SHA-512", t);
 	BenchMarkKeyless<HAVAL3>("HAVAL (pass=3)", t);
 	BenchMarkKeyless<HAVAL4>("HAVAL (pass=4)", t);
 	BenchMarkKeyless<HAVAL5>("HAVAL (pass=5)", t);
@@ -501,6 +509,7 @@ void BenchMarkAll(float t)
 	BenchMarkKeyed<SHARKEncryption>("SHARK (r=6)", t);
 #endif
 	BenchMarkKeyed<CAST128Encryption>("CAST-128", t);
+	BenchMarkKeyed<CAST256Encryption>("CAST-256", t);
 	BenchMarkKeyed<SquareEncryption>("Square", t);
 	BenchMarkKeyed<SKIPJACKEncryption>("SKIPJACK", t);
 	BenchMarkKeyed<RC6Encryption>("RC6", t);
@@ -639,9 +648,9 @@ void BenchMarkAll(float t)
 		ECP::Point P(x, y);
 		P = ec.Multiply(k, P);
 		ECP::Point Q(ec.Multiply(d, P));
-		ECPrivateKey<ECP> cpriv(ec, P, Q, r, d);
-		ECPublicKey<ECP> cpub(cpriv);
-		ECSigner<ECP, SHA> spriv(ec, P, Q, r, d);
+		ECDecryptor<ECP> cpriv(ec, P, r, Q, d);
+		ECEncryptor<ECP> cpub(cpriv);
+		ECSigner<ECP, SHA> spriv(cpriv);
 		ECVerifier<ECP, SHA> spub(spriv);
 		ECDHC<ECP> ecdhc(ec, P, r, k);
 		ECMQVC<ECP> ecmqvc(ec, P, r, k);
@@ -662,15 +671,15 @@ void BenchMarkAll(float t)
 		Integer k(12);
 		Integer d("2065729449256706362097909124274151550853609397");
 
-		GF2N gf2n(155, 62, 0);
+		GF2NT gf2n(155, 62, 0);
 		byte b[]={0x7, 0x33, 0x8f};
 		EC2N ec(gf2n, PolynomialMod2::Zero(), PolynomialMod2(b,3));
 		EC2N::Point P(0x7B, 0x1C8);
 		P = ec.Multiply(k, P);
 		EC2N::Point Q(ec.Multiply(d, P));
-		ECPrivateKey<EC2N> cpriv(ec, P, Q, r, d);
-		ECPublicKey<EC2N> cpub(cpriv);
-		ECSigner<EC2N, SHA> spriv(ec, P, Q, r, d);
+		ECDecryptor<EC2N> cpriv(ec, P, r, Q, d);
+		ECEncryptor<EC2N> cpub(cpriv);
+		ECSigner<EC2N, SHA> spriv(cpriv);
 		ECVerifier<EC2N, SHA> spub(spriv);
 		ECDHC<EC2N> ecdhc(ec, P, r, k);
 		ECMQVC<EC2N> ecmqvc(ec, P, r, k);

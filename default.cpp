@@ -111,7 +111,7 @@ void DefaultEncryptor::FirstPut(const byte *)
 
 void DefaultEncryptor::LastPut(const byte *inString, unsigned int length)
 {
-	m_filter->MessageEnd(0);
+	m_filter->MessageEnd();
 }
 
 // ********************************************************
@@ -131,7 +131,7 @@ void DefaultDecryptor::FirstPut(const byte *inString)
 
 void DefaultDecryptor::LastPut(const byte *inString, unsigned int length)
 {
-	m_filter->MessageEnd(0);
+	m_filter->MessageEnd();
 	m_state = WAITING_FOR_KEYCHECK;
 }
 
@@ -187,7 +187,7 @@ DefaultEncryptorWithMAC::DefaultEncryptorWithMAC(const char *passphrase, Buffere
 
 void DefaultEncryptorWithMAC::LastPut(const byte *inString, unsigned int length)
 {
-	m_filter->MessageEnd(0);
+	m_filter->MessageEnd();
 }
 
 // ********************************************************
@@ -212,7 +212,7 @@ bool DefaultDecryptorWithMAC::CheckLastMAC() const
 
 void DefaultDecryptorWithMAC::LastPut(const byte *inString, unsigned int length)
 {
-	m_filter->MessageEnd(0);
+	m_filter->MessageEnd();
 	if (m_throwException && !CheckLastMAC())
 		throw MACBadErr();
 }

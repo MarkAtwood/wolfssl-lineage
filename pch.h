@@ -7,12 +7,6 @@
 #include "cryptlib.h"
 #include "misc.h"
 #include "smartptr.h"
-/*
-#include <utility>
-#include <algorithm>
-#include <vector>
-#include <iostream>
-*/
 #endif
 
 #endif

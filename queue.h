@@ -14,7 +14,7 @@ class ByteQueueNode;
 class ByteQueue : public BufferedTransformation
 {
 public:
-	ByteQueue(unsigned int nodeSize=256);
+	ByteQueue(unsigned int m_nodeSize=256);
 	ByteQueue(const ByteQueue &copy);
 	~ByteQueue();
 
@@ -26,43 +26,15 @@ public:
 	void Put(byte inByte);
 	void Put(const byte *inString, unsigned int length);
 
-	void MessageEnd(int) {}
-
 	unsigned int Get(byte &outByte);
 	unsigned int Get(byte *outString, unsigned int getMax);
-
-	unsigned long TransferTo(BufferedTransformation &target);
-	unsigned int TransferTo(BufferedTransformation &target, unsigned int transferMax);
-
-	unsigned long Skip();
-	unsigned int Skip(unsigned int skipMax);
 
 	unsigned int Peek(byte &outByte) const;
 	unsigned int Peek(byte *outString, unsigned int peekMax) const;
 
-	unsigned long CopyTo(BufferedTransformation &target) const;
-	unsigned int CopyTo(BufferedTransformation &target, unsigned int copyMax) const;
-
-	unsigned long TotalBytesRetrievable() const
-		{return CurrentSize();}
-	unsigned int NumberOfMessages() const
-		{return IsEmpty() ? 0 : 1;}
-	bool CurrentMessageIsComplete() const
-		{return false;}
-	bool RetrieveNextMessage()
-		{return false;}
-	unsigned int SkipMessages()
-		{return IsEmpty() ? 0 : (Clear(), 1);}
-	unsigned int SkipMessages(unsigned int count)
-		{return IsEmpty() || !count ? 0 : (Clear(), 1);}
-	unsigned int TransferMessagesTo(BufferedTransformation &target)
-		{return IsEmpty() ? 0 : (TransferTo(target), 1);}
-	unsigned int TransferMessagesTo(BufferedTransformation &target, unsigned int count)
-		{return IsEmpty() || !count ? 0 : (TransferTo(target, count), 1);}
-	unsigned int CopyMessagesTo(BufferedTransformation &target) const
-		{return IsEmpty() ? 0 : (CopyTo(target), 1);}
-	unsigned int CopyMessagesTo(BufferedTransformation &target, unsigned int count) const
-		{return IsEmpty() || !count ? 0 : (CopyTo(target, count), 1);}
+	unsigned long Skip(unsigned long skipMax=ULONG_MAX);
+	unsigned long TransferTo(BufferedTransformation &target, unsigned long transferMax=ULONG_MAX);
+	unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax=ULONG_MAX) const;
 
 	// these member functions are not inherited
 	unsigned long CurrentSize() const;
@@ -70,27 +42,64 @@ public:
 
 	void Clear();
 
-	byte * Spy(unsigned int &contiguousSize);
+	void Unget(byte inByte);
+	void Unget(const byte *inString, unsigned int length);
+
 	const byte * Spy(unsigned int &contiguousSize) const;
 
 	byte * MakeNewSpace(unsigned int &contiguousSize);
 	void OccupyNewSpace(unsigned int size);
 
-	// TODO: implement LazyPut
-	void LazyPut(const byte *inString, unsigned int size) {Put(inString, size);}
-	void FinalizeLazyPut() {}
+	void LazyPut(const byte *inString, unsigned int size);
+	void FinalizeLazyPut();
 
 	ByteQueue & operator=(const ByteQueue &rhs);
 	bool operator==(const ByteQueue &rhs) const;
 	byte operator[](unsigned long i) const;
+	void swap(ByteQueue &rhs);
+
+	class Walker : public BufferedTransformation
+	{
+	public:
+		Walker(const ByteQueue &queue)
+			: m_queue(queue), m_node(queue.m_head), m_position(0), m_offset(0)
+			, m_lazyString(queue.m_lazyString), m_lazyLength(queue.m_lazyLength) {}
+
+		unsigned long MaxRetrievable() const
+			{return m_queue.CurrentSize() - m_position;}
+
+		void Put(byte inByte) {}
+		void Put(const byte *inString, unsigned int length) {}
+
+		unsigned int Get(byte &outByte);
+		unsigned int Get(byte *outString, unsigned int getMax);
+
+		unsigned int Peek(byte &outByte) const;
+		unsigned int Peek(byte *outString, unsigned int peekMax) const;
+
+		unsigned long Skip(unsigned long skipMax=ULONG_MAX);
+		unsigned long TransferTo(BufferedTransformation &target, unsigned long transferMax=ULONG_MAX);
+		unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax=ULONG_MAX) const;
+
+	private:
+		const ByteQueue &m_queue;
+		const ByteQueueNode *m_node;
+		unsigned int m_position, m_offset;
+		const byte *m_lazyString;
+		unsigned int m_lazyLength;
+	};
+
+	friend class Walker;
 
 private:
 	void CleanupUsedNodes();
 	void CopyFrom(const ByteQueue &copy);
 	void Destroy();
 
-	unsigned int nodeSize;
-	ByteQueueNode *head, *tail;
+	unsigned int m_nodeSize;
+	ByteQueueNode *m_head, *m_tail;
+	const byte *m_lazyString;
+	unsigned int m_lazyLength;
 };
 
 // use this to make sure LazyPut is finalized in event of exception
@@ -105,6 +114,13 @@ private:
 	ByteQueue &m_bq;
 };
 
+NAMESPACE_END
+
+NAMESPACE_BEGIN(std)
+inline void swap(CryptoPP::ByteQueue &a, CryptoPP::ByteQueue &b)
+{
+	a.swap(b);
+}
 NAMESPACE_END
 
 #endif

@@ -1,14 +1,17 @@
 #ifndef CRYPTOPP_PUBKEY_H
 #define CRYPTOPP_PUBKEY_H
 
-#include "cryptlib.h"
-#include "misc.h"
+#include "integer.h"
+#include "filters.h"
 #include <memory>
 #include <assert.h>
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class Integer;
+Integer NR_EncodeDigest(unsigned int modulusBits, const byte *digest, unsigned int digestLen);
+Integer DSA_EncodeDigest(unsigned int modulusBits, const byte *digest, unsigned int digestLen);
+
+// ********************************************************
 
 class TrapdoorFunction
 {
@@ -16,8 +19,10 @@ public:
 	virtual ~TrapdoorFunction() {}
 
 	virtual Integer ApplyFunction(const Integer &x) const =0;
-	virtual Integer MaxPreimage() const =0;
-	virtual Integer MaxImage() const =0;
+	virtual Integer PreimageBound() const =0;
+	virtual Integer ImageBound() const =0;
+	virtual Integer MaxPreimage() const {return --PreimageBound();}
+	virtual Integer MaxImage() const {return --ImageBound();}
 };
 
 class InvertibleTrapdoorFunction : virtual public TrapdoorFunction
@@ -41,37 +46,50 @@ public:
 // ********************************************************
 
 template <class H>
-class MGF1
+class P1363_MGF1
 {
 public:
 	static void GenerateAndMask(byte *output, unsigned int outputLength, const byte *input, unsigned int inputLength);
 };
 
 template <class H>
-void MGF1<H>::GenerateAndMask(byte *output, unsigned int outputLength, const byte *input, unsigned int inputLength)
+void P1363_MGF1<H>::GenerateAndMask(byte *output, unsigned int outputLength, const byte *input, unsigned int inputLength)
 {
 	H h;
-	SecByteBlock buf(STDMAX(4U, (unsigned int)H::DIGESTSIZE));
+	ArrayXorSink *sink;
+	HashFilter filter(h, sink = new ArrayXorSink(output, outputLength));
 	word32 counter = 0;
-
-	while (outputLength)
+	while (sink->AvailableSize() > 0)
 	{
-		h.Update(input, inputLength);
-		buf[0] = byte(counter >> 3*8);
-		buf[1] = byte(counter >> 2*8);
-		buf[2] = byte(counter >> 1*8);
-		buf[3] = byte(counter);
-		h.Update(buf, 4);
-		h.Final(buf);
-
-		unsigned int xorLen = STDMIN((unsigned int)H::DIGESTSIZE, outputLength);
-		xorbuf(output, buf, xorLen);
-
-		output += xorLen;
-		outputLength -= xorLen;
-		counter++;
+		filter.Put(input, inputLength);
+		filter.PutWord32(counter++);
+		filter.MessageEnd();
 	}
 }
+
+// ********************************************************
+
+template <class H>
+class P1363_KDF2
+{
+public:
+	static void DeriveKey(byte *output, unsigned int outputLength, const byte *input, unsigned int inputLength);
+};
+
+template <class H>
+void P1363_KDF2<H>::DeriveKey(byte *output, unsigned int outputLength, const byte *input, unsigned int inputLength)
+{
+	H h;
+	ArraySink *sink;
+	HashFilter filter(h, sink = new ArraySink(output, outputLength));
+	word32 counter = 1;
+	while (sink->AvailableSize() > 0)
+	{
+		filter.Put(input, inputLength);
+		filter.PutWord32(counter++);
+		filter.MessageEnd();
+	}
+};
 
 // ********************************************************
 
@@ -107,7 +125,7 @@ public:
 
 protected:
 	CryptoSystemBaseTemplate() {}
-	unsigned int PaddedBlockBitLength() const {return f.MaxPreimage().BitCount()-1;}
+	unsigned int PaddedBlockBitLength() const {return f.PreimageBound().BitCount()-1;}
 };
 
 template <class P, class F>
@@ -165,7 +183,7 @@ public:
 
 protected:
 	DigestSignatureSystemBaseTemplate() {}
-	unsigned int PaddedBlockBitLength() const {return f.MaxImage().BitCount()-1;}
+	unsigned int PaddedBlockBitLength() const {return f.ImageBound().BitCount()-1;}
 };
 
 template <class P, class T>
@@ -273,7 +291,7 @@ public:
 	bool AllowLeftoverMessage() const {return H::AllowLeftoverMessage();}
 
 protected:
-	unsigned int PaddedBlockBitLength() const {return f.MaxImage().BitCount()-1;}
+	unsigned int PaddedBlockBitLength() const {return f.ImageBound().BitCount()-1;}
 };
 
 template <class F, class H>

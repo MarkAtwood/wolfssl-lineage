@@ -14,7 +14,7 @@ template <class T> class HMAC : public MessageAuthenticationCode
 {
 public:
 	// put enums here for Metrowerks 4
-	enum {KEYLENGTH=16, MAX_KEYLENGTH=T::DATASIZE, DIGESTSIZE=T::DIGESTSIZE, DATASIZE=T::DATASIZE};
+	enum {KEYLENGTH=16, MAX_KEYLENGTH=T::BLOCKSIZE, DIGESTSIZE=T::DIGESTSIZE, BLOCKSIZE=T::BLOCKSIZE};
 
 	HMAC(const byte *userKey, unsigned int keylength=KEYLENGTH);
 	void Update(const byte *input, unsigned int length);

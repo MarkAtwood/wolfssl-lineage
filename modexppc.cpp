@@ -9,74 +9,55 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-ModExpPrecomputation::~ModExpPrecomputation() {}
-
-ModExpPrecomputation::ModExpPrecomputation(const Integer &mod, const Integer &base, unsigned int maxExpBits, unsigned int storage)
+ModExpPrecomputation& ModExpPrecomputation::operator=(const ModExpPrecomputation &rhs)
 {
-	Precompute(mod, base, maxExpBits, storage);
-}
-
-ModExpPrecomputation::ModExpPrecomputation(const ModExpPrecomputation &mep)
-	: mr(mep.mr.get() ? new MontgomeryRepresentation(*mep.mr) : NULL)
-	, ep(mep.ep.get() ? new ExponentiationPrecomputation<Integer>(mr->MultiplicativeGroup(), *mep.ep) : NULL)
-{
-}
-
-ModExpPrecomputation& ModExpPrecomputation::operator=(const ModExpPrecomputation &mep)
-{
-	mr.reset(mep.mr.get() ? new MontgomeryRepresentation(*mep.mr) : NULL);
-	ep.reset(mep.ep.get() ? new ExponentiationPrecomputation<Integer>(mr->MultiplicativeGroup(), *mep.ep) : NULL);
+	m_mr = rhs.m_mr;
+	m_ep = rhs.m_ep;
+	m_ep.m_group = &m_mr->MultiplicativeGroup();
 	return *this;
 }
 
-void ModExpPrecomputation::Precompute(const Integer &mod, const Integer &base, unsigned int maxExpBits, unsigned int storage)
+void ModExpPrecomputation::SetModulusAndBase(const Integer &modulus, const Integer &base)
 {
-	if (!mr.get() || mr->GetModulus()!=mod)
-	{
-		mr.reset(new MontgomeryRepresentation(mod));
-		ep.reset(NULL);
-	}
-
-	if (!ep.get() || ep->storage < storage)
-		ep.reset(new ExponentiationPrecomputation<Integer>(mr->MultiplicativeGroup(), mr->ConvertIn(base), maxExpBits, storage));
+	m_mr.reset(new MontgomeryRepresentation(modulus));
+	m_ep.SetGroupAndBase(m_mr->MultiplicativeGroup(), m_mr->ConvertIn(base));
 }
 
-void ModExpPrecomputation::Load(const Integer &mod, BufferedTransformation &bt)
+void ModExpPrecomputation::Precompute(unsigned int maxExpBits, unsigned int storage)
 {
-	if (!mr.get() || mr->GetModulus()!=mod)
-		mr.reset(new MontgomeryRepresentation(mod));
+	m_ep.Precompute(maxExpBits, storage);
+}
 
-	ep.reset(new ExponentiationPrecomputation<Integer>(mr->MultiplicativeGroup()));
+void ModExpPrecomputation::Load(BufferedTransformation &bt)
+{
 	BERSequenceDecoder seq(bt);
-	ep->storage = (unsigned int)(Integer(seq).ConvertToLong());
-	ep->exponentBase.BERDecode(seq);
-	ep->g.resize(ep->storage);
-	for (unsigned i=0; i<ep->storage; i++)
-		ep->g[i].BERDecode(seq);
+	word32 version;
+	BERDecodeUnsigned<word32>(seq, version, INTEGER, 1, 1);
+	m_ep.m_exponentBase.BERDecode(seq);
+	m_ep.m_bases.clear();
+	while (!seq.EndReached())
+		m_ep.m_bases.push_back(Integer(seq));
 	seq.MessageEnd();
 }
 
 void ModExpPrecomputation::Save(BufferedTransformation &bt) const
 {
-	assert(ep.get());
 	DERSequenceEncoder seq(bt);
-	Integer(ep->storage).DEREncode(seq);
-	ep->exponentBase.DEREncode(seq);
-	for (unsigned i=0; i<ep->storage; i++)
-		ep->g[i].DEREncode(seq);
+	DEREncodeUnsigned<word32>(seq, 1);	// version
+	m_ep.m_exponentBase.DEREncode(seq);
+	for (unsigned i=0; i<m_ep.m_bases.size(); i++)
+		m_ep.m_bases[i].DEREncode(seq);
 	seq.MessageEnd();
 }
 
 Integer ModExpPrecomputation::Exponentiate(const Integer &exponent) const
 {
-	assert(mr.get() && ep.get());
-	return mr->ConvertOut(ep->Exponentiate(exponent));
+	return m_mr->ConvertOut(m_ep.Exponentiate(exponent));
 }
 
 Integer ModExpPrecomputation::CascadeExponentiate(const Integer &exponent, const ModExpPrecomputation &pc2, const Integer &exponent2) const
 {
-	assert(mr.get() && ep.get());
-	return mr->ConvertOut(ep->CascadeExponentiate(exponent, *pc2.ep, exponent2));
+	return m_mr->ConvertOut(m_ep.CascadeExponentiate(exponent, pc2.m_ep, exponent2));
 }
 
 NAMESPACE_END

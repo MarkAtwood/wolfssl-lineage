@@ -6,31 +6,66 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 /// implements the SHA-1 standard
-class SHA : public IteratedHash<word32>
+class SHA : public IteratedHash<word32, true, 64>
 {
 public:
-	SHA();
-	void Final(byte *hash);
+	enum {DIGESTSIZE = 20};
+	SHA() : IteratedHash<word32, true, 64>(DIGESTSIZE) {Init();}
+	static void Transform(word32 *digest, const word32 *data);
+
+protected:
+	void Init();
+	void vTransform(const word32 *data) {Transform(digest, data);}
+};
+
+typedef SHA SHA1;
+
+/// implements the SHA-256 standard
+class SHA256 : public IteratedHash<word32, true, 64>
+{
+public:
+	enum {DIGESTSIZE = 32};
+	SHA256() : IteratedHash<word32, true, 64>(DIGESTSIZE) {Init();}
+	static void Transform(word32 *digest, const word32 *data);
+
+protected:
+	void Init();
+	void vTransform(const word32 *data) {Transform(digest, data);}
+
+	const static word32 K[64];
+};
+
+#ifdef WORD64_AVAILABLE
+
+/// implements the SHA-512 standard
+class SHA512 : public IteratedHash<word64, true, 128>
+{
+public:
+	enum {DIGESTSIZE = 64};
+	SHA512() : IteratedHash<word64, true, 128>(DIGESTSIZE) {Init();}
+	static void Transform(word64 *digest, const word64 *data);
+
+protected:
+	void Init();
+	void vTransform(const word64 *data) {Transform(digest, data);}
+
+	const static word64 K[80];
+};
+
+/// implements the SHA-384 standard
+class SHA384 : public IteratedHash<word64, true, 128>
+{
+public:
+	enum {DIGESTSIZE = 48};
+	SHA384() : IteratedHash<word64, true, 128>(64) {Init();}
 	unsigned int DigestSize() const {return DIGESTSIZE;};
 
-	static void CorrectEndianess(word32 *out, const word32 *in, unsigned int byteCount)
-	{
-#ifdef IS_LITTLE_ENDIAN
-		byteReverse(out, in, byteCount);
-#else
-		if (in!=out)
-			memcpy(out, in, byteCount);
-#endif
-	}
-
-	static void Transform(word32 *digest, const word32 *data );
-
-	enum {DIGESTSIZE = 20, DATASIZE = 64};
-
-private:
+protected:
 	void Init();
-	void HashBlock(const word32 *input);
+	void vTransform(const word64 *data) {SHA512::Transform(digest, data);}
 };
+
+#endif
 
 NAMESPACE_END
 

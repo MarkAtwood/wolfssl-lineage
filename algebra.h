@@ -98,6 +98,15 @@ private:
 
 // ********************************************************
 
+template <class T>
+struct BaseAndExponent
+{
+public:
+	bool operator<(const BaseAndExponent<T> &rhs) const {return exponent < rhs.exponent;}
+	T base;
+	Integer exponent;
+};
+
 // VC60 workaround: incomplete member template support
 template <class Element, class Iterator>
 	Element GeneralCascadeMultiplication(const AbstractGroup<Element> &group, Iterator begin, Iterator end);

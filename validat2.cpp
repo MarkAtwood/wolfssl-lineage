@@ -22,7 +22,6 @@
 #include "rng.h"
 #include "files.h"
 #include "hex.h"
-#include "forkjoin.h"
 
 #include <iostream>
 #include <iomanip>
@@ -358,7 +357,10 @@ bool ElGamalValidate()
 		FileSource fc("elgc2048.dat", true, new HexDecoder);
 		ElGamalDecryptor privC(fc);
 		ElGamalEncryptor pubC(privC);
-		pubC.Precompute();
+		privC.Precompute();
+		ByteQueue queue;
+		privC.SavePrecomputation(queue);
+		pubC.LoadPrecomputation(queue);
 
 		pass = CryptoSystemValidate(privC, pubC) && pass;
 	}
@@ -444,10 +446,11 @@ bool DSAValidate()
 	fail = pub.VerifyMessage((byte *)"xyz", 3, sig);
 	pass = pass && !fail;
 	}
-	FileSource fs("dsa1024.dat", true, new HexDecoder());
-	DSAPrivateKey priv(fs);
-	priv.LoadPrecomputation(fs);
-	DSAPublicKey pub(priv);
+	FileSource fs1("dsa1024.dat", true, new HexDecoder());
+	DSAPrivateKey priv(fs1);
+	priv.LoadPrecomputation(fs1);
+	FileSource fs2("dsa1024b.dat", true, new HexDecoder());
+	DSAPublicKey pub(fs2);
 	pass = SignatureValidate(priv, pub) && pass;
 	return pass;
 }
@@ -550,18 +553,29 @@ bool ECPValidate()
 	ECP::Point P(x, y);
 	P = ec.Multiply(k, P);
 	ECP::Point Q(ec.Multiply(d, P));
-	ECSigner<ECP, SHA> priv(ec, P, Q, r, d);
-	ECVerifier<ECP, SHA> pub(priv);
+	ECDecryptor<ECP> cpriv(ec, P, r, Q, d);
+	ECEncryptor<ECP> cpub(cpriv);
+	ECSigner<ECP, SHA> spriv(cpriv);
+	ECVerifier<ECP, SHA> spub(spriv);
 	ECDHC<ECP> ecdhc(ec, P, r, k);
 	ECMQVC<ECP> ecmqvc(ec, P, r, k);
 
-	priv.Precompute();
+	spriv.Precompute();
 	ByteQueue queue;
-	priv.SavePrecomputation(queue);
-	pub.LoadPrecomputation(queue);
+	spriv.SavePrecomputation(queue);
+	spub.LoadPrecomputation(queue);
 
-	bool pass = SignatureValidate(priv, pub);
-	pass = CryptoSystemValidate(priv, pub) && pass;
+	bool pass = SignatureValidate(spriv, spub);
+	pass = CryptoSystemValidate(cpriv, cpub) && pass;
+	pass = SimpleKeyAgreementValidate(ecdhc) && pass;
+	pass = AuthenticatedKeyAgreementValidate(ecmqvc) && pass;
+
+	cout << "Turning on point compression..." << endl;
+	cpriv.SetPointCompression(true);
+	cpub.SetPointCompression(true);
+	ecdhc.SetPointCompression(true);
+	ecmqvc.SetPointCompression(true);
+	pass = CryptoSystemValidate(cpriv, cpub) && pass;
 	pass = SimpleKeyAgreementValidate(ecdhc) && pass;
 	pass = AuthenticatedKeyAgreementValidate(ecmqvc) && pass;
 
@@ -576,24 +590,35 @@ bool EC2NValidate()
 	Integer k(12);
 	Integer d("2065729449256706362097909124274151550853609397");
 
-	GF2N gf2n(155, 62, 0);
+	GF2NT gf2n(155, 62, 0);
 	byte b[]={0x7, 0x33, 0x8f};
 	EC2N ec(gf2n, PolynomialMod2::Zero(), PolynomialMod2(b,3));
 	EC2N::Point P(0x7B, 0x1C8);
 	P = ec.Multiply(k, P);
 	EC2N::Point Q(ec.Multiply(d, P));
-	ECSigner<EC2N, SHA> priv(ec, P, Q, r, d);
-	ECVerifier<EC2N, SHA> pub(priv);
+	ECDecryptor<EC2N> cpriv(ec, P, r, Q, d);
+	ECEncryptor<EC2N> cpub(cpriv);
+	ECSigner<EC2N, SHA> spriv(cpriv);
+	ECVerifier<EC2N, SHA> spub(spriv);
 	ECDHC<EC2N> ecdhc(ec, P, r, k);
 	ECMQVC<EC2N> ecmqvc(ec, P, r, k);
 
-	priv.Precompute();
+	spriv.Precompute();
 	ByteQueue queue;
-	priv.SavePrecomputation(queue);
-	pub.LoadPrecomputation(queue);
+	spriv.SavePrecomputation(queue);
+	spub.LoadPrecomputation(queue);
 
-	bool pass = SignatureValidate(priv, pub);
-	pass = CryptoSystemValidate(priv, pub) && pass;
+	bool pass = SignatureValidate(spriv, spub);
+	pass = CryptoSystemValidate(cpriv, cpub) && pass;
+	pass = SimpleKeyAgreementValidate(ecdhc) && pass;
+	pass = AuthenticatedKeyAgreementValidate(ecmqvc) && pass;
+
+	cout << "Turning on point compression..." << endl;
+	cpriv.SetPointCompression(true);
+	cpub.SetPointCompression(true);
+	ecdhc.SetPointCompression(true);
+	ecmqvc.SetPointCompression(true);
+	pass = CryptoSystemValidate(cpriv, cpub) && pass;
 	pass = SimpleKeyAgreementValidate(ecdhc) && pass;
 	pass = AuthenticatedKeyAgreementValidate(ecmqvc) && pass;
 
@@ -605,17 +630,18 @@ bool ECDSAValidate()
 	cout << "\nECDSA validation suite running...\n\n";
 
 	// from Sample Test Vectors for P1363
-	GF2N gf2n(191, 9, 0);
+	GF2NT gf2n(191, 9, 0);
 	byte a[]="\x28\x66\x53\x7B\x67\x67\x52\x63\x6A\x68\xF5\x65\x54\xE1\x26\x40\x27\x6B\x64\x9E\xF7\x52\x62\x67";
 	byte b[]="\x2E\x45\xEF\x57\x1F\x00\x78\x6F\x67\xB0\x08\x1B\x94\x95\xA3\xD9\x54\x62\xF5\xDE\x0A\xA1\x85\xEC";
 	EC2N ec(gf2n, PolynomialMod2(a,24), PolynomialMod2(b,24));
 
-	EC2N::Point P = ec.DecodePoint((byte *)"\x04\x36\xB3\xDA\xF8\xA2\x32\x06\xF9\xC4\xF2\x99\xD7\xB2\x1A\x9C\x36\x91\x37\xF2\xC8\x4A\xE1\xAA\x0D"
-		"\x76\x5B\xE7\x34\x33\xB3\xF9\x5E\x33\x29\x32\xE7\x0E\xA2\x45\xCA\x24\x18\xEA\x0E\xF9\x80\x18\xFB");
+	EC2N::Point P;
+	ec.DecodePoint(P, (byte *)"\x04\x36\xB3\xDA\xF8\xA2\x32\x06\xF9\xC4\xF2\x99\xD7\xB2\x1A\x9C\x36\x91\x37\xF2\xC8\x4A\xE1\xAA\x0D"
+		"\x76\x5B\xE7\x34\x33\xB3\xF9\x5E\x33\x29\x32\xE7\x0E\xA2\x45\xCA\x24\x18\xEA\x0E\xF9\x80\x18\xFB", ec.EncodedPointSize());
 	Integer n("40000000000000000000000004a20e90c39067c893bbb9a5H");
 	Integer d("340562e1dda332f9d2aec168249b5696ee39d0ed4d03760fH");
 	EC2N::Point Q(ec.Multiply(d, P));
-	ECSigner<EC2N, SHA, ECDSA> priv(ec, P, Q, n, d);
+	ECSigner<EC2N, SHA, ECDSA> priv(ec, P, n, Q, d);
 	ECVerifier<EC2N, SHA, ECDSA> pub(priv);
 
 	Integer h("A9993E364706816ABA3E25717850C26C9CD0D89DH");

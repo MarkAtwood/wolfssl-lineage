@@ -11,7 +11,7 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 MQV::MQV(const Integer &p, const Integer &q, const Integer &g)
-	: p(p), q(q), g(g), gpc(p, g, ExponentBitLength(), 1)
+	: p(p), q(q), g(g), gpc(p, g)
 {
 }
 
@@ -21,7 +21,7 @@ MQV::MQV(RandomNumberGenerator &rng, unsigned int pbits)
 	p = pg.Prime();
 	q = pg.SubPrime();
 	g = pg.Generator();
-	gpc.Precompute(p, g, ExponentBitLength(), 1);
+	gpc.SetModulusAndBase(p, g);
 }
 
 MQV::MQV(BufferedTransformation &bt)
@@ -32,7 +32,7 @@ MQV::MQV(BufferedTransformation &bt)
 	g.BERDecode(seq);
 	seq.MessageEnd();
 
-	gpc.Precompute(p, g, ExponentBitLength(), 1);
+	gpc.SetModulusAndBase(p, g);
 }
 
 void MQV::DEREncode(BufferedTransformation &bt) const
@@ -46,12 +46,12 @@ void MQV::DEREncode(BufferedTransformation &bt) const
 
 void MQV::Precompute(unsigned int precomputationStorage)
 {
-	gpc.Precompute(p, g, ExponentBitLength(), precomputationStorage);
+	gpc.Precompute(ExponentBitLength(), precomputationStorage);
 }
 
 void MQV::LoadPrecomputation(BufferedTransformation &bt)
 {
-	gpc.Load(p, bt);
+	gpc.Load(bt);
 }
 
 void MQV::SavePrecomputation(BufferedTransformation &bt) const
@@ -99,7 +99,7 @@ bool MQV::Agree(byte *agreedValue, const byte *staticPrivateKey, const byte *eph
 
 	const Integer e[2] = {q, ((h2+v%h2)*s+u) % q};
 	Integer r[2];
-	SimultaneousExponentiation<Integer, Integer *, const Integer *>(r, mr, b, e, e+2);
+	SimultaneousExponentiation(r, mr, b, e, e+2);
 
 	if (r[0] != mr.One() || r[1] == mr.One())
 		return false;

@@ -1,46 +1,15 @@
 #ifndef CRYPTOPP_CONFIG_H
 #define CRYPTOPP_CONFIG_H
 
-// define this if running on a little-endian CPU
+// ***************** Important Settings ********************
 
+// define this if running on a little-endian CPU
 #if !defined(__sparc__) && (!defined(__MWERKS__) || defined(__INTEL__))
 #define IS_LITTLE_ENDIAN
 #endif
 
-// switch between different secure memory allocation mechnisms, this is the only
-// one available right now
-
-#define SECALLOC_DEFAULT
-
-#define GZIP_OS_CODE 0
-
-// how much memory to use for deflation (compression)
-// note 16 bit compilers don't work with BIG_MEM (pointer wraps around segment boundary)
-
-// #define SMALL_MEM
-#define MEDIUM_MEM
-// #define BIG_MEM
-
-// Try this if your CPU has 256K internal cache or a slow multiply instruction
-// and you want a (possibly) faster IDEA implementation using log tables
-
-// #define IDEA_LARGECACHE
-
-// Try this if you have a large cache or your CPU is slow manipulating
-// individual bytes.
-
-// #define DIAMOND_USE_PERMTABLE
-
-// Define this if, for the linear congruential RNG, you want to use
-// the original constants as specified in S.K. Park and K.W. Miller's
-// CACM paper.
-
-// #define LCRNG_ORIGINAL_NUMBERS
-
-// Define this if your compiler does not support namespaces
-
+// define this if your compiler does not support namespaces
 // #define NO_NAMESPACE
-
 #ifdef NO_NAMESPACE
 #define std
 #define CryptoPP
@@ -55,7 +24,40 @@
 #define NAMESPACE_END }
 #endif
 
-// Make sure these typedefs are correct for your platform
+// ***************** Less Important Settings ***************
+
+// switch between different secure memory allocation mechnisms, this is the only
+// one available right now
+#define SECALLOC_DEFAULT
+
+#define GZIP_OS_CODE 0
+
+// how much memory to use for deflation (compression)
+// note 16 bit compilers don't work with BIG_MEM (pointer wraps around segment boundary)
+// #define SMALL_MEM
+#define MEDIUM_MEM
+// #define BIG_MEM
+
+// Try this if your CPU has 256K internal cache or a slow multiply instruction
+// and you want a (possibly) faster IDEA implementation using log tables
+// #define IDEA_LARGECACHE
+
+// Try this if you have a large cache or your CPU is slow manipulating
+// individual bytes.
+// #define DIAMOND_USE_PERMTABLE
+
+// Define this if, for the linear congruential RNG, you want to use
+// the original constants as specified in S.K. Park and K.W. Miller's
+// CACM paper.
+// #define LCRNG_ORIGINAL_NUMBERS
+
+// choose which style of sockets to wrap (mostly useful for cygwin which has both)
+#define PREFER_BERKELEY_STYLE_SOCKETS
+// #define PREFER_WINDOWS_STYLE_SOCKETS
+// #define PREFER_NO_SOCKETS
+
+// ***************** Important Settings Again ********************
+// But the defaults should be ok.
 
 typedef unsigned char byte;     // moved outside namespace for Borland C++Builder 5
 
@@ -126,14 +128,16 @@ union dword_union
 #define FAST_ROTATE
 #endif
 
-#ifdef _MSC_VER
-// VC60 workaround
-#define STDMIN std::_cpp_min
-#define STDMAX std::_cpp_max
-#else
-#define STDMIN std::min
-#define STDMAX std::max
-#endif
+// can't use std::min or std::max in MSVC60 or Cygwin 1.1.0
+template <class _Tp>
+inline const _Tp& STDMIN(const _Tp& __a, const _Tp& __b) {
+  return __b < __a ? __b : __a;
+}
+
+template <class _Tp>
+inline const _Tp& STDMAX(const _Tp& __a, const _Tp& __b) {
+  return  __a < __b ? __b : __a;
+}
 
 #ifdef _MSC_VER
 // 4250: dominance

@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <string.h>		// CodeWarrior doesn't have memory.h
 #include <algorithm>
+#include <string>
 
 #ifdef INTEL_INTRINSICS
 #include <stdlib.h>
@@ -14,11 +15,9 @@ NAMESPACE_BEGIN(CryptoPP)
 
 // ************** misc functions ***************
 
-#ifdef _MSC_VER
-#define GETBYTE(x, y) (((byte *)&(x))[y])
-#else
 #define GETBYTE(x, y) (unsigned int)(((x)>>(8*(y)))&255)
-#endif
+// this one may be faster on a Pentium
+// #define GETBYTE(x, y) (((byte *)&(x))[y])
 
 unsigned int Parity(unsigned long);
 unsigned int BytePrecision(unsigned long);
@@ -193,7 +192,7 @@ inline word32 byteReverse(word32 value)
 inline word64 byteReverse(word64 value)
 {
 #ifdef SLOW_WORD64
-	return (dword(byteReverse(word32(value))) << 32) | byteReverse(word32(value>>32));
+	return (word64(byteReverse(word32(value))) << 32) | byteReverse(word32(value>>32));
 #else
 	value = ((value & W64LIT(0xFF00FF00FF00FF00)) >> 8) | ((value & W64LIT(0x00FF00FF00FF00FF)) << 8);
 	value = ((value & W64LIT(0xFFFF0000FFFF0000)) >> 16) | ((value & W64LIT(0x0000FFFF0000FFFF)) << 16);
@@ -201,6 +200,64 @@ inline word64 byteReverse(word64 value)
 #endif
 }
 #endif
+
+inline byte bitReverse(byte value)
+{
+	value = ((value & 0xAA) >> 1) | ((value & 0x55) << 1);
+	value = ((value & 0xCC) >> 2) | ((value & 0x33) << 2);
+	return rotlFixed(value, 4);
+}
+
+inline word16 bitReverse(word16 value)
+{
+	value = ((value & 0xAAAA) >> 1) | ((value & 0x5555) << 1);
+	value = ((value & 0xCCCC) >> 2) | ((value & 0x3333) << 2);
+	value = ((value & 0xF0F0) >> 4) | ((value & 0x0F0F) << 4);
+	return byteReverse(value);
+}
+
+inline word32 bitReverse(word32 value)
+{
+	value = ((value & 0xAAAAAAAA) >> 1) | ((value & 0x55555555) << 1);
+	value = ((value & 0xCCCCCCCC) >> 2) | ((value & 0x33333333) << 2);
+	value = ((value & 0xF0F0F0F0) >> 4) | ((value & 0x0F0F0F0F) << 4);
+	return byteReverse(value);
+}
+
+#ifdef WORD64_AVAILABLE
+inline word64 bitReverse(word64 value)
+{
+#ifdef SLOW_WORD64
+	return (word64(bitReverse(word32(value))) << 32) | bitReverse(word32(value>>32));
+#else
+	value = ((value & W64LIT(0xAAAAAAAAAAAAAAAA)) >> 1) | ((value & W64LIT(0x5555555555555555)) << 1);
+	value = ((value & W64LIT(0xCCCCCCCCCCCCCCCC)) >> 2) | ((value & W64LIT(0x3333333333333333)) << 2);
+	value = ((value & W64LIT(0xF0F0F0F0F0F0F0F0)) >> 4) | ((value & W64LIT(0x0F0F0F0F0F0F0F0F)) << 4);
+	return byteReverse(value);
+#endif
+}
+#endif
+
+template <class T>
+inline T bitReverse(T value)
+{
+	if (sizeof(T) == 1)
+		return bitReverse((byte)value);
+	else if (sizeof(T) == 2)
+		return bitReverse((word16)value);
+	else if (sizeof(T) == 4)
+		return bitReverse((word32)value);
+	else
+	{
+#ifdef WORD64_AVAILABLE
+		assert(sizeof(T) == 8);
+		return bitReverse((word64)value);
+#else
+		assert(false);
+		return 0;
+#endif
+	}
+}
 
 template <class T>
 void byteReverse(T *out, const T *in, unsigned int byteCount)
@@ -354,6 +411,34 @@ inline void PutBlockBigEndian(byte *block, T a, T b, T c, T d)
 #endif
 }
 
+template <class T>
+std::string WordToString(T value, bool highFirst = true)
+{
+#ifdef IS_LITTLE_ENDIAN
+	if (highFirst)
+#else
+	if (!highFirst)
+#endif
+		value = byteReverse(value);
+
+	return std::string((char *)&value, sizeof(value));
+}
+
+template <class T>
+T StringToWord(const std::string &str, bool highFirst = true)
+{
+	T value = 0;
+	memcpy(&value, str.data(), STDMIN(sizeof(value), str.size()));
+#ifdef IS_LITTLE_ENDIAN
+	if (highFirst)
+#else
+	if (!highFirst)
+#endif
+		return byteReverse(value);
+	else
+		return value;
+}
+
 // ************** secure memory allocation ***************
 
 #ifdef SECALLOC_DEFAULT
@@ -386,6 +471,10 @@ template <class T> struct SecBlock
 		{return ptr;}
 	operator T *()
 		{return ptr;}
+#if defined(__GNUC__)	// reduce warnings
+	operator const T *()
+		{return ptr;}
+#endif
 
 // CodeWarrior defines _MSC_VER
 #if !defined(_MSC_VER) || defined(__MWERKS__)
@@ -429,6 +518,11 @@ template <class T> struct SecBlock
 	bool operator==(const SecBlock<T> &t) const
 	{
 		return size == t.size && memcmp(ptr, t.ptr, size*sizeof(T)) == 0;
+	}
+
+	bool operator!=(const SecBlock<T> &t) const
+	{
+		return !operator==(t);
 	}
 
 	void New(unsigned int newSize)

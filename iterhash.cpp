@@ -5,21 +5,19 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-template <class T> IteratedHash<T>::IteratedHash(unsigned int blockSize, unsigned int digestSize)
-	: blockSize(blockSize), data(blockSize/sizeof(T)), digest(digestSize/sizeof(T))
+template <class T>
+IteratedHashBase<T>::IteratedHashBase(unsigned int blockSize, unsigned int digestSize)
+	: blockSize(blockSize), countLo(0), countHi(0)
+	, data(blockSize/sizeof(T)), digest(digestSize/sizeof(T))
 {
 }
 
-template <class T> IteratedHash<T>::~IteratedHash()
+template <class T> void IteratedHashBase<T>::Update(const byte *input, unsigned int len)
 {
-}
-
-template <class T> void IteratedHash<T>::Update(const byte *input, unsigned int len)
-{
-	word32 tmp = countLo;
+	HashWordType tmp = countLo;
 	if ((countLo = tmp + ((word32)len << 3)) < tmp)
 		countHi++;             // Carry from low to high
-	countHi += len >> 29;
+	countHi += len >> (8*sizeof(HashWordType)-3);
 
 	assert((blockSize & (blockSize-1)) == 0);	// blockSize is a power of 2
 	unsigned int num = (unsigned int)(tmp >> 3) & (blockSize-1);
@@ -66,7 +64,7 @@ template <class T> void IteratedHash<T>::Update(const byte *input, unsigned int 
 	memcpy(data, input, len);
 }
 
-template <class T> void IteratedHash<T>::PadLastBlock(unsigned int lastBlockSize, byte padFirst)
+template <class T> void IteratedHashBase<T>::PadLastBlock(unsigned int lastBlockSize, byte padFirst)
 {
 	unsigned int num = (unsigned int)(countLo >> 3) & (blockSize-1);
 	assert(num < blockSize);
@@ -81,14 +79,20 @@ template <class T> void IteratedHash<T>::PadLastBlock(unsigned int lastBlockSize
 	}
 }
 
+template <class T> void IteratedHashBase<T>::Reinit()
+{
+	countLo = countHi = 0;
+	Init();
+}
+
 // provide empty definitions to avoid instantiation warnings
-template <class T> void IteratedHash<T>::Init() {}
-template <class T> void IteratedHash<T>::HashBlock(const T *input) {}
+template <class T> void IteratedHashBase<T>::Init() {}
+template <class T> void IteratedHashBase<T>::HashBlock(const T *input) {}
 
 #ifdef WORD64_AVAILABLE
-template class IteratedHash<word64>;
+template class IteratedHashBase<word64>;
 #endif
 
-template class IteratedHash<word32>;
+template class IteratedHashBase<word32>;
 
 NAMESPACE_END

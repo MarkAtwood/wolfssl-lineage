@@ -1,4 +1,4 @@
-Test Driver for Crypto++, a C++ Class Library of Cryptographic Primitives:
+Test Driver for Crypto++, a C++ Class Library of Cryptographic Primitives
 
 - To generate an RSA key
 	cryptest g
@@ -12,30 +12,40 @@ Test Driver for Crypto++, a C++ Class Library of Cryptographic Primitives:
 - To verify a signature of a file using RSA
 	cryptest rv publickeyfile messagefile signaturefile
 
-- To calculate MD5, SHS, and RIPEMD-160 message digests:
+- To calculate MD5, SHA, and RIPEMD-160 message digests
 	cryptest m file
 
-- To encrypt and decrypt a string using DES-EDE in CBC mode: 
+- To encrypt and decrypt a string using DES-EDE in CBC mode 
 	cryptest t
 
 - To encrypt or decrypt a file
 	cryptest e|d input output
 
-- To share a file into shadows:
-	cryptest s <pieces> <pieces-needed> file
-	(make sure file has no extension, if you're running this under DOS)
+- To secret share a file (shares will be named file.000, file.001, etc)
+	cryptest ss <threshold> <number-of-shares> file
 
-- To reconstruct a file from shadows:
-	cryptest j output file1 file2 [....]
+- To reconstruct a secret-shared file
+	cryptest sr file share1 share2 [....]
+	(number of shares given must be equal to threshold)
 
-- To gzip a file:
+- To information disperse a file (shares will be named file.000, file.001, etc)
+	cryptest id <threshold> <number-of-shares> file
+
+- To reconstruct an information-dispersed file
+	cryptest ir file share1 share2 [....]
+	(number of shares given must be equal to threshold)
+
+- To gzip a file
 	cryptest z <compression-level> input output
 
-- To gunzip a file:
+- To gunzip a file
 	cryptest u input output
 
-- To run validation tests:
+- To forward a TCP connection
+	cryptest ft source-port destination-host destination-port
+
+- To run validation tests
 	cryptest v
 
-- To run benchmarks:
+- To run benchmarks
 	cryptest b [time for each benchmark in seconds]

@@ -5,30 +5,16 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class MD5 : public IteratedHash<word32>
+class MD5 : public IteratedHash<word32, false, 64>
 {
 public:
-	MD5();
-	void Final(byte *hash);
-	unsigned int DigestSize() const {return DIGESTSIZE;}
-
-	static void CorrectEndianess(word32 *out, const word32 *in, unsigned int byteCount)
-	{
-#ifndef IS_LITTLE_ENDIAN
-		byteReverse(out, in, byteCount);
-#else
-		if (in!=out)
-			memcpy(out, in, byteCount);
-#endif
-	}
-
+	enum {DIGESTSIZE = 16};
+	MD5() : IteratedHash<word32, false, 64>(DIGESTSIZE) {Init();}
 	static void Transform(word32 *digest, const word32 *data);
 
-	enum {DIGESTSIZE = 16, DATASIZE = 64};
-
-private:
+protected:
 	void Init();
-	void HashBlock(const word32 *input);
+	void vTransform(const word32 *data) {Transform(digest, data);}
 };
 
 NAMESPACE_END

@@ -25,13 +25,18 @@ struct EC2NPoint
 class EC2N : public AbstractGroup<EC2NPoint>
 {
 public:
-	typedef GF2N Field;
+	typedef GF2NP Field;
 	typedef Field::Element FieldElement;
-
 	typedef EC2NPoint Point;
 
 	EC2N(const Field &field, const Field::Element &a, const Field::Element &b)
 		: field(field), a(a), b(b) {}
+	// construct from BER encoded parameters
+	// this constructor will decode and extract the the fields fieldID and curve of the sequence ECParameters
+	EC2N(BufferedTransformation &bt);
+
+	// encode the fields fieldID and curve of the sequence ECParameters
+	void DEREncode(BufferedTransformation &bt) const;
 
 	bool Equal(const Point &P, const Point &Q) const;
 	const Point& Zero() const {static const Point zero; return zero;}
@@ -47,18 +52,22 @@ public:
 	bool ValidateParameters(RandomNumberGenerator &rng) const;
 	bool VerifyPoint(const Point &P) const;
 
-	unsigned int EncodedPointSize() const
-		{return 1+2*field.MaxElementByteLength();}
-	Point DecodePoint(const byte *encodedPoint) const;
-	void EncodePoint(byte *encodedPoint, const Point &P) const;
+	unsigned int EncodedPointSize(bool compressed = false) const
+		{return 1 + (compressed?1:2)*field->MaxElementByteLength();}
+	// returns false if point is compressed and not valid (doesn't check if uncompressed)
+	bool DecodePoint(Point &P, const byte *encodedPoint, unsigned int len) const;
+	void EncodePoint(byte *encodedPoint, const Point &P, bool compressed = false) const;
 
-	Integer FieldSize() const {return Integer::Power2(field.MaxElementBitLength());}
-	const Field & GetField() const {return field;}
+	Point BERDecodePoint(BufferedTransformation &bt) const;
+	void DEREncodePoint(BufferedTransformation &bt, const Point &P, bool compressed = false) const;
+
+	Integer FieldSize() const {return Integer::Power2(field->MaxElementBitLength());}
+	const Field & GetField() const {return *field;}
 	const FieldElement & GetA() const {return a;}
 	const FieldElement & GetB() const {return b;}
 
 private:
-	Field field;
+	clonable_ptr<Field> field;
 	FieldElement a, b;
 	mutable Point R;
 };
@@ -68,12 +77,16 @@ template <class T> class EcPrecomputation;
 template<> class EcPrecomputation<EC2N>
 {
 public:
-	EcPrecomputation();
-	EcPrecomputation(const EcPrecomputation<EC2N> &ecp);
-	EcPrecomputation(const EC2N &ecIn, const EC2N::Point &base, unsigned int maxExpBits, unsigned int storage);
-	~EcPrecomputation();
+	EcPrecomputation() : m_ec(NULL) {}
+	EcPrecomputation(const EcPrecomputation &a)
+		{operator=(a);}
+	EcPrecomputation(const EC2N &ec, const EC2N::Point &base)
+		{SetCurveAndBase(ec, base);}
 
-	void Precompute(const EC2N::Point &base, unsigned int maxExpBits, unsigned int storage);
+	EcPrecomputation& operator=(const EcPrecomputation &rhs);
+
+	void SetCurveAndBase(const EC2N &ec, const EC2N::Point &base);
+	void Precompute(unsigned int maxExpBits, unsigned int storage);
 	void Load(BufferedTransformation &storedPrecomputation);
 	void Save(BufferedTransformation &storedPrecomputation) const;
 
@@ -81,8 +94,8 @@ public:
 	EC2N::Point CascadeMultiply(const Integer &exponent, const EcPrecomputation<EC2N> &pc2, const Integer &exponent2) const;
 
 private:
-	member_ptr<EC2N> ec;
-	member_ptr< ExponentiationPrecomputation<EC2N::Point> > ep;
+	value_ptr<EC2N> m_ec;
+	ExponentiationPrecomputation<EC2N::Point> m_ep;
 };
 
 NAMESPACE_END

@@ -3,6 +3,7 @@
 
 #include "filters.h"
 #include "queue.h"
+#include <vector>
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -13,7 +14,7 @@ enum ASNTag
 	INTEGER 			= 0x02,
 	BIT_STRING			= 0x03,
 	OCTET_STRING		= 0x04,
-	NULL_VALUE			= 0x05,
+	TAG_NULL			= 0x05,
 	OBJECT_IDENTIFIER	= 0x06,
 	OBJECT_DESCRIPTOR	= 0x07,
 	EXTERNAL			= 0x08,
@@ -54,43 +55,68 @@ public:
 	BERDecodeErr(const char *err) : Exception(err) {}
 };
 
-unsigned int DERLengthEncode(unsigned int length, byte *output=0);
-unsigned int DERLengthEncode(unsigned int length, BufferedTransformation &);
+// unsigned int DERLengthEncode(unsigned int length, byte *output=0);
+unsigned int DERLengthEncode(BufferedTransformation &out, unsigned int length);
 // returns false if indefinite length
-bool BERLengthDecode(BufferedTransformation &, unsigned int &length);
-unsigned int BERExtractDefiniteLengthField(BufferedTransformation &input, BufferedTransformation &output);
+bool BERLengthDecode(BufferedTransformation &in, unsigned int &length);
 
-unsigned int DEREncodeOctetString(const byte *str, unsigned int strLen, BufferedTransformation &bt);
-unsigned int DEREncodeOctetString(const SecByteBlock &str, BufferedTransformation &bt);
-unsigned int BERDecodeOctetString(BufferedTransformation &bt, SecByteBlock &str);
+void DEREncodeNull(BufferedTransformation &out);
+void BERDecodeNull(BufferedTransformation &in);
+
+unsigned int DEREncodeOctetString(BufferedTransformation &out, const byte *str, unsigned int strLen);
+unsigned int DEREncodeOctetString(BufferedTransformation &out, const SecByteBlock &str);
+unsigned int BERDecodeOctetString(BufferedTransformation &in, SecByteBlock &str);
+unsigned int BERDecodeOctetString(BufferedTransformation &in, BufferedTransformation &str);
 
 // for UTF8_STRING, PRINTABLE_STRING, and IA5_STRING
-unsigned int DEREncodeTextString(const std::string &str, BufferedTransformation &bt, byte asnTag);
-unsigned int BERDecodeTextString(BufferedTransformation &bt, std::string &str, byte asnTag);
+unsigned int DEREncodeTextString(BufferedTransformation &out, const std::string &str, byte asnTag);
+unsigned int BERDecodeTextString(BufferedTransformation &in, std::string &str, byte asnTag);
 
-unsigned int DEREncodeBitString(const byte *str, unsigned int strLen, BufferedTransformation &bt);
-unsigned int BERDecodeBitString(BufferedTransformation &bt, SecByteBlock &str);
+unsigned int DEREncodeBitString(BufferedTransformation &out, const byte *str, unsigned int strLen, unsigned int unusedBits=0);
+unsigned int BERDecodeBitString(BufferedTransformation &in, SecByteBlock &str, unsigned int &unusedBits);
 
-class BERSequenceDecoder : public Store
+// OBJECT IDENTIFIER
+class OID
 {
 public:
-	BERSequenceDecoder(BufferedTransformation &inQueue, byte asnTag = SEQUENCE | CONSTRUCTED);
-	BERSequenceDecoder(BERSequenceDecoder &inQueue, byte asnTag = SEQUENCE | CONSTRUCTED);
-	~BERSequenceDecoder();
+	OID() {}
+	OID(unsigned long v) : m_values(1, v) {}
+	OID(BufferedTransformation &bt) {BERDecode(bt);}
+
+	bool operator==(const OID &rhs) const {return m_values == rhs.m_values;}
+	bool operator!=(const OID &rhs) const {return !operator==(rhs);}
+
+	OID & operator+=(unsigned long rhs) {m_values.push_back(rhs); return *this;}
+	OID operator+(unsigned long rhs) const {return OID(*this)+=rhs;}
+
+	void DEREncode(BufferedTransformation &bt) const;
+	void BERDecode(BufferedTransformation &bt);
+
+	// throw BERDecodeErr() if decoded value doesn't equal this OID
+	void BERDecodeAndCheck(BufferedTransformation &bt) const;
+
+	std::vector<unsigned long> m_values;
+
+private:
+	static void EncodeValue(BufferedTransformation &bt, unsigned long v);
+	static unsigned int DecodeValue(BufferedTransformation &bt, unsigned long &v);
+};
+
+class BERGeneralDecoder : public Store
+{
+public:
+	explicit BERGeneralDecoder(BufferedTransformation &inQueue, byte asnTag);
+	explicit BERGeneralDecoder(BERGeneralDecoder &inQueue, byte asnTag);
+	~BERGeneralDecoder();
 
 	bool IsDefiniteLength() const {return m_definiteLength;}
 	unsigned int RemainingLength() const {assert(m_definiteLength); return m_length;}
+	bool EndReached() const;
+	byte PeekByte() const;
+	void CheckByte(byte b);
 
-	unsigned long MaxRetrievable() const;
-
-	unsigned int Get(byte &outByte);
-	unsigned int Get(byte *outString, unsigned int getMax);
-
-	unsigned int Peek(byte &outByte) const;
-	unsigned int Peek(byte *outString, unsigned int peekMax) const;
-
-	unsigned long CopyTo(BufferedTransformation &target) const;
-	unsigned int CopyTo(BufferedTransformation &target, unsigned int copyMax) const;
+	unsigned long TransferTo(BufferedTransformation &target, unsigned long transferMax);
+	unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax) const;
 
 	// call this to denote end of sequence
 	void MessageEnd(int=-1);
@@ -104,12 +130,12 @@ private:
 	unsigned int ReduceLength(unsigned int delta);
 };
 
-class DERSequenceEncoder : public ByteQueue
+class DERGeneralEncoder : public ByteQueue
 {
 public:
-	DERSequenceEncoder(BufferedTransformation &outQueue, byte asnTag = SEQUENCE | CONSTRUCTED);
-	DERSequenceEncoder(DERSequenceEncoder &outQueue, byte asnTag = SEQUENCE | CONSTRUCTED);
-	~DERSequenceEncoder();
+	explicit DERGeneralEncoder(BufferedTransformation &outQueue, byte asnTag = SEQUENCE | CONSTRUCTED);
+	explicit DERGeneralEncoder(DERGeneralEncoder &outQueue, byte asnTag = SEQUENCE | CONSTRUCTED);
+	~DERGeneralEncoder();
 
 	// call this to denote end of sequence
 	void MessageEnd(int=-1);
@@ -121,54 +147,88 @@ private:
 	byte m_asnTag;
 };
 
-class BERSetDecoder : public BERSequenceDecoder
+class BERSequenceDecoder : public BERGeneralDecoder
 {
 public:
-	BERSetDecoder(BufferedTransformation &inQueue, byte asnTag = SET | CONSTRUCTED);
-	BERSetDecoder(BERSetDecoder &inQueue, byte asnTag = SET | CONSTRUCTED);
+	explicit BERSequenceDecoder(BufferedTransformation &inQueue, byte asnTag = SEQUENCE | CONSTRUCTED)
+		: BERGeneralDecoder(inQueue, asnTag) {}
+	explicit BERSequenceDecoder(BERSequenceDecoder &inQueue, byte asnTag = SEQUENCE | CONSTRUCTED)
+		: BERGeneralDecoder(inQueue, asnTag) {}
 };
 
-class DERSetEncoder : public DERSequenceEncoder
+class DERSequenceEncoder : public DERGeneralEncoder
 {
 public:
-	DERSetEncoder(BufferedTransformation &outQueue, byte asnTag = SET | CONSTRUCTED);
-	DERSetEncoder(DERSetEncoder &outQueue, byte asnTag = SET | CONSTRUCTED);
+	explicit DERSequenceEncoder(BufferedTransformation &outQueue, byte asnTag = SEQUENCE | CONSTRUCTED)
+		: DERGeneralEncoder(outQueue, asnTag) {}
+	explicit DERSequenceEncoder(DERSequenceEncoder &outQueue, byte asnTag = SEQUENCE | CONSTRUCTED)
+		: DERGeneralEncoder(outQueue, asnTag) {}
+};
+
+class BERSetDecoder : public BERGeneralDecoder
+{
+public:
+	explicit BERSetDecoder(BufferedTransformation &inQueue, byte asnTag = SET | CONSTRUCTED)
+		: BERGeneralDecoder(inQueue, asnTag) {}
+	explicit BERSetDecoder(BERSetDecoder &inQueue, byte asnTag = SET | CONSTRUCTED)
+		: BERGeneralDecoder(inQueue, asnTag) {}
+};
+
+class DERSetEncoder : public DERGeneralEncoder
+{
+public:
+	explicit DERSetEncoder(BufferedTransformation &outQueue, byte asnTag = SET | CONSTRUCTED)
+		: DERGeneralEncoder(outQueue, asnTag) {}
+	explicit DERSetEncoder(DERSetEncoder &outQueue, byte asnTag = SET | CONSTRUCTED)
+		: DERGeneralEncoder(outQueue, asnTag) {}
 };
 
 // ********************************************************
 
 // for INTEGER, BOOLEAN, and ENUM
 template <class T>
-unsigned int DEREncodeUnsigned(T w, BufferedTransformation &bt, byte asnTag = INTEGER)
+unsigned int DEREncodeUnsigned(BufferedTransformation &out, T w, byte asnTag = INTEGER)
 {
-	byte buf[sizeof(w)];
-	for (unsigned int i=0; i<sizeof(w); i++)
-		buf[i] = byte(w >> (sizeof(w)-1-i)*8);
-	unsigned int bc = sizeof(w);
-	while (bc > 1 && buf[sizeof(w)-bc] == 0)
-		bc--;
-	bt.Put(asnTag);
-	unsigned int lengthBytes = DERLengthEncode(bc, bt);
-	bt.Put(buf+sizeof(w)-bc, bc);
+	byte buf[sizeof(w)+1];
+	unsigned int bc;
+	if (asnTag == BOOLEAN)
+	{
+		buf[sizeof(w)] = w ? 0xff : 0;
+		bc = 1;
+	}
+	else
+	{
+		buf[0] = 0;
+		for (unsigned int i=0; i<sizeof(w); i++)
+			buf[i+1] = byte(w >> (sizeof(w)-1-i)*8);
+		bc = sizeof(w);
+		while (bc > 1 && buf[sizeof(w)+1-bc] == 0)
+			--bc;
+		if (buf[sizeof(w)+1-bc] & 0x80)
+			++bc;
+	}
+	out.Put(asnTag);
+	unsigned int lengthBytes = DERLengthEncode(out, bc);
+	out.Put(buf+sizeof(w)+1-bc, bc);
 	return 1+lengthBytes+bc;
 }
 
 // VC60 workaround: std::numeric_limits<T>::max conflicts with MFC max macro
 // CW41 workaround: std::numeric_limits<T>::max causes a template error
 template <class T>
-void BERDecodeUnsigned(BufferedTransformation &bt, T &w, byte asnTag = INTEGER,
+void BERDecodeUnsigned(BufferedTransformation &in, T &w, byte asnTag = INTEGER,
 					   T minValue = 0, T maxValue = 0xffffffff)
 {
 	byte b;
-	if (!bt.Get(b) || b != asnTag)
+	if (!in.Get(b) || b != asnTag)
 		BERDecodeError();
 
 	unsigned int bc;
-	BERLengthDecode(bt, bc);
+	BERLengthDecode(in, bc);
 
 	SecByteBlock buf(bc);
 
-	if (bc != bt.Get(buf, bc))
+	if (bc != in.Get(buf, bc))
 		BERDecodeError();
 
 	const byte *ptr = buf;

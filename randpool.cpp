@@ -4,12 +4,12 @@
 #include "pch.h"
 #include "randpool.h"
 #include "mdc.h"
-#include "md5.h"
+#include "sha.h"
 #include "modes.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-typedef MDC<MD5> RandomPoolCipher;
+typedef MDC<SHA> RandomPoolCipher;
 
 RandomPool::RandomPool(unsigned int poolSize)
 	: pool(poolSize), key(RandomPoolCipher::KEYLENGTH)
@@ -24,8 +24,6 @@ RandomPool::RandomPool(unsigned int poolSize)
 
 void RandomPool::Stir()
 {
-//	add these lines to be compatible with PGP's randpool.c
-//	byteReverse((word32 *)pool.ptr, (word32 *)pool.ptr, pool.size);
 	for (int i=0; i<2; i++)
 	{
 		RandomPoolCipher cipher(key);
@@ -33,7 +31,6 @@ void RandomPool::Stir()
 		cfb.ProcessString(pool, pool.size);
 		memcpy(key, pool, key.size);
 	}
-//	byteReverse((word32 *)pool.ptr, (word32 *)pool.ptr, pool.size);
 
 	addPos = 0;
 	getPos = key.size;

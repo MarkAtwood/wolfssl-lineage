@@ -3,28 +3,91 @@
 #include "pch.h"
 #include "dsa.h"
 #include "asn.h"
+#include "oids.h"
 #include "nbtheory.h"
 #include "sha.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
+unsigned int DSAConvertSignatureFormat(byte *buffer, unsigned int bufferSize, DSASignatureFormat toFormat, const byte *signature, unsigned int signatureLen, DSASignatureFormat fromFormat)
+{
+	Integer r, s;
+	StringStore store(signature, signatureLen);
+	ArraySink sink(buffer, bufferSize);
+
+	switch (fromFormat)
+	{
+	case DSA_P1363:
+		r.Decode(store, signatureLen/2);
+		s.Decode(store, signatureLen/2);
+		break;
+	case DSA_DER:
+	{
+		BERSequenceDecoder seq(store);
+		r.BERDecode(seq);
+		s.BERDecode(seq);
+		seq.MessageEnd();
+		break;
+	}
+	case DSA_OPENPGP:
+		r.OpenPGPDecode(store);
+		s.OpenPGPDecode(store);
+		break;
+	}
+
+	switch (toFormat)
+	{
+	case DSA_P1363:
+		r.Encode(sink, bufferSize/2);
+		s.Encode(sink, bufferSize/2);
+		break;
+	case DSA_DER:
+	{
+		DERSequenceEncoder seq(sink);
+		r.DEREncode(seq);
+		s.DEREncode(seq);
+		seq.MessageEnd();
+		break;
+	}
+	case DSA_OPENPGP:
+		r.OpenPGPEncode(sink);
+		s.OpenPGPEncode(sink);
+		break;
+	}
+
+	return sink.TotalPutLength();
+}
+
+Integer DSA_EncodeDigest(unsigned int modulusBits, const byte *digest, unsigned int digestLen)
+{
+	Integer h;
+	if (digestLen*8 <= modulusBits)
+		h.Decode(digest, digestLen);
+	else
+	{
+		h.Decode(digest, bitsToBytes(modulusBits));
+		h >>= bitsToBytes(modulusBits)*8 - modulusBits;
+	}
+	return h;
+}
+
 GDSADigestVerifier::GDSADigestVerifier(const Integer &p, const Integer &q,
 			   const Integer &g, const Integer &y)
 	: m_p(p), m_q(q), m_g(g), m_y(y),
-	  m_gpc(p, g, q.BitCount(), 1), m_ypc(p, y, q.BitCount(), 1)
+	  m_gpc(p, g), m_ypc(p, y)
 {
 }
 
 void GDSADigestVerifier::Precompute(unsigned int precomputationStorage)
 {
-	m_gpc.Precompute(m_p, m_g, ExponentBitLength(), precomputationStorage);
-	m_ypc.Precompute(m_p, m_y, ExponentBitLength(), precomputationStorage);
+	m_gpc.Precompute(ExponentBitLength(), precomputationStorage);
+	m_ypc.Precompute(ExponentBitLength(), precomputationStorage);
 }
 
 void GDSADigestVerifier::LoadPrecomputation(BufferedTransformation &bt)
 {
-	m_gpc.Load(m_p, bt);
-	m_ypc.Load(m_p, bt);
+	m_gpc.Load(bt);
+	m_ypc.Load(bt);
 }
 
 void GDSADigestVerifier::SavePrecomputation(BufferedTransformation &bt) const
@@ -35,15 +98,7 @@ void GDSADigestVerifier::SavePrecomputation(BufferedTransformation &bt) const
 
 Integer GDSADigestVerifier::EncodeDigest(const byte *digest, unsigned int digestLen) const
 {
-	Integer h;
-	if (digestLen*8 <= m_q.BitCount())
-		h.Decode(digest, digestLen);
-	else
-	{
-		h.Decode(digest, m_q.ByteCount());
-		h >>= m_q.ByteCount()*8 - m_q.BitCount();
-	}
-	return h;
+	return DSA_EncodeDigest(m_q.BitCount(), digest, digestLen);
 }
 
 unsigned int GDSADigestVerifier::ExponentBitLength() const
@@ -53,25 +108,56 @@ unsigned int GDSADigestVerifier::ExponentBitLength() const
 
 GDSADigestVerifier::GDSADigestVerifier(BufferedTransformation &bt)
 {
-	BERSequenceDecoder seq(bt);
-	m_p.BERDecode(seq);
-	m_q.BERDecode(seq);
-	m_g.BERDecode(seq);
-	m_y.BERDecode(seq);
-	seq.MessageEnd();
+	BERSequenceDecoder subjectPublicKeyInfo(bt);
+	if (subjectPublicKeyInfo.PeekByte() == INTEGER)
+	{
+		// for backwards compatibility
+		m_p.BERDecode(subjectPublicKeyInfo);
+		m_q.BERDecode(subjectPublicKeyInfo);
+		m_g.BERDecode(subjectPublicKeyInfo);
+		m_y.BERDecode(subjectPublicKeyInfo);
+	}
+	else
+	{
+		BERSequenceDecoder algorithm(subjectPublicKeyInfo);
+			ASN1::id_dsa().BERDecodeAndCheck(algorithm);
+			BERSequenceDecoder parameters(algorithm);
+				m_p.BERDecode(parameters);
+				m_q.BERDecode(parameters);
+				m_g.BERDecode(parameters);
+			parameters.MessageEnd();
+		algorithm.MessageEnd();
 
-	m_gpc.Precompute(m_p, m_g, ExponentBitLength(), 1);
-	m_ypc.Precompute(m_p, m_y, ExponentBitLength(), 1);
+		BERSequenceDecoder subjectPublicKey(subjectPublicKeyInfo, BIT_STRING);
+			subjectPublicKey.CheckByte(0);	// unused bits
+			m_y.BERDecode(subjectPublicKey);
+		subjectPublicKey.MessageEnd();
+	}
+	subjectPublicKeyInfo.MessageEnd();
+
+	m_gpc.SetModulusAndBase(m_p, m_g);
+	m_ypc.SetModulusAndBase(m_p, m_y);
 }
 
 void GDSADigestVerifier::DEREncode(BufferedTransformation &bt) const
 {
-	DERSequenceEncoder seq(bt);
-	m_p.DEREncode(seq);
-	m_q.DEREncode(seq);
-	m_g.DEREncode(seq);
-	m_y.DEREncode(seq);
-	seq.MessageEnd();
+	DERSequenceEncoder subjectPublicKeyInfo(bt);
+
+		DERSequenceEncoder algorithm(subjectPublicKeyInfo);
+			ASN1::id_dsa().DEREncode(algorithm);
+			DERSequenceEncoder parameters(algorithm);
+				m_p.DEREncode(parameters);
+				m_q.DEREncode(parameters);
+				m_g.DEREncode(parameters);
+			parameters.MessageEnd();
+		algorithm.MessageEnd();
+
+		DERGeneralEncoder subjectPublicKey(subjectPublicKeyInfo, BIT_STRING);
+			subjectPublicKey.Put(0);	// unused bits
+			m_y.DEREncode(subjectPublicKey);
+		subjectPublicKey.MessageEnd();
+
+	subjectPublicKeyInfo.MessageEnd();
 }
 
 bool GDSADigestVerifier::VerifyDigest(const byte *digest, unsigned int digestLen, const byte *signature) const
@@ -110,10 +196,10 @@ GDSADigestSigner::GDSADigestSigner(RandomNumberGenerator &rng, unsigned int pbit
 	m_p = pg.Prime();
 	m_q = pg.SubPrime();
 	m_g = pg.Generator();
-	m_x.Randomize(rng, 2, m_q-2, Integer::ANY);
-	m_gpc.Precompute(m_p, m_g, ExponentBitLength(), 1);
+	m_x.Randomize(rng, 1, m_q-1, Integer::ANY);
+	m_gpc.SetModulusAndBase(m_p, m_g);
 	m_y = m_gpc.Exponentiate(m_x);
-	m_ypc.Precompute(m_p, m_y, ExponentBitLength(), 1);
+	m_ypc.SetModulusAndBase(m_p, m_y);
 }
 
 GDSADigestSigner::GDSADigestSigner(RandomNumberGenerator &rng, const Integer &pIn, const Integer &qIn, const Integer &gIn)
@@ -121,10 +207,10 @@ GDSADigestSigner::GDSADigestSigner(RandomNumberGenerator &rng, const Integer &pI
 	m_p = pIn;
 	m_q = qIn;
 	m_g = gIn;
-	m_x.Randomize(rng, 2, m_q-2, Integer::ANY);
-	m_gpc.Precompute(m_p, m_g, ExponentBitLength(), 1);
+	m_x.Randomize(rng, 1, m_q-1, Integer::ANY);
+	m_gpc.SetModulusAndBase(m_p, m_g);
 	m_y = m_gpc.Exponentiate(m_x);
-	m_ypc.Precompute(m_p, m_y, ExponentBitLength(), 1);
+	m_ypc.SetModulusAndBase(m_p, m_y);
 }
 
 GDSADigestSigner::GDSADigestSigner(BufferedTransformation &bt)
@@ -137,8 +223,8 @@ GDSADigestSigner::GDSADigestSigner(BufferedTransformation &bt)
 	m_x.BERDecode(seq);
 	seq.MessageEnd();
 
-	m_gpc.Precompute(m_p, m_g, ExponentBitLength(), 1);
-	m_ypc.Precompute(m_p, m_y, ExponentBitLength(), 1);
+	m_gpc.SetModulusAndBase(m_p, m_g);
+	m_ypc.SetModulusAndBase(m_p, m_y);
 }
 
 void GDSADigestSigner::DEREncode(BufferedTransformation &bt) const
@@ -157,7 +243,7 @@ void GDSADigestSigner::SignDigest(RandomNumberGenerator &rng, const byte *digest
 	assert(digestLen <= MaxDigestLength());
 
 	Integer h = EncodeDigest(digest, digestLen);
-	Integer k(rng, 2, m_q-2);
+	Integer k(rng, 1, m_q-1);
 	Integer r, s;
 
 	RawSign(k, h, r, s);
@@ -239,10 +325,10 @@ DSAPrivateKey::DSAPrivateKey(RandomNumberGenerator &rng, unsigned int keybits)
 		m_g = a_exp_b_mod_c(h, (m_p-1)/m_q, m_p);
 	} while (m_g <= 1);
 
-	m_x.Randomize(rng, 2, m_q-2);
-	m_gpc.Precompute(m_p, m_g, m_q.BitCount(), 1);
+	m_x.Randomize(rng, 1, m_q-1);
+	m_gpc.SetModulusAndBase(m_p, m_g);
 	m_y = m_gpc.Exponentiate(m_x);
-	m_ypc.Precompute(m_p, m_y, m_q.BitCount(), 1);
+	m_ypc.SetModulusAndBase(m_p, m_y);
 }
 
 NAMESPACE_END

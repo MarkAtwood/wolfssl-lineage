@@ -19,25 +19,24 @@ public:
 
 	void Encrypt(RandomNumberGenerator &rng, const byte *plainText, unsigned int plainTextLength, byte *cipherText);
 
-	unsigned int MaxPlainTextLength() const {return STDMIN(255U, modulusLen-3);}
-	unsigned int CipherTextLength() const {return 2*modulusLen;}
+	unsigned int MaxPlainTextLength() const {return STDMIN(255U, m_p.ByteCount()-3);}
+	unsigned int CipherTextLength() const {return 2*m_p.ByteCount();}
 
 	void RawEncrypt(const Integer &k, const Integer &m, Integer &a, Integer &b) const;
 
-	const Integer & GetModulus() const {return p;}
-	const Integer & GetGenerator() const {return g;}
-	const Integer & GetPublicResidue() const {return y;}
+	const Integer & GetModulus() const {return m_p;}
+	const Integer & GetGenerator() const {return m_g;}
+	const Integer & GetPublicResidue() const {return m_y;}
 
-	const ModExpPrecomputation & GetGPC() const {return gpc;}
-	const ModExpPrecomputation & GetYPC() const {return ypc;}
+	const ModExpPrecomputation & GetGPC() const {return m_gpc;}
+	const ModExpPrecomputation & GetYPC() const {return m_ypc;}
 
 protected:
 	ElGamalEncryptor() {}
 	unsigned int ExponentBitLength() const;
 
-	Integer p, g, y;
-	unsigned int modulusLen;
-	ModExpPrecomputation gpc, ypc;
+	Integer m_p, m_g, m_y;
+	ModExpPrecomputation m_gpc, m_ypc;
 };
 
 class ElGamalDecryptor : public ElGamalEncryptor, public PK_FixedLengthDecryptor
@@ -55,8 +54,10 @@ public:
 
 	void RawDecrypt(const Integer &a, const Integer &b, Integer &m) const;
 
+	const Integer & GetPrivateExponent() const {return m_x;}
+
 protected:
-	Integer x;
+	Integer m_x;
 };
 
 NAMESPACE_END

@@ -35,8 +35,8 @@ class TransparentFilter : public Filter
 {
 public:
 	TransparentFilter(BufferedTransformation *outQ=NULL) : Filter(outQ) {}
-	void Put(byte inByte) {BufferedTransformation::Put(inByte);}
-	void Put(const byte *inString, unsigned int length) {BufferedTransformation::Put(inString, length);}
+	void Put(byte inByte) {AttachedTransformation()->Put(inByte);}
+	void Put(const byte *inString, unsigned int length) {AttachedTransformation()->Put(inString, length);}
 };
 
 class OpaqueFilter : public Filter
@@ -178,28 +178,28 @@ class SignerFilter : public Filter
 {
 public:
 	SignerFilter(RandomNumberGenerator &rng, const PK_Signer &signer, BufferedTransformation *outQueue = NULL)
-		: rng(rng), signer(signer), messageAccumulator(signer.NewMessageAccumulator()), Filter(outQueue) {}
+		: m_rng(rng), m_signer(signer), m_messageAccumulator(signer.NewMessageAccumulator()), Filter(outQueue) {}
 
 	void MessageEnd(int propagation);
 
 	void Put(byte inByte)
-		{messageAccumulator->Update(&inByte, 1);}
+		{m_messageAccumulator->Update(&inByte, 1);}
 
 	void Put(const byte *inString, unsigned int length)
-		{messageAccumulator->Update(inString, length);}
+		{m_messageAccumulator->Update(inString, length);}
 
 private:
-	RandomNumberGenerator &rng;
-	const PK_Signer &signer;
-	member_ptr<HashModule> messageAccumulator;
+	RandomNumberGenerator &m_rng;
+	const PK_Signer &m_signer;
+	member_ptr<HashModule> m_messageAccumulator;
 };
 
 class VerifierFilter : public Filter
 {
 public:
 	VerifierFilter(const PK_Verifier &verifier, BufferedTransformation *outQueue = NULL)
-		: verifier(verifier), messageAccumulator(verifier.NewMessageAccumulator())
-		, signature(verifier.SignatureLength()), Filter(outQueue) {}
+		: m_verifier(verifier), m_messageAccumulator(verifier.NewMessageAccumulator())
+		, m_signature(verifier.SignatureLength()), Filter(outQueue) {}
 
 	// this function must be called before MessageEnd()
 	void PutSignature(const byte *sig);
@@ -207,47 +207,15 @@ public:
 	void MessageEnd(int propagation);
 
 	void Put(byte inByte)
-		{messageAccumulator->Update(&inByte, 1);}
+		{m_messageAccumulator->Update(&inByte, 1);}
 
 	void Put(const byte *inString, unsigned int length)
-		{messageAccumulator->Update(inString, length);}
+		{m_messageAccumulator->Update(inString, length);}
 
 private:
-	const PK_Verifier &verifier;
-	member_ptr<HashModule> messageAccumulator;
-	SecByteBlock signature;
-};
-
-class Source : public Filter
-{
-public:
-	Source(BufferedTransformation *outQ)
-		: Filter(outQ) {}
-
-	void Put(byte)
-		{Pump(1);}
-	void Put(const byte *, unsigned int length)
-		{Pump(length);}
-	void MessageEnd(int propagation=-1)
-		{PumpAll(); Filter::MessageEnd(propagation);}
-
-	virtual unsigned int Pump(unsigned int pumpMax) =0;
-	virtual unsigned long PumpAll() =0;
-};
-
-class StringSource : public Source
-{
-public:
-	StringSource(const char *source, bool pumpAndClose, BufferedTransformation *outQueue = NULL);
-	StringSource(const byte *source, unsigned int length, bool pumpAndClose, BufferedTransformation *outQueue = NULL);
-	StringSource(const std::string &source, bool pumpAndClose, BufferedTransformation *outQueue = NULL);
-
-	unsigned int Pump(unsigned int size);
-	unsigned long PumpAll();
-
-private:
-	const byte *m_source;
-	unsigned int m_length, m_count;
+	const PK_Verifier &m_verifier;
+	member_ptr<HashModule> m_messageAccumulator;
+	SecByteBlock m_signature;
 };
 
 class Sink : public BufferedTransformation
@@ -264,9 +232,14 @@ public:
 class Redirector : public Sink
 {
 public:
-	Redirector(BufferedTransformation *target, bool passSignal=true) : m_target(target), m_passSignal(passSignal) {}
-	void Redirect(BufferedTransformation *target) {m_target = target;}
+	Redirector() : m_target(NULL), m_passSignal(true) {}
+	Redirector(BufferedTransformation &target, bool passSignal=true) : m_target(&target), m_passSignal(passSignal) {}
+
+	void Redirect(BufferedTransformation &target) {m_target = &target;}
+	void StopRedirect() {m_target = NULL;}
+	bool GetPassSignal() const {return m_passSignal;}
 	void SetPassSignal(bool passSignal) {m_passSignal = passSignal;}
+
 	void Put(byte b) 
 		{if (m_target) m_target->Put(b);}
 	void Put(const byte *string, unsigned int len) 
@@ -278,6 +251,17 @@ public:
 	void MessageSeriesEnd(int propagation=-1) 
 		{if (m_target && m_passSignal) m_target->MessageSeriesEnd(propagation);}
 
+	void ChannelPut(const std::string &channel, byte b) 
+		{if (m_target) m_target->ChannelPut(channel, b);}
+	void ChannelPut(const std::string &channel, const byte *string, unsigned int len) 
+		{if (m_target) m_target->ChannelPut(channel, string, len);}
+	void ChannelFlush(const std::string &channel, bool completeFlush, int propagation=-1) 
+		{if (m_target && m_passSignal) m_target->ChannelFlush(channel, completeFlush, propagation);}
+	void ChannelMessageEnd(const std::string &channel, int propagation=-1)
+		{if (m_target && m_passSignal) m_target->ChannelMessageEnd(channel, propagation);}
+	void ChannelMessageSeriesEnd(const std::string &channel, int propagation=-1) 
+		{if (m_target && m_passSignal) m_target->ChannelMessageSeriesEnd(channel, propagation);}
+
 private:
 	BufferedTransformation *m_target;
 	bool m_passSignal;
@@ -286,21 +270,35 @@ private:
 class OutputProxy : public Sink
 {
 public:
-	OutputProxy(BufferedTransformation &parent, bool passSignal=true) : m_parent(parent), m_passSignal(passSignal) {}
+	OutputProxy(BufferedTransformation &owner, bool passSignal) : m_owner(owner), m_passSignal(passSignal) {}
+
+	bool GetPassSignal() const {return m_passSignal;}
 	void SetPassSignal(bool passSignal) {m_passSignal = passSignal;}
+
 	void Put(byte b) 
-		{m_parent.BufferedTransformation::Put(b);}
+		{m_owner.AttachedTransformation()->Put(b);}
 	void Put(const byte *string, unsigned int len) 
-		{m_parent.BufferedTransformation::Put(string, len);}
+		{m_owner.AttachedTransformation()->Put(string, len);}
 	void Flush(bool completeFlush, int propagation=-1) 
-		{if (m_passSignal) m_parent.BufferedTransformation::Flush(completeFlush, propagation);}
+		{if (m_passSignal) m_owner.AttachedTransformation()->Flush(completeFlush, propagation);}
 	void MessageEnd(int propagation=-1)
-		{if (m_passSignal) m_parent.BufferedTransformation::MessageEnd(propagation);}
+		{if (m_passSignal) m_owner.AttachedTransformation()->MessageEnd(propagation);}
 	void MessageSeriesEnd(int propagation=-1) 
-		{if (m_passSignal) m_parent.BufferedTransformation::MessageSeriesEnd(propagation);}
+		{if (m_passSignal) m_owner.AttachedTransformation()->MessageSeriesEnd(propagation);}
+
+	void ChannelPut(const std::string &channel, byte b) 
+		{m_owner.AttachedTransformation()->ChannelPut(channel, b);}
+	void ChannelPut(const std::string &channel, const byte *string, unsigned int len) 
+		{m_owner.AttachedTransformation()->ChannelPut(channel, string, len);}
+	void ChannelFlush(const std::string &channel, bool completeFlush, int propagation=-1) 
+		{if (m_passSignal) m_owner.AttachedTransformation()->ChannelFlush(channel, completeFlush, propagation);}
+	void ChannelMessageEnd(const std::string &channel, int propagation=-1)
+		{if (m_passSignal) m_owner.AttachedTransformation()->ChannelMessageEnd(channel, propagation);}
+	void ChannelMessageSeriesEnd(const std::string &channel, int propagation=-1) 
+		{if (m_passSignal) m_owner.AttachedTransformation()->ChannelMessageSeriesEnd(channel, propagation);}
 
 private:
-	BufferedTransformation &m_parent;
+	BufferedTransformation &m_owner;
 	bool m_passSignal;
 };
 
@@ -308,6 +306,8 @@ class ProxyFilter : public FilterWithBufferedInput
 {
 public:
 	ProxyFilter(Filter *filter, unsigned int firstSize, unsigned int lastSize, BufferedTransformation *outQ);
+
+	void Flush(bool completeFlush, int propagation=-1);
 
 	void SetFilter(Filter *filter);
 	void NextPut(const byte *s, unsigned int len);
@@ -331,43 +331,187 @@ private:
 	std::string &m_output;
 };
 
-class Store : public BufferedTransformation
+class ArraySink : public Sink
 {
 public:
+	ArraySink(byte *buf, unsigned int size) : m_buf(buf), m_size(size), m_total(0) {}
+
+	unsigned int AvailableSize() {return m_size - STDMIN(m_total, (unsigned long)m_size);}
+	unsigned long TotalPutLength() {return m_total;}
+
+	void Put(byte b)
+	{
+		if (m_total < m_size)
+			m_buf[m_total] = b;
+		m_total++;
+	}
+
+	void Put(const byte *str, unsigned int len)
+	{
+		if (m_total < m_size)
+			memcpy(m_buf+m_total, str, STDMIN(len, (unsigned int)(m_size-m_total)));
+		m_total += len;
+	}
+
+protected:
+	byte *m_buf;
+	unsigned int m_size;
+	unsigned long m_total;
+};
+
+class ArrayXorSink : public ArraySink
+{
+public:
+	ArrayXorSink(byte *buf, unsigned int size)
+		: ArraySink(buf, size) {}
+
+	void Put(byte b)
+	{
+		if (m_total < m_size)
+			m_buf[m_total] ^= b;
+		m_total++;
+	}
+
+	void Put(const byte *str, unsigned int len)
+	{
+		if (m_total < m_size)
+			xorbuf(m_buf+m_total, str, STDMIN(len, (unsigned int)(m_size-m_total)));
+		m_total += len;
+	}
+};
+
+class BufferedTransformationWithAutoSignal : virtual public BufferedTransformation
+{
+public:
+	BufferedTransformationWithAutoSignal(int propagation=-1) : m_autoSignalPropagation(propagation) {}
+
+	void SetAutoSignalPropagation(int propagation)
+		{m_autoSignalPropagation = propagation;}
+	int GetAutoSignalPropagation() const
+		{return m_autoSignalPropagation;}
+
+private:
+	int m_autoSignalPropagation;
+};
+
+class Store : public BufferedTransformationWithAutoSignal
+{
+public:
+	Store() : m_messageEnd(false) {}
+
 	void Put(byte)
 		{}
 	void Put(const byte *, unsigned int length)
 		{}
+
+	virtual unsigned long TransferTo(BufferedTransformation &target, unsigned long transferMax=ULONG_MAX) =0;
+	virtual unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax=ULONG_MAX) const =0;
+
+	unsigned int NumberOfMessages() const {return m_messageEnd ? 0 : 1;}
+	bool GetNextMessage();
+	unsigned int CopyMessagesTo(BufferedTransformation &target, unsigned int count=UINT_MAX) const;
+
+private:
+	bool m_messageEnd;
 };
 
 class StringStore : public Store
 {
 public:
-	StringStore(const char *store)
-		: m_store((const byte *)store), m_length(strlen(store)), m_count(0) {}
-	StringStore(const byte *store, unsigned int length)
-		: m_store(store), m_length(length), m_count(0) {}
+	StringStore(const char *string)
+		: m_store((const byte *)string), m_length(strlen(string)), m_count(0) {}
+	StringStore(const byte *string, unsigned int length)
+		: m_store(string), m_length(length), m_count(0) {}
+	StringStore(const std::string &string)
+		: m_store((const byte *)string.data()), m_length(string.length()), m_count(0) {}
 
-	unsigned long MaxRetrievable() const;
-
-	unsigned int Get(byte &outByte);
-	unsigned int Get(byte *outString, unsigned int getMax);
-
-	unsigned int Peek(byte &outByte) const;
-	unsigned int Peek(byte *outString, unsigned int peekMax) const;
-
-	unsigned long CopyTo(BufferedTransformation &target) const;
-	unsigned int CopyTo(BufferedTransformation &target, unsigned int copyMax) const;
+	unsigned long TransferTo(BufferedTransformation &target, unsigned long transferMax=ULONG_MAX);
+	unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax=ULONG_MAX) const;
 
 private:
 	const byte *m_store;
 	unsigned int m_length, m_count;
 };
 
-/*
-BufferedTransformation *Insert(const byte *in, unsigned int length, BufferedTransformation *outQueue);
-unsigned int Extract(Source *source, byte *out, unsigned int length);
-*/
+class RandomNumberStore : public Store
+{
+public:
+	RandomNumberStore(RandomNumberGenerator &rng, unsigned int length)
+		: m_rng(rng), m_length(length), m_count(0) {}
+
+	unsigned long TransferTo(BufferedTransformation &target, unsigned long transferMax=ULONG_MAX);
+	unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax=ULONG_MAX) const;
+
+private:
+	RandomNumberGenerator &m_rng;
+	unsigned int m_length, m_count;
+};
+
+class Source : public Filter
+{
+public:
+	Source(BufferedTransformation *outQ)
+		: Filter(outQ) {}
+
+	virtual unsigned long Pump(unsigned long pumpMax=ULONG_MAX) =0;
+	virtual unsigned int PumpMessages(unsigned int count=UINT_MAX) {return 0;}
+	void PumpAll();
+
+	void Put(byte)
+		{Pump(1);}
+	void Put(const byte *, unsigned int length)
+		{Pump(length);}
+	void MessageEnd(int propagation=-1)
+		{PumpAll();}
+};
+
+class GeneralSource : public Source
+{
+public:
+	GeneralSource(BufferedTransformation &store, bool pumpAll, BufferedTransformation *outQueue = NULL)
+		: Source(outQueue), m_store(store)
+	{
+		if (pumpAll) PumpAll();
+	}
+
+	unsigned long Pump(unsigned long pumpMax=ULONG_MAX)
+		{return m_store.TransferTo(*AttachedTransformation(), pumpMax);}
+	unsigned int PumpMessages(unsigned int count=UINT_MAX)
+		{return m_store.TransferMessagesTo(*AttachedTransformation(), count);}
+
+private:
+	BufferedTransformation &m_store;
+};
+
+class StringSource : public Source
+{
+public:
+	StringSource(const char *string, bool pumpAll, BufferedTransformation *outQueue = NULL);
+	StringSource(const byte *string, unsigned int length, bool pumpAll, BufferedTransformation *outQueue = NULL);
+	StringSource(const std::string &string, bool pumpAll, BufferedTransformation *outQueue = NULL);
+
+	unsigned long Pump(unsigned long pumpMax=ULONG_MAX)
+		{return m_store.TransferTo(*AttachedTransformation(), pumpMax);}
+	unsigned int PumpMessages(unsigned int count=UINT_MAX)
+		{return m_store.TransferMessagesTo(*AttachedTransformation(), count);}
+
+private:
+	StringStore m_store;
+};
+
+class RandomNumberSource : public Source
+{
+public:
+	RandomNumberSource(RandomNumberGenerator &rng, unsigned int length, bool pumpAll, BufferedTransformation *outQueue = NULL);
+
+	unsigned long Pump(unsigned long pumpMax=ULONG_MAX)
+		{return m_store.TransferTo(*AttachedTransformation(), pumpMax);}
+	unsigned int PumpMessages(unsigned int count=UINT_MAX)
+		{return m_store.TransferMessagesTo(*AttachedTransformation(), count);}
+
+private:
+	RandomNumberStore m_store;
+};
 
 NAMESPACE_END
 

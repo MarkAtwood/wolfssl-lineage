@@ -41,14 +41,6 @@ public:
 		PolynomialMod2(const byte *encodedPoly, unsigned int byteCount)
 			{Decode(encodedPoly, byteCount);}
 
-/*		// not implemented
-		PolynomialMod2(const byte *BEREncodedBitString)
-			{BERDecode(BEREncodedBitString);}
-		PolynomialMod2(BufferedTransformation &bt)
-			{BERDecode(bt);}
-*/
-
-
 		/// create a random polynomial uniformly distributed over all polynomials with degree less than bitcount
 		PolynomialMod2(RandomNumberGenerator &rng, unsigned int bitcount)
 			{Randomize(rng, bitcount);}
@@ -57,6 +49,8 @@ public:
 		static PolynomialMod2 Monomial(unsigned i);
 		/// return x^t0 + x^t1 + x^t2
 		static PolynomialMod2 Trinomial(unsigned t0, unsigned t1, unsigned t2);
+		/// return x^t0 + x^t1 + x^t2 + x^t3 + x^t4
+		static PolynomialMod2 Pentanomial(unsigned t0, unsigned t1, unsigned t2, unsigned int t3, unsigned int t4);
 		/// return x^(n-1) + ... + x + 1
 		static PolynomialMod2 AllOnes(unsigned n);
 
@@ -66,22 +60,34 @@ public:
 		static const PolynomialMod2 &One();
 	//@}
 
-	//@Man: ACCESSORS
+	//@Man: ENCODE/DECODE
 	//@{
 		/// minimum number of bytes to encode this polynomial
 		/** MinEncodedSize of 0 is 1 */
 		unsigned int MinEncodedSize() const {return STDMAX(1U, ByteCount());}
+
 		/// encode in big-endian format
 		/** if outputLen < MinEncodedSize, the most significant bytes will be dropped
 			if outputLen > MinEncodedSize, the most significant bytes will be padded
 		*/
 		unsigned int Encode(byte *output, unsigned int outputLen) const;
+		///
+		unsigned int Encode(BufferedTransformation &bt, unsigned int outputLen) const;
 
-/*		// not implemented
-		unsigned int DEREncode(byte *output) const;
-		unsigned int DEREncode(BufferedTransformation &bt) const;
-*/
+		///
+		void Decode(const byte *input, unsigned int inputLen);
+		/// 
+		//* Precondition: bt.MaxRetrievable() >= inputLen
+		void Decode(BufferedTransformation &bt, unsigned int inputLen);
 
+		/// encode value as big-endian octet string
+		void DEREncodeAsOctetString(BufferedTransformation &bt, unsigned int length) const;
+		/// decode value as big-endian octet string
+		void BERDecodeAsOctetString(BufferedTransformation &bt, unsigned int length);
+	//@}
+
+	//@Man: ACCESSORS
+	//@{
 		/// number of significant bits = Degree() + 1
 		unsigned int BitCount() const;
 		/// number of significant bytes = ceiling(BitCount()/8)
@@ -103,6 +109,11 @@ public:
 			{return (i/WORD_BITS < reg.size) ? int(reg[i/WORD_BITS] >> (i % WORD_BITS)) & 1 : 0;}
 		/// return coefficient for x^i
 		int operator[](unsigned int i) const {return GetCoefficient(i);}
+
+		///
+		bool IsZero() const {return !*this;}
+		///
+		bool Equals(const PolynomialMod2 &rhs) const;
 	//@}
 
 	//@Man: MANIPULATORS
@@ -128,13 +139,6 @@ public:
 		///
 		PolynomialMod2&  operator>>=(unsigned int);
 
-		///
-		void Decode(const byte *input, unsigned int inputLen);
-
-/*
-		void BERDecode(const byte *input);
-		void BERDecode(BufferedTransformation &bt);
-*/
 		///
 		void Randomize(RandomNumberGenerator &rng, unsigned int bitcount);
 
@@ -163,42 +167,24 @@ public:
 	//@Man: BINARY OPERATORS
 	//@{
 		///
-		friend PolynomialMod2 operator&(const PolynomialMod2 &a, const PolynomialMod2 &b);
+		PolynomialMod2 And(const PolynomialMod2 &b) const;
 		///
-		friend PolynomialMod2 operator^(const PolynomialMod2 &a, const PolynomialMod2 &b);
+		PolynomialMod2 Xor(const PolynomialMod2 &b) const;
 		///
-		friend PolynomialMod2 operator+(const PolynomialMod2 &a, const PolynomialMod2 &b) {return a^b;}
+		PolynomialMod2 Plus(const PolynomialMod2 &b) const {return Xor(b);}
 		///
-		friend PolynomialMod2 operator-(const PolynomialMod2 &a, const PolynomialMod2 &b) {return a^b;}
+		PolynomialMod2 Minus(const PolynomialMod2 &b) const {return Xor(b);}
 		///
-		friend PolynomialMod2 operator*(const PolynomialMod2 &a, const PolynomialMod2 &b);
+		PolynomialMod2 Times(const PolynomialMod2 &b) const;
 		///
-		friend PolynomialMod2 operator/(const PolynomialMod2 &a, const PolynomialMod2 &b);
+		PolynomialMod2 DividedBy(const PolynomialMod2 &b) const;
 		///
-		friend PolynomialMod2 operator%(const PolynomialMod2 &a, const PolynomialMod2 &b);
+		PolynomialMod2 Modulo(const PolynomialMod2 &b) const;
 
 		///
 		PolynomialMod2 operator>>(unsigned int n) const;
 		///
 		PolynomialMod2 operator<<(unsigned int n) const;
-
-		///
-		friend bool operator==(const PolynomialMod2 &a, const PolynomialMod2 &b);
-		///
-		friend bool operator!=(const PolynomialMod2 &a, const PolynomialMod2 &b)
-			{return !(a==b);}
-		/// compares degree
-		friend bool operator> (const PolynomialMod2 &a, const PolynomialMod2 &b)
-			{return a.Degree() > b.Degree();}
-		/// compares degree
-		friend bool operator>=(const PolynomialMod2 &a, const PolynomialMod2 &b)
-			{return a.Degree() >= b.Degree();}
-		/// compares degree
-		friend bool operator< (const PolynomialMod2 &a, const PolynomialMod2 &b)
-			{return a.Degree() < b.Degree();}
-		/// compares degree
-		friend bool operator<=(const PolynomialMod2 &a, const PolynomialMod2 &b)
-			{return a.Degree() <= b.Degree();}
 	//@}
 
 	//@Man: OTHER ARITHMETIC FUNCTIONS
@@ -215,7 +201,7 @@ public:
 		PolynomialMod2 Squared() const;
 
 		/// only 1 is a unit
-		bool IsUnit() const {return *this == One();}
+		bool IsUnit() const {return Equals(One());}
 		/// return inverse if *this is a unit, otherwise return 0
 		PolynomialMod2 MultiplicativeInverse() const {return IsUnit() ? One() : Zero();}
 
@@ -246,8 +232,15 @@ class GF2NP : public QuotientRing<EuclideanDomainOf<PolynomialMod2> >
 public:
 	GF2NP(const PolynomialMod2 &modulus);
 
+	virtual GF2NP * Clone() const {return new GF2NP(*this);}
+	virtual void DEREncode(BufferedTransformation &bt) const
+		{assert(false);}	// no ASN.1 syntax yet for general polynomial basis
+
+	void DEREncodeElement(BufferedTransformation &out, const Element &a) const;
+	void BERDecodeElement(BufferedTransformation &in, Element &a) const;
+
 	bool Equal(const Element &a, const Element &b) const
-		{assert(a.Degree() < m_modulus.Degree() && b.Degree() < m_modulus.Degree()); return a==b;}
+		{assert(a.Degree() < m_modulus.Degree() && b.Degree() < m_modulus.Degree()); return a.Equals(b);}
 
 	bool IsUnit(const Element &a) const
 		{assert(a.Degree() < m_modulus.Degree()); return !!a;}
@@ -257,6 +250,13 @@ public:
 
 	unsigned int MaxElementByteLength() const
 		{return bitsToBytes(MaxElementBitLength());}
+
+	Element SquareRoot(const Element &a) const;
+
+	Element HalfTrace(const Element &a) const;
+
+	// returns z such that z^2 + z == a
+	Element SolveQuadraticEquation(const Element &a) const;
 
 protected:
 	unsigned int m;
@@ -268,6 +268,9 @@ class GF2NT : public GF2NP
 public:
 	// polynomial modulus = x^t0 + x^t1 + x^t2, t0 > t1 > t2
 	GF2NT(unsigned int t0, unsigned int t1, unsigned int t2);
+
+	GF2NP * Clone() const {return new GF2NT(*this);}
+	void DEREncode(BufferedTransformation &bt) const;
 
 	const Element& Multiply(const Element &a, const Element &b) const;
 
@@ -283,9 +286,61 @@ private:
 	PolynomialMod2 result;
 };
 
-typedef GF2NT GF2N;
+// pentanomial basis
+class GF2NPP : public GF2NP
+{
+public:
+	// polynomial modulus = x^t0 + x^t1 + x^t2 + x^t3 + x^t4, t0 > t1 > t2 > t3 > t4
+	GF2NPP(unsigned int t0, unsigned int t1, unsigned int t2, unsigned int t3, unsigned int t4)
+		: GF2NP(PolynomialMod2::Pentanomial(t0, t1, t2, t3, t4)), t0(t0), t1(t1), t2(t2), t3(t3) {}
+
+	GF2NP * Clone() const {return new GF2NPP(*this);}
+	void DEREncode(BufferedTransformation &bt) const;
+
+private:
+	unsigned int t0, t1, t2, t3;
+};
+
+// construct new GF2NP from the ASN.1 sequence Characteristic-two
+GF2NP * BERDecodeGF2NP(BufferedTransformation &bt);
 
 NAMESPACE_END
+
+// declaring these overloaded operators inside the CryptoPP namespace
+// causes problems with GCC 2.95.2
+
+///
+inline bool operator==(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b)
+	{return a.Equals(b);}
+///
+inline bool operator!=(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b)
+	{return !(a==b);}
+/// compares degree
+inline bool operator> (const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b)
+	{return a.Degree() > b.Degree();}
+/// compares degree
+inline bool operator>=(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b)
+	{return a.Degree() >= b.Degree();}
+/// compares degree
+inline bool operator< (const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b)
+	{return a.Degree() < b.Degree();}
+/// compares degree
+inline bool operator<=(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b)
+	{return a.Degree() <= b.Degree();}
+///
+inline CryptoPP::PolynomialMod2 operator&(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b) {return a.And(b);}
+///
+inline CryptoPP::PolynomialMod2 operator^(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b) {return a.Xor(b);}
+///
+inline CryptoPP::PolynomialMod2 operator+(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b) {return a.Plus(b);}
+///
+inline CryptoPP::PolynomialMod2 operator-(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b) {return a.Minus(b);}
+///
+inline CryptoPP::PolynomialMod2 operator*(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b) {return a.Times(b);}
+///
+inline CryptoPP::PolynomialMod2 operator/(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b) {return a.DividedBy(b);}
+///
+inline CryptoPP::PolynomialMod2 operator%(const CryptoPP::PolynomialMod2 &a, const CryptoPP::PolynomialMod2 &b) {return a.Modulo(b);}
 
 NAMESPACE_BEGIN(std)
 inline void swap(CryptoPP::PolynomialMod2 &a, CryptoPP::PolynomialMod2 &b)

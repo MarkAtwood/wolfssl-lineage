@@ -47,7 +47,7 @@ bool XTR_DH::ValidateDomainParameters(RandomNumberGenerator &rng) const
 
 void XTR_DH::GenerateKeyPair(RandomNumberGenerator &rng, byte *privateKey, byte *publicKey) const
 {
-	Integer x(rng, 2, q-2);
+	Integer x(rng, 1, q-1);
 	GFP2Element y = XTR_Exponentiate(g, x, p);
 	x.Encode(privateKey, PrivateKeyLength());
 	y.Encode(publicKey, PublicKeyLength());

@@ -10,6 +10,7 @@ bool CRC32Validate();
 bool MD2Validate();
 bool MD5Validate();
 bool SHAValidate();
+bool SHA2Validate();
 bool HAVALValidate();
 bool TigerValidate();
 bool RIPEMDValidate();

@@ -17,8 +17,8 @@ public:
 	void DEREncode(BufferedTransformation &bt) const;
 
 	Integer ApplyFunction(const Integer &x) const;
-	Integer MaxPreimage() const {return n-1;}
-	Integer MaxImage() const {return n-1;}
+	Integer PreimageBound() const {return n;}
+	Integer ImageBound() const {return n;}
 
 protected:
 	LUCFunction() {}	// to be used only by InvertibleLUCFunction

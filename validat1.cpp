@@ -48,6 +48,7 @@ bool ValidateAll()
 	pass=MD2Validate() && pass;
 	pass=MD5Validate() && pass;
 	pass=SHAValidate() && pass;
+	pass=SHA2Validate() && pass;
 	pass=HAVALValidate() && pass;
 	pass=TigerValidate() && pass;
 	pass=RIPEMDValidate() && pass;
@@ -897,13 +898,22 @@ bool SHARKValidate()
 
 bool CASTValidate()
 {
+	bool pass = true;
+
 	cout << "\nCAST-128 validation suite running...\n\n";
 
-	FileSource valdata("castval.dat", true, new HexDecoder);
-	bool pass = true;
-	pass = BlockTransformationTest(FixedRoundsCipherFactory<CAST128Encryption, CAST128Decryption>(16), valdata, 1) && pass;
-	pass = BlockTransformationTest(FixedRoundsCipherFactory<CAST128Encryption, CAST128Decryption>(10), valdata, 1) && pass;
-	pass = BlockTransformationTest(FixedRoundsCipherFactory<CAST128Encryption, CAST128Decryption>(5), valdata, 1) && pass;
+	FileSource val128("cast128v.dat", true, new HexDecoder);
+	pass = BlockTransformationTest(FixedRoundsCipherFactory<CAST128Encryption, CAST128Decryption>(16), val128, 1) && pass;
+	pass = BlockTransformationTest(FixedRoundsCipherFactory<CAST128Encryption, CAST128Decryption>(10), val128, 1) && pass;
+	pass = BlockTransformationTest(FixedRoundsCipherFactory<CAST128Encryption, CAST128Decryption>(5), val128, 1) && pass;
+
+	cout << "\nCAST-256 validation suite running...\n\n";
+
+	FileSource val256("cast256v.dat", true, new HexDecoder);
+	pass = BlockTransformationTest(FixedRoundsCipherFactory<CAST256Encryption, CAST256Decryption>(16), val256, 1) && pass;
+	pass = BlockTransformationTest(FixedRoundsCipherFactory<CAST256Encryption, CAST256Decryption>(24), val256, 1) && pass;
+	pass = BlockTransformationTest(FixedRoundsCipherFactory<CAST256Encryption, CAST256Decryption>(32), val256, 1) && pass;
+
 	return pass;
 }
 

@@ -2,7 +2,6 @@
 #define CRYPTOPP_SMARTPTR_H
 
 #include "config.h"
-
 #include <algorithm>
 
 NAMESPACE_BEGIN(CryptoPP)
@@ -10,7 +9,7 @@ NAMESPACE_BEGIN(CryptoPP)
 template<class T> class member_ptr
 {
 public:
-	explicit member_ptr(T *p = 0) : m_p(p) {}
+	explicit member_ptr(T *p = NULL) : m_p(p) {}
 
 	~member_ptr();
 
@@ -32,7 +31,7 @@ public:
 
 	void reset(T *p = 0);
 
-private:
+protected:
 	member_ptr(const member_ptr<T>& rhs);		// copy not allowed
 	void operator=(const member_ptr<T>& rhs);	// assignment not allowed
 
@@ -41,6 +40,52 @@ private:
 
 template <class T> member_ptr<T>::~member_ptr() {delete m_p;}
 template <class T> void member_ptr<T>::reset(T *p) {delete m_p; m_p = p;}
+
+// ********************************************************
+
+template<class T> class value_ptr : public member_ptr<T>
+{
+public:
+	value_ptr(const T &obj) : member_ptr<T>(new T(obj)) {}
+	value_ptr(T *p = NULL) : member_ptr<T>(p) {}
+	value_ptr(const value_ptr<T>& rhs)
+		: member_ptr<T>(rhs.m_p ? new T(*rhs.m_p) : NULL) {}
+
+	value_ptr<T>& operator=(const value_ptr<T>& rhs);
+	bool operator==(const value_ptr<T>& rhs)
+	{
+		return (!m_p && !rhs.m_p) || (m_p && rhs.m_p && *mp == *rhs.m_p);
+	}
+};
+
+template <class T> value_ptr<T>& value_ptr<T>::operator=(const value_ptr<T>& rhs)
+{
+	T *old_p = m_p;
+	m_p = rhs.m_p ? new T(*rhs.m_p) : NULL;
+	delete old_p;
+	return *this;
+}
+
+// ********************************************************
+
+template<class T> class clonable_ptr : public member_ptr<T>
+{
+public:
+	clonable_ptr(const T &obj) : member_ptr<T>(obj.Clone()) {}
+	clonable_ptr(T *p = NULL) : member_ptr<T>(p) {}
+	clonable_ptr(const clonable_ptr<T>& rhs)
+		: member_ptr<T>(rhs.m_p ? rhs.m_p->Clone() : NULL) {}
+
+	clonable_ptr<T>& operator=(const clonable_ptr<T>& rhs);
+};
+
+template <class T> clonable_ptr<T>& clonable_ptr<T>::operator=(const clonable_ptr<T>& rhs)
+{
+	T *old_p = m_p;
+	m_p = rhs.m_p ? rhs.m_p->Clone() : NULL;
+	delete old_p;
+	return *this;
+}
 
 // ********************************************************
 
@@ -129,6 +174,20 @@ private:
 
 	unsigned int _size;
 	member_ptr<T> *ptr;
+};
+
+// ********************************************************
+
+// derive from this class for a temporary variable
+// that can be used during base/member initialization
+template <class T>
+class ConstructorTemp
+{
+protected:
+	ConstructorTemp(const ConstructorTemp &copy) : m_temp(NULL) {}
+	ConstructorTemp(T *t = NULL) : m_temp(t) {}
+	ConstructorTemp(const T &t) : m_temp(new T(t)) {}
+	member_ptr<T> m_temp;
 };
 
 NAMESPACE_END

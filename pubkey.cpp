@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "pubkey.h"
+#include "integer.h"
 #include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)

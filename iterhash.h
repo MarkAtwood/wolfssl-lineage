@@ -12,17 +12,19 @@ NAMESPACE_BEGIN(CryptoPP)
 	IteratedHash<word64>	// #ifdef WORD64_AVAILABLE
 */
 
-template <class T> class IteratedHash : public virtual HashModule
+template <class T>
+class IteratedHashBase : public virtual HashModule
 {
 public:
-	IteratedHash(unsigned int blockSize, unsigned int digestSize);
-	~IteratedHash();
+	IteratedHashBase(unsigned int blockSize, unsigned int digestSize);
+	unsigned int DigestSize() const {return digest.size * sizeof(T);};
 	void Update(const byte *input, unsigned int length);
 
 	typedef T HashWordType;
 
 protected:
 	void PadLastBlock(unsigned int lastBlockSize, byte padFirst=0x80);
+	void Reinit();
 	virtual void Init() =0;
 	virtual void HashBlock(const T *input) =0;
 
@@ -30,6 +32,59 @@ protected:
 	word32 countLo, countHi;	// 64-bit bit count
 	SecBlock<T> data;			// Data buffer
 	SecBlock<T> digest;			// Message digest
+};
+
+template <class T, bool H, unsigned int S>
+class IteratedHash : public IteratedHashBase<T>
+{
+public:
+	enum {HIGHFIRST = H, BLOCKSIZE = S};
+	IteratedHash(unsigned int digestSize) : IteratedHashBase<T>(BLOCKSIZE, digestSize) {}
+
+	inline static void CorrectEndianess(HashWordType *out, const HashWordType *in, unsigned int byteCount)
+	{
+#ifdef IS_LITTLE_ENDIAN
+		if (HIGHFIRST)
+#else
+		if (!HIGHFIRST)
+#endif
+			byteReverse(out, in, byteCount);
+		else if (in!=out)
+			memcpy(out, in, byteCount);
+	}
+
+	void Final(byte *hash)
+	{
+		PadLastBlock(BLOCKSIZE - 2*sizeof(HashWordType));
+		CorrectEndianess(data, data, BLOCKSIZE - 2*sizeof(HashWordType));
+
+		data[data.size-2] = HIGHFIRST ? countHi : countLo;
+		data[data.size-1] = HIGHFIRST ? countLo : countHi;
+
+		vTransform(data);
+		CorrectEndianess(digest, digest, DigestSize());
+		memcpy(hash, digest, DigestSize());
+
+		Reinit();		// reinit for next use
+	}
+
+protected:
+	void HashBlock(const HashWordType *input)
+	{
+#ifdef IS_LITTLE_ENDIAN
+		if (HIGHFIRST)
+#else
+		if (!HIGHFIRST)
+#endif
+		{
+			byteReverse(data.ptr, input, (unsigned int)BLOCKSIZE);
+			vTransform(data);
+		}
+		else
+			vTransform(input);
+	}
+
+	virtual void vTransform(const HashWordType *data) =0;
 };
 
 NAMESPACE_END

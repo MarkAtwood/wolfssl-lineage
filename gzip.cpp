@@ -5,17 +5,16 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-Gzip::Gzip(int dlevel, BufferedTransformation *bt)
-	: Deflator(dlevel, bt),
+Gzip::Gzip(BufferedTransformation *bt, unsigned int deflateLevel, unsigned int log2WindowSize)
+	: Deflator(bt, deflateLevel, log2WindowSize),
 	  m_totalLen(0)
 {
-	assert (dlevel >= 1 && dlevel <= 9);
 	AttachedTransformation()->Put(MAGIC1);
 	AttachedTransformation()->Put(MAGIC2);
 	AttachedTransformation()->Put(DEFLATED);
 	AttachedTransformation()->Put(0);		// general flag
 	AttachedTransformation()->PutWord32(0);	// time stamp
-	byte extra = (dlevel == 1) ? FAST : ((dlevel == 9) ? SLOW : 0);
+	byte extra = (deflateLevel == 1) ? FAST : ((deflateLevel == 9) ? SLOW : 0);
 	AttachedTransformation()->Put(extra);
 	AttachedTransformation()->Put(GZIP_OS_CODE);
 }
@@ -44,132 +43,64 @@ void Gzip::MessageEnd(int propagation)
 	Filter::MessageEnd(propagation);
 }
 
+// *************************************************************
+
 Gunzip::Gunzip(BufferedTransformation *outQueue, bool repeat)
-	: Filter(outQueue), m_inflator(new InflatorRedirector(*this))
-	, m_repeat(repeat), m_autoSignalPropagation(-1)
+	: Inflator(outQueue, repeat), m_length(0)
 {
-	m_totalLen = 0;
-	m_state = PROCESS_HEADER;
 }
 
-void Gunzip::Put(const byte *inString, unsigned int length)
-{
-	switch (m_state)
-	{
-		case PROCESS_HEADER:
-			m_inQueue.Put(inString, length);
-			if (m_inQueue.CurrentSize() >= MAX_HEADERSIZE)
-				ProcessHeader();
-			break;
-		case PROCESS_BODY:
-			m_inflator.Put(inString, length);
-			break;
-		case PROCESS_TAIL:
-			m_inQueue.Put(inString, length);
-			if (m_inQueue.CurrentSize() >= TAIL_SIZE)
-				ProcessTail();
-			break;
-		case AFTER_END:
-			AttachedTransformation()->Put(inString, length);
-			break;
-	}
-}
-
-void Gunzip::MessageEnd(int propagation)
-{
-	if (m_state == AFTER_END)
-		Filter::MessageEnd(propagation);
-
-	if (m_state == PROCESS_HEADER)
-		ProcessHeader();
-
-	if (m_state == PROCESS_BODY)
-		m_inflator.MessageEnd();
-
-	if (m_state == PROCESS_TAIL)
-		ProcessTail();
-}
-
-void Gunzip::ProcessHeader()
+void Gunzip::ProcessPrestreamHeader()
 {
 	byte buf[6];
 	byte b, flags;
 
-	if (m_inQueue.Get(buf, 2)!=2) goto error;
-	if (buf[0] != MAGIC1 || buf[1] != MAGIC2) goto error;
-	if (!m_inQueue.Skip(1)) goto error;	 // skip extra flags
-	if (!m_inQueue.Get(flags)) goto error;
-	if (flags & (ENCRYPTED | CONTINUED)) goto error;
-	if (m_inQueue.Skip(6)!=6) goto error;    // Skip file time, extra flags and OS type
+	if (m_inQueue.Get(buf, 2)!=2) throw HeaderErr();
+	if (buf[0] != MAGIC1 || buf[1] != MAGIC2) throw HeaderErr();
+	if (!m_inQueue.Skip(1)) throw HeaderErr();	 // skip extra flags
+	if (!m_inQueue.Get(flags)) throw HeaderErr();
+	if (flags & (ENCRYPTED | CONTINUED)) throw HeaderErr();
+	if (m_inQueue.Skip(6)!=6) throw HeaderErr();    // Skip file time, extra flags and OS type
 
 	if (flags & EXTRA_FIELDS)	// skip extra fields
 	{
 		word16 length;
-		if(!m_inQueue.GetWord16(length, false)) goto error;
-		if (m_inQueue.Skip(length)!=length) goto error;
+		if (m_inQueue.GetWord16(length, false) != 2) throw HeaderErr();
+		if (m_inQueue.Skip(length)!=length) throw HeaderErr();
 	}
 
 	if (flags & FILENAME)	// skip filename
 		do
-			if(!m_inQueue.Get(b)) goto error;
+			if(!m_inQueue.Get(b)) throw HeaderErr();
 		while (b);
 
 	if (flags & COMMENTS)	// skip comments
 		do
-			if(!m_inQueue.Get(b)) goto error;
+			if(!m_inQueue.Get(b)) throw HeaderErr();
 		while (b);
-
-	m_inQueue.TransferTo(m_inflator);
-	m_state = PROCESS_BODY;
-	return;
-error:
-	throw HeaderErr();
 }
 
-void Gunzip::ProcessTail()
+void Gunzip::ProcessDecompressedData(const byte *inString, unsigned int length)
 {
-	if (m_inQueue.CurrentSize() < TAIL_SIZE)
+	AttachedTransformation()->Put(inString, length);
+	m_crc.Update(inString, length);
+	m_length += length;
+}
+
+void Gunzip::ProcessPoststreamTail()
+{
+	SecByteBlock crc(4);
+	if (m_inQueue.Get(crc, 4) != 4)
 		throw TailErr();
-
-	SecByteBlock tail(TAIL_SIZE);
-	m_inQueue.Get(tail, TAIL_SIZE);
-
-	if (!m_crc.Verify(tail))
+	if (!m_crc.Verify(crc))
 		throw CrcErr();
 
-	if ((((word32)tail[4]) | ((word32)tail[5] << 8) | ((word32)tail[6] << 16) | ((word32)tail[7] << 24)) != m_totalLen)
+	word32 lengthCheck;
+	if (m_inQueue.GetWord32(lengthCheck, false) != 4)
+		throw TailErr();
+	if (lengthCheck != m_length)
 		throw LengthErr();
-
-	Filter::MessageEnd(m_autoSignalPropagation);
-
-	if (m_repeat)
-	{
-		m_totalLen = 0;
-		m_state = PROCESS_HEADER;
-		m_inflator.Reset();
-	}
-	else
-	{
-		m_state = AFTER_END;
-		m_inQueue.TransferTo(*AttachedTransformation());
-	}
-}
-
-void Gunzip::InflatorRedirector::Put(const byte *inString, unsigned int length)
-{
-	if (parent.m_state == PROCESS_BODY)
-	{
-		parent.AttachedTransformation()->Put(inString, length);
-		parent.m_crc.Update(inString, length);
-		parent.m_totalLen += length;
-	}
-	else
-		parent.Put(inString, length);
-}
-
-void Gunzip::InflatorRedirector::MessageEnd(int)
-{
-	parent.m_state = PROCESS_TAIL;
+	m_length = 0;
 }
 
 NAMESPACE_END

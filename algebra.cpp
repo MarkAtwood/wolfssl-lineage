@@ -171,9 +171,9 @@ template <class T> T AbstractGroup<T>::CascadeScalarMultiply(const Element &x, c
 template <class Element, class Iterator> Element GeneralCascadeMultiplication(const AbstractGroup<Element> &group, Iterator begin, Iterator end)
 {
 	if (end-begin == 1)
-		return group.ScalarMultiply((*begin).second, (*begin).first);
+		return group.ScalarMultiply((*begin).base, (*begin).exponent);
 	else if (end-begin == 2)
-		return group.CascadeScalarMultiply((*begin).second, (*begin).first, (*(begin+1)).second, (*(begin+1)).first);
+		return group.CascadeScalarMultiply((*begin).base, (*begin).exponent, (*(begin+1)).base, (*(begin+1)).exponent);
 	else
 	{
 		Integer q, r;
@@ -183,23 +183,23 @@ template <class Element, class Iterator> Element GeneralCascadeMultiplication(co
 		std::make_heap(begin, end);
 		std::pop_heap(begin, end);
 
-		while (!!(*begin).first)
+		while (!!(*begin).exponent)
 		{
-			// (*last).first is largest exponent, (*begin).first is next largest
-			Integer::Divide(r, q, (*last).first, (*begin).first);
+			// (*last).exponent is largest exponent, (*begin).exponent is next largest
+			Integer::Divide(r, q, (*last).exponent, (*begin).exponent);
 
 			if (q == Integer::One())
-				group.Accumulate((*begin).second, (*last).second);	// avoid overhead of GeneralizedMultiplication()
+				group.Accumulate((*begin).base, (*last).base);	// avoid overhead of GeneralizedMultiplication()
 			else
-				group.Accumulate((*begin).second, group.ScalarMultiply((*last).second, q));
+				group.Accumulate((*begin).base, group.ScalarMultiply((*last).base, q));
 
-			(*last).first = r;
+			(*last).exponent = r;
 
 			std::push_heap(begin, end);
 			std::pop_heap(begin, end);
 		}
 
-		return group.ScalarMultiply((*last).second, (*last).first);
+		return group.ScalarMultiply((*last).base, (*last).exponent);
 	}
 }
 

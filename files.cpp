@@ -5,69 +5,91 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+using namespace std;
+
 static const unsigned int BUFFER_SIZE = 1024;
 
-FileSource::FileSource (std::istream &i, bool pumpAndClose, BufferedTransformation *outQueue)
-	: Source(outQueue), in(i)
+FileStore::FileStore(istream &i)
+	: m_in(i)
 {
-	if (pumpAndClose)
-	{
-		PumpAll();
-		MessageEnd();
-	}
 }
 
-FileSource::FileSource (const char *filename, bool pumpAndClose, BufferedTransformation *outQueue)
-	: Source(outQueue), file(filename, std::ios::in | std::ios::binary), in(file)
+FileStore::FileStore(const char *filename)
+	: m_file(filename, ios::in | ios::binary), m_in(m_file)
 {
-	if (!file)
+	if (!m_file)
 		throw OpenErr(filename);
+}
 
-	if (pumpAndClose)
+unsigned long FileStore::MaxRetrievable() const
+{
+	streampos current = m_in.tellg();
+	streampos end = m_in.rdbuf()->pubseekoff(0, ios::end, ios::in);
+	m_in.rdbuf()->pubseekpos(current);
+	return end-current;
+}
+
+unsigned int FileStore::Peek(byte &outByte) const
+{
+	int result = m_in.peek();
+	if (result == EOF)	// GCC workaround: 2.95.2 doesn't have char_traits<char>::eof()
+		return 0;
+	else
 	{
-		PumpAll();
-		MessageEnd();
+		outByte = byte(result);
+		return 1;
 	}
 }
 
-unsigned int FileSource::Pump(unsigned int size)
+unsigned long FileStore::TransferTo(BufferedTransformation &target, unsigned long size)
 {
-	unsigned int total=0;
-	SecByteBlock buffer(STDMIN(size, BUFFER_SIZE));
+	m_buffer.Resize(BUFFER_SIZE);
+	unsigned long total=0;
 
-	while (size && in.good())
+	while (size && m_in.good())
 	{
-		in.read((char *)buffer.ptr, STDMIN(size, BUFFER_SIZE));
-		unsigned l = in.gcount();
-		AttachedTransformation()->Put(buffer, l);
+		m_in.read((char *)m_buffer.ptr, STDMIN(size, (unsigned long)BUFFER_SIZE));
+		unsigned int l = m_in.gcount();
+		target.Put(m_buffer, l);
 		size -= l;
 		total += l;
 	}
 
-	if (!in.good() && !in.eof())
+	if (!m_in.good() && !m_in.eof())
 		throw ReadErr();
 
 	return total;
 }
 
-unsigned long FileSource::PumpAll()
+unsigned long FileStore::CopyTo(BufferedTransformation &target, unsigned long copyMax) const
 {
-	unsigned long total=0;
-	unsigned int l;
-
-	while ((l=Pump(BUFFER_SIZE)) != 0)
-		total += l;
-
+	unsigned long total = const_cast<FileStore *>(this)->TransferTo(target, copyMax);
+	m_in.clear();
+	m_in.seekg(-std::streamoff(total), ios::cur);	// GCC workaround: 2.95.2 doesn't have istream::off_type
 	return total;
 }
 
-FileSink::FileSink(std::ostream &o)
+FileSource::FileSource (istream &i, bool pumpAll, BufferedTransformation *outQueue)
+	: Source(outQueue), m_store(i)
+{
+	if (pumpAll)
+		PumpAll();
+}
+
+FileSource::FileSource (const char *filename, bool pumpAll, BufferedTransformation *outQueue)
+	: Source(outQueue), m_store(filename)
+{
+	if (pumpAll)
+		PumpAll();
+}
+
+FileSink::FileSink(ostream &o)
 	: out(o)
 {
 }
 
 FileSink::FileSink(const char *filename, bool binary)
-	: file(filename, std::ios::out | (binary ? std::ios::binary : std::ios::openmode(0)) | std::ios::trunc), out(file)
+	: file(filename, ios::out | (binary ? ios::binary : ios::openmode(0)) | ios::trunc), out(file)
 {
 	if (!file)
 		throw OpenErr(filename);

@@ -7,9 +7,10 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-template <class T> class XMACC : public IteratedHash<typename T::HashWordType>, public MessageAuthenticationCode
+template <class T> class XMACC : public IteratedHash<typename T::HashWordType, T::HIGHFIRST, T::BLOCKSIZE>, public MessageAuthenticationCode
 {
 public:
+	enum {KEYLENGTH=T::DIGESTSIZE-4, DIGESTSIZE = 4+T::DIGESTSIZE};
 	typedef typename T::HashWordType HashWordType;
 
 	// If you need to generate MACs with XMACC (instead of just verifying them),
@@ -25,13 +26,11 @@ public:
 	bool Verify(const byte *mac);
 	unsigned int DigestSize() const {return DIGESTSIZE;}
 
-	enum {KEYLENGTH=T::DIGESTSIZE-4, DIGESTSIZE = 4+T::DIGESTSIZE, DATASIZE = T::DATASIZE};
-
 private:
 	void Init();
-	void HashBlock(const HashWordType *input);
 	static void WriteWord32(byte *output, word32 value);
 	static void XorDigest(HashWordType *digest, const HashWordType *buffer);
+	void vTransform(const HashWordType *data);
 
 	SecByteBlock key;
 	SecBlock<HashWordType> buffer;
@@ -39,7 +38,7 @@ private:
 };
 
 template <class T> XMACC<T>::XMACC(const byte *userKey, word32 counter)
-	: IteratedHash<T::HashWordType>(DATASIZE, T::DIGESTSIZE)
+	: IteratedHash<T::HashWordType, T::HIGHFIRST, T::BLOCKSIZE>(T::DIGESTSIZE)
 	, key(KEYLENGTH)
 	, buffer(T::DIGESTSIZE/sizeof(HashWordType))
 	, counter(counter)
@@ -50,7 +49,6 @@ template <class T> XMACC<T>::XMACC(const byte *userKey, word32 counter)
 
 template <class T> void XMACC<T>::Init()
 {
-	countLo = countHi = 0;
 	index = 0x80000000;
 	memset(digest, 0, T::DIGESTSIZE);
 }
@@ -69,13 +67,12 @@ template <class T> inline void XMACC<T>::XorDigest(HashWordType *digest, const H
 		digest[i] ^= buffer[i];
 }
 
-template <class T> void XMACC<T>::HashBlock(const HashWordType *input)
+template <class T> void XMACC<T>::vTransform(const HashWordType *input)
 {
 	memcpy(buffer, key, KEYLENGTH);
 	WriteWord32((byte *)buffer.ptr+KEYLENGTH, ++index);
 	T::CorrectEndianess(buffer, buffer, T::DIGESTSIZE);
-	T::CorrectEndianess(data, input, DATASIZE);
-	T::Transform(buffer, data);
+	T::Transform(buffer, input);
 	XorDigest(digest, buffer);
 }
 
@@ -83,17 +80,18 @@ template <class T> void XMACC<T>::Final(byte *mac)
 {
 	assert(counter != 0xffffffff);
 
-	PadLastBlock(DATASIZE-8);
-	WriteWord32((byte *)data.ptr+DATASIZE-8, countHi);
-	WriteWord32((byte *)data.ptr+DATASIZE-4, countLo);
-	HashBlock(data);
+	PadLastBlock(BLOCKSIZE - 2*sizeof(HashWordType));
+	CorrectEndianess(data, data, BLOCKSIZE - 2*sizeof(HashWordType));
+	data[data.size-2] = byteReverse(countHi);	// byteReverse for backwards compatibility
+	data[data.size-1] = byteReverse(countLo);
+	vTransform(data);
 
 	memcpy(buffer, key, KEYLENGTH);
 	WriteWord32((byte *)buffer.ptr+KEYLENGTH, 0);
-	memset(data, 0, DATASIZE-4);
-	WriteWord32((byte *)data.ptr+DATASIZE-4, ++counter);
+	memset(data, 0, BLOCKSIZE-4);
+	WriteWord32((byte *)data.ptr+BLOCKSIZE-4, ++counter);
 	T::CorrectEndianess(buffer, buffer, T::DIGESTSIZE);
-	T::CorrectEndianess(data, data, DATASIZE);
+	T::CorrectEndianess(data, data, BLOCKSIZE);
 	T::Transform(buffer, data);
 	XorDigest(digest, buffer);
 
@@ -101,28 +99,29 @@ template <class T> void XMACC<T>::Final(byte *mac)
 	T::CorrectEndianess(digest, digest, T::DIGESTSIZE);
 	memcpy(mac+4, digest, T::DIGESTSIZE);
 
-	Init();		// reinit for next use
+	Reinit();		// reinit for next use
 }
 
 template <class T> bool XMACC<T>::Verify(const byte *mac)
 {
-	PadLastBlock(DATASIZE-8);
-	WriteWord32((byte *)data.ptr+DATASIZE-8, countHi);
-	WriteWord32((byte *)data.ptr+DATASIZE-4, countLo);
-	HashBlock(data);
+	PadLastBlock(BLOCKSIZE - 2*sizeof(HashWordType));
+	CorrectEndianess(data, data, BLOCKSIZE - 2*sizeof(HashWordType));
+	data[data.size-2] = byteReverse(countHi);	// byteReverse for backwards compatibility
+	data[data.size-1] = byteReverse(countLo);
+	vTransform(data);
 
 	memcpy(buffer, key, KEYLENGTH);
 	WriteWord32((byte *)buffer.ptr+KEYLENGTH, 0);
-	memset(data, 0, DATASIZE-4);
-	memcpy((byte *)data.ptr+DATASIZE-4, mac, 4);
+	memset(data, 0, BLOCKSIZE-4);
+	memcpy((byte *)data.ptr+BLOCKSIZE-4, mac, 4);
 	T::CorrectEndianess(buffer, buffer, T::DIGESTSIZE);
-	T::CorrectEndianess(data, data, DATASIZE);
+	T::CorrectEndianess(data, data, BLOCKSIZE);
 	T::Transform(buffer, data);
 	XorDigest(digest, buffer);
 
 	T::CorrectEndianess(digest, digest, T::DIGESTSIZE);
 	bool macValid = (memcmp(mac+4, digest, T::DIGESTSIZE) == 0);
-	Init();		// reinit for next use
+	Reinit();		// reinit for next use
 	return macValid;
 }
 

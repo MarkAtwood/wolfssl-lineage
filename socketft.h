@@ -1,13 +1,55 @@
 #ifndef CRYPTOPP_SOCKETFT_H
 #define CRYPTOPP_SOCKETFT_H
 
-#ifdef _MSC_VER		// TODO: port to other compilers/OS
+#ifdef __GNUC__
+#include <_G_config.h>
+#endif
 
-#include "filters.h"
+#if defined(macintosh) || (defined(_G_HAVE_SYS_SOCKET) && _G_HAVE_SYS_SOCKET)
+#define HAS_BERKELEY_STYLE_SOCKETS
+#endif
+
+#if defined(_WIN32)
+#define HAS_WINDOWS_STYLE_SOCKETS
+#endif
+
+#include "hrtimer.h"
+
+#if defined(HIGHRES_TIMER_AVAILABLE) && !defined(PREFER_NO_SOCKETS) && (defined(HAS_BERKELEY_STYLE_SOCKETS) || defined(HAS_WINDOWS_STYLE_SOCKETS))
+#define SOCKETS_AVAILABLE
+#endif
+
+#ifdef SOCKETS_AVAILABLE
+
+#if defined(HAS_WINDOWS_STYLE_SOCKETS) && (!defined(HAS_BERKELEY_STYLE_SOCKETS) || defined(PREFER_WINDOWS_STYLE_SOCKETS))
+#define USE_WINDOWS_STYLE_SOCKETS
+#else
+#define USE_BERKELEY_STYLE_SOCKETS
+#endif
+
+#include "network.h"
 #include "queue.h"
-#include <winsock.h>
+
+#ifdef USE_WINDOWS_STYLE_SOCKETS
+#include <winsock2.h>
+#else
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#endif
 
 NAMESPACE_BEGIN(CryptoPP)
+
+#ifdef USE_WINDOWS_STYLE_SOCKETS
+typedef ::SOCKET socket_t;
+#else
+typedef int socket_t;
+const socket_t INVALID_SOCKET = -1;
+// cygwin 1.1.4 doesn't have SHUT_RD
+const int SD_RECEIVE = 0;
+const int SD_SEND = 1;
+const int SD_BOTH = 2;
+#endif
 
 class Socket
 {
@@ -15,105 +57,98 @@ public:
 	class Err : public Exception
 	{
 	public:
-		Err(SOCKET s, const std::string& operation, int error);
+		Err(socket_t s, const std::string& operation, int error);
 
-		SOCKET GetSocket() const {return m_s;}
+		socket_t GetSocket() const {return m_s;}
 		const std::string & GetOperation() const {return m_operation;}
 		int GetError() const {return m_error;}
 
 	private:
-		SOCKET m_s;
+		socket_t m_s;
 		std::string m_operation;
 		int m_error;
 	};
 
-	Socket(SOCKET s = INVALID_SOCKET, bool own=false) : m_s(s), m_own(own) {}
+	Socket(socket_t s = INVALID_SOCKET, bool own=false) : m_s(s), m_own(own) {}
 	Socket(const Socket &s) : m_s(s.m_s), m_own(false) {}
 	virtual ~Socket();
 
-	SOCKET GetSocket() {return m_s;}
-	void AttachSocket(SOCKET s, bool own=false);
-	SOCKET DetachSocket();
+	operator socket_t() {return m_s;}
+	socket_t GetSocket() {return m_s;}
+	void AttachSocket(socket_t s, bool own=false);
+	socket_t DetachSocket();
+	void CloseSocket();
 
 	void Create(int nType = SOCK_STREAM);
-	void Close();
 	void Bind(unsigned int port, const char *addr=NULL);
 	void Bind(const sockaddr* psa, unsigned int saLen);
 	void Listen(int backlog=5);
-	void Connect(const char *addr, unsigned int port);
-	void Connect(const sockaddr* psa, int saLen);
+	// the next three functions return false if the socket is in nonblocking mode
+	// and the operation cannot be completed immediately
+	bool Connect(const char *addr, unsigned int port);
+	bool Connect(const sockaddr* psa, int saLen);
 	bool Accept(Socket& s, sockaddr *psa=NULL, int *psaLen=NULL);
 	unsigned int Send(const byte* buf, unsigned int bufLen, int flags=0);
 	unsigned int Receive(byte* buf, unsigned int bufLen, int flags=0);
+	void ShutDown(int how = SD_SEND);
 
 	void IOCtl(long cmd, unsigned long *argp);
-	bool ReadReady(const timeval *timeout);
-	bool WriteReady(const timeval *timeout);
+	bool SendReady(const timeval *timeout);
+	bool ReceiveReady(const timeval *timeout);
+
+	// look up the port number give its name, returns 0 if not found
+	static unsigned int PortNameToNumber(const char *name, const char *protocol="tcp");
+	// start Windows Sockets 2
+	static void StartSockets();
+	// returns errno or WSAGetLastError
+	static int GetLastError();
+	// sets errno or calls WSASetLastError
+	static void SetLastError(int errorCode);
 
 protected:
 	virtual void SocketChanged() {}
-	virtual void CheckAndHandleError(const char *operation, SOCKET result) const;
 	virtual void CheckAndHandleError(const char *operation, int result) const;
+#ifdef USE_WINDOWS_STYLE_SOCKETS
+	virtual void CheckAndHandleError(const char *operation, socket_t result) const;
+#endif
 
-	SOCKET m_s;
+	socket_t m_s;
 	bool m_own;
 };
 
-class SocketSource : public Socket, public Source
+class SocketSource : public Socket, public NetworkSource
 {
 public:
-	SocketSource(SOCKET s, bool pumpAndClose, BufferedTransformation *outQueue = NULL, unsigned int maxBufferSize=0, bool autoSuck=false);
+	SocketSource(socket_t s = INVALID_SOCKET, bool pumpAndClose = false, BufferedTransformation *outQueue = NULL);
 
-	unsigned long GeneralPump(byte delimiter, bool checkDelimiter, unsigned int size, bool checkSize, const timeval *timeout);
-
-	unsigned int Pump(unsigned int size);
-	unsigned long PumpAll();
-
-	unsigned long PumpAll(const timeval *timeout);
-	unsigned int PumpLine(byte delimiter='\n', unsigned int size=1024);
-
-	unsigned int Suck(const timeval *timeout);
-
-	void SetMaxBufferSize(unsigned int maxBufferSize) {m_maxBufferSize = maxBufferSize;}
-	void SetAutoSuck(bool autoSuck = true) {m_autoSuck = autoSuck;}
-
-	unsigned int GetCurrentBufferSize() const {return m_buffer.CurrentSize();}
+	bool ReceiveReady(unsigned long timeout=0);
+	bool Receive(byte* buf, unsigned int bufLen);
+	bool ReceiveResultReady(unsigned long timeout=0) {return true;}
+	unsigned int GetReceiveResult() {return m_lastResult;}
+	bool EofReceived() const {return m_eofReceived;}
 
 private:
-
-	unsigned int m_maxBufferSize;
-	bool m_autoSuck, m_socketClosed;
-	ByteQueue m_buffer;
+	unsigned int m_lastResult;
+	bool m_eofReceived;
 };
 
-class SocketSink : public Socket, public Sink
+class SocketSink : public Socket, public NetworkSink
 {
 public:
-	SocketSink(SOCKET s, unsigned int maxBufferSize=0, bool autoFlush=false);
+	SocketSink(socket_t s = INVALID_SOCKET, unsigned int maxBufferSize=0, bool autoFlush=false);
 
-	void Put(byte b) {SocketSink::Put(&b, 1);}
-	void Put(const byte *str, unsigned int bc);
-
-	// TODO add Flush and fix MessageEnd
-	void MessageEnd(int) {}
-
-	void Write(const char *str) {Put((byte *)str, strlen(str));}
-
-	unsigned int Flush(const timeval *timeout);
-
-	void SetMaxBufferSize(unsigned int maxBufferSize) {m_maxBufferSize = maxBufferSize;}
-	void SetAutoFlush(bool autoFlush = true) {m_autoFlush = autoFlush;}
-
-	unsigned int GetCurrentBufferSize() const {return m_buffer.CurrentSize();}
+	bool SendReady(unsigned long timeout=0);
+	bool Send(const byte* buf, unsigned int bufLen);
+	bool SendResultReady(unsigned long timeout=0) {return true;}
+	unsigned int GetSendResult() {return m_lastResult;}
+	void SendEof() {ShutDown(SD_SEND);}
 
 private:
-	unsigned int m_maxBufferSize;
-	bool m_autoFlush;
-	ByteQueue m_buffer;
+	unsigned int m_lastResult;
 };
 
 NAMESPACE_END
 
-#endif
+#endif	// #ifdef SOCKETS_AVAILABLE
 
 #endif

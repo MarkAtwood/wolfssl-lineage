@@ -7,23 +7,36 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+Integer NR_EncodeDigest(unsigned int modulusBits, const byte *digest, unsigned int digestLen)
+{
+	Integer h;
+	if (digestLen*8 < modulusBits)
+		h.Decode(digest, digestLen);
+	else
+	{
+		h.Decode(digest, bitsToBytes(modulusBits));
+		h >>= bitsToBytes(modulusBits)*8 - modulusBits + 1;
+	}
+	return h;
+}
+
 NRDigestVerifier::NRDigestVerifier(const Integer &p, const Integer &q,
 			   const Integer &g, const Integer &y)
 	: m_p(p), m_q(q), m_g(g), m_y(y),
-	  m_gpc(p, g, q.BitCount(), 1), m_ypc(p, y, q.BitCount(), 1)
+	  m_gpc(p, g), m_ypc(p, y)
 {
 }
 
 void NRDigestVerifier::Precompute(unsigned int precomputationStorage)
 {
-	m_gpc.Precompute(m_p, m_g, ExponentBitLength(), precomputationStorage);
-	m_ypc.Precompute(m_p, m_y, ExponentBitLength(), precomputationStorage);
+	m_gpc.Precompute(ExponentBitLength(), precomputationStorage);
+	m_ypc.Precompute(ExponentBitLength(), precomputationStorage);
 }
 
 void NRDigestVerifier::LoadPrecomputation(BufferedTransformation &bt)
 {
-	m_gpc.Load(m_p, bt);
-	m_ypc.Load(m_p, bt);
+	m_gpc.Load(bt);
+	m_ypc.Load(bt);
 }
 
 void NRDigestVerifier::SavePrecomputation(BufferedTransformation &bt) const
@@ -34,16 +47,7 @@ void NRDigestVerifier::SavePrecomputation(BufferedTransformation &bt) const
 
 Integer NRDigestVerifier::EncodeDigest(const byte *digest, unsigned int digestLen) const
 {
-	Integer h;
-	if (digestLen*8 < m_q.BitCount())
-		h.Decode(digest, digestLen);
-	else
-	{
-		h.Decode(digest, m_q.ByteCount());
-		h >>= m_q.ByteCount()*8 - m_q.BitCount() + 1;
-	}
-	assert(h < m_q);
-	return h;
+	return NR_EncodeDigest(m_q.BitCount(), digest, digestLen);
 }
 
 unsigned int NRDigestVerifier::ExponentBitLength() const
@@ -60,8 +64,8 @@ NRDigestVerifier::NRDigestVerifier(BufferedTransformation &bt)
 	m_y.BERDecode(seq);
 	seq.MessageEnd();
 
-	m_gpc.Precompute(m_p, m_g, ExponentBitLength(), 1);
-	m_ypc.Precompute(m_p, m_y, ExponentBitLength(), 1);
+	m_gpc.SetModulusAndBase(m_p, m_g);
+	m_ypc.SetModulusAndBase(m_p, m_y);
 }
 
 void NRDigestVerifier::DEREncode(BufferedTransformation &bt) const
@@ -107,10 +111,10 @@ NRDigestSigner::NRDigestSigner(RandomNumberGenerator &rng, unsigned int pbits)
 	m_p = pg.Prime();
 	m_q = pg.SubPrime();
 	m_g = pg.Generator();
-	m_x.Randomize(rng, 2, m_q-2, Integer::ANY);
-	m_gpc.Precompute(m_p, m_g, ExponentBitLength(), 1);
+	m_x.Randomize(rng, 1, m_q-1, Integer::ANY);
+	m_gpc.SetModulusAndBase(m_p, m_g);
 	m_y = m_gpc.Exponentiate(m_x);
-	m_ypc.Precompute(m_p, m_y, ExponentBitLength(), 1);
+	m_ypc.SetModulusAndBase(m_p, m_y);
 }
 
 NRDigestSigner::NRDigestSigner(RandomNumberGenerator &rng, const Integer &pIn, const Integer &qIn, const Integer &gIn)
@@ -118,10 +122,10 @@ NRDigestSigner::NRDigestSigner(RandomNumberGenerator &rng, const Integer &pIn, c
 	m_p = pIn;
 	m_q = qIn;
 	m_g = gIn;
-	m_x.Randomize(rng, 2, m_q-2, Integer::ANY);
-	m_gpc.Precompute(m_p, m_g, ExponentBitLength(), 1);
+	m_x.Randomize(rng, 1, m_q-1, Integer::ANY);
+	m_gpc.SetModulusAndBase(m_p, m_g);
 	m_y = m_gpc.Exponentiate(m_x);
-	m_ypc.Precompute(m_p, m_y, ExponentBitLength(), 1);
+	m_ypc.SetModulusAndBase(m_p, m_y);
 }
 
 NRDigestSigner::NRDigestSigner(BufferedTransformation &bt)
@@ -134,8 +138,8 @@ NRDigestSigner::NRDigestSigner(BufferedTransformation &bt)
 	m_x.BERDecode(seq);
 	seq.MessageEnd();
 
-	m_gpc.Precompute(m_p, m_g, ExponentBitLength(), 1);
-	m_ypc.Precompute(m_p, m_y, ExponentBitLength(), 1);
+	m_gpc.SetModulusAndBase(m_p, m_g);
+	m_ypc.SetModulusAndBase(m_p, m_y);
 }
 
 void NRDigestSigner::DEREncode(BufferedTransformation &bt) const
@@ -167,7 +171,7 @@ void NRDigestSigner::RawSign(RandomNumberGenerator &rng, const Integer &m, Integ
 {
 	do
 	{
-		Integer k(rng, 2, m_q-2, Integer::ANY);
+		Integer k(rng, 1, m_q-1, Integer::ANY);
 		r = (m_gpc.Exponentiate(k) + m) % m_q;
 		s = (k - m_x*r) % m_q;
 	} while (!r);			// make sure r != 0

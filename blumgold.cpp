@@ -40,7 +40,7 @@ unsigned int BlumGoldwasserPublicKey::CipherTextLength(unsigned int plainTextLen
 
 void BlumGoldwasserPublicKey::Encrypt(RandomNumberGenerator &rng, const byte *input, unsigned int inputLen, byte *output)
 {
-	Integer seed(rng, 2, n-2);
+	Integer seed(rng, 1, n-1);
 	PublicBlumBlumShub bbs(n, seed);
 	bbs.ProcessString(output+modulusLen, input, inputLen);
 	bbs.modn.Square(bbs.current).Encode(output, modulusLen);

@@ -7,6 +7,13 @@
 #include <iosfwd>
 
 NAMESPACE_BEGIN(CryptoPP)
+class Integer;
+NAMESPACE_END
+
+// declaring these overloaded operators inside the CryptoPP namespace
+// causes problems with GCC 2.95.2
+
+NAMESPACE_BEGIN(CryptoPP)
 
 /// multiple precision integer and basic arithmetics
 /** This class can represent positive and negative integers
@@ -66,9 +73,6 @@ public:
 		/// convert from big-endian byte array
 		Integer(const byte *encodedInteger, unsigned int byteCount, Signedness s=UNSIGNED);
 
-		/// convert from Basic Encoding Rules encoded byte array
-		Integer(const byte *BEREncodedInteger);
-
 		/// convert from BER encoded byte array stored in a BufferedTransformation object
 		Integer(BufferedTransformation &bt);
 
@@ -98,27 +102,63 @@ public:
 		static Integer Power2(unsigned int e);
 	//@}
 
+	//@Man: ENCODE/DECODE
+	//@{
+		/// minimum number of bytes to encode this integer
+		/** MinEncodedSize of 0 is 1 */
+		unsigned int MinEncodedSize(Signedness=UNSIGNED) const;
+		/// encode in big-endian format
+		/** unsigned means encode absolute value, signed means encode two's complement if negative.
+			if outputLen < MinEncodedSize, the most significant bytes will be dropped
+			if outputLen > MinEncodedSize, the most significant bytes will be padded
+		*/
+		unsigned int Encode(byte *output, unsigned int outputLen, Signedness=UNSIGNED) const;
+		///
+		unsigned int Encode(BufferedTransformation &bt, unsigned int outputLen, Signedness=UNSIGNED) const;
+
+		/// encode using Distinguished Encoding Rules, put result into a BufferedTransformation object
+		void DEREncode(BufferedTransformation &bt) const;
+
+		/// encode absolute value as big-endian octet string
+		void DEREncodeAsOctetString(BufferedTransformation &bt, unsigned int length) const;
+
+		/// encode absolute value in OpenPGP format, return length of output
+		unsigned int OpenPGPEncode(byte *output, unsigned int bufferSize) const;
+		/// encode absolute value in OpenPGP format, put result into a BufferedTransformation object
+		unsigned int OpenPGPEncode(BufferedTransformation &bt) const;
+
+		///
+		void Decode(const byte *input, unsigned int inputLen, Signedness=UNSIGNED);
+		/// 
+		//* Precondition: bt.MaxRetrievable() >= inputLen
+		void Decode(BufferedTransformation &bt, unsigned int inputLen, Signedness=UNSIGNED);
+
+		///
+		void BERDecode(const byte *input, unsigned int inputLen);
+		///
+		void BERDecode(BufferedTransformation &bt);
+
+		/// decode nonnegative value as big-endian octet string
+		void BERDecodeAsOctetString(BufferedTransformation &bt, unsigned int length);
+
+		class OpenPGPDecodeErr : public Exception
+		{
+		public: 
+			OpenPGPDecodeErr() : Exception("OpenPGP decode error") {}
+		};
+
+		///
+		void OpenPGPDecode(const byte *input, unsigned int inputLen);
+		///
+		void OpenPGPDecode(BufferedTransformation &bt);
+	//@}
+
 	//@Man: ACCESSORS
 	//@{
 		/// return true if *this can be represented as a signed long
 		bool IsConvertableToLong() const;
 		/// return equivalent signed long if possible, otherwise undefined
 		signed long ConvertToLong() const;
-
-		/// minimum number of bytes to encode this integer
-		/** MinEncodedSize of 0 is 1 */
-		unsigned int MinEncodedSize(Signedness=UNSIGNED) const;
-		/// encode in big-endian format
-		/** unsigned means ignore sign, signed means use two's complement.
-			if outputLen < MinEncodedSize, the most significant bytes will be dropped
-			if outputLen > MinEncodedSize, the most significant bytes will be padded
-		*/
-		unsigned int Encode(byte *output, unsigned int outputLen, Signedness=UNSIGNED) const;
-
-		/// encode integer using Distinguished Encoding Rules, returns size of output
-		unsigned int DEREncode(byte *output) const;
-		/// encode using DER, put result into a BufferedTransformation object
-		unsigned int DEREncode(BufferedTransformation &bt) const;
 
 		/// number of significant bits = floor(log2(abs(*this))) + 1
 		unsigned int BitCount() const;
@@ -127,10 +167,12 @@ public:
 		/// number of significant words = ceiling(ByteCount()/sizeof(word))
 		unsigned int WordCount() const;
 
-		/// return the n-th bit, n=0 being the least significant bit
-		bool GetBit(unsigned int n) const;
-		/// return the n-th byte
-		byte GetByte(unsigned int n) const;
+		/// return the i-th bit, i=0 being the least significant bit
+		bool GetBit(unsigned int i) const;
+		/// return the i-th byte
+		byte GetByte(unsigned int i) const;
+		/// return n lowest bits of *this >> i
+		unsigned long GetBits(unsigned int i, unsigned int n) const;
 
 		///
 		bool IsZero() const {return !*this;}
@@ -160,28 +202,20 @@ public:
 		///
 		Integer&  operator-=(const Integer& t);
 		///
-		Integer&  operator*=(const Integer& t)	{return *this = *this*t;}
+		Integer&  operator*=(const Integer& t)	{return *this = Times(t);}
 		///
-		Integer&  operator/=(const Integer& t)	{return *this = *this/t;}
+		Integer&  operator/=(const Integer& t)	{return *this = DividedBy(t);}
 		///
-		Integer&  operator%=(const Integer& t)	{return *this = *this%t;}
+		Integer&  operator%=(const Integer& t)	{return *this = Modulo(t);}
 		///
-		Integer&  operator/=(word t)  {return *this = *this/t;}
+		Integer&  operator/=(word t)  {return *this = DividedBy(t);}
 		///
-		Integer&  operator%=(word t)  {return *this = *this%t;}
+		Integer&  operator%=(word t)  {return *this = Modulo(t);}
 
 		///
 		Integer&  operator<<=(unsigned int);
 		///
 		Integer&  operator>>=(unsigned int);
-
-		///
-		void Decode(const byte *input, unsigned int inputLen, Signedness=UNSIGNED);
-
-		///
-		void BERDecode(const byte *input);
-		///
-		void BERDecode(BufferedTransformation &bt);
 
 		///
 		void Randomize(RandomNumberGenerator &rng, unsigned int bitcount);
@@ -227,42 +261,6 @@ public:
 
 	//@Man: BINARY OPERATORS
 	//@{
-		///
-		friend Integer operator+(const Integer &a, const Integer &b);
-		///
-		friend Integer operator-(const Integer &a, const Integer &b);
-		///
-		friend Integer operator*(const Integer &a, const Integer &b);
-		///
-		friend Integer operator/(const Integer &a, const Integer &b);
-		///
-		friend Integer operator%(const Integer &a, const Integer &b);
-		///
-		friend Integer operator/(const Integer &a, word b);
-		///
-		friend word    operator%(const Integer &a, word b);
-
-		///
-		Integer operator>>(unsigned int n) const	{return Integer(*this)>>=n;}
-		///
-		Integer operator<<(unsigned int n) const	{return Integer(*this)<<=n;}
-
-		///
-		friend bool operator==(const Integer& a, const Integer& b) {return (a.Compare(b)==0);}
-		///
-		friend bool operator!=(const Integer& a, const Integer& b) {return (a.Compare(b)!=0);}
-		///
-		friend bool operator> (const Integer& a, const Integer& b) {return (a.Compare(b)> 0);}
-		///
-		friend bool operator>=(const Integer& a, const Integer& b) {return (a.Compare(b)>=0);}
-		///
-		friend bool operator< (const Integer& a, const Integer& b) {return (a.Compare(b)< 0);}
-		///
-		friend bool operator<=(const Integer& a, const Integer& b) {return (a.Compare(b)<=0);}
-	//@}
-
-	//@Man: OTHER ARITHMETIC FUNCTIONS
-	//@{
 		/// signed comparison
 		/** returns:
 			\begin{itemize}
@@ -274,11 +272,34 @@ public:
 		int Compare(const Integer& a) const;
 
 		///
+		Integer Plus(const Integer &b) const;
+		///
+		Integer Minus(const Integer &b) const;
+		///
+		Integer Times(const Integer &b) const;
+		///
+		Integer DividedBy(const Integer &b) const;
+		///
+		Integer Modulo(const Integer &b) const;
+		///
+		Integer DividedBy(word b) const;
+		///
+		word Modulo(word b) const;
+
+		///
+		Integer operator>>(unsigned int n) const	{return Integer(*this)>>=n;}
+		///
+		Integer operator<<(unsigned int n) const	{return Integer(*this)<<=n;}
+	//@}
+
+	//@Man: OTHER ARITHMETIC FUNCTIONS
+	//@{
+		///
 		Integer AbsoluteValue() const;
 		///
-		Integer Doubled() const {return *this + *this;}
+		Integer Doubled() const {return Plus(*this);}
 		///
-		Integer Squared() const {return *this * (*this);}
+		Integer Squared() const {return Times(*this);}
 		/// extract square root, if negative return 0, else return floor of square root
 		Integer SquareRoot() const;
 		/// return whether this integer is a perfect square
@@ -335,6 +356,36 @@ private:
 };
 
 NAMESPACE_END
+
+// declaring these overloaded operators inside the CryptoPP namespace
+// causes problems with GCC 2.95.2
+
+///
+inline bool operator==(const CryptoPP::Integer& a, const CryptoPP::Integer& b) {return a.Compare(b)==0;}
+///
+inline bool operator!=(const CryptoPP::Integer& a, const CryptoPP::Integer& b) {return a.Compare(b)!=0;}
+///
+inline bool operator> (const CryptoPP::Integer& a, const CryptoPP::Integer& b) {return a.Compare(b)> 0;}
+///
+inline bool operator>=(const CryptoPP::Integer& a, const CryptoPP::Integer& b) {return a.Compare(b)>=0;}
+///
+inline bool operator< (const CryptoPP::Integer& a, const CryptoPP::Integer& b) {return a.Compare(b)< 0;}
+///
+inline bool operator<=(const CryptoPP::Integer& a, const CryptoPP::Integer& b) {return a.Compare(b)<=0;}
+///
+inline CryptoPP::Integer operator+(const CryptoPP::Integer &a, const CryptoPP::Integer &b) {return a.Plus(b);}
+///
+inline CryptoPP::Integer operator-(const CryptoPP::Integer &a, const CryptoPP::Integer &b) {return a.Minus(b);}
+///
+inline CryptoPP::Integer operator*(const CryptoPP::Integer &a, const CryptoPP::Integer &b) {return a.Times(b);}
+///
+inline CryptoPP::Integer operator/(const CryptoPP::Integer &a, const CryptoPP::Integer &b) {return a.DividedBy(b);}
+///
+inline CryptoPP::Integer operator%(const CryptoPP::Integer &a, const CryptoPP::Integer &b) {return a.Modulo(b);}
+///
+inline CryptoPP::Integer operator/(const CryptoPP::Integer &a, CryptoPP::word b) {return a.DividedBy(b);}
+///
+inline CryptoPP::word    operator%(const CryptoPP::Integer &a, CryptoPP::word b) {return a.Modulo(b);}
 
 NAMESPACE_BEGIN(std)
 inline void swap(CryptoPP::Integer &a, CryptoPP::Integer &b)

@@ -105,25 +105,27 @@ static unsigned reverse(unsigned int code, int len)
 }
 
 /* Allocate the match buffer and initialize the various tables. */
-CodeTree::CodeTree(int deflate_level, BufferedTransformation *outQ)
-  : BitOutput(outQ),
-	deflate_level(deflate_level),
-	dyn_ltree(HEAP_SIZE), dyn_dtree(2*D_CODES+1),
-	bl_tree(2*BL_CODES+1),
-	bl_count(MAX_BITS+1),
-	l_desc(dyn_ltree, static_ltree, extra_lbits, LITERALS+1, L_CODES, MAX_BITS, 0),
-	d_desc(dyn_dtree, static_dtree, extra_dbits, 0,          D_CODES, MAX_BITS, 0),
-	bl_desc(bl_tree, (ct_data *)0, extra_blbits, 0,     BL_CODES, MAX_BL_BITS, 0),
-	heap(2*L_CODES+1),
-	depth(2*L_CODES+1),
-	length_code(MAX_MATCH-MIN_MATCH+1),
-	dist_code(512),
-	base_length(LENGTH_CODES),
-	base_dist(D_CODES),
-	l_buf(LIT_BUFSIZE),
-	d_buf(DIST_BUFSIZE),
-	flag_buf(LIT_BUFSIZE/8)
+CodeTree::CodeTree(BufferedTransformation *outQ, unsigned int deflateLevel, unsigned int log2WindowSize)
+	: BitOutput(outQ)
+	, deflate_level(deflateLevel), m_log2WindowSize(log2WindowSize)
+	, WSIZE(1 << log2WindowSize), MAX_DIST(WSIZE-MIN_LOOKAHEAD)
+	, dyn_ltree(HEAP_SIZE), dyn_dtree(2*D_CODES+1)
+	, bl_tree(2*BL_CODES+1)
+	, bl_count(MAX_BITS+1)
+	, l_desc(dyn_ltree, static_ltree, extra_lbits, LITERALS+1, L_CODES, MAX_BITS, 0)
+	, d_desc(dyn_dtree, static_dtree, extra_dbits, 0,          D_CODES, MAX_BITS, 0)
+	, bl_desc(bl_tree, (ct_data *)0, extra_blbits, 0,     BL_CODES, MAX_BL_BITS, 0)
+	, heap(2*L_CODES+1)
+	, depth(2*L_CODES+1)
+	, length_code(MAX_MATCH-MIN_MATCH+1)
+	, dist_code(512)
+	, base_length(LENGTH_CODES)
+	, base_dist(D_CODES)
+	, l_buf(LIT_BUFSIZE)
+	, d_buf(DIST_BUFSIZE)
+	, flag_buf(LIT_BUFSIZE/8)
 {
+	assert (deflateLevel <= 9);
 
    unsigned int n;    /* iterates over tree elements */
    int bits;      /* bit counter */
@@ -664,7 +666,7 @@ word32 CodeTree::flush_block(byte *buf, word32 stored_len, int eof)
 #ifdef FORCE_METHOD
    if (level == 2 && buf) /* force stored block */
 #else
-   if (stored_len+4 <= opt_lenb && buf) /* 4: two words for the lengths */
+   if ((deflate_level == 0 || stored_len+4 <= opt_lenb) && buf) /* 4: two words for the lengths */
 #endif
    {
 	   /* The test buf != NULL is only necessary if LIT_BUFSIZE > WSIZE.

@@ -15,8 +15,8 @@ public:
 	void DEREncode(BufferedTransformation &bt) const;
 
 	Integer ApplyFunction(const Integer &x) const;
-	Integer MaxPreimage() const {return n-1;}
-	Integer MaxImage() const {return n-1;}
+	Integer PreimageBound() const {return n;}
+	Integer ImageBound() const {return n;}
 
 	const Integer& GetModulus() const {return n;}
 	const Integer& GetExponent() const {return e;}

@@ -10,9 +10,9 @@ static const word32 START_D = 0xb1b1; // round constant of first decryption roun
 
 static inline word32 reverseBits(word32 a)
 {
-	a = ((a & 0xAAAAAAAAL) >> 1) | ((a & 0x55555555L) << 1);
-	a = ((a & 0xCCCCCCCCL) >> 2) | ((a & 0x33333333L) << 2);
-	return ((a & 0xF0F0F0F0L) >> 4) | ((a & 0x0F0F0F0FL) << 4);
+	a = ((a & 0xAAAAAAAA) >> 1) | ((a & 0x55555555) << 1);
+	a = ((a & 0xCCCCCCCC) >> 2) | ((a & 0x33333333) << 2);
+	return ((a & 0xF0F0F0F0) >> 4) | ((a & 0x0F0F0F0F) << 4);
 }
 
 #define mu(a0, a1, a2)				\

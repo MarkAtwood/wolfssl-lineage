@@ -7,7 +7,7 @@
 NAMESPACE_BEGIN(CryptoPP)
 
 // not standard, may change in future version
-template <class H, class MGF=MGF1<H> >
+template <class H, class MGF=P1363_MGF1<H> >
 class PSSR : public SignatureEncodingMethodWithRecovery
 {
 public:

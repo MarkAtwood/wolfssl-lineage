@@ -3,10 +3,13 @@
 #include "pch.h"
 #include "cryptlib.h"
 #include "misc.h"
+#include "filters.h"
 
 #include <memory>
 
 NAMESPACE_BEGIN(CryptoPP)
+
+const std::string BufferedTransformation::NULL_CHANNEL;
 
 unsigned int RandomNumberGenerator::GenerateBit()
 {
@@ -123,12 +126,47 @@ void BufferedTransformation::PutMessageEnd(const byte *inString, unsigned int le
 	MessageEnd(propagation);
 }
 
+void BufferedTransformation::ChannelFlush(const std::string &channel, bool completeFlush, int propagation)
+{
+	if (channel.empty())
+		Flush(completeFlush, propagation);
+	else if (AttachedTransformation() && propagation)
+		AttachedTransformation()->ChannelFlush(channel, completeFlush, propagation-1);
+}
+
+void BufferedTransformation::ChannelMessageEnd(const std::string &channel, int propagation)
+{
+	if (channel.empty())
+		MessageEnd(propagation);
+	else if (AttachedTransformation() && propagation)
+		AttachedTransformation()->ChannelMessageEnd(channel, propagation-1);
+}
+
+void BufferedTransformation::ChannelMessageSeriesEnd(const std::string &channel, int propagation)
+{
+	if (channel.empty())
+		MessageSeriesEnd(propagation);
+	else if (AttachedTransformation() && propagation)
+		AttachedTransformation()->ChannelMessageSeriesEnd(channel, propagation-1);
+}
+
+void BufferedTransformation::ChannelPutMessageEnd(const std::string &channel, const byte *inString, unsigned int length, int propagation)
+{
+	if (channel.empty())
+		PutMessageEnd(inString, length, propagation);
+	else
+	{
+		ChannelPut(channel, inString, length);
+		ChannelMessageEnd(channel, propagation);
+	}
+}
+
 unsigned long BufferedTransformation::MaxRetrievable() const
 {
 	if (AttachedTransformation())
 		return AttachedTransformation()->MaxRetrievable();
 	else
-		return 0;
+		return CopyTo(BitBucket());
 }
 
 bool BufferedTransformation::AnyRetrievable() const
@@ -136,7 +174,10 @@ bool BufferedTransformation::AnyRetrievable() const
 	if (AttachedTransformation())
 		return AttachedTransformation()->AnyRetrievable();
 	else
-		return false;
+	{
+		byte b;
+		return Peek(b) != 0;
+	}
 }
 
 unsigned int BufferedTransformation::Get(byte &outByte)
@@ -144,7 +185,7 @@ unsigned int BufferedTransformation::Get(byte &outByte)
 	if (AttachedTransformation())
 		return AttachedTransformation()->Get(outByte);
 	else
-		return 0;
+		return Get(&outByte, 1);
 }
 
 unsigned int BufferedTransformation::Get(byte *outString, unsigned int getMax)
@@ -152,23 +193,7 @@ unsigned int BufferedTransformation::Get(byte *outString, unsigned int getMax)
 	if (AttachedTransformation())
 		return AttachedTransformation()->Get(outString, getMax);
 	else
-		return 0;
-}
-
-unsigned long BufferedTransformation::Skip()
-{
-	if (AttachedTransformation())
-		return AttachedTransformation()->Skip();
-	else
-		return 0;
-}
-
-unsigned int BufferedTransformation::Skip(unsigned int skipMax)
-{
-	if (AttachedTransformation())
-		return AttachedTransformation()->Skip(skipMax);
-	else
-		return 0;
+		return TransferTo(ArraySink(outString, getMax), getMax);
 }
 
 unsigned int BufferedTransformation::Peek(byte &outByte) const
@@ -176,7 +201,7 @@ unsigned int BufferedTransformation::Peek(byte &outByte) const
 	if (AttachedTransformation())
 		return AttachedTransformation()->Peek(outByte);
 	else
-		return 0;
+		return Peek(&outByte, 1);
 }
 
 unsigned int BufferedTransformation::Peek(byte *outString, unsigned int peekMax) const
@@ -184,18 +209,18 @@ unsigned int BufferedTransformation::Peek(byte *outString, unsigned int peekMax)
 	if (AttachedTransformation())
 		return AttachedTransformation()->Peek(outString, peekMax);
 	else
-		return 0;
+		return CopyTo(ArraySink(outString, peekMax), peekMax);
 }
 
-unsigned long BufferedTransformation::CopyTo(BufferedTransformation &target) const
+unsigned long BufferedTransformation::Skip(unsigned long skipMax)
 {
 	if (AttachedTransformation())
-		return AttachedTransformation()->CopyTo(target);
+		return AttachedTransformation()->Skip(skipMax);
 	else
-		return 0;
+		return TransferTo(BitBucket(), skipMax);
 }
 
-unsigned int BufferedTransformation::CopyTo(BufferedTransformation &target, unsigned int copyMax) const
+unsigned long BufferedTransformation::CopyTo(BufferedTransformation &target, unsigned long copyMax) const
 {
 	if (AttachedTransformation())
 		return AttachedTransformation()->CopyTo(target, copyMax);
@@ -203,15 +228,7 @@ unsigned int BufferedTransformation::CopyTo(BufferedTransformation &target, unsi
 		return 0;
 }
 
-unsigned long BufferedTransformation::TransferTo(BufferedTransformation &target)
-{
-	if (AttachedTransformation())
-		return AttachedTransformation()->TransferTo(target);
-	else
-		return 0;
-}
-
-unsigned int BufferedTransformation::TransferTo(BufferedTransformation &target, unsigned int size)
+unsigned long BufferedTransformation::TransferTo(BufferedTransformation &target, unsigned long size)
 {
 	if (AttachedTransformation())
 		return AttachedTransformation()->TransferTo(target, size);
@@ -224,7 +241,7 @@ unsigned long BufferedTransformation::TotalBytesRetrievable() const
 	if (AttachedTransformation())
 		return AttachedTransformation()->TotalBytesRetrievable();
 	else
-		return 0;
+		return MaxRetrievable();
 }
 
 unsigned int BufferedTransformation::NumberOfMessages() const
@@ -232,31 +249,23 @@ unsigned int BufferedTransformation::NumberOfMessages() const
 	if (AttachedTransformation())
 		return AttachedTransformation()->NumberOfMessages();
 	else
-		return 0;
+		return CopyMessagesTo(BitBucket());
 }
 
-bool BufferedTransformation::CurrentMessageIsComplete() const
+bool BufferedTransformation::AnyMessages() const
 {
 	if (AttachedTransformation())
-		return AttachedTransformation()->CurrentMessageIsComplete();
+		return AttachedTransformation()->NumberOfMessages();
+	else
+		return NumberOfMessages() != 0;
+}
+
+bool BufferedTransformation::GetNextMessage()
+{
+	if (AttachedTransformation())
+		return AttachedTransformation()->GetNextMessage();
 	else
 		return false;
-}
-
-bool BufferedTransformation::RetrieveNextMessage()
-{
-	if (AttachedTransformation())
-		return AttachedTransformation()->RetrieveNextMessage();
-	else
-		return false;
-}
-
-unsigned int BufferedTransformation::SkipMessages()
-{
-	if (AttachedTransformation())
-		return AttachedTransformation()->SkipMessages();
-	else
-		return 0;
 }
 
 unsigned int BufferedTransformation::SkipMessages(unsigned int count)
@@ -264,15 +273,7 @@ unsigned int BufferedTransformation::SkipMessages(unsigned int count)
 	if (AttachedTransformation())
 		return AttachedTransformation()->SkipMessages(count);
 	else
-		return 0;
-}
-
-unsigned int BufferedTransformation::TransferMessagesTo(BufferedTransformation &target)
-{
-	if (AttachedTransformation())
-		return AttachedTransformation()->TransferMessagesTo(target);
-	else
-		return 0;
+		return TransferMessagesTo(BitBucket(), count);
 }
 
 unsigned int BufferedTransformation::TransferMessagesTo(BufferedTransformation &target, unsigned int count)
@@ -280,15 +281,17 @@ unsigned int BufferedTransformation::TransferMessagesTo(BufferedTransformation &
 	if (AttachedTransformation())
 		return AttachedTransformation()->TransferMessagesTo(target, count);
 	else
-		return 0;
-}
-
-unsigned int BufferedTransformation::CopyMessagesTo(BufferedTransformation &target) const
-{
-	if (AttachedTransformation())
-		return AttachedTransformation()->CopyMessagesTo(target);
-	else
-		return 0;
+	{
+		unsigned int i;
+		for (i=0; i<count && AnyMessages(); i++)
+		{
+			while (TransferTo(target)) {}
+			bool result = GetNextMessage();
+			assert(result);
+			target.MessageEnd(GetAutoSignalPropagation());
+		}
+		return i;
+	}
 }
 
 unsigned int BufferedTransformation::CopyMessagesTo(BufferedTransformation &target, unsigned int count) const
@@ -299,64 +302,129 @@ unsigned int BufferedTransformation::CopyMessagesTo(BufferedTransformation &targ
 		return 0;
 }
 
-void BufferedTransformation::PutWord16(word16 value, bool highFirst)
+void BufferedTransformation::SkipAll()
+{
+	if (AttachedTransformation())
+		AttachedTransformation()->SkipAll();
+	else
+	{
+		while (SkipMessages()) {}
+		while (Skip()) {}
+	}
+}
+
+void BufferedTransformation::TransferAllTo(BufferedTransformation &target)
+{
+	if (AttachedTransformation())
+		AttachedTransformation()->TransferAllTo(target);
+	else
+	{
+		while (TransferMessagesTo(target)) {}
+		while (TransferTo(target)) {}
+	}
+}
+
+void BufferedTransformation::CopyAllTo(BufferedTransformation &target) const
+{
+	if (AttachedTransformation())
+		AttachedTransformation()->CopyAllTo(target);
+	else
+	{
+		CopyMessagesTo(target);
+		CopyTo(target);
+	}
+}
+
+void BufferedTransformation::SetRetrievalChannel(const std::string &channel)
+{
+	if (AttachedTransformation())
+		AttachedTransformation()->SetRetrievalChannel(channel);
+}
+
+void BufferedTransformation::ChannelPut(const std::string &channel, byte inByte)
+{
+	if (channel.empty())
+		Put(inByte);
+}
+
+void BufferedTransformation::ChannelPut(const std::string &channel, const byte *inString, unsigned int length)
+{
+	if (channel.empty())
+		Put(inString, length);
+}
+
+void BufferedTransformation::ChannelPutWord16(const std::string &channel, word16 value, bool highFirst)
 {
 	if (highFirst)
 	{
-		Put(value>>8);
-		Put(byte(value));
+		ChannelPut(channel, value>>8);
+		ChannelPut(channel, byte(value));
 	}
 	else
 	{
-		Put(byte(value));
-		Put(value>>8);
+		ChannelPut(channel, byte(value));
+		ChannelPut(channel, value>>8);
 	}
+}
+
+void BufferedTransformation::ChannelPutWord32(const std::string &channel, word32 value, bool highFirst)
+{
+	if (highFirst)
+	{
+		for (int i=0; i<4; i++)
+			ChannelPut(channel, byte(value>>((3-i)*8)));
+	}
+	else
+	{
+		for (int i=0; i<4; i++)
+			ChannelPut(channel, byte(value>>(i*8)));
+	}
+}
+
+void BufferedTransformation::PutWord16(word16 value, bool highFirst)
+{
+	ChannelPutWord16(NULL_CHANNEL, value, highFirst);
 }
 
 void BufferedTransformation::PutWord32(word32 value, bool highFirst)
 {
-	if (highFirst)
-	{
-		for (int i=0; i<4; i++)
-			Put(byte(value>>((3-i)*8)));
-	}
-	else
-	{
-		for (int i=0; i<4; i++)
-			Put(byte(value>>(i*8)));
-	}
+	ChannelPutWord32(NULL_CHANNEL, value, highFirst);
 }
 
-unsigned int BufferedTransformation::GetWord16(word16 &value, bool highFirst)
+unsigned int BufferedTransformation::PeekWord16(word16 &value, bool highFirst)
 {
-	if (MaxRetrievable()<2)
-		return 0;
-
-	byte buf[2];
-	Get(buf, 2);
+	byte buf[2] = {0, 0};
+	unsigned int len = Peek(buf, 2);
 
 	if (highFirst)
 		value = (buf[0] << 8) | buf[1];
 	else
 		value = (buf[1] << 8) | buf[0];
 
-	return 2;
+	return len;
 }
 
-unsigned int BufferedTransformation::GetWord32(word32 &value, bool highFirst)
+unsigned int BufferedTransformation::PeekWord32(word32 &value, bool highFirst)
 {
-	if (MaxRetrievable()<4)
-		return 0;
-
-	byte buf[4];
-	Get(buf, 4);
+	byte buf[4] = {0, 0, 0, 0};
+	unsigned int len = Peek(buf, 4);
 
 	if (highFirst)
 		value = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf [3];
 	else
 		value = (buf[3] << 24) | (buf[2] << 16) | (buf[1] << 8) | buf [0];
 
-	return 4;
+	return len;
+}
+
+unsigned int BufferedTransformation::GetWord16(word16 &value, bool highFirst)
+{
+	return Skip(PeekWord16(value, highFirst));
+}
+
+unsigned int BufferedTransformation::GetWord32(word32 &value, bool highFirst)
+{
+	return Skip(PeekWord32(value, highFirst));
 }
 
 void BufferedTransformation::Attach(BufferedTransformation *newOut)

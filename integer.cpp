@@ -5,6 +5,7 @@
 #include "modarith.h"
 #include "nbtheory.h"
 #include "asn.h"
+#include "oids.h"
 #include "words.h"
 
 #include <iostream>
@@ -31,8 +32,8 @@ static __declspec(naked) word __fastcall Add(word *C, const word *A, const word 
 		push esi
 		push edi
 
-		mov esi, [esp+24]
-		mov ebx, [esp+20]
+		mov esi, [esp+24]	; N
+		mov ebx, [esp+20]	; B
 
 		sub ecx, edx
 		xor eax, eax
@@ -80,8 +81,8 @@ static __declspec(naked) word __fastcall Subtract(word *C, const word *A, const 
 		push esi
 		push edi
 
-		mov esi, [esp+24]
-		mov ebx, [esp+20]
+		mov esi, [esp+24]	; N
+		mov ebx, [esp+20]	; B
 
 		sub ecx, edx
 		xor eax, eax
@@ -1352,11 +1353,6 @@ Integer::Integer(const byte *encodedInteger, unsigned int byteCount, Signedness 
 	Decode(encodedInteger, byteCount, s);
 }
 
-Integer::Integer(const byte *BEREncodedInteger)
-{
-	BERDecode(BEREncodedInteger);
-}
-
 Integer::Integer(BufferedTransformation &bt)
 {
 	BERDecode(bt);
@@ -1443,6 +1439,15 @@ void Integer::SetByte(unsigned int n, byte value)
 	reg.CleanGrow(RoundupSize(bytesToWords(n+1)));
 	reg[n/WORD_SIZE] &= ~(word(0xff) << 8*(n%WORD_SIZE));
 	reg[n/WORD_SIZE] |= (word(value) << 8*(n%WORD_SIZE));
+}
+
+unsigned long Integer::GetBits(unsigned int i, unsigned int n) const
+{
+	assert(n <= sizeof(unsigned long)*8);
+	unsigned long v;
+	for (unsigned int j=0; j<n; j++)
+		v |= GetBit(i+j) << j;
+	return v;
 }
 
 Integer Integer::operator-() const
@@ -1554,18 +1559,31 @@ unsigned int Integer::BitCount() const
 
 void Integer::Decode(const byte *input, unsigned int inputLen, Signedness s)
 {
-	sign = ((s==SIGNED) && (input[0] & 0x80)) ? NEGATIVE : POSITIVE;
+	Decode(StringStore(input, inputLen), inputLen, s);
+}
 
-	while (inputLen>0 && input[0]==0)
+void Integer::Decode(BufferedTransformation &bt, unsigned int inputLen, Signedness s)
+{
+	assert(bt.MaxRetrievable() >= inputLen);
+
+	byte b;
+	bt.Peek(b);
+	sign = ((s==SIGNED) && (b & 0x80)) ? NEGATIVE : POSITIVE;
+
+	while (inputLen>0 && (sign==POSITIVE ? b==0 : b==0xff))
 	{
-		input++;
+		bt.Skip(1);
 		inputLen--;
+		bt.Peek(b);
 	}
 
 	reg.CleanNew(RoundupSize(bytesToWords(inputLen)));
 
-	for (unsigned i=0; i<inputLen; i++)
-		reg[i/WORD_SIZE] |= input[inputLen-1-i] << (i%WORD_SIZE)*8;
+	for (unsigned int i=inputLen; i > 0; i--)
+	{
+		bt.Get(b);
+		reg[(i-1)/WORD_SIZE] |= b << ((i-1)%WORD_SIZE)*8;
+	}
 
 	if (sign == NEGATIVE)
 	{
@@ -1589,77 +1607,86 @@ unsigned int Integer::MinEncodedSize(Signedness signedness) const
 
 unsigned int Integer::Encode(byte *output, unsigned int outputLen, Signedness signedness) const
 {
+	return Encode(ArraySink(output, outputLen), outputLen);
+}
+
+unsigned int Integer::Encode(BufferedTransformation &bt, unsigned int outputLen, Signedness signedness) const
+{
 	if (signedness == UNSIGNED || NotNegative())
 	{
-		for (unsigned i=0; i<outputLen; i++)
-			output[i]=GetByte(outputLen-i-1);
+		for (unsigned int i=outputLen; i > 0; i--)
+			bt.Put(GetByte(i-1));
 	}
 	else
 	{
 		// take two's complement of *this
 		Integer temp = Integer::Power2(8*STDMAX(ByteCount(), outputLen)) + *this;
 		for (unsigned i=0; i<outputLen; i++)
-			output[i]=temp.GetByte(outputLen-i-1);
+			bt.Put(temp.GetByte(outputLen-i-1));
 	}
 	return outputLen;
 }
 
-unsigned int Integer::DEREncode(byte *output) const
+void Integer::DEREncode(BufferedTransformation &bt) const
 {
-	unsigned int i=0;
-	output[i++] = INTEGER;
-	unsigned int bc = MinEncodedSize(SIGNED);
-	SecByteBlock buf(bc);
-	Encode(buf, bc, SIGNED);
-	i += DERLengthEncode(bc, output+i);
-	memcpy(output+i, buf, bc);
-	return i+bc;
+	DERGeneralEncoder enc(bt, INTEGER);
+	Encode(enc, MinEncodedSize(SIGNED), SIGNED);
+	enc.MessageEnd();
 }
 
-unsigned int Integer::DEREncode(BufferedTransformation &bt) const
+void Integer::BERDecode(const byte *input, unsigned int len)
 {
-	bt.Put(INTEGER);
-	unsigned int bc = MinEncodedSize(SIGNED);
-	SecByteBlock buf(bc);
-	Encode(buf, bc, SIGNED);
-	unsigned int lengthBytes = DERLengthEncode(bc, bt);
-	bt.Put(buf, bc);
-	return 1+lengthBytes+bc;
-}
-
-void Integer::BERDecode(const byte *input)
-{
-	if (*input++ != INTEGER)
-		BERDecodeError();
-	int bc;
-	if (!(*input & 0x80))
-		bc = *input++;
-	else
-	{
-		int lengthBytes = *input++ & 0x7f;
-		if (lengthBytes > 2)
-			BERDecodeError();
-		bc = *input++;
-		if (lengthBytes > 1)
-			bc = (bc << 8) | *input++;
-	}
-	Decode(input, bc, SIGNED);
+	BERDecode(StringStore(input, len));
 }
 
 void Integer::BERDecode(BufferedTransformation &bt)
 {
-	byte b;
-	if (!bt.Get(b) || b != INTEGER)
+	BERGeneralDecoder dec(bt, INTEGER);
+	if (!dec.IsDefiniteLength())
 		BERDecodeError();
+	Decode(dec, dec.RemainingLength(), SIGNED);
+	dec.MessageEnd();
+}
 
-	unsigned int bc;
-	BERLengthDecode(bt, bc);
+void Integer::DEREncodeAsOctetString(BufferedTransformation &bt, unsigned int length) const
+{
+	DERGeneralEncoder enc(bt, OCTET_STRING);
+	Encode(enc, length);
+	enc.MessageEnd();
+}
 
-	SecByteBlock buf(bc);
-
-	if (bc != bt.Get(buf, bc))
+void Integer::BERDecodeAsOctetString(BufferedTransformation &bt, unsigned int length)
+{
+	BERGeneralDecoder dec(bt, OCTET_STRING);
+	if (!dec.IsDefiniteLength() || dec.RemainingLength() != length)
 		BERDecodeError();
-	Decode(buf, bc, SIGNED);
+	Decode(dec, length);
+	dec.MessageEnd();
+}
+
+unsigned int Integer::OpenPGPEncode(byte *output, unsigned int len) const
+{
+	return OpenPGPEncode(ArraySink(output, len));
+}
+
+unsigned int Integer::OpenPGPEncode(BufferedTransformation &bt) const
+{
+	word16 bitCount = BitCount();
+	bt.PutWord16(bitCount);
+	return 2 + Encode(bt, bitsToBytes(bitCount));
+}
+
+void Integer::OpenPGPDecode(const byte *input, unsigned int len)
+{
+	OpenPGPDecode(StringStore(input, len));
+}
+
+void Integer::OpenPGPDecode(BufferedTransformation &bt)
+{
+	word16 bitCount;
+	if (bt.GetWord16(bitCount) != 2 || bt.MaxRetrievable() < bitsToBytes(bitCount))
+		throw OpenPGPDecodeErr();
+	Decode(bt, bitsToBytes(bitCount));
 }
 
 void Integer::Randomize(RandomNumberGenerator &rng, unsigned int nbits)
@@ -1919,23 +1946,23 @@ void PositiveSubtract(Integer &diff, const Integer &a, const Integer& b)
 	}
 }
 
-Integer operator+(const Integer &a, const Integer& b)
+Integer Integer::Plus(const Integer& b) const
 {
-	Integer sum((word)0, STDMAX(a.reg.size, b.reg.size));
-	if (a.NotNegative())
+	Integer sum((word)0, STDMAX(reg.size, b.reg.size));
+	if (NotNegative())
 	{
 		if (b.NotNegative())
-			PositiveAdd(sum, a, b);
+			PositiveAdd(sum, *this, b);
 		else
-			PositiveSubtract(sum, a, b);
+			PositiveSubtract(sum, *this, b);
 	}
 	else
 	{
 		if (b.NotNegative())
-			PositiveSubtract(sum, b, a);
+			PositiveSubtract(sum, b, *this);
 		else
 		{
-			PositiveAdd(sum, a, b);
+			PositiveAdd(sum, *this, b);
 			sum.sign = Integer::NEGATIVE;
 		}
 	}
@@ -1965,25 +1992,25 @@ Integer& Integer::operator+=(const Integer& t)
 	return *this;
 }
 
-Integer operator-(const Integer &a, const Integer& b)
+Integer Integer::Minus(const Integer& b) const
 {
-	Integer diff((word)0, STDMAX(a.reg.size, b.reg.size));
-	if (a.NotNegative())
+	Integer diff((word)0, STDMAX(reg.size, b.reg.size));
+	if (NotNegative())
 	{
 		if (b.NotNegative())
-			PositiveSubtract(diff, a, b);
+			PositiveSubtract(diff, *this, b);
 		else
-			PositiveAdd(diff, a, b);
+			PositiveAdd(diff, *this, b);
 	}
 	else
 	{
 		if (b.NotNegative())
 		{
-			PositiveAdd(diff, a, b);
+			PositiveAdd(diff, *this, b);
 			diff.sign = Integer::NEGATIVE;
 		}
 		else
-			PositiveSubtract(diff, b, a);
+			PositiveSubtract(diff, b, *this);
 	}
 	return diff;
 }
@@ -2057,10 +2084,10 @@ void Multiply(Integer &product, const Integer &a, const Integer &b)
 		product.Negate();
 }
 
-Integer operator*(const Integer &a, const Integer &b)
+Integer Integer::Times(const Integer &b) const
 {
 	Integer product;
-	Multiply(product, a, b);
+	Multiply(product, *this, b);
 	return product;
 }
 
@@ -2133,17 +2160,17 @@ void Integer::Divide(Integer &remainder, Integer &quotient, const Integer &divid
 		quotient.Negate();
 }
 
-Integer operator/(const Integer &a, const Integer &b)
+Integer Integer::DividedBy(const Integer &b) const
 {
 	Integer remainder, quotient;
-	Integer::Divide(remainder, quotient, a, b);
+	Integer::Divide(remainder, quotient, *this, b);
 	return quotient;
 }
 
-Integer operator%(const Integer &a, const Integer &b)
+Integer Integer::Modulo(const Integer &b) const
 {
 	Integer remainder, quotient;
-	Integer::Divide(remainder, quotient, a, b);
+	Integer::Divide(remainder, quotient, *this, b);
 	return remainder;
 }
 
@@ -2184,14 +2211,14 @@ word Integer::ShortDivide(Integer &quotient, const Integer &dividend, word divis
 	return remainder;
 }
 
-Integer operator/(const Integer &a, word b)
+Integer Integer::DividedBy(word b) const
 {
 	Integer quotient;
-	Integer::ShortDivide(quotient, a, b);
+	Integer::ShortDivide(quotient, *this, b);
 	return quotient;
 }
 
-word operator%(const Integer &dividend, word divisor)
+word Integer::Modulo(word divisor) const
 {
 	if (!divisor)
 		throw Integer::DivideByZero();
@@ -2201,27 +2228,27 @@ word operator%(const Integer &dividend, word divisor)
 	word remainder;
 
 	if ((divisor & (divisor-1)) == 0)	// divisor is a power of 2
-		remainder = dividend.reg[0] & (divisor-1);
+		remainder = reg[0] & (divisor-1);
 	else
 	{
-		unsigned int i = dividend.WordCount();
+		unsigned int i = WordCount();
 
 		if (divisor <= 5)
 		{
 			dword sum=0;
 			while (i--)
-				sum += dividend.reg[i];
+				sum += reg[i];
 			remainder = word(sum%divisor);
 		}
 		else
 		{
 			remainder = 0;
 			while (i--)
-				remainder = word(MAKE_DWORD(dividend.reg[i], remainder) % divisor);
+				remainder = word(MAKE_DWORD(reg[i], remainder) % divisor);
 		}
 	}
 
-	if (dividend.IsNegative() && remainder)
+	if (IsNegative() && remainder)
 		remainder = divisor - remainder;
 
 	return remainder;
@@ -2370,6 +2397,35 @@ word Integer::InverseMod(const word mod) const
 }
 
 // ********************************************************
+
+ModularArithmetic::ModularArithmetic(BufferedTransformation &bt)
+{
+	BERSequenceDecoder seq(bt);
+	OID oid(seq);
+	if (oid != ASN1::prime_field())
+		BERDecodeError();
+	modulus.BERDecode(seq);
+	seq.MessageEnd();
+	result.reg.Resize(modulus.reg.size);
+}
+
+void ModularArithmetic::DEREncode(BufferedTransformation &bt) const
+{
+	DERSequenceEncoder seq(bt);
+	ASN1::prime_field().DEREncode(seq);
+	modulus.DEREncode(seq);
+	seq.MessageEnd();
+}
+
+void ModularArithmetic::DEREncodeElement(BufferedTransformation &out, const Element &a) const
+{
+	a.DEREncodeAsOctetString(out, MaxElementByteLength());
+}
+
+void ModularArithmetic::BERDecodeElement(BufferedTransformation &in, Element &a) const
+{
+	a.BERDecodeAsOctetString(in, MaxElementByteLength());
+}
 
 const Integer& ModularArithmetic::Half(const Integer &a) const
 {

@@ -4,6 +4,9 @@
 #include "gf2n.h"
 #include "algebra.h"
 #include "words.h"
+#include "rng.h"
+#include "asn.h"
+#include "oids.h"
 
 #include <iostream>
 
@@ -96,6 +99,17 @@ PolynomialMod2 PolynomialMod2::Trinomial(unsigned t0, unsigned t1, unsigned t2)
 	return r;
 }
 
+PolynomialMod2 PolynomialMod2::Pentanomial(unsigned t0, unsigned t1, unsigned t2, unsigned int t3, unsigned int t4)
+{
+	PolynomialMod2 r((word)0, t0+1);
+	r.SetBit(t0);
+	r.SetBit(t1);
+	r.SetBit(t2);
+	r.SetBit(t3);
+	r.SetBit(t4);
+	return r;
+}
+
 const PolynomialMod2 &PolynomialMod2::Zero()
 {
 	static const PolynomialMod2 zero;
@@ -110,21 +124,47 @@ const PolynomialMod2 &PolynomialMod2::One()
 
 void PolynomialMod2::Decode(const byte *input, unsigned int inputLen)
 {
-	reg.CleanNew(bytesToWords(inputLen));
-
-	for (unsigned int i=0; i<inputLen; i++)
-		reg[i/WORD_SIZE] |= input[inputLen-1-i] << (i%WORD_SIZE)*8;
+	Decode(StringStore(input, inputLen), inputLen);
 }
 
 unsigned int PolynomialMod2::Encode(byte *output, unsigned int outputLen) const
 {
-	unsigned int byteCount = STDMIN(outputLen, reg.size*WORD_SIZE);
+	return Encode(ArraySink(output, outputLen), outputLen);
+}
 
-	for (unsigned int i=0; i<byteCount; i++)
-		output[outputLen-1-i] = byte(reg[i/WORD_SIZE] >> (i%WORD_SIZE)*8);
+void PolynomialMod2::Decode(BufferedTransformation &bt, unsigned int inputLen)
+{
+	reg.CleanNew(bytesToWords(inputLen));
 
-	memset(output, 0, outputLen-byteCount);
+	for (unsigned int i=inputLen; i > 0; i--)
+	{
+		byte b;
+		bt.Get(b);
+		reg[(i-1)/WORD_SIZE] |= b << ((i-1)%WORD_SIZE)*8;
+	}
+}
+
+unsigned int PolynomialMod2::Encode(BufferedTransformation &bt, unsigned int outputLen) const
+{
+	for (unsigned int i=outputLen; i > 0; i--)
+		bt.Put(GetByte(i-1));
 	return outputLen;
+}
+
+void PolynomialMod2::DEREncodeAsOctetString(BufferedTransformation &bt, unsigned int length) const
+{
+	DERGeneralEncoder enc(bt, OCTET_STRING);
+	Encode(enc, length);
+	enc.MessageEnd();
+}
+
+void PolynomialMod2::BERDecodeAsOctetString(BufferedTransformation &bt, unsigned int length)
+{
+	BERGeneralDecoder dec(bt, OCTET_STRING);
+	if (!dec.IsDefiniteLength() || dec.RemainingLength() != length)
+		BERDecodeError();
+	Decode(dec, length);
+	dec.MessageEnd();
 }
 
 unsigned int PolynomialMod2::WordCount() const
@@ -172,40 +212,40 @@ PolynomialMod2& PolynomialMod2::operator^=(const PolynomialMod2& t)
 	return *this;
 }
 
-PolynomialMod2 operator^(const PolynomialMod2 &a, const PolynomialMod2 &b)
+PolynomialMod2 PolynomialMod2::Xor(const PolynomialMod2 &b) const
 {
-	if (b.reg.size >= a.reg.size)
+	if (b.reg.size >= reg.size)
 	{
 		PolynomialMod2 result((word)0, b.reg.size*WORD_BITS);
-		XorWords(result.reg, a.reg, b.reg, a.reg.size);
-		CopyWords(result.reg+a.reg.size, b.reg+a.reg.size, b.reg.size-a.reg.size);
+		XorWords(result.reg, reg, b.reg, reg.size);
+		CopyWords(result.reg+reg.size, b.reg+reg.size, b.reg.size-reg.size);
 		return result;
 	}
 	else
 	{
-		PolynomialMod2 result((word)0, a.reg.size*WORD_BITS);
-		XorWords(result.reg, a.reg, b.reg, b.reg.size);
-		CopyWords(result.reg+b.reg.size, a.reg+b.reg.size, a.reg.size-b.reg.size);
+		PolynomialMod2 result((word)0, reg.size*WORD_BITS);
+		XorWords(result.reg, reg, b.reg, b.reg.size);
+		CopyWords(result.reg+b.reg.size, reg+b.reg.size, reg.size-b.reg.size);
 		return result;
 	}
 }
 
-PolynomialMod2 operator&(const PolynomialMod2 &a, const PolynomialMod2 &b)
+PolynomialMod2 PolynomialMod2::And(const PolynomialMod2 &b) const
 {
-	PolynomialMod2 result((word)0, WORD_BITS*STDMIN(a.reg.size, b.reg.size));
-	AndWords(result.reg, a.reg, b.reg, result.reg.size);
+	PolynomialMod2 result((word)0, WORD_BITS*STDMIN(reg.size, b.reg.size));
+	AndWords(result.reg, reg, b.reg, result.reg.size);
 	return result;
 }
 
-PolynomialMod2 operator*(const PolynomialMod2 &a, const PolynomialMod2 &b)
+PolynomialMod2 PolynomialMod2::Times(const PolynomialMod2 &b) const
 {
-	PolynomialMod2 result((word)0, a.BitCount() + b.BitCount());
+	PolynomialMod2 result((word)0, BitCount() + b.BitCount());
 
 	for (int i=b.Degree(); i>=0; i--)
 	{
 		result <<= 1;
 		if (b[i])
-			XorWords(result.reg, a.reg, a.reg.size);
+			XorWords(result.reg, reg, reg.size);
 	}
 	return result;
 }
@@ -255,17 +295,17 @@ void PolynomialMod2::Divide(PolynomialMod2 &remainder, PolynomialMod2 &quotient,
 	}
 }
 
-PolynomialMod2 operator/(const PolynomialMod2 &a, const PolynomialMod2 &b)
+PolynomialMod2 PolynomialMod2::DividedBy(const PolynomialMod2 &b) const
 {
 	PolynomialMod2 remainder, quotient;
-	PolynomialMod2::Divide(remainder, quotient, a, b);
+	PolynomialMod2::Divide(remainder, quotient, *this, b);
 	return quotient;
 }
 
-PolynomialMod2 operator%(const PolynomialMod2 &a, const PolynomialMod2 &b)
+PolynomialMod2 PolynomialMod2::Modulo(const PolynomialMod2 &b) const
 {
 	PolynomialMod2 remainder, quotient;
-	PolynomialMod2::Divide(remainder, quotient, a, b);
+	PolynomialMod2::Divide(remainder, quotient, *this, b);
 	return remainder;
 }
 
@@ -388,18 +428,18 @@ bool PolynomialMod2::operator!() const
 	return true;
 }
 
-bool operator==(const PolynomialMod2 &a, const PolynomialMod2 &b)
+bool PolynomialMod2::Equals(const PolynomialMod2 &rhs) const
 {
-	unsigned i, smallerSize = STDMIN(a.reg.size, b.reg.size);
+	unsigned i, smallerSize = STDMIN(reg.size, rhs.reg.size);
 
 	for (i=0; i<smallerSize; i++)
-		if (a.reg[i] != b.reg[i]) return false;
+		if (reg[i] != rhs.reg[i]) return false;
 
-	for (i=smallerSize; i<a.reg.size; i++)
-		if (a.reg[i] != 0) return false;
+	for (i=smallerSize; i<reg.size; i++)
+		if (reg[i] != 0) return false;
 
-	for (i=smallerSize; i<b.reg.size; i++)
-		if (b.reg[i] != 0) return false;
+	for (i=smallerSize; i<rhs.reg.size; i++)
+		if (rhs.reg[i] != 0) return false;
 
 	return true;
 }
@@ -479,6 +519,48 @@ bool PolynomialMod2::IsIrreducible() const
 GF2NP::GF2NP(const PolynomialMod2 &modulus)
 	: QuotientRing<EuclideanDomainOf<PolynomialMod2> >(EuclideanDomainOf<PolynomialMod2>(), modulus), m(modulus.Degree()) 
 {
+}
+
+GF2NP::Element GF2NP::SquareRoot(const Element &a) const
+{
+	Element r;
+	for (unsigned int i=1; i<=m-1; i++)
+		r = Square(r);
+	return r;
+}
+
+GF2NP::Element GF2NP::HalfTrace(const Element &a) const
+{
+	assert(m%2 == 1);
+	Element h = a;
+	for (unsigned int i=1; i<=(m-1)/2; i++)
+		h = Add(Square(Square(h)), a);
+	return h;
+}
+
+GF2NP::Element GF2NP::SolveQuadraticEquation(const Element &a) const
+{
+	if (m%2 == 0)
+	{
+		Element z, w;
+		do
+		{
+			LC_RNG rng(11111);
+			Element p(rng, m);
+			z = PolynomialMod2::Zero();
+			w = p;
+			for (unsigned int i=1; i<=m-1; i++)
+			{
+				w = Square(w);
+				z = Square(z);
+				Accumulate(z, Multiply(w, a));
+				Accumulate(w, p);
+			}
+		} while (w.IsZero());
+		return z;
+	}
+	else
+		return HalfTrace(a);
 }
 
 // ********************************************************
@@ -698,6 +780,67 @@ const GF2NT::Element& GF2NT::Reduced(const Element &a) const
 	SetWords(result.reg.ptr, 0, result.reg.size);
 	CopyWords(result.reg.ptr, b, STDMIN(b.size, result.reg.size));
 	return result;
+}
+
+void GF2NP::DEREncodeElement(BufferedTransformation &out, const Element &a) const
+{
+	a.DEREncodeAsOctetString(out, MaxElementByteLength());
+}
+
+void GF2NP::BERDecodeElement(BufferedTransformation &in, Element &a) const
+{
+	a.BERDecodeAsOctetString(in, MaxElementByteLength());
+}
+
+void GF2NT::DEREncode(BufferedTransformation &bt) const
+{
+	DERSequenceEncoder seq(bt);
+	DEREncodeUnsigned(seq, m);
+	ASN1::tpBasis().DEREncode(seq);
+	DEREncodeUnsigned(seq, t1);
+	seq.MessageEnd();
+}
+
+void GF2NPP::DEREncode(BufferedTransformation &bt) const
+{
+	DERSequenceEncoder seq(bt);
+	DEREncodeUnsigned(seq, m);
+	ASN1::ppBasis().DEREncode(seq);
+	DERSequenceEncoder pentanomial(seq);
+	DEREncodeUnsigned(pentanomial, t3);
+	DEREncodeUnsigned(pentanomial, t2);
+	DEREncodeUnsigned(pentanomial, t1);
+	pentanomial.MessageEnd();
+	seq.MessageEnd();
+}
+
+GF2NP * BERDecodeGF2NP(BufferedTransformation &bt)
+{
+	BERSequenceDecoder seq(bt);
+	unsigned int m;
+	BERDecodeUnsigned(seq, m);
+	OID oid(seq);
+	if (oid == ASN1::tpBasis())
+	{
+		unsigned int t1;
+		BERDecodeUnsigned(seq, t1);
+		return new GF2NT(m, t1, 0);
+	}
+	else if (oid == ASN1::ppBasis())
+	{
+		unsigned int t1, t2, t3;
+		BERSequenceDecoder pentanomial(seq);
+		BERDecodeUnsigned(pentanomial, t3);
+		BERDecodeUnsigned(pentanomial, t2);
+		BERDecodeUnsigned(pentanomial, t1);
+		pentanomial.MessageEnd();
+		return new GF2NPP(m, t3, t2, t1, 0);
+	}
+	else
+	{
+		BERDecodeError();
+		return NULL;
+	}
 }
 
 NAMESPACE_END

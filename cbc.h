@@ -35,7 +35,7 @@ protected:
 
 /// CBC mode encryptor with padding
 
-/** Compatible with RFC 2040.
+/** Compatible with RFC 1423 (and also 2040 and 2630).
 */
 class CBCPaddedEncryptor : protected CipherMode, public FilterWithBufferedInput
 {

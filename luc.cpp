@@ -300,7 +300,7 @@ LUCELG_DigestSigner::LUCELG_DigestSigner(RandomNumberGenerator &rng, unsigned in
 	p = pg.Prime();
 	q = pg.SubPrime();
 	g = pg.Generator();
-	x.Randomize(rng, 2, q-2, Integer::ANY);
+	x.Randomize(rng, 1, q-1, Integer::ANY);
 	y = Lucas(x, g, p);
 }
 
@@ -309,7 +309,7 @@ LUCELG_DigestSigner::LUCELG_DigestSigner(RandomNumberGenerator &rng, const Integ
 	p = pIn;
 	q = qIn;
 	g = gIn;
-	x.Randomize(rng, 2, q-2, Integer::ANY);
+	x.Randomize(rng, 1, q-1, Integer::ANY);
 	y = Lucas(x, g, p);
 }
 
@@ -348,7 +348,7 @@ void LUCELG_DigestSigner::SignDigest(RandomNumberGenerator &rng, const byte *dig
 
 void LUCELG_DigestSigner::RawSign(RandomNumberGenerator &rng, const Integer &m, Integer &r, Integer &s) const
 {
-	Integer k(rng, 2, q-2, Integer::ANY);
+	Integer k(rng, 1, q-1, Integer::ANY);
 	r = Lucas(k, g, p);
 	s = (k + x*(r+m)) % q;
 }
