@@ -268,4 +268,6 @@ EC2N::Point EcPrecomputation<EC2N>::CascadeMultiply(const Integer &exponent, con
 	return m_ep.CascadeExponentiate(exponent, pc2.m_ep, exponent2);
 }
 
+template class AbstractGroup<EC2N::Point>;
+
 NAMESPACE_END

@@ -1,7 +1,7 @@
 // hrtimer.cpp - written and placed in the public domain by Wei Dai
-
 #include "pch.h"
 #include "hrtimer.h"
+#include <stddef.h>		// for NULL
 
 #ifdef HIGHRES_TIMER_AVAILABLE
 

@@ -492,4 +492,6 @@ ECP::Point EcPrecomputation<ECP>::CascadeMultiply(const Integer &exponent, const
 	return FromMontgomery(*m_mr, m_ep.CascadeExponentiate(exponent, pc2.m_ep, exponent2));
 }
 
+template class AbstractGroup<ECP::Point>;
+
 NAMESPACE_END
