@@ -33,10 +33,16 @@ const short yasslPort = 11111;
 const char* cert = "../../certs/cert.der";
 const char* key  = "../../certs/key.der";
 
+const char* certSuite = "../certs/cert.der";
+const char* keySuite  = "../certs/key.der";
+
+const char* certDebug = "../../../certs/cert.der";
+const char* keyDebug  = "../../../certs/key.der";
+
 using namespace yaSSL;
 
 
-int main(int argc, char** argv)
+int server_test(int argc, char** argv)
 {
 #ifdef WIN32
     WSADATA wsd;
@@ -74,11 +80,23 @@ int main(int argc, char** argv)
     SSL_METHOD* method = TLSv1_server_method();
     SSL_CTX*    ctx = SSL_CTX_new(method);
 
+    // To allow testing from serveral dirs
     if (SSL_CTX_use_certificate_file(ctx, cert, SSL_FILETYPE_ASN1)
-         != SSL_SUCCESS) err_sys("failed to use certificate: certs/cert.der");
-
+        != SSL_SUCCESS)
+        if (SSL_CTX_use_certificate_file(ctx, certSuite, SSL_FILETYPE_ASN1)
+            != SSL_SUCCESS)
+            if (SSL_CTX_use_certificate_file(ctx, certDebug, SSL_FILETYPE_ASN1)
+                != SSL_SUCCESS)
+                err_sys("failed to use certificate: certs/cert.der");
+    
+    // To allow testing from several dirs
     if (SSL_CTX_use_PrivateKey_file(ctx, key, SSL_FILETYPE_ASN1)
-         != SSL_SUCCESS) err_sys("failed to use key file: certs/key.der");
+         != SSL_SUCCESS) 
+         if (SSL_CTX_use_PrivateKey_file(ctx, keySuite, SSL_FILETYPE_ASN1)
+            != SSL_SUCCESS) 
+                if (SSL_CTX_use_PrivateKey_file(ctx,keyDebug,SSL_FILETYPE_ASN1)
+                    != SSL_SUCCESS) 
+                    err_sys("failed to use key file: certs/key.der");
 
     SSL* ssl = SSL_new(ctx);
     SSL_set_fd(ssl, clientfd);
@@ -99,3 +117,13 @@ int main(int argc, char** argv)
 
     return 0;
 }
+
+
+#ifndef NO_MAIN_DRIVER
+
+int main(int argc, char** argv)
+{
+    return server_test(argc, argv);
+}
+
+#endif // NO_MAIN_DRIVER

@@ -37,11 +37,11 @@ class BlockCipher {
 public:
     BlockCipher() : cipher_(DIR, MODE) {}
 
-    void Process(byte* c, const byte* p, uint32 sz) 
+    void Process(byte* c, const byte* p, word32 sz) 
             { cipher_.Process(c, p, sz); }
-    void SetKey(const byte* k, uint32 sz)   
+    void SetKey(const byte* k, word32 sz)   
             { cipher_.SetKey(k, sz, DIR); }
-    void SetKey(const byte* k, uint32 sz, const byte* iv)   
+    void SetKey(const byte* k, word32 sz, const byte* iv)   
             { cipher_.SetKey(k, sz, DIR); cipher_.SetIV(iv); }
 private:
     T cipher_;
@@ -59,9 +59,9 @@ public:
 
     virtual void ProcessAndXorBlock(const byte*, const byte*, byte*) const = 0;
 
-    void ECB_Process(byte*, const byte*, uint32);
-    void CBC_Encrypt(byte*, const byte*, uint32);
-    void CBC_Decrypt(byte*, const byte*, uint32);
+    void ECB_Process(byte*, const byte*, word32);
+    void CBC_Encrypt(byte*, const byte*, word32);
+    void CBC_Decrypt(byte*, const byte*, word32);
 
     void SetIV(const byte* iv) { memcpy(reg_, iv, BLOCK_SIZE); }
 private:
@@ -74,9 +74,9 @@ private:
 
 
 template<int BLOCK_SIZE>
-void Mode_BASE<BLOCK_SIZE>::ECB_Process(byte* out, const byte* in, uint32 sz)
+void Mode_BASE<BLOCK_SIZE>::ECB_Process(byte* out, const byte* in, word32 sz)
 {
-    uint32 blocks = sz / BLOCK_SIZE;
+    word32 blocks = sz / BLOCK_SIZE;
 
     while (blocks--) {
         ProcessAndXorBlock(in, 0, out);
@@ -87,9 +87,9 @@ void Mode_BASE<BLOCK_SIZE>::ECB_Process(byte* out, const byte* in, uint32 sz)
 
 
 template<int BLOCK_SIZE>
-void Mode_BASE<BLOCK_SIZE>::CBC_Encrypt(byte* out, const byte* in, uint32 sz)
+void Mode_BASE<BLOCK_SIZE>::CBC_Encrypt(byte* out, const byte* in, word32 sz)
 {
-    uint32 blocks = sz / BLOCK_SIZE;
+    word32 blocks = sz / BLOCK_SIZE;
 
     while (blocks--) {
         xorbuf(reg_, in, BLOCK_SIZE);
@@ -102,9 +102,9 @@ void Mode_BASE<BLOCK_SIZE>::CBC_Encrypt(byte* out, const byte* in, uint32 sz)
 
 
 template<int BLOCK_SIZE>
-void Mode_BASE<BLOCK_SIZE>::CBC_Decrypt(byte* out, const byte* in, uint32 sz)
+void Mode_BASE<BLOCK_SIZE>::CBC_Decrypt(byte* out, const byte* in, word32 sz)
 {
-    uint32 blocks = sz / BLOCK_SIZE;
+    word32 blocks = sz / BLOCK_SIZE;
     byte   hold[BLOCK_SIZE];
 
     while (blocks--) {

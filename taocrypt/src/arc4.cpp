@@ -26,20 +26,20 @@
 
 namespace TaoCrypt {
 
-void ARC4::SetKey(const byte* key, uint32 length)
+void ARC4::SetKey(const byte* key, word32 length)
 {
     x_ = 1;
     y_ = 0;
 
-    uint32 i;
+    word32 i;
 
     for (i = 0; i < STATE_SIZE; i++)
         state_[i] = i;
 
-    uint32 keyIndex = 0, stateIndex = 0;
+    word32 keyIndex = 0, stateIndex = 0;
 
     for (i = 0; i < STATE_SIZE; i++) {
-        uint32 a = state_[i];
+        word32 a = state_[i];
         stateIndex += key[keyIndex] + a;
         stateIndex &= 0xFF;
         state_[i] = state_[stateIndex];
@@ -54,12 +54,12 @@ void ARC4::SetKey(const byte* key, uint32 length)
 // local
 namespace {
 
-inline unsigned int MakeByte(uint32& x, uint32& y, byte* s)
+inline unsigned int MakeByte(word32& x, word32& y, byte* s)
 {
-    uint32 a = s[x];
+    word32 a = s[x];
     y = (y+a) & 0xff;
 
-    uint32 b = s[y];
+    word32 b = s[y];
     s[x] = b;
     s[y] = a;
     x = (x+1) & 0xff;
@@ -70,13 +70,13 @@ inline unsigned int MakeByte(uint32& x, uint32& y, byte* s)
 } // namespace
 
 
-void ARC4::Process(byte* out, const byte* in, uint32 length)
+void ARC4::Process(byte* out, const byte* in, word32 length)
 {
     if (length == 0) return;
 
     byte *const s = state_;
-    uint32 x = x_;
-    uint32 y = y_;
+    word32 x = x_;
+    word32 y = y_;
 
     if (in == out)
         while (length--)

@@ -79,8 +79,8 @@ void RSA_PrivateKey::Initialize(Sink& sink)
 }
 
 
-void RSA_BlockType2::Pad(const byte *input, uint32 inputLen, byte *pkcsBlock,
-                         uint32 pkcsBlockLen, RandomNumberGenerator& rng) const
+void RSA_BlockType2::Pad(const byte *input, word32 inputLen, byte *pkcsBlock,
+                         word32 pkcsBlockLen, RandomNumberGenerator& rng) const
 {
     // convert from bit length to byte length
     if (pkcsBlockLen % 8 != 0)
@@ -93,16 +93,16 @@ void RSA_BlockType2::Pad(const byte *input, uint32 inputLen, byte *pkcsBlock,
     pkcsBlock[0] = 2;  // block type 2
 
     // pad with non-zero random bytes
-    uint32 padLen = pkcsBlockLen - inputLen - 1;
+    word32 padLen = pkcsBlockLen - inputLen - 1;
     rng.GenerateBlock(&pkcsBlock[1], padLen);
-    for (uint32 i = 1; i < padLen; i++)
+    for (word32 i = 1; i < padLen; i++)
         if (pkcsBlock[i] == 0) pkcsBlock[i] = 0x01;
     
     pkcsBlock[pkcsBlockLen-inputLen-1] = 0;     // separator
     memcpy(pkcsBlock+pkcsBlockLen-inputLen, input, inputLen);
 }
 
-uint32 RSA_BlockType2::UnPad(const byte *pkcsBlock, unsigned int pkcsBlockLen,
+word32 RSA_BlockType2::UnPad(const byte *pkcsBlock, unsigned int pkcsBlockLen,
                            byte *output) const
 {
     bool invalid = false;
@@ -136,8 +136,8 @@ uint32 RSA_BlockType2::UnPad(const byte *pkcsBlock, unsigned int pkcsBlockLen,
 }
 
 
-void RSA_BlockType1::Pad(const byte* input, uint32 inputLen, byte* pkcsBlock,
-                         uint32 pkcsBlockLen, RandomNumberGenerator&) const
+void RSA_BlockType1::Pad(const byte* input, word32 inputLen, byte* pkcsBlock,
+                         word32 pkcsBlockLen, RandomNumberGenerator&) const
 {
     // convert from bit length to byte length
     if (pkcsBlockLen % 8 != 0)
@@ -157,7 +157,7 @@ void RSA_BlockType1::Pad(const byte* input, uint32 inputLen, byte* pkcsBlock,
 }
 
 
-uint32 RSA_BlockType1::UnPad(const byte* pkcsBlock, uint32 pkcsBlockLen,
+word32 RSA_BlockType1::UnPad(const byte* pkcsBlock, word32 pkcsBlockLen,
                              byte* output) const
 {
     bool invalid = false;
@@ -191,7 +191,7 @@ uint32 RSA_BlockType1::UnPad(const byte* pkcsBlock, uint32 pkcsBlockLen,
 }
 
 
-void SSL_Decrypt(RSA_PublicKey& key, const byte* sig, uint32 sz, byte* plain)
+void SSL_Decrypt(RSA_PublicKey& key, const byte* sig, word32 sz, byte* plain)
 {
     PK_Lengths lengths(key.GetModulus());
    

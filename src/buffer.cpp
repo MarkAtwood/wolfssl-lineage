@@ -84,7 +84,8 @@ void input_buffer::allocate(uint s)
 { 
     if (buffer_) 
         throw Error("Buffer ReAlloc", realloc_error);
-    buffer_ = new byte[s]; end_ = buffer_ + s; 
+    buffer_ = new byte[s];
+    end_ = buffer_ + s; 
 }
 
 

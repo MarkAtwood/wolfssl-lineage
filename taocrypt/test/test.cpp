@@ -73,57 +73,62 @@ void err_sys(const char* msg, int es)
 }
 
 
-int main(int argc, char** argv)
+int taocrypt_test()
 {
-    if (argc > 1) 
-        file_test(argc, argv);
-    else {
-        int ret = 0;
-        if ( (ret = sha_test()) ) 
-            err_sys("SHA  test failed!\n", ret);
-        else
-            printf( "SHA  test passed!\n");
+    int ret = 0;
+    if ( (ret = sha_test()) ) 
+        err_sys("SHA  test failed!\n", ret);
+    else
+        printf( "SHA  test passed!\n");
 
-        if ( (ret = md5_test()) ) 
-            err_sys("MD5  test failed!\n", ret);
-        else
-            printf( "MD5  test passed!\n");
+    if ( (ret = md5_test()) ) 
+        err_sys("MD5  test failed!\n", ret);
+    else
+        printf( "MD5  test passed!\n");
 
-        if ( ( ret = hmac_test()) )
-            err_sys("HMAC test failed!\n", ret);
-        else
-            printf( "HMAC test passed!\n");
+    if ( ( ret = hmac_test()) )
+        err_sys("HMAC test failed!\n", ret);
+    else
+        printf( "HMAC test passed!\n");
 
-        if ( (ret = arc4_test()) )
-            err_sys("ARC4 test failed!\n", ret);
-        else
-            printf( "ARC4 test passed!\n");
+    if ( (ret = arc4_test()) )
+        err_sys("ARC4 test failed!\n", ret);
+    else
+        printf( "ARC4 test passed!\n");
 
-        if ( (ret = des_test()) )
-            err_sys("DES  test failed!\n", ret);
-        else
-            printf( "DES  test passed!\n");
+    if ( (ret = des_test()) )
+        err_sys("DES  test failed!\n", ret);
+    else
+        printf( "DES  test passed!\n");
 
-        if ( (ret = aes_test()) )
-            err_sys("AES  test failed!\n", ret);
-        else
-            printf( "AES  test passed!\n");
+    if ( (ret = aes_test()) )
+        err_sys("AES  test failed!\n", ret);
+    else
+        printf( "AES  test passed!\n");
 
-        if ( (ret = rsa_test()) )
-            err_sys("RSA  test failed!\n", ret);
-        else
-            printf( "RSA  test passed!\n");
+    if ( (ret = rsa_test()) )
+        err_sys("RSA  test failed!\n", ret);
+    else
+        printf( "RSA  test passed!\n");
 
-        /*
-        if ( (ret = dh_test()) )
-            err_sys("DH   test failed!\n", ret);
-        else
-            printf( "DH   test passed!\n");
-        */
-    }
-
+    if ( (ret = dh_test()) )
+        err_sys("DH   test failed!\n", ret);
+    else
+        printf( "DH   test passed!\n");
+   
     return 0;
 }
+
+
+// so overall tests can pull in test function 
+#ifndef NO_MAIN_DRIVER
+
+int main(int argc, char** argv)
+{
+    return taocrypt_test();
+}
+
+#endif // NO_MAIN_DRIVER
 
 
 void file_test(int argc, char** argv)
@@ -469,6 +474,14 @@ int rsa_test()
     std::string name = "../../certs/key.der";
 	Sink sink;
     FileSource(name, sink);
+    if (sink.size() == 0) {
+        FileSource("../certs/key.der", sink);  // for testsuite
+        if (sink.size() == 0) {
+            FileSource("../../../certs/key.der", sink); // for win32 Debug dir
+            if (sink.size() == 0)
+                err_sys("where's your certs dir?", -79);
+        }
+    }
     RSA_PrivateKey priv(sink);
 
     RSAES_Encryptor enc(priv);
@@ -491,8 +504,16 @@ int rsa_test()
 
     // test decode   
     name = "../../certs/cert.der";
-	Sink sink2;
+    Sink sink2;
     FileSource(name, sink2);
+    if (sink2.size() == 0) {
+        FileSource("../certs/cert.der", sink2);  // for testsuite
+        if (sink2.size() == 0) {
+            FileSource("../../../certs/cert.der", sink2); // win32 Debug dir
+            if (sink2.size() == 0)
+                err_sys("where's your certs dir?", -79);
+        }
+    }
     CertDecoder cd(sink2);
     Sink sink3(cd.GetPublicKey().GetKey(), cd.GetPublicKey().size());
     RSA_PublicKey pub(sink3);
@@ -504,8 +525,16 @@ int rsa_test()
 int dh_test()
 {
     std::string name = "../../certs/dh1024.dat";
-	Sink sink;
+    Sink sink;
     FileSource(name, sink);
+    if (sink.size() == 0) {
+        FileSource("../certs/dh1024.dat", sink);  // for testsuite
+        if (sink.size() == 0) {
+            FileSource("../../../certs/dh1024.dat", sink); // win32 Debug dir
+            if (sink.size() == 0)
+                err_sys("where's your certs dir?", -79);
+        }
+    }
     HexDecoder hDec(sink);
     DH dh(sink);
 

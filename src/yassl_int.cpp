@@ -631,8 +631,8 @@ void SSL::fillData(Data& data)
 void SSL::flushBuffer()
 {
     uint sz = std::for_each(buffers_.getHandShake().begin(),
-                              buffers_.getHandShake().end(),
-                              SumBuffer()).total_;
+                            buffers_.getHandShake().end(),
+                            SumBuffer()).total_;
     output_buffer out(sz);
     uint elements = buffers_.getHandShake().size();
 

@@ -28,7 +28,7 @@
 
 namespace TaoCrypt {
 
-#define blk0(i) (W[i] = (*reinterpret_cast<uint32*>(&buffer_[i*4])))
+#define blk0(i) (W[i] = (*reinterpret_cast<word32*>(&buffer_[i*4])))
 #define blk1(i) (W[i&15] = \
                  rotlFixed(W[(i+13)&15]^W[(i+8)&15]^W[(i+2)&15]^W[i&15],1))
 
@@ -63,7 +63,7 @@ void SHA::Init()
 }
 
 
-SHA::SHA(const SHA& that) : HASH(DIGEST_SIZE / sizeof(uint32), BLOCK_SIZE) 
+SHA::SHA(const SHA& that) : HASH(DIGEST_SIZE / sizeof(word32), BLOCK_SIZE) 
 { 
     buffLen_ = that.buffLen_;
     length_  = that.length_;
@@ -92,14 +92,14 @@ void SHA::Swap(SHA& other)
 
 void SHA::Transform()
 {
-    uint32 W[BLOCK_SIZE / sizeof(uint32)];
+    word32 W[BLOCK_SIZE / sizeof(word32)];
 
     // Copy context->state[] to working vars 
-    uint32 a = digest_[0];
-    uint32 b = digest_[1];
-    uint32 c = digest_[2];
-    uint32 d = digest_[3];
-    uint32 e = digest_[4];
+    word32 a = digest_[0];
+    word32 b = digest_[1];
+    word32 c = digest_[2];
+    word32 d = digest_[3];
+    word32 e = digest_[4];
 
     // 4 rounds of 20 operations each. Loop unrolled. 
     R0(a,b,c,d,e, 0); R0(e,a,b,c,d, 1); R0(d,e,a,b,c, 2); R0(c,d,e,a,b, 3);

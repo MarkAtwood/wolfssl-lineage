@@ -24,42 +24,118 @@
 #define TAO_CRYPT_BLOCK_HPP
 
 #include <algorithm>        // std::swap
-#include <string.h>
+#include <stdexcept>        // std::runtime_error
+#include <string.h>         // memcpy
+#include <limits>           // std::numeric_limits
 #include "misc.hpp"
+
+
+#if defined(_MSC_VER) && defined(_CRTAPI1)
+#define TAOCRYPT_MSVCRT6
+#endif
 
 
 namespace TaoCrypt {
 
-template<typename T>
-T* reallocate(T* p, uint32 oldSize, uint32 newSize, bool preserve)
+
+template<class T>
+class AllocatorBase
+{
+public:
+    typedef T      value_type;
+    typedef size_t size_type;
+#ifdef TAOCRYPT_MSVCRT6
+    typedef ptrdiff_t      difference_type;
+#else
+    typedef std::ptrdiff_t difference_type;
+#endif
+    typedef T*       pointer;
+    typedef const T* const_pointer;
+    typedef T&       reference;
+    typedef const T& const_reference;
+
+    pointer       address(reference r) const {return (&r);}
+    const_pointer address(const_reference r) const {return (&r); }
+    void          construct(pointer p, const T& val) {new (p) T(val);}
+    void          destroy(pointer p) {p->~T();}
+    size_type     max_size() const {return std::numeric_limits<T>::max();}
+   
+protected:
+    static void CheckSize(size_t n)
+    {
+        if (n > ~size_t(0) / sizeof(T))
+            throw std::runtime_error("AllocatorBase: requested size would"
+                                     "cause integer overflow");
+    }
+};
+
+
+template<typename T, class A>
+typename A::pointer StdReallocate(A& a, T* p, typename A::size_type oldSize,
+                                  typename A::size_type newSize, bool preserve)
 {
     if (oldSize == newSize)
         return p;
 
     if (preserve) {
-        T* newPointer = new T[newSize];
+        A b;
+        typename A::pointer newPointer = b.allocate(newSize, 0);
         memcpy(newPointer, p, sizeof(T) * min(oldSize, newSize));
-        delete[] p;
+        a.deallocate(p, oldSize);
+        std::swap(a, b);
         return newPointer;
     }
     else {
-        delete[] p;
-        return new T[newSize];
+        a.deallocate(p, oldSize);
+        return a.allocate(newSize, 0);
     }
 }
 
 
-template<typename T>
+template <class T>
+class AllocatorWithCleanup : public AllocatorBase<T>
+{
+public:
+    typedef typename AllocatorBase<T>::pointer   pointer;
+    typedef typename AllocatorBase<T>::size_type size_type;
+
+    pointer allocate(size_type n, const void* = 0)
+    {
+        CheckSize(n);
+        if (n == 0)
+            return 0;
+        return new T[n];
+    }
+
+    void deallocate(void* p, size_type n)
+    {
+        memset(p, 0, n * sizeof(T));
+        delete [] (T*)p;
+    }
+
+    pointer reallocate(T* p, size_type oldSize, size_type newSize,
+                       bool preserve)
+    {
+        return StdReallocate(*this, p, oldSize, newSize, preserve);
+    }
+
+    // VS.NET STL enforces the policy of "All STL-compliant allocators have to
+    // provide a template class member called rebind".
+    template <class U> struct rebind { typedef AllocatorWithCleanup<U> other;};
+};
+
+
+template<typename T, class A = AllocatorWithCleanup<T> >
 class Block {
 public:
-    explicit Block(uint32 s = 0) : sz_(s), buffer_(new T[sz_]) 
+    explicit Block(word32 s = 0) : sz_(s), buffer_(allocator_.allocate(sz_)) 
                     { CleanNew(sz_); }
 
-    Block(const T* buff, uint32 s) : sz_(s), buffer_(new T[sz_])
+    Block(const T* buff, word32 s) : sz_(s), buffer_(allocator_.allocate(sz_))
         { memcpy(buffer_, buff, sz_ * sizeof(T)); }
 
-    Block(const Block& other) : sz_(other.sz_), buffer_(new T[sz_])
-        { memcpy(buffer_, other.buffer_, sz_ * sizeof(T)); }
+    Block(const Block& that) : sz_(that.sz_), buffer_(allocator_.allocate(sz_))
+        { memcpy(buffer_, that.buffer_, sz_ * sizeof(T)); }
 
     Block& operator=(const Block& that) {
         Block tmp(that);
@@ -67,54 +143,56 @@ public:
         return *this;
     }
 
-    T& operator[] (uint32 i) { assert(i < sz_); return buffer_[i]; }
-    const T& operator[] (uint32 i) const 
+    T& operator[] (word32 i) { assert(i < sz_); return buffer_[i]; }
+    const T& operator[] (word32 i) const 
         { assert(i < sz_); return buffer_[i]; }
 
-    T* operator+ (uint32 i) { return buffer_ + i; }
-    const T* operator+ (uint32 i) const { return buffer_ + i; }
+    T* operator+ (word32 i) { return buffer_ + i; }
+    const T* operator+ (word32 i) const { return buffer_ + i; }
 
-    uint32 size() const { return sz_; }
+    word32 size() const { return sz_; }
 
     T* get_buffer() const { return buffer_; }
     T* begin()      const { return get_buffer(); }
 
-    void CleanGrow(uint32 newSize)
+    void CleanGrow(word32 newSize)
     {
         if (newSize > sz_) {
-            buffer_ = reallocate(buffer_, sz_, newSize, true);
+            buffer_ = allocator_.reallocate(buffer_, sz_, newSize, true);
             memset(buffer_ + sz_, 0, (newSize - sz_) * sizeof(T));
             sz_ = newSize;
         }
     }
 
-    void CleanNew(uint32 newSize)
+    void CleanNew(word32 newSize)
     {
         New(newSize);
         memset(buffer_, 0, sz_ * sizeof(T));
     }
 
-    void New(uint32 newSize)
+    void New(word32 newSize)
     {
-        buffer_ = reallocate(buffer_, sz_, newSize, false);
+        buffer_ = allocator_.reallocate(buffer_, sz_, newSize, false);
         sz_ = newSize;
     }
 
-    void resize(uint32 newSize)
+    void resize(word32 newSize)
     {
-        buffer_ = reallocate(buffer_, sz_, newSize, true);
+        buffer_ = allocator_.reallocate(buffer_, sz_, newSize, true);
         sz_ = newSize;
     }
 
     void swap(Block& other) {
         std::swap(sz_, other.sz_);
         std::swap(buffer_, other.buffer_);
+        std::swap(allocator_, other.allocator_);
     }
 
-    ~Block() { delete[] buffer_; }
+    ~Block() { allocator_.deallocate(buffer_, sz_); }
 private:
-    uint32 sz_;     // size in Ts
+    word32 sz_;     // size in Ts
     T*     buffer_;
+    A      allocator_;
 };
 
 

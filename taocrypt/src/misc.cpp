@@ -23,6 +23,8 @@
 
 
 #include "misc.hpp"
+#include <new>        // for NewHandler
+
 
 namespace TaoCrypt {
 
@@ -86,6 +88,22 @@ unsigned long Crop(unsigned long value, unsigned int size)
 }
 
 
+#if !(defined(_MSC_VER) && (_MSC_VER < 1300))
+using std::new_handler;
+using std::set_new_handler;
+#endif
+
+void CallNewHandler()
+{
+    new_handler newHandler = set_new_handler(NULL);
+    if (newHandler)
+        set_new_handler(newHandler);
+
+    if (newHandler)
+        newHandler();
+    else
+        throw std::bad_alloc();
+}
 
 
 }  // namespace

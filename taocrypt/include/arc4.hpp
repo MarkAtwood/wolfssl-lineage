@@ -36,8 +36,8 @@ public:
 
     ARC4() {}
 
-    void Process(byte*, const byte*, uint32);
-    void SetKey(const byte*, uint32);
+    void Process(byte*, const byte*, word32);
+    void SetKey(const byte*, word32);
 private:
     byte x_;
     byte y_;

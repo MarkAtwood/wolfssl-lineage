@@ -37,7 +37,7 @@ public:
     OS_Seed();
     ~OS_Seed();
 
-    void GenerateSeed(byte*, uint32 sz);
+    void GenerateSeed(byte*, word32 sz);
 
 #if defined(_WIN64)
     typedef unsigned __int64 ProviderHandle;
@@ -62,7 +62,7 @@ public:
     OS_Seed();
     ~OS_Seed();
 
-    void GenerateSeed(byte*, uint32 sz);
+    void GenerateSeed(byte*, word32 sz);
 private:
     int fd_;
 
@@ -78,7 +78,7 @@ public:
     RandomNumberGenerator();
     ~RandomNumberGenerator() {}
 
-    void GenerateBlock(byte*, uint32 sz);
+    void GenerateBlock(byte*, word32 sz);
     byte GenerateByte();
 private:
     OS_Seed seed_;

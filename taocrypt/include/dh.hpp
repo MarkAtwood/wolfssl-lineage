@@ -69,7 +69,7 @@ public:
     Integer& GetG() { return g_; }
 
     // for p and agree
-    uint32 GetByteLength() const { return p_.ByteCount(); }
+    word32 GetByteLength() const { return p_.ByteCount(); }
 private:
     // group parms
     Integer p_;

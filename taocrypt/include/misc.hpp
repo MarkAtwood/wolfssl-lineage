@@ -34,53 +34,190 @@ namespace TaoCrypt {
 #if !defined(LITTLE_ENDIAN_ORDER) && (defined(__BIG_ENDIAN__) || \
    defined(__sparc)  || defined(__sparc__) || defined(__hppa__) || \
    defined(__mips__) || (defined(__MWERKS__) && !defined(__INTEL__)))
-#	define BIG_ENDIAN_ORDER
+    #define BIG_ENDIAN_ORDER
 #endif
 
 #ifndef BIG_ENDIAN_ORDER
-#	define LITTLE_ENDIAN_ORDER
+    #define LITTLE_ENDIAN_ORDER
 #endif
 
 
-typedef unsigned short uint16;
-typedef unsigned int   uint32;  // == word32 cryptopp
 typedef unsigned char  byte;
+typedef unsigned short word16;
+typedef unsigned int   word32;
 
-// tao TODO: fix these for 64 bit, word is register size dword is twice as big
-#if defined(_MSC_VER)
-typedef unsigned __int32 word;
-typedef unsigned __int64 dword;
-#else 
-typedef unsigned long word;
-typedef unsigned long long dword;
-#endif // _MSC_VER
+#if defined(__GNUC__) || defined(__MWERKS__)
+    #define WORD64_AVAILABLE
+    typedef unsigned long long word64;
+    #define W64LIT(x) x##LL
+#elif defined(_MSC_VER) || defined(__BCPLUSPLUS__)
+    #define WORD64_AVAILABLE
+    typedef unsigned __int64 word64;
+    #define W64LIT(x) x##ui64
+#endif
 
-const uint32 WORD_SIZE = sizeof(word);
-const uint32 WORD_BITS = WORD_SIZE * 8;
+// define largest word type
+#ifdef WORD64_AVAILABLE
+    typedef word64 lword;
+#else
+    typedef word32 lword;
+#endif
+
+#if defined(__alpha__) || defined(__ia64__) || defined(_ARCH_PPC64) || \
+    defined(__x86_64__) || defined(__mips64)
+// These platforms have 64-bit CPU registers. Unfortunately most C++ compilers
+// don't allow any way to access the 64-bit by 64-bit multiply instruction
+// without using assembly, so in order to use word64 as word, the assembly
+// instruction must be defined in Dword::Multiply().
+    typedef word32 hword;
+    typedef word64 word;
+#else
+    #define TAOCRYPT_NATIVE_DWORD_AVAILABLE
+    #ifdef WORD64_AVAILABLE
+            #define TAOCRYPT_SLOW_WORD64 
+            // define this if your CPU is not64-bit to use alternative code
+            // that avoids word64
+            typedef word16 hword;
+            typedef word32 word;
+            typedef word64 dword;
+    #else
+            typedef word8  hword;
+            typedef word16 word;
+            typedef word32 dword;
+    #endif
+#endif
+
+const word32 WORD_SIZE = sizeof(word);
+const word32 WORD_BITS = WORD_SIZE * 8;
 
 
-#if defined(_MSC_VER)
-    #define INTEL_INTRINSICS
-#endif // _MSC_VER 
+#if defined(_MSC_VER) || defined(__BCPLUSPLUS__)
+	#define INTEL_INTRINSICS
+	#define FAST_ROTATE
+#elif defined(__MWERKS__) && TARGET_CPU_PPC
+	#define PPC_INTRINSICS
+	#define FAST_ROTATE
+#elif defined(__GNUC__) && defined(__i386__)
+        // GCC does peephole optimizations which should result in using rotate
+        // instructions
+	#define FAST_ROTATE
+#endif
 
 
-#define LOW_WORD(x) (word)(x)
+// CodeWarrior defines _MSC_VER
+#if !defined(TAOCRYPT_DISABLE_X86ASM) && ((defined(_MSC_VER) && \
+   !defined(__MWERKS__) && defined(_M_IX86)) || \
+   (defined(__GNUC__) && defined(__i386__)))
+    #define TAOCRYPT_X86ASM_AVAILABLE
+#endif
 
-union dword_union
+
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#	define TAOCRYPT_MALLOC_ALIGNMENT_IS_16
+#endif
+
+#if defined(__linux__) || defined(__sun__) || defined(__CYGWIN__)
+#	define TAOCRYPT_MEMALIGN_AVAILABLE
+#endif
+
+
+#if defined(_WIN32) || defined(__CYGWIN__)
+    #define TAOCRYPT_WIN32_AVAILABLE
+#endif
+
+#if defined(__unix__) || defined(__MACH__)
+    #define TAOCRYPT_UNIX_AVAILABLE
+#endif
+
+
+// VC60 workaround: it doesn't allow typename in some places
+#if defined(_MSC_VER) && (_MSC_VER < 1300)
+    #define CPP_TYPENAME
+#else
+    #define CPP_TYPENAME typename
+#endif
+
+
+#ifdef _MSC_VER
+    #define TAOCRYPT_NO_VTABLE __declspec(novtable)
+#else
+    #define TAOCRYPT_NO_VTABLE
+#endif
+
+
+// ***************** DLL related ********************
+
+#ifdef TAOCRYPT_WIN32_AVAILABLE
+
+#ifdef TAOCRYPT_EXPORTS
+    #define TAOCRYPT_IS_DLL
+    #define TAOCRYPT_DLL __declspec(dllexport)
+#elif defined(TAOCRYPT_IMPORTS)
+    #define TAOCRYPT_IS_DLL
+    #define TAOCRYPT_DLL __declspec(dllimport)
+#else
+    #define TAOCRYPT_DLL
+#endif  // EXPORTS
+
+#define TAOCRYPT_API __stdcall
+#define TAOCRYPT_CDECL __cdecl
+
+#else	// TAOCRYPT_WIN32_AVAILABLE
+
+#define TAOCRYPT_DLL
+#define TAOCRYPT_API
+#define TAOCRYPT_CDECL
+
+#endif	// TAOCRYPT_WIN32_AVAILABLE
+
+
+// ****************** tempalte stuff *******************
+
+
+#if defined(TAOCRYPT_MANUALLY_INSTANTIATE_TEMPLATES) && \
+  !defined(TAOCRYPT_IMPORTS)
+    #define TAOCRYPT_DLL_TEMPLATE_CLASS template class TAOCRYPT_DLL
+#elif defined(__MWERKS__)
+    #define TAOCRYPT_DLL_TEMPLATE_CLASS extern class TAOCRYPT_DLL
+#else
+    #define TAOCRYPT_DLL_TEMPLATE_CLASS extern template class TAOCRYPT_DLL
+#endif
+
+
+#if defined(TAOCRYPT_MANUALLY_INSTANTIATE_TEMPLATES) && \
+  !defined(TAOCRYPT_EXPORTS)
+    #define TAOCRYPT_STATIC_TEMPLATE_CLASS template class
+#elif defined(__MWERKS__)
+    #define TAOCRYPT_STATIC_TEMPLATE_CLASS extern class
+#else
+    #define TAOCRYPT_STATIC_TEMPLATE_CLASS extern template class
+#endif
+
+
+// ************** compile-time assertion ***************
+
+template <bool b>
+struct CompileAssert
 {
-    dword_union (const dword &dw) : dw(dw) {}
-    dword dw;
-    word w[2];
+	static char dummy[2*b-1];
 };
 
-#ifndef BIG_ENDIAN_ORDER
-#   define HIGH_WORD(x) (dword_union(x).w[1])
+#define TAOCRYPT_COMPILE_ASSERT(assertion) \
+    TAOCRYPT_COMPILE_ASSERT_INSTANCE(assertion, __LINE__)
+
+#if defined(TAOCRYPT_EXPORTS) || defined(TAOCRYPT_IMPORTS)
+    #define TAOCRYPT_COMPILE_ASSERT_INSTANCE(assertion, instance)
 #else
-#   define HIGH_WORD(x) (dword_union(x).w[0])
+    #define TAOCRYPT_COMPILE_ASSERT_INSTANCE(assertion, instance) static \
+    CompileAssert<(assertion)> TAOCRYPT_ASSERT_JOIN(cryptopp_assert_, instance)
 #endif
 
-#define MAKE_DWORD(lowWord, hiWord) ((dword(hiWord)<<WORD_BITS) | (lowWord))
+#define TAOCRYPT_ASSERT_JOIN(X, Y) TAOCRYPT_DO_ASSERT_JOIN(X, Y)
 
+#define TAOCRYPT_DO_ASSERT_JOIN(X, Y) X##Y
+
+
+/********************************************/
 
 inline unsigned int BitsToBytes(unsigned int bitCount)
 {
@@ -97,9 +234,9 @@ inline unsigned int BitsToWords(unsigned int bitCount)
     return ((bitCount+WORD_BITS-1)/(WORD_BITS));
 }
 
-inline void CopyWords(word* r, const word* a, uint32 n)
+inline void CopyWords(word* r, const word* a, word32 n)
 {
-    for (uint32 i = 0; i < n; i++)
+    for (word32 i = 0; i < n; i++)
         r[i] = a[i];
 }
 
@@ -220,13 +357,13 @@ template <class T> inline T rotrFixed(T x, unsigned int y)
 
 #pragma intrinsic(_lrotl, _lrotr)
 
-template<> inline uint32 rotlFixed(uint32 x, uint32 y)
+template<> inline word32 rotlFixed(word32 x, word32 y)
 {
     assert(y < 32);
     return y ? _lrotl(x, y) : x;
 }
 
-template<> inline uint32 rotrFixed(uint32 x, uint32 y)
+template<> inline word32 rotrFixed(word32 x, word32 y)
 {
     assert(y < 32);
     return y ? _lrotr(x, y) : x;
@@ -238,32 +375,42 @@ template<> inline uint32 rotrFixed(uint32 x, uint32 y)
 #undef min
 #endif 
 
-inline uint32 min(uint32 a, uint32 b)
+inline word32 min(word32 a, word32 b)
 {
     return a < b ? a : b;
 }
 
 
-inline uint32 ByteReverse(uint32 value)
+inline word32 ByteReverse(word32 value)
 {
-    return (rotrFixed(value, 8U) & 0xff00ff00) | 
+#ifdef PPC_INTRINSICS
+    // PPC: load reverse indexed instruction
+    return (word32)__lwbrx(&value,0);
+#elif defined(FAST_ROTATE)
+    // 5 instructions with rotate instruction, 9 without
+    return (rotrFixed(value, 8U) & 0xff00ff00) |
            (rotlFixed(value, 8U) & 0x00ff00ff);
+#else
+    // 6 instructions with rotate instruction, 8 without
+    value = ((value & 0xFF00FF00) >> 8) | ((value & 0x00FF00FF) << 8);
+    return rotlFixed(value, 16U);
+#endif
 }
 
 
 template <typename T>
-inline void ByteReverse(T* out, const T* in, uint32 byteCount)
+inline void ByteReverse(T* out, const T* in, word32 byteCount)
 {
     assert(byteCount % sizeof(T) == 0);
-    uint32 count = byteCount/sizeof(T);
-    for (uint32 i=0; i<count; i++)
+    word32 count = byteCount/sizeof(T);
+    for (word32 i=0; i<count; i++)
         out[i] = ByteReverse(in[i]);
 }
 
-inline void ByteReverse(byte* out, const byte* in, uint32 byteCount)
+inline void ByteReverse(byte* out, const byte* in, word32 byteCount)
 {
-    uint32* o       = reinterpret_cast<uint32*>(out);
-    const uint32* i = reinterpret_cast<const uint32*>(in);
+    word32* o       = reinterpret_cast<word32*>(out);
+    const word32* i = reinterpret_cast<const word32*>(in);
     ByteReverse(o, i, byteCount);
 }
 
@@ -276,7 +423,7 @@ inline T ByteReverseIf(T value, ByteOrder order)
 
 
 template <typename T>
-inline void ByteReverseIf(T* out, const T* in, uint32 bc, ByteOrder order)
+inline void ByteReverseIf(T* out, const T* in, word32 bc, ByteOrder order)
 {
     if (!HostByteOrderIs(order)) 
         ByteReverse(out, in, bc);
@@ -286,8 +433,8 @@ inline void ByteReverseIf(T* out, const T* in, uint32 bc, ByteOrder order)
 
 
 template <class T>
-inline void GetUserKey(ByteOrder order, T* out, uint32 outlen, const byte* in,
-                       uint32 inlen)
+inline void GetUserKey(ByteOrder order, T* out, word32 outlen, const byte* in,
+                       word32 inlen)
 {
     const unsigned int U = sizeof(T);
     assert(inlen <= outlen*U);
@@ -309,22 +456,22 @@ inline byte UnalignedGetWordNonTemplate(ByteOrder order, const byte *block,
     return block[0];
 }
 
-inline uint16 UnalignedGetWordNonTemplate(ByteOrder order, const byte* block,
-                                          uint16*)
+inline word16 UnalignedGetWordNonTemplate(ByteOrder order, const byte* block,
+                                          word16*)
 {
     return (order == BigEndianOrder)
         ? block[1] | (block[0] << 8)
         : block[0] | (block[1] << 8);
 }
 
-inline uint32 UnalignedGetWordNonTemplate(ByteOrder order, const byte* block,
-                                          uint32*)
+inline word32 UnalignedGetWordNonTemplate(ByteOrder order, const byte* block,
+                                          word32*)
 {
     return (order == BigEndianOrder)
-        ? uint32(block[3]) | (uint32(block[2]) << 8) | (uint32(block[1]) << 16)
-            | (uint32(block[0]) << 24)
-        : uint32(block[0]) | (uint32(block[1]) << 8) | (uint32(block[2]) << 16)
-            | (uint32(block[3]) << 24);
+        ? word32(block[3]) | (word32(block[2]) << 8) | (word32(block[1]) << 16)
+            | (word32(block[0]) << 24)
+        : word32(block[0]) | (word32(block[1]) << 8) | (word32(block[2]) << 16)
+            | (word32(block[3]) << 24);
 }
 
 template <class T>
@@ -341,7 +488,7 @@ inline void UnalignedPutWord(ByteOrder order, byte *block, byte value,
 
 #define GETBYTE(x, y) (unsigned int)byte((x)>>(8*(y)))
 
-inline void UnalignedPutWord(ByteOrder order, byte *block, uint16 value,
+inline void UnalignedPutWord(ByteOrder order, byte *block, word16 value,
                              const byte *xorBlock = NULL)
 {
     if (order == BigEndianOrder)
@@ -362,7 +509,7 @@ inline void UnalignedPutWord(ByteOrder order, byte *block, uint16 value,
     }
 }
 
-inline void UnalignedPutWord(ByteOrder order, byte* block, uint32 value,
+inline void UnalignedPutWord(ByteOrder order, byte* block, word32 value,
                              const byte* xorBlock = NULL)
 {
     if (order == BigEndianOrder)
@@ -436,7 +583,7 @@ public:
     template <class U>
     inline GetBlock<T, B, A> & operator()(U &x)
     {
-        //CRYPTOPP_COMPILE_ASSERT(sizeof(U) >= sizeof(T));
+        TAOCRYPT_COMPILE_ASSERT(sizeof(U) >= sizeof(T));
         x = GetWord<T>(A, B::ToEnum(), m_block);
         m_block += sizeof(T);
         return *this;
@@ -586,8 +733,8 @@ void ShiftWordsRightByWords(word* r, unsigned int n, unsigned int shiftWords)
 template <class T1, class T2>
 inline T1 SaturatingSubtract(T1 a, T2 b)
 {
-    //CRYPTOPP_COMPILE_ASSERT_INSTANCE(T1(-1)>0, 0);  // T1 is unsigned type
-    //CRYPTOPP_COMPILE_ASSERT_INSTANCE(T2(-1)>0, 1);  // T2 is unsigned type
+    TAOCRYPT_COMPILE_ASSERT_INSTANCE(T1(-1)>0, 0);  // T1 is unsigned type
+    TAOCRYPT_COMPILE_ASSERT_INSTANCE(T2(-1)>0, 1);  // T2 is unsigned type
     return T1((a > b) ? (a - b) : 0);
 }
 
@@ -597,6 +744,7 @@ unsigned int  BytePrecision(unsigned long value);
 unsigned int  BitPrecision(unsigned long);
 unsigned long Crop(unsigned long value, unsigned int size);
 
+void CallNewHandler();
 
 } // namespace
 

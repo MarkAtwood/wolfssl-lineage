@@ -87,9 +87,9 @@ public:
     virtual ~BER_Decoder() {}
 
     Integer& GetInteger(Integer&);
-    uint32   GetSequence();
-    uint32   GetVersion();
-    uint32   GetExplicitVersion();
+    word32   GetSequence();
+    word32   GetVersion();
+    word32   GetExplicitVersion();
 private:
     virtual void ReadHeader() = 0;
 };
@@ -126,16 +126,16 @@ private:
 
 class PublicKey {
     const byte* key_;
-    uint32      sz_;
+    word32      sz_;
 public:
-    PublicKey(const byte* k, uint32 s) : key_(k), sz_(s) {}
+    PublicKey(const byte* k, word32 s) : key_(k), sz_(s) {}
     PublicKey() : key_(0), sz_(0) {}
 
     const byte* GetKey() const { return key_; }
-    uint32      size()   const { return sz_; }
+    word32      size()   const { return sz_; }
 
     void SetKey(const byte* k) { key_ = k; }
-    void SetSize(uint32 s) { sz_ = s; }
+    void SetSize(word32 s) { sz_ = s; }
 };
 
 

@@ -27,12 +27,12 @@
 
 namespace TaoCrypt {
 
-void HASH::Update(const byte* data, uint32 len)
+void HASH::Update(const byte* data, word32 len)
 {
     // do block size increments
-    uint32 blockSz = getBlockSize();
+    word32 blockSz = getBlockSize();
     while (len) {
-        uint32 add = min(len, blockSz - buffLen_);
+        word32 add = min(len, blockSz - buffLen_);
         memcpy(&buffer_[buffLen_], data, add);
 
         buffLen_ += add;
@@ -49,11 +49,11 @@ void HASH::Update(const byte* data, uint32 len)
 
 void HASH::Final(byte* hash)
 {
-    uint32    blockSz   = getBlockSize();
-    uint32    digestSz  = getDigestSize();
-    uint32    padSz     = getPadSize();
+    word32    blockSz   = getBlockSize();
+    word32    digestSz  = getDigestSize();
+    word32    padSz     = getPadSize();
     ByteOrder order     = getByteOrder();
-    uint32    prePadLen = length_ + buffLen_ * 8;  // in bits
+    word32    prePadLen = length_ + buffLen_ * 8;  // in bits
 
     buffer_[buffLen_++] = 0x80;  // add 1
 
@@ -68,7 +68,7 @@ void HASH::Final(byte* hash)
     ByteReverseIf(buffer_, buffer_, blockSz, order);
     //write64Order(prePadLen, &buffer_[padSz], order);
 
-    uint32 hiSize = 0;  // if using 64 bit length TODO: fix
+    word32 hiSize = 0;  // if using 64 bit length TODO: fix
     memcpy(&buffer_[padSz],   order ? &hiSize : &prePadLen, sizeof(prePadLen));
     memcpy(&buffer_[padSz+4], order ? &prePadLen : &hiSize, sizeof(prePadLen));
 

@@ -33,23 +33,23 @@ namespace TaoCrypt {
 
 class Sink {
     ByteBlock buffer_;
-    uint32    current_;
+    word32    current_;
 public:
-    explicit Sink(uint32 sz = 0) : buffer_(sz), current_(0) {}
-    Sink(const byte* b, uint32 sz) : buffer_(b, sz), current_(0) {}
+    explicit Sink(word32 sz = 0) : buffer_(sz), current_(0) {}
+    Sink(const byte* b, word32 sz) : buffer_(b, sz), current_(0) {}
 
-    uint32 size() const { return buffer_.size(); }
-    void   set_size(uint32 sz) { buffer_.New(sz); }
-    void   grow(uint32 sz)     { buffer_.CleanGrow(sz); }
-    void   put(const byte*, uint32);
+    word32 size() const { return buffer_.size(); }
+    void   set_size(word32 sz) { buffer_.New(sz); }
+    void   grow(word32 sz)     { buffer_.CleanGrow(sz); }
+    void   put(const byte*, word32);
     byte*  get_buffer() const { return buffer_.get_buffer(); }
     const byte*  get_current() const { return &buffer_[current_]; }
 
-    byte operator[] (uint32 i) { current_ = i; return next(); }
+    byte operator[] (word32 i) { current_ = i; return next(); }
     byte next() { return buffer_[current_++]; }
     byte prev() { return buffer_[--current_]; }
 
-    void eat(uint32 i) { current_ += i; }
+    void eat(word32 i) { current_ += i; }
     void reset(ByteBlock&);
 private:
     // do i need these ???
@@ -77,10 +77,10 @@ public:
     FileSource(const std::string& fname, Sink& sink) : file_(fname.c_str())
             { get(sink); }
    
-    uint32   size(bool use_current = false);
+    word32   size(bool use_current = false);
 private:
-    uint32   get(Sink&);
-    uint32   size_left();                     
+    word32   get(Sink&);
+    word32   size_left();                     
 
     FileSource(const FileSource&);            // hide
     FileSource& operator=(const FileSource&); // hide

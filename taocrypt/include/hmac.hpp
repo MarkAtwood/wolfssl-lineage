@@ -33,11 +33,11 @@ public:
     enum { IPAD = 0x36, OPAD = 0x5C };
 
     HMAC() { Init(); }
-    void Update(const byte*, uint32);
+    void Update(const byte*, word32);
     void Final(byte*);
     void Init();
 
-    void SetKey(const byte*, uint32);
+    void SetKey(const byte*, word32);
 private:
     byte ipad_[T::BLOCK_SIZE];
     byte opad_[T::BLOCK_SIZE];
@@ -61,7 +61,7 @@ void HMAC<T>::Init()
 
 
 template <class T>
-void HMAC<T>::SetKey(const byte* key, uint32 length)
+void HMAC<T>::SetKey(const byte* key, word32 length)
 {
     Init();
 
@@ -74,7 +74,7 @@ void HMAC<T>::SetKey(const byte* key, uint32 length)
     }
     memset(ipad_ + length, 0, T::BLOCK_SIZE - length);
 
-    for (uint32 i = 0; i < T::BLOCK_SIZE; i++) {
+    for (word32 i = 0; i < T::BLOCK_SIZE; i++) {
         opad_[i] = ipad_[i] ^ OPAD;
         ipad_[i] ^= IPAD;
     }
@@ -90,7 +90,7 @@ void HMAC<T>::KeyInnerHash()
 
 
 template <class T>
-void HMAC<T>::Update(const byte* msg, uint32 length)
+void HMAC<T>::Update(const byte* msg, word32 length)
 {
     if (!innerHashKeyed_)
         KeyInnerHash();

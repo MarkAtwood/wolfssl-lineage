@@ -28,7 +28,7 @@
 namespace TaoCrypt {
 
 
-void AES::Process(byte* out, const byte* in, uint32 sz)
+void AES::Process(byte* out, const byte* in, word32 sz)
 {
     if (mode_ == ECB)
         ECB_Process(out, in, sz);
@@ -41,7 +41,7 @@ void AES::Process(byte* out, const byte* in, uint32 sz)
 
 
 
-void AES::SetKey(const byte* userKey, uint32 keylen, CipherDir fake)
+void AES::SetKey(const byte* userKey, word32 keylen, CipherDir fake)
 {
     if ( (keylen != 16) && (keylen != 24) && (keylen != 32) )
         throw std::runtime_error("bad AES key size");
@@ -167,7 +167,7 @@ void AES::SetKey(const byte* userKey, uint32 keylen, CipherDir fake)
 }
 
 
-typedef BlockGetAndPut<uint32, BigEndian> gpBlock;
+typedef BlockGetAndPut<word32, BigEndian> gpBlock;
 
 void AES::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out) const
 {
@@ -181,7 +181,7 @@ void AES::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out) const
 void AES::encrypt(const byte* inBlock, const byte* xorBlock,
                   byte* outBlock) const
 {
-    uint32 s0, s1, s2, s3, t0, t1, t2, t3;
+    word32 s0, s1, s2, s3, t0, t1, t2, t3;
     const word *rk = key_.get_buffer();
 
     /*
@@ -291,7 +291,7 @@ void AES::encrypt(const byte* inBlock, const byte* xorBlock,
 void AES::decrypt(const byte* inBlock, const byte* xorBlock,
                   byte* outBlock) const
 {
-    uint32 s0, s1, s2, s3, t0, t1, t2, t3;
+    word32 s0, s1, s2, s3, t0, t1, t2, t3;
     const word* rk = key_.get_buffer();
 
     /*

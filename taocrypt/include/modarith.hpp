@@ -32,6 +32,7 @@
 
 namespace TaoCrypt {
 
+
 class ModularArithmetic : public AbstractRing<Integer>
 {
 public:

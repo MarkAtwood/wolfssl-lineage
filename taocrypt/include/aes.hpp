@@ -38,29 +38,29 @@ public:
 
     AES(CipherDir DIR, Mode MODE) : dir_(DIR), mode_(MODE) {}
 
-    void Process(byte*, const byte*, uint32);
-    void SetKey(const byte* iv, uint32 sz, CipherDir fake = ENCRYPTION);
+    void Process(byte*, const byte*, word32);
+    void SetKey(const byte* iv, word32 sz, CipherDir fake = ENCRYPTION);
 
     void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
 private:
     CipherDir dir_;
     Mode      mode_;
 
-    static const uint32 Te0[256];
-    static const uint32 Te1[256];
-    static const uint32 Te2[256];
-    static const uint32 Te3[256];
-    static const uint32 Te4[256];
+    static const word32 Te0[256];
+    static const word32 Te1[256];
+    static const word32 Te2[256];
+    static const word32 Te3[256];
+    static const word32 Te4[256];
 
-    static const uint32 Td0[256];
-    static const uint32 Td1[256];
-    static const uint32 Td2[256];
-    static const uint32 Td3[256];
-    static const uint32 Td4[256];
+    static const word32 Td0[256];
+    static const word32 Td1[256];
+    static const word32 Td2[256];
+    static const word32 Td3[256];
+    static const word32 Td4[256];
 
-    static const uint32 rcon_[];
+    static const word32 rcon_[];
 
-    uint32    rounds_;
+    word32    rounds_;
     WordBlock key_;
 
     void encrypt(const byte*, const byte*, byte*) const;

@@ -38,7 +38,7 @@ public:
 
     DES_BASE(CipherDir DIR, Mode MODE) : dir_(DIR), mode_(MODE) {}
 
-    void Process(byte*, const byte*, uint32);
+    void Process(byte*, const byte*, word32);
 protected:
     CipherDir dir_;
     Mode      mode_;
@@ -51,11 +51,11 @@ class DES : public DES_BASE {
 public:
     DES(CipherDir DIR, Mode MODE) : DES_BASE(DIR, MODE) {}
 
-    void SetKey(const byte*, uint32, CipherDir dir);
-    void RawProcessBlock(uint32&, uint32&) const;
+    void SetKey(const byte*, word32, CipherDir dir);
+    void RawProcessBlock(word32&, word32&) const;
     void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
 private:
-    uint32 k_[KEY_SIZE];
+    word32 k_[KEY_SIZE];
 };
 
 
@@ -64,7 +64,7 @@ public:
     DES_EDE2(CipherDir DIR, Mode MODE) 
         : DES_BASE(DIR, MODE), des1_(DIR, MODE), des2_(DIR, MODE) {}
 
-    void SetKey(const byte*, uint32, CipherDir dir);
+    void SetKey(const byte*, word32, CipherDir dir);
     void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
 private:
     DES des1_;
@@ -78,7 +78,7 @@ public:
         : DES_BASE(DIR, MODE), des1_(DIR, MODE), des2_(DIR, MODE),
                                des3_(DIR, MODE) {}
 
-    void SetKey(const byte*, uint32, CipherDir dir);
+    void SetKey(const byte*, word32, CipherDir dir);
     void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
 private:
     DES des1_;

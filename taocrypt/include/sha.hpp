@@ -31,12 +31,12 @@ class SHA : public HASH {
 public:
     enum { BLOCK_SIZE = 64, DIGEST_SIZE = 20, PAD_SIZE = 56,
            TAO_BYTE_ORDER = BigEndianOrder};   // in Bytes
-    SHA() : HASH(DIGEST_SIZE / sizeof(uint32), BLOCK_SIZE) { Init(); }
+    SHA() : HASH(DIGEST_SIZE / sizeof(word32), BLOCK_SIZE) { Init(); }
 
     ByteOrder getByteOrder()  const { return ByteOrder(TAO_BYTE_ORDER); }
-    uint32    getBlockSize()  const { return BLOCK_SIZE; }
-    uint32    getDigestSize() const { return DIGEST_SIZE; }
-    uint32    getPadSize()    const { return PAD_SIZE; }
+    word32    getBlockSize()  const { return BLOCK_SIZE; }
+    word32    getDigestSize() const { return DIGEST_SIZE; }
+    word32    getPadSize()    const { return PAD_SIZE; }
 
     void Init();
 

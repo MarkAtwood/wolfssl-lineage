@@ -30,7 +30,70 @@
 #include <cstring>
 #include <algorithm>
 
+
+#ifdef TAOCRYPT_X86ASM_AVAILABLE
+
+#ifdef _M_IX86
+    #if (defined(__INTEL_COMPILER) && (__INTEL_COMPILER >= 500)) || \
+      (defined(__ICL) && (__ICL >= 500))
+        #define SSE2_INTRINSICS_AVAILABLE
+        #define TAOCRYPT_MM_MALLOC_AVAILABLE
+    #elif defined(_MSC_VER)
+        // _mm_free seems to be the only way to tell if the Processor Pack is
+        //installed or not
+        #include <malloc.h>
+        #if defined(_mm_free)
+            #define SSE2_INTRINSICS_AVAILABLE
+            #define TAOCRYPT_MM_MALLOC_AVAILABLE
+        #endif
+    #endif
+#endif
+
+// SSE2 intrinsics work in GCC 3.3 or later
+#if defined(__SSE2__) && (__GNUC_MAJOR__ > 3 || __GNUC_MINOR__ > 2)
+    #define SSE2_INTRINSICS_AVAILABLE
+#endif
+
+#endif  // X86ASM
+
+
+
+
 namespace TaoCrypt {
+
+#if defined(SSE2_INTRINSICS_AVAILABLE)
+
+    template <class T>
+    class AlignedAllocator : public AllocatorBase<T>
+    {
+    public:
+        typedef typename AllocatorBase<T>::pointer   pointer;
+        typedef typename AllocatorBase<T>::size_type size_type;
+
+        pointer allocate(size_type n, const void* = 0);
+        void deallocate(void* p, size_type n);
+        pointer reallocate(T* p, size_type oldSize, size_type newSize,
+                           bool preserve)
+        {
+            return StdReallocate(*this, p, oldSize, newSize, preserve);
+        }
+
+    #if !(defined(TAOCRYPT_MALLOC_ALIGNMENT_IS_16) || \
+        defined(TAOCRYPT_MEMALIGN_AVAILABLE) || \
+        defined(TAOCRYPT_MM_MALLOC_AVAILABLE))
+    #define TAOCRYPT_NO_ALIGNED_ALLOC
+        AlignedAllocator() : m_pBlock(NULL) {}
+    protected:
+        void *m_pBlock;
+    #endif
+    };
+
+    template class TAOCRYPT_DLL AlignedAllocator<word>;
+    typedef Block<word, AlignedAllocator<word> > AlignedWordBlock;
+#else
+    typedef WordBlock AlignedWordBlock;
+#endif
+
 
 template<typename T> inline
 const T& min(const T& a, const T& b)
@@ -196,8 +259,8 @@ private:
                                  const Integer& b);
     friend void PositiveDivide(Integer& remainder, Integer& quotient, const
                                Integer& dividend, const Integer& divisor);
-    WordBlock reg_;
-    Sign      sign_;
+    AlignedWordBlock reg_;
+    Sign             sign_;
 };
 
 inline bool operator==(const Integer& a, const Integer& b) 

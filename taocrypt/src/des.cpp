@@ -68,7 +68,7 @@ static const int bytebit[] = {
 };
 
 
-void DES::SetKey(const byte* key, uint32 length, CipherDir dir)
+void DES::SetKey(const byte* key, word32 length, CipherDir dir)
 {
     byte buffer[56+56+8];
     byte *const pc1m = buffer;                 /* place to modify pc1 into */
@@ -98,14 +98,14 @@ void DES::SetKey(const byte* key, uint32 length, CipherDir dir)
             }
         }
         /* Now convert to odd/even interleaved form for use in F */
-        k_[2*i] = ((uint32)ks[0] << 24)
-            | ((uint32)ks[2] << 16)
-            | ((uint32)ks[4] << 8)
-            | ((uint32)ks[6]);
-        k_[2*i + 1] = ((uint32)ks[1] << 24)
-            | ((uint32)ks[3] << 16)
-            | ((uint32)ks[5] << 8)
-            | ((uint32)ks[7]);
+        k_[2*i] = ((word32)ks[0] << 24)
+            | ((word32)ks[2] << 16)
+            | ((word32)ks[4] << 8)
+            | ((word32)ks[6]);
+        k_[2*i + 1] = ((word32)ks[1] << 24)
+            | ((word32)ks[3] << 16)
+            | ((word32)ks[5] << 8)
+            | ((word32)ks[7]);
     }
     
     // reverse key schedule order
@@ -117,9 +117,9 @@ void DES::SetKey(const byte* key, uint32 length, CipherDir dir)
    
 }
 
-static inline void IPERM(uint32& left, uint32& right)
+static inline void IPERM(word32& left, word32& right)
 {
-    uint32 work;
+    word32 work;
 
     right = rotlFixed(right, 4U);
     work = (left ^ right) & 0xf0f0f0f0;
@@ -139,9 +139,9 @@ static inline void IPERM(uint32& left, uint32& right)
     right ^= work;
 }
 
-static inline void FPERM(uint32& left, uint32& right)
+static inline void FPERM(word32& left, word32& right)
 {
-    uint32 work;
+    word32 work;
 
     right = rotrFixed(right, 1U);
     work = (left ^ right) & 0xaaaaaaaa;
@@ -161,7 +161,7 @@ static inline void FPERM(uint32& left, uint32& right)
     left = rotrFixed(left^work, 4U);
 }
 
-const uint32 Spbox[DES::BOXES][DES::BOX_SIZE] = {
+const word32 Spbox[DES::BOXES][DES::BOX_SIZE] = {
 {
 0x01010400,0x00000000,0x00010000,0x01010404,
 0x01010004,0x00010404,0x00000004,0x00010000,
@@ -302,14 +302,14 @@ const uint32 Spbox[DES::BOXES][DES::BOX_SIZE] = {
 
 
 
-void DES::RawProcessBlock(uint32& lIn, uint32& rIn) const
+void DES::RawProcessBlock(word32& lIn, word32& rIn) const
 {
-    uint32 l = lIn, r = rIn;
-    const uint32* kptr = k_;
+    word32 l = lIn, r = rIn;
+    const word32* kptr = k_;
 
     for (unsigned i=0; i<8; i++)
     {
-        uint32 work = rotrFixed(r, 4U) ^ kptr[4*i+0];
+        word32 work = rotrFixed(r, 4U) ^ kptr[4*i+0];
         l ^= Spbox[6][(work) & 0x3f]
           ^  Spbox[4][(work >> 8) & 0x3f]
           ^  Spbox[2][(work >> 16) & 0x3f]
@@ -336,7 +336,7 @@ void DES::RawProcessBlock(uint32& lIn, uint32& rIn) const
 }
 
 
-void DES_BASE::Process(byte* out, const byte* in, uint32 sz)
+void DES_BASE::Process(byte* out, const byte* in, word32 sz)
 {
     if (mode_ == ECB)
         ECB_Process(out, in, sz);
@@ -349,20 +349,20 @@ void DES_BASE::Process(byte* out, const byte* in, uint32 sz)
 
 
 
-typedef BlockGetAndPut<uint32, BigEndian> Block;
+typedef BlockGetAndPut<word32, BigEndian> Block;
 
 
 void DES::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out) const
 {
-    uint32 l,r;
+    word32 l,r;
     Block::Get(in)(l)(r);
     IPERM(l,r);
 
-    const uint32* kptr = k_;
+    const word32* kptr = k_;
 
     for (unsigned i = 0; i < 8; i++)
     {
-        uint32 work = rotrFixed(r, 4U) ^ kptr[4*i+0];
+        word32 work = rotrFixed(r, 4U) ^ kptr[4*i+0];
         l ^= Spbox[6][(work) & 0x3f]
           ^  Spbox[4][(work >> 8) & 0x3f]
           ^  Spbox[2][(work >> 16) & 0x3f]
@@ -390,7 +390,7 @@ void DES::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out) const
 }
 
 
-void DES_EDE2::SetKey(const byte* key, uint32 sz, CipherDir dir)
+void DES_EDE2::SetKey(const byte* key, word32 sz, CipherDir dir)
 {
     des1_.SetKey(key, sz, dir);
     des2_.SetKey(key + 8, sz, ReverseDir(dir));
@@ -400,7 +400,7 @@ void DES_EDE2::SetKey(const byte* key, uint32 sz, CipherDir dir)
 void DES_EDE2::ProcessAndXorBlock(const byte* in, const byte* xOr,
                                   byte* out) const
 {
-    uint32 l,r;
+    word32 l,r;
     Block::Get(in)(l)(r);
     IPERM(l,r);
     des1_.RawProcessBlock(l, r);
@@ -411,7 +411,7 @@ void DES_EDE2::ProcessAndXorBlock(const byte* in, const byte* xOr,
 }
 
 
-void DES_EDE3::SetKey(const byte* key, uint32 sz, CipherDir dir)
+void DES_EDE3::SetKey(const byte* key, word32 sz, CipherDir dir)
 {
     des1_.SetKey(key+(dir==ENCRYPTION?0:2*8), sz, dir);
     des2_.SetKey(key+8, sz, ReverseDir(dir));
@@ -421,7 +421,7 @@ void DES_EDE3::SetKey(const byte* key, uint32 sz, CipherDir dir)
 void DES_EDE3::ProcessAndXorBlock(const byte* in, const byte* xOr,
                                   byte* out) const
 {
-    uint32 l,r;
+    word32 l,r;
     Block::Get(in)(l)(r);
     IPERM(l,r);
     des1_.RawProcessBlock(l, r);
