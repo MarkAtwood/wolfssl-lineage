@@ -2805,4 +2805,6 @@ const Integer& MontgomeryRepresentation::MultiplicativeInverse(const Integer &a)
 	return result;
 }
 
+template class AbstractRing<Integer>;
+
 NAMESPACE_END

@@ -1,7 +1,7 @@
 Compilation Copyright (c) 1995-2001 by Wei Dai.  All rights reserved.
 This copyright applies only to this particular software distribution 
 package, and does not imply a copyright on any particular file in 
-the library.
+the package.
 
 The following files are copyrighted by their respective original authors:
 

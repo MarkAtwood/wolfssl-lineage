@@ -95,4 +95,7 @@ GFP2Element XTR_Exponentiate(const GFP2Element &b, const Integer &e, const Integ
 	return gfp2.ConvertOut(S[1]);
 }
 
+template class AbstractRing<GFP2Element>;
+template class AbstractGroup<GFP2Element>; // not sure this is needed
+
 NAMESPACE_END
