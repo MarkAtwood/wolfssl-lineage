@@ -340,7 +340,7 @@ void SSL::deriveKeys()
 
     opaque sha_output[SHA_LEN];
 
-    //size_t        secretLen = connection_.secret_len_; // NEWTAO master always 48
+    //size_t        secretLen = connection_.secret_len_; // NEWTAO always 48
     size_t        secretLen = SECRET_LEN;
     output_buffer md5_input(secretLen + SHA_LEN);
     output_buffer sha_input(KEY_PREFIX + secretLen + 2 * RAN_LEN);
@@ -522,11 +522,19 @@ const byte* SSL::get_macSecret(bool verify)
 }
 
 
+static const char handshake_order[] = "Out of order HandShake Message!";
+
+static void order_error()
+{
+    throw Error(handshake_order, out_of_order);
+}
+
+
 void SSL::verifyState(const RecordLayerHeader& rlHeader)
 {
     if (states_.recordLayer_ == recordNotReady || 
             (rlHeader.type_ == application_data &&        // data and handshake
-             states_.handshakeLayer_ != handshakeReady) ) // isn't complete yet
+             states_.handshakeLayer_ != handShakeReady) ) // isn't complete yet
               throw Error("RecordLayer read after fatal error!", record_layer);
 }
 
@@ -543,11 +551,21 @@ void SSL::verifyState(const HandShakeHeader& hsHeader)
 }
 
 
-static const char handshake_order[] = "Out of order HandShake Message!";
-
-static void order_error()
+void SSL::verifyState(ClientState cs)
 {
-    throw Error(handshake_order, out_of_order);
+    if (states_.clientState_ != cs) order_error();
+}
+
+
+void SSL::verifyState(ServerState ss)
+{
+    if (states_.serverState_ != ss) order_error();
+}
+
+
+void SSL::verfiyHandShakeComplete()
+{
+    if (states_.handshakeLayer_ != handShakeReady) order_error();
 }
 
 

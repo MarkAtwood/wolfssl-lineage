@@ -48,7 +48,7 @@ enum HandShakeState {
     handShakeNotReady = 0,      // fatal error, no more processing
     preHandshake,               // initial state
     inHandshake,                // handshake started
-    handshakeReady              // handshake done
+    handShakeReady              // handshake done
 };
 
 
@@ -229,6 +229,9 @@ public:
     size_t bufferedData();
     void   verifyState(const RecordLayerHeader&);
     void   verifyState(const HandShakeHeader&);
+    void   verifyState(ClientState);
+    void   verifyState(ServerState);
+    void   verfiyHandShakeComplete();
     void   matchSuite(const opaque*, size_t length);
     void   restoreHashes(const MD5& md5, const SHA& sha) 
                         { md5HandShake_ = md5; shaHandShake_ = sha; }

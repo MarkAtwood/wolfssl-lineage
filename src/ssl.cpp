@@ -62,6 +62,7 @@ int SSL_connect(SSL* ssl)
         ssl->flushBuffer();
         processReply(*ssl);
 
+        ssl->verifyState(serverFinishedComplete);
         return SSL_SUCCESS;
     }
     catch (Error& err) {

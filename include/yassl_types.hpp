@@ -31,10 +31,8 @@
 
 
 typedef unsigned char  uint8;
-// depedent on machine
 typedef unsigned short uint16;
 typedef unsigned int   uint32;
-// no depedency
 typedef uint8          uint24[3];
 typedef uint32         uint64[2];
 

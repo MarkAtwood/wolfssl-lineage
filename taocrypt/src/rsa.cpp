@@ -31,7 +31,7 @@ namespace TaoCrypt {
 
 Integer RSA_PublicKey::ApplyFunction(const Integer& x) const
 {
-	return a_exp_b_mod_c(x, e_, n_);
+    return a_exp_b_mod_c(x, e_, n_);
 }
 
 
@@ -51,18 +51,18 @@ void RSA_PublicKey::Initialize(Sink& sink)
 Integer RSA_PrivateKey::CalculateInverse(RandomNumberGenerator& rng,
                                          const Integer& x) const
 {
-	ModularArithmetic modn(n_);
-	
+    ModularArithmetic modn(n_);
+
     Integer r(rng, Integer::One(), n_ - Integer::One());
-	Integer re = modn.Exponentiate(r, e_);
-	re = modn.Multiply(re, x);			// blind
-	// here we follow the notation of PKCS #1 and let u=q inverse mod p
-	// but in ModRoot, u=p inverse mod q, so we reverse the order of p and q
-	Integer y = ModularRoot(re, dq_, dp_, q_, p_, u_);
-	y = modn.Divide(y, r);				// unblind
-	if (modn.Exponentiate(y, e_) != x)		// check
+    Integer re = modn.Exponentiate(r, e_);
+    re = modn.Multiply(re, x);			// blind
+    // here we follow the notation of PKCS #1 and let u=q inverse mod p
+    // but in ModRoot, u=p inverse mod q, so we reverse the order of p and q
+    Integer y = ModularRoot(re, dq_, dp_, q_, p_, u_);
+    y = modn.Divide(y, r);				// unblind
+    if (modn.Exponentiate(y, e_) != x)		// check
         throw std::runtime_error("error during priv key operation");
-	return y;
+    return y;
 }
 
 
@@ -82,56 +82,56 @@ void RSA_PrivateKey::Initialize(Sink& sink)
 void RSA_BlockType2::Pad(const byte *input, size_t inputLen, byte *pkcsBlock,
                          size_t pkcsBlockLen, RandomNumberGenerator& rng) const
 {
-	// convert from bit length to byte length
-	if (pkcsBlockLen % 8 != 0)
-	{
-		pkcsBlock[0] = 0;
-		pkcsBlock++;
-	}
-	pkcsBlockLen /= 8;
+    // convert from bit length to byte length
+    if (pkcsBlockLen % 8 != 0)
+    {
+        pkcsBlock[0] = 0;
+        pkcsBlock++;
+    }
+    pkcsBlockLen /= 8;
 
-	pkcsBlock[0] = 2;  // block type 2
+    pkcsBlock[0] = 2;  // block type 2
 
-	// pad with non-zero random bytes
+    // pad with non-zero random bytes
     size_t padLen = pkcsBlockLen - inputLen - 1;
     rng.GenerateBlock(&pkcsBlock[1], padLen);
     for (size_t i = 1; i < padLen; i++)
         if (pkcsBlock[i] == 0) pkcsBlock[i] = 0x01;
     
-	pkcsBlock[pkcsBlockLen-inputLen-1] = 0;     // separator
-	memcpy(pkcsBlock+pkcsBlockLen-inputLen, input, inputLen);
+    pkcsBlock[pkcsBlockLen-inputLen-1] = 0;     // separator
+    memcpy(pkcsBlock+pkcsBlockLen-inputLen, input, inputLen);
 }
 
 size_t RSA_BlockType2::UnPad(const byte *pkcsBlock, unsigned int pkcsBlockLen,
                            byte *output) const
 {
-	bool invalid = false;
-	unsigned int maxOutputLen = SaturatingSubtract(pkcsBlockLen / 8, 10U);
+    bool invalid = false;
+    unsigned int maxOutputLen = SaturatingSubtract(pkcsBlockLen / 8, 10U);
 
-	// convert from bit length to byte length
-	if (pkcsBlockLen % 8 != 0)
-	{
-		invalid = (pkcsBlock[0] != 0) || invalid;
-		pkcsBlock++;
-	}
-	pkcsBlockLen /= 8;
+    // convert from bit length to byte length
+    if (pkcsBlockLen % 8 != 0)
+    {
+        invalid = (pkcsBlock[0] != 0) || invalid;
+        pkcsBlock++;
+    }
+    pkcsBlockLen /= 8;
 
-	// Require block type 2.
-	invalid = (pkcsBlock[0] != 2) || invalid;
+    // Require block type 2.
+    invalid = (pkcsBlock[0] != 2) || invalid;
 
-	// skip past the padding until we find the separator
-	unsigned i=1;
-	while (i<pkcsBlockLen && pkcsBlock[i++]) { // null body
-		}
-	assert(i==pkcsBlockLen || pkcsBlock[i-1]==0);
+    // skip past the padding until we find the separator
+    unsigned i=1;
+    while (i<pkcsBlockLen && pkcsBlock[i++]) { // null body
+        }
+    assert(i==pkcsBlockLen || pkcsBlock[i-1]==0);
 
-	unsigned int outputLen = pkcsBlockLen - i;
-	invalid = (outputLen > maxOutputLen) || invalid;
+    unsigned int outputLen = pkcsBlockLen - i;
+    invalid = (outputLen > maxOutputLen) || invalid;
 
-	if (invalid)
+    if (invalid)
         throw std::runtime_error("invalid block type 2 unpad");
 
-	memcpy (output, pkcsBlock+i, outputLen);
+    memcpy (output, pkcsBlock+i, outputLen);
     return outputLen;
 }
 
@@ -177,7 +177,7 @@ size_t RSA_BlockType1::UnPad(const byte* pkcsBlock, size_t pkcsBlockLen,
     // skip past the padding until we find the separator
     unsigned i=1;
     while (i<pkcsBlockLen && pkcsBlock[i++]) { // null body
-		}
+        }
     assert(i==pkcsBlockLen || pkcsBlock[i-1]==0);
 
     unsigned int outputLen = pkcsBlockLen - i;

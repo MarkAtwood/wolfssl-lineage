@@ -38,12 +38,12 @@ class PK_Lengths {
 public:
     explicit PK_Lengths(const Integer& i) : image_(i) {}
 
-	size_t PaddedBlockBitLength()  const {return image_.BitCount() - 1;}
+    size_t PaddedBlockBitLength()  const {return image_.BitCount() - 1;}
     size_t PaddedBlockByteLength() const 
                 {return BitsToBytes(PaddedBlockBitLength());}
 
-	size_t FixedCiphertextLength()   const {return image_.ByteCount();}
-	size_t FixedMaxPlaintextLength() const 
+    size_t FixedCiphertextLength()   const {return image_.ByteCount();}
+    size_t FixedMaxPlaintextLength() const 
                 {return SaturatingSubtract(PaddedBlockBitLength() / 8, 10U); }
 };
 
@@ -56,16 +56,16 @@ public:
     RSA_PublicKey() {}
     explicit RSA_PublicKey(Sink&);
 
-	void Initialize(const Integer& n, const Integer& e) {n_ = n; e_ = e;}
+    void Initialize(const Integer& n, const Integer& e) {n_ = n; e_ = e;}
     void Initialize(Sink&);
 
-	Integer ApplyFunction(const Integer& x) const;
+    Integer ApplyFunction(const Integer& x) const;
 
-	const Integer& GetModulus() const {return n_;}
-	const Integer& GetPublicExponent() const {return e_;}
+    const Integer& GetModulus() const {return n_;}
+    const Integer& GetPublicExponent() const {return e_;}
 
-	void SetModulus(const Integer& n) {n_ = n;}
-	void SetPublicExponent(const Integer& e) {e_ = e;}
+    void SetModulus(const Integer& n) {n_ = n;}
+    void SetPublicExponent(const Integer& e) {e_ = e;}
 
     size_t FixedCiphertextLength()
     {
@@ -85,28 +85,28 @@ public:
     RSA_PrivateKey() {}
     explicit RSA_PrivateKey(Sink&);
 
-	void Initialize(const Integer& n,  const Integer& e, const Integer& d,
+    void Initialize(const Integer& n,  const Integer& e, const Integer& d,
                     const Integer& p,  const Integer& q, const Integer& dp, 
                     const Integer& dq, const Integer& u)
-		{n_ = n; e_ = e; d_ = d; p_ = p; q_ = q; dp_ = dp; dq_ = dq; u_ = u;}
+        {n_ = n; e_ = e; d_ = d; p_ = p; q_ = q; dp_ = dp; dq_ = dq; u_ = u;}
     void Initialize(Sink&);
 
-	Integer CalculateInverse(RandomNumberGenerator&, const Integer&) const;
+    Integer CalculateInverse(RandomNumberGenerator&, const Integer&) const;
 
-	const Integer& GetPrime1() const {return p_;}
-	const Integer& GetPrime2() const {return q_;}
-	const Integer& GetPrivateExponent() const {return d_;}
-	const Integer& GetModPrime1PrivateExponent() const {return dp_;}
-	const Integer& GetModPrime2PrivateExponent() const {return dq_;}
-	const Integer& GetMultiplicativeInverseOfPrime2ModPrime1() const 
+    const Integer& GetPrime1() const {return p_;}
+    const Integer& GetPrime2() const {return q_;}
+    const Integer& GetPrivateExponent() const {return d_;}
+    const Integer& GetModPrime1PrivateExponent() const {return dp_;}
+    const Integer& GetModPrime2PrivateExponent() const {return dq_;}
+    const Integer& GetMultiplicativeInverseOfPrime2ModPrime1() const 
                    {return u_;}
 
-	void SetPrime1(const Integer& p) {p_ = p;}
-	void SetPrime2(const Integer& q) {q_ = q;}
-	void SetPrivateExponent(const Integer& d) {d_ = d;}
-	void SetModPrime1PrivateExponent(const Integer& dp) {dp_ = dp;}
-	void SetModPrime2PrivateExponent(const Integer& dq) {dq_ = dq;}
-	void SetMultiplicativeInverseOfPrime2ModPrime1(const Integer& u) {u_ = u;}
+    void SetPrime1(const Integer& p) {p_ = p;}
+    void SetPrime2(const Integer& q) {q_ = q;}
+    void SetPrivateExponent(const Integer& d) {d_ = d;}
+    void SetModPrime1PrivateExponent(const Integer& dp) {dp_ = dp;}
+    void SetModPrime2PrivateExponent(const Integer& dq) {dq_ = dq;}
+    void SetMultiplicativeInverseOfPrime2ModPrime1(const Integer& u) {u_ = u;}
 };
 
 
@@ -177,13 +177,13 @@ size_t RSA_Decryptor<Pad>::Decrypt(const byte* cipher, size_t sz, byte* plain,
     if (sz != lengths.FixedCiphertextLength())
         throw std::runtime_error("bad cipher text size");
 
-	ByteBlock paddedBlock(lengths.PaddedBlockByteLength());
-	Integer x = key_.CalculateInverse(rng, Integer(cipher,
+    ByteBlock paddedBlock(lengths.PaddedBlockByteLength());
+    Integer x = key_.CalculateInverse(rng, Integer(cipher,
                                       lengths.FixedCiphertextLength()).Ref());
-	if (x.ByteCount() > paddedBlock.size())
-		x = Integer::Zero();	// don't return false, prevents timing attack
-	x.Encode(paddedBlock.get_buffer(), paddedBlock.size());
-	return padding_.UnPad(paddedBlock.get_buffer(),
+    if (x.ByteCount() > paddedBlock.size())
+        x = Integer::Zero();	// don't return false, prevents timing attack
+    x.Encode(paddedBlock.get_buffer(), paddedBlock.size());
+    return padding_.UnPad(paddedBlock.get_buffer(),
                           lengths.PaddedBlockBitLength(), plain);
 }
 

@@ -1,4 +1,4 @@
-// main.cpp
+// test.cpp
 
 #include <string.h>
 #include <stdio.h>
@@ -8,33 +8,48 @@
 #include "hmac.hpp"
 #include "arc4.hpp"
 #include "des.hpp"
-#include "integer.hpp"
-#include "file.hpp"
 #include "rsa.hpp"
 #include "aes.hpp"
 #include "asn.hpp"
-#include "random.hpp"
 #include "dh.hpp"
 #include "coding.hpp"
+#include "random.hpp"
 
 
+using TaoCrypt::byte;
 using TaoCrypt::SHA;
 using TaoCrypt::MD5;
-using TaoCrypt::byte;
 using TaoCrypt::HMAC;
 using TaoCrypt::ARC4;
-using TaoCrypt::DES;
-using TaoCrypt::ENCRYPTION;
-using TaoCrypt::DECRYPTION;
+using TaoCrypt::DES_EDE3_CBC_Encryption;
+using TaoCrypt::DES_EDE3_CBC_Decryption;
+using TaoCrypt::DES_CBC_Encryption;
+using TaoCrypt::DES_CBC_Decryption;
+using TaoCrypt::DES_ECB_Encryption;
+using TaoCrypt::DES_ECB_Decryption;
+using TaoCrypt::AES_CBC_Encryption;
+using TaoCrypt::AES_CBC_Decryption;
+using TaoCrypt::AES_ECB_Encryption;
+using TaoCrypt::AES_ECB_Decryption;
+using TaoCrypt::RSA_PrivateKey;
+using TaoCrypt::RSA_PublicKey;
+using TaoCrypt::RSAES_Encryptor;
+using TaoCrypt::RSAES_Decryptor;
+using TaoCrypt::Sink;
+using TaoCrypt::FileSource;
+using TaoCrypt::HexDecoder;
+using TaoCrypt::CertDecoder;
+using TaoCrypt::DH;
 
 
-struct hashTest {
-    byte*  message_;
-    byte*  digest_; 
-    size_t len_;
+struct testVector {
+    byte*  input_;
+    byte*  output_; 
+    size_t inLen_;
+    size_t outLen_;
 
-    hashTest(const char* m, const char* d) : message_((byte*)m),
-             digest_((byte*)d), len_(strlen(m)) {}
+    testVector(const char* in, const char* out) : input_((byte*)in),
+               output_((byte*)out), inLen_(strlen(in)), outLen_(strlen(out)) {}
 };
 
 void file_test(int, char**);
@@ -44,9 +59,11 @@ int  hmac_test();
 int  arc4_test();
 int  des_test();
 int  aes_test();
-int  int_test();
 int  rsa_test();
 int  dh_test();
+
+TaoCrypt::RandomNumberGenerator rng;
+
 
 int main(int argc, char** argv)
 {
@@ -77,114 +94,23 @@ int main(int argc, char** argv)
             printf("DES  test failed!\n");
         else
             printf("DES  test passed!\n");
+
         if (aes_test())
             printf("AES  test failed!\n");
         else
             printf("AES  test passed!\n");
-        if (int_test())
-            printf("INT  test failed!\n");
-        else
-            printf("INT  test passed!\n");
+
         if (rsa_test())
-            printf("RSA test failed!\n");
+            printf("RSA  test failed!\n");
         else
-            printf("RSA test passed!\n");
+            printf("RSA  test passed!\n");
+
         if (dh_test())
-            printf("DH test failed!\n");
+            printf("DH   test failed!\n");
         else
-            printf("DH test passed!\n");
+            printf("DH   test passed!\n");
     }
 
-    return 0;
-}
-
-TaoCrypt::RandomNumberGenerator rng;
-
-class BadHeader {};
-
-void ReadBERHeader(TaoCrypt::Sink& sink)
-{
-    byte b = sink.next();
-    if (b != 0x30) throw BadHeader();  // sequence
-
-    b = sink.next();
-    if (b >= 0x80) {        // total length
-        b = b >> 6;
-
-        for (int i = 0; i < b; i++)
-            sink.next();
-    }
-    else
-        sink.next();
-
-    b = sink.next();
-    if (b != 0x02) throw BadHeader();  // version in INT
-
-    b = sink.next();
-    if (b != 0x01) throw BadHeader();  // length not 1
-
-    b = sink.next();
-    if (b != 0x00 && b != 0x01) throw BadHeader(); // version incorrect
-}
-
-
-int dh_test()
-{
-    std::string name = "c:\\src\\yassl\\cryptopp51\\dh1024.dat";
-	TaoCrypt::Sink sink;
-    TaoCrypt::FileSource(name, sink);
-    TaoCrypt::HexDecoder hd(sink);
-
-    TaoCrypt::DH dh(sink);
-
-    byte pub[128];
-    byte priv[128];
-    byte agree[128];
-    byte pub2[128];
-    byte priv2[128];
-    byte agree2[128];
-
-    TaoCrypt::DH dh2(dh);
-
-    dh.GenerateKeyPair(rng, priv, pub);
-    dh2.GenerateKeyPair(rng, priv2, pub2);
-    dh.Agree(agree, priv, pub2); 
-    dh2.Agree(agree2, priv2, pub);
-
-    int cmp;
-    cmp = memcmp(agree, agree2, dh.GetByteLength());
-
-
-    return 0;
-}
-
-
-int rsa_test()
-{
-    std::string name = "c:\\src\\yassl\\certs\\key.der";
-	TaoCrypt::Sink sink;
-    TaoCrypt::FileSource(name, sink);
-    TaoCrypt::RSA_PrivateKey priv(sink);
-
-    TaoCrypt::RSAES_Encryptor enc(priv);
-    byte message[32] = "this is my message to verify";
-    byte cipher[128];
-    enc.Encrypt(message, 28, cipher, rng);
-
-    TaoCrypt::RSAES_Decryptor dec(priv);
-    byte plain[128];
-    dec.Decrypt(cipher, 64, plain, rng);
-
-    dec.SSL_Sign(message, 28, cipher, rng);
-    bool verify;
-    verify = enc.SSL_Verify(message, 28, cipher);
-
-
-    name = "c:\\src\\yassl\\certs\\cert.der";
-	TaoCrypt::Sink sink2;
-    TaoCrypt::FileSource(name, sink2);
-    TaoCrypt::RSA_PublicKey pub(sink2);
- 
     return 0;
 }
 
@@ -192,9 +118,9 @@ int rsa_test()
 void file_test(int argc, char** argv)
 {
     FILE* f;
-    int   i = 0;
+    int   i(0);
     MD5   md5;
-    byte  buf[1000];
+    byte  buf[1024];
     byte  md5sum[MD5::DIGEST_SIZE];
     
     if( !( f = fopen( argv[1], "rb" ) )) {
@@ -206,7 +132,7 @@ void file_test(int argc, char** argv)
     
     md5.Final(md5sum);
 
-    for(int j = 0; j < MD5::DIGEST_SIZE; j++ ) 
+    for(int j = 0; j < MD5::DIGEST_SIZE; ++j ) 
         printf( "%02x", md5sum[j] );
    
     printf("  %s\n", argv[1]);
@@ -218,31 +144,31 @@ int sha_test()
     SHA  sha;
     byte hash[SHA::DIGEST_SIZE];
 
-    hashTest test_sha[] =
+    testVector test_sha[] =
     {
-        hashTest("abc", 
+        testVector("abc", 
                  "\xA9\x99\x3E\x36\x47\x06\x81\x6A\xBA\x3E\x25\x71\x78\x50\xC2"
                  "\x6C\x9C\xD0\xD8\x9D"),
-        hashTest("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
+        testVector("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
                  "\x84\x98\x3E\x44\x1C\x3B\xD2\x6E\xBA\xAE\x4A\xA1\xF9\x51\x29"
                  "\xE5\xE5\x46\x70\xF1"),
-	    hashTest("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        testVector("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
                  "aaaa", 
                  "\x00\x98\xBA\x82\x4B\x5C\x16\x42\x7B\xD7\xA1\x12\x2A\x5A\x44"
                  "\x2A\x25\xEC\x64\x4D"),
-        hashTest("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        testVector("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
                  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
                  "aaaaaaaa",
                  "\xAD\x5B\x3F\xDB\xCB\x52\x67\x78\xC2\x83\x9D\x2F\x15\x1E\xA7"
                  "\x53\x99\x5E\x26\xA0")  
     };
 
-    int times = sizeof(test_sha) / sizeof(hashTest);
-    for (int i = 0; i < times; i++) {
-        sha.Update(test_sha[i].message_, test_sha[i].len_);
+    int times( sizeof(test_sha) / sizeof(testVector) );
+    for (int i = 0; i < times; ++i) {
+        sha.Update(test_sha[i].input_, test_sha[i].inLen_);
         sha.Final(hash);
 
-        if (memcmp(hash, test_sha[i].digest_, SHA::DIGEST_SIZE) != 0)
+        if (memcmp(hash, test_sha[i].output_, SHA::DIGEST_SIZE) != 0)
             return -1 - i;
     }
 
@@ -255,33 +181,33 @@ int md5_test()
     MD5  md5;
     byte hash[MD5::DIGEST_SIZE];
 
-    hashTest test_md5[] =
+    testVector test_md5[] =
     {
-        hashTest("abc", 
+        testVector("abc", 
                  "\x90\x01\x50\x98\x3c\xd2\x4f\xb0\xd6\x96\x3f\x7d\x28\xe1\x7f"
                  "\x72"),
-        hashTest("message digest", 
+        testVector("message digest", 
                  "\xf9\x6b\x69\x7d\x7c\xb7\x93\x8d\x52\x5a\x2f\x31\xaa\xf1\x61"
                  "\xd0"),
-        hashTest("abcdefghijklmnopqrstuvwxyz",
+        testVector("abcdefghijklmnopqrstuvwxyz",
                  "\xc3\xfc\xd3\xd7\x61\x92\xe4\x00\x7d\xfb\x49\x6c\xca\x67\xe1"
                  "\x3b"),
-        hashTest("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567"
+        testVector("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567"
                  "89",
                  "\xd1\x74\xab\x98\xd2\x77\xd9\xf5\xa5\x61\x1c\x2c\x9f\x41\x9d"
                  "\x9f"),
-        hashTest("123456789012345678901234567890123456789012345678901234567890"
+        testVector("123456789012345678901234567890123456789012345678901234567890"
                  "12345678901234567890",
                  "\x57\xed\xf4\xa2\x2b\xe3\xc9\x55\xac\x49\xda\x2e\x21\x07\xb6"
                  "\x7a")
     };
 
-    int times = sizeof(test_md5) / sizeof(hashTest);
-    for (int i = 0; i < times; i++) {
-        md5.Update(test_md5[i].message_, test_md5[i].len_);
+    int times( sizeof(test_md5) / sizeof(testVector) );
+    for (int i = 0; i < times; ++i) {
+        md5.Update(test_md5[i].input_, test_md5[i].inLen_);
         md5.Final(hash);
 
-        if (memcmp(hash, test_md5[i].digest_, MD5::DIGEST_SIZE) != 0)
+        if (memcmp(hash, test_md5[i].output_, MD5::DIGEST_SIZE) != 0)
             return -10 - i;
     }
 
@@ -292,19 +218,40 @@ int md5_test()
 int hmac_test()
 {
     HMAC<MD5> hmacMD5;
-    byte hash[SHA::DIGEST_SIZE];  // biggest for both tests
-    byte message[] = "this is my message to verify";
+    byte hash[MD5::DIGEST_SIZE];
 
-    hmacMD5.SetKey(message, 8);
-    hmacMD5.Update(message, 28);
-    hmacMD5.Final(hash);
+    const char* keys[]=
+    {
+        "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b",
+        "Jefe",
+        "\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA"
+    };
 
+    testVector test_hmacMD5[] = 
+    {
+        testVector("Hi There",
+                 "\x92\x94\x72\x7a\x36\x38\xbb\x1c\x13\xf4\x8e\xf8\x15\x8b\xfc"
+                 "\x9d"),
+        testVector("what do ya want for nothing?",
+                 "\x75\x0c\x78\x3e\x6a\xb0\xb5\x03\xea\xa8\x6e\x31\x0a\x5d\xb7"
+                 "\x38"),
+        testVector("\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD"
+                 "\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD"
+                 "\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD"
+                 "\xDD\xDD\xDD\xDD\xDD",
+                 "\x56\xbe\x34\x52\x1d\x14\x4c\x88\xdb\xb8\xc7\x33\xf0\xe8\xb3"
+                 "\xf6")
+    };
 
-    HMAC<SHA> hmacSHA;
+    int times( sizeof(test_hmacMD5) / sizeof(testVector) );
+    for (int i = 0; i < times; ++i) {
+        hmacMD5.SetKey((byte*)keys[i], strlen(keys[i]));
+        hmacMD5.Update(test_hmacMD5[i].input_, test_hmacMD5[i].inLen_);
+        hmacMD5.Final(hash);
 
-    hmacSHA.SetKey(message, 8);
-    hmacSHA.Update(message, 28);
-    hmacSHA.Final(hash);
+        if (memcmp(hash, test_hmacMD5[i].output_, MD5::DIGEST_SIZE) != 0)
+            return -20 - i;
+    }
 
     return 0;
 }
@@ -312,19 +259,47 @@ int hmac_test()
 
 int arc4_test()
 {
-    ARC4::Encryption enc;
-    ARC4::Decryption dec;
+    byte cipher[16];
+    byte plain[16];
 
-    byte key[] = "todds first key";
-    byte msg[] = "this is the first message to test";
-    byte cipher[24];
-    byte plain [24];
+	const char* keys[] = 
+    {           
+        "\x01\x23\x45\x67\x89\xab\xcd\xef",
+        "\x01\x23\x45\x67\x89\xab\xcd\xef",
+        "\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\xef\x01\x23\x45"
+    };
 
-    enc.SetKey(key, 8);
-    dec.SetKey(key, 8);
+    testVector test_arc4[] =
+    {
+        testVector("\x01\x23\x45\x67\x89\xab\xcd\xef",
+                   "\x75\xb7\x87\x80\x99\xe0\xc5\x96"),
+        testVector("\x00\x00\x00\x00\x00\x00\x00\x00",
+                   "\x74\x94\xc2\xe7\x10\x4b\x08\x79"),
+        testVector("\x00\x00\x00\x00\x00\x00\x00\x00",
+                   "\xde\x18\x89\x41\xa3\x37\x5d\x3a"),
+        testVector("\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+                   "\xd6\xa1\x41\xa7\xec\x3c\x38\xdf\xbd\x61")
+    };
 
-    enc.Process(cipher, msg, 24);
-    dec.Process(plain, cipher, 24);
+
+    int times( sizeof(test_arc4) / sizeof(testVector) );
+    for (int i = 0; i < times; ++i) {
+        ARC4::Encryption enc;
+        ARC4::Decryption dec;
+
+        enc.SetKey((byte*)keys[i], strlen(keys[i]));
+        dec.SetKey((byte*)keys[i], strlen(keys[i]));
+
+        enc.Process(cipher, test_arc4[i].input_, test_arc4[i].outLen_);
+        dec.Process(plain,  cipher, test_arc4[i].outLen_);
+
+        if (memcmp(plain, test_arc4[i].input_, test_arc4[i].outLen_))
+            return -30 - i;
+
+        if (memcmp(cipher, test_arc4[i].output_, test_arc4[i].outLen_))
+            return -40 - i;
+    }
 
     return 0;
 }
@@ -332,26 +307,92 @@ int arc4_test()
 
 int des_test()
 {
-    TaoCrypt::DES_EDE3_CBC_Encryption enc;
-    TaoCrypt::DES_EDE3_CBC_Decryption dec;
+    //ECB mode
+    DES_ECB_Encryption enc;
+    DES_ECB_Decryption dec;
 
-    //TaoCrypt::DES_EDE2_CBC_Encryption enc;
-    //TaoCrypt::DES_EDE2_CBC_Decryption dec;
+    const byte key[] = { 0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef };
+    const byte iv[] =  { 0x12,0x34,0x56,0x78,0x90,0xab,0xcd,0xef };
 
-    //TaoCrypt::DES_CBC_Encryption enc;
-    //TaoCrypt::DES_CBC_Decryption dec;
-
-    byte key[] = "todds first key with extra stuff";
-    byte msg[] = "this is the first message to test";
-    byte iv[]  = "12345678";
+    const char* vector = "Now is the time for all ";  // strlen == 24
+    byte plain[24];
     byte cipher[24];
-    byte plain [24];
 
-    enc.SetKey(key, 24, iv);
-    dec.SetKey(key, 24, iv);
+    enc.SetKey(key, sizeof(key));
+    enc.Process(cipher, (byte*)vector, strlen(vector));
+    dec.SetKey(key, sizeof(key));
+    dec.Process(plain, cipher, sizeof(cipher));
 
-    enc.Process(cipher, msg, 24);
-    dec.Process(plain, cipher, 24);
+    if (memcmp(plain, vector, sizeof(plain)))
+        return -50;
+
+    const byte verify1[] = 
+    {
+        0x3f,0xa4,0x0e,0x8a,0x98,0x4d,0x48,0x15,
+        0x6a,0x27,0x17,0x87,0xab,0x88,0x83,0xf9,
+        0x89,0x3d,0x51,0xec,0x4b,0x56,0x3b,0x53
+    };
+
+    if (memcmp(cipher, verify1, sizeof(cipher)))
+        return -51;
+
+    // CBC mode
+    DES_CBC_Encryption enc2;
+    DES_CBC_Decryption dec2;
+
+    enc2.SetKey(key, sizeof(key), iv);
+    enc2.Process(cipher, (byte*)vector, strlen(vector));
+    dec2.SetKey(key, sizeof(key), iv);
+    dec2.Process(plain, cipher, sizeof(cipher));
+
+    if (memcmp(plain, vector, sizeof(plain)))
+        return -52;
+
+    const byte verify2[] = 
+    {
+        0xe5,0xc7,0xcd,0xde,0x87,0x2b,0xf2,0x7c,
+        0x43,0xe9,0x34,0x00,0x8c,0x38,0x9c,0x0f,
+        0x68,0x37,0x88,0x49,0x9a,0x7c,0x05,0xf6
+    };
+
+    if (memcmp(cipher, verify2, sizeof(cipher)))
+        return -53;
+
+    // EDE3 CBC mode
+    DES_EDE3_CBC_Encryption enc3;
+    DES_EDE3_CBC_Decryption dec3;
+
+	const byte key3[] = 
+    {
+        0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef,
+        0xfe,0xde,0xba,0x98,0x76,0x54,0x32,0x10,
+        0x89,0xab,0xcd,0xef,0x01,0x23,0x45,0x67
+    };
+	const byte iv3[] = 
+    {
+        0x12,0x34,0x56,0x78,0x90,0xab,0xcd,0xef,
+        0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,
+        0x11,0x21,0x31,0x41,0x51,0x61,0x71,0x81
+        
+    };
+
+    enc3.SetKey(key3, sizeof(key3), iv3);
+    enc3.Process(cipher, (byte*)vector, strlen(vector));
+    dec3.SetKey(key3, sizeof(key3), iv3);
+    dec3.Process(plain, cipher, sizeof(cipher));
+
+    if (memcmp(plain, vector, sizeof(plain)))
+        return -54;
+
+    const byte verify3[] = 
+    {
+        0x43,0xa0,0x29,0x7e,0xd1,0x84,0xf8,0x0e,
+        0x89,0x64,0x84,0x32,0x12,0xd5,0x08,0x98,
+        0x18,0x94,0x15,0x74,0x87,0x12,0x7d,0xb0
+    };
+
+    if (memcmp(cipher, verify3, sizeof(cipher)))
+        return -55;
 
     return 0;
 }
@@ -359,38 +400,121 @@ int des_test()
 
 int aes_test()
 {
-    TaoCrypt::AES_CBC_Encryption enc;
-    TaoCrypt::AES_CBC_Decryption dec;
+    AES_CBC_Encryption enc;
+    AES_CBC_Decryption dec;
+    const int bs(TaoCrypt::AES::BLOCK_SIZE);
 
-    byte key[] = "todds first key with extra stuff";
-    byte msg[] = "this is the first message to test";
+    byte key[] = "0123456789abcdef";
     byte iv[]  = "1234567890abcdef";
-    byte cipher[24];
-    byte plain [24];
+    byte msg[] = "now is the time ";
+    byte cipher[bs];
+    byte plain [bs];
 
-    enc.SetKey(key, 24, iv);
-    dec.SetKey(key, 24, iv);
+    enc.SetKey(key, bs, iv);
+    dec.SetKey(key, bs, iv);
 
-    enc.Process(cipher, msg, 16);
-    dec.Process(plain, cipher, 16);
+    enc.Process(cipher, msg, bs);
+    dec.Process(plain, cipher, bs);
 
+    if (memcmp(plain, msg, bs))
+        return -60;
+
+    const byte verify[] = 
+    {
+        0x95,0x94,0x92,0x57,0x5f,0x42,0x81,0x53,
+        0x2c,0xcc,0x9d,0x46,0x77,0xa2,0x33,0xcb
+    };
+
+    if (memcmp(cipher, verify, bs))
+        return -61;
+
+    AES_ECB_Encryption enc2;
+    AES_ECB_Decryption dec2;
+
+    enc2.SetKey(key, bs, iv);
+    dec2.SetKey(key, bs, iv);
+
+    enc2.Process(cipher, msg, bs);
+    dec2.Process(plain, cipher, bs);
+
+    if (memcmp(plain, msg, bs))
+        return -62;
+
+    const byte verify2[] = 
+    {
+        0xd0,0xc9,0xd9,0xc9,0x40,0xe8,0x97,0xb6,
+        0xc8,0x8c,0x33,0x3b,0xb5,0x8f,0x85,0xd1
+    };
+
+    if (memcmp(cipher, verify2, bs))
+        return -63;
 
     return 0;
 }
 
 
-int int_test()
+int rsa_test()
 {
-    using TaoCrypt::Integer;
-    Integer myInt(4);
-    Integer myInt2;
+    std::string name = "../../certs/key.der";
+	Sink sink;
+    FileSource(name, sink);
+    RSA_PrivateKey priv(sink);
 
-    if (myInt == myInt2)
-        printf("Int's equal\n");
+    RSAES_Encryptor enc(priv);
+    byte message[] = "Everyone gets Friday off.";
+    const int len(strlen((char*)message));
+    byte cipher[64];
+    enc.Encrypt(message, len, cipher, rng);
+
+    RSAES_Decryptor dec(priv);
+    byte plain[64];
+    dec.Decrypt(cipher, sizeof(cipher), plain, rng);
+
+    if (memcmp(plain, message, len))
+        return -70;
+
+    dec.SSL_Sign(message, len, cipher, rng);
+    if (!enc.SSL_Verify(message, len, cipher))
+        return -71;
 
 
-
+    // test decode   
+    name = "../../certs/cert.der";
+	Sink sink2;
+    FileSource(name, sink2);
+    CertDecoder cd(sink2);
+    Sink sink3(cd.GetPublicKey().GetKey(), cd.GetPublicKey().size());
+    RSA_PublicKey pub(sink3);
+ 
     return 0;
 }
 
 
+int dh_test()
+{
+    std::string name = "../../certs/dh1024.dat";
+	Sink sink;
+    FileSource(name, sink);
+    HexDecoder hDec(sink);
+    DH dh(sink);
+
+    byte pub[128];
+    byte priv[128];
+    byte agree[128];
+    byte pub2[128];
+    byte priv2[128];
+    byte agree2[128];
+
+    DH dh2(dh);
+
+    dh.GenerateKeyPair(rng, priv, pub);
+    dh2.GenerateKeyPair(rng, priv2, pub2);
+    dh.Agree(agree, priv, pub2); 
+    dh2.Agree(agree2, priv2, pub);
+
+    
+    if ( memcmp(agree, agree2, dh.GetByteLength()) )
+        return -80;
+
+    return 0;
+}

@@ -49,11 +49,12 @@ public:
     void    set_length(int l)  { length_ = l; }
 
     // for building buffer's type field
-    virtual HandShakeType get_type() const { return no_shake; } // TODO: make pure
+    virtual HandShakeType get_type() const { return no_shake; } // TODO: pure
 
     // handles dispactch of proper >>
-    virtual input_buffer&  set(input_buffer& in) { return in; } // TODO: make pure
-    virtual output_buffer& get(output_buffer& out) const { return out; } // TODO: make pure
+    virtual input_buffer&  set(input_buffer& in) { return in; } // TODO: pure
+    virtual output_buffer& get(output_buffer& out) const { return out; }
+    // TODO: make pure
 
     virtual void Process(input_buffer&, SSL&) {}; // TODO: make pure
 
@@ -79,6 +80,9 @@ public:
 
     HandShakeType get_type() const { return certificate; }
     void Process(input_buffer&, SSL&);
+private:
+    Certificate(const Certificate&);            // hide copy
+    Certificate& operator=(const Certificate&); // and assign
 };
 
 
@@ -117,6 +121,9 @@ public:
     ContentType get_type()   const { return change_cipher_spec; }
     uint16      get_length() const { return SIZEOF_ENUM; }
     void Process(input_buffer&, SSL&);
+private:
+    ChangeCipherSpec(const ChangeCipherSpec&);            // hide copy
+    ChangeCipherSpec& operator=(const ChangeCipherSpec&); // and assign
 };
 
 
@@ -125,6 +132,8 @@ class Alert : public Message {
     AlertLevel       level_;
     AlertDescription description_;
 public:
+    Alert() {}
+
     ContentType get_type()   const { return alert; }
     uint16      get_length() const { return SIZEOF_ENUM * 2; }
     void Process(input_buffer&, SSL&);
@@ -134,6 +143,9 @@ public:
    
     input_buffer& set(input_buffer& in) { return in >> *this; }
     output_buffer& get(output_buffer& out) const { return out << *this; }
+private:
+    Alert(const Alert&);            // hide copy
+    Alert& operator=(const Alert&); // and assign
 };
 
 
@@ -158,6 +170,9 @@ public:
     void          set_length(uint16 l) { length_ = l; }
     opaque*       set_buffer()         { return buffer_; }
     void Process(input_buffer&, SSL&);
+private:
+    Data(const Data&);            // hide copy
+    Data& operator=(const Data&); // and assign
 };
 
 
@@ -170,6 +185,8 @@ class HandShakeHeader : public Message {
     HandShakeType      type_;
     uint24             length_;      // length of message
 public:
+    HandShakeHeader() {}
+
     ContentType   get_type()   const { return handshake; }
     uint16        get_length() const { return c24to32(length_); }
     HandShakeType get_handshakeType() const { return type_; }
@@ -183,6 +200,9 @@ public:
 
     input_buffer& set(input_buffer& in) { return in >> *this; }
     output_buffer& get(output_buffer& out) const { return out << *this; }
+private:
+    HandShakeHeader(const HandShakeHeader&);            // hide copy
+    HandShakeHeader& operator=(const HandShakeHeader&); // and assign
 };
 
 
@@ -221,6 +241,9 @@ public:
 
     ClientHello() {}
     explicit ClientHello(ProtocolVersion pv) : client_version_(pv) {}
+private:
+    ClientHello(const ClientHello&);            // hide copy
+    ClientHello& operator=(const ClientHello&); // and assign
 };
 
 
@@ -249,6 +272,9 @@ public:
 
     const opaque* get_random() const { return random_; }
     friend void buildServerHello(SSL&, ServerHello&);
+private:
+    ServerHello(const ServerHello&);            // hide copy
+    ServerHello& operator=(const ServerHello&); // and assign
 };
 
 
@@ -297,6 +323,9 @@ public:
         Ys_ = new opaque[pubSz_ = sz];
         return Ys_;
     }
+private:
+    ServerDHParams(const ServerDHParams&);            // hide copy
+    ServerDHParams& operator=(const ServerDHParams&); // and assign
 };
 
 
@@ -356,6 +385,9 @@ public:
     void read(SSL&, input_buffer&);
     int  get_length() const { return length_; }
     opaque* get_serverKey() const { return keyMessage_; }
+private:
+    DH_Server(const DH_Server&);            // hide copy
+    DH_Server& operator=(const DH_Server&); // and assign
 };
 
 
@@ -390,6 +422,9 @@ public:
 
     void Process(input_buffer&, SSL&);
     HandShakeType get_type() const { return server_key_exchange; };
+private:
+    ServerKeyExchange(const ServerKeyExchange&);            // hide copy
+    ServerKeyExchange& operator=(const ServerKeyExchange&); // and assign
 };
 
 
@@ -436,6 +471,10 @@ public:
     int     get_length()    const { return length_; }
     opaque* get_clientKey() const { return secret_; }
     void    alloc(int sz) { length_ = sz; secret_ = new opaque[sz]; }
+private:
+    // hide copy and assign
+    EncryptedPreMasterSecret(const EncryptedPreMasterSecret&);           
+    EncryptedPreMasterSecret& operator=(const EncryptedPreMasterSecret&);
 };
 
 
@@ -473,6 +512,10 @@ public:
     void    alloc(int sz, bool offset = false) 
                 { length_ = sz + (offset ? KEY_OFFSET : 0); 
                   Yc_ = new opaque[length_]; }
+private:
+    // hide copy and assign
+    ClientDiffieHellmanPublic(const ClientDiffieHellmanPublic&);
+    ClientDiffieHellmanPublic& operator=(const ClientDiffieHellmanPublic&);
 };
 
 
@@ -500,6 +543,9 @@ public:
 
     HandShakeType  get_type() const { return client_key_exchange; };
     void Process(input_buffer&, SSL&);
+private:
+    ClientKeyExchange(const ClientKeyExchange&);            // hide copy
+    ClientKeyExchange& operator=(const ClientKeyExchange&); // and assign
 };
 
 
@@ -525,6 +571,9 @@ public:
     void Process(input_buffer&, SSL&);
 
     HandShakeType get_type() const { return finished; };
+private:
+    Finished(const Finished&);            // hide copy
+    Finished& operator=(const Finished&); // and assign
 };
 
 

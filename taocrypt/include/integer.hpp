@@ -52,26 +52,22 @@ public:
         enum RandomNumberType { ANY, PRIME };
 
         class DivideByZero {};
-	
-		Integer();
-		Integer(const Integer& t);
-		Integer(signed long value);
-		Integer(Sign s, word highWord, word lowWord);
+
+        Integer();
+        Integer(const Integer& t);
+        Integer(signed long value);
+        Integer(Sign s, word highWord, word lowWord);
 
         explicit Integer(const char* str);
         explicit Integer(const wchar_t* str);
 
         // BER Decode Sink
         explicit Integer(Sink&);
-	
+
         Integer(const byte* encodedInteger, size_t byteCount,
                 Signedness s = UNSIGNED);
 
         ~Integer() {}
-
-		//Integer(BufferedTransformation &bt, unsigned int byteCount, Signedness s=UNSIGNED);
-		//explicit Integer(BufferedTransformation &bt);
-		//Integer(RandomNumberGenerator &rng, unsigned int bitcount);
       
         static const Integer &Zero();
         static const Integer &One();
@@ -79,33 +75,17 @@ public:
 
         Integer& Ref() { return *this; }
 
-        Integer(RandomNumberGenerator& rng, const Integer& min, const Integer& max);
+        Integer(RandomNumberGenerator& rng, const Integer& min,
+                const Integer& max);
 
-		static Integer Power2(unsigned int e);
+        static Integer Power2(unsigned int e);
 
         unsigned int MinEncodedSize(Signedness = UNSIGNED) const;
         size_t Encode(byte* output, size_t outputLen,
                       Signedness = UNSIGNED) const;
 
-        //unsigned int Encode(BufferedTransformation &bt, unsigned int outputLen, Signedness=UNSIGNED) const;
-        //void DEREncode(BufferedTransformation &bt) const;
-        //void DEREncodeAsOctetString(BufferedTransformation &bt, unsigned int length) const;
-
-        //unsigned int OpenPGPEncode(byte *output, unsigned int bufferSize) const;
-        //unsigned int OpenPGPEncode(BufferedTransformation &bt) const;
-
         void Decode(const byte* input, size_t inputLen, Signedness = UNSIGNED);
         void Decode(Sink&);
-        //void Decode(BufferedTransformation &bt, unsigned int inputLen, Signedness=UNSIGNED);
-
-        //void BERDecode(const byte* input, unsigned int inputLen);
-        //void BERDecode(BufferedTransformation &bt);
-
-        //void BERDecodeAsOctetString(BufferedTransformation &bt, unsigned int length);
-
-        //void OpenPGPDecode(const byte *input, unsigned int inputLen);
-	
-        //void OpenPGPDecode(BufferedTransformation &bt);
 
         bool  IsConvertableToLong() const;
         signed long ConvertToLong() const;
@@ -131,7 +111,8 @@ public:
         Integer&  operator+=(const Integer& t);
         Integer&  operator-=(const Integer& t);
         Integer&  operator*=(const Integer& t)	{ return *this = Times(t); }
-        Integer&  operator/=(const Integer& t)	{ return *this = DividedBy(t);}
+        Integer&  operator/=(const Integer& t)	
+                        { return *this = DividedBy(t);}
         Integer&  operator%=(const Integer& t)	{ return *this = Modulo(t); }
         Integer&  operator/=(word t)  { return *this = DividedBy(t); }
         Integer&  operator%=(word t)  { return *this = Modulo(t); }
@@ -140,17 +121,8 @@ public:
 
      
         void Randomize(RandomNumberGenerator &rng, unsigned int bitcount);
-        void Randomize(RandomNumberGenerator &rng, const Integer &min, const Integer &max);
-        /*
-        bool Randomize(RandomNumberGenerator &rng, const Integer &min, const Integer &max, RandomNumberType rnType, const Integer &equiv=Zero(), const Integer &mod=One());
-
-        bool GenerateRandomNoThrow(RandomNumberGenerator &rng, const NameValuePairs &params = g_nullNameValuePairs);
-        void GenerateRandom(RandomNumberGenerator &rng, const NameValuePairs &params = g_nullNameValuePairs)
-        {
-            if (!GenerateRandomNoThrow(rng, params))
-                throw RandomNumberNotFound();
-        }
-        */
+        void Randomize(RandomNumberGenerator &rng, const Integer &min,
+                       const Integer &max);
 
         void SetBit(unsigned int n, bool value = 1);
         void SetByte(unsigned int n, byte value);
@@ -189,7 +161,7 @@ public:
         Integer SquareRoot() const;
 
         bool    IsSquare() const;
-		bool    IsUnit() const;
+        bool    IsUnit() const;
 
         Integer MultiplicativeInverse() const;
 
@@ -208,44 +180,54 @@ public:
         Integer InverseMod(const Integer& n) const;
         word InverseMod(word n) const;
 
-	    //friend std::istream& operator>>(std::istream& in, Integer &a);
-        //friend std::ostream& operator<<(std::ostream& out, const Integer &a);
 private:
-	friend class ModularArithmetic;
-	friend class MontgomeryRepresentation;
-	friend class HalfMontgomeryRepresentation;
+    friend class ModularArithmetic;
+    friend class MontgomeryRepresentation;
+    friend class HalfMontgomeryRepresentation;
 
-	Integer(word value, unsigned int length);
+    Integer(word value, unsigned int length);
 
-	int PositiveCompare(const Integer& t) const;
-	friend void PositiveAdd(Integer& sum, const Integer& a, const Integer& b);
-	friend void PositiveSubtract(Integer& diff, const Integer& a, const Integer& b);
-	friend void PositiveMultiply(Integer& product, const Integer& a,
+    int PositiveCompare(const Integer& t) const;
+    friend void PositiveAdd(Integer& sum, const Integer& a, const Integer& b);
+    friend void PositiveSubtract(Integer& diff, const Integer& a,
                                  const Integer& b);
-	friend void PositiveDivide(Integer& remainder, Integer& quotient, const
+    friend void PositiveMultiply(Integer& product, const Integer& a,
+                                 const Integer& b);
+    friend void PositiveDivide(Integer& remainder, Integer& quotient, const
                                Integer& dividend, const Integer& divisor);
-	WordBlock reg_;
-	Sign      sign_;
+    WordBlock reg_;
+    Sign      sign_;
 };
 
-inline bool operator==(const Integer& a, const Integer& b) {return a.Compare(b)==0;}
-inline bool operator!=(const Integer& a, const Integer& b) {return a.Compare(b)!=0;}
-inline bool operator> (const Integer& a, const Integer& b) {return a.Compare(b)> 0;}
-inline bool operator>=(const Integer& a, const Integer& b) {return a.Compare(b)>=0;}
-inline bool operator< (const Integer& a, const Integer& b) {return a.Compare(b)< 0;}
-inline bool operator<=(const Integer& a, const Integer& b) {return a.Compare(b)<=0;}
+inline bool operator==(const Integer& a, const Integer& b) 
+                        {return a.Compare(b)==0;}
+inline bool operator!=(const Integer& a, const Integer& b) 
+                        {return a.Compare(b)!=0;}
+inline bool operator> (const Integer& a, const Integer& b) 
+                        {return a.Compare(b)> 0;}
+inline bool operator>=(const Integer& a, const Integer& b) 
+                        {return a.Compare(b)>=0;}
+inline bool operator< (const Integer& a, const Integer& b) 
+                        {return a.Compare(b)< 0;}
+inline bool operator<=(const Integer& a, const Integer& b) 
+                        {return a.Compare(b)<=0;}
 
-inline Integer operator+(const Integer &a, const Integer &b) {return a.Plus(b);}
-inline Integer operator-(const Integer &a, const Integer &b) {return a.Minus(b);}
-inline Integer operator*(const Integer &a, const Integer &b) {return a.Times(b);}
-inline Integer operator/(const Integer &a, const Integer &b) {return a.DividedBy(b);}
-inline Integer operator%(const Integer &a, const Integer &b) {return a.Modulo(b);}
+inline Integer operator+(const Integer &a, const Integer &b) 
+                        {return a.Plus(b);}
+inline Integer operator-(const Integer &a, const Integer &b) 
+                        {return a.Minus(b);}
+inline Integer operator*(const Integer &a, const Integer &b) 
+                        {return a.Times(b);}
+inline Integer operator/(const Integer &a, const Integer &b) 
+                        {return a.DividedBy(b);}
+inline Integer operator%(const Integer &a, const Integer &b) 
+                        {return a.Modulo(b);}
 inline Integer operator/(const Integer &a, word b) {return a.DividedBy(b);}
 inline word    operator%(const Integer &a, word b) {return a.Modulo(b);}
 
 inline void swap(Integer &a, Integer &b)
 {
-	a.swap(b);
+    a.swap(b);
 }
 
 

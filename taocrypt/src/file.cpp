@@ -40,9 +40,9 @@ size_t FileSource::size(bool use_current)
         begin = file_.seekg(0, std::ios::beg).tellg();
 
     streampos end = file_.seekg(0, std::ios::end).tellg();
-	file_.seekg(current);
+    file_.seekg(current);
 
-	return end - begin;
+    return end - begin;
 }
 
 

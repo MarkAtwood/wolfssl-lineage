@@ -807,7 +807,7 @@ void Finished::Process(input_buffer& input, SSL& ssl)
     assert (cmp == 0);
 
     // update states
-    ssl.set_states().handshakeLayer_ = handshakeReady;
+    ssl.set_states().handshakeLayer_ = handShakeReady;
     if (ssl.get_security().entity_ == client_end)
         ssl.set_states().clientState_ = serverFinishedComplete;
     else

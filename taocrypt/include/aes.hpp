@@ -47,22 +47,22 @@ private:
     CipherDir dir_;
     Mode      mode_;
 
-	static const uint32 Te0[256];
-	static const uint32 Te1[256];
-	static const uint32 Te2[256];
-	static const uint32 Te3[256];
-	static const uint32 Te4[256];
+    static const uint32 Te0[256];
+    static const uint32 Te1[256];
+    static const uint32 Te2[256];
+    static const uint32 Te3[256];
+    static const uint32 Te4[256];
 
-	static const uint32 Td0[256];
-	static const uint32 Td1[256];
-	static const uint32 Td2[256];
-	static const uint32 Td3[256];
-	static const uint32 Td4[256];
+    static const uint32 Td0[256];
+    static const uint32 Td1[256];
+    static const uint32 Td2[256];
+    static const uint32 Td3[256];
+    static const uint32 Td4[256];
 
-	static const uint32 rcon_[];
+    static const uint32 rcon_[];
 
-	size_t    rounds_;
-	WordBlock key_;
+    size_t    rounds_;
+    WordBlock key_;
 
     void encrypt(const byte*, const byte*, byte*) const;
     void decrypt(const byte*, const byte*, byte*) const;

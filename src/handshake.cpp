@@ -144,7 +144,7 @@ void hashHandShake(SSL& ssl, const input_buffer& input, unsigned int sz)
 // calculate MD5 hash for finished
 static void buildMD5(SSL& ssl, Finished& fin, const opaque* sender)
 {
-    //size_t secretLen = ssl.get_connection().secret_len_; // NEWTAO master alway 48
+    //size_t secretLen = ssl.get_connection().secret_len_; // NEWTAO always 48
     size_t secretLen = SECRET_LEN;
     MD5&   md5 = ssl.use_MD5();
     opaque md5_result[MD5_LEN];
@@ -174,7 +174,7 @@ static void buildMD5(SSL& ssl, Finished& fin, const opaque* sender)
 // calculate SHA hash for finished
 static void buildSHA(SSL& ssl, Finished& fin, const opaque* sender)
 {
-    //size_t secretLen = ssl.get_connection().secret_len_; // NEWTAO master always 48
+    //size_t secretLen = ssl.get_connection().secret_len_; // NEWTAO always 48
     size_t secretLen = SECRET_LEN;
     SHA&   sha = ssl.use_SHA();
     opaque sha_result[SHA_LEN];
@@ -205,7 +205,7 @@ void buildFinishedTLS(SSL& ssl, Finished& fin, const opaque* sender)
     opaque handshake_hash[FINISHED_SZ];
     MD5&   md5 = ssl.use_MD5();
     SHA&   sha = ssl.use_SHA();
-    //size_t secretLen = ssl.get_connection().secret_len_; // NEWTAO master always 48
+    //size_t secretLen = ssl.get_connection().secret_len_; // NEWTAO always 48
     size_t secretLen = SECRET_LEN;
 
     md5.get_digest(handshake_hash);
@@ -483,6 +483,8 @@ void processData(SSL& ssl, input_buffer& cipher, unsigned int cipherSz,
 
 void sendClientHello(SSL& ssl)
 {
+    ssl.verifyState(serverNull);
+
     ClientHello       ch(ssl.get_connection().version_);
     RecordLayerHeader rlHeader;
     HandShakeHeader   hsHeader;
@@ -511,8 +513,14 @@ static void decrypt_message(SSL& ssl, input_buffer& input, size_t sz)
 
 void processReply(SSL& ssl)
 {
-    ssl.get_socket().receive(NULL, 0);		   // wait if no input and blocking
+    ssl.get_socket().receive(NULL, 0);        // wait if no input and blocking
     size_t ready = ssl.get_socket().get_ready();
+#if defined(__CYGWIN__)  // non-blocking, can't turn off?
+    if (!ready) {
+        usleep(50000);
+        ready = ssl.get_socket().get_ready();
+    }
+#endif // __CYGWIN__
     if (!ready) return;
     input_buffer buffer(ready);
     size_t read  = ssl.get_socket().receive(buffer.get_buffer(),
@@ -542,6 +550,8 @@ void processReply(SSL& ssl)
 
 void sendClientKeyExchange(SSL& ssl, BufferOutput buffer)
 {
+    ssl.verifyState(serverHelloDoneComplete);
+
     ClientKeyExchange ck(ssl);
     ck.build(ssl);
     ssl.makeMasterSecret();
@@ -581,6 +591,9 @@ void sendServerKeyExchange(SSL& ssl, BufferOutput buffer)
 
 void sendChangeCipher(SSL& ssl, BufferOutput buffer)
 {
+    if (ssl.get_security().entity_ == server_end) 
+        ssl.verifyState(clientFinishedComplete);
+
     ChangeCipherSpec ccs;
     RecordLayerHeader rlHeader;
     buildHeader(ssl, rlHeader, ccs);
@@ -612,6 +625,8 @@ void sendFinished(SSL& ssl, ConnectionEnd side, BufferOutput buffer)
 
 int sendData(SSL& ssl, const Data& data)
 {
+    ssl.verfiyHandShakeComplete();
+
     output_buffer out;
     buildData(ssl, out, data);
     ssl.get_socket().send(out.get_buffer(), out.get_size());
@@ -622,6 +637,8 @@ int sendData(SSL& ssl, const Data& data)
 
 int receiveData(SSL& ssl, Data& data)
 {
+    ssl.verfiyHandShakeComplete();
+
     if (ssl.bufferedData() < data.get_length())
         processReply(ssl);
     ssl.fillData(data);
@@ -632,6 +649,8 @@ int receiveData(SSL& ssl, Data& data)
 
 void sendServerHello(SSL& ssl, BufferOutput buffer)
 {
+    ssl.verifyState(clientHelloComplete);
+
     ServerHello       sh(ssl.get_connection().version_);
     RecordLayerHeader rlHeader;
     HandShakeHeader   hsHeader;

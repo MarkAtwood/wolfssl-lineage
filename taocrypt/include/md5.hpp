@@ -30,10 +30,10 @@ namespace TaoCrypt {
 class MD5 : public HASH {
 public:
     enum { BLOCK_SIZE = 64, DIGEST_SIZE = 16, PAD_SIZE = 56,
-           BYTE_ORDER = LittleEndianOrder };   // in Bytes
+           TAO_BYTE_ORDER = LittleEndianOrder };   // in Bytes
     MD5() : HASH(DIGEST_SIZE / sizeof(uint32), BLOCK_SIZE) { Init(); }
 
-    ByteOrder getByteOrder()  const { return ByteOrder(BYTE_ORDER); }
+    ByteOrder getByteOrder()  const { return ByteOrder(TAO_BYTE_ORDER); }
     size_t    getBlockSize()  const { return BLOCK_SIZE; }
     size_t    getDigestSize() const { return DIGEST_SIZE; }
     size_t    getPadSize()    const { return PAD_SIZE; }

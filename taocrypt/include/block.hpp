@@ -32,19 +32,19 @@ namespace TaoCrypt {
 template<typename T>
 T* reallocate(T* p, size_t oldSize, size_t newSize, bool preserve)
 {
-	if (oldSize == newSize)
-		return p;
+    if (oldSize == newSize)
+        return p;
 
-	if (preserve) {
-		T* newPointer = new T[newSize];
+    if (preserve) {
+        T* newPointer = new T[newSize];
         memcpy(newPointer, p, sizeof(T) * min(oldSize, newSize));
-		delete[] p;
-		return newPointer;
-	}
-	else {
-		delete[] p;
-		return new T[newSize];
-	}
+        delete[] p;
+        return newPointer;
+    }
+    else {
+        delete[] p;
+        return new T[newSize];
+    }
 }
 
 
@@ -78,32 +78,32 @@ public:
     T* get_buffer() const { return buffer_; }
     T* begin()      const { return get_buffer(); }
 
-	void CleanGrow(size_t newSize)
-	{
-		if (newSize > sz_) {
-			buffer_ = reallocate(buffer_, sz_, newSize, true);
-			memset(buffer_ + sz_, 0, (newSize - sz_) * sizeof(T));
-			sz_ = newSize;
-		}
-	}
+    void CleanGrow(size_t newSize)
+    {
+        if (newSize > sz_) {
+            buffer_ = reallocate(buffer_, sz_, newSize, true);
+            memset(buffer_ + sz_, 0, (newSize - sz_) * sizeof(T));
+            sz_ = newSize;
+        }
+    }
 
-	void CleanNew(unsigned int newSize)
-	{
-	    New(newSize);
-		memset(buffer_, 0, sz_ * sizeof(T));
-	}
+    void CleanNew(unsigned int newSize)
+    {
+        New(newSize);
+        memset(buffer_, 0, sz_ * sizeof(T));
+    }
 
-	void New(unsigned int newSize)
-	{
-    	buffer_ = reallocate(buffer_, sz_, newSize, false);
+    void New(unsigned int newSize)
+    {
+        buffer_ = reallocate(buffer_, sz_, newSize, false);
         sz_ = newSize;
-	}
+    }
 
-	void resize(unsigned int newSize)
-	{
-    	buffer_ = reallocate(buffer_, sz_, newSize, true);
+    void resize(unsigned int newSize)
+    {
+        buffer_ = reallocate(buffer_, sz_, newSize, true);
         sz_ = newSize;
-	}
+    }
 
     void swap(Block& other) {
         std::swap(sz_, other.sz_);

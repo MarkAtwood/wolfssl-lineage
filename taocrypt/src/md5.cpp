@@ -74,7 +74,7 @@ void MD5::Transform()
 #define F4(x, y, z) (y ^ (x | ~z))
 
 #define MD5STEP(f, w, x, y, z, data, s) \
-	w = rotlFixed(w + f(x, y, z) + data, s) + x
+    w = rotlFixed(w + f(x, y, z) + data, s) + x
 
     // Copy context->state[] to working vars 
     uint32 a = digest_[0];

@@ -99,8 +99,8 @@ void Mode_BASE<BLOCK_SIZE>::CBC_Decrypt(byte* out, const byte* in, size_t sz)
     byte   hold[BLOCK_SIZE];
 
     while (blocks--) {
-	    memcpy(tmp_, in, BLOCK_SIZE);
-	    ProcessAndXorBlock(tmp_, 0, out);
+        memcpy(tmp_, in, BLOCK_SIZE);
+        ProcessAndXorBlock(tmp_, 0, out);
         xorbuf(out,  reg_, BLOCK_SIZE);
         memcpy(hold, reg_,   BLOCK_SIZE); // swap reg_ and tmp_
         memcpy(reg_,   tmp_, BLOCK_SIZE);
