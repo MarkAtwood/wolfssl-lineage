@@ -105,7 +105,7 @@ void c32toa(uint32 u32, opaque* c)
 
 
 SSL::SSL(SSL_CTX* ctx) : connection_(ctx->method_->version_),
-    securityParms_(ctx->method_->side_), mac_(0), cipher_(0)
+    securityParms_(ctx->method_->side_), mac_(0), cipher_(0), dh_(0)
 {
     if (securityParms_.entity_ == server_end) {
         cert_.CopyCert(ctx->getCert());    
@@ -119,6 +119,7 @@ void delHandShake(output_buffer* hs) { delete hs; }
 
 SSL::~SSL() 
 { 
+    delete dh_;
     delete cipher_; 
     delete mac_; 
     std::for_each(handShakeList_.begin(), handShakeList_.end(), delHandShake);

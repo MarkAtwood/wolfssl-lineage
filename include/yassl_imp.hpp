@@ -254,15 +254,69 @@ struct ServerRSAParams {
 
 
 // Ephemeral Diffie-Hellman Parameters
-struct ServerDHParams {
-    opaque* dh_p_;
-    opaque* dh_g_;
-    opaque* dh_Ys_;
+class ServerDHParams {
+    opaque* p_;
+    opaque* g_;
+    opaque* Ys_;
+    int pSz_;
+    int gSz_;
+    int pubSz_;
+public:
+    ServerDHParams() : pSz_(0), gSz_(0), pubSz_(0), p_(0), g_(0), Ys_(0) {}
+    ~ServerDHParams() { delete[] Ys_; delete[] g_; delete p_; }
+
+    int get_pSize()   const { return pSz_; }
+    int get_gSize()   const { return gSz_; }
+    int get_pubSize() const { return pubSz_; }
+
+    const opaque* get_p()   const { return p_; }
+    const opaque* get_g()   const { return g_; }
+    const opaque* get_pub() const { return Ys_; }
+
+    void set_p(const byte* p, int sz)
+    {
+        p_ = new opaque[pSz_ = sz];
+        memcpy(p_, p, pSz_);
+    }
+
+    void set_g(const byte* g, int sz)
+    {
+        g_ = new opaque[gSz_ = sz];
+        memcpy(g_, g, gSz_);
+    }
+
+    void set_pub(const byte* pub, int sz)
+    {
+        Ys_ = new opaque[pubSz_ = sz];
+        memcpy(Ys_, pub, pubSz_);
+    }
+
+    opaque* alloc_p(int sz)
+    {
+        p_ = new opaque[pSz_ = sz];
+        return p_;
+    }
+
+    opaque* alloc_g(int sz)
+    {
+        g_ = new opaque[gSz_ = sz];
+        return g_;
+    }
+
+    opaque* alloc_pub(int sz)
+    {
+        Ys_ = new opaque[pubSz_ = sz];
+        return Ys_;
+    }
 };
 
 
 struct ServerKeyBase {
     virtual ~ServerKeyBase() {}
+    virtual void build(SSL&) {}
+    virtual void read(SSL&, input_buffer&) {}
+    virtual int  get_length() const { return 0; }
+    virtual opaque* get_serverKey() const { return 0; }
 };
 
 
@@ -299,9 +353,19 @@ struct Signature : public SignatureBase {};
 
 
 // Server's Diffie-Hellman exchange
-struct DH_Server : public ServerKeyBase {
-    ServerDHParams  params_;
+class DH_Server : public ServerKeyBase {
+    ServerDHParams  parms_;
     Signature       signature_;             // usually dsa_sa but could be rsa
+    int             length_;                // total length of message
+    opaque*         keyMessage_;            // total exchange message
+public:
+    DH_Server() : length_(0), keyMessage_(0) {}
+    ~DH_Server() { delete keyMessage_; }
+
+    void build(SSL&);
+    void read(SSL&, input_buffer&);
+    int  get_length() const { return length_; }
+    opaque* get_serverKey() const { return keyMessage_; }
 };
 
 
@@ -312,9 +376,27 @@ struct RSA_Server : public ServerKeyBase {
 };
 
 
-struct ServerKeyExchange : public HandShakeBase {
-    input_buffer&  set(input_buffer& in)         { return in;}
-    output_buffer& get(output_buffer& out) const { return out; }
+class ServerKeyExchange : public HandShakeBase {
+    ServerKeyBase* server_key_;
+public:
+    explicit ServerKeyExchange(SSL& ssl) { createKey(ssl); }
+    ServerKeyExchange() : server_key_(0) {}
+    ~ServerKeyExchange() { delete server_key_; }
+
+    void createKey(SSL&);
+    void build(SSL& ssl) 
+    { 
+        server_key_->build(ssl); 
+        set_length(server_key_->get_length());
+    }
+
+    const opaque* getKey()       const { return server_key_->get_serverKey(); }
+    int           getKeyLength() const { return server_key_->get_length(); }
+
+    input_buffer&  set(input_buffer& in)         { return in;} // process does
+    output_buffer& get(output_buffer& out) const { return out << *this; }
+
+    friend output_buffer& operator<<(output_buffer&, const ServerKeyExchange&);
 
     void Process(input_buffer&, SSL&);
     HandShakeType get_type() const { return server_key_exchange; };
@@ -358,7 +440,7 @@ class EncryptedPreMasterSecret : public ClientKeyBase {
     int     length_;
 public:
     EncryptedPreMasterSecret() : secret_(0), length_(0) {}
-    ~EncryptedPreMasterSecret() { delete [] secret_; }
+    ~EncryptedPreMasterSecret() { delete[] secret_; }
     void    build(SSL&);
     void    read(SSL&, input_buffer&);
     int     get_length()    const { return length_; }
@@ -384,10 +466,20 @@ struct FortezzaKeys : public ClientKeyBase {
 
 
 // Diffie-Hellman public key from page 40/41
-struct  ClientDiffieHellmanPublic : public ClientKeyBase {
+class  ClientDiffieHellmanPublic : public ClientKeyBase {
     PublicValueEncoding public_value_encoding_;
-    opaque*             dh_Yc_;       
+    int     length_;
+    opaque* Yc_;       
     // dh_Yc only if explicit, otherwise sent in certificate
+public:
+    ClientDiffieHellmanPublic() : length_(0), Yc_(0) {}
+    ~ClientDiffieHellmanPublic() { delete[] Yc_; }
+
+    void    build(SSL&);
+    void    read(SSL&, input_buffer&);
+    int     get_length()    const { return length_; }
+    opaque* get_clientKey() const { return Yc_; }
+    void    alloc(int sz) { length_ = sz; Yc_ = new opaque[sz]; }
 };
 
 
@@ -410,7 +502,7 @@ public:
 
     friend output_buffer& operator<<(output_buffer&, const ClientKeyExchange&);
    
-    input_buffer&  set(input_buffer& in)         { return in; }
+    input_buffer&  set(input_buffer& in)         { return in; } // process does
     output_buffer& get(output_buffer& out) const { return out << *this; }
 
     HandShakeType  get_type() const { return client_key_exchange; };

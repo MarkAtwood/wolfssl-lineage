@@ -36,6 +36,7 @@
 #include "arc4.h"
 #include "rsa.h"
 #include "dsa.h"
+#include "dh.h"
 #include "osrng.h"
 #include "hex.h"
 #include "files.h"
@@ -507,6 +508,116 @@ void RSA::decrypt(byte* plain, const byte* cipher, unsigned int sz,
 
     RSAES_PKCS1v15_Decryptor dec(pimpl_->privateKey_);
     dec.Decrypt(random.pimpl_->RNG_, cipher, sz, plain);
+}
+
+
+struct DiffieHellman::DHImpl {
+    CryptoPP::DH         dh_;
+    CryptoPP::RandomPool ranPool_;
+    byte* publicKey_;
+    byte* privateKey_;
+    byte* agreedKey_;
+
+    DHImpl() : publicKey_(0), privateKey_(0), agreedKey_(0) {}
+    ~DHImpl() {delete[] agreedKey_; delete[] privateKey_; delete[] publicKey_;}
+
+    DHImpl(const DHImpl& that) : publicKey_(0), privateKey_(0), agreedKey_(0),
+                                 dh_(that.dh_), ranPool_(that.ranPool_) {}
+
+    void AllocKeys(unsigned int pubSz, unsigned int privSz, unsigned int agrSz)
+    {
+        publicKey_  = new byte[pubSz];
+        privateKey_ = new byte[privSz];
+        agreedKey_  = new byte[agrSz];
+    }
+};
+
+
+// generate pair
+DiffieHellman::DiffieHellman(const byte* p, unsigned int pSz, const byte* g,
+                             unsigned int gSz, const RandomPool& random)
+    : pimpl_(new DHImpl)
+{
+    using CryptoPP::Integer;
+    pimpl_->ranPool_ = random.pimpl_->RNG_;
+    pimpl_->dh_.AccessGroupParameters().Initialize(Integer(p, pSz),
+                                                   Integer(g, gSz));
+    unsigned int pubSz    = pimpl_->dh_.PublicKeyLength();
+    unsigned int privSz   = pimpl_->dh_.PrivateKeyLength();
+    unsigned int agreedSz = pimpl_->dh_.AgreedValueLength();
+    pimpl_->AllocKeys(pubSz, privSz, agreedSz);
+
+    pimpl_->dh_.GenerateKeyPair(pimpl_->ranPool_, pimpl_->privateKey_,
+                                                  pimpl_->publicKey_);
+}
+
+DiffieHellman::~DiffieHellman() { delete pimpl_; }
+
+
+DiffieHellman::DiffieHellman(const DiffieHellman& that) 
+    : pimpl_(new DHImpl(*that.pimpl_))
+{
+    pimpl_->dh_.GenerateKeyPair(pimpl_->ranPool_, pimpl_->privateKey_,
+                                                  pimpl_->publicKey_);
+}
+
+
+DiffieHellman& DiffieHellman::operator=(const DiffieHellman& that)
+{
+    pimpl_->dh_ = that.pimpl_->dh_;
+    pimpl_->ranPool_ = that.pimpl_->ranPool_;
+
+    pimpl_->dh_.GenerateKeyPair(pimpl_->ranPool_, pimpl_->privateKey_,
+                                                  pimpl_->publicKey_);
+    return *this;
+}
+
+
+void DiffieHellman::makeAgreement(const byte* otherPub)
+{
+    pimpl_->dh_.Agree(pimpl_->agreedKey_, pimpl_->privateKey_, otherPub);
+}
+
+
+size_t DiffieHellman::get_agreedKeyLength() const
+{
+    return pimpl_->dh_.AgreedValueLength();
+}
+
+
+const byte* DiffieHellman::get_agreedKey() const
+{
+    return pimpl_->agreedKey_;
+}
+
+
+const byte* DiffieHellman::get_publicKey() const
+{
+    return pimpl_->publicKey_;
+}
+
+
+void DiffieHellman::set_sizes(int& pSz, int& gSz, int& pubSz) const
+{
+    using CryptoPP::Integer;
+    Integer p = pimpl_->dh_.AccessGroupParameters().GetModulus();
+    Integer g = pimpl_->dh_.AccessGroupParameters().GetGenerator();
+
+    pSz   = p.ByteCount();
+    gSz   = g.ByteCount();
+    pubSz = pimpl_->dh_.PublicKeyLength();
+}
+
+
+void DiffieHellman::get_parms(byte* bp, byte* bg, byte* bpub) const
+{
+    using CryptoPP::Integer;
+    Integer p = pimpl_->dh_.AccessGroupParameters().GetModulus();
+    Integer g = pimpl_->dh_.AccessGroupParameters().GetGenerator();
+
+    p.Encode(bp, p.ByteCount());
+    g.Encode(bg, g.ByteCount());
+    memcpy(bpub, pimpl_->publicKey_, pimpl_->dh_.PublicKeyLength());
 }
 
 

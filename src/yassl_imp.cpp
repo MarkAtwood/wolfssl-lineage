@@ -36,7 +36,15 @@ void ClientKeyExchange::createKey(SSL& ssl)
 }
 
 
-// build PreMaster secret and encrypt, client side
+// construct key exchange with known ssl parms
+void ServerKeyExchange::createKey(SSL& ssl)
+{
+    const ServerKeyFactory& skf = ssl.get_factory().serverKeyFactory_;
+    server_key_ = skf.CreateObject(ssl.get_security().kea_);
+}
+
+
+// build/set PreMaster secret and encrypt, client side
 void EncryptedPreMasterSecret::build(SSL& ssl)
 {
     opaque tmp[SECRET_LEN];
@@ -50,6 +58,32 @@ void EncryptedPreMasterSecret::build(SSL& ssl)
     RSA rsa(cert.get_Key(), cert.get_KeyLength());
     alloc(rsa.get_cipherLength());
     rsa.encrypt(secret_, tmp, SECRET_LEN, ssl.get_random());
+}
+
+
+// build/set premaster and Client Public key, client side
+void ClientDiffieHellmanPublic::build(SSL& ssl)
+{
+    DiffieHellman& dhServer = ssl.use_dh();
+    DiffieHellman  dhClient(dhServer);
+
+    alloc(dhClient.get_agreedKeyLength());
+    memcpy(Yc_, dhClient.get_agreedKey(), length_);
+
+    dhClient.makeAgreement(dhServer.get_publicKey());
+    ssl.set_preMaster(dhClient.get_agreedKey());
+}
+
+
+// build server exhange, server side
+void DH_Server::build(SSL& ssl)
+{
+    DiffieHellman& dhServer = ssl.use_dh();
+
+    int pSz, gSz, pubSz;
+    dhServer.set_sizes(pSz, gSz, pubSz);
+    dhServer.get_parms(parms_.alloc_p(pSz), parms_.alloc_g(gSz),
+                       parms_.alloc_pub(pubSz));
 }
 
 
@@ -69,6 +103,55 @@ void EncryptedPreMasterSecret::read(SSL& ssl, input_buffer& input)
 }
 
 
+// read client's public key, server side
+void ClientDiffieHellmanPublic::read(SSL& ssl, input_buffer& input)
+{
+    DiffieHellman& dh = ssl.use_dh();
+
+    uint16 keyLength;
+    byte tmp[2];
+    tmp[0] = input[AUTO];
+    tmp[1] = input[AUTO];
+    ato16(tmp, keyLength);
+
+    alloc(keyLength);
+    input.read(Yc_, length_);
+    dh.makeAgreement(Yc_);
+
+    ssl.set_preMaster(dh.get_agreedKey());
+    ssl.makeMasterSecret();
+}
+
+
+// read server's p, g, and public key, client side
+void DH_Server::read(SSL& ssl, input_buffer& input)
+{
+    uint16 length;
+    byte tmp[2];
+
+    // p
+    tmp[0] = input[AUTO];
+    tmp[1] = input[AUTO];
+    ato16(tmp, length);
+
+    input.read(parms_.alloc_p(length), length);
+
+    // g
+    tmp[0] = input[AUTO];
+    tmp[1] = input[AUTO];
+    ato16(tmp, length);
+
+    input.read(parms_.alloc_g(length), length);
+
+    // pub
+    tmp[0] = input[AUTO];
+    tmp[1] = input[AUTO];
+    ato16(tmp, length);
+
+    input.read(parms_.alloc_pub(length), length);
+}
+
+
 SecurityParameters::SecurityParameters(ConnectionEnd ce) : entity_(ce)
 {
     pending_ = true;	// suite not set yet
@@ -82,10 +165,11 @@ SecurityParameters::SecurityParameters(ConnectionEnd ce) : entity_(ce)
     suites_[i++] = 0x00;
     suites_[i++] = SSL_DHE_RSA_WITH_DES_CBC_SHA;  
     suites_[i++] = 0x00;
+    suites_[i++] = SSL_DHE_DSS_WITH_DES_CBC_SHA;  
+    suites_[i++] = 0x00;
     suites_[i++] = SSL_RSA_WITH_RC4_128_SHA;  
     suites_[i++] = 0x00;
-    suites_[i++] = SSL_RSA_WITH_RC4_128_MD5;  
-
+    suites_[i++] = SSL_RSA_WITH_RC4_128_MD5;
     suites_size_ = i;
 }
 
@@ -498,23 +582,21 @@ void ClientHello::Process(input_buffer& input, SSL& ssl)
 }
 
 
-// input operator for ServerKeyExchange
-input_buffer& operator>>(input_buffer& input, ServerKeyExchange& sk)
-{
-    return input; 
-}
-
 // output operator for ServerKeyExchange
 output_buffer& operator<<(output_buffer& output, const ServerKeyExchange& sk)
 {
+    output.write(sk.getKey(), sk.getKeyLength());
     return output;
 }
+
 
 // Server Key Exchange processing handler
 void ServerKeyExchange::Process(input_buffer& input, SSL& ssl)
 {
-    // read input here after creating server key base* from ssl 
+    createKey(ssl);
+    server_key_->read(ssl, input);
 
+    ssl.set_states().clientState_ = serverKeyExchangeComplete;
 }
 
 

@@ -57,6 +57,7 @@ enum ClientState {
     serverNull = 0,
     serverHelloComplete,
     serverCertComplete,
+    serverKeyExchangeComplete,
     serverHelloDoneComplete,
     serverFinishedComplete	
 };
@@ -164,6 +165,7 @@ class SSL {
     RandomPool          random_;                // random number generator
     MAC*                mac_;                   // agreed upon mac
     BulkCipher*         cipher_;                // agreed upon cipher
+    DiffieHellman*      dh_;                    // server dh parms
     sslFactory          factory_;               // creates new ssl objects
     Socket              socket_;                // socket wrapper
     std::list<input_buffer*>  dataList_;        // list of users app data
@@ -192,6 +194,8 @@ public:
           MAC&        use_mac()             { return *mac_; }
     const BulkCipher& get_cipher() const    { return *cipher_; }
           BulkCipher& use_cipher()          { return *cipher_; }
+    const DiffieHellman& get_dh()  const    { return *dh_; }
+          DiffieHellman& use_dh()           { return *dh_; }
     const RandomPool& get_random() const    { return random_; }
     const Socket&     get_socket() const    { return socket_; }
 

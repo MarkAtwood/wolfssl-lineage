@@ -225,6 +225,7 @@ public:
 
     friend class RSA;
 	friend class DSS;
+    friend class DiffieHellman;
 private:
     struct RandomImpl;
     RandomImpl* pimpl_;
@@ -286,19 +287,28 @@ private:
 };
 
 
-/* hide for now TODO: figure out a way to give access to C clients p and g args
+// hide for now TODO: figure out a way to give access to C clients p and g args
 // Diffie-Hellman agreement
-class DH  {
-    DH();
-    ~DH();
+class DiffieHellman  {
+public:
+    DiffieHellman(const byte*, unsigned int, const byte*, unsigned int,
+                  const RandomPool& random);
+    ~DiffieHellman();
+
+    DiffieHellman(const DiffieHellman&);  
+    DiffieHellman& operator=(const DiffieHellman&);
+
+    size_t      get_agreedKeyLength() const;
+    const byte* get_agreedKey()       const;
+    const byte* get_publicKey()       const;
+    void        makeAgreement(const byte*);
+
+    void        set_sizes(int&, int&, int&) const;
+    void        get_parms(byte*, byte*, byte*) const;
 private:
     struct DHImpl;
     DHImpl* pimpl_;
-
-    DH(const DH&);              // hide copy
-    DH& operator=(const DH&);   // & assign
 };
-*/
 
 
 // Lagrge Integer
