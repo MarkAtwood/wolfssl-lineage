@@ -335,7 +335,7 @@ void SignerWithRecoveryTemplate<F,H>::Sign(RandomNumberGenerator &rng, HashModul
 		throw KeyTooShort();
 	SecByteBlock representative(PaddedBlockByteLength());
 	ma->Encode(rng, representative);
-	f.CalculateInverse(Integer(representative, representative.size)).Encode(signature, SignatureLength());
+	f.CalculateInverse(Integer(representative, representative.size)).Encode(signature, this->SignatureLength());
 }
 
 template <class F, class H>
@@ -343,7 +343,7 @@ bool VerifierWithRecoveryTemplate<F,H>::Verify(HashModule *messageAccumulator, c
 {
 	std::auto_ptr<H> ma(static_cast<H*>(messageAccumulator));
 	SecByteBlock representative(PaddedBlockByteLength());
-	f.ApplyFunction(Integer(signature, SignatureLength())).Encode(representative, representative.size);
+	f.ApplyFunction(Integer(signature, this->SignatureLength())).Encode(representative, representative.size);
 	return ma->Verify(representative);
 }
 
@@ -351,7 +351,7 @@ template <class F, class H>
 HashModule * VerifierWithRecoveryTemplate<F,H>::NewLeftoverMessageAccumulator(const byte *signature) const
 {
 	SecByteBlock representative(PaddedBlockByteLength());
-	f.ApplyFunction(Integer(signature, SignatureLength())).Encode(representative, representative.size);
+	f.ApplyFunction(Integer(signature, this->SignatureLength())).Encode(representative, representative.size);
 	return new H(representative, PaddedBlockBitLength());
 }
 

@@ -21,18 +21,18 @@ template <class P, class F>
 unsigned int DecryptorTemplate<P,F>::Decrypt(const byte *cipherText, byte *plainText)
 {
 	SecByteBlock paddedBlock(PaddedBlockByteLength());
-	f.CalculateInverse(Integer(cipherText, CipherTextLength())).Encode(paddedBlock, paddedBlock.size);
+	f.CalculateInverse(Integer(cipherText, this->CipherTextLength())).Encode(paddedBlock, paddedBlock.size);
 	return pad.Unpad(paddedBlock, PaddedBlockBitLength(), plainText);
 }
 
 template <class P, class F>
 void EncryptorTemplate<P,F>::Encrypt(RandomNumberGenerator &rng, const byte *plainText, unsigned int plainTextLength, byte *cipherText)
 {
-	assert(plainTextLength <= MaxPlainTextLength());
+	assert(plainTextLength <= this->MaxPlainTextLength());
 
 	SecByteBlock paddedBlock(PaddedBlockByteLength());
 	pad.Pad(rng, plainText, plainTextLength, paddedBlock, PaddedBlockBitLength());
-	f.ApplyFunction(Integer(paddedBlock, paddedBlock.size)).Encode(cipherText, CipherTextLength());
+	f.ApplyFunction(Integer(paddedBlock, paddedBlock.size)).Encode(cipherText, this->CipherTextLength());
 }
 
 template <class P, class F>
