@@ -44,7 +44,13 @@ template <class T> void IteratedHashBase<T>::Update(const byte *input, unsigned 
 	// chars and save the leftovers to this->data.
 	if (len >= blockSize)
 	{
-		if ((unsigned int)input % sizeof(T))   // test for alignment
+		if (IsAligned<T>(input))
+		{
+			unsigned int leftOver = HashMultipleBlocks((T *)input, len);
+			input += (len - leftOver);
+			len = leftOver;
+		}
+		else
 			do
 			{   // copy input first if it's not aligned correctly
 				memcpy(data, input, blockSize);
@@ -52,16 +58,21 @@ template <class T> void IteratedHashBase<T>::Update(const byte *input, unsigned 
 				input+=blockSize;
 				len-=blockSize;
 			} while (len >= blockSize);
-		else
-			do
-			{
-				HashBlock((T *)input);
-				input+=blockSize;
-				len-=blockSize;
-			} while (len >= blockSize);
 	}
 
 	memcpy(data, input, len);
+}
+
+template <class T> unsigned int IteratedHashBase<T>::HashMultipleBlocks(const T *input, unsigned int length)
+{
+	do
+	{
+		HashBlock(input);
+		input += blockSize/sizeof(T);
+		length -= blockSize;
+	}
+	while (length >= blockSize);
+	return length;
 }
 
 template <class T> void IteratedHashBase<T>::PadLastBlock(unsigned int lastBlockSize, byte padFirst)

@@ -367,16 +367,23 @@ public:
 
 	// a faster version of Interpolate(x, y, n).EvaluateAt(position)
 	CoefficientType InterpolateAt(const CoefficientType &position, const CoefficientType x[], const CoefficientType y[], unsigned int n) const;
-
+/*
 	void PrepareBulkInterpolation(CoefficientType *w, const CoefficientType x[], unsigned int n) const;
 	void PrepareBulkInterpolationAt(CoefficientType *v, const CoefficientType &position, const CoefficientType x[], const CoefficientType w[], unsigned int n) const;
 	CoefficientType BulkInterpolateAt(const CoefficientType y[], const CoefficientType v[], unsigned int n) const;
-
+*/
 protected:
 	void CalculateAlpha(std::vector<CoefficientType> &alpha, const CoefficientType x[], const CoefficientType y[], unsigned int n) const;
 
 	CoefficientRing m_ring;
 };
+
+template <class Ring, class Element>
+void PrepareBulkPolynomialInterpolation(const Ring &ring, Element *w, const Element x[], unsigned int n);
+template <class Ring, class Element>
+void PrepareBulkPolynomialInterpolationAt(const Ring &ring, Element *v, const Element &position, const Element x[], const Element w[], unsigned int n);
+template <class Ring, class Element>
+Element BulkPolynomialInterpolateAt(const Ring &ring, const Element y[], const Element v[], unsigned int n);
 
 NAMESPACE_END
 

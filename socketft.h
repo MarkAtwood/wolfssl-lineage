@@ -1,11 +1,15 @@
 #ifndef CRYPTOPP_SOCKETFT_H
 #define CRYPTOPP_SOCKETFT_H
 
+#include "config.h"
+
+#ifndef NO_OS_DEPENDENCE
+
 #ifdef __GNUC__
 #include <_G_config.h>
 #endif
 
-#if defined(macintosh) || (defined(_G_HAVE_SYS_SOCKET) && _G_HAVE_SYS_SOCKET)
+#if defined(_G_HAVE_SYS_SOCKET) && _G_HAVE_SYS_SOCKET
 #define HAS_BERKELEY_STYLE_SOCKETS
 #endif
 
@@ -15,9 +19,11 @@
 
 #include "hrtimer.h"
 
-#if defined(HIGHRES_TIMER_AVAILABLE) && !defined(PREFER_NO_SOCKETS) && (defined(HAS_BERKELEY_STYLE_SOCKETS) || defined(HAS_WINDOWS_STYLE_SOCKETS))
+#if defined(HIGHRES_TIMER_AVAILABLE) && (defined(HAS_BERKELEY_STYLE_SOCKETS) || defined(HAS_WINDOWS_STYLE_SOCKETS))
 #define SOCKETS_AVAILABLE
 #endif
+
+#endif	// #ifndef NO_OS_DEPENDENCE
 
 #ifdef SOCKETS_AVAILABLE
 

@@ -11,7 +11,7 @@ public:
 	typedef word32 Element;
 	typedef int RandomizationParameter;
 
-	GF2_32(word32 modulus) : m_modulus(modulus) {}
+	GF2_32(word32 modulus=0x0000008D) : m_modulus(modulus) {}
 
 	Element RandomElement(RandomNumberGenerator &rng, int ignored = 0) const
 		{return rng.GetLong();}

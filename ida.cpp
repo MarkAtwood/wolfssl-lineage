@@ -7,18 +7,11 @@
 #include "gf2_32.h"
 #include "polynomi.h"
 
-#include "algebra.cpp"
 #include "polynomi.cpp"
 
 ANONYMOUS_NAMESPACE_BEGIN
-typedef CryptoPP::PolynomialOverFixedRing<CryptoPP::GF2_32, 0> Polynomial;
-typedef CryptoPP::RingOfPolynomialsOver<CryptoPP::GF2_32> PolynomialRing;
-
-static const CryptoPP::GF2_32 field(0x0000008D);
-static const PolynomialRing polynomialRing(field);
+static const CryptoPP::GF2_32 field;
 NAMESPACE_END
-
-template<> const CryptoPP::GF2_32 Polynomial::fixedRing(field);
 
 using namespace std;
 
@@ -50,7 +43,7 @@ skipFind:
 		if (m_inputChannelIds.size() == m_threshold)
 			return m_threshold;
 
-		m_lastMapPosition = m_inputChannelMap.insert(make_pair(channelId, m_inputChannelIds.size())).first;
+		m_lastMapPosition = m_inputChannelMap.insert(pair<const unsigned long, unsigned int>(channelId, m_inputChannelIds.size())).first;
 		m_inputQueues.push_back(MessageQueue());
 		m_inputChannelIds.push_back(channelId);
 
@@ -123,7 +116,7 @@ void RawIDA::ComputeV(unsigned int i)
 	if (m_outputToInput[i] == m_threshold && i * m_threshold <= 1000*1000)
 	{
 		m_v[i].Resize(m_threshold);
-		polynomialRing.PrepareBulkInterpolationAt(m_v[i].ptr, m_outputChannelIds[i], m_inputChannelIds.begin(), m_w, m_threshold);
+		PrepareBulkPolynomialInterpolationAt(field, m_v[i].ptr, m_outputChannelIds[i], m_inputChannelIds.begin(), m_w.ptr, m_threshold);
 	}
 }
 
@@ -139,7 +132,8 @@ void RawIDA::AddOutputChannel(word32 channelId)
 void RawIDA::PrepareInterpolation()
 {
 	assert(m_inputChannelIds.size() == m_threshold);
-	polynomialRing.PrepareBulkInterpolation(m_w, m_inputChannelIds.begin(), m_threshold);
+	PrepareBulkPolynomialInterpolation(field, m_w.ptr, m_inputChannelIds.begin(), m_threshold);
+//	polynomialRing.PrepareBulkInterpolation(m_w, m_inputChannelIds.begin(), m_threshold);
 	for (unsigned int i=0; i<m_outputChannelIds.size(); i++)
 		ComputeV(i);
 }
@@ -168,12 +162,12 @@ void RawIDA::ProcessInputQueues()
 			if (m_outputToInput[i] != m_threshold)
 				m_outputQueues[i].PutWord32(m_y[m_outputToInput[i]]);
 			else if (m_v[i].size == m_threshold)
-				m_outputQueues[i].PutWord32(polynomialRing.BulkInterpolateAt(m_y, m_v[i].ptr, m_threshold));
+				m_outputQueues[i].PutWord32(BulkPolynomialInterpolateAt(field, m_y.ptr, m_v[i].ptr, m_threshold));
 			else
 			{
 				m_u.Resize(m_threshold);
-				polynomialRing.PrepareBulkInterpolationAt(m_u, m_outputChannelIds[i], m_inputChannelIds.begin(), m_w, m_threshold);
-				m_outputQueues[i].PutWord32(polynomialRing.BulkInterpolateAt(m_y, m_u, m_threshold));
+				PrepareBulkPolynomialInterpolationAt(field, m_u.ptr, m_outputChannelIds[i], m_inputChannelIds.begin(), m_w.ptr, m_threshold);
+				m_outputQueues[i].PutWord32(BulkPolynomialInterpolateAt(field, m_y.ptr, m_u.ptr, m_threshold));
 			}
 		}
 	}
@@ -385,7 +379,7 @@ void PaddingRemover::Put(const byte *begin, unsigned int length)
 		PaddingRemover::Put(*begin++);
 	}
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__MWERKS__)
 	typedef reverse_iterator<const byte *, const byte> rit;
 #else
 	typedef reverse_iterator<const byte *> rit;

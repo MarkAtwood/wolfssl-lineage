@@ -1,11 +1,13 @@
 #ifndef CRYPTOPP_WINPIPES_H
 #define CRYPTOPP_WINPIPES_H
 
-#ifdef _WIN32
+#if !defined(NO_OS_DEPENDENCE) && defined(_WIN32)
 
 #include "network.h"
 #include "queue.h"
 #include <windows.h>
+
+#define WINDOWS_PIPES_AVAILABLE
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -117,6 +119,6 @@ public:
 
 NAMESPACE_END
 
-#endif
+#endif	// #if !defined(NO_OS_DEPENDENCE) && defined(_WIN32)
 
 #endif

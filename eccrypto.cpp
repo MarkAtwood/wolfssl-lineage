@@ -12,21 +12,6 @@ NAMESPACE_BEGIN(CryptoPP)
 template void SimultaneousMultiplication<EC2NPoint, EC2NPoint *, const Integer *>(EC2NPoint * result, const AbstractGroup<EC2NPoint> &group, const EC2NPoint &base, const Integer * expBegin, const Integer * expEnd);
 template void SimultaneousMultiplication<ECPPoint, ECPPoint *, const Integer *>(ECPPoint * result, const AbstractGroup<ECPPoint> &group, const ECPPoint &base, const Integer * expBegin, const Integer * expEnd);
 
-template class ECPrivateKey<EC2N>;
-template class ECPrivateKey<ECP>;
-template class ECDigestVerifier<EC2N, ECDSA>;
-template class ECDigestVerifier<ECP, ECDSA>;
-template class ECDigestSigner<EC2N, ECDSA>;
-template class ECDigestSigner<ECP, ECDSA>;
-template class ECDigestVerifier<EC2N, ECNR>;
-template class ECDigestVerifier<ECP, ECNR>;
-template class ECDigestSigner<EC2N, ECNR>;
-template class ECDigestSigner<ECP, ECNR>;
-template class ECDHC<EC2N>;
-template class ECDHC<ECP>;
-template class ECMQVC<EC2N>;
-template class ECMQVC<ECP>;
-
 // VC60 workaround: complains when these functions are put into an anonymous namespace
 static Integer ConvertToInteger(const PolynomialMod2 &x)
 {
@@ -396,5 +381,22 @@ bool ECMQVC<EC>::Agree(byte *agreedValue, const byte *staticPrivateKey, const by
 	Q.x.Encode(agreedValue, AgreedValueLength());
 	return true;
 }
+
+template class ECParameters<EC2N>;
+template class ECParameters<ECP>;
+template class ECPrivateKey<EC2N>;
+template class ECPrivateKey<ECP>;
+template class ECDigestVerifier<EC2N, ECDSA>;
+template class ECDigestVerifier<ECP, ECDSA>;
+template class ECDigestSigner<EC2N, ECDSA>;
+template class ECDigestSigner<ECP, ECDSA>;
+template class ECDigestVerifier<EC2N, ECNR>;
+template class ECDigestVerifier<ECP, ECNR>;
+template class ECDigestSigner<EC2N, ECNR>;
+template class ECDigestSigner<ECP, ECNR>;
+template class ECDHC<EC2N>;
+template class ECDHC<ECP>;
+template class ECMQVC<EC2N>;
+template class ECMQVC<ECP>;
 
 NAMESPACE_END

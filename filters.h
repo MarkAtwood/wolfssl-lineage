@@ -436,7 +436,7 @@ private:
 class RandomNumberStore : public Store
 {
 public:
-	RandomNumberStore(RandomNumberGenerator &rng, unsigned int length)
+	RandomNumberStore(RandomNumberGenerator &rng, unsigned long length)
 		: m_rng(rng), m_length(length), m_count(0) {}
 
 	unsigned long TransferTo(BufferedTransformation &target, unsigned long transferMax=ULONG_MAX);
@@ -444,7 +444,7 @@ public:
 
 private:
 	RandomNumberGenerator &m_rng;
-	unsigned int m_length, m_count;
+	unsigned long m_length, m_count;
 };
 
 class Source : public Filter

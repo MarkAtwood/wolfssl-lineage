@@ -182,7 +182,7 @@ void OID::EncodeValue(BufferedTransformation &bt, unsigned long v)
 {
 	for (unsigned int i=RoundUpToMultipleOf(STDMAX(7U,BitPrecision(v)), 7)-7; i != 0; i-=7)
 		bt.Put(0x80 | ((v >> i) & 0x7f));
-	bt.Put((v >> i) & 0x7f);
+	bt.Put(v & 0x7f);
 }
 
 unsigned int OID::DecodeValue(BufferedTransformation &bt, unsigned long &v)

@@ -1,12 +1,14 @@
-#ifndef VALIDATE_H
-#define VALIDATE_H
+#ifndef CRYPTOPP_VALIDATE_H
+#define CRYPTOPP_VALIDATE_H
 
 bool ValidateAll();
 bool TestSettings();
+bool TestOS_RNG();
 
 bool ZKValidate();
 
 bool CRC32Validate();
+bool Adler32Validate();
 bool MD2Validate();
 bool MD5Validate();
 bool SHAValidate();
@@ -14,6 +16,7 @@ bool SHA2Validate();
 bool HAVALValidate();
 bool TigerValidate();
 bool RIPEMDValidate();
+bool PanamaValidate();
 
 bool MD5MACValidate();
 bool HMACValidate();

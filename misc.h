@@ -52,6 +52,21 @@ inline unsigned int RoundUpToMultipleOf(unsigned int n, unsigned int m)
 	return RoundDownToMultipleOf(n+m-1, m);
 }
 
+template <class T>
+inline bool IsAligned(const void *p)
+{
+	return (unsigned int)p % sizeof(T) == 0;
+}
+
+inline bool CheckEndianess(bool highFirst)
+{
+#ifdef IS_LITTLE_ENDIAN
+	return !highFirst;
+#else
+	return highFirst;
+#endif
+}
+
 // ************** rotate functions ***************
 
 template <class T> inline T rotlFixed(T x, unsigned int y)
@@ -95,13 +110,13 @@ template <class T> inline T rotrMod(T x, unsigned int y)
 template<> inline word32 rotlFixed<word32>(word32 x, unsigned int y)
 {
 	assert(y < 32);
-	return _lrotl(x, y);
+	return y ? _lrotl(x, y) : x;
 }
 
 template<> inline word32 rotrFixed<word32>(word32 x, unsigned int y)
 {
 	assert(y < 32);
-	return _lrotr(x, y);
+	return y ? _lrotr(x, y) : x;
 }
 
 template<> inline word32 rotlVariable<word32>(word32 x, unsigned int y)
@@ -133,13 +148,13 @@ template<> inline word32 rotrMod<word32>(word32 x, unsigned int y)
 template<> inline word32 rotlFixed<word32>(word32 x, unsigned int y)
 {
 	assert(y < 32);
-	return (__rlwinm(x,y,0,31));
+	return y ? __rlwinm(x,y,0,31) : x;
 }
 
 template<> inline word32 rotrFixed<word32>(word32 x, unsigned int y)
 {
 	assert(y < 32);
-	return (__rlwinm(x,32-y,0,31));
+	return y ? __rlwinm(x,32-y,0,31) : x;
 }
 
 template<> inline word32 rotlVariable<word32>(word32 x, unsigned int y)
@@ -414,11 +429,7 @@ inline void PutBlockBigEndian(byte *block, T a, T b, T c, T d)
 template <class T>
 std::string WordToString(T value, bool highFirst = true)
 {
-#ifdef IS_LITTLE_ENDIAN
-	if (highFirst)
-#else
-	if (!highFirst)
-#endif
+	if (!CheckEndianess(highFirst))
 		value = byteReverse(value);
 
 	return std::string((char *)&value, sizeof(value));
@@ -429,14 +440,7 @@ T StringToWord(const std::string &str, bool highFirst = true)
 {
 	T value = 0;
 	memcpy(&value, str.data(), STDMIN(sizeof(value), str.size()));
-#ifdef IS_LITTLE_ENDIAN
-	if (highFirst)
-#else
-	if (!highFirst)
-#endif
-		return byteReverse(value);
-	else
-		return value;
+	return CheckEndianess(highFirst) ? value : byteReverse(value);
 }
 
 // ************** secure memory allocation ***************

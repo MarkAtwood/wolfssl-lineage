@@ -9,8 +9,8 @@ NAMESPACE_BEGIN(CryptoPP)
 class RC2Base : public BlockTransformation
 {
 public:
-	// values of KEYLENGTH is defaults only
-	enum {KEYLENGTH=16, BLOCKSIZE=8, ROUNDS=18};
+	// value of KEYLENGTH is default only
+	enum {KEYLENGTH=16, BLOCKSIZE=8};
 	unsigned int BlockSize() const {return BLOCKSIZE;}
 	static unsigned int KeyLength(unsigned int keylength)
 		{return keylength < 1 ? 1 : (keylength <= 128 ? keylength : 128);}

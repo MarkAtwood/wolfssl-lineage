@@ -571,6 +571,7 @@ bool Validate(int alg)
 	switch (alg)
 	{
 	case 1: return TestSettings();
+	case 2: return TestOS_RNG();
 	case 3: return MD5Validate();
 	case 4: return SHAValidate();
 	case 5: return DESValidate();
@@ -620,6 +621,8 @@ bool Validate(int alg)
 	case 50: return XTRDHValidate();
 	case 51: return SKIPJACKValidate();
 	case 52: return SHA2Validate();
+	case 53: return PanamaValidate();
+	case 54: return Adler32Validate();
 	default: return ValidateAll();
 	}
 }

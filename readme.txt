@@ -1,23 +1,52 @@
 Crypto++: a C++ Class Library of Cryptographic Primitives
-Version 3.2  3/20/2000
+Version 4.0  11/2/2000
 
 This library includes:
 
-MD2, MD5, SHA-1, HAVAL, Tiger, RIPE-MD160, MD5-MAC, HMAC, XOR-MAC,
-CBC-MAC, DMAC, DES, IDEA, WAKE, 3-WAY, TEA, SAFER, Blowfish, SHARK, GOST,
-CAST-128, Square, Diamond2, Sapphire, RC2, RC5, RC6, MARS, Rijndael,   
-Twofish, Serpent SEAL, Luby-Rackoff, MDC, various encryption modes (CFB,
-CBC, OFB, counter), DH, DH2, MQV, DSA, NR, ElGamal, LUC, LUCDIF, LUCELG,
-Rabin, RW, RSA, BlumGoldwasser, elliptic curve cryptosystems, BBS, DEFLATE
-compression, Shamir's secret sharing scheme, Rabin's information dispersal
-scheme.  There are also various miscellanous modules such as base 64
-coding and 32-bit CRC.
+- a class hierarchy with an API defined by abstract base classes  
+- Proposed AES (Rijndael) and other AES candidates: RC6, MARS, 
+  Twofish, Serpent, CAST-256  
+- other symmetric block ciphers: IDEA, DES, Triple DES (DES-EDE2 
+  and DES-EDE3), DESX (DES-XEX3), RC2, RC5, Blowfish, Diamond2, 
+  TEA, SAFER, 3-WAY, GOST, SHARK, CAST-128, Square, Skipjack  
+- generic cipher modes: CBC padded, CBC ciphertext stealing (CTS), 
+  CFB, OFB, counter mode  
+- stream ciphers: Panama, ARC4, SEAL, WAKE, Sapphire, BlumBlumShub  
+- public key cryptography: RSA, DSA, ElGamal, Nyberg-Rueppel (NR), 
+  BlumGoldwasser, Rabin, Rabin-Williams (RW), LUC, LUCELG  
+- padding schemes for public-key systems: PKCS#1 v2.0, OAEP, PSSR, 
+  IEEE P1363 EMSA2  
+- key agreement schemes: Diffie-Hellman (DH), Unified Diffie-
+  Hellman (DH2), Menezes-Qu-Vanstone (MQV), LUCDIF, XTR-DH  
+- elliptic curve cryptography: ECDSA, ECNR, ECIES, ECDHC, ECMQVC  
+- one-way hash functions: SHA-1, MD2, MD5, HAVAL, RIPEMD-160, 
+  Tiger, SHA-2 (SHA-256, SHA-384, and SHA-512), Panama  
+- message authentication codes: MD5-MAC, HMAC, XOR-MAC, CBC-MAC, DMAC  
+- cipher constructions based on hash functions: Luby-Rackoff, MDC  
+- pseudo random number generators (PRNG): ANSI X9.17 appendix C, 
+  PGP’s RandPool  
+- Shamir’s secret sharing scheme and Rabin’s information dispersal 
+  algorithm (IDA)  
+- DEFLATE (RFC 1951) compression/decompression with gzip (RFC 
+  1952) and zlib (RFC 1950) format support  
+- fast multi-precision integer (bignum) and polynomial operations  
+- prime number generation and verification  
+- various miscellaneous modules such as base 64 coding and 32-bit CRC  
+- class wrappers for these operating system features (optional):  
+  - high resolution timers on Windows, Unix, and MacOS  
+  - Berkeley and Windows style sockets  
+  - Windows named pipes  
+  - /dev/random and /dev/urandom on Linux and FreeBSD  
+  - Microsoft’s CryptGenRandom on Windows  
+- A high level interface for most of the above, using a 
+  filter/pipeline metaphor  
+- benchmarks and validation testing
 
 You are welcome to use it for any purpose without paying me, but see
 license.txt for the fine print.
 
-Crypto++ has been compiled successfully with MSVC 6.0 on Windows 2000
-and GCC 2.95.2 on FreeBSD 3.4.
+Crypto++ has been compiled successfully with MSVC 6.0 on Windows 2000,
+GCC 2.95.2 on FreeBSD 4.1, and CodeWarrior 5.3 on MacOS 8.
 
 To compile Crypto++ with MSVC, open the "cryptest.dsw" workspace file
 and build the "cryptest" project. This will compile Crypto++ as a static
@@ -61,7 +90,7 @@ History
 1.0 - First public release.  Withdrawn at the request of RSA DSI.
     - included Blowfish, BBS, DES, DH, Diamond, DSA, ElGamal, IDEA,
       MD5, RC4, RC5, RSA, SHA, WAKE, secret sharing, DEFLATE compression
-    - had a big bug in the RSA key generation code.
+    - had a serious bug in the RSA key generation code.
 
 1.1 - Removed RSA, RC4, RC5
     - Disabled calls to RSAREF's non-public functions
@@ -136,3 +165,25 @@ History
     - fixed crashing bug in Inflator when given invalid inputs
     - fixed endian bug in Serpent
     - fixed padding bug in Tiger
+
+4.0 - added Skipjack, CAST-256, Panama, SHA-2 (SHA-256, SHA-384, and SHA-512),
+      and XTR-DH
+    - added a faster variant of Rabin's Information Dispersal Algorithm (IDA)
+    - added class wrappers for these operating system features:
+      - high resolution timers on Windows, Unix, and MacOS
+      - Berkeley and Windows style sockets
+      - Windows named pipes
+      - /dev/random and /dev/urandom on Linux and FreeBSD
+    - Microsoft's CryptGenRandom on Windows
+    - added support for SEC 1 elliptic curve key format and compressed points
+    - added support for X.509 public key format (subjectPublicKeyInfo) for
+      RSA, DSA, and elliptic curves
+    - added support for DER and OpenPGP signature format for DSA
+    - added support for ZLIB compressed data format (RFC 1950)
+    - changed elliptic curve encryption to use ECIES (as defined in SEC 1)
+    - changed MARS key schedule to reflect the latest specification
+    - changed BufferedTransformation interface to support multiple channels
+      and messages
+    - changed CAST and SHA-1 implementations to use public domain source code
+    - fixed bug in StringSource
+    - optmized multi-precision integer code for better performance

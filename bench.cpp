@@ -11,6 +11,7 @@
 #include "haval.h"
 #include "tiger.h"
 #include "ripemd.h"
+#include "panama.h"
 #include "idea.h"
 #include "des.h"
 #include "rc2.h"
@@ -72,11 +73,11 @@ USING_NAMESPACE(CryptoPP)
 USING_NAMESPACE(std)
 
 #ifdef CLOCKS_PER_SEC
-static const float CLOCK_TICKS_PER_SECOND = (float)CLOCKS_PER_SEC;
+static const double CLOCK_TICKS_PER_SECOND = (double)CLOCKS_PER_SEC;
 #elif defined(CLK_TCK)
-static const float CLOCK_TICKS_PER_SECOND = (float)CLK_TCK;
+static const double CLOCK_TICKS_PER_SECOND = (double)CLK_TCK;
 #else
-static const float CLOCK_TICKS_PER_SECOND = 1000000.0;
+static const double CLOCK_TICKS_PER_SECOND = 1000000.0;
 #endif
 
 static const byte *const key=(byte *)"0123456789abcdef000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
@@ -84,61 +85,73 @@ static const byte *const key=(byte *)"0123456789abcdef00000000000000000000000000
 static double logtotal = 0;
 static unsigned int logcount = 0;
 
-void BenchMark(const char *name, BlockTransformation &cipher, float timeTotal)
+void OutputResultBytes(const char *name, unsigned long length, double timeTaken)
+{
+	double mbs = length / timeTaken / (1024*1024);
+	cout << "<TR><TH>" << name;
+	cout << "<TD>" << length;
+	cout << setiosflags(ios::fixed);
+	cout << "<TD>" << setprecision(3) << timeTaken;
+	cout << "<TD>" << setprecision(3) << mbs << endl;
+	cout << resetiosflags(ios::fixed);
+	logtotal += log(mbs);
+	logcount++;
+}
+
+void OutputResultOperations(const char *name, const char *operation, bool pc, unsigned long iterations, double timeTaken)
+{
+	cout << "<TR><TH>" << name << " " << operation << (pc ? " with precomputation" : "");
+	cout << "<TD>" << iterations;
+	cout << setiosflags(ios::fixed);
+	cout << "<TD>" << setprecision(3) << timeTaken;
+	cout << "<TD>" << setprecision(2) << (1000*timeTaken/iterations) << endl;
+	cout << resetiosflags(ios::fixed);
+
+	logtotal += log(iterations/timeTaken);
+	logcount++;
+}
+
+void BenchMark(const char *name, BlockTransformation &cipher, double timeTotal)
 {
 	const int BUF_SIZE = cipher.BlockSize();
 	SecByteBlock buf(BUF_SIZE);
 	clock_t start = clock();
 
 	unsigned long i=0, length=BUF_SIZE;
-	float timeTaken;
+	double timeTaken;
 	do
 	{
 		length *= 2;
 		for (; i<length; i+=BUF_SIZE)
 			cipher.ProcessBlock(buf);
-		timeTaken = float(clock() - start) / CLOCK_TICKS_PER_SECOND;
+		timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND;
 	}
 	while (timeTaken < 2.0/3*timeTotal);
 
-	float kbs = length / timeTaken;
-	cout << "<TR><TH>" << name;
-	cout << "<TD>" << length;
-	cout << "<TD>" << timeTaken;
-	cout << "<TD>" << (long)kbs << endl;
-
-	logtotal += log(kbs);
-	logcount++;
+	OutputResultBytes(name, length, timeTaken);
 }
 
-void BenchMark(const char *name, StreamCipher &cipher, float timeTotal)
+void BenchMark(const char *name, StreamCipher &cipher, double timeTotal)
 {
 	const int BUF_SIZE=128; // encrypt 128 bytes at a time
 	SecByteBlock buf(BUF_SIZE);
 	clock_t start = clock();
 
 	unsigned long i=0, length=BUF_SIZE;
-	float timeTaken;
+	double timeTaken;
 	do
 	{
 		length *= 2;
 		for (; i<length; i+=BUF_SIZE)
 			cipher.ProcessString(buf, BUF_SIZE);
-		timeTaken = float(clock() - start) / CLOCK_TICKS_PER_SECOND;
+		timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND;
 	}
 	while (timeTaken < 2.0/3*timeTotal);
 
-	float kbs = length / timeTaken;
-	cout << "<TR><TH>" << name;
-	cout << "<TD>" << length;
-	cout << "<TD>" << timeTaken;
-	cout << "<TD>" << (long)kbs << endl;
-
-	logtotal += log(kbs);
-	logcount++;
+	OutputResultBytes(name, length, timeTaken);
 }
 
-void BenchMark(const char *name, HashModule &hash, float timeTotal)
+void BenchMark(const char *name, HashModule &hash, double timeTotal)
 {
 	const int BUF_SIZE=1024; // update 1024 bytes at a time
 	SecByteBlock buf(BUF_SIZE);
@@ -147,27 +160,20 @@ void BenchMark(const char *name, HashModule &hash, float timeTotal)
 	clock_t start = clock();
 
 	unsigned long i=0, length=BUF_SIZE;
-	float timeTaken;
+	double timeTaken;
 	do
 	{
 		length *= 2;
 		for (; i<length; i+=BUF_SIZE)
 			hash.Update(buf, BUF_SIZE);
-		timeTaken = float(clock() - start) / CLOCK_TICKS_PER_SECOND;
+		timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND;
 	}
 	while (timeTaken < 2.0/3*timeTotal);
 
-	float kbs = length / timeTaken;
-	cout << "<TR><TH>" << name;
-	cout << "<TD>" << length;
-	cout << "<TD>" << timeTaken;
-	cout << "<TD>" << (long)kbs << endl;
-
-	logtotal += log(kbs);
-	logcount++;
+	OutputResultBytes(name, length, timeTaken);
 }
 
-void BenchMark(const char *name, BufferedTransformation &bt, float timeTotal)
+void BenchMark(const char *name, BufferedTransformation &bt, double timeTotal)
 {
 	const int BUF_SIZE=1024; // update 1024 bytes at a time
 	SecByteBlock buf(BUF_SIZE);
@@ -176,27 +182,20 @@ void BenchMark(const char *name, BufferedTransformation &bt, float timeTotal)
 	clock_t start = clock();
 
 	unsigned long i=0, length=BUF_SIZE;
-	float timeTaken;
+	double timeTaken;
 	do
 	{
 		length *= 2;
 		for (; i<length; i+=BUF_SIZE)
 			bt.Put(buf, BUF_SIZE);
-		timeTaken = float(clock() - start) / CLOCK_TICKS_PER_SECOND;
+		timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND;
 	}
 	while (timeTaken < 2.0/3*timeTotal);
 
-	float kbs = length / timeTaken;
-	cout << "<TR><TH>" << name;
-	cout << "<TD>" << length;
-	cout << "<TD>" << timeTaken;
-	cout << "<TD>" << (long)kbs << endl;
-
-	logtotal += log(kbs);
-	logcount++;
+	OutputResultBytes(name, length, timeTaken);
 }
 
-void BenchMarkEncryption(const char *name, PK_Encryptor &key, float timeTotal, bool pc=false)
+void BenchMarkEncryption(const char *name, PK_Encryptor &key, double timeTotal, bool pc=false)
 {
 	unsigned int len = 16;
 	LC_RNG rng(time(NULL));
@@ -205,27 +204,21 @@ void BenchMarkEncryption(const char *name, PK_Encryptor &key, float timeTotal, b
 
 	clock_t start = clock();
 	unsigned int i;
-	float timeTaken;
-	for (timeTaken=(float)0, i=0; timeTaken < timeTotal; timeTaken = float(clock() - start) / CLOCK_TICKS_PER_SECOND, i++)
+	double timeTaken;
+	for (timeTaken=(double)0, i=0; timeTaken < timeTotal; timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND, i++)
 		key.Encrypt(rng, plaintext, len, ciphertext);
 
-	cout << "<TR><TH>" << name << " Encryption" << (pc ? " with precomputation" : "");
-	cout << "<TD>" << i;
-	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
-
-	logtotal += log(i/timeTaken);
-	logcount++;
+	OutputResultOperations(name, "Encryption", pc, i, timeTaken);
 }
 
-void BenchMarkEncryption(const char *name, PK_WithPrecomputation<PK_FixedLengthEncryptor> &key, float timeTotal)
+void BenchMarkEncryption(const char *name, PK_WithPrecomputation<PK_FixedLengthEncryptor> &key, double timeTotal)
 {
 	BenchMarkEncryption(name, dynamic_cast<PK_Encryptor &>(key), timeTotal);
 	key.Precompute(16);
 	BenchMarkEncryption(name, dynamic_cast<PK_Encryptor &>(key), timeTotal, true);
 }
 
-void BenchMarkDecryption(const char *name, PK_Decryptor &priv, PK_Encryptor &pub, float timeTotal)
+void BenchMarkDecryption(const char *name, PK_Decryptor &priv, PK_Encryptor &pub, double timeTotal)
 {
 	unsigned int len = 16;
 	LC_RNG rng(time(NULL));
@@ -236,20 +229,14 @@ void BenchMarkDecryption(const char *name, PK_Decryptor &priv, PK_Encryptor &pub
 
 	clock_t start = clock();
 	unsigned int i;
-	float timeTaken;
-	for (timeTaken=(float)0, i=0; timeTaken < timeTotal; timeTaken = float(clock() - start) / CLOCK_TICKS_PER_SECOND, i++)
+	double timeTaken;
+	for (timeTaken=(double)0, i=0; timeTaken < timeTotal; timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND, i++)
 		priv.Decrypt(ciphertext, ciphertext.size, plaintext);
 
-	cout << "<TR><TH>" << name << " Decryption";
-	cout << "<TD>" << i;
-	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
-
-	logtotal += log(i/timeTaken);
-	logcount++;
+	OutputResultOperations(name, "Decryption", false, i, timeTaken);
 }
 
-void BenchMarkSigning(const char *name, PK_Signer &key, float timeTotal, bool pc=false)
+void BenchMarkSigning(const char *name, PK_Signer &key, double timeTotal, bool pc=false)
 {
 	unsigned int len = 16;
 	LC_RNG rng(time(NULL));
@@ -258,27 +245,21 @@ void BenchMarkSigning(const char *name, PK_Signer &key, float timeTotal, bool pc
 
 	clock_t start = clock();
 	unsigned int i;
-	float timeTaken;
-	for (timeTaken=(float)0, i=0; timeTaken < timeTotal; timeTaken = float(clock() - start) / CLOCK_TICKS_PER_SECOND, i++)
+	double timeTaken;
+	for (timeTaken=(double)0, i=0; timeTaken < timeTotal; timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND, i++)
 		key.SignMessage(rng, message, len, signature);
 
-	cout << "<TR><TH>" << name << " Signature" << (pc ? " with precomputation" : "");
-	cout << "<TD>" << i;
-	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
-
-	logtotal += log(i/timeTaken);
-	logcount++;
+	OutputResultOperations(name, "Signature", pc, i, timeTaken);
 }
 
-void BenchMarkSigning(const char *name, PK_WithPrecomputation<PK_Signer> &key, float timeTotal)
+void BenchMarkSigning(const char *name, PK_WithPrecomputation<PK_Signer> &key, double timeTotal)
 {
 	BenchMarkSigning(name, dynamic_cast<PK_Signer &>(key), timeTotal);
 	key.Precompute(16);
 	BenchMarkSigning(name, dynamic_cast<PK_Signer &>(key), timeTotal, true);
 }
 
-void BenchMarkVerification(const char *name, PK_Signer &priv, PK_Verifier &pub, float timeTotal, bool pc=false)
+void BenchMarkVerification(const char *name, PK_Signer &priv, PK_Verifier &pub, double timeTotal, bool pc=false)
 {
 	unsigned int len = 16;
 	LC_RNG rng(time(NULL));
@@ -288,81 +269,63 @@ void BenchMarkVerification(const char *name, PK_Signer &priv, PK_Verifier &pub, 
 
 	clock_t start = clock();
 	unsigned int i;
-	float timeTaken;
-	for (timeTaken=(float)0, i=0; timeTaken < timeTotal; timeTaken = float(clock() - start) / CLOCK_TICKS_PER_SECOND, i++)
+	double timeTaken;
+	for (timeTaken=(double)0, i=0; timeTaken < timeTotal; timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND, i++)
 		pub.VerifyMessage(message, len, signature);
 
-	cout << "<TR><TH>" << name << " Verification" << (pc ? " with precomputation" : "");
-	cout << "<TD>" << i;
-	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
-
-	logtotal += log(i/timeTaken);
-	logcount++;
+	OutputResultOperations(name, "Verification", pc, i, timeTaken);
 }
 
-void BenchMarkVerification(const char *name, PK_Signer &priv, PK_WithPrecomputation<PK_Verifier> &pub, float timeTotal)
+void BenchMarkVerification(const char *name, PK_Signer &priv, PK_WithPrecomputation<PK_Verifier> &pub, double timeTotal)
 {
 	BenchMarkVerification(name, priv, dynamic_cast<PK_Verifier &>(pub), timeTotal);
 	pub.Precompute(16);
 	BenchMarkVerification(name, priv, dynamic_cast<PK_Verifier &>(pub), timeTotal, true);
 }
 
-void BenchMarkKeyGen(const char *name, PK_SimpleKeyAgreementDomain &d, float timeTotal, bool pc=false)
+void BenchMarkKeyGen(const char *name, PK_SimpleKeyAgreementDomain &d, double timeTotal, bool pc=false)
 {
 	LC_RNG rng(time(NULL));
 	SecByteBlock priv(d.PrivateKeyLength()), pub(d.PublicKeyLength());
 
 	clock_t start = clock();
 	unsigned int i;
-	float timeTaken;
-	for (timeTaken=(float)0, i=0; timeTaken < timeTotal; timeTaken = float(clock() - start) / CLOCK_TICKS_PER_SECOND, i++)
+	double timeTaken;
+	for (timeTaken=(double)0, i=0; timeTaken < timeTotal; timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND, i++)
 		d.GenerateKeyPair(rng, priv, pub);
 
-	cout << "<TR><TH>" << name << " Key-Pair Generation" << (pc ? " with precomputation" : "");
-	cout << "<TD>" << i;
-	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
-
-	logtotal += log(i/timeTaken);
-	logcount++;
+	OutputResultOperations(name, "Key-Pair Generation", pc, i, timeTaken);
 }
 
-void BenchMarkKeyGen(const char *name, PK_WithPrecomputation<PK_SimpleKeyAgreementDomain> &d, float timeTotal)
+void BenchMarkKeyGen(const char *name, PK_WithPrecomputation<PK_SimpleKeyAgreementDomain> &d, double timeTotal)
 {
 	BenchMarkKeyGen(name, dynamic_cast<PK_SimpleKeyAgreementDomain &>(d), timeTotal);
 	d.Precompute(16);
 	BenchMarkKeyGen(name, dynamic_cast<PK_SimpleKeyAgreementDomain &>(d), timeTotal, true);
 }
 
-void BenchMarkKeyGen(const char *name, PK_AuthenticatedKeyAgreementDomain &d, float timeTotal, bool pc=false)
+void BenchMarkKeyGen(const char *name, PK_AuthenticatedKeyAgreementDomain &d, double timeTotal, bool pc=false)
 {
 	LC_RNG rng(time(NULL));
 	SecByteBlock priv(d.EphemeralPrivateKeyLength()), pub(d.EphemeralPublicKeyLength());
 
 	clock_t start = clock();
 	unsigned int i;
-	float timeTaken;
-	for (timeTaken=(float)0, i=0; timeTaken < timeTotal; timeTaken = float(clock() - start) / CLOCK_TICKS_PER_SECOND, i++)
+	double timeTaken;
+	for (timeTaken=(double)0, i=0; timeTaken < timeTotal; timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND, i++)
 		d.GenerateEphemeralKeyPair(rng, priv, pub);
 
-	cout << "<TR><TH>" << name << " Key-Pair Generation" << (pc ? " with precomputation" : "");
-	cout << "<TD>" << i;
-	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
-
-	logtotal += log(i/timeTaken);
-	logcount++;
+	OutputResultOperations(name, "Key-Pair Generation", pc, i, timeTaken);
 }
 
-void BenchMarkKeyGen(const char *name, PK_WithPrecomputation<PK_AuthenticatedKeyAgreementDomain> &d, float timeTotal)
+void BenchMarkKeyGen(const char *name, PK_WithPrecomputation<PK_AuthenticatedKeyAgreementDomain> &d, double timeTotal)
 {
 	BenchMarkKeyGen(name, dynamic_cast<PK_AuthenticatedKeyAgreementDomain &>(d), timeTotal);
 	d.Precompute(16);
 	BenchMarkKeyGen(name, dynamic_cast<PK_AuthenticatedKeyAgreementDomain &>(d), timeTotal, true);
 }
 
-void BenchMarkAgreement(const char *name, PK_SimpleKeyAgreementDomain &d, float timeTotal, bool pc=false)
+void BenchMarkAgreement(const char *name, PK_SimpleKeyAgreementDomain &d, double timeTotal, bool pc=false)
 {
 	LC_RNG rng(time(NULL));
 	SecByteBlock priv1(d.PrivateKeyLength()), priv2(d.PrivateKeyLength());
@@ -373,23 +336,17 @@ void BenchMarkAgreement(const char *name, PK_SimpleKeyAgreementDomain &d, float 
 
 	clock_t start = clock();
 	unsigned int i;
-	float timeTaken;
-	for (timeTaken=(float)0, i=0; timeTaken < timeTotal; timeTaken = float(clock() - start) / CLOCK_TICKS_PER_SECOND, i+=2)
+	double timeTaken;
+	for (timeTaken=(double)0, i=0; timeTaken < timeTotal; timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND, i+=2)
 	{
 		d.Agree(val, priv1, pub2);
 		d.Agree(val, priv2, pub1);
 	}
 
-	cout << "<TR><TH>" << name << " Agreement" << (pc ? " with precomputation" : "");
-	cout << "<TD>" << i;
-	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
-
-	logtotal += log(i/timeTaken);
-	logcount++;
+	OutputResultOperations(name, "Key Agreement", pc, i, timeTaken);
 }
 
-void BenchMarkAgreement(const char *name, PK_AuthenticatedKeyAgreementDomain &d, float timeTotal, bool pc=false)
+void BenchMarkAgreement(const char *name, PK_AuthenticatedKeyAgreementDomain &d, double timeTotal, bool pc=false)
 {
 	LC_RNG rng(time(NULL));
 	SecByteBlock spriv1(d.StaticPrivateKeyLength()), spriv2(d.StaticPrivateKeyLength());
@@ -404,25 +361,19 @@ void BenchMarkAgreement(const char *name, PK_AuthenticatedKeyAgreementDomain &d,
 
 	clock_t start = clock();
 	unsigned int i;
-	float timeTaken;
-	for (timeTaken=(float)0, i=0; timeTaken < timeTotal; timeTaken = float(clock() - start) / CLOCK_TICKS_PER_SECOND, i+=2)
+	double timeTaken;
+	for (timeTaken=(double)0, i=0; timeTaken < timeTotal; timeTaken = double(clock() - start) / CLOCK_TICKS_PER_SECOND, i+=2)
 	{
 		d.Agree(val, spriv1, epriv1, spub2, epub2);
 		d.Agree(val, spriv2, epriv2, spub1, epub1);
 	}
 
-	cout << "<TR><TH>" << name << " Key Agreement" << (pc ? " with precomputation" : "");
-	cout << "<TD>" << i;
-	cout << "<TD>" << setprecision(3) << timeTaken;
-	cout << "<TD>" << setprecision(2) << setiosflags(ios::fixed) << (1000*timeTaken/i) << resetiosflags(ios::fixed) << endl;
-
-	logtotal += log(i/timeTaken);
-	logcount++;
+	OutputResultOperations(name, "Key Agreement", pc, i, timeTaken);
 }
 
 //VC60 workaround: compiler bug triggered without the extra dummy parameters
 template <class T>
-void BenchMarkKeyed(const char *name, float timeTotal, T *x=NULL)
+void BenchMarkKeyed(const char *name, double timeTotal, T *x=NULL)
 {
 	T c(key);
 	BenchMark(name, c, timeTotal);
@@ -430,7 +381,7 @@ void BenchMarkKeyed(const char *name, float timeTotal, T *x=NULL)
 
 //VC60 workaround: compiler bug triggered without the extra dummy parameters
 template <class T>
-void BenchMarkKeyless(const char *name, float timeTotal, T *x=NULL)
+void BenchMarkKeyless(const char *name, double timeTotal, T *x=NULL)
 {
 	T c;
 	BenchMark(name, c, timeTotal);
@@ -438,7 +389,7 @@ void BenchMarkKeyless(const char *name, float timeTotal, T *x=NULL)
 
 //VC60 workaround: compiler bug triggered without the extra dummy parameters
 template <class D, class E>
-void BenchMarkCrypto(const char *filename, const char *name, float timeTotal, D *x=NULL, E *y=NULL)
+void BenchMarkCrypto(const char *filename, const char *name, double timeTotal, D *x=NULL, E *y=NULL)
 {
 	FileSource f(filename, true, new HexDecoder());
 	D priv(f);
@@ -449,7 +400,7 @@ void BenchMarkCrypto(const char *filename, const char *name, float timeTotal, D 
 
 //VC60 workaround: compiler bug triggered without the extra dummy parameters
 template <class S, class V>
-void BenchMarkSignature(const char *filename, const char *name, float timeTotal, S *x=NULL, V *y=NULL)
+void BenchMarkSignature(const char *filename, const char *name, double timeTotal, S *x=NULL, V *y=NULL)
 {
 	FileSource f(filename, true, new HexDecoder());
 	S priv(f);
@@ -460,7 +411,7 @@ void BenchMarkSignature(const char *filename, const char *name, float timeTotal,
 
 //VC60 workaround: compiler bug triggered without the extra dummy parameters
 template <class D>
-void BenchMarkKeyAgreement(const char *filename, const char *name, float timeTotal, D *x=NULL)
+void BenchMarkKeyAgreement(const char *filename, const char *name, double timeTotal, D *x=NULL)
 {
 	FileSource f(filename, true, new HexDecoder());
 	D d(f);
@@ -468,13 +419,13 @@ void BenchMarkKeyAgreement(const char *filename, const char *name, float timeTot
 	BenchMarkAgreement(name, d, timeTotal);
 }
 
-void BenchMarkAll(float t)
+void BenchMarkAll(double t)
 {
 	logtotal = 0;
 	logcount = 0;
 
 	cout << "<TABLE border=1><COLGROUP><COL align=left><COL align=right><COL align=right><COL align=right>" << endl;
-	cout << "<THEAD><TR><TH>Cipher<TH>Total Bytes<TH>Time<TH>Bytes/Second\n<TBODY>" << endl;
+	cout << "<THEAD><TR><TH>Algorithm<TH>Bytes Processed<TH>Time Taken<TH>Megabytes(2^20 bytes)/Second\n<TBODY>" << endl;
 
 	BenchMarkKeyless<CRC32>("CRC-32", t);
 	BenchMarkKeyless<Adler32>("Adler-32", t);
@@ -490,6 +441,8 @@ void BenchMarkAll(float t)
 	BenchMarkKeyless<Tiger>("Tiger", t);
 #endif
 	BenchMarkKeyless<RIPEMD160>("RIPE-MD160", t);
+	BenchMarkKeyless<PanamaHash<false> >("Panama Hash (little endian)", t);
+	BenchMarkKeyless<PanamaHash<true> >("Panama Hash (big endian)", t);
 	BenchMarkKeyed<MDC<MD5> >("MDC/MD5", t);
 	BenchMarkKeyed<LREncryption<MD5> >("Luby-Rackoff/MD5", t);
 	BenchMarkKeyed<DESEncryption>("DES", t);
@@ -523,6 +476,8 @@ void BenchMarkAll(float t)
 		WAKEEncryption c(key, new BitBucket);
 		BenchMark("WAKE", c, t);
 	}
+	BenchMarkKeyed<PanamaCipher<false> >("Panama Cipher (little endian)", t);
+	BenchMarkKeyed<PanamaCipher<true> >("Panama Cipher (big endian)", t);
 	BenchMarkKeyed<SapphireEncryption>("Sapphire", t);
 	BenchMarkKeyed<MD5MAC>("MD5-MAC", t);
 	BenchMarkKeyed<XMACC<MD5> >("XMACC/MD5", t);

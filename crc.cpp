@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include "crc.h"
+#include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
@@ -125,7 +126,7 @@ void CRC32::Update(const byte *s, unsigned int n)
 {
 	word32 crc = m_crc;
 
-	for(; ((unsigned int)s & 3) != 0 && n > 0; n--)
+	for(; !IsAligned<word32>(s) && n > 0; n--)
 		crc = m_tab[CRC32_INDEX(crc) ^ *s++] ^ CRC32_SHIFTED(crc);
 
 	while (n >= 4)

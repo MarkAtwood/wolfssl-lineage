@@ -317,6 +317,14 @@ SOURCE=.\oaep.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\osrng.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\panama.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\pch.cpp
 # ADD CPP /Yc"pch.h"
 # End Source File
@@ -403,13 +411,6 @@ SOURCE=.\serpent.cpp
 # Begin Source File
 
 SOURCE=.\sha.cpp
-
-!IF  "$(CFG)" == "cryptlib - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "cryptlib - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -742,6 +743,14 @@ SOURCE=.\oaep.h
 # Begin Source File
 
 SOURCE=.\oids.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\osrng.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\panama.h
 # End Source File
 # Begin Source File
 

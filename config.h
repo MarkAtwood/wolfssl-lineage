@@ -3,10 +3,25 @@
 
 // ***************** Important Settings ********************
 
+// define this if running on a big-endian CPU
+#if defined(__sparc__) || defined(__hppa__) || defined(__ppc__) || (defined(__MWERKS__) && !defined(__INTEL__))
+#define IS_BIG_ENDIAN
+#endif
+
 // define this if running on a little-endian CPU
-#if !defined(__sparc__) && (!defined(__MWERKS__) || defined(__INTEL__))
+// big endian will be assumed if IS_LITTLE_ENDIAN is not defined
+#ifndef IS_BIG_ENDIAN
 #define IS_LITTLE_ENDIAN
 #endif
+
+// define this if you want to disable all OS-dependent features,
+// such as sockets and OS-provided random number generators
+// #define NO_OS_DEPENDENCE
+
+// Define this to use features provided by Microsoft's CryptoAPI.
+// Current the only feature used is random number generation.
+// This macro will be ignored if NO_OS_DEPENDENCE is defined.
+#define USE_MS_CRYPTOAPI
 
 // define this if your compiler does not support namespaces
 // #define NO_NAMESPACE
@@ -54,7 +69,6 @@
 // choose which style of sockets to wrap (mostly useful for cygwin which has both)
 #define PREFER_BERKELEY_STYLE_SOCKETS
 // #define PREFER_WINDOWS_STYLE_SOCKETS
-// #define PREFER_NO_SOCKETS
 
 // ***************** Important Settings Again ********************
 // But the defaults should be ok.
@@ -80,6 +94,7 @@ typedef unsigned __int64 word64;
 #define W64LIT(x) x##ui64
 #endif
 
+// defined this if your CPU is not 64-bit
 #if defined(WORD64_AVAILABLE) && !defined(__alpha)
 #define SLOW_WORD64
 #endif
@@ -125,6 +140,9 @@ union dword_union
 #define FAST_ROTATE
 #elif defined(__MWERKS__) && TARGET_CPU_PPC
 #define PPC_INTRINSICS
+#define FAST_ROTATE
+#elif defined(__GNUC__) && defined(__i386__)
+// GCC does peephole optimizations which should result in using rotate instructions
 #define FAST_ROTATE
 #endif
 

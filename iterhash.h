@@ -8,21 +8,22 @@ NAMESPACE_BEGIN(CryptoPP)
 
 /* The following classes are explicitly instantiated in iterhash.cpp
 
-	IteratedHash<word32>
-	IteratedHash<word64>	// #ifdef WORD64_AVAILABLE
+	IteratedHashBase<word32>
+	IteratedHashBase<word64>	// #ifdef WORD64_AVAILABLE
 */
 
 template <class T>
 class IteratedHashBase : public virtual HashModule
 {
 public:
+	typedef T HashWordType;
+
 	IteratedHashBase(unsigned int blockSize, unsigned int digestSize);
 	unsigned int DigestSize() const {return digest.size * sizeof(T);};
 	void Update(const byte *input, unsigned int length);
 
-	typedef T HashWordType;
-
 protected:
+	virtual unsigned int HashMultipleBlocks(const T *input, unsigned int length);
 	void PadLastBlock(unsigned int lastBlockSize, byte padFirst=0x80);
 	void Reinit();
 	virtual void Init() =0;
@@ -38,16 +39,14 @@ template <class T, bool H, unsigned int S>
 class IteratedHash : public IteratedHashBase<T>
 {
 public:
+	typedef T HashWordType;
 	enum {HIGHFIRST = H, BLOCKSIZE = S};
+	
 	IteratedHash(unsigned int digestSize) : IteratedHashBase<T>(BLOCKSIZE, digestSize) {}
 
 	inline static void CorrectEndianess(HashWordType *out, const HashWordType *in, unsigned int byteCount)
 	{
-#ifdef IS_LITTLE_ENDIAN
-		if (HIGHFIRST)
-#else
-		if (!HIGHFIRST)
-#endif
+		if (!CheckEndianess(HIGHFIRST))
 			byteReverse(out, in, byteCount);
 		else if (in!=out)
 			memcpy(out, in, byteCount);
@@ -71,17 +70,13 @@ public:
 protected:
 	void HashBlock(const HashWordType *input)
 	{
-#ifdef IS_LITTLE_ENDIAN
-		if (HIGHFIRST)
-#else
-		if (!HIGHFIRST)
-#endif
+		if (CheckEndianess(HIGHFIRST))
+			vTransform(input);
+		else
 		{
 			byteReverse(data.ptr, input, (unsigned int)BLOCKSIZE);
 			vTransform(data);
 		}
-		else
-			vTransform(input);
 	}
 
 	virtual void vTransform(const HashWordType *data) =0;

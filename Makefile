@@ -1,8 +1,12 @@
-CXXFLAGS = -O2 -w
+CXXFLAGS = -O2 -w -pipe
 ARFLAGS = crs
 
 ifeq ($(OSTYPE),)	# for DJGPP, where OSTYPE doesn't exist
 CXXFLAGS := $(CXXFLAGS) -mbnu210
+endif
+
+ifeq ($(OSTYPE),solaris)
+LDLIBS = -lnsl -lsocket
 endif
 
 ifeq ($(CXX),gcc)	# for some reason CXX is gcc on cygwin 1.1.4

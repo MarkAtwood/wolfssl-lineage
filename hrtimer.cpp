@@ -3,6 +3,8 @@
 #include "pch.h"
 #include "hrtimer.h"
 
+#ifdef HIGHRES_TIMER_AVAILABLE
+
 #if defined(_WIN32)
 #include <windows.h>
 #elif defined(__unix__)
@@ -14,8 +16,6 @@
 #include <assert.h>
 
 NAMESPACE_BEGIN(CryptoPP)
-
-#ifdef HIGHRES_TIMER_AVAILABLE
 
 word64 Timer::GetCurrentTimerValue()
 {
@@ -67,6 +67,6 @@ unsigned long Timer::ElapsedTime()
 	}
 }
 
-#endif
-
 NAMESPACE_END
+
+#endif

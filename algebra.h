@@ -98,13 +98,13 @@ private:
 
 // ********************************************************
 
-template <class T>
+template <class T, class E = Integer>
 struct BaseAndExponent
 {
 public:
 	bool operator<(const BaseAndExponent<T> &rhs) const {return exponent < rhs.exponent;}
 	T base;
-	Integer exponent;
+	E exponent;
 };
 
 // VC60 workaround: incomplete member template support

@@ -85,6 +85,8 @@ template <class EC>
 class ECPublicKey : public ECParameters<EC>, virtual public PK_Precomputation
 {
 public:
+	typedef typename EC::Point Point;
+	
 	ECPublicKey(const EC &ec, const Point &G, const Integer &n, const Point &Q)
 		: ECParameters<EC>(ec, G, n), m_Q(Q), m_Qpc(ec, m_Q) {}
 	// construct from a SubjectPublicKeyInfo sequence
@@ -135,6 +137,8 @@ template <class EC, ECSignatureScheme SS = ECNR>
 class ECDigestVerifier : public ECPublicKey<EC>, public PK_WithPrecomputation<DigestVerifier>
 {
 public:
+	typedef typename EC::Point Point;
+	
 	ECDigestVerifier(const ECPublicKey<EC> &key)
 		: ECPublicKey<EC>(key) {}
 	ECDigestVerifier(const EC &ec, const Point &G, const Integer &n, const Point &Q)
@@ -155,6 +159,8 @@ template <class EC, ECSignatureScheme SS = ECNR>
 class ECDigestSigner : public ECPrivateKey<EC>, public PK_WithPrecomputation<DigestSigner>
 {
 public:
+	typedef typename EC::Point Point;
+	
 	ECDigestSigner(const ECPrivateKey<EC> &key)
 		: ECPrivateKey<EC>(key) {}
 	ECDigestSigner(const EC &ec, const Point &G, const Integer &n, const Point &Q, const Integer &d)
@@ -176,8 +182,9 @@ template <class EC, class H, ECSignatureScheme SS = ECNR>
 class ECSigner : public SignerTemplate<ECDigestSigner<EC, SS>, H>, public PK_WithPrecomputation<PK_Signer>
 {
 	typedef SignerTemplate<ECDigestSigner<EC, SS>, H> Base;
-	typedef typename EC::Point Point;
 public:
+	typedef typename EC::Point Point;
+	
 	ECSigner(const ECPrivateKey<EC> &key)
 		: Base(ECDigestSigner<EC, SS>(key)) {}
 	ECSigner(const EC &ec, const Point &G, const Integer &n, const Point &Q, const Integer &d)
@@ -191,8 +198,9 @@ template <class EC, class H, ECSignatureScheme SS = ECNR>
 class ECVerifier : public VerifierTemplate<ECDigestVerifier<EC, SS>, H>, public PK_WithPrecomputation<PK_Verifier>
 {
 	typedef VerifierTemplate<ECDigestVerifier<EC, SS>, H> Base;
-	typedef typename EC::Point Point;
 public:
+	typedef typename EC::Point Point;
+	
 	ECVerifier(const ECPublicKey<EC> &key)
 		: Base(ECDigestVerifier<EC, SS>(key)) {}
 	ECVerifier(const EC &ec, const Point &G, const Integer &n, const Point &Q)
@@ -205,6 +213,8 @@ template <class EC, class MAC = HMAC<SHA>, class KDF = P1363_KDF2<SHA> >
 class ECEncryptor : public ECPublicKey<EC>, public PK_WithPrecomputation<PK_Encryptor>
 {
 public:
+	typedef typename EC::Point Point;
+	
 	ECEncryptor(const ECPublicKey<EC> &key)
 		: ECPublicKey<EC>(key) {}
 	ECEncryptor(const EC &ec, const Point &G, const Integer &n, const Point &Q)
@@ -242,6 +252,8 @@ template <class EC, class MAC = HMAC<SHA>, class KDF = P1363_KDF2<SHA> >
 class ECDecryptor : public ECPrivateKey<EC>, public PK_WithPrecomputation<PK_Decryptor>
 {
 public:
+	typedef typename EC::Point Point;
+	
 	ECDecryptor(const ECPrivateKey<EC> &key)
 		: ECPrivateKey<EC>(key) {}
 	ECDecryptor(const EC &ec, const Point &G, const Integer &n, const Point &Q, const Integer &d)
@@ -290,6 +302,8 @@ template <class EC>
 class ECDHC : public ECParameters<EC>, public PK_WithPrecomputation<PK_SimpleKeyAgreementDomain>
 {
 public:
+	typedef typename EC::Point Point;
+	
 	// G is a point of prime order n, k is order of ec divided by n
 	ECDHC(const EC &ec, const Point &G, const Integer &n, const Integer &k)
 		: ECParameters<EC>(ec, G, n, k) {}
@@ -309,6 +323,8 @@ template <class EC>
 class ECMQVC : public ECParameters<EC>, public PK_WithPrecomputation<PK_AuthenticatedKeyAgreementDomain>
 {
 public:
+	typedef typename EC::Point Point;
+	
 	// G is a point of prime order n, k is order of ec divided by n
 	ECMQVC(const EC &ec, const Point &G, const Integer &n, const Integer &k)
 		: ECParameters<EC>(ec, G, n, k) {}

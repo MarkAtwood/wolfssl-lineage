@@ -21,12 +21,6 @@ public:
 	byte GenerateByte();
 	void GenerateBlock(byte *output, unsigned int size);
 
-/*	// help compiler disambiguate
-	word16 GetShort(word16 min=0, word16 max=0xffff)
-		{return RandomNumberGenerator::GetShort(min, max);}
-	word32 GetLong(word32 min=0, word32 max=0xffffffffL)
-		{return RandomNumberGenerator::GetLong(min, max);}
-*/
 protected:
 	void Stir();
 

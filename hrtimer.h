@@ -5,7 +5,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-#if defined(WORD64_AVAILABLE) && (defined(_WIN32) || defined(__unix__) || defined(macintosh))
+#if !defined(NO_OS_DEPENDENCE) && defined(WORD64_AVAILABLE) && (defined(_WIN32) || defined(__unix__) || defined(macintosh))
 #define HIGHRES_TIMER_AVAILABLE
 #endif
 

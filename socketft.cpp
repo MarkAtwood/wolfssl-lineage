@@ -7,7 +7,7 @@
 
 #include <strstream>	// GCC workaround: 2.95.2 doesn't have <sstream>
 
-#ifndef USE_WINDOWS_STYLE_SOCKETS
+#ifdef USE_BERKELEY_STYLE_SOCKETS
 #include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -103,7 +103,7 @@ void Socket::Bind(unsigned int port, const char *addr)
 	else
 	{
 		unsigned long result = inet_addr(addr);
-		if (result == INADDR_NONE)
+		if (result == -1)	// Solaris doesn't have INADDR_NONE
 		{
 			SetLastError(SOCKET_EINVAL);
 			CheckAndHandleError("inet_addr", SOCKET_ERROR);
@@ -137,7 +137,7 @@ bool Socket::Connect(const char *addr, unsigned int port)
 	sa.sin_family = AF_INET;
 	sa.sin_addr.s_addr = inet_addr(addr);
 
-	if (sa.sin_addr.s_addr == INADDR_NONE)
+	if (sa.sin_addr.s_addr == -1)	// Solaris doesn't have INADDR_NONE
 	{
 		hostent *lphost = gethostbyname(addr);
 		if (lphost == NULL)

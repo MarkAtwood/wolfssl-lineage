@@ -511,52 +511,52 @@ RingOfPolynomialsOver<T>::CoefficientType RingOfPolynomialsOver<T>::InterpolateA
 	return result;
 }
 
-template <class T>
-void RingOfPolynomialsOver<T>::PrepareBulkInterpolation(CoefficientType *w, const CoefficientType x[], unsigned int n) const
+template <class Ring, class Element>
+void PrepareBulkPolynomialInterpolation(const Ring &ring, Element *w, const Element x[], unsigned int n)
 {
 	for (unsigned int i=0; i<n; i++)
 	{
-		CoefficientType t = m_ring.One();
+		Element t = ring.One();
 		for (unsigned int j=0; j<n; j++)
 			if (i != j)
-				t = m_ring.Multiply(t, m_ring.Subtract(x[i], x[j]));
-		w[i] = m_ring.MultiplicativeInverse(t);
+				t = ring.Multiply(t, ring.Subtract(x[i], x[j]));
+		w[i] = ring.MultiplicativeInverse(t);
 	}
 }
 
-template <class T>
-void RingOfPolynomialsOver<T>::PrepareBulkInterpolationAt(CoefficientType *v, const CoefficientType &position, const CoefficientType x[], const CoefficientType w[], unsigned int n) const
+template <class Ring, class Element>
+void PrepareBulkPolynomialInterpolationAt(const Ring &ring, Element *v, const Element &position, const Element x[], const Element w[], unsigned int n)
 {
 	assert(n > 0);
 
-	std::vector<CoefficientType> a(2*n-1);
+	std::vector<Element> a(2*n-1);
 	unsigned int i;
 
 	for (i=0; i<n; i++)
-		a[n-1+i] = m_ring.Subtract(position, x[i]);
+		a[n-1+i] = ring.Subtract(position, x[i]);
 
 	for (i=n-1; i>1; i--)
-		a[i-1] = m_ring.Multiply(a[2*i], a[2*i-1]);
+		a[i-1] = ring.Multiply(a[2*i], a[2*i-1]);
 
-	a[0] = m_ring.One();
+	a[0] = ring.One();
 
 	for (i=0; i<n-1; i++)
 	{
 		std::swap(a[2*i+1], a[2*i+2]);
-		a[2*i+1] = m_ring.Multiply(a[i], a[2*i+1]);
-		a[2*i+2] = m_ring.Multiply(a[i], a[2*i+2]);
+		a[2*i+1] = ring.Multiply(a[i], a[2*i+1]);
+		a[2*i+2] = ring.Multiply(a[i], a[2*i+2]);
 	}
 
 	for (i=0; i<n; i++)
-		v[i] = m_ring.Multiply(a[n-1+i], w[i]);
+		v[i] = ring.Multiply(a[n-1+i], w[i]);
 }
 
-template <class T>
-RingOfPolynomialsOver<T>::CoefficientType RingOfPolynomialsOver<T>::BulkInterpolateAt(const CoefficientType y[], const CoefficientType v[], unsigned int n) const
+template <class Ring, class Element>
+Element BulkPolynomialInterpolateAt(const Ring &ring, const Element y[], const Element v[], unsigned int n)
 {
-	CoefficientType result = m_ring.Zero();
+	Element result = ring.Zero();
 	for (unsigned int i=0; i<n; i++)
-		m_ring.Accumulate(result, m_ring.Multiply(y[i], v[i]));
+		ring.Accumulate(result, ring.Multiply(y[i], v[i]));
 	return result;
 }
 

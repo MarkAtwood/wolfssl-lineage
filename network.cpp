@@ -67,16 +67,16 @@ unsigned long NetworkSource::GeneralPump(unsigned long maxSize, unsigned long ma
 			byte *p, *end = m_buf + STDMIN((unsigned long)m_bufSize, maxSize - totalPumpSize);
 			if (checkDelimiter && (p=std::find(m_buf.ptr, end, delimiter)) != end)
 			{
-				AttachedTransformation()->Put(m_buf, p-m_buf);
-				totalPumpSize += p-m_buf;
+				AttachedTransformation()->Put(m_buf, p-m_buf.ptr);
+				totalPumpSize += p-m_buf.ptr;
 				m_bufSize = m_buf+m_bufSize-p;
 				memmove(m_buf, p, m_bufSize);
 				break;
 			}
 			else
 			{
-				AttachedTransformation()->Put(m_buf, end-m_buf);
-				totalPumpSize += end-m_buf;
+				AttachedTransformation()->Put(m_buf, end-m_buf.ptr);
+				totalPumpSize += end-m_buf.ptr;
 				m_bufSize = m_buf+m_bufSize-end;
 			}
 		}
