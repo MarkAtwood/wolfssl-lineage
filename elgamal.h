@@ -5,6 +5,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! ElGamal Encryptor
 class ElGamalEncryptor : public PK_WithPrecomputation<PK_FixedLengthEncryptor>
 {
 public:
@@ -39,6 +40,7 @@ protected:
 	ModExpPrecomputation m_gpc, m_ypc;
 };
 
+//! ElGamal Decryptor
 class ElGamalDecryptor : public ElGamalEncryptor, public PK_FixedLengthDecryptor
 {
 public:

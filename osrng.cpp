@@ -13,6 +13,7 @@
 #include <wincrypt.h>
 #elif defined(__FreeBSD__) || defined(__linux__)
 #include <fcntl.h>
+#include <unistd.h>
 #endif
 
 NAMESPACE_BEGIN(CryptoPP)

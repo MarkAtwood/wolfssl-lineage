@@ -43,7 +43,8 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-static const int IDEA_KEYLEN=(6*IDEA::ROUNDS+4);  // key schedule length in # of word16s
+static const int ROUNDS=8;
+static const int IDEA_KEYLEN=(6*ROUNDS+4);  // key schedule length in # of word16s
 
 #define low16(x) ((x)&0xffff)	// compiler should be able to optimize this away if word is 16 bits
 #define high16(x) ((x)>>16)

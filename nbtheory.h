@@ -100,6 +100,7 @@ unsigned int FactoringWorkFactor(unsigned int bitlength);
 
 // ********************************************************
 
+//! generator of prime numbers of special forms
 class PrimeAndGenerator
 {
 public:

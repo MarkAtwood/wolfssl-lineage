@@ -6,17 +6,14 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-// can be passed to functions that ask for a RNG but doesn't actually use it
+//! can be passed to functions that ask for a RNG but doesn't actually use it
 class NullRNG : public RandomNumberGenerator
 {
 	byte GenerateByte() {assert(false); return 0x7d;}
 };
 
-// linear congruential generator
-// originally by William S. England
-
-// do not use for cryptographic purposes
-
+//! linear congruential generator
+/*! originally by William S. England, do not use for cryptographic purposes */
 class LC_RNG : public RandomNumberGenerator
 {
 public:
@@ -37,7 +34,7 @@ private:
 	static const word16 r;
 };
 
-// RNG derived from ANSI X9.17 Appendix C
+//! RNG derived from ANSI X9.17 Appendix C
 
 class X917RNG : public RandomNumberGenerator
 {
@@ -55,9 +52,9 @@ private:
 	int randbuf_counter;	// # of unused bytes left in randbuf
 };
 
-// This class implements Maurer's Universal Statistical Test for Random Bit Generators
-// it is intended for measuring the randomness of *PHYSICAL* RNGs.
-// For more details see his paper in Journal of Cryptology, 1992.
+/** This class implements Maurer's Universal Statistical Test for Random Bit Generators
+    it is intended for measuring the randomness of *PHYSICAL* RNGs.
+    For more details see his paper in Journal of Cryptology, 1992. */
 
 class MaurerRandomnessTest : public Sink
 {

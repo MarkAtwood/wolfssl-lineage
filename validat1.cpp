@@ -329,7 +329,7 @@ public:
 template <class E, class D> class FixedRoundsCipherFactory : public CipherFactory
 {
 public:
-	FixedRoundsCipherFactory(unsigned int keylen=0) : m_keylen(keylen?keylen:E::KEYLENGTH)
+	FixedRoundsCipherFactory(unsigned int keylen=0) : m_keylen(keylen?keylen:E::DEFAULT_KEYLENGTH)
 		{assert(E::KeyLength(m_keylen)==m_keylen && D::KeyLength(m_keylen)==m_keylen);}
 	unsigned int BlockSize() const {return E::BLOCKSIZE;}
 	unsigned int KeyLength() const {return m_keylen;}
@@ -345,7 +345,7 @@ public:
 template <class E, class D> class VariableRoundsCipherFactory : public CipherFactory
 {
 public:
-	VariableRoundsCipherFactory(unsigned int keylen=0, unsigned int rounds=0) : m_keylen(keylen?keylen:E::KEYLENGTH), m_rounds(rounds?rounds:E::ROUNDS)
+	VariableRoundsCipherFactory(unsigned int keylen=0, unsigned int rounds=0) : m_keylen(keylen?keylen:E::DEFAULT_KEYLENGTH), m_rounds(rounds?rounds:E::DEFAULT_ROUNDS)
 		{assert(E::KeyLength(m_keylen)==m_keylen && D::KeyLength(m_keylen)==m_keylen);}
 	unsigned int BlockSize() const {return E::BLOCKSIZE;}
 	unsigned int KeyLength() const {return m_keylen;}

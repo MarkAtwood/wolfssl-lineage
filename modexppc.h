@@ -7,6 +7,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! .
 class ModExpPrecomputation
 {
 public:

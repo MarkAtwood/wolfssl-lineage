@@ -6,24 +6,25 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// CBC-MAC
-
-/** Compatible with FIPS 113. T should be an encryption class.
+//! <a href="http://www.weidai.com/scan-mirror/mac.html#CBC-MAC">CBC-MAC</a>
+/*! Compatible with FIPS 113. T should be an encryption class.
 	Secure only for fixed length messages. For variable length
 	messages use DMAC.
 */
-template <class T> class CBC_MAC : public MessageAuthenticationCode
+template <class T> class CBC_MAC : public MessageAuthenticationCode, public SameKeyLengthAs<T>
 {
 public:
-	enum {KEYLENGTH=T::KEYLENGTH, DIGESTSIZE=T::BLOCKSIZE};
+	enum {DIGESTSIZE=T::BLOCKSIZE};
 
-	CBC_MAC(const byte *key, unsigned int keylength = KEYLENGTH);
+#ifdef __MWERKS__	// CW50 workaround: can't use DEFAULT_KEYLENGTH here
+	CBC_MAC(const byte *key, unsigned int keylength = T::DEFAULT_KEYLENGTH);
+#else
+	CBC_MAC(const byte *key, unsigned int keylength = DEFAULT_KEYLENGTH);
+#endif
 
 	void Update(const byte *input, unsigned int length);
 	void Final(byte *mac);
 	unsigned int DigestSize() const {return DIGESTSIZE;}
-	static unsigned int KeyLength(unsigned int keylength)
-		{return T::KeyLength(keylength);}
 
 private:
 	void ProcessBuf();

@@ -1,11 +1,15 @@
 #ifndef CRYPTOPP_BLUMGOLD_H
 #define CRYPTOPP_BLUMGOLD_H
 
+/** \file
+*/
+
 #include "cryptlib.h"
 #include "integer.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! BlumGoldwasser Public Key Class - PKI    
 class BlumGoldwasserPublicKey : public PK_Encryptor
 {
 public:
@@ -28,6 +32,7 @@ protected:
 	unsigned int modulusLen;
 };
 
+//! BlumGoldwasser Private Key Class - PKI    
 class BlumGoldwasserPrivateKey : public BlumGoldwasserPublicKey, public PK_Decryptor
 {
 public:

@@ -9,6 +9,7 @@ NAMESPACE_BEGIN(CryptoPP)
 class BlumGoldwasserPublicKey;
 class BlumGoldwasserPrivateKey;
 
+//! BlumBlumShub without factorization of the modulus
 class PublicBlumBlumShub : public RandomNumberGenerator,
 						   public virtual StreamCipher
 {
@@ -31,6 +32,7 @@ protected:
 	friend class BlumGoldwasserPrivateKey;
 };
 
+//! BlumBlumShub with factorization of the modulus
 class BlumBlumShub : public PublicBlumBlumShub,
 					 public RandomAccessStreamCipher
 {

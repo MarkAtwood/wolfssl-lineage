@@ -5,6 +5,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! .
 class LowFirstBitReader
 {
 public:
@@ -24,6 +25,7 @@ private:
 	unsigned int m_bitsBuffered;
 };
 
+//! Huffman Decoder
 class HuffmanDecoder
 {
 public:
@@ -73,7 +75,7 @@ private:
 	SecBlock<LookupEntry> m_cache;
 };
 
-// DEFLATE (RFC 1951) decompressor
+//! DEFLATE (RFC 1951) decompressor
 
 class Inflator : public Filter, public BufferedTransformationWithAutoSignal
 {

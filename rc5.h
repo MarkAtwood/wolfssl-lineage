@@ -1,22 +1,21 @@
 #ifndef CRYPTOPP_RC5_H
 #define CRYPTOPP_RC5_H
 
+/** \file
+*/
+
 #include "cryptlib.h"
 #include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class RC5Base : public BlockTransformation
+/// base class, do not use directly
+class RC5Base : public FixedBlockSize<8>, public VariableKeyLength<16, 0, 255>
 {
 public:
 	typedef word32 RC5_WORD;
 
-	// values of KEYLENGTH and ROUNDS are defaults only
-	// default number of rounds has been increased to 16 from 12
-	enum {KEYLENGTH=16, BLOCKSIZE = sizeof(RC5_WORD)*2, ROUNDS=16};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength)
-		{return STDMIN(keylength, 255U);}
+	enum {DEFAULT_ROUNDS=16};
 
 protected:
 	RC5Base(const byte *key, unsigned int keyLen, unsigned int rounds);
@@ -25,10 +24,11 @@ protected:
 	SecBlock<RC5_WORD> sTable;  // expanded key table
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#RC5">RC5</a>
 class RC5Encryption : public RC5Base
 {
 public:
-	RC5Encryption(const byte *key, unsigned int keyLen=KEYLENGTH, unsigned int rounds=ROUNDS)
+	RC5Encryption(const byte *key, unsigned int keyLen=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS)
 		: RC5Base(key, keyLen, rounds) {}
 
 	void ProcessBlock(byte * inoutBlock) const
@@ -36,10 +36,11 @@ public:
 	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#RC5">RC5</a>
 class RC5Decryption : public RC5Base
 {
 public:
-	RC5Decryption(const byte *key, unsigned int keyLen=KEYLENGTH, unsigned int rounds=ROUNDS)
+	RC5Decryption(const byte *key, unsigned int keyLen=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS)
 		: RC5Base(key, keyLen, rounds) {}
 
 	void ProcessBlock(byte * inoutBlock) const

@@ -3,35 +3,37 @@
 #ifndef CRYPTOPP_LUBYRACK_H
 #define CRYPTOPP_LUBYRACK_H
 
+/** \file */
+
 #include "cryptlib.h"
 #include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-template <class T> class LRBase : public BlockTransformation
+//! base class, do not use directly
+template <class T> class LRBase : public BlockTransformation, public VariableKeyLength<16, 0, UINT_MAX, 2>
 {
 public:
-	enum {KEYLENGTH=16};    // default key length
+	enum {BLOCKSIZE = 2*T::DIGESTSIZE};
+	unsigned int BlockSize() const {return BLOCKSIZE;}
 
 protected:
 	LRBase(const byte *userKey, unsigned int keyLen);
-	unsigned int BlockSize() const {return 2*S;}
-	static unsigned int KeyLength(unsigned int keylength)
-		{return keylength < 1 ? 1 : keylength;}
 
-	const unsigned int S;    // block size / 2
-	const unsigned int L;    // key length / 2
+	enum {S=T::DIGESTSIZE};
+	const unsigned int L;	// key length / 2
 	SecByteBlock key;
 
 	mutable T hm;
 	mutable SecByteBlock buffer;
 };
 
+//! Luby-Rackoff Encryptor
 template <class T> class LREncryption : public LRBase<T>
 {
 public:
 	// keyLen must be even
-	LREncryption(const byte *userKey, int keyLen=LRBase<T>::KEYLENGTH)
+	LREncryption(const byte *userKey, int keyLen=LRBase<T>::DEFAULT_KEYLENGTH)
 		: LRBase<T>(userKey, keyLen) {}
 
 	void ProcessBlock(byte * inoutBlock) const
@@ -40,11 +42,12 @@ public:
 	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
 };
 
+//! Luby-Rackoff Decryptor
 template <class T> class LRDecryption : public LRBase<T>
 {
 public:
 	// keyLen must be even
-	LRDecryption(const byte *userKey, int keyLen=LRBase<T>::KEYLENGTH)
+	LRDecryption(const byte *userKey, int keyLen=LRBase<T>::DEFAULT_KEYLENGTH)
 		: LRBase<T>(userKey, keyLen) {}
 
 	void ProcessBlock(byte * inoutBlock) const
@@ -54,7 +57,7 @@ public:
 };
 
 template <class T> LRBase<T>::LRBase(const byte *userKey, unsigned int keyLen)
-: S(T::DIGESTSIZE), L(keyLen/2), key(2*L), buffer(2*S)
+	: L(keyLen/2), key(2*L), buffer(2*S)
 {
 	memcpy(key, userKey, 2*L);
 }

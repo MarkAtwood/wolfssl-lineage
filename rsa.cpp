@@ -12,9 +12,9 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-INSTANTIATE_PUBKEY_TEMPLATES_MACRO(PKCS_EncryptionPaddingScheme, PKCS_SignaturePaddingScheme, RSAFunction, InvertibleRSAFunction);
+INSTANTIATE_PUBKEY_TEMPLATES_MACRO(PKCS_EncryptionPaddingScheme, PKCS_SignaturePaddingScheme, RSAFunction, InvertibleRSAFunction)
 template class OAEP<SHA>;
-INSTANTIATE_PUBKEY_CRYPTO_TEMPLATES_MACRO(OAEP<SHA>, RSAFunction, InvertibleRSAFunction);
+INSTANTIATE_PUBKEY_CRYPTO_TEMPLATES_MACRO(OAEP<SHA>, RSAFunction, InvertibleRSAFunction)
 
 RSAFunction::RSAFunction(BufferedTransformation &bt)
 {
@@ -104,7 +104,8 @@ InvertibleRSAFunction::InvertibleRSAFunction(RandomNumberGenerator &rng, unsigne
 	// pre-calculate some other data for faster speed
 	const Integer lcm = LCM(p-1, q-1);
 	// make sure e starts odd
-	for (e = eStart+(1-eStart%2); GCD(e, lcm)!=1; ++e, ++e);
+	for (e = eStart+(1-eStart%2); GCD(e, lcm)!=1; ++e, ++e)
+		;
 	d = EuclideanMultiplicativeInverse(e, lcm);
 	dp = d % (p-1);
 	dq = d % (q-1);

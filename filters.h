@@ -8,9 +8,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-// Filter provides an implementation of BufferedTransformation's
-// attachment interface
-
+/// provides an implementation of BufferedTransformation's attachment interface
 class Filter : virtual public BufferedTransformation
 {
 public:
@@ -31,6 +29,7 @@ private:
 	member_ptr<BufferedTransformation> m_outQueue;
 };
 
+//! .
 class TransparentFilter : public Filter
 {
 public:
@@ -39,6 +38,7 @@ public:
 	void Put(const byte *inString, unsigned int length) {AttachedTransformation()->Put(inString, length);}
 };
 
+//! .
 class OpaqueFilter : public Filter
 {
 public:
@@ -47,22 +47,23 @@ public:
 	void Put(const byte *inString, unsigned int length) {}
 };
 
-// FilterWithBufferedInput divides up the input stream into
-// a first block, a number of middle blocks, and a last block.
-// First and last blocks are optional, and middle blocks may
-// be a stream instead (i.e. blockSize == 1).
-
+/*! FilterWithBufferedInput divides up the input stream into
+	a first block, a number of middle blocks, and a last block.
+	First and last blocks are optional, and middle blocks may
+	be a stream instead (i.e. blockSize == 1).
+*/
 class FilterWithBufferedInput : public Filter
 {
 public:
-	// firstSize and lastSize may be 0, blockSize must be at least 1
+	/// firstSize and lastSize may be 0, blockSize must be at least 1
 	FilterWithBufferedInput(unsigned int firstSize, unsigned int blockSize, unsigned int lastSize, BufferedTransformation *outQ);
 	void Put(byte inByte);
 	void Put(const byte *inString, unsigned int length);
 	void MessageEnd(int propagation=-1);
 
-	// the input buffer may contain more than blockSize bytes if lastSize != 0
-	// ForceNextPut() forces a call to NextPut() if this is the case
+	/*! the input buffer may contain more than blockSize bytes if lastSize != 0
+		ForceNextPut() forces a call to NextPut() if this is the case 
+	*/
 	void ForceNextPut();
 
 protected:
@@ -104,6 +105,7 @@ private:
 	BlockQueue m_queue;
 };
 
+//! .
 class FilterWithInputQueue : public Filter
 {
 public:
@@ -115,6 +117,7 @@ protected:
 	ByteQueue m_inQueue;
 };
 
+//! Filter Wrapper for StreamCipher
 class StreamCipherFilter : public Filter
 {
 public:
@@ -131,6 +134,7 @@ private:
 	StreamCipher &cipher;
 };
 
+//! Filter Wrapper for HashModule
 class HashFilter : public Filter
 {
 public:
@@ -147,6 +151,7 @@ private:
 	bool m_putMessage;
 };
 
+//! Filter Wrapper for HashModule
 class HashVerifier : public FilterWithBufferedInput
 {
 public:
@@ -174,6 +179,7 @@ private:
 	bool m_verified;
 };
 
+//! Filter Wrapper for PK_Signer
 class SignerFilter : public Filter
 {
 public:
@@ -194,6 +200,7 @@ private:
 	member_ptr<HashModule> m_messageAccumulator;
 };
 
+//! Filter Wrapper for PK_Verifier
 class VerifierFilter : public Filter
 {
 public:
@@ -218,10 +225,12 @@ private:
 	SecByteBlock m_signature;
 };
 
+//! A BufferedTransformation that doesn't produce any retrievable output
 class Sink : public BufferedTransformation
 {
 };
 
+//! .
 class BitBucket : public Sink
 {
 public:
@@ -231,6 +240,7 @@ public:
 
 extern BitBucket g_bitBucket;
 
+//! Redirect input to another BufferedTransformation without owning it
 class Redirector : public Sink
 {
 public:
@@ -269,6 +279,7 @@ private:
 	bool m_passSignal;
 };
 
+// Used By ProxyFilter
 class OutputProxy : public Sink
 {
 public:
@@ -304,6 +315,7 @@ private:
 	bool m_passSignal;
 };
 
+//! Base class for Filter classes that are proxies for a chain of other filters.
 class ProxyFilter : public FilterWithBufferedInput
 {
 public:
@@ -319,6 +331,7 @@ protected:
 	OutputProxy *m_proxy;
 };
 
+//! Append input to a string object
 template <class T>
 class StringSinkTemplate : public Sink
 {
@@ -337,8 +350,10 @@ private:
 	T &m_output;
 };
 
+//! Append input to an std::string
 typedef StringSinkTemplate<std::string> StringSink;
 
+//! Copy input to a memory buffer
 class ArraySink : public Sink
 {
 public:
@@ -367,6 +382,7 @@ protected:
 	unsigned long m_total;
 };
 
+//! Xor input to a memory buffer
 class ArrayXorSink : public ArraySink
 {
 public:
@@ -388,6 +404,7 @@ public:
 	}
 };
 
+//! Provide implementation of SetAutoSignalPropagation and GetAutoSignalPropagation
 class BufferedTransformationWithAutoSignal : virtual public BufferedTransformation
 {
 public:
@@ -402,6 +419,7 @@ private:
 	int m_autoSignalPropagation;
 };
 
+//! A BufferedTransformation that only contains pre-existing output
 class Store : public BufferedTransformationWithAutoSignal
 {
 public:
@@ -423,6 +441,7 @@ private:
 	bool m_messageEnd;
 };
 
+//! .
 class StringStore : public Store
 {
 public:
@@ -441,6 +460,7 @@ private:
 	unsigned int m_length, m_count;
 };
 
+//! .
 class RandomNumberStore : public Store
 {
 public:
@@ -455,6 +475,7 @@ private:
 	unsigned long m_length, m_count;
 };
 
+//! A Filter that pumps data into its attachment as input
 class Source : public Filter
 {
 public:
@@ -473,6 +494,7 @@ public:
 		{PumpAll();}
 };
 
+//! Turn a Store into a Source
 class GeneralSource : public Source
 {
 public:
@@ -491,12 +513,23 @@ private:
 	BufferedTransformation &m_store;
 };
 
+//! .
 class StringSource : public Source
 {
 public:
 	StringSource(const char *string, bool pumpAll, BufferedTransformation *outQueue = NULL);
 	StringSource(const byte *string, unsigned int length, bool pumpAll, BufferedTransformation *outQueue = NULL);
-	template <class T> StringSource(const T &string, bool pumpAll, BufferedTransformation *outQueue = NULL);
+
+#ifdef __MWERKS__	// CW60 workaround
+	StringSource(const std::string &string, bool pumpAll, BufferedTransformation *outQueue = NULL)
+#else
+	template <class T> StringSource(const T &string, bool pumpAll, BufferedTransformation *outQueue = NULL)
+#endif
+		: Source(outQueue), m_store(string)
+	{
+		if (pumpAll)
+			PumpAll();
+	}
 
 	unsigned long Pump(unsigned long pumpMax=ULONG_MAX)
 		{return m_store.TransferTo(*AttachedTransformation(), pumpMax);}
@@ -507,6 +540,7 @@ private:
 	StringStore m_store;
 };
 
+//! .
 class RandomNumberSource : public Source
 {
 public:

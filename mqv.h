@@ -1,11 +1,14 @@
 #ifndef CRYPTOPP_MQV_H
 #define CRYPTOPP_MQV_H
 
+/** \file
+*/
+
 #include "modexppc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-// Menezes-Qu-Vanstone in GF(p) with key validation
+/// Menezes-Qu-Vanstone in GF(p) with key validation, AKA <a href="http://www.weidai.com/scan-mirror/ka.html#MQV">MQV</a>
 
 class MQV : public PK_WithPrecomputation<PK_AuthenticatedKeyAgreementDomain>
 {

@@ -13,6 +13,7 @@ Integer DSA_EncodeDigest(unsigned int modulusBits, const byte *digest, unsigned 
 
 // ********************************************************
 
+//! base class for a trapdoor function
 class TrapdoorFunction
 {
 public:
@@ -25,12 +26,14 @@ public:
 	virtual Integer MaxImage() const {return --ImageBound();}
 };
 
+//! invertible trapdoor function
 class InvertibleTrapdoorFunction : virtual public TrapdoorFunction
 {
 public:
 	virtual Integer CalculateInverse(const Integer &x) const =0;
 };
 
+//! Base Class
 class PaddingScheme
 {
 public:
@@ -45,6 +48,7 @@ public:
 
 // ********************************************************
 
+//! .
 template <class H>
 class P1363_MGF1
 {
@@ -69,6 +73,7 @@ void P1363_MGF1<H>::GenerateAndMask(byte *output, unsigned int outputLength, con
 
 // ********************************************************
 
+//! .
 template <class H>
 class P1363_KDF2
 {
@@ -89,10 +94,11 @@ void P1363_KDF2<H>::DeriveKey(byte *output, unsigned int outputLength, const byt
 		filter.PutWord32(counter++);
 		filter.MessageEnd();
 	}
-};
+}
 
 // ********************************************************
 
+//! .
 template <class F>
 class PublicKeyBaseTemplate
 {
@@ -114,6 +120,7 @@ protected:
 
 // ********************************************************
 
+//! .
 template <class P, class F>
 class CryptoSystemBaseTemplate : virtual public PK_FixedLengthCryptoSystem, virtual public PublicKeyBaseTemplate<F>
 {
@@ -128,6 +135,7 @@ protected:
 	unsigned int PaddedBlockBitLength() const {return f.PreimageBound().BitCount()-1;}
 };
 
+//! .
 template <class P, class F>
 class DecryptorTemplate : public PK_FixedLengthDecryptor, public CryptoSystemBaseTemplate<P, F>
 {
@@ -139,6 +147,7 @@ protected:
 	DecryptorTemplate() {}
 };
 
+//! .
 template <class P, class T>
 class EncryptorTemplate : public PK_FixedLengthEncryptor, public CryptoSystemBaseTemplate<P, T>
 {
@@ -152,6 +161,7 @@ protected:
 
 // ********************************************************
 
+//! .
 class DigestSignatureSystem
 {
 public:
@@ -160,18 +170,21 @@ public:
 	virtual unsigned int DigestSignatureLength() const =0;
 };
 
+//! .
 class DigestSigner : public virtual DigestSignatureSystem
 {
 public:
 	virtual void SignDigest(RandomNumberGenerator &rng, const byte *digest, unsigned int digestLen, byte *signature) const =0;
 };
 
+//! .
 class DigestVerifier : public virtual DigestSignatureSystem
 {
 public:
 	virtual bool VerifyDigest(const byte *digest, unsigned int digestLen, const byte *sig) const =0;
 };
 
+//! .
 template <class P, class T>
 class DigestSignatureSystemBaseTemplate : virtual public DigestSignatureSystem, virtual public PublicKeyBaseTemplate<T>
 {
@@ -186,6 +199,7 @@ protected:
 	unsigned int PaddedBlockBitLength() const {return f.ImageBound().BitCount()-1;}
 };
 
+//! .
 template <class P, class T>
 class DigestSignerTemplate : public DigestSigner, public DigestSignatureSystemBaseTemplate<P, T>
 {
@@ -197,6 +211,7 @@ protected:
 	DigestSignerTemplate() {}
 };
 
+//! .
 template <class P, class T>
 class DigestVerifierTemplate : public DigestVerifier, public DigestSignatureSystemBaseTemplate<P, T>
 {
@@ -210,6 +225,7 @@ protected:
 
 // ********************************************************
 
+//! .
 template <class S, class H>
 class SignatureSystemBaseTemplate : virtual public PK_SignatureSystem, virtual public S
 {
@@ -221,6 +237,7 @@ protected:
 	SignatureSystemBaseTemplate() : S(*(S*)0) {}
 };
 
+//! .
 template <class S, class H>
 class SignerTemplate : virtual public PK_Signer, public SignatureSystemBaseTemplate<S, H>
 {
@@ -232,6 +249,7 @@ protected:
 	SignerTemplate() : S(*(S*)0) {}
 };
 
+//! .
 template <class S, class H>
 class VerifierTemplate : virtual public PK_Verifier, public SignatureSystemBaseTemplate<S, H>
 {
@@ -265,6 +283,7 @@ bool VerifierTemplate<S,H>::Verify(HashModule *messageAccumulator, const byte *s
 
 // ********************************************************
 
+//! .
 class SignatureEncodingMethodWithRecovery : public HashModule
 {
 public:
@@ -275,6 +294,7 @@ public:
 	virtual unsigned int MaximumRecoverableLength() const =0;
 };
 
+//! .
 template <class F, class H>
 class SignatureSystemWithRecoveryBaseTemplate : virtual public PK_SignatureSystemWithRecovery, virtual public PublicKeyBaseTemplate<F>
 {
@@ -288,6 +308,7 @@ protected:
 	unsigned int PaddedBlockBitLength() const {return f.ImageBound().BitCount()-1;}
 };
 
+//! .
 template <class F, class H>
 class SignerWithRecoveryTemplate : virtual public PK_SignerWithRecovery, public SignatureSystemWithRecoveryBaseTemplate<F, H>
 {
@@ -295,6 +316,7 @@ public:
 	void Sign(RandomNumberGenerator &rng, HashModule *messageAccumulator, byte *signature) const;
 };
 
+//! .
 template <class F, class H>
 class VerifierWithRecoveryTemplate : virtual public PK_VerifierWithRecovery, public SignatureSystemWithRecoveryBaseTemplate<F, H>
 {

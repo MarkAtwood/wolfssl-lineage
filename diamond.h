@@ -1,22 +1,23 @@
 #ifndef CRYPTOPP_DIAMOND_H
 #define CRYPTOPP_DIAMOND_H
 
+/** \file
+*/
+
 #include "cryptlib.h"
 #include "misc.h"
 #include "crc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class Diamond2Base : public BlockTransformation
+/// base class, do not use directly
+class Diamond2Base : public FixedBlockSize<16>, public VariableKeyLength<16, 1, 256>
 {
 public:
 	Diamond2Base(const byte *key, unsigned int key_size, unsigned int rounds,
 				CipherDir direction);
 
-	enum {KEYLENGTH=16, BLOCKSIZE=16, ROUNDS=10, MAX_KEYLENGTH=256};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength)
-		{return keylength < 1 ? 1 : (keylength <= MAX_KEYLENGTH ? keylength : MAX_KEYLENGTH);}
+	enum {DEFAULT_ROUNDS=10};
 
 protected:
 	enum {ROUNDSIZE=4096};
@@ -33,36 +34,36 @@ protected:
 #endif
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#Diamond2">Diamond2</a>
 class Diamond2Encryption : public Diamond2Base
 {
 public:
-	Diamond2Encryption(const byte *key, unsigned int key_size=KEYLENGTH, unsigned int rounds=ROUNDS)
+	Diamond2Encryption(const byte *key, unsigned int key_size=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS)
 		: Diamond2Base(key, key_size, rounds, ENCRYPTION) {}
 
 	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
 	void ProcessBlock(byte * inoutBlock) const;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#Diamond2">Diamond2</a>
 class Diamond2Decryption : public Diamond2Base
 {
 public:
-	Diamond2Decryption(const byte *key, unsigned int key_size=KEYLENGTH, unsigned int rounds=ROUNDS)
+	Diamond2Decryption(const byte *key, unsigned int key_size=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS)
 		: Diamond2Base(key, key_size, rounds, DECRYPTION) {}
 
 	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
 	void ProcessBlock(byte * inoutBlock) const;
 };
 
-class Diamond2LiteBase : public BlockTransformation
+/// base class, do not use directly
+class Diamond2LiteBase : public FixedBlockSize<8>, public VariableKeyLength<16, 1, 256>
 {
 public:
 	Diamond2LiteBase(const byte *key, unsigned int key_size, unsigned int rounds,
 				CipherDir direction);
 
-	enum {KEYLENGTH=16, BLOCKSIZE=8, ROUNDS=8, MAX_KEYLENGTH=256};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength)
-		{return keylength < 1 ? 1 : (keylength <= MAX_KEYLENGTH ? keylength : MAX_KEYLENGTH);}
+	enum {DEFAULT_ROUNDS=8};
 
 protected:
 	enum {ROUNDSIZE=2048};
@@ -78,20 +79,22 @@ protected:
 #endif
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#Diamond2">Diamond2 Lite</a>
 class Diamond2LiteEncryption : public Diamond2LiteBase
 {
 public:
-	Diamond2LiteEncryption(const byte *key, unsigned int key_size=KEYLENGTH, unsigned int rounds=ROUNDS)
+	Diamond2LiteEncryption(const byte *key, unsigned int key_size=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS)
 		: Diamond2LiteBase(key, key_size, rounds, ENCRYPTION) {}
 
 	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
 	void ProcessBlock(byte * inoutBlock) const;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#Diamond2">Diamond2 Lite</a>
 class Diamond2LiteDecryption : public Diamond2LiteBase
 {
 public:
-	Diamond2LiteDecryption(const byte *key, unsigned int key_size=KEYLENGTH, unsigned int rounds=ROUNDS)
+	Diamond2LiteDecryption(const byte *key, unsigned int key_size=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS)
 		: Diamond2LiteBase(key, key_size, rounds, DECRYPTION) {}
 
 	void ProcessBlock(const byte *inBlock, byte * outBlock) const;

@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(CryptoPP)
 typedef MDC<SHA> RandomPoolCipher;
 
 RandomPool::RandomPool(unsigned int poolSize)
-	: pool(poolSize), key(RandomPoolCipher::KEYLENGTH)
+	: pool(poolSize), key(RandomPoolCipher::DEFAULT_KEYLENGTH)
 {
 	assert(poolSize > key.size);
 

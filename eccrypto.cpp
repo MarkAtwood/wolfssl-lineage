@@ -40,6 +40,7 @@ static bool CheckMOVCondition(const Integer &q, const Integer &r)
 
 template <class T> struct EcRecommendedParameters;
 
+//! .
 template<> struct EcRecommendedParameters<EC2N>
 {
 	EcRecommendedParameters(const OID &oid, unsigned int t2, unsigned int t3, unsigned int t4, const char *a, const char *b, const char *g, const char *n, unsigned int h)
@@ -63,6 +64,7 @@ template<> struct EcRecommendedParameters<EC2N>
 	unsigned int h;
 };
 
+//! .
 template<> struct EcRecommendedParameters<ECP>
 {
 	EcRecommendedParameters(const OID &oid, const char *p, const char *a, const char *b, const char *g, const char *n, unsigned int h)

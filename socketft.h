@@ -42,6 +42,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #endif
 
 NAMESPACE_BEGIN(CryptoPP)
@@ -57,9 +58,17 @@ const int SD_SEND = 1;
 const int SD_BOTH = 2;
 #endif
 
+#ifdef HAS_WINDOWS_STYLE_SOCKETS	// use HAS_ instead of USE_ because cygwin doesn't have socklen_t
+typedef int socklen_t;
+#else
+typedef ::socklen_t socklen_t;
+#endif
+
+//! wrapper for Windows or Berkeley Sockets
 class Socket
 {
 public:
+	//! exception thrown by Socket class
 	class Err : public Exception
 	{
 	public:
@@ -79,6 +88,9 @@ public:
 	Socket(const Socket &s) : m_s(s.m_s), m_own(false) {}
 	virtual ~Socket();
 
+	bool GetOwnership() const {return m_own;}
+	void SetOwnership(bool own) {m_own = own;}
+
 	operator socket_t() {return m_s;}
 	socket_t GetSocket() {return m_s;}
 	void AttachSocket(socket_t s, bool own=false);
@@ -87,14 +99,14 @@ public:
 
 	void Create(int nType = SOCK_STREAM);
 	void Bind(unsigned int port, const char *addr=NULL);
-	void Bind(const sockaddr* psa, unsigned int saLen);
+	void Bind(const sockaddr* psa, socklen_t saLen);
 	void Listen(int backlog=5);
 	// the next three functions return false if the socket is in nonblocking mode
 	// and the operation cannot be completed immediately
 	bool Connect(const char *addr, unsigned int port);
-	bool Connect(const sockaddr* psa, int saLen);
-	bool Accept(Socket& s, sockaddr *psa=NULL, int *psaLen=NULL);
-	void GetSockName(sockaddr *psa, int *psaLen);
+	bool Connect(const sockaddr* psa, socklen_t saLen);
+	bool Accept(Socket& s, sockaddr *psa=NULL, socklen_t *psaLen=NULL);
+	void GetSockName(sockaddr *psa, socklen_t *psaLen);
 	unsigned int Send(const byte* buf, unsigned int bufLen, int flags=0);
 	unsigned int Receive(byte* buf, unsigned int bufLen, int flags=0);
 	void ShutDown(int how = SD_SEND);
@@ -125,7 +137,7 @@ protected:
 	bool m_own;
 };
 
-// contributed by Denis Bider
+//! contributed by Denis Bider
 class SocketsInitializer
 {
 public:
@@ -133,6 +145,7 @@ public:
 	~SocketsInitializer() {try {Socket::ShutdownSockets();} catch (...) {}}
 };
 
+//! .
 class SocketSource : public Socket, public NetworkSource
 {
 public:
@@ -149,6 +162,7 @@ private:
 	bool m_eofReceived;
 };
 
+//! .
 class SocketSink : public Socket, public NetworkSink
 {
 public:

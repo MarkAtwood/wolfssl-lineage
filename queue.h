@@ -8,10 +8,11 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-// The queue is implemented as a linked list of arrays, but you don't need to
-// know about that.  So just ignore this next line. :)
+/** The queue is implemented as a linked list of arrays, but you don't need to
+    know about that.  So just ignore this next line. :) */
 class ByteQueueNode;
 
+//! Byte Queue
 class ByteQueue : public BufferedTransformation
 {
 public:
@@ -103,7 +104,7 @@ private:
 	unsigned int m_lazyLength;
 };
 
-// use this to make sure LazyPut is finalized in event of exception
+//! use this to make sure LazyPut is finalized in event of exception
 class LazyPutter
 {
 public:

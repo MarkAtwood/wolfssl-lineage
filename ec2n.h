@@ -7,6 +7,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! Elliptic Curve Point
 struct EC2NPoint
 {
 	EC2NPoint() : identity(true) {}
@@ -22,6 +23,7 @@ struct EC2NPoint
 	PolynomialMod2 x, y;
 };
 
+//! Elliptic Curve over GF(2^n)
 class EC2N : public AbstractGroup<EC2NPoint>
 {
 public:
@@ -76,6 +78,7 @@ private:
 
 template <class T> class EcPrecomputation;
 
+//! .
 template<> class EcPrecomputation<EC2N>
 {
 public:

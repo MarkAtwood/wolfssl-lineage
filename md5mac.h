@@ -5,10 +5,11 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class MD5MAC : public IteratedHash<word32, false, 64>, public MessageAuthenticationCode
+/// <a href="http://www.weidai.com/scan-mirror/mac.html#MD5-MAC">MD5-MAC</a>
+class MD5MAC : public IteratedHash<word32, false, 64>, public MessageAuthenticationCode, public FixedKeyLength<16>
 {
 public:
-	enum {KEYLENGTH=16, DIGESTSIZE = 16};
+	enum {DIGESTSIZE = 16};
 	MD5MAC(const byte *userKey);
 	void Final(byte *mac);
 

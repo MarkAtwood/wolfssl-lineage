@@ -8,6 +8,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! .
 class ChannelSwitch : public BufferedTransformation
 {
 public:

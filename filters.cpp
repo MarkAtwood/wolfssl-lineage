@@ -361,14 +361,6 @@ StringSource::StringSource(const byte *string, unsigned int length, bool pumpAll
 		PumpAll();
 }
 
-template <class T>
-StringSource::StringSource(const T &string, bool pumpAll, BufferedTransformation *outQueue)
-	: Source(outQueue), m_store(string)
-{
-	if (pumpAll)
-		PumpAll();
-}
-
 bool Store::GetNextMessage()
 {
 	if (!m_messageEnd && !AnyRetrievable())

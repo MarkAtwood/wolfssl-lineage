@@ -465,6 +465,48 @@ T StringToWord(const std::string &str, bool highFirst = true)
 	return CheckEndianess(highFirst) ? value : byteReverse(value);
 }
 
+// ************** key length query ***************
+
+/// support query of fixed key length
+template <unsigned int N>
+class FixedKeyLength
+{
+public:
+	enum {KEYLENGTH=N, MIN_KEYLENGTH=N, MAX_KEYLENGTH=N, DEFAULT_KEYLENGTH=N};
+	/// returns the key length
+	static unsigned int KeyLength(unsigned int) {return KEYLENGTH;}
+};
+
+/// support query of variable key length, parameters are default, min, max, multiple (default multiple 1)
+template <unsigned int D, unsigned int N, unsigned int M, unsigned int Q=1>
+class VariableKeyLength
+{
+public:
+	enum {MIN_KEYLENGTH=N, MAX_KEYLENGTH=M, DEFAULT_KEYLENGTH=D, KEYLENGTH_MULTIPLE=Q};
+	/// returns the smallest valid key length in bytes that is >= min(n, MAX_KEYLENGTH)
+	static unsigned int KeyLength(unsigned int n)
+	{
+		assert(KEYLENGTH_MULTIPLE > 0 && MIN_KEYLENGTH % KEYLENGTH_MULTIPLE == 0 && MAX_KEYLENGTH % KEYLENGTH_MULTIPLE == 0);
+		if (n < MIN_KEYLENGTH)
+			return MIN_KEYLENGTH;
+		else if (n > MAX_KEYLENGTH)
+			return MAX_KEYLENGTH;
+		else
+			return RoundUpToMultipleOf(n, KEYLENGTH_MULTIPLE);
+	}
+};
+
+/// support query of key length that's the same as another class
+template <class T>
+class SameKeyLengthAs
+{
+public:
+	enum {MIN_KEYLENGTH=T::MIN_KEYLENGTH, MAX_KEYLENGTH=T::MAX_KEYLENGTH, DEFAULT_KEYLENGTH=T::DEFAULT_KEYLENGTH};
+	/// returns the smallest valid key length in bytes that is >= min(n, MAX_KEYLENGTH)
+	static unsigned int KeyLength(unsigned int keylength)
+		{return T::KeyLength(keylength);}
+};
+
 // ************** secure memory allocation ***************
 
 #ifdef SECALLOC_DEFAULT
@@ -475,6 +517,7 @@ T StringToWord(const std::string &str, bool highFirst = true)
 #define SecFree(ptr, number) (delete [] (ptr))
 #endif
 
+//! a block of memory allocated using SecAlloc
 template <class T> struct SecBlock
 {
 	explicit SecBlock(unsigned int size=0)
@@ -490,6 +533,10 @@ template <class T> struct SecBlock
 	operator const void *() const
 		{return ptr;}
 	operator void *()
+		{return ptr;}
+#endif
+#if defined(__GNUC__)	// reduce warnings
+	operator const void *()
 		{return ptr;}
 #endif
 
@@ -636,6 +683,7 @@ inline void swap(CryptoPP::SecBlock<T> &a, CryptoPP::SecBlock<T> &b)
 {
 	a.swap(b);
 }
+
 NAMESPACE_END
 
 #endif // MISC_H

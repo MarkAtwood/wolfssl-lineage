@@ -1,6 +1,9 @@
 #ifndef CRYPTOPP_DES_H
 #define CRYPTOPP_DES_H
 
+/** \file
+*/
+
 #include "cryptlib.h"
 #include "misc.h"
 
@@ -10,10 +13,11 @@ NAMESPACE_BEGIN(CryptoPP)
    (the least significant bits of each byte) in the key. However
    you can use these two functions to check or correct the parity
    bits if you wish. */
-bool DES_CheckKeyParityBits(const byte *key);
-void DES_CorrectKeyParityBits(byte *key);
+bool DES_CheckKeyParityBits(const byte *key); //!< Checks DES Key for correct parity
+void DES_CorrectKeyParityBits(byte *key);     //!< Corrects a Key for correct parity
 
-class DES : public BlockTransformation
+/// base class, do not use directly
+class DES : public FixedBlockSize<8>, public FixedKeyLength<8>
 {
 public:
 	DES(const byte *userKey, CipherDir);
@@ -21,10 +25,6 @@ public:
 	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
 	void ProcessBlock(byte * inoutBlock) const
 		{DES::ProcessBlock(inoutBlock, inoutBlock);}
-
-	enum {KEYLENGTH=8, BLOCKSIZE=8};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
 
 	// exposed for faster Triple-DES
 	void RawProcessBlock(word32 &l, word32 &r) const;
@@ -35,6 +35,7 @@ protected:
 	SecBlock<word32> k;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#DES">DES</a>
 class DESEncryption : public DES
 {
 public:
@@ -42,6 +43,7 @@ public:
 		: DES (userKey, ENCRYPTION) {}
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#DES">DES</a>
 class DESDecryption : public DES
 {
 public:
@@ -49,9 +51,8 @@ public:
 		: DES (userKey, DECRYPTION) {}
 };
 
-// two key triple-des
-
-class DES_EDE2_Encryption : public BlockTransformation
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#DESede">DES-EDE2</a>
+class DES_EDE2_Encryption : public FixedBlockSize<8>, public FixedKeyLength<16>
 {
 public:
 	DES_EDE2_Encryption(const byte * userKey, unsigned int = 0)
@@ -61,15 +62,12 @@ public:
 	void ProcessBlock(byte * inoutBlock) const
 		{DES_EDE2_Encryption::ProcessBlock(inoutBlock, inoutBlock);}
 
-	enum {KEYLENGTH=16, BLOCKSIZE=8};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
-
 private:
 	DES e, d;
 };
 
-class DES_EDE2_Decryption : public BlockTransformation
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#DESede">DES-EDE2</a>
+class DES_EDE2_Decryption : public FixedBlockSize<8>, public FixedKeyLength<16>
 {
 public:
 	DES_EDE2_Decryption(const byte * userKey, unsigned int = 0)
@@ -79,17 +77,12 @@ public:
 	void ProcessBlock(byte * inoutBlock) const
 		{DES_EDE2_Decryption::ProcessBlock(inoutBlock, inoutBlock);}
 
-	enum {KEYLENGTH=16, BLOCKSIZE=8};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
-
 private:
 	DES d, e;
 };
 
-// three key triple-des
-
-class DES_EDE3_Encryption : public BlockTransformation
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#DESede">DES-EDE3</a>
+class DES_EDE3_Encryption : public FixedBlockSize<8>, public FixedKeyLength<24>
 {
 public:
 	DES_EDE3_Encryption(const byte * userKey, unsigned int = 0)
@@ -100,15 +93,12 @@ public:
 	void ProcessBlock(byte * inoutBlock) const
 		{DES_EDE3_Encryption::ProcessBlock(inoutBlock, inoutBlock);}
 
-	enum {KEYLENGTH=24, BLOCKSIZE=8};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
-
 private:
 	DES e1, d2, e3;
 };
 
-class DES_EDE3_Decryption : public BlockTransformation
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#DESede">DES-EDE3</a>
+class DES_EDE3_Decryption : public FixedBlockSize<8>, public FixedKeyLength<24>
 {
 public:
 	DES_EDE3_Decryption(const byte * userKey, unsigned int = 0)
@@ -119,17 +109,12 @@ public:
 	void ProcessBlock(byte * inoutBlock) const
 		{DES_EDE3_Decryption::ProcessBlock(inoutBlock, inoutBlock);}
 
-	enum {KEYLENGTH=24, BLOCKSIZE=8};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
-
 private:
 	DES d1, e2, d3;
 };
 
-// also known as DESX
-
-class DES_XEX3_Encryption : public BlockTransformation
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#DESX">DES-XEX3</a>, AKA DESX
+class DES_XEX3_Encryption : public FixedBlockSize<8>, public FixedKeyLength<24>
 {
 public:
 	DES_XEX3_Encryption(const byte * userKey, unsigned int = 0)
@@ -139,17 +124,14 @@ public:
 	void ProcessBlock(byte * inoutBlock) const
 		{DES_XEX3_Encryption::ProcessBlock(inoutBlock, inoutBlock);}
 
-	enum {KEYLENGTH=24, BLOCKSIZE=8};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
-
 private:
 	SecByteBlock x1;
 	DES e2;
 	SecByteBlock x3;
 };
 
-class DES_XEX3_Decryption : public BlockTransformation
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#DESX">DES-XEX3</a>, AKA DESX
+class DES_XEX3_Decryption : public FixedBlockSize<8>, public FixedKeyLength<24>
 {
 public:
 	DES_XEX3_Decryption(const byte * userKey, unsigned int = 0)
@@ -158,10 +140,6 @@ public:
 	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
 	void ProcessBlock(byte * inoutBlock) const
 		{DES_XEX3_Decryption::ProcessBlock(inoutBlock, inoutBlock);}
-
-	enum {KEYLENGTH=24, BLOCKSIZE=8};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
 
 private:
 	SecByteBlock x1;

@@ -11,11 +11,16 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! Windows Handle
 class WindowsHandle
 {
 public:
 	WindowsHandle(HANDLE h = INVALID_HANDLE_VALUE, bool own=false);
+	WindowsHandle(const WindowsHandle &h) : m_h(h.m_h), m_own(false) {}
 	virtual ~WindowsHandle();
+
+	bool GetOwnership() const {return m_own;}
+	void SetOwnership(bool own) {m_own = own;}
 
 	operator HANDLE() {return m_h;}
 	HANDLE GetHandle() {return m_h;}
@@ -31,6 +36,7 @@ protected:
 	bool m_own;
 };
 
+//! Windows Pipe
 class WindowsPipe : public WindowsHandle
 {
 public:
@@ -56,6 +62,7 @@ protected:
 	virtual void CheckAndHandleError(const char *operation, BOOL result) const;
 };
 
+//! Windows Read Pipe
 class WindowsReadPipe : public WindowsPipe, virtual public NetworkReceiver
 {
 public:
@@ -79,6 +86,7 @@ private:
 	bool m_eofReceived;
 };
 
+//! Windows Pipe Source
 class WindowsPipeSource : public WindowsReadPipe, public NetworkSource
 {
 public:
@@ -90,6 +98,7 @@ public:
 	}
 };
 
+//! Windows Write Pipe
 class WindowsWritePipe : public WindowsPipe, virtual public NetworkSender
 {
 public:
@@ -110,6 +119,7 @@ private:
 	DWORD m_lastResult;
 };
 
+//! Windows Pipe Sink
 class WindowsPipeSink : public WindowsWritePipe, public NetworkSink
 {
 public:

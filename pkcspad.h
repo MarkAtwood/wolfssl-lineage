@@ -6,7 +6,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-// EME-PKCS1-v1_5
+/// <a href="http://www.weidai.com/scan-mirror/ca.html#cem_PKCS1-1.5">EME-PKCS1-v1_5</a>
 class PKCS_EncryptionPaddingScheme
 {
 public:
@@ -15,7 +15,7 @@ public:
 	unsigned int Unpad(const byte *padded, unsigned int paddedLength, byte *raw) const;
 };
 
-// EMSA-PKCS1-v1_5
+/// <a href="http://www.weidai.com/scan-mirror/ca.html#cem_PKCS1-1.5">EME-PKCS1-v1_5</a>
 class PKCS_SignaturePaddingScheme
 {
 public:
@@ -24,6 +24,7 @@ public:
 	unsigned int Unpad(const byte *padded, unsigned int paddedLength, byte *raw) const;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/ca.html#cem_PKCS1-1.5">EME-PKCS1-v1_5</a>
 template <class H>
 class PKCS_DecoratedHashModule : public HashModule
 {

@@ -7,6 +7,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+/// <a href="http://www.weidai.com/scan-mirror/mac.XMAC">XMACC</a>
 template <class T> class XMACC : public IteratedHash<typename T::HashWordType, T::HIGHFIRST, T::BLOCKSIZE>, public MessageAuthenticationCode
 {
 public:

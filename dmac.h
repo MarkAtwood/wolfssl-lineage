@@ -5,23 +5,24 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// DMAC
-
-/** Based on "CBC MAC for Real-Time Data Sources" by Erez Petrank
+//! DMAC
+/*! Based on "CBC MAC for Real-Time Data Sources" by Erez Petrank
 	and Charles Rackoff. T should be an encryption class.
 */
-template <class T> class DMAC : public MessageAuthenticationCode
+template <class T> class DMAC : public MessageAuthenticationCode, SameKeyLengthAs<T>
 {
 public:
-	enum {KEYLENGTH=T::KEYLENGTH, DIGESTSIZE=T::BLOCKSIZE};
+	enum {DIGESTSIZE=T::BLOCKSIZE};
 
-	DMAC(const byte *key, unsigned int keylength = KEYLENGTH);
+#ifdef __MWERKS__	// CW50 workaround: can't use DEFAULT_KEYLENGTH here
+	DMAC(const byte *key, unsigned int keylength = T::DEFAULT_KEYLENGTH);
+#else
+	DMAC(const byte *key, unsigned int keylength = DEFAULT_KEYLENGTH);
+#endif
 
 	void Update(const byte *input, unsigned int length);
 	void Final(byte *mac);
 	unsigned int DigestSize() const {return DIGESTSIZE;}
-	static unsigned int KeyLength(unsigned int keylength)
-		{return T::KeyLength(keylength);}
 
 private:
 	byte *GenerateSubKeys(const byte *key, unsigned int keylength);

@@ -54,16 +54,16 @@ void SHARKBase::InitEncryptionRoundKeys(const byte *key, unsigned int keyLen, un
 
 // construct an SHARKEncryption object with fixed round keys, to be used to initialize actual round keys
 SHARKEncryption::SHARKEncryption()
-	: SHARKBase(ROUNDS)
+	: SHARKBase(DEFAULT_ROUNDS)
 {
-	for (unsigned int i=0; i<ROUNDS; i++)
+	for (unsigned int i=0; i<DEFAULT_ROUNDS; i++)
 		roundkeys[i] = cbox[0][i];
 
-	roundkeys[ROUNDS] = SHARKTransform(cbox[0][ROUNDS]);
+	roundkeys[DEFAULT_ROUNDS] = SHARKTransform(cbox[0][DEFAULT_ROUNDS]);
 
 #ifdef IS_LITTLE_ENDIAN
 	roundkeys[0] = byteReverse(roundkeys[0]);
-	roundkeys[ROUNDS] = byteReverse(roundkeys[ROUNDS]);
+	roundkeys[DEFAULT_ROUNDS] = byteReverse(roundkeys[DEFAULT_ROUNDS]);
 #endif
 }
 

@@ -565,7 +565,7 @@ void Deflator::EncodeBlock(bool eof, unsigned int blockType)
 		if (blockType == DYNAMIC)
 		{
 			SecBlock<unsigned int> literalCodeLengths(286), distanceCodeLengths(30);
-#ifdef _MSC_VER		// VC60 workaround
+#if defined(_MSC_VER) && !defined(__MWERKS__)		// VC60 workaround
 			typedef reverse_iterator<unsigned int *, unsigned int> RevIt;
 #else
 			typedef reverse_iterator<unsigned int *> RevIt;

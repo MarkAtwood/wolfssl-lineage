@@ -9,6 +9,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! .
 class FileStore : public Store
 {
 public:
@@ -37,6 +38,7 @@ private:
 	SecByteBlock m_buffer;
 };
 
+//! .
 class FileSource : public Source
 {
 public:
@@ -58,6 +60,7 @@ private:
 	FileStore m_store;
 };
 
+//! .
 class FileSink : public Sink
 {
 public:

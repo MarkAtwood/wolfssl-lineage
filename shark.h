@@ -1,6 +1,9 @@
 #ifndef CRYPTOPP_SHARK_H
 #define CRYPTOPP_SHARK_H
 
+/** \file
+*/
+
 #include "config.h"
 
 #ifdef WORD64_AVAILABLE
@@ -10,14 +13,11 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class SHARKBase : public BlockTransformation
+/// base class, do not use directly
+class SHARKBase : public FixedBlockSize<8>, public VariableKeyLength<16, 1, 16>
 {
 public:
-	// values of KEYLENGTH and ROUNDS are defaults only
-	enum {KEYLENGTH=16, BLOCKSIZE=8, ROUNDS=6, MAX_KEYLENGTH=16};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength)
-		{return keylength < 1 ? 1 : (keylength <= MAX_KEYLENGTH ? keylength : MAX_KEYLENGTH);}
+	enum {DEFAULT_ROUNDS=6};
 
 protected:
 	static void InitEncryptionRoundKeys(const byte *key, unsigned int keyLen, unsigned int rounds, word64 *roundkeys);
@@ -27,10 +27,11 @@ protected:
 	SecBlock<word64> roundkeys;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SHARK-E">SHARK-E</a>
 class SHARKEncryption : public SHARKBase
 {
 public:
-	SHARKEncryption(const byte *key, unsigned int keyLen=KEYLENGTH, unsigned int rounds=ROUNDS);
+	SHARKEncryption(const byte *key, unsigned int keyLen=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS);
 
 	void ProcessBlock(byte * inoutBlock) const
 		{SHARKEncryption::ProcessBlock(inoutBlock, inoutBlock);}
@@ -43,10 +44,11 @@ private:
 	static const word64 cbox[8][256];
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SHARK-E">SHARK-E</a>
 class SHARKDecryption : public SHARKBase
 {
 public:
-	SHARKDecryption(const byte *key, unsigned int keyLen=KEYLENGTH, unsigned int rounds=ROUNDS);
+	SHARKDecryption(const byte *key, unsigned int keyLen=DEFAULT_KEYLENGTH, unsigned int rounds=DEFAULT_ROUNDS);
 
 	void ProcessBlock(byte * inoutBlock) const
 		{SHARKDecryption::ProcessBlock(inoutBlock, inoutBlock);}

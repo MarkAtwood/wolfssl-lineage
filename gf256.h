@@ -5,6 +5,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! GF(256) with polynomial basis
 class GF256
 {
 public:

@@ -1,6 +1,9 @@
 #ifndef CRYPTOPP_NR_H
 #define CRYPTOPP_NR_H
 
+/** \file
+*/
+
 #include "pubkey.h"
 #include "modexppc.h"
 
@@ -8,6 +11,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+/// <a href="http://www.weidai.com/scan-mirror/sig.html#NR">Nyberg-Rueppel</a> Digest Verifier
 class NRDigestVerifier : public PK_WithPrecomputation<DigestVerifier>
 {
 public:
@@ -39,6 +43,7 @@ protected:
 	ModExpPrecomputation m_gpc, m_ypc;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/sig.html#NR">Nyberg-Rueppel</a> Digest Signer
 class NRDigestSigner : public NRDigestVerifier, public PK_WithPrecomputation<DigestSigner>
 {
 public:
@@ -58,6 +63,7 @@ protected:
 	Integer m_x;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/sig.html#NR">Nyberg-Rueppel</a>
 template <class H>
 class NRSigner : public SignerTemplate<NRDigestSigner, H>, public PK_WithPrecomputation<PK_Signer>
 {
@@ -79,6 +85,7 @@ public:
 		: Base(storedKey) {}
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/sig.html#NR">Nyberg-Rueppel</a>
 template <class H>
 class NRVerifier : public VerifierTemplate<NRDigestVerifier, H>, public PK_WithPrecomputation<PK_Verifier>
 {

@@ -6,6 +6,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! Converts given data to base 16
 class HexEncoder : public Filter
 {
 public:
@@ -23,6 +24,7 @@ private:
 	const byte *m_vec;
 };
 
+//! Decode 16 bit data back to bytes
 class HexDecoder : public Filter
 {
 public:

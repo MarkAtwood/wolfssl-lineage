@@ -1,6 +1,9 @@
 #ifndef CRYPTOPP_ECCRYPTO_H
 #define CRYPTOPP_ECCRTPTO_H
 
+/** \file
+*/
+
 #include "pubkey.h"
 #include "integer.h"
 #include "asn.h"
@@ -9,7 +12,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/* The following classes are explicitly instantiated in eccrypto.cpp
+/** The following classes are explicitly instantiated in eccrypto.cpp
 
 template class ECParameters<EC2N>;
 template class ECParameters<ECP>;
@@ -31,15 +34,21 @@ template class ECMQVC<EC2N>;
 template class ECMQVC<ECP>;
 */
 
-// The ECDSA signature format used by Crypto++ is as defined by IEEE P1363.
-// To convert to or from other signature formats, see dsa.h.
-
-enum ECSignatureScheme {ECNR, ECDSA};
+/*! The ECDSA signature format used by Crypto++ is as defined by IEEE P1363.
+	To convert to or from other signature formats, see dsa.h.
+*/
+enum ECSignatureScheme
+{
+	ECNR,	///< Elliptic Curve Nyberg-Rueppel
+	ECDSA	///< <a href="http://www.weidai.com/scan-mirror/sig.html#ECDSA">Elliptic Curve Digital Signature Algorithm</a>
+};
 
 template <class T> class EcPrecomputation;
 
-// this class corresponds to the ASN.1 sequence of the same name
-// in ANSI X9.62 (also SEC 1)
+//! Elliptic Curve Parameters
+/*! This class corresponds to the ASN.1 sequence of the same name
+    in ANSI X9.62 (also SEC 1).
+*/
 template <class EC>
 class ECParameters : virtual public PK_Precomputation
 {
@@ -100,12 +109,14 @@ protected:
 #define EC_PARAMETERS_CONSTRUCTORS(Self, Base)								\
 	Self(const ECParameters<EC> &params)									\
 		: Base(params) {}													\
+	Self(const OID &oid)													\
+		: Base(oid) {}														\
 	Self(const EC &ec, const Point &G, const Integer &n, const Integer &k)	\
 		: Base(ec, G, n, k) {}												\
 	Self(BufferedTransformation &bt)										\
 		: Base(bt) {}
 
-// Elliptic Curve Diffie-Hellman with Cofactor Multiplication
+/// Elliptic Curve Diffie-Hellman with Cofactor Multiplication, AKA <a href="http://www.weidai.com/scan-mirror/ka.html#ECDHC">ECDHC</a>
 template <class EC>
 class ECDHC : public ECParameters<EC>, public PK_WithPrecomputation<PK_SimpleKeyAgreementDomain>
 {
@@ -124,7 +135,7 @@ public:
 	bool Agree(byte *agreedValue, const byte *privateKey, const byte *otherPublicKey, bool validateOtherPublicKey=true) const;
 };
 
-// Elliptic Curve Menezes-Qu-Vanstone with Cofactor Multiplication
+/// Elliptic Curve Menezes-Qu-Vanstone with Cofactor Multiplication, AKA <a href="http://www.weidai.com/scan-mirror/ka.html#ECMQVC">ECMQVC</a>
 template <class EC>
 class ECMQVC : public ECParameters<EC>, public PK_WithPrecomputation<PK_AuthenticatedKeyAgreementDomain>
 {
@@ -151,6 +162,7 @@ public:
 		bool validateStaticOtherPublicKey=true) const;
 };
 
+/// Elliptic Curve Public Key
 template <class EC>
 class ECPublicKey : public ECParameters<EC>, virtual public PK_Precomputation
 {
@@ -188,11 +200,14 @@ protected:
 		: Base(key) {}														\
 	Self(const ECParameters<EC> &params, const Point &Q)					\
 		: Base(params, Q) {}												\
+	Self(const OID &oid, const Point &Q)									\
+		: Base(oid, Q) {}													\
 	Self(const EC &ec, const Point &G, const Integer &n, const Point &Q)	\
 		: Base(ec, G, n, Q) {}												\
 	Self(BufferedTransformation &bt)										\
 		: Base(bt) {}
-
+		
+/// Elliptic Curve Private Key
 template <class EC>
 class ECPrivateKey : public ECPublicKey<EC>
 {
@@ -201,11 +216,15 @@ public:
 
 	ECPrivateKey(const ECParameters<EC> &params, const Point &Q, const Integer &d)
 		: ECPublicKey<EC>(params, Q), m_d(d) {}
+	ECPrivateKey(const OID &oid, const Point &Q, const Integer &d)
+		: ECPublicKey<EC>(oid, Q), m_d(d) {}
 	ECPrivateKey(const EC &ec, const Point &G, const Integer &n, const Point &Q, const Integer &d)
 		: ECPublicKey<EC>(ec, G, n, Q), m_d(d) {}
 	// generate a random private key
 	ECPrivateKey(RandomNumberGenerator &rng, const ECParameters<EC> &params)
 		: ECPublicKey<EC>(params, Point()) {Randomize(rng);}
+	ECPrivateKey(RandomNumberGenerator &rng, const OID &oid)
+		: ECPublicKey<EC>(oid, Point()) {Randomize(rng);}
 	ECPrivateKey(RandomNumberGenerator &rng, const EC &ec, const Point &G, const Integer &n)
 		: ECPublicKey<EC>(ec, G, n, Point()) {Randomize(rng);}
 	// decode private key
@@ -228,15 +247,20 @@ protected:
 		: Base(key) {}														\
 	Self(const ECParameters<EC> &params, const Point &Q, const Integer &d)	\
 		: Base(params, Q, d) {}												\
+	Self(const OID& oid, const Point &Q, const Integer &d)					\
+		: Base(oid, Q, d) {}												\
 	Self(const EC &ec, const Point &G, const Integer &n, const Point &Q, const Integer &d)	\
 		: Base(ec, G, n, Q, d) {}											\
 	Self(RandomNumberGenerator &rng, const ECParameters<EC> &params)		\
 		: Base(rng, params) {}												\
+	Self(RandomNumberGenerator &rng, const OID& oid)						\
+		: Base(rng, oid) {}													\
 	Self(RandomNumberGenerator &rng, const EC &ec, const Point &G, const Integer &n)	\
 		: Base(rng, ec, G, n) {}											\
 	Self(BufferedTransformation &bt)										\
 		: Base(bt) {}
 
+/// Elliptic Curve Digest Signature Verifier
 template <class EC, ECSignatureScheme SS = ECNR>
 class ECDigestVerifier : public ECPublicKey<EC>, public PK_WithPrecomputation<DigestVerifier>
 {
@@ -254,6 +278,7 @@ public:
 	bool RawVerify(const Integer &e, const Integer &n, const Integer &s) const;
 };
 
+/// Elliptic Curve Digest Signer
 template <class EC, ECSignatureScheme SS = ECNR>
 class ECDigestSigner : public ECPrivateKey<EC>, public PK_WithPrecomputation<DigestSigner>
 {
@@ -267,10 +292,11 @@ public:
 	unsigned int MaxDigestLength() const {return 0xffff;}
 	unsigned int DigestSignatureLength() const {return 2*ExponentLength();}
 
-	// exposed for validation testing
+	/// exposed for validation testing
 	void RawSign(const Integer &k, const Integer &e, Integer &n, Integer &s) const;
 };
 
+/// Elliptic Curve Message Signer
 template <class EC, class H, ECSignatureScheme SS = ECNR>
 class ECSigner : public SignerTemplate<ECDigestSigner<EC, SS>, H>, public PK_WithPrecomputation<PK_Signer>
 {
@@ -281,6 +307,7 @@ public:
 	EC_PRIVATE_KEY_CONSTRUCTORS(ECSigner, Base)
 };
 
+/// Elliptic Curve Message Signature Verifier
 template <class EC, class H, ECSignatureScheme SS = ECNR>
 class ECVerifier : public VerifierTemplate<ECDigestVerifier<EC, SS>, H>, public PK_WithPrecomputation<PK_Verifier>
 {
@@ -291,6 +318,7 @@ public:
 	EC_PUBLIC_KEY_CONSTRUCTORS(ECVerifier, Base)
 };
 
+/// Elliptic Curve ECIES, AKA <a href="http://www.weidai.com/scan-mirror/ca.html#EC-DHAES">EC-DHAES</a>
 template <class EC, class MAC = HMAC<SHA>, class KDF = P1363_KDF2<SHA> >
 class ECEncryptor : public ECPublicKey<EC>, public PK_WithPrecomputation<PK_Encryptor>
 {
@@ -316,7 +344,7 @@ public:
 		Point Q1 = m_Qpc.Multiply(x);
 		Q1.x.Encode(agreedSecret, agreedSecret.size);
 
-		SecByteBlock derivedKey(plainTextLength + MAC::KEYLENGTH);
+		SecByteBlock derivedKey(plainTextLength + MAC::DEFAULT_KEYLENGTH);
 		KDF::DeriveKey(derivedKey, derivedKey.size, agreedSecret, agreedSecret.size);
 		xorbuf(cipherText, plainText, derivedKey, plainTextLength);
 
@@ -325,6 +353,7 @@ public:
 	}
 };
 
+/// Elliptic Curve ECIES, AKA <a href="http://www.weidai.com/scan-mirror/ca.html#/// Elliptic Curve ECIES, AKA <a href="http://www.weidai.com/scan-mirror/ca.html#EC-DHAES">EC-DHAES</a>
 template <class EC, class MAC = HMAC<SHA>, class KDF = P1363_KDF2<SHA> >
 class ECDecryptor : public ECPrivateKey<EC>, public PK_Decryptor
 {
@@ -356,7 +385,7 @@ public:
 		R[1].x.Encode(agreedSecret, agreedSecret.size);
 
 		unsigned int plainTextLength = MaxPlainTextLength(cipherTextLength);
-		SecByteBlock derivedKey(plainTextLength + MAC::KEYLENGTH);
+		SecByteBlock derivedKey(plainTextLength + MAC::DEFAULT_KEYLENGTH);
 		KDF::DeriveKey(derivedKey, derivedKey.size, agreedSecret, agreedSecret.size);
 		
 		MAC mac(derivedKey + plainTextLength);

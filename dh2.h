@@ -1,10 +1,14 @@
 #ifndef CRYPTOPP_DH2_H
 #define CRYPTOPP_DH2_H
 
+/** \file
+*/
+
 #include "cryptlib.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
+/// <a href="http://www.weidai.com/scan-mirror/ka.html#DH2">Unified Diffie-Hellman</a>
 class DH2 : public PK_AuthenticatedKeyAgreementDomain
 {
 public:

@@ -6,12 +6,11 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/* The following classes are explicitly instantiated in iterhash.cpp
+/*! The following classes are explicitly instantiated in iterhash.cpp
 
 	IteratedHashBase<word32>
 	IteratedHashBase<word64>	// #ifdef WORD64_AVAILABLE
 */
-
 template <class T>
 class IteratedHashBase : public virtual HashModule
 {
@@ -35,6 +34,7 @@ protected:
 	SecBlock<T> digest;			// Message digest
 };
 
+//! .
 template <class T, bool H, unsigned int S>
 class IteratedHash : public IteratedHashBase<T>
 {

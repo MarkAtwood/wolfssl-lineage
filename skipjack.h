@@ -1,19 +1,17 @@
 #ifndef CRYPTOPP_SKIPJACK_H
 #define CRYPTOPP_SKIPJACK_H
 
+/** \file
+*/
+
 #include "cryptlib.h"
 #include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class SKIPJACK : public BlockTransformation
+/// base class, do not use directly
+class SKIPJACK : public FixedBlockSize<8>, public FixedKeyLength<10>
 {
-public:
-	enum {KEYLENGTH=10, BLOCKSIZE=8};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength)
-		{return KEYLENGTH;}
-
 protected:
 	SKIPJACK(const byte *userKey);
 
@@ -22,6 +20,7 @@ protected:
 	SecBlock<byte[256]> tab;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SKIPJACK">SKIPJACK</a>
 class SKIPJACKEncryption : public SKIPJACK
 {
 public:
@@ -33,6 +32,7 @@ public:
 		{SKIPJACKEncryption::ProcessBlock(inoutBlock, inoutBlock);}
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SKIPJACK">SKIPJACK</a>
 class SKIPJACKDecryption : public SKIPJACK
 {
 public:

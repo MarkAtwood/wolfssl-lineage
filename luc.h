@@ -1,6 +1,9 @@
 #ifndef CRYPTOPP_LUC_H
 #define CRYPTOPP_LUC_H
 
+/** \file
+*/
+
 #include "pkcspad.h"
 #include "oaep.h"
 #include "integer.h"
@@ -9,6 +12,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! .
 class LUCFunction : virtual public TrapdoorFunction
 {
 public:
@@ -25,6 +29,7 @@ protected:
 	Integer n, e;	// these are only modified in constructors
 };
 
+//! .
 class InvertibleLUCFunction : public LUCFunction, public InvertibleTrapdoorFunction
 {
 public:
@@ -41,6 +46,7 @@ protected:
 	Integer p, q, u;
 };
 
+//! .
 template <class B>
 class LUCPrivateKeyTemplate : public B
 {
@@ -58,6 +64,7 @@ public:
 		: PublicKeyBaseTemplate<InvertibleLUCFunction>(bt) {}
 };
 
+//! .
 template <class B, class V>
 class LUCPublicKeyTemplate : public B
 {
@@ -72,19 +79,22 @@ public:
 		: PublicKeyBaseTemplate<LUCFunction>(bt) {}
 };
 
-// analagous to the RSA schemes defined in PKCS #1 v2.0
+//! analagous to the RSA schemes defined in PKCS #1 v2.0
 typedef LUCPrivateKeyTemplate<DecryptorTemplate<OAEP<SHA>, InvertibleLUCFunction> >
 	LUCES_OAEP_SHA_Decryptor;
+//! .
 typedef LUCPublicKeyTemplate<EncryptorTemplate<OAEP<SHA>, LUCFunction>, LUCES_OAEP_SHA_Decryptor>
 	LUCES_OAEP_SHA_Encryptor;
-
+//! .
 typedef LUCPrivateKeyTemplate<SignerTemplate<DigestSignerTemplate<PKCS_SignaturePaddingScheme, InvertibleLUCFunction>, PKCS_DecoratedHashModule<SHA> > >
 	LUCSSA_PKCS1v15_SHA_Signer;
+//! .
 typedef LUCPublicKeyTemplate<VerifierTemplate<DigestVerifierTemplate<PKCS_SignaturePaddingScheme, LUCFunction>, PKCS_DecoratedHashModule<SHA> >, LUCSSA_PKCS1v15_SHA_Signer>
 	LUCSSA_PKCS1v15_SHA_Verifier;
 
 // ********************************************************
 
+//! .
 class LUCELG_Encryptor : public PK_FixedLengthEncryptor
 {
 public:
@@ -111,6 +121,7 @@ protected:
 	unsigned int modulusLen;
 };
 
+//! .
 class LUCELG_Decryptor : public LUCELG_Encryptor, public PK_FixedLengthDecryptor
 {
 public:
@@ -132,6 +143,7 @@ protected:
 
 // ********************************************************
 
+//! .
 class LUCELG_DigestVerifier : public DigestVerifier
 {
 public:
@@ -152,6 +164,7 @@ protected:
 	Integer p, q, g, y;
 };
 
+//! .
 class LUCELG_DigestSigner : public LUCELG_DigestVerifier, public DigestSigner
 {
 public:
@@ -169,6 +182,7 @@ protected:
 	Integer x;
 };
 
+//! .
 template <class H>
 class LUCELG_Signer : public SignerTemplate<LUCELG_DigestSigner, H>
 {
@@ -190,6 +204,7 @@ public:
 		: Base(storedKey) {}
 };
 
+//! .
 template <class H>
 class LUCELG_Verifier : public VerifierTemplate<LUCELG_DigestVerifier, H>
 {
@@ -209,6 +224,7 @@ public:
 
 // ********************************************************
 
+//! .
 class LUCDIF : public PK_SimpleKeyAgreementDomain
 {
 public:

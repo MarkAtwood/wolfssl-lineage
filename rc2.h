@@ -1,19 +1,20 @@
 #ifndef CRYPTOPP_RC2_H
 #define CRYPTOPP_RC2_H
 
+/** \file
+*/
+
 #include "cryptlib.h"
 #include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class RC2Base : public BlockTransformation
+/// base class, do not use directly
+class RC2Base : public FixedBlockSize<8>, public VariableKeyLength<16, 1, 128>
 {
 public:
-	// value of KEYLENGTH is default only
-	enum {KEYLENGTH=16, BLOCKSIZE=8};
+	enum {BLOCKSIZE=8};
 	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength)
-		{return keylength < 1 ? 1 : (keylength <= 128 ? keylength : 128);}
 
 protected:
 	// max keyLen is 128, max effectiveLen is 1024
@@ -22,10 +23,11 @@ protected:
 	SecBlock<word16> K;  // expanded key table
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#RC2">RC2</a>
 class RC2Encryption : public RC2Base
 {
 public:
-	RC2Encryption(const byte *key, unsigned int keyLen=KEYLENGTH, unsigned int effectiveLen=1024)
+	RC2Encryption(const byte *key, unsigned int keyLen=DEFAULT_KEYLENGTH, unsigned int effectiveLen=1024)
 		: RC2Base(key, keyLen, effectiveLen) {}
 
 	void ProcessBlock(byte * inoutBlock) const
@@ -33,10 +35,11 @@ public:
 	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#RC2">RC2</a>
 class RC2Decryption : public RC2Base
 {
 public:
-	RC2Decryption(const byte *key, unsigned int keyLen=KEYLENGTH, unsigned int effectiveLen=1024)
+	RC2Decryption(const byte *key, unsigned int keyLen=DEFAULT_KEYLENGTH, unsigned int effectiveLen=1024)
 		: RC2Base(key, keyLen, effectiveLen) {}
 
 	void ProcessBlock(byte * inoutBlock) const

@@ -1,6 +1,11 @@
 #ifndef CRYPTOPP_RW_H
 #define CRYPTOPP_RW_H
 
+/** \file
+	This file contains classes that implement the
+	Rabin-Williams signature schemes as defined in IEEE P1363.
+*/
+
 #include "pubkey.h"
 #include "integer.h"
 
@@ -9,6 +14,7 @@ NAMESPACE_BEGIN(CryptoPP)
 const word IFSSR_R = 6;
 const word IFSSA_R = 12;
 
+//! .
 class EMSA2Pad
 {
 public:
@@ -18,6 +24,7 @@ public:
 	unsigned int Unpad(const byte *padded, unsigned int paddedLength, byte *raw) const;
 };
 
+//! .
 template <class H>
 class EMSA2DecoratedHashModule : public HashModule
 {
@@ -58,6 +65,7 @@ unsigned int EMSA2DecoratedHashModule<H>::DigestSize() const
 
 // *****************************************************************************
 
+//! .
 template <word r>
 class RWFunction : virtual public TrapdoorFunction
 {
@@ -78,6 +86,7 @@ protected:
 	Integer n;
 };
 
+//! .
 template <word r>
 class InvertibleRWFunction : public RWFunction<r>, public InvertibleTrapdoorFunction
 {
@@ -98,6 +107,7 @@ protected:
 	Integer p, q, u;
 };
 
+//! Rabin-Williams Signer, as defined in IEEE P1363
 template <class H>
 class RWSigner : public SignerTemplate<DigestSignerTemplate<EMSA2Pad, InvertibleRWFunction<IFSSA_R> >, EMSA2DecoratedHashModule<H> >
 {
@@ -114,6 +124,7 @@ public:
 		: PublicKeyBaseTemplate<InvertibleRWFunction<IFSSA_R> >(bt) {}
 };
 
+//! Rabin-Williams Verifier, as defined in IEEE P1363
 template <class H>
 class RWVerifier : public VerifierTemplate<DigestVerifierTemplate<EMSA2Pad, RWFunction<IFSSA_R> >, EMSA2DecoratedHashModule<H> >
 {

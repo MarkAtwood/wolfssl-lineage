@@ -5,6 +5,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! GF(2^32) with polynomial basis
 class GF2_32
 {
 public:

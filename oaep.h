@@ -5,10 +5,9 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-// defined in misc.cpp
-extern byte OAEP_P_DEFAULT[];
+extern byte OAEP_P_DEFAULT[];	// defined in misc.cpp
 
-// EME-OAEP
+/// <a href="http://www.weidai.com/scan-mirror/ca.html#cem_OAEP-MGF1">EME-OAEP</a>
 template <class H, class MGF=P1363_MGF1<H>, byte *P=OAEP_P_DEFAULT, unsigned int PLen=0>
 class OAEP
 {

@@ -6,6 +6,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SEAL-3.0-BE">SEAL</a>
 class SEAL : public RandomNumberGenerator,
 			 public RandomAccessStreamCipher
 {

@@ -7,6 +7,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+/// ZLIB Compressor (RFC 1950)
 class ZlibCompressor : public Deflator
 {
 public:
@@ -22,6 +23,7 @@ private:
 	Adler32 m_adler32;
 };
 
+/// ZLIB Decompressor (RFC 1950)
 class ZlibDecompressor : public Inflator
 {
 public:

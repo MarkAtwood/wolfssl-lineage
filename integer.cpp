@@ -121,6 +121,105 @@ loopend:
 	}
 }
 
+#elif defined(__GNUC__) && defined(__i386__)
+
+static word Add(word *C, const word *A, const word *B, unsigned int N)
+{
+	assert (N%2 == 0);
+
+	register word carry;
+
+	// Notes and further work (by Alister Lee): 
+	// - get extended asm to accept parameter into ebx. Currently, the parameter
+	//   is accepted into eax and moved to ebx resulting in an extra instruction 
+	//   outside the loop. I think this is a bug in gcc.
+	// - get extended asm to save and restore ebp through the clobbered list.
+	//   I think this is a limitation of gcc.
+
+	// on entry esi = N, edx = A, ecx = C, eax = B through extended asm (see below)
+	__asm__(	
+				"push %%ebp\n\t"					// can't automatically save ebp
+				"mov %%eax, %%ebx\n\t"				// ebx is B (can't automatically accept
+													// parameter into ebx)	
+				"sub %%edx, %%ecx\n\t"				// hold the distance between C & A so 
+													// we can add this to A to get C
+				"xor %%eax, %%eax\n\t"
+				"sub %%esi, %%eax\n\t"				// eax is a negative index from end of B
+			 	"lea (%%ebx,%%esi,4), %%ebx\n\t"	// ebx is end of B
+				"sar $1, %%eax\n\t"					// eax is number of dwords
+													// this also clears the carry flag
+				"jz 1f\n"							// to loopend
+													// if no dwords then nothing to do
+			
+			"0:\n\t"								// loopstart:
+				"mov 0(%%edx), %%esi\n\t"			// load next dword of A into ebp:esi
+				"mov 4(%%edx), %%ebp\n\t"
+				"mov (%%ebx,%%eax,8), %%edi\n\t"	// load next word of B, using eax as index
+				"lea 8(%%edx), %%edx\n\t"			// advance A
+				"adc %%edi, %%esi\n\t"				// add with carry
+				"mov 4(%%ebx,%%eax,8), %%edi\n\t"	// load next word of B, using eax as index
+				"adc %%edi, %%ebp\n\t"				// add with carry
+				"inc %%eax\n\t"						// advance index into B
+													// no more words when zero
+				"mov %%esi, -8(%%edx,%%ecx)\n\t"	// store ebp:esi into next dword of C 
+				"mov %%ebp, -4(%%edx,%%ecx)\n\t"	
+				"jnz 0b\n"							// to loopstart
+													// carry flag feeds into next iteration
+			
+			"1:\n\t"								// loopend:
+				"adc $0, %%eax\n\t"					// capture carry flag
+				"pop %%ebp"								
+							
+			: "=a" (carry)
+			: "S" (N), "d" (A), "c" (C), "a" (B)
+			: "%edi", "%ebx"
+			);
+			 
+	return carry;		 
+}
+
+static word Subtract(word *C, const word *A, const word *B, unsigned int N)
+{
+	assert (N%2 == 0);
+
+	register word carry;
+
+	// Notes: see notes on Add above
+	
+	__asm__(
+				"push %%ebp\n\t"
+				"mov %%eax, %%ebx\n\t"
+				"sub %%edx, %%ecx\n\t"
+				"xor %%eax, %%eax\n\t"
+				"sub %%esi, %%eax\n\t"
+				"lea (%%ebx,%%esi,4), %%ebx\n\t"
+				"sar $1, %%eax\n\t"		
+				"jz 1f\n"
+
+			"0:\n\t"
+				"mov 0(%%edx), %%esi\n\t"
+				"mov 4(%%edx), %%ebp\n\t"
+				"mov (%%ebx,%%eax,8), %%edi\n\t"
+				"lea 8(%%edx), %%edx\n\t"
+				"sbb %%edi, %%esi\n\t"
+				"mov 4(%%ebx,%%eax,8), %%edi\n\t"
+				"sbb %%edi, %%ebp\n\t"
+				"inc %%eax\n\t"
+				"mov %%esi, -8(%%edx, %%ecx)\n\t"
+				"mov %%ebp, -4(%%edx, %%ecx)\n\t"
+				"jnz 0b\n"
+
+			"1:\n\t"
+				"adc $0, %%eax\n\t"
+				"pop %%ebp"
+		: "=a" (carry)
+		: "S" (N), "d" (A), "c" (C), "a" (B)
+		: "%edi", "%ebx"
+	);
+
+	return carry;
+}
+
 #else	// defined(_MSC_VER) && !defined(__MWERKS__) && defined(_M_IX86) && (_M_IX86<=600)
 
 static word Add(word *C, const word *A, const word *B, unsigned int N)

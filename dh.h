@@ -1,12 +1,14 @@
 #ifndef CRYPTOPP_DH_H
 #define CRYPTOPP_DH_H
 
+/** \file
+*/
+
 #include "modexppc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-// Diffie-Hellman in GF(p) with key validation
-
+/// <a href="http://www.weidai.com/scan-mirror/ka.html#DH">Diffie-Hellman</a> in GF(p) with key validation
 class DH : public PK_WithPrecomputation<PK_SimpleKeyAgreementDomain>
 {
 public:

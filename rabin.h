@@ -1,12 +1,16 @@
 #ifndef CRYPTOPP_RABIN_H
 #define CRYPTOPP_RABIN_H
 
+/** \file
+*/
+
 #include "oaep.h"
 #include "pssr.h"
 #include "integer.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! Rabin
 class RabinFunction : virtual public TrapdoorFunction
 {
 public:
@@ -27,6 +31,7 @@ protected:
 	Integer n, r, s;	// these are only modified in constructors
 };
 
+//! Invertible Rabin
 class InvertibleRabinFunction : public RabinFunction, public InvertibleTrapdoorFunction
 {
 public:
@@ -46,6 +51,7 @@ protected:
 	Integer p, q, u;
 };
 
+//! Rabin Private Key
 template <class B>
 class RabinPrivateKeyTemplate : public B
 {
@@ -63,6 +69,7 @@ public:
 		: PublicKeyBaseTemplate<InvertibleRabinFunction>(bt) {}
 };
 
+//! Rabin Public Key
 template <class B, class V>
 class RabinPublicKeyTemplate : public B
 {
@@ -79,8 +86,10 @@ public:
 
 class SHA;
 
+//! Rabin Decryptor
 typedef RabinPrivateKeyTemplate<DecryptorTemplate<OAEP<SHA>, InvertibleRabinFunction> >
 	RabinDecryptor;
+//! Rabin Encryptor
 typedef RabinPublicKeyTemplate<EncryptorTemplate<OAEP<SHA>, RabinFunction>, RabinDecryptor>
 	RabinEncryptor;
 

@@ -1,12 +1,16 @@
 #ifndef CRYPTOPP_IDEA_H
 #define CRYPTOPP_IDEA_H
 
+/** \file
+*/
+
 #include "cryptlib.h"
 #include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class IDEA : public BlockTransformation
+/// base class, do not use directly
+class IDEA : public FixedBlockSize<8>, public FixedKeyLength<16>
 {
 public:
 	IDEA(const byte *userKey, CipherDir dir);
@@ -14,10 +18,6 @@ public:
 	void ProcessBlock(byte * inoutBlock) const
 		{IDEA::ProcessBlock(inoutBlock, inoutBlock);}
 	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
-
-	enum {KEYLENGTH=16, BLOCKSIZE=8, ROUNDS=8};
-	unsigned int BlockSize() const {return BLOCKSIZE;};
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
 
 private:
 	void EnKey(const byte *);
@@ -33,6 +33,7 @@ private:
 #endif
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#IDEA">IDEA</a>
 class IDEAEncryption : public IDEA
 {
 public:
@@ -40,6 +41,7 @@ public:
 		: IDEA (userKey, ENCRYPTION) {}
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#IDEA">IDEA</a>
 class IDEADecryption : public IDEA
 {
 public:

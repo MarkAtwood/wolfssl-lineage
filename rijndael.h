@@ -1,19 +1,27 @@
 #ifndef CRYPTOPP_RIJNDAEL_H
 #define CRYPTOPP_RIJNDAEL_H
 
+/** \file
+*/
+
 #include "cryptlib.h"
 #include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class Rijndael : public BlockTransformation
+//! base class, do not use directly
+/*!
+  \b AES Standard \b <br>
+  Information<br>
+     http://www.rijndael.com/<br>
+     http://www.esat.kuleuven.ac.be/~rijmen/rijndael/<br>
+  <br>
+  Keylength = 128/192/256 bits<br>
+  Blocksize = 128 bits<br>
+  Rounds    = Variable<br>    
+*/
+class Rijndael : public FixedBlockSize<16>, public VariableKeyLength<16, 16, 32, 8>
 {
-public:
-	enum {KEYLENGTH=16, BLOCKSIZE=16};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength)
-		{return keylength <= 16 ? 16 : (keylength <= 24 ? 24 : 32);}
-
 protected:
 	Rijndael(const byte *userKey, unsigned int keylength);
 
@@ -35,10 +43,11 @@ protected:
 	SecBlock<word32> m_key;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#Rijndael">Rijndael</a>
 class RijndaelEncryption : public Rijndael
 {
 public:
-	RijndaelEncryption(const byte *userKey, unsigned int keylength=KEYLENGTH)
+	RijndaelEncryption(const byte *userKey, unsigned int keylength=DEFAULT_KEYLENGTH)
 		: Rijndael(userKey, keylength) {}
 
 	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
@@ -46,10 +55,11 @@ public:
 		{RijndaelEncryption::ProcessBlock(inoutBlock, inoutBlock);}
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#Rijndael">Rijndael</a>
 class RijndaelDecryption : public Rijndael
 {
 public:
-	RijndaelDecryption(const byte *userKey, unsigned int keylength=KEYLENGTH);
+	RijndaelDecryption(const byte *userKey, unsigned int keylength=DEFAULT_KEYLENGTH);
 
 	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
 	void ProcessBlock(byte * inoutBlock) const

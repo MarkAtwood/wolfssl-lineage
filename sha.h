@@ -5,7 +5,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-/// implements the SHA-1 standard
+/// <a href="http://www.weidai.com/scan-mirror/md.html#SHA-1">SHA-1</a>
 class SHA : public IteratedHash<word32, true, 64>
 {
 public:
@@ -20,7 +20,7 @@ protected:
 
 typedef SHA SHA1;
 
-/// implements the SHA-256 standard
+//! implements the SHA-256 standard
 class SHA256 : public IteratedHash<word32, true, 64>
 {
 public:
@@ -37,7 +37,7 @@ protected:
 
 #ifdef WORD64_AVAILABLE
 
-/// implements the SHA-512 standard
+//! implements the SHA-512 standard
 class SHA512 : public IteratedHash<word64, true, 128>
 {
 public:
@@ -52,7 +52,7 @@ protected:
 	const static word64 K[80];
 };
 
-/// implements the SHA-384 standard
+//! implements the SHA-384 standard
 class SHA384 : public IteratedHash<word64, true, 128>
 {
 public:

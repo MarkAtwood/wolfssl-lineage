@@ -5,13 +5,14 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+/// <a href="http://www.weidai.com/scan-mirror/md.html#HAVAL">HAVAL</a>
 class HAVAL : public IteratedHash<word32, false, 128>
 {
 public:
 	enum {DIGESTSIZE = 32, VERSION = 1};
 
-	// digestSize can be 16, 20, 24, 28, or 32
-	// pass can be 3, 4 or 5
+	/// digestSize can be 16, 20, 24, 28, or 32 (Default=32)<br>
+	/// pass can be 3, 4 or 5 (Default=3)
 	HAVAL(unsigned int digestSize=DIGESTSIZE, unsigned int passes=3);
 	void Final(byte *hash);
 	unsigned int DigestSize() const {return digestSize;}
@@ -27,6 +28,7 @@ protected:
 	const unsigned int digestSize, pass;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/md.html#HAVAL">HAVAL</a> with 3 passes
 class HAVAL3 : public HAVAL
 {
 public:
@@ -34,6 +36,7 @@ public:
 	static void Transform(word32 *buf, const word32 *in);
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/md.html#HAVAL">HAVAL</a> with 4 passes
 class HAVAL4 : public HAVAL
 {
 public:
@@ -41,6 +44,7 @@ public:
 	static void Transform(word32 *buf, const word32 *in);
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/md.html#HAVAL">HAVAL</a> with 5 passes
 class HAVAL5 : public HAVAL
 {
 public:

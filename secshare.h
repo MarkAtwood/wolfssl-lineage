@@ -35,9 +35,7 @@ public:
 		{return outPorts[currentPort]->Peek(outByte);}
 	unsigned int Peek(byte *outString, unsigned int peekMax) const
 		{return outPorts[currentPort]->Peek(outString, peekMax);}
-	unsigned long CopyTo(BufferedTransformation &target) const
-		{return outPorts[currentPort]->CopyTo(target);}
-	unsigned int CopyTo(BufferedTransformation &target, unsigned int copyMax) const
+	unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax=ULONG_MAX) const
 		{return outPorts[currentPort]->CopyTo(target, copyMax);}
 
 	void Put(byte inByte);
@@ -75,8 +73,7 @@ public:
 	unsigned int Get(byte *outString, unsigned int getMax);
 	unsigned int Peek(byte &outByte) const;
 	unsigned int Peek(byte *outString, unsigned int peekMax) const;
-	unsigned long CopyTo(BufferedTransformation &target) const;
-	unsigned int CopyTo(BufferedTransformation &target, unsigned int copyMax) const;
+	unsigned long CopyTo(BufferedTransformation &target, unsigned long copyMax=ULONG_MAX) const;
 
 private:
 	Join &parent;

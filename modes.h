@@ -1,6 +1,9 @@
 #ifndef CRYPTOPP_MODES_H
 #define CRYPTOPP_MODES_H
 
+/** \file
+*/
+
 #include "cryptlib.h"
 #include "misc.h"
 
@@ -27,10 +30,11 @@ protected:
 	int counter;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#mode_CFB">Cipher-Feedback mode</a>
 class CFBEncryption : public StreamCipher, protected FeedBackMode
 {
 public:
-	// cipher should be an *encryption* object
+	/// cipher should be an *encryption* object
 	CFBEncryption(const BlockTransformation &cipher, const byte *IV, int feedBackSize = 0)
     	: FeedBackMode(cipher, IV, feedBackSize) {}
 
@@ -46,10 +50,11 @@ public:
 	void ProcessString(byte *inoutString, unsigned int length);
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#mode_CFB">Cipher-Feedback mode</a>
 class CFBDecryption : public StreamCipher, protected FeedBackMode
 {
 public:
-	// cipher should be an *encryption* object
+	/// cipher should be an *encryption* object
 	CFBDecryption(const BlockTransformation &cipher, const byte *IV, int feedBackSize = 0)
     	: FeedBackMode(cipher, IV, feedBackSize) {}
 
@@ -66,10 +71,11 @@ public:
 	void ProcessString(byte *inoutString, unsigned int length);
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#mode_OFB">Output-Feedback mode</a>
 class OFB : public RandomNumberGenerator, public StreamCipher, protected FeedBackMode
 {
 public:
-	// cipher should be an *encryption* object
+	/// cipher should be an *encryption* object
 	OFB(const BlockTransformation &cipher, const byte *IV, int feedBackSize = 0)
     	: FeedBackMode(cipher, IV, feedBackSize) {}
 
@@ -87,6 +93,7 @@ public:
 	void ProcessString(byte *inoutString, unsigned int length);
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#mode_Counter-BE">Counter-BE Mode</a>
 class CounterMode : public RandomNumberGenerator, public RandomAccessStreamCipher, protected CipherMode
 {
 public:
@@ -115,20 +122,22 @@ private:
 	int size;
 };
 
+/// CFB with a sync method used by PGP
 class PGP_CFBEncryption : public CFBEncryption
 {
 public:
-	// cipher should be an *encryption* object
+	/// cipher should be an *encryption* object
 	PGP_CFBEncryption(const BlockTransformation &cipher, const byte *IV)
     	: CFBEncryption(cipher, IV, 0) {}
 
 	void Sync();
 };
 
+/// CFB with a sync method used by PGP
 class PGP_CFBDecryption : public CFBDecryption
 {
 public:
-	// cipher should be an *encryption* object
+	/// cipher should be an *encryption* object
 	PGP_CFBDecryption(const BlockTransformation &cipher, const byte *IV)
     	: CFBDecryption(cipher, IV, 0) {}
 

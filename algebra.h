@@ -15,6 +15,7 @@ class Integer;
 // But this should be fine:
 // abcd = group.Add(a, group.Add(b, group.Add(c,d));
 
+//! Abstract Group
 template <class T> class AbstractGroup
 {
 public:
@@ -39,6 +40,7 @@ public:
 	virtual void SimultaneousMultiply(Element *results, const Element &base, const Integer *exponents, unsigned int exponentsCount) const;
 };
 
+//! Abstract Ring
 template <class T> class AbstractRing : public AbstractGroup<T>
 {
 public:
@@ -112,6 +114,7 @@ private:
 
 // ********************************************************
 
+//! Base and Exponent
 template <class T, class E = Integer>
 struct BaseAndExponent
 {
@@ -131,6 +134,7 @@ template <class Element, class Iterator>
 
 // ********************************************************
 
+//! Abstract Euclidean Domain
 template <class T> class AbstractEuclideanDomain : public AbstractRing<T>
 {
 public:
@@ -147,6 +151,7 @@ protected:
 
 // ********************************************************
 
+//! EuclideanDomainOf
 template <class T> class EuclideanDomainOf : public AbstractEuclideanDomain<T>
 {
 public:
@@ -206,6 +211,7 @@ private:
 	mutable Element result;
 };
 
+//! Quotient Ring
 template <class T> class QuotientRing : public AbstractRing<typename T::Element>
 {
 public:

@@ -10,6 +10,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! .
 class ModularArithmetic : public AbstractRing<Integer>
 {
 public:
@@ -104,7 +105,7 @@ protected:
 
 // const ModularArithmetic::RandomizationParameter ModularArithmetic::DefaultRandomizationParameter = 0 ;
 
-// do modular arithmetics in Montgomery representation for increased speed
+//! do modular arithmetics in Montgomery representation for increased speed
 class MontgomeryRepresentation : public ModularArithmetic
 {
 public:

@@ -13,6 +13,7 @@ typedef DES_EDE2_Decryption Default_ECB_Decryption;
 typedef SHA DefaultHashModule;
 typedef HMAC<DefaultHashModule> DefaultMAC;
 
+//! Password-Based Encryptor using DES-EDE2
 class DefaultEncryptor : public ProxyFilter
 {
 public:
@@ -28,6 +29,7 @@ private:
 	member_ptr<Default_ECB_Encryption> m_cipher;
 };
 
+//! Password-Based Decryptor using DES-EDE2
 class DefaultDecryptor : public ProxyFilter
 {
 public:
@@ -60,6 +62,7 @@ private:
 	bool m_throwException;
 };
 
+//! Password-Based Encryptor using DES-EDE2 and HMAC/SHA-1
 class DefaultEncryptorWithMAC : public ProxyFilter
 {
 public:
@@ -74,6 +77,7 @@ private:
 	member_ptr<DefaultMAC> m_mac;
 };
 
+//! Password-Based Decryptor using DES-EDE2 and HMAC/SHA-1
 class DefaultDecryptorWithMAC : public ProxyFilter
 {
 public:

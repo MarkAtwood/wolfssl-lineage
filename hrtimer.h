@@ -11,13 +11,12 @@ NAMESPACE_BEGIN(CryptoPP)
 
 #ifdef HIGHRES_TIMER_AVAILABLE
 
-// high resolution timer
-
+//! high resolution timer
 class Timer
 {
 public:
 	enum Unit {SECONDS, MILLISECONDS, MICROSECONDS};
-	Timer(Unit unit)	: m_started(false), m_unit(unit) {}
+	Timer(Unit unit)	: m_started(false), m_timerUnit(unit) {}
 
 	static word64 GetCurrentTimerValue();	// GetCurrentTime is a macro in MSVC 6.0
 	static unsigned long ConvertTo(word64 t, Unit unit);
@@ -36,7 +35,7 @@ public:
 	unsigned long ElapsedTime();
 
 private:
-	Unit m_unit;
+	Unit m_timerUnit;	// HPUX workaround: m_unit is a system macro on HPUX
 	bool m_started;
 	word64 m_start;
 };

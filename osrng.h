@@ -9,6 +9,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! Exception class for Random Number Generator.
 class OS_RNG_Err : public Exception
 {
 public:
@@ -19,8 +20,7 @@ public:
 
 #define NONBLOCKING_RNG_AVAILABLE
 
-// encapsulate CryptoAPI's CryptGenRandom or /dev/urandom
-
+//! encapsulate CryptoAPI's CryptGenRandom or /dev/urandom
 class NonblockingRng : public RandomNumberGenerator
 {
 public:
@@ -43,8 +43,7 @@ protected:
 
 #define BLOCKING_RNG_AVAILABLE
 
-// encapsulate /dev/random
-
+//! encapsulate /dev/random
 class BlockingRng : public RandomNumberGenerator
 {
 public:
@@ -63,6 +62,7 @@ protected:
 
 #define AUTO_SEEDED_RANDOM_POOL_AVAILABLE
 
+//! Automatic Seeded Random Pool
 class AutoSeededRandomPool : public RandomPool
 {
 public:

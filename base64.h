@@ -6,6 +6,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! Base64 Encoder Class 
 class Base64Encoder : public Filter
 {
 public:
@@ -31,6 +32,7 @@ private:
 	byte inBuf[3];
 };
 
+//! Base64 Decoder Class 
 class Base64Decoder : public Filter
 {
 public:

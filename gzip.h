@@ -7,6 +7,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+/// GZIP Compression (RFC 1952)
 class Gzip : public Deflator
 {
 public:
@@ -24,6 +25,7 @@ protected:
 	CRC32 m_crc;
 };
 
+/// GZIP Decompression (RFC 1952)
 class Gunzip : public Inflator
 {
 public:

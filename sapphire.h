@@ -6,11 +6,9 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class SapphireBase
+/// base class, do not use directly
+class SapphireBase : public VariableKeyLength<16, 1, 255>
 {
-public:
-	enum {KEYLENGTH=16};    // default key length
-
 protected:
 	SapphireBase();
 	SapphireBase(const byte *userKey, unsigned int keyLength);
@@ -40,10 +38,11 @@ private:
 	byte keyrand(unsigned int limit, const byte *user_key, byte keysize, byte *rsum, unsigned *keypos);
 };
 
-class SapphireEncryption : public StreamCipher, protected SapphireBase
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#Sapphire-II">Sapphire-II Cipher</a>
+class SapphireEncryption : public StreamCipher, public SapphireBase
 {
 public:
-	SapphireEncryption(const byte *userKey, unsigned int keyLength=KEYLENGTH)
+	SapphireEncryption(const byte *userKey, unsigned int keyLength=DEFAULT_KEYLENGTH)
 		: SapphireBase(userKey, keyLength) {}
 
 	inline byte ProcessByte(byte b)
@@ -64,10 +63,11 @@ protected:
 	SapphireEncryption() {}     // for SapphireHash
 };
 
-class SapphireDecryption : public StreamCipher, private SapphireBase
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#Sapphire-II">Sapphire-II cipher</a>
+class SapphireDecryption : public StreamCipher, public SapphireBase
 {
 public:
-	SapphireDecryption(const byte *userKey, unsigned int keyLength=KEYLENGTH)
+	SapphireDecryption(const byte *userKey, unsigned int keyLength=DEFAULT_KEYLENGTH)
 		: SapphireBase(userKey, keyLength) {}
 
 	inline byte ProcessByte(byte b)
@@ -85,6 +85,7 @@ public:
 	void ProcessString(byte *inoutString, unsigned int length);
 };
 
+/// Sapphire Random Number Generator
 class SapphireRNG : public RandomNumberGenerator, private SapphireEncryption
 {
 public:
@@ -94,6 +95,8 @@ public:
 	inline byte GetByte() {return SapphireEncryption::ProcessByte(0);}
 };
 
+//! Sapphire Hash
+/*! Digest Length = 160 bits */
 class SapphireHash : public HashModule, private SapphireEncryption
 {
 public:

@@ -1,12 +1,15 @@
 #ifndef CRYPTOPP_XTR_H
 #define CRYPTOPP_XTR_H
 
+/** \file
+	"The XTR public key system" by Arjen K. Lenstra and Eric R. Verheul
+*/
+
 #include "modarith.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-// "The XTR public key system" by Arjen K. Lenstra and Eric R. Verheul
-
+//! an element of GF(p^2)
 class GFP2Element
 {
 public:
@@ -35,6 +38,7 @@ public:
 	Integer c1, c2;
 };
 
+//! GF(p^2), optimal normal basis
 template <class F>
 class GFP2_ONB : public AbstractRing<GFP2Element>
 {

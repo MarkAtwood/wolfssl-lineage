@@ -1,19 +1,17 @@
 #ifndef CRYPTOPP_TWOFISH_H
 #define CRYPTOPP_TWOFISH_H
 
+/** \file
+*/
+
 #include "cryptlib.h"
 #include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class Twofish : public BlockTransformation
+/// base class, do not use directly
+class Twofish : public FixedBlockSize<16>, public VariableKeyLength<16, 0, 32>
 {
-public:
-	enum {KEYLENGTH=16, BLOCKSIZE=16};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength)
-		{return STDMIN(keylength, 32U);}
-
 protected:
 	Twofish(const byte *userKey, unsigned int keylength);
 	static word32 h0(word32 x, const word32 *key, unsigned int kLen);
@@ -26,10 +24,11 @@ protected:
 	SecBlock<word32[256]> m_s;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#Twofish">Twofish</a>
 class TwofishEncryption : public Twofish
 {
 public:
-	TwofishEncryption(const byte *userKey, unsigned int keylength=KEYLENGTH)
+	TwofishEncryption(const byte *userKey, unsigned int keylength=DEFAULT_KEYLENGTH)
 		: Twofish(userKey, keylength) {}
 
 	void ProcessBlock(const byte *inBlock, byte * outBlock) const;
@@ -37,10 +36,11 @@ public:
 		{TwofishEncryption::ProcessBlock(inoutBlock, inoutBlock);}
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#Twofish">Twofish</a>
 class TwofishDecryption : public Twofish
 {
 public:
-	TwofishDecryption(const byte *userKey, unsigned int keylength=KEYLENGTH)
+	TwofishDecryption(const byte *userKey, unsigned int keylength=DEFAULT_KEYLENGTH)
 		: Twofish(userKey, keylength) {}
 
 	void ProcessBlock(const byte *inBlock, byte * outBlock) const;

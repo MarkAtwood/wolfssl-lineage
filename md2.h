@@ -6,6 +6,8 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+/// <a href="http://www.weidai.com/scan-mirror/md.html#MD2">MD2</a>
+/** 128 Bit Hash */
 class MD2 : public HashModule
 {
 public:

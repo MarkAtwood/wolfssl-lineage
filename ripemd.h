@@ -5,6 +5,8 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! One way hash
+/** Digest Length = 160 bits */
 class RIPEMD160 : public IteratedHash<word32, false, 64>
 {
 public:

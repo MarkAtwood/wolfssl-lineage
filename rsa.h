@@ -1,12 +1,19 @@
 #ifndef CRYPTOPP_RSA_H
 #define CRYPTOPP_RSA_H
 
+/** \file
+	This file contains classes that implement the
+	<a href="http://www.weidai.com/scan-mirror/ca.html#RSA">RSA</a>
+	ciphers and signature schemes as defined in PKCS #1 v2.0.
+*/
+
 #include "pkcspad.h"
 #include "oaep.h"
 #include "integer.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! .
 class RSAFunction : virtual public TrapdoorFunction
 {
 public:
@@ -26,6 +33,7 @@ protected:
 	Integer n, e;	// these are only modified in constructors
 };
 
+//! .
 class InvertibleRSAFunction : public RSAFunction, public InvertibleTrapdoorFunction
 {
 public:
@@ -46,6 +54,7 @@ protected:
 	Integer d, p, q, dp, dq, u;
 };
 
+//! .
 template <class B>
 class RSAPrivateKeyTemplate : public B
 {
@@ -66,6 +75,7 @@ public:
 		: PublicKeyBaseTemplate<InvertibleRSAFunction>(bt) {}
 };
 
+//! .
 template <class B, class V>
 class RSAPublicKeyTemplate : public B
 {
@@ -84,29 +94,39 @@ public:
 };
 
 // The two RSA encryption schemes defined in PKCS #1 v2.0
+//! RSA PKCS1v15 Decryptor
 typedef RSAPrivateKeyTemplate<DecryptorTemplate<PKCS_EncryptionPaddingScheme, InvertibleRSAFunction> >
 	RSAES_PKCS1v15_Decryptor;
+//! RSA PKCS1v15 Encryptor
 typedef RSAPublicKeyTemplate<EncryptorTemplate<PKCS_EncryptionPaddingScheme, RSAFunction>, RSAES_PKCS1v15_Decryptor>
 	RSAES_PKCS1v15_Encryptor;
 
+//! RSA OAEP SHA Decryptor
 typedef RSAPrivateKeyTemplate<DecryptorTemplate<OAEP<SHA>, InvertibleRSAFunction> >
 	RSAES_OAEP_SHA_Decryptor;
+//! RSA OAEP SHA Encryptor
 typedef RSAPublicKeyTemplate<EncryptorTemplate<OAEP<SHA>, RSAFunction>, RSAES_OAEP_SHA_Decryptor>
 	RSAES_OAEP_SHA_Encryptor;
 
 // The three RSA signature schemes defined in PKCS #1 v2.0
+//! RSA PKCS1v15 SHA Signer
 typedef RSAPrivateKeyTemplate<SignerTemplate<DigestSignerTemplate<PKCS_SignaturePaddingScheme, InvertibleRSAFunction>, PKCS_DecoratedHashModule<SHA> > >
 	RSASSA_PKCS1v15_SHA_Signer;
+//! RSA PKCS1v15 SHA Verifier
 typedef RSAPublicKeyTemplate<VerifierTemplate<DigestVerifierTemplate<PKCS_SignaturePaddingScheme, RSAFunction>, PKCS_DecoratedHashModule<SHA> >, RSASSA_PKCS1v15_SHA_Signer>
 	RSASSA_PKCS1v15_SHA_Verifier;
 
+//! RSA PKCS1v15 MD2 Signer
 typedef RSAPrivateKeyTemplate<SignerTemplate<DigestSignerTemplate<PKCS_SignaturePaddingScheme, InvertibleRSAFunction>, PKCS_DecoratedHashModule<MD2> > >
 	RSASSA_PKCS1v15_MD2_Signer;
+//! RSA PKCS1v15 MD2 Verifier
 typedef RSAPublicKeyTemplate<VerifierTemplate<DigestVerifierTemplate<PKCS_SignaturePaddingScheme, RSAFunction>, PKCS_DecoratedHashModule<MD2> >, RSASSA_PKCS1v15_MD2_Signer>
 	RSASSA_PKCS1v15_MD2_Verifier;
 
+//! RSA PKCS1v15 MD5 Signer
 typedef RSAPrivateKeyTemplate<SignerTemplate<DigestSignerTemplate<PKCS_SignaturePaddingScheme, InvertibleRSAFunction>, PKCS_DecoratedHashModule<MD5> > >
 	RSASSA_PKCS1v15_MD5_Signer;
+//! RSA PKCS1v15 MD5 Verifier
 typedef RSAPublicKeyTemplate<VerifierTemplate<DigestVerifierTemplate<PKCS_SignaturePaddingScheme, RSAFunction>, PKCS_DecoratedHashModule<MD5> >, RSASSA_PKCS1v15_MD5_Signer>
 	RSASSA_PKCS1v15_MD5_Verifier;
 

@@ -6,6 +6,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! Random Pool
 class RandomPool : public RandomNumberGenerator,
 				   public Sink
 {

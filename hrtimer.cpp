@@ -59,7 +59,7 @@ void Timer::StartTimer()
 unsigned long Timer::ElapsedTime()
 {
 	if (m_started)
-		return ConvertTo(GetCurrentTimerValue() - m_start, m_unit);
+		return ConvertTo(GetCurrentTimerValue() - m_start, m_timerUnit);
 	else
 	{
 		StartTimer();

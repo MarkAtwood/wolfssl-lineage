@@ -7,6 +7,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+/// base class, do not use directly
 class Panama
 {
 public:
@@ -20,6 +21,7 @@ protected:
 	unsigned int m_bstart;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/md.html#Panama">Panama Hash</a>
 template <bool H = false>	// default to little endian
 class PanamaHash : protected Panama, public IteratedHash<word32, H, 32>
 {
@@ -35,19 +37,20 @@ protected:
 	unsigned int HashMultipleBlocks(const word32 *input, unsigned int length);
 };
 
+/// Panama MAC
 template <bool H = false>	// default to little endian
-class PanamaMAC : public PanamaHash<H>, public MessageAuthenticationCode
+class PanamaMAC : public PanamaHash<H>, public MessageAuthenticationCode, public VariableKeyLength<32, 0, UINT_MAX>
 {
 public:
-	enum {KEYLENGTH = 32};
-	PanamaMAC(const byte *key, unsigned int keylength=KEYLENGTH) {Update(key, keylength);}
+	PanamaMAC(const byte *key, unsigned int keylength=DEFAULT_KEYLENGTH) {Update(key, keylength);}
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#Panama">Panama Stream Cipher</a>
 template <bool H = false>	// default to little endian
-class PanamaCipher : protected Panama, public StreamCipher
+class PanamaCipher : protected Panama, public StreamCipher, public FixedKeyLength<32>
 {
 public:
-	enum {HIGHFIRST = H, KEYLENGTH = 32, IVLENGTH = 32};
+	enum {HIGHFIRST = H, IVLENGTH = 32};
 	PanamaCipher(const byte *key, const byte *iv=NULL);
 
 	byte ProcessByte(byte input)

@@ -48,6 +48,7 @@ enum ASNIdFlag
 
 #define BERDecodeError() throw BERDecodeErr()
 
+//! BER Decoder Exception Class  
 class BERDecodeErr : public Exception
 {
 public: 
@@ -82,7 +83,7 @@ unsigned int BERDecodeTextString(BufferedTransformation &in, std::string &str, b
 unsigned int DEREncodeBitString(BufferedTransformation &out, const byte *str, unsigned int strLen, unsigned int unusedBits=0);
 unsigned int BERDecodeBitString(BufferedTransformation &in, SecByteBlock &str, unsigned int &unusedBits);
 
-// OBJECT IDENTIFIER
+//! Object Identifier
 class OID
 {
 public:
@@ -110,6 +111,7 @@ private:
 	static unsigned int DecodeValue(BufferedTransformation &bt, unsigned long &v);
 };
 
+//! BER General Decoder
 class BERGeneralDecoder : public Store
 {
 public:
@@ -138,6 +140,7 @@ private:
 	unsigned int ReduceLength(unsigned int delta);
 };
 
+//! DER General Encoder
 class DERGeneralEncoder : public ByteQueue
 {
 public:
@@ -155,6 +158,7 @@ private:
 	byte m_asnTag;
 };
 
+//! BER Sequence Decoder
 class BERSequenceDecoder : public BERGeneralDecoder
 {
 public:
@@ -164,6 +168,7 @@ public:
 		: BERGeneralDecoder(inQueue, asnTag) {}
 };
 
+//! DER Sequence Encoder
 class DERSequenceEncoder : public DERGeneralEncoder
 {
 public:
@@ -173,6 +178,7 @@ public:
 		: DERGeneralEncoder(outQueue, asnTag) {}
 };
 
+//! BER Set Decoder
 class BERSetDecoder : public BERGeneralDecoder
 {
 public:
@@ -182,6 +188,7 @@ public:
 		: BERGeneralDecoder(inQueue, asnTag) {}
 };
 
+//! DER Set Encoder
 class DERSetEncoder : public DERGeneralEncoder
 {
 public:
@@ -193,7 +200,8 @@ public:
 
 // ********************************************************
 
-// for INTEGER, BOOLEAN, and ENUM
+//! DER Encode Unsigned
+/*! for INTEGER, BOOLEAN, and ENUM */
 template <class T>
 unsigned int DEREncodeUnsigned(BufferedTransformation &out, T w, byte asnTag = INTEGER)
 {
@@ -221,6 +229,7 @@ unsigned int DEREncodeUnsigned(BufferedTransformation &out, T w, byte asnTag = I
 	return 1+lengthBytes+bc;
 }
 
+//! BER Decode Unsigned
 // VC60 workaround: std::numeric_limits<T>::max conflicts with MFC max macro
 // CW41 workaround: std::numeric_limits<T>::max causes a template error
 template <class T>

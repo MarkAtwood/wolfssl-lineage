@@ -15,6 +15,7 @@ const word32 CRC32_NEGL = 0xffffffffL;
 #define CRC32_SHIFTED(c) (c << 8)
 #endif
 
+//! CRC Checksum Calculation
 class CRC32 : public HashModule
 {
 public:

@@ -6,6 +6,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! .
 class LowFirstBitWriter : public Filter
 {
 public:
@@ -24,6 +25,7 @@ protected:
 	SecByteBlock m_outputBuffer;
 };
 
+//! Huffman Encoder
 class HuffmanEncoder
 {
 public:
@@ -47,7 +49,7 @@ public:
 	SecBlock<Code> m_valueToCode;
 };
 
-// DEFLATE (RFC 1951) compressor
+//! DEFLATE (RFC 1951) compressor
 
 class Deflator : public LowFirstBitWriter
 {

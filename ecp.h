@@ -7,6 +7,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! Elliptical Curve Point
 struct ECPPoint
 {
 	ECPPoint() : identity(true) {}
@@ -22,6 +23,7 @@ struct ECPPoint
 	Integer x, y;
 };
 
+//! Elliptic Curve over GF(p), where p is prime
 class ECP : public AbstractGroup<ECPPoint>
 {
 public:
@@ -84,6 +86,7 @@ private:
 
 template <class T> class EcPrecomputation;
 
+//! .
 template<> class EcPrecomputation<ECP>
 {
 public:

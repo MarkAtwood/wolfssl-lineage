@@ -9,8 +9,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-// a variant of Rabin's Information Dispersal Algorithm
-
+/// base class for secret sharing and information dispersal
 class RawIDA : public Filter, public BufferedTransformationWithAutoSignal
 {
 public:
@@ -51,6 +50,7 @@ protected:
 	SecBlock<word32> m_u, m_w, m_y;
 };
 
+/// a variant of Shamir's Secret Sharing Algorithm
 class SecretSharing : public Filter
 {
 public:
@@ -67,6 +67,7 @@ protected:
 	bool m_pad;
 };
 
+/// a variant of Shamir's Secret Sharing Algorithm
 class SecretRecovery : public RawIDA
 {
 public:
@@ -79,6 +80,7 @@ protected:
 	bool m_pad;
 };
 
+/// a variant of Rabin's Information Dispersal Algorithm
 class InformationDispersal : public Filter
 {
 public:
@@ -95,6 +97,7 @@ protected:
 	unsigned int m_nextChannel;
 };
 
+/// a variant of Rabin's Information Dispersal Algorithm
 class InformationRecovery : public RawIDA
 {
 public:

@@ -8,20 +8,19 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-// HMAC(K, text) = H(K XOR opad, H(K XOR ipad, text))
-
-template <class T> class HMAC : public MessageAuthenticationCode
+//! <a href="http://www.weidai.com/scan-mirror/mac.html#HMAC">HMAC</a>
+/*! HMAC(K, text) = H(K XOR opad, H(K XOR ipad, text)) */
+template <class T> class HMAC : public MessageAuthenticationCode, public VariableKeyLength<16, 0, T::BLOCKSIZE>
 {
 public:
 	// put enums here for Metrowerks 4
-	enum {KEYLENGTH=16, MAX_KEYLENGTH=T::BLOCKSIZE, DIGESTSIZE=T::DIGESTSIZE, BLOCKSIZE=T::BLOCKSIZE};
+	enum {DIGESTSIZE=T::DIGESTSIZE, BLOCKSIZE=T::BLOCKSIZE};
 
-	HMAC(const byte *userKey, unsigned int keylength=KEYLENGTH);
+	// CW50 workaround: can't use DEFAULT_KEYLENGTH here
+	HMAC(const byte *userKey, unsigned int keylength = 16);
 	void Update(const byte *input, unsigned int length);
 	void Final(byte *mac);
 	unsigned int DigestSize() const {return DIGESTSIZE;}
-	static unsigned int KeyLength(unsigned int keylength)
-		{return STDMIN(keylength, (unsigned int)MAX_KEYLENGTH);}
 
 private:
 	enum {IPAD=0x36, OPAD=0x5c};

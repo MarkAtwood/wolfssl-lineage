@@ -9,6 +9,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+/// <a href="http://www.weidai.com/scan-mirror/md.html#Tiger">Tiger</a>
 class Tiger : public IteratedHash<word64, false, 64>
 {
 public:

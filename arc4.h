@@ -6,13 +6,11 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class ARC4 : public RandomNumberGenerator,
-            public StreamCipher
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#RC4">Alleged RC4</a>
+class ARC4 : public RandomNumberGenerator, public StreamCipher, VariableKeyLength<16, 1, 256>
 {
 public:
-    enum {KEYLENGTH=16};    // default key length
-
-    ARC4(const byte *userKey, unsigned int keyLength=KEYLENGTH);
+    ARC4(const byte *userKey, unsigned int keyLength=DEFAULT_KEYLENGTH);
     ~ARC4();
 
     byte GenerateByte();
@@ -20,9 +18,6 @@ public:
     byte ProcessByte(byte input);
     void ProcessString(byte *outString, const byte *inString, unsigned int length);
     void ProcessString(byte *inoutString, unsigned int length);
-
-	static unsigned int KeyLength(unsigned int keylength)
-		{return keylength < 1 ? 1 : (keylength <= 256 ? keylength : 256);}
 
 private:
     SecByteBlock m_state;

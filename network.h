@@ -8,12 +8,15 @@ NAMESPACE_BEGIN(CryptoPP)
 
 const unsigned long INFINITE_TIME = ULONG_MAX;
 
+//! a Source class that can pump from a device for a specified amount of time.
 class NonblockingSource : public Source, public BufferedTransformationWithAutoSignal
 {
 public:
 	NonblockingSource(BufferedTransformation *outQ)
 		: Source(outQ), m_messagePumped(false) {}
 
+	//! pump up to maxSize bytes using at most maxTime milliseconds
+	/*! If checkDelimiter is true, pump up to delimiter, which itself is not extracted or pumped. */
 	virtual unsigned long GeneralPump(unsigned long maxSize=ULONG_MAX, unsigned long maxTime=INFINITE_TIME, bool checkDelimiter=false, byte delimiter='\n') =0;
 
 	unsigned long Pump(unsigned long pumpMax=ULONG_MAX) {return GeneralPump(pumpMax);}
@@ -26,6 +29,7 @@ private:
 	bool m_messagePumped;
 };
 
+//! Network Receiver
 class NetworkReceiver
 {
 public:
@@ -36,6 +40,7 @@ public:
 	virtual bool EofReceived() const =0;
 };
 
+//! a Sink class that queues input and can flush to a device for a specified amount of time.
 class NonblockingSink : public Sink
 {
 public:
@@ -51,6 +56,7 @@ public:
 	virtual unsigned int GetCurrentBufferSize() const =0;
 };
 
+//! Network Sender
 class NetworkSender
 {
 public:
@@ -63,6 +69,7 @@ public:
 
 #ifdef HIGHRES_TIMER_AVAILABLE
 
+//! Network Source
 class NetworkSource : virtual public NetworkReceiver, public NonblockingSource
 {
 public:
@@ -75,6 +82,7 @@ private:
 	bool m_needReceiveResult;
 };
 
+//! Network Sink
 class NetworkSink : virtual public NetworkSender, public NonblockingSink
 {
 public:

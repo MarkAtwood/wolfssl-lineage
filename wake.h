@@ -19,10 +19,11 @@ protected:
 	word32 r3, r4, r5, r6;
 };
 
-class WAKEEncryption : public Filter, protected WAKE
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#WAKE-CFB-BE">WAKE-CFB-BE</a>
+class WAKEEncryption : public Filter, protected WAKE, public FixedKeyLength<32>
 {
 public:
-	// key length is 32 bytes
+	/// key length is 32 bytes
 	WAKEEncryption(const byte *key, BufferedTransformation *outQueue = NULL);
 
 	void Put(byte inByte)
@@ -42,10 +43,11 @@ protected:
 	unsigned int inbufSize;
 };
 
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#WAKE-CFB-BE">WAKE-CFB-BE</a>
 class WAKEDecryption : public WAKEEncryption
 {
 public:
-	// key length is 32 bytes
+	/// key length is 32 bytes
 	WAKEDecryption(const byte *key, BufferedTransformation *outQueue = NULL)
 		: WAKEEncryption(key, outQueue) {lastBlock=false;}
 

@@ -19,6 +19,7 @@ NAMESPACE_BEGIN(CryptoPP)
 #ifdef USE_WINDOWS_STYLE_SOCKETS
 const int SOCKET_EINVAL = WSAEINVAL;
 const int SOCKET_EWOULDBLOCK = WSAEWOULDBLOCK;
+typedef int socklen_t;
 #else
 const int SOCKET_ERROR = -1;
 const int SOCKET_EINVAL = EINVAL;
@@ -110,7 +111,7 @@ void Socket::Bind(unsigned int port, const char *addr)
 	Bind((sockaddr *)&sa, sizeof(sa));
 }
 
-void Socket::Bind(const sockaddr *psa, unsigned int saLen)
+void Socket::Bind(const sockaddr *psa, socklen_t saLen)
 {
 	assert(m_s != INVALID_SOCKET);
 	// cygwin workaround: needs const_cast
@@ -146,20 +147,20 @@ bool Socket::Connect(const char *addr, unsigned int port)
 
 	sa.sin_port = htons((u_short)port);
 
-	return Connect((sockaddr *)&sa, sizeof(sa));
+	return Connect((const sockaddr *)&sa, sizeof(sa));
 }
 
-bool Socket::Connect(const sockaddr* psa, int saLen)
+bool Socket::Connect(const sockaddr* psa, socklen_t saLen)
 {
 	assert(m_s != INVALID_SOCKET);
-	int result = connect(m_s, psa, saLen);
+	int result = connect(m_s, const_cast<sockaddr*>(psa), saLen);
 	if (result == SOCKET_ERROR && GetLastError() == SOCKET_EWOULDBLOCK)
 		return false;
 	CheckAndHandleError("connect", result);
 	return true;
 }
 
-bool Socket::Accept(Socket& target, sockaddr *psa, int *psaLen)
+bool Socket::Accept(Socket& target, sockaddr *psa, socklen_t *psaLen)
 {
 	assert(m_s != INVALID_SOCKET);
 	socket_t s = accept(m_s, psa, psaLen);
@@ -170,7 +171,7 @@ bool Socket::Accept(Socket& target, sockaddr *psa, int *psaLen)
 	return true;
 }
 
-void Socket::GetSockName(sockaddr *psa, int *psaLen)
+void Socket::GetSockName(sockaddr *psa, socklen_t *psaLen)
 {
 	assert(m_s != INVALID_SOCKET);
 	CheckAndHandleError("getsockname", getsockname(m_s, psa, psaLen));

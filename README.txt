@@ -1,5 +1,5 @@
 Crypto++: a C++ Class Library of Cryptographic Primitives
-Version 4.0  11/2/2000
+Version 4.1  1/10/2000
 
 This library includes:
 
@@ -81,9 +81,11 @@ A no longer needs it.
 Crypto++ safely in a multithreaded application, but you must provide
 synchronization when multiple threads access a common Crypto++ object.
 
-Good luck, and feel free to e-mail me at weidai@eskimo.com if you have
-any problems.  Also, check http://www.eskimo.com/~weidai/cryptlib.html
-for updates and new versions.
+If you run into any problems, please try the Crypto++ mailing list.
+The subscription information and the list archive are available at
+http://www.cryptopp.com. You can also email me directly at
+weidai@eskimo.com, but you will probably get a faster response through
+the mailing list.
 
 Wei Dai
 
@@ -179,7 +181,7 @@ History
       - Microsoft's CryptGenRandom on Windows
     - added support for SEC 1 elliptic curve key format and compressed points
     - added support for X.509 public key format (subjectPublicKeyInfo) for
-      RSA, DSA, and elliptic curves
+      RSA, DSA, and elliptic curve schemes
     - added support for DER and OpenPGP signature format for DSA
     - added support for ZLIB compressed data format (RFC 1950)
     - changed elliptic curve encryption to use ECIES (as defined in SEC 1)
@@ -189,3 +191,17 @@ History
     - changed CAST and SHA-1 implementations to use public domain source code
     - fixed bug in StringSource
     - optmized multi-precision integer code for better performance
+
+4.1 - added more support for the recommended elliptic curve parameters in SEC 2
+    - added Panama MAC
+    - added IV stealing feature to CTS mode
+    - added support for PKCS #8 private key format for RSA, DSA, and elliptic
+      curve schemes
+    - changed Deflate, MD5, Rijndael, and Twofish to use public domain code
+    - fixed a bug with flushing compressed streams
+    - fixed a bug with decompressing stored blocks
+    - fixed a bug with EC point decompression using non-trinomial basis
+    - fixed a bug in NetworkSource::GeneralPump()
+    - fixed performance issue with EC over GF(p) decryption
+    - fixed syntax to allow GCC to compile without -fpermissive
+    - relaxed some restrictions in the license

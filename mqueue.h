@@ -7,6 +7,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
+//! Message Queue
 class MessageQueue : public BufferedTransformationWithAutoSignal
 {
 public:

@@ -3,12 +3,16 @@
 #ifndef CRYPTOPP_MDC_H
 #define CRYPTOPP_MDC_H
 
+/** \file
+*/
+
 #include "cryptlib.h"
 #include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-template <class T> class MDC : public BlockTransformation
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#MDC">MDC</a>
+template <class T> class MDC : public FixedBlockSize<T::DIGESTSIZE>, public FixedKeyLength<T::BLOCKSIZE>
 {
 public:
 	MDC(const byte *userKey, unsigned int = 0)
@@ -30,16 +34,6 @@ public:
 		T::Transform((word32 *)outBlock, key);
 		T::CorrectEndianess((word32 *)outBlock, (word32 *)outBlock, BLOCKSIZE);
 	}
-
-	unsigned int BlockSize() const {return BLOCKSIZE;}
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
-
-#ifdef __BCPLUSPLUS__
-	static const unsigned int KEYLENGTH=T::DATASIZE;
-    static const unsigned int BLOCKSIZE=T::DIGESTSIZE;
-#else
-	enum {KEYLENGTH=T::BLOCKSIZE, BLOCKSIZE=T::DIGESTSIZE};
-#endif
 
 private:
 	SecBlock<word32> key;

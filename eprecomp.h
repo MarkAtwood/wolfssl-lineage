@@ -7,14 +7,15 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-// Please do not directly use the following class.  It should be
-// considered a private class for the library.  The following
-// classes are public and use ExponentiationPrecomputation internally.
-//
-// ModExpPrecomputation;
-// EcPrecomputation<EC2N>;
-// EcPrecomputation<ECP>;
-
+/**
+   Please do not directly use the following class.  It should be
+   considered a private class for the library.  The following
+   classes are public and use ExponentiationPrecomputation internally. <br><br>
+ 
+   ModExpPrecomputation; <br>
+   EcPrecomputation<EC2N>; <br>
+   EcPrecomputation<ECP>;
+*/
 template <class T> class ExponentiationPrecomputation
 {
 public:

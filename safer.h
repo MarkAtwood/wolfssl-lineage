@@ -1,16 +1,19 @@
 #ifndef CRYPTOPP_SAFER_H
 #define CRYPTOPP_SAFER_H
 
+/** \file
+*/
+
 #include "cryptlib.h"
 #include "misc.h"
 
 NAMESPACE_BEGIN(CryptoPP)
 
-class SAFER : public BlockTransformation
+/// base class, do not use directly
+class SAFER : public FixedBlockSize<8>
 {
 public:
-	enum {BLOCKSIZE=8, MAX_ROUNDS=13};
-	unsigned int BlockSize() const {return BLOCKSIZE;}
+	enum {MAX_ROUNDS=13};
 
 protected:
 	SAFER(const byte *userkey_1, const byte *userkey_2, unsigned nof_rounds, bool strengthened);
@@ -23,13 +26,12 @@ protected:
 	static const byte log_tab[256];
 };
 
-class SAFER_K64_Encryption : public SAFER
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-K">SAFER-K64</a>
+class SAFER_K64_Encryption : public SAFER, public FixedKeyLength<8>
 {
 public:
-	enum {KEYLENGTH=8, ROUNDS=6};
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
-
-	SAFER_K64_Encryption(const byte *userKey, unsigned int = 0, unsigned int rounds=ROUNDS)
+	enum {DEFAULT_ROUNDS=6};
+	SAFER_K64_Encryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
 		: SAFER(userKey, userKey, rounds, false) {}
 
 	void ProcessBlock(byte * inoutBlock) const
@@ -38,13 +40,12 @@ public:
 		{SAFER::Encrypt(inBlock, outBlock);}
 };
 
-class SAFER_K64_Decryption : public SAFER
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-K">SAFER-K64</a>
+class SAFER_K64_Decryption : public SAFER, public FixedKeyLength<8>
 {
 public:
-	enum {KEYLENGTH=8, ROUNDS=6};
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
-
-	SAFER_K64_Decryption(const byte *userKey, unsigned int = 0, unsigned int rounds=ROUNDS)
+	enum {DEFAULT_ROUNDS=6};
+	SAFER_K64_Decryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
 		: SAFER(userKey, userKey, rounds, false) {}
 
 	void ProcessBlock(byte * inoutBlock) const
@@ -53,13 +54,12 @@ public:
 		{SAFER::Decrypt(inBlock, outBlock);}
 };
 
-class SAFER_K128_Encryption : public SAFER
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-K">SAFER-K128</a>
+class SAFER_K128_Encryption : public SAFER, public FixedKeyLength<16>
 {
 public:
-	enum {KEYLENGTH=16, ROUNDS=10};
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
-
-	SAFER_K128_Encryption(const byte *userKey, unsigned int = 0, unsigned int rounds=ROUNDS)
+	enum {DEFAULT_ROUNDS=10};
+	SAFER_K128_Encryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
 		: SAFER(userKey, userKey+8, rounds, false) {}
 
 	void ProcessBlock(byte * inoutBlock) const
@@ -68,13 +68,12 @@ public:
 		{SAFER::Encrypt(inBlock, outBlock);}
 };
 
-class SAFER_K128_Decryption : public SAFER
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-K">SAFER-K128</a>
+class SAFER_K128_Decryption : public SAFER, public FixedKeyLength<16>
 {
 public:
-	enum {KEYLENGTH=16, ROUNDS=10};
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
-
-	SAFER_K128_Decryption(const byte *userKey, unsigned int = 0, unsigned int rounds=ROUNDS)
+	enum {DEFAULT_ROUNDS=10};
+	SAFER_K128_Decryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
 		: SAFER(userKey, userKey+8, rounds, false) {}
 
 	void ProcessBlock(byte * inoutBlock) const
@@ -83,13 +82,12 @@ public:
 		{SAFER::Decrypt(inBlock, outBlock);}
 };
 
-class SAFER_SK64_Encryption : public SAFER
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-SK">SAFER-SK64</a>
+class SAFER_SK64_Encryption : public SAFER, public FixedKeyLength<8>
 {
 public:
-	enum {KEYLENGTH=8, ROUNDS=8};
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
-
-	SAFER_SK64_Encryption(const byte *userKey, unsigned int = 0, unsigned int rounds=ROUNDS)
+	enum {DEFAULT_ROUNDS=8};
+	SAFER_SK64_Encryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
 		: SAFER(userKey, userKey, rounds, true) {}
 
 	void ProcessBlock(byte * inoutBlock) const
@@ -98,13 +96,12 @@ public:
 		{SAFER::Encrypt(inBlock, outBlock);}
 };
 
-class SAFER_SK64_Decryption : public SAFER
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-SK">SAFER-SK64</a>
+class SAFER_SK64_Decryption : public SAFER, public FixedKeyLength<8>
 {
 public:
-	enum {KEYLENGTH=8, ROUNDS=8};
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
-
-	SAFER_SK64_Decryption(const byte *userKey, unsigned int = 0, unsigned int rounds=ROUNDS)
+	enum {DEFAULT_ROUNDS=8};
+	SAFER_SK64_Decryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
 		: SAFER(userKey, userKey, rounds, true) {}
 
 	void ProcessBlock(byte * inoutBlock) const
@@ -113,13 +110,12 @@ public:
 		{SAFER::Decrypt(inBlock, outBlock);}
 };
 
-class SAFER_SK128_Encryption : public SAFER
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-SK">SAFER-SK128</a>
+class SAFER_SK128_Encryption : public SAFER, public FixedKeyLength<16>
 {
 public:
-	enum {KEYLENGTH=16, ROUNDS=10};
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
-
-	SAFER_SK128_Encryption(const byte *userKey, unsigned int = 0, unsigned int rounds=ROUNDS)
+	enum {DEFAULT_ROUNDS=10};
+	SAFER_SK128_Encryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
 		: SAFER(userKey, userKey+8, rounds, true) {}
 
 	void ProcessBlock(byte * inoutBlock) const
@@ -128,13 +124,12 @@ public:
 		{SAFER::Encrypt(inBlock, outBlock);}
 };
 
-class SAFER_SK128_Decryption : public SAFER
+/// <a href="http://www.weidai.com/scan-mirror/cs.html#SAFER-SK">SAFER-SK128</a>
+class SAFER_SK128_Decryption : public SAFER, public FixedKeyLength<16>
 {
 public:
-	enum {KEYLENGTH=16, ROUNDS=10};
-	static unsigned int KeyLength(unsigned int keylength) {return KEYLENGTH;}
-
-	SAFER_SK128_Decryption(const byte *userKey, unsigned int = 0, unsigned int rounds=ROUNDS)
+	enum {DEFAULT_ROUNDS=10};
+	SAFER_SK128_Decryption(const byte *userKey, unsigned int = 0, unsigned int rounds=DEFAULT_ROUNDS)
 		: SAFER(userKey, userKey+8, rounds, true) {}
 
 	void ProcessBlock(byte * inoutBlock) const

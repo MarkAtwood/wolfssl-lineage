@@ -11,7 +11,7 @@
 
 NAMESPACE_BEGIN(CryptoPP)
 
-INSTANTIATE_PUBKEY_CRYPTO_TEMPLATES_MACRO(OAEP<SHA>, RabinFunction, InvertibleRabinFunction);
+INSTANTIATE_PUBKEY_CRYPTO_TEMPLATES_MACRO(OAEP<SHA>, RabinFunction, InvertibleRabinFunction)
 
 RabinFunction::RabinFunction(const Integer &n, const Integer &r, const Integer &s)
 	: n(n), r(r), s(s)

@@ -182,12 +182,7 @@ unsigned int JoinInterface::Peek(byte *outString, unsigned int peekMax) const
 	return parent.Peek(outString, peekMax);
 }
 
-unsigned long JoinInterface::CopyTo(BufferedTransformation &target) const
-{
-	return parent.CopyTo(target);
-}
-
-unsigned int JoinInterface::CopyTo(BufferedTransformation &target, unsigned int copyMax) const
+unsigned long JoinInterface::CopyTo(BufferedTransformation &target, unsigned long copyMax) const
 {
 	return parent.CopyTo(target, copyMax);
 }
