@@ -90,16 +90,58 @@ opaque* x509::use_buffer()
 
 
 //CertManager
+CertManager::CertManager()
+    : verifyPeer_(false), failNoCert_(false), sendVerify_(false)
+{}
+
 
 CertManager::~CertManager()
 {
+    std::for_each(peerList_.begin(), peerList_.end(), del_ptr_zero()) ;
+
     std::for_each(list_.begin(), list_.end(), del_ptr_zero()) ;
 }
 
 
-void CertManager::AddCert(x509* x)
+bool CertManager::verifyPeer() const
+{
+    return verifyPeer_;
+}
+
+
+bool CertManager::failNoCert() const
+{
+    return failNoCert_;
+}
+
+
+bool CertManager::sendVerify() const
+{
+    return sendVerify_;
+}
+
+
+void CertManager::setVerifyPeer()
+{
+    verifyPeer_ = true;
+}
+
+
+void CertManager::setFailNoCert()
+{
+    failNoCert_ = true;
+}
+
+
+void CertManager::setSendVerify()
+{
+    sendVerify_ = true;
+}
+
+
+void CertManager::AddPeerCert(x509* x)
 { 
-    list_.push_back(x);  // take ownership
+    peerList_.push_back(x);  // take ownership
 }
 
 
@@ -116,21 +158,21 @@ const x509* CertManager::get_cert() const
 }
 
 
-const opaque* CertManager::get_Key() const
+const opaque* CertManager::get_peerKey() const
 { 
-    return publicKey_.get_buffer();
+    return peerPublicKey_.get_buffer();
+}
+
+
+uint CertManager::get_peerKeyLength() const
+{ 
+    return peerPublicKey_.get_size();
 }
 
 
 const opaque* CertManager::get_privateKey() const
 { 
     return privateKey_.get_buffer();
-}
-
-
-uint CertManager::get_KeyLength() const
-{ 
-    return publicKey_.get_size();
 }
 
 
@@ -160,10 +202,10 @@ void CertManager::SetPrivateKey(const x509& key)
 #if defined(USE_CML_LIB)
 
 // Get the peer's certificate, extract and save public key
-void CertManager::SetKey()
+void CertManager::SetPeerKey()
 {
     // first cert is the peer's
-    x509* main = list_.front();
+    x509* main = peerList_.front();
 
     Bytes_struct cert;
     cert.num  = main->get_length();
@@ -175,23 +217,23 @@ void CertManager::SetKey()
 
     uint sz;
     opaque* key_buffer = reinterpret_cast<opaque*>(key.Get(sz));
-    publicKey_.allocate(sz);
-    publicKey_.assign(key_buffer, sz);
+    peerPublicKey_.allocate(sz);
+    peerPublicKey_.assign(key_buffer, sz);
 }
 
 #else // USE_CML_LIB
 
 // Get the peer's certificate, extract and save public key
-void CertManager::SetKey()
+void CertManager::SetPeerKey()
 {
     // first cert is the peer's
-    x509* main = list_.front();
+    x509* main = peerList_.front();
     TaoCrypt::Sink sink(main->get_buffer(), main->get_length());
     TaoCrypt::CertDecoder cert(sink);
 
     uint sz = cert.GetPublicKey().size();
-    publicKey_.allocate(sz);
-    publicKey_.assign(cert.GetPublicKey().GetKey(), sz);
+    peerPublicKey_.allocate(sz);
+    peerPublicKey_.assign(cert.GetPublicKey().GetKey(), sz);
 }
 
 #endif // USE_CML_LIB

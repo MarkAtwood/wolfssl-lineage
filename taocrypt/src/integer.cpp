@@ -73,7 +73,7 @@ CPP_TYPENAME AllocatorBase<T>::pointer AlignedAllocator<T>::allocate(
 {
     CheckSize(n);
     if (n == 0)
-        return NULL;
+        return 0;
     if (n >= 4)
     {
         void* p;
@@ -90,7 +90,7 @@ CPP_TYPENAME AllocatorBase<T>::pointer AlignedAllocator<T>::allocate(
         CallNewHandler();
 
     #ifdef TAOCRYPT_NO_ALIGNED_ALLOC
-        assert(m_pBlock == NULL);
+        assert(m_pBlock == 0);
         m_pBlock = p;
         if (!IsAlignedOn(p, 16))
         {
@@ -117,7 +117,7 @@ void AlignedAllocator<T>::deallocate(void* p, size_type n)
         #elif defined(TAOCRYPT_NO_ALIGNED_ALLOC)
             assert(m_pBlock == p || (byte*)m_pBlock+8 == p);
             free(m_pBlock);
-            m_pBlock = NULL;
+            m_pBlock = 0;
         #else
             free(p);
         #endif
@@ -342,7 +342,7 @@ private:
 
 // do a 3 word by 2 word divide, returns quotient and leaves remainder in A
 template <class S, class D>
-S DivideThreeWordsByTwo(S *A, S B0, S B1, D *dummy=NULL)
+S DivideThreeWordsByTwo(S* A, S B0, S B1, D* dummy = 0)
 {
     // assert {A[2],A[1]} < {B1,B0}, so quotient can fit in a S
     assert(A[2] < B1 || (A[2]==B1 && A[1] < B0));
@@ -2302,7 +2302,7 @@ void RecursiveMultiplyBottom(word *R, word *T, const word *A, const word *B,
 /*
 template <class P>
 void RecursiveMultiplyTop(word *R, word *T, const word *L, const word *A,
-                          const word *B, unsigned int N, const P *dummy=NULL)
+                          const word *B, unsigned int N, const P *dummy=0)
 {
     assert(N>=2 && N%2==0);
 

@@ -65,7 +65,7 @@ void EncryptedPreMasterSecret::build(SSL& ssl)
     ssl.set_preMaster(tmp, SECRET_LEN);
 
     const CertManager& cert = ssl.getCrypto().get_certManager();
-    RSA rsa(cert.get_Key(), cert.get_KeyLength());
+    RSA rsa(cert.get_peerKey(), cert.get_peerKeyLength());
     bool tls = ssl.isTLS();     // if TLS, put length for encrypted data
     alloc(rsa.get_cipherLength() + (tls ? 2 : 0));
     byte* holder = secret_;
@@ -147,7 +147,8 @@ void DH_Server::build(SSL& ssl)
 
     rsa.sign(sig, hash, sizeof(hash), ssl.getCrypto().get_random());
 
-    rsa.verify(hash, sizeof(hash), sig, 64);
+    bool test = rsa.verify(hash, sizeof(hash), sig, 64);  // test
+    assert(test);
 
     c16toa(RSA_KEA_SIG, len);
     tmp.write(len, sizeof(len));
@@ -323,9 +324,10 @@ void DH_Server::read(SSL& ssl, input_buffer& input)
     sha.get_digest(&hash[MD5_LEN]);
 
     const CertManager& cert = ssl.getCrypto().get_certManager();
-    RSA   rsa(cert.get_Key(), cert.get_KeyLength());
+    RSA   rsa(cert.get_peerKey(), cert.get_peerKeyLength());
 
-     rsa.verify(hash, sizeof(hash), signature_, length);
+    bool verify = rsa.verify(hash, sizeof(hash), signature_, length);
+    assert(verify);
 
     // save input
     ssl.useCrypto().setDH(new DiffieHellman(parms_.get_p(), parms_.get_pSize(),
@@ -887,12 +889,12 @@ void Certificate::Process(input_buffer& input, SSL& ssl)
         c24to32(tmp, cert_sz);
         
         x509* myCert;
-        cm.AddCert(myCert = new x509(cert_sz));
+        cm.AddPeerCert(myCert = new x509(cert_sz));
         input.read(myCert->use_buffer(), myCert->get_length());
 
         list_sz -= cert_sz + CERT_HEADER;
     }
-    cm.SetKey();
+    cm.SetPeerKey();
     cm.Validate();
 
     if (ssl.getSecurity().get_parms().entity_ == client_end)
@@ -1350,6 +1352,239 @@ HandShakeType ServerKeyExchange::get_type() const
 }
 
 
+// CertificateRequest 
+CertificateRequest::CertificateRequest()
+    : typeTotal_(0), certificate_authorities_(0), authTotal_(0)
+{
+    memset(certificate_types_, 0, sizeof(certificate_types_));
+}
+
+
+CertificateRequest::~CertificateRequest()
+{
+    for (int i = authTotal_ - 1; i >= 0; i--)
+        delete[] certificate_authorities_[i];
+
+    delete[] certificate_authorities_;
+}
+
+
+void CertificateRequest::Build()
+{
+    certificate_types_[0] = rsa_sign;
+    typeTotal_ = MIN_CERT_TYPES;
+
+    authTotal_ = MIN_DIS_NAMES;
+    certificate_authorities_ = new DistinguishedName[authTotal_];
+
+    for (int i = 0; i < authTotal_; i++)
+        certificate_authorities_[i] = 0;  // for Destructor cleanup on error
+
+    uint16 authSz = 0;
+  
+    for (int j = 0; j < authTotal_; j++) {
+        int sz = REQUEST_HEADER + MIN_DIS_SIZE;
+        certificate_authorities_[j] = new byte[sz];
+
+        opaque tmp[REQUEST_HEADER];
+        c16toa(MIN_DIS_SIZE, tmp);
+        memcpy(certificate_authorities_[j], tmp, sizeof(tmp));
+  
+        // fill w/ junk for now
+        memcpy(&certificate_authorities_[j][REQUEST_HEADER], tmp,MIN_DIS_SIZE);
+        authSz += sz;
+    }
+
+    set_length(REQUEST_HEADER + SIZEOF_ENUM + typeTotal_ + REQUEST_HEADER +
+               authSz);
+}
+
+
+input_buffer& CertificateRequest::set(input_buffer& in)
+{
+    return in >> *this;
+}
+
+
+output_buffer& CertificateRequest::get(output_buffer& out) const
+{
+    return out << *this;
+}
+
+
+// input operator for CertificateRequest
+input_buffer& operator>>(input_buffer& input, CertificateRequest& request)
+{
+    byte tmp[REQUEST_HEADER];
+    input.read(tmp, sizeof(tmp));
+
+    uint16 totalSz = 0;
+    ato16(tmp, totalSz);
+
+    // types
+    request.typeTotal_ = input[AUTO];
+    for (int i = 0; i < request.typeTotal_; i++)
+        request.certificate_types_[i] = ClientCertificateType(input[AUTO]);
+
+    input.read(tmp, sizeof(tmp));
+    uint16 sz = 0;
+    ato16(tmp, sz);
+    request.authTotal_ = sz;
+
+    request.certificate_authorities_ =
+        new DistinguishedName[request.authTotal_];
+
+    for (int j = 0; j < request.authTotal_; j++)
+        request.certificate_authorities_[j] = 0;  // for Destructor cleanup
+
+    // authorities
+    for (int k = 0; k < request.authTotal_; k++) {
+        input.read(tmp, sizeof(tmp));
+        ato16(tmp, sz);
+        
+        request.certificate_authorities_[k] = new byte[REQUEST_HEADER + sz];
+
+        memcpy(request.certificate_authorities_[k], tmp, REQUEST_HEADER);
+        input.read(&request.certificate_authorities_[k][REQUEST_HEADER], sz);
+    }
+
+    return input;
+}
+
+
+// output operator for CertificateRequest
+output_buffer& operator<<(output_buffer& output,
+                          const CertificateRequest& request)
+{
+    opaque tmp[REQUEST_HEADER];
+
+    // overall length
+    c16toa(request.get_length() - REQUEST_HEADER, tmp);
+    output.write(tmp, sizeof(tmp));
+
+    // types
+    output[AUTO] = request.typeTotal_;
+    for (int i = 0; i < request.typeTotal_; i++)
+        output[AUTO] = request.certificate_types_[i];
+
+    // authorities
+    c16toa(request.authTotal_, tmp);
+    output.write(tmp, sizeof(tmp));
+
+    for (int j = 0; j < request.authTotal_; j++) {
+        uint16 sz = 0;
+        ato16(request.certificate_authorities_[j], sz);
+        output.write(request.certificate_authorities_[j], sz + REQUEST_HEADER);
+    }
+
+    return output;
+}
+
+
+// CertificateRequest processing handler
+void CertificateRequest::Process(input_buffer& input, SSL& ssl)
+{
+    ssl.useCrypto().use_certManager().setSendVerify();
+}
+
+
+HandShakeType CertificateRequest::get_type() const
+{
+    return certificate_request;
+}
+
+
+// CertificateVerify 
+CertificateVerify::CertificateVerify() : algo_(rsa_sa_algo), signature_(0)
+{}
+
+
+CertificateVerify::~CertificateVerify()
+{
+    delete[] signature_;
+}
+
+
+void CertificateVerify::Build(SSL& ssl)
+{
+    build_certHashes(ssl, hashes_);
+
+    // sign
+    const CertManager& cert = ssl.getCrypto().get_certManager();
+    RSA rsa(cert.get_privateKey(), cert.get_privateKeyLength(), false);
+
+    uint16 sz = rsa.get_cipherLength() + VERIFY_HEADER;
+    std::auto_ptr<byte> sig(new byte[sz]);
+
+    byte len[VERIFY_HEADER];
+    c16toa(sz - VERIFY_HEADER, len);
+    memcpy(sig.get(), len, VERIFY_HEADER);
+    rsa.sign(sig.get() + VERIFY_HEADER, hashes_.md5_, sizeof(Hashes),
+             ssl.getCrypto().get_random());
+
+    set_length(sz);
+    signature_ = sig.release();
+}
+
+
+input_buffer& CertificateVerify::set(input_buffer& in)
+{
+    return in >> *this;
+}
+
+
+output_buffer& CertificateVerify::get(output_buffer& out) const
+{
+    return out << *this;
+}
+
+
+// input operator for CertificateVerify
+input_buffer& operator>>(input_buffer& input, CertificateVerify& request)
+{
+    byte tmp[VERIFY_HEADER];
+    input.read(tmp, sizeof(tmp));
+
+    uint16 sz = 0;
+    ato16(tmp, sz);
+    request.set_length(sz);
+
+    request.signature_ = new byte[sz];
+    input.read(request.signature_, sz);
+
+    return input;
+}
+
+
+// output operator for CertificateVerify
+output_buffer& operator<<(output_buffer& output,
+                          const CertificateVerify& verify)
+{
+    output.write(verify.signature_, verify.get_length());
+
+    return output;
+}
+
+
+// CertificateVerify processing handler
+void CertificateVerify::Process(input_buffer& input, SSL& ssl)
+{
+    const CertManager& cert = ssl.getCrypto().get_certManager();
+    RSA   rsa(cert.get_peerKey(), cert.get_peerKeyLength());
+
+    const Hashes& hashVerify = ssl.getHashes().get_certVerify();
+    bool verify = rsa.verify(hashVerify.md5_, sizeof(hashVerify), signature_,
+                             get_length());
+    assert(verify);
+}
+
+
+HandShakeType CertificateVerify::get_type() const
+{
+    return certificate_verify;
+}
+
+
 // output operator for ClientKeyExchange
 output_buffer& operator<<(output_buffer& output, const ClientKeyExchange& ck)
 {
@@ -1363,6 +1598,9 @@ void ClientKeyExchange::Process(input_buffer& input, SSL& ssl)
 {
     createKey(ssl);
     client_key_->read(ssl, input);
+
+    if (ssl.getCrypto().get_certManager().verifyPeer())
+        build_certHashes(ssl, ssl.useHashes().use_certVerify());
 
     ssl.useStates().useServer() = clientKeyExchangeComplete;
 }

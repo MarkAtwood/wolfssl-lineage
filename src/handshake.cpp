@@ -195,7 +195,7 @@ void buildSHA(SSL& ssl, Finished& fin, const opaque* sender)
     const opaque* master_secret = 
         ssl.getSecurity().get_connection().master_secret_;
 
-    // make sha inner
+     // make sha inner
     memcpy(sha_inner, sender, SIZEOF_SENDER);
     memcpy(&sha_inner[SIZEOF_SENDER], master_secret, SECRET_LEN);
     memcpy(&sha_inner[SIZEOF_SENDER + SECRET_LEN], PAD1, PAD_SHA);
@@ -389,6 +389,57 @@ void get_xor(byte *digest, uint digLen, output_buffer& md5,
         digest[i] = md5[AUTO] ^ sha[AUTO];
 }
 
+
+void buildMD5_CertVerify(SSL& ssl, byte* digest)
+{
+    opaque md5_result[MD5_LEN];
+    opaque md5_inner[SECRET_LEN + PAD_MD5];
+    opaque md5_outer[SECRET_LEN + PAD_MD5 + MD5_LEN];
+
+    const opaque* master_secret = 
+        ssl.getSecurity().get_connection().master_secret_;
+
+    // make md5 inner
+    memcpy(md5_inner, master_secret, SECRET_LEN);
+    memcpy(&md5_inner[SECRET_LEN], PAD1, PAD_MD5);
+
+    ssl.useHashes().use_MD5().get_digest(md5_result, md5_inner,
+                                         sizeof(md5_inner));
+
+    // make md5 outer
+    memcpy(md5_outer, master_secret, SECRET_LEN);
+    memcpy(&md5_outer[SECRET_LEN], PAD2, PAD_MD5);
+    memcpy(&md5_outer[SECRET_LEN + PAD_MD5], md5_result, MD5_LEN);
+
+    ssl.useHashes().use_MD5().get_digest(digest, md5_outer, sizeof(md5_outer));
+}
+
+
+void buildSHA_CertVerify(SSL& ssl, byte* digest)
+{
+    opaque sha_result[SHA_LEN];
+    opaque sha_inner[SECRET_LEN + PAD_SHA];
+    opaque sha_outer[SECRET_LEN + PAD_SHA + SHA_LEN];
+
+    const opaque* master_secret = 
+        ssl.getSecurity().get_connection().master_secret_;
+
+     // make sha inner
+    memcpy(sha_inner, master_secret, SECRET_LEN);
+    memcpy(&sha_inner[SECRET_LEN], PAD1, PAD_SHA);
+
+    ssl.useHashes().use_SHA().get_digest(sha_result, sha_inner,
+                                         sizeof(sha_inner));
+
+    // make sha outer
+    memcpy(sha_outer, master_secret, SECRET_LEN);
+    memcpy(&sha_outer[SECRET_LEN], PAD2, PAD_SHA);
+    memcpy(&sha_outer[SECRET_LEN + PAD_SHA], sha_result, SHA_LEN);
+
+    ssl.useHashes().use_SHA().get_digest(digest, sha_outer, sizeof(sha_outer));
+}
+
+
 } // namespace for locals
 
 
@@ -509,18 +560,33 @@ void PRF(byte* digest, uint digLen, const byte* secret, uint secLen,
 }
 
 
+void build_certHashes(SSL& ssl, Hashes& hashes)
+{
+    // store current states, building requires get_digest which resets state
+    MD5 md5(ssl.getHashes().get_MD5());
+    SHA sha(ssl.getHashes().get_SHA());
+
+    if (ssl.isTLS()) {
+        ssl.useHashes().use_MD5().get_digest(hashes.md5_);
+        ssl.useHashes().use_SHA().get_digest(hashes.sha_);
+    }
+    else {
+        buildMD5_CertVerify(ssl, hashes.md5_);
+        buildSHA_CertVerify(ssl, hashes.sha_);
+    }
+
+    // restore
+    ssl.useHashes().use_MD5() = md5;
+    ssl.useHashes().use_SHA() = sha;
+}
+
+
 void processReply(SSL& ssl)
 {
-    ssl.getSocket().receive(NULL, 0);        // wait if no input and blocking
+    ssl.getSocket().wait();                  // wait for input
     uint ready = ssl.getSocket().get_ready();
-#if defined(__CYGWIN__)  // non-blocking, can't turn off?
-    uint tries(20);
-    while (!ready && --tries) {
-        usleep(50000);
-        ready = ssl.getSocket().get_ready();
-    }
-#endif // __CYGWIN__
     if (!ready) return;
+
     input_buffer buffer(ready);
     uint read  = ssl.getSocket().receive(buffer.get_buffer(),
                                          buffer.get_capacity());
@@ -741,6 +807,44 @@ void sendCertificate(SSL& ssl, BufferOutput buffer)
 
     buildHeaders(ssl, hsHeader, rlHeader, cert);
     buildOutput(*out.get(), rlHeader, hsHeader, cert);
+    hashHandShake(ssl, *out.get());
+
+    if (buffer == buffered)
+        ssl.addBuffer(out.release());
+    else
+        ssl.getSocket().send(out->get_buffer(), out->get_size());
+}
+
+
+void sendCertificateRequest(SSL& ssl, BufferOutput buffer)
+{
+    CertificateRequest request;
+    request.Build();
+    RecordLayerHeader  rlHeader;
+    HandShakeHeader    hsHeader;
+    std::auto_ptr<output_buffer> out(new output_buffer);
+
+    buildHeaders(ssl, hsHeader, rlHeader, request);
+    buildOutput(*out.get(), rlHeader, hsHeader, request);
+    hashHandShake(ssl, *out.get());
+
+    if (buffer == buffered)
+        ssl.addBuffer(out.release());
+    else
+        ssl.getSocket().send(out->get_buffer(), out->get_size());
+}
+
+
+void sendCertificateVerify(SSL& ssl, BufferOutput buffer)
+{
+    CertificateVerify  verify;
+    verify.Build(ssl);
+    RecordLayerHeader  rlHeader;
+    HandShakeHeader    hsHeader;
+    std::auto_ptr<output_buffer> out(new output_buffer);
+
+    buildHeaders(ssl, hsHeader, rlHeader, verify);
+    buildOutput(*out.get(), rlHeader, hsHeader, verify);
     hashHandShake(ssl, *out.get());
 
     if (buffer == buffered)

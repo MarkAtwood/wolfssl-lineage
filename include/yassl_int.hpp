@@ -198,12 +198,19 @@ sslFactory& GetSSL_Factory();
 class SSL_METHOD {
     ProtocolVersion version_;
     ConnectionEnd   side_;
-    bool            rollback_;
+    bool            verifyPeer_;
+    bool            failNoCert_;
 public:
     explicit SSL_METHOD(ConnectionEnd ce, ProtocolVersion pv);
 
     ProtocolVersion getVersion() const;
     ConnectionEnd   getSide()    const;
+
+    void setVerifyPeer();
+    void setFailNoCert();
+
+    bool verifyPeer() const;
+    bool failNoCert() const;
 private:
     SSL_METHOD(const SSL_METHOD&);              // hide copy
     SSL_METHOD& operator=(const SSL_METHOD&);   // and assign
@@ -221,6 +228,9 @@ public:
     const x509*       getCert()   const;
     const x509*       getKey()    const;
     const SSL_METHOD* getMethod() const;
+
+    void setVerifyPeer();
+    void setFailNoCert();
 
     friend int read_file(SSL_CTX*, const char*, int, CertType);
 private:
@@ -264,16 +274,19 @@ class sslHashes {
     MD5       md5HandShake_;          // md5 handshake hash
     SHA       shaHandShake_;          // sha handshake hash
     Finished  verify_;                // peer's verify hash
+    Hashes    certVerify_;            // peer's cert verify hash
 public:
     sslHashes() {}
 
-    const MD5&      get_MD5()    const;
-    const SHA&      get_SHA()    const;
-    const Finished& get_verify() const;
+    const MD5&      get_MD5()        const;
+    const SHA&      get_SHA()        const;
+    const Finished& get_verify()     const;
+    const Hashes&   get_certVerify() const;
 
     MD5&      use_MD5();
     SHA&      use_SHA();
     Finished& use_verify();
+    Hashes&   use_certVerify();
 private:
     sslHashes(const sslHashes&);             // hide copy
     sslHashes& operator=(const sslHashes&); // and assign

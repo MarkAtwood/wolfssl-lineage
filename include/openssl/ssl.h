@@ -268,9 +268,10 @@ enum { /* ssl Constants */
     SSL_FILETYPE_PEM     = 11,
     SSL_FILETYPE_DEFAULT = 10, /* ASN1 */
 
-    SSL_VERIFY_NONE        = 20,
-    SSL_VERIFY_PEER        = 21,
-    SSL_VERIFY_CLIENT_ONCE = 22,
+    SSL_VERIFY_NONE                 = 0,
+    SSL_VERIFY_PEER                 = 1,
+    SSL_VERIFY_FAIL_IF_NO_PEER_CERT = 2,
+    SSL_VERIFY_CLIENT_ONCE          = 4,
 
     SSL_SESS_CACHE_OFF                = 30,
     SSL_SESS_CACHE_CLIENT             = 31,
@@ -278,8 +279,6 @@ enum { /* ssl Constants */
     SSL_SESS_CACHE_BOTH               = 33,
     SSL_SESS_CACHE_NO_AUTO_CLEAR      = 34,
     SSL_SESS_CACHE_NO_INTERNAL_LOOKUP = 35,
-
-    SSL_VERIFY_FAIL_IF_NO_PEER_CERT = 40,
 
     SSL_OP_MICROSOFT_SESS_ID_BUG            = 50,
     SSL_OP_NETSCAPE_CHALLENGE_BUG           = 51,

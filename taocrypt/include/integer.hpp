@@ -82,7 +82,7 @@ namespace TaoCrypt {
         defined(TAOCRYPT_MEMALIGN_AVAILABLE) || \
         defined(TAOCRYPT_MM_MALLOC_AVAILABLE))
     #define TAOCRYPT_NO_ALIGNED_ALLOC
-        AlignedAllocator() : m_pBlock(NULL) {}
+        AlignedAllocator() : m_pBlock(0) {}
     protected:
         void *m_pBlock;
     #endif

@@ -219,12 +219,17 @@ SSL::SSL(SSL_CTX* ctx)
     : secure_(ctx->getMethod()->getVersion(), crypto_.use_random(),
               ctx->getMethod()->getSide())
 {
-    if (secure_.use_parms().entity_ == server_end) {
-        crypto_.use_certManager().CopyCert(ctx->getCert());    
-        if (!ctx->getKey())
-            throw Error("No Server Key File", no_key_file);
+    crypto_.use_certManager().CopyCert(ctx->getCert());
+
+    if (ctx->getKey())
         crypto_.use_certManager().SetPrivateKey(*ctx->getKey());
-    }
+    else if (secure_.use_parms().entity_ == server_end)
+        throw Error("No Server Key File", no_key_file);
+
+    if (ctx->getMethod()->verifyPeer())
+        crypto_.use_certManager().setVerifyPeer();
+    if (ctx->getMethod()->failNoCert())
+        crypto_.use_certManager().setFailNoCert();
 }
 
 
@@ -716,6 +721,10 @@ void SSL::verifyClientState(HandShakeType hsType)
         if (states_.getClient() != serverHelloComplete)
             order_error();
         break;
+    case certificate_request :
+        if (states_.getClient() != serverCertComplete)
+            order_error();
+        break;
     case server_key_exchange :
         if (states_.getClient() != serverCertComplete)
             order_error();
@@ -743,14 +752,22 @@ void SSL::verifyServerState(HandShakeType hsType)
         if (states_.getServer() != clientNull)
             order_error();
         break;
+    case certificate :
+        if (states_.getServer() != clientHelloComplete)
+            order_error();
+        break;
     case client_key_exchange :
         if (states_.getServer() != clientHelloComplete)
+            order_error();
+        break;
+    case certificate_verify :
+        if (states_.getServer() != clientKeyExchangeComplete)
             order_error();
         break;
     case finished :
         if (states_.getServer() != clientKeyExchangeComplete || 
             secure_.get_parms().pending_)    // no change
-                order_error();          // cipher yet
+                order_error();               // cipher yet
         break;
     default :
         order_error();
@@ -1038,7 +1055,7 @@ void Sessions::remove(const opaque* id)
 
 
 SSL_METHOD::SSL_METHOD(ConnectionEnd ce, ProtocolVersion pv) 
-    : version_(pv), side_(ce), rollback_(false) 
+    : version_(pv), side_(ce), verifyPeer_(false), failNoCert_(false) 
 {}
 
 
@@ -1051,6 +1068,30 @@ ProtocolVersion SSL_METHOD::getVersion() const
 ConnectionEnd SSL_METHOD::getSide() const
 {
     return side_;
+}
+
+
+void SSL_METHOD::setVerifyPeer()
+{
+    verifyPeer_ = true;
+}
+
+
+void SSL_METHOD::setFailNoCert()
+{
+    failNoCert_ = true;
+}
+
+
+bool SSL_METHOD::verifyPeer() const
+{
+    return verifyPeer_;
+}
+
+
+bool SSL_METHOD::failNoCert() const
+{
+    return failNoCert_;
 }
 
 
@@ -1082,6 +1123,18 @@ const x509* SSL_CTX::getKey() const
 const SSL_METHOD* SSL_CTX::getMethod() const
 {
     return method_;
+}
+
+
+void SSL_CTX::setVerifyPeer()
+{
+    method_->setVerifyPeer();
+}
+
+
+void SSL_CTX::setFailNoCert()
+{
+    method_->setFailNoCert();
 }
 
 
@@ -1196,6 +1249,12 @@ const Finished& sslHashes::get_verify() const
 }
 
 
+const Hashes& sslHashes::get_certVerify() const
+{
+    return certVerify_;
+}
+
+
 MD5& sslHashes::use_MD5(){
     return md5HandShake_;
 }
@@ -1210,6 +1269,12 @@ SHA& sslHashes::use_SHA()
 Finished& sslHashes::use_verify()
 {
     return verify_;
+}
+
+
+Hashes& sslHashes::use_certVerify()
+{
+    return certVerify_;
 }
 
 

@@ -30,7 +30,7 @@
 namespace TaoCrypt {
 
 
-
+// Sink (w/ Source functionality builtin) as bytes 
 class Sink {
     ByteBlock buffer_;
     word32    current_;
@@ -38,21 +38,21 @@ public:
     explicit Sink(word32 sz = 0) : buffer_(sz), current_(0) {}
     Sink(const byte* b, word32 sz) : buffer_(b, sz), current_(0) {}
 
-    word32 size() const { return buffer_.size(); }
-    void   set_size(word32 sz) { buffer_.New(sz); }
+    word32 size() const        { return buffer_.size(); }
     void   grow(word32 sz)     { buffer_.CleanGrow(sz); }
-    void   put(const byte*, word32);
-    byte*  get_buffer() const { return buffer_.get_buffer(); }
+   
+    const byte*  get_buffer()  const { return buffer_.get_buffer(); }
     const byte*  get_current() const { return &buffer_[current_]; }
 
     byte operator[] (word32 i) { current_ = i; return next(); }
     byte next() { return buffer_[current_++]; }
     byte prev() { return buffer_[--current_]; }
 
-    void eat(word32 i) { current_ += i; }
+    void advance(word32 i) { current_ += i; }
     void reset(ByteBlock&);
+
+    friend class FileSource;  // for get()
 private:
-    // do i need these ???
     Sink(const Sink& that) : buffer_(that.buffer_), current_(that.current_) {}
     Sink& operator=(const Sink& that)
     {
@@ -73,9 +73,9 @@ private:
 class FileSource {
     std::ifstream file_;
 public:
-    explicit FileSource(const std::string& fname) : file_(fname.c_str()) {}
-    FileSource(const std::string& fname, Sink& sink) : file_(fname.c_str())
-            { get(sink); }
+    FileSource(const std::string& fname, Sink& sink)
+        : file_(fname.c_str(), std::ios::in | std::ios::binary)
+        { get(sink); }
    
     word32   size(bool use_current = false);
 private:
@@ -84,6 +84,22 @@ private:
 
     FileSource(const FileSource&);            // hide
     FileSource& operator=(const FileSource&); // hide
+};
+
+
+class FileSink {
+    std::ofstream file_;
+public:
+    FileSink(const std::string& fname, Sink& sink)
+        : file_(fname.c_str(), std::ios::out | std::ios::binary)
+        { put(sink); }
+
+    word32 size(bool use_current = false);
+private:
+    void put(Sink&);
+
+    FileSink(const FileSink&);            // hide
+    FileSink& operator=(const FileSink&); // hide
 };
 
 

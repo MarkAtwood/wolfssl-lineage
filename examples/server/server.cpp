@@ -1,75 +1,23 @@
 /* server.cpp */
 
-#include "openssl/ssl.h"   /* openssl compatibility test */
-#include <stdio.h>
-#include <stdlib.h>
 
-#ifdef WIN32
-    #include <winsock2.h>
-	typedef int socklen_t;
-#else
-    #include <string.h>
-    #include <unistd.h>
-    #include <netinet/in.h>
-    #include <arpa/inet.h>
-    #include <sys/ioctl.h>
-    #include <sys/time.h>
-    #include <sys/types.h>
-    #include <sys/socket.h>
-#endif /* WIN32 */
+#include "../../testsuite/test.hpp"
 
 
-
-
-void err_sys(const char* msg)
-{
-    printf("yassl server error: %s\n", msg);
-    exit(EXIT_FAILURE);
-}
-
-const char* loopback  = "127.0.0.1";
-const short yasslPort = 11111; 
-
-const char* cert = "../../certs/cert.der";
-const char* key  = "../../certs/key.der";
-
-const char* certSuite = "../certs/cert.der";
-const char* keySuite  = "../certs/key.der";
-
-const char* certDebug = "../../../certs/cert.der";
-const char* keyDebug  = "../../../certs/key.der";
-
-using namespace yaSSL;
-
-
-int server_test(int argc, char** argv)
+THREAD_RETURN YASSL_API server_test(void* args)
 {
 #ifdef WIN32
     WSADATA wsd;
     WSAStartup(0x0002, &wsd);
-    int sockfd;
-#else
-    unsigned int sockfd;
-#endif // WIN32
+#endif
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
+    SOCKET_T sockfd   = 0;
+    int      clientfd = 0;
+    int      argc     = 0;
+    char**   argv     = 0;
 
-    addr.sin_port = htons(yasslPort);
-    if (argc == 2)
-        addr.sin_addr.s_addr = inet_addr(argv[1]);
-    else
-        addr.sin_addr.s_addr = inet_addr(loopback);
-    if (bind(sockfd, (const sockaddr*)&addr, sizeof(addr)) != 0)
-        err_sys("tcp bind failed");
-    if (listen(sockfd, 3) != 0) err_sys("tcp listen failed");
-
-    sockaddr_in client;
-    socklen_t client_len = sizeof(client);
-    int clientfd = accept(sockfd, (sockaddr*)&client, &client_len);
-    if (clientfd == -1) err_sys("tcp accept failed");
+    set_args(argc, argv, *static_cast<func_args*>(args));
+    tcp_accept(sockfd, clientfd);
 
 #ifdef WIN32
     closesocket(sockfd);
@@ -80,23 +28,8 @@ int server_test(int argc, char** argv)
     SSL_METHOD* method = TLSv1_server_method();
     SSL_CTX*    ctx = SSL_CTX_new(method);
 
-    // To allow testing from serveral dirs
-    if (SSL_CTX_use_certificate_file(ctx, cert, SSL_FILETYPE_ASN1)
-        != SSL_SUCCESS)
-        if (SSL_CTX_use_certificate_file(ctx, certSuite, SSL_FILETYPE_ASN1)
-            != SSL_SUCCESS)
-            if (SSL_CTX_use_certificate_file(ctx, certDebug, SSL_FILETYPE_ASN1)
-                != SSL_SUCCESS)
-                err_sys("failed to use certificate: certs/cert.der");
-    
-    // To allow testing from several dirs
-    if (SSL_CTX_use_PrivateKey_file(ctx, key, SSL_FILETYPE_ASN1)
-         != SSL_SUCCESS) 
-         if (SSL_CTX_use_PrivateKey_file(ctx, keySuite, SSL_FILETYPE_ASN1)
-            != SSL_SUCCESS) 
-                if (SSL_CTX_use_PrivateKey_file(ctx,keyDebug,SSL_FILETYPE_ASN1)
-                    != SSL_SUCCESS) 
-                    err_sys("failed to use key file: certs/key.der");
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
+    set_serverCerts(ctx);
 
     SSL* ssl = SSL_new(ctx);
     SSL_set_fd(ssl, clientfd);
@@ -115,15 +48,22 @@ int server_test(int argc, char** argv)
     SSL_CTX_free(ctx);
     SSL_free(ssl);
 
+    ((func_args*)args)->return_code = 0;
     return 0;
 }
 
 
 #ifndef NO_MAIN_DRIVER
 
-int main(int argc, char** argv)
-{
-    return server_test(argc, argv);
-}
+    int main(int argc, char** argv)
+    {
+        func_args args;
+
+        args.argc = argc;
+        args.argv = argv;
+
+        server_test(&args);
+        return args.return_code;
+    }
 
 #endif // NO_MAIN_DRIVER

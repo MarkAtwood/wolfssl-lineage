@@ -355,16 +355,13 @@ struct Hashes {
     
 
 struct rsa_sa : public SignatureBase {
-    Hashes hases_;
+    Hashes hashes_;
 };
 
 
 struct dsa_sa : public SignatureBase {
     uint8 sha_[SHA_LEN];
 };
-
-
-struct Signature : public SignatureBase {};
 
 
 // Server's Diffie-Hellman exchange
@@ -422,9 +419,29 @@ private:
 
 
 
-struct CertificateRequest : public HandShakeBase  {
-    opaque* certificate_types_;
-    opaque* certificate_authorities_;
+class CertificateRequest : public HandShakeBase  {
+    ClientCertificateType certificate_types_[CERT_TYPES];
+    int                   typeTotal_;
+    DistinguishedName*    certificate_authorities_;
+    int                   authTotal_;
+public:
+    CertificateRequest();
+    ~CertificateRequest();
+
+    input_buffer&  set(input_buffer& in);
+    output_buffer& get(output_buffer& out) const;
+
+    friend input_buffer&  operator>>(input_buffer&, CertificateRequest&);
+    friend output_buffer& operator<<(output_buffer&,
+                                     const CertificateRequest&);
+
+    void Process(input_buffer&, SSL&);
+    HandShakeType get_type() const;
+
+    void Build();
+private:
+    CertificateRequest(const CertificateRequest&);              // hide copy
+    CertificateRequest& operator=(const CertificateRequest&);   // and assign
 };
 
 
@@ -537,8 +554,27 @@ private:
 };
 
 
-struct CertificateVerify : public HandShakeBase {
-    Signature signature_;
+class CertificateVerify : public HandShakeBase {
+    Hashes             hashes_;
+    SignatureAlgorithm algo_;
+    byte*              signature_;  // owns
+public:
+    CertificateVerify();
+    ~CertificateVerify();
+
+    input_buffer&  set(input_buffer& in);
+    output_buffer& get(output_buffer& out) const;
+
+    friend input_buffer&  operator>>(input_buffer&, CertificateVerify&);
+    friend output_buffer& operator<<(output_buffer&, const CertificateVerify&);
+
+    void Process(input_buffer&, SSL&);
+    HandShakeType get_type() const;
+
+    void Build(SSL&);
+private:
+    CertificateVerify(const CertificateVerify&);              // hide copy
+    CertificateVerify& operator=(const CertificateVerify&);   // and assign
 };
 
 

@@ -31,8 +31,15 @@ namespace TaoCrypt {
 class Sink;
 
 class HexEncoder {
+    ByteBlock encoded_;
+    Sink&     plain_;
+public:
+    explicit HexEncoder(Sink& s) : plain_(s) { Encode(); }
+private:
+    void Encode();
 
-
+    HexEncoder(const HexEncoder&);              // hide copy
+    HexEncoder& operator=(const HexEncoder&);   // and assign
 };
 
 
@@ -50,17 +57,28 @@ private:
 
 
 class Base64Encoder {
+    ByteBlock encoded_;
+    Sink&     plain_;
+public:
+    explicit Base64Encoder(Sink& s) : plain_(s) { Encode(); }
+private:
+    void Encode();
 
-
-
+    Base64Encoder(const Base64Encoder&);              // hide copy
+    Base64Encoder& operator=(const Base64Encoder&);   // and assign
 };
 
 
 class Base64Decoder {
+    ByteBlock decoded_;
+    Sink&     coded_;
+public:
+    explicit Base64Decoder(Sink& s) : coded_(s) { Decode(); }
+private:
+    void Decode();
 
-
-
-
+    Base64Decoder(const Base64Decoder&);              // hide copy
+    Base64Decoder& operator=(const Base64Decoder&);   // and assign
 };
 
 

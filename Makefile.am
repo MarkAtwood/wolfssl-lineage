@@ -1,2 +1,2 @@
-SUBDIRS = taocrypt src examples
+SUBDIRS = taocrypt src examples testsuite
 EXTRA_DIST = certs doc stunnel yassl.dsp yassl.dsw

@@ -120,11 +120,18 @@ int Socket::send(const byte* buf, unsigned int len, int flags) const
 int Socket::receive(byte* buf, unsigned int len, int flags) const
 {
     assert(socket_ != INVALID_SOCKET);
-    unsigned int recv = ::recv(socket_, (char *)buf, len, flags);
+    unsigned int recvd = ::recv(socket_, (char *)buf, len, flags);
 
-    if (recv != len) throw Error("Bad TCP Receive", receive_error, SocketLib);
+    if (recvd != len) throw Error("Bad TCP Receive", receive_error, SocketLib);
 
-    return recv;
+    return recvd;
+}
+
+
+void Socket::wait() const
+{
+    byte b;
+    unsigned int recvd = receive(&b, 1, MSG_PEEK);
 }
 
 

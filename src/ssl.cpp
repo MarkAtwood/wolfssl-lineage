@@ -60,8 +60,15 @@ int SSL_connect(SSL* ssl)
         sendClientHello(*ssl);
         processReply(*ssl);
 
+        if(ssl->getCrypto().get_certManager().sendVerify())
+            sendCertificate(*ssl);
+
         if (!ssl->getSecurity().get_resuming())
             sendClientKeyExchange(*ssl);
+
+        if(ssl->getCrypto().get_certManager().sendVerify())
+            sendCertificateVerify(*ssl);
+
         sendChangeCipher(*ssl);
         sendFinished(*ssl, client_end);
         ssl->flushBuffer();
@@ -122,8 +129,12 @@ int SSL_accept(SSL* ssl)
 
         if (!ssl->getSecurity().get_resuming()) {
             sendCertificate(*ssl);
+
             if (ssl->getSecurity().get_connection().send_server_key_)
                 sendServerKeyExchange(*ssl);
+            else if(ssl->getCrypto().get_certManager().verifyPeer())
+                sendCertificateRequest(*ssl);
+
             sendServerHelloDone(*ssl);
             ssl->flushBuffer();
 
@@ -519,7 +530,11 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
 void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback verify_callback)
 {
-    // TODO: set client verify to mode
+    if (mode & SSL_VERIFY_PEER)
+        ctx->setVerifyPeer();
+
+    if (mode & SSL_VERIFY_FAIL_IF_NO_PEER_CERT)
+        ctx->setFailNoCert();
 }
 
 

@@ -56,13 +56,18 @@ word32 FileSource::get(Sink& sink)
 {
     word32 sz(size());
     if (sink.size() < sz)
-        sink.set_size(sz);
+        sink.grow(sz);
 
-    file_.read(reinterpret_cast<char*>(sink.get_buffer()), sz);
+    file_.read(reinterpret_cast<char*>(sink.buffer_.get_buffer()), sz);
 
     return sz;
 }
 
+
+void FileSink::put(Sink& sink)
+{
+    file_.write(reinterpret_cast<const char*>(sink.get_buffer()), sink.size());
+}
 
 
 void Sink::reset(ByteBlock& otherBlock)

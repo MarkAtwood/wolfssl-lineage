@@ -77,6 +77,8 @@ public:
     int send(const byte* buf, unsigned int len, int flags = 0) const;
     int receive(byte* buf, unsigned int len, int flags = 0)    const;
 
+    void wait() const;
+
     void closeSocket();
     void shutDown(int how = SD_SEND);
 

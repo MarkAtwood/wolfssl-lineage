@@ -1,94 +1,52 @@
 /* echoserver.cpp */
 
-#include "openssl/ssl.h"   /* openssl compatibility test */
-#include <stdio.h>
-#include <stdlib.h>
-
-#ifdef WIN32
-    #include <winsock2.h>
-	typedef int socklen_t;
-#else
-    #include <string.h>
-    #include <unistd.h>
-    #include <netinet/in.h>
-    #include <arpa/inet.h>
-    #include <sys/ioctl.h>
-    #include <sys/time.h>
-    #include <sys/types.h>
-    #include <sys/socket.h>
-#endif /* WIN32 */
+#include "../../testsuite/test.hpp"
 
 
-void err_sys(const char* msg)
-{
-    fputs("yassl server error: ", stderr);
-    fputs(msg, stderr);
-    exit(EXIT_FAILURE);
-}
+#ifndef NO_MAIN_DRIVER
+    #define ECHO_OUT
 
-const char* loopback  = "127.0.0.1";
-const short yasslPort = 11111; 
+    THREAD_RETURN YASSL_API echoserver_test(void*);
+    int main(int argc, char** argv)
+    {
+        func_args args;
 
-const char* cert = "../../certs/cert.der";
-const char* key  = "../../certs/key.der";
+        args.argc = argc;
+        args.argv = argv;
 
-const char* certSuite = "../certs/cert.der";
-const char* keySuite  = "../certs/key.der";
+        echoserver_test(&args);
+        return args.return_code;
+    }
 
-const char* certDebug = "../../../certs/cert.der";
-const char* keyDebug  = "../../../certs/key.der";
-
-using namespace yaSSL;
+#endif // NO_MAIN_DRIVER
 
 
-int echoserver_test(int argc, char** argv)
+THREAD_RETURN YASSL_API echoserver_test(void* args)
 {
 #ifdef WIN32
     WSADATA wsd;
     WSAStartup(0x0002, &wsd);
-    int sockfd;
-#else
-    unsigned int sockfd;
-#endif // WIN32
+#endif
 
+    SOCKET_T sockfd = 0;
+    int      argc = 0;
+    char**   argv = 0;
+
+    set_args(argc, argv, *static_cast<func_args*>(args));
+
+#ifdef ECHO_OUT
     FILE* fout = stdout;
-
     if (argc >= 2) fout = fopen(argv[1], "w");
-
     if (!fout) err_sys("can't open output file");
+#endif
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-
-    addr.sin_port = htons(yasslPort);
-    addr.sin_addr.s_addr = inet_addr(loopback);
-
-    if (bind(sockfd, (const sockaddr*)&addr, sizeof(addr)) != 0)
-        err_sys("tcp bind failed");
-    if (listen(sockfd, 3) != 0) err_sys("tcp listen failed");
+    tcp_listen(sockfd);
 
     SSL_METHOD* method = TLSv1_server_method();
-    SSL_CTX*    ctx = SSL_CTX_new(method);
+    SSL_CTX*    ctx    = SSL_CTX_new(method);
 
-    // To allow testing from serveral dirs
-    if (SSL_CTX_use_certificate_file(ctx, cert, SSL_FILETYPE_ASN1)
-        != SSL_SUCCESS)
-        if (SSL_CTX_use_certificate_file(ctx, certSuite, SSL_FILETYPE_ASN1)
-            != SSL_SUCCESS)
-            if (SSL_CTX_use_certificate_file(ctx, certDebug, SSL_FILETYPE_ASN1)
-                != SSL_SUCCESS)
-                err_sys("failed to use certificate: certs/cert.der");
-    
-    // To allow testing from several dirs
-    if (SSL_CTX_use_PrivateKey_file(ctx, key, SSL_FILETYPE_ASN1)
-         != SSL_SUCCESS) 
-         if (SSL_CTX_use_PrivateKey_file(ctx, keySuite, SSL_FILETYPE_ASN1)
-            != SSL_SUCCESS) 
-                if (SSL_CTX_use_PrivateKey_file(ctx,keyDebug,SSL_FILETYPE_ASN1)
-                    != SSL_SUCCESS) 
-                    err_sys("failed to use key file: certs/key.der");
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
+    set_serverCerts(ctx);
 
     bool shutdown(false);
     while (!shutdown) {
@@ -106,18 +64,19 @@ int echoserver_test(int argc, char** argv)
         while ( (echoSz = SSL_read(ssl, command, sizeof(command))) > 0) {
            
             if ( strncmp(command, "quit", 4) == 0) {
-                printf("client sent quit command: shutting down!");
+                printf("client sent quit command: shutting down!\n");
                 shutdown = true;
                 break;
             }
-
             command[echoSz] = 0;
+
+        #ifdef ECHO_OUT
             fputs(command, fout);
+        #endif
 
             if (SSL_write(ssl, command, echoSz) != echoSz)
                 err_sys("SSL_write failed");
         }
-
         SSL_free(ssl);
     }
 
@@ -129,15 +88,6 @@ int echoserver_test(int argc, char** argv)
 
     SSL_CTX_free(ctx);
 
+    ((func_args*)args)->return_code = 0;
     return 0;
 }
-
-
-#ifndef NO_MAIN_DRIVER
-
-int main(int argc, char** argv)
-{
-    return echoserver_test(argc, argv);
-}
-
-#endif // NO_MAIN_DRIVER

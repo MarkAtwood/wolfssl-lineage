@@ -317,7 +317,7 @@ inline T RoundUpToMultipleOf(T n, T m)
 }
 
 template <class T>
-inline unsigned int GetAlignment(T* dummy=NULL)	// VC60 workaround
+inline unsigned int GetAlignment(T* dummy = 0)	// VC60 workaround
 {
 #if (_MSC_VER >= 1300)
     return __alignof(T);
@@ -335,7 +335,7 @@ inline bool IsAlignedOn(const void* p, unsigned int alignment)
 }
 
 template <class T>
-inline bool IsAligned(const void* p, T* dummy=NULL)	// VC60 workaround
+inline bool IsAligned(const void* p, T* dummy = 0)	// VC60 workaround
 {
     return IsAlignedOn(p, GetAlignment<T>());
 }
@@ -475,13 +475,13 @@ inline word32 UnalignedGetWordNonTemplate(ByteOrder order, const byte* block,
 }
 
 template <class T>
-inline T UnalignedGetWord(ByteOrder order, const byte *block, T*dummy=NULL)
+inline T UnalignedGetWord(ByteOrder order, const byte *block, T* dummy = 0)
 {
     return UnalignedGetWordNonTemplate(order, block, dummy);
 }
 
 inline void UnalignedPutWord(ByteOrder order, byte *block, byte value,
-                             const byte *xorBlock = NULL)
+                             const byte *xorBlock = 0)
 {
     block[0] = xorBlock ? (value ^ xorBlock[0]) : value;
 }
@@ -489,7 +489,7 @@ inline void UnalignedPutWord(ByteOrder order, byte *block, byte value,
 #define GETBYTE(x, y) (unsigned int)byte((x)>>(8*(y)))
 
 inline void UnalignedPutWord(ByteOrder order, byte *block, word16 value,
-                             const byte *xorBlock = NULL)
+                             const byte *xorBlock = 0)
 {
     if (order == BigEndianOrder)
     {
@@ -510,7 +510,7 @@ inline void UnalignedPutWord(ByteOrder order, byte *block, word16 value,
 }
 
 inline void UnalignedPutWord(ByteOrder order, byte* block, word32 value,
-                             const byte* xorBlock = NULL)
+                             const byte* xorBlock = 0)
 {
     if (order == BigEndianOrder)
     {
@@ -558,7 +558,7 @@ inline void GetWord(bool assumeAligned, ByteOrder order, T &result,
 
 template <class T>
 inline void PutWord(bool assumeAligned, ByteOrder order, byte* block, T value,
-                    const byte *xorBlock = NULL)
+                    const byte *xorBlock = 0)
 {
     if (assumeAligned)
     {

@@ -1,62 +1,27 @@
 /* client.cpp  */
 
-#include "openssl/ssl.h"  /* openssl compatibility test */
-#include <stdio.h>
-#include <stdlib.h>
+#include "../../testsuite/test.hpp"
 
-#ifdef WIN32
-    #include <winsock2.h>
-#else
-    #include <string.h>
-    #include <unistd.h>
-    #include <netinet/in.h>
-    #include <arpa/inet.h>
-    #include <sys/ioctl.h>
-    #include <sys/time.h>
-    #include <sys/types.h>
-    #include <sys/socket.h>
-#endif /* WIN32 */
+//#define TEST_RESUME
 
 
-
-void err_sys(const char* msg)
-{
-    printf("yassl client error: %s\n", msg);
-    exit(EXIT_FAILURE);
-}
-
-
-const char* loopback  = "127.0.0.1";
-const short yasslPort = 11111;
-
-using namespace yaSSL;
-
-
-int main(int argc, char** argv)
+void client_test(void* args)
 {
 #ifdef WIN32
     WSADATA wsd;
     WSAStartup(0x0002, &wsd);
-    int sockfd;
-#else
-    unsigned int sockfd;
-#endif /* WIN32  */
+#endif
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    sockaddr_in servaddr;
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
+    SOCKET_T sockfd = 0;
+    int      argc = 0;
+    char**   argv = 0;
 
-    servaddr.sin_port = htons(yasslPort);
-    if (argc == 2)
-        servaddr.sin_addr.s_addr = inet_addr(argv[1]);
-    else
-        servaddr.sin_addr.s_addr = inet_addr(loopback);
-    if (connect(sockfd, (const sockaddr*)&servaddr, sizeof(servaddr)) != 0)
-        err_sys("tcp connect failed");
+    set_args(argc, argv, *static_cast<func_args*>(args));
+    tcp_connect(sockfd);
 
     SSL_METHOD* method = TLSv1_client_method();
     SSL_CTX*    ctx = SSL_CTX_new(method);
+    set_certs(ctx);
     SSL*        ssl = SSL_new(ctx);
 
     SSL_set_fd(ssl, sockfd);
@@ -70,22 +35,16 @@ int main(int argc, char** argv)
     reply[SSL_read(ssl, reply, sizeof(reply))] = 0;
     printf("Server response: %s\n", reply);
 
-    // if resume test, comment the next three lines out
-    ///*
-    SSL_shutdown(ssl);
-    SSL_CTX_free(ctx);
-    SSL_free(ssl);
-    //*/
-    
-    // start reusme
-    /*
+#ifdef TEST_RESUME
     SSL_SESSION* session   = SSL_get_session(ssl);
     SSL*         sslResume = SSL_new(ctx);
+#endif
 
     SSL_shutdown(ssl);
     SSL_CTX_free(ctx);
     SSL_free(ssl);
 
+#ifdef TEST_RESUME
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (connect(sockfd, (const sockaddr*)&servaddr, sizeof(servaddr)) != 0)
         err_sys("tcp connect failed");
@@ -101,8 +60,24 @@ int main(int argc, char** argv)
     printf("Server response: %s\n", reply);
 
     SSL_free(sslResume);
-    // end reusme
-    */
+#endif // TEST_RESUME
 
-    return 0;
+    ((func_args*)args)->return_code = 0;
 }
+
+
+#ifndef NO_MAIN_DRIVER
+
+    int main(int argc, char** argv)
+    {
+        func_args args;
+
+        args.argc = argc;
+        args.argv = argv;
+
+        client_test(&args);
+        return args.return_code;
+    }
+
+#endif // NO_MAIN_DRIVER
+

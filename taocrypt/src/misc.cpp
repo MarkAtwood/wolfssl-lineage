@@ -95,7 +95,7 @@ using std::set_new_handler;
 
 void CallNewHandler()
 {
-    new_handler newHandler = set_new_handler(NULL);
+    new_handler newHandler = set_new_handler(0);
     if (newHandler)
         set_new_handler(newHandler);
 

@@ -38,7 +38,11 @@ using TaoCrypt::RSAES_Encryptor;
 using TaoCrypt::RSAES_Decryptor;
 using TaoCrypt::Sink;
 using TaoCrypt::FileSource;
+using TaoCrypt::FileSink;
 using TaoCrypt::HexDecoder;
+using TaoCrypt::HexEncoder;
+using TaoCrypt::Base64Decoder;
+using TaoCrypt::Base64Encoder;
 using TaoCrypt::CertDecoder;
 using TaoCrypt::DH;
 
@@ -66,15 +70,28 @@ int  dh_test();
 
 TaoCrypt::RandomNumberGenerator rng;
 
+
 void err_sys(const char* msg, int es)
 {
     printf("%s", msg);
     exit(es);    
 }
 
+// func_args from test.hpp, so don't have to pull in other junk
+struct func_args {
+    int    argc;
+    char** argv;
+    int    return_code;
+};
 
-int taocrypt_test()
+
+void taocrypt_test(void* args)
 {
+    int    argc = ((func_args*)args)->argc;
+    char** argv = ((func_args*)args)->argv;
+    ((func_args*)args)->return_code = -1; // error state
+    
+
     int ret = 0;
     if ( (ret = sha_test()) ) 
         err_sys("SHA  test failed!\n", ret);
@@ -115,23 +132,29 @@ int taocrypt_test()
         err_sys("DH   test failed!\n", ret);
     else
         printf( "DH   test passed!\n");
-   
-    return 0;
+
+    ((func_args*)args)->return_code = ret;
 }
 
 
 // so overall tests can pull in test function 
 #ifndef NO_MAIN_DRIVER
 
-int main(int argc, char** argv)
-{
-    return taocrypt_test();
-}
+    int main(int argc, char** argv)
+    {
+        func_args args;
+
+        args.argc = argc;
+        args.argv = argv;
+
+        taocrypt_test(&args);
+        return args.return_code;
+    }
 
 #endif // NO_MAIN_DRIVER
 
 
-void file_test(int argc, char** argv)
+void file_test(char* file, byte* check)
 {
     FILE* f;
     int   i(0);
@@ -139,19 +162,20 @@ void file_test(int argc, char** argv)
     byte  buf[1024];
     byte  md5sum[MD5::DIGEST_SIZE];
     
-    if( !( f = fopen( argv[1], "rb" ) )) {
-        printf("Can't open %s\n", argv[1]);
+    if( !( f = fopen( file, "rb" ) )) {
+        printf("Can't open %s\n", file);
         return;
     }
     while( ( i = fread(buf, 1, sizeof(buf), f )) > 0 )
         md5.Update(buf, i);
     
     md5.Final(md5sum);
+    memcpy(check, md5sum, sizeof(md5sum));
 
     for(int j = 0; j < MD5::DIGEST_SIZE; ++j ) 
         printf( "%02x", md5sum[j] );
    
-    printf("  %s\n", argv[1]);
+    printf("  %s\n", file);
 }
 
 
@@ -536,6 +560,26 @@ int dh_test()
         }
     }
     HexDecoder hDec(sink);
+
+
+    /*
+    Sink der;
+    FileSource("cert.der.bak", der);
+    Base64Encoder b64Enc(der);
+    FileSink("cert.pem", der);
+
+    Sink pem;
+    FileSource("cert.pem.bak", pem);
+    Base64Decoder b64Dec(pem);
+    FileSink("cert.der", pem);
+
+    Sink f1, f2;
+    FileSource("cert.der", f1);
+    FileSource("cert.der.bak", f2);
+    int cmp = memcmp(f1.get_buffer(), f2.get_buffer(), 560);
+    */
+    
+
     DH dh(sink);
 
     byte pub[128];

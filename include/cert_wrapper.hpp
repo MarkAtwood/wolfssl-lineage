@@ -66,25 +66,40 @@ private:
 // Certificate Manager keeps a list of thhe cert chain and public key
 class CertManager {
     std::list<x509*> list_;
-    input_buffer     publicKey_;
-    input_buffer     privateKey_;       // if server or client auth
+    input_buffer     publicKey_;        
+    input_buffer     privateKey_;
+
+    std::list<x509*> peerList_;
+    input_buffer     peerPublicKey_;
+
+    bool             verifyPeer_;
+    bool             failNoCert_;
+    bool             sendVerify_;
 public:
-    CertManager() {}
+    CertManager();
     ~CertManager();
 
-    void AddCert(x509* x);  // take ownership
-    void CopyCert(const x509* x);
+    void AddPeerCert(x509* x);      // take ownership
+    void CopyCert(const x509* x);   
     bool Validate() const;
 
-    void SetKey();
+    void SetPeerKey();
     void SetPrivateKey(const x509&);
 
     const x509*   get_cert()       const;
-    const opaque* get_Key()        const;
+    const opaque* get_peerKey()    const;
     const opaque* get_privateKey() const;
 
-    uint get_KeyLength()           const;
+    uint get_peerKeyLength()       const;
     uint get_privateKeyLength()    const;
+
+    bool verifyPeer() const;
+    bool failNoCert() const;
+    bool sendVerify() const;
+
+    void setVerifyPeer();
+    void setFailNoCert();
+    void setSendVerify();
 private:
     CertManager(const CertManager&);            // hide copy
     CertManager& operator=(const CertManager&); // and assign

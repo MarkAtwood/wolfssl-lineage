@@ -176,9 +176,10 @@ void CertDecoder::SetPublicKey()
 
     byte b = sink_.next();
     if (b != BIT_STRING) throw BadHeader();
-    b = sink_.next();      // length
-    b = sink_.next();  
-    if (b != 0) throw BadHeader();
+    b = sink_.next();      // length, future
+    b = sink_.next(); 
+    while(b != 0)
+        b = sink_.next();
 
     StoreSequence();
 }
@@ -218,19 +219,19 @@ void CertDecoder::StoreSequence()
 
 void CertDecoder::GetAlgoId()
 {
-    sink_.eat(GetSequence());
+    sink_.advance(GetSequence());
 }
 
 
 void CertDecoder::GetName()
 {
-    sink_.eat(GetSequence());
+    sink_.advance(GetSequence());
 }
 
 
 void CertDecoder::GetValidity()
 {
-    sink_.eat(GetSequence());
+    sink_.advance(GetSequence());
 }
 
 

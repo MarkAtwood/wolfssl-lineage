@@ -713,8 +713,7 @@ x509* PemToDer(const char* file, CertType type)
     pem.erase(pem.find(footer), footer.length());
 
     Sink der((const unsigned char*)pem.c_str(), pem.size());
-    throw std::runtime_error("add Base64Decoder(der)");
-    // Base64Decoder(der);
+    Base64Decoder b64Dec(der);
 
     uint sz = der.size();
     auto_ptr<x509> x(new x509(sz));

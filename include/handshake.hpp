@@ -34,10 +34,11 @@
 namespace yaSSL {
 
 // forward decls
-class SSL;
-class Finished;
-class Data;
-class Alert;
+class  SSL;
+class  Finished;
+class  Data;
+class  Alert;
+struct Hashes;
 
 enum BufferOutput { buffered, unbuffered };
 
@@ -49,6 +50,8 @@ void sendServerKeyExchange(SSL&, BufferOutput = buffered);
 void sendChangeCipher(SSL&, BufferOutput = buffered);
 void sendFinished(SSL&, ConnectionEnd, BufferOutput = buffered);
 void sendCertificate(SSL&, BufferOutput = buffered);
+void sendCertificateRequest(SSL&, BufferOutput = buffered);
+void sendCertificateVerify(SSL&, BufferOutput = buffered);
 int  sendData(SSL&, const Data&);
 int  sendAlert(SSL& ssl, const Alert& alert);
 
@@ -56,6 +59,7 @@ int  receiveData(SSL&, Data&);
 void processReply(SSL&);
 
 void buildFinished(SSL&, Finished&, const opaque*);
+void build_certHashes(SSL&, Hashes&);
 
 void hmac(SSL&, byte*, const byte*, uint, ContentType, bool verify = false);
 void TLS_hmac(SSL&, byte*, const byte*, uint, ContentType,
