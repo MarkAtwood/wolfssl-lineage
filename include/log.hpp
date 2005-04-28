@@ -29,7 +29,7 @@
 
 #include "socket_wrapper.hpp"
 
-#ifndef NDEBUG
+#ifdef YASSL_LOG
 #include <cstdio>
 #endif
 
@@ -40,7 +40,7 @@ typedef unsigned int uint;
 
 // Debug logger
 class Log {
-#ifndef NDEBUG
+#ifdef YASSL_LOG
     FILE* log_;
 #endif
 public:

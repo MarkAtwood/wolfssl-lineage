@@ -24,12 +24,14 @@
  * the various handshake messages.
  */
 
-
+#include "runtime.hpp"
 #include "handshake.hpp"
 #include "yassl_int.hpp"
 
 
 namespace yaSSL {
+
+using mySTL::min;
 
 
 // Build a client hello message from cipher suites and compression method
@@ -577,8 +579,12 @@ void TLS_hmac(SSL& ssl, byte* digest, const byte* buffer, uint sz,
     c16toa(sz, length);
     c32toa(ssl.get_SEQIncrement(verify), &seq[sizeof(uint32)]);
 
-    if (ssl.getSecurity().get_parms().mac_algorithm_ == sha)
+    MACAlgorithm algo = ssl.getSecurity().get_parms().mac_algorithm_;
+
+    if (algo == sha)
         hmac.reset(new (ys) HMAC_SHA(ssl.get_macSecret(verify), SHA_LEN));
+    else if (algo == rmd)
+        hmac.reset(new (ys) HMAC_RMD(ssl.get_macSecret(verify), RMD_LEN));
     else
         hmac.reset(new (ys) HMAC_MD5(ssl.get_macSecret(verify), MD5_LEN));
     
@@ -688,7 +694,7 @@ DoProcessReply(SSL& ssl, mySTL::auto_ptr<input_buffer> buffered)
 
         while (buffer.get_current() < hdr.length_ + RECORD_HEADER + offset) {
             // each message in record
-            if (ssl.getSecurity().get_parms().pending_ == false) // cipher enabled
+            if (ssl.getSecurity().get_parms().pending_ == false) // cipher on
                 decrypt_message(ssl, buffer, hdr.length_);
             mySTL::auto_ptr<Message> msg(mf.CreateObject(hdr.type_));
             if (!msg.get()) {
@@ -839,18 +845,26 @@ void sendFinished(SSL& ssl, ConnectionEnd side, BufferOutput buffer)
 
 
 // send data
-int sendData(SSL& ssl, const Data& data)
+int sendData(SSL& ssl, const void* buffer, int sz)
 {
     ssl.verfiyHandShakeComplete();
     if (ssl.GetError()) return 0;
+    int sent = 0;
 
-    output_buffer out;
-    buildMessage(ssl, out, data);
-    ssl.Send(out.get_buffer(), out.get_size());
-    ssl.useLog().ShowData(data.get_length(), true);
+    for (;;) {
+        int len = min(sz - sent, MAX_RECORD_SIZE);
+        output_buffer out;
+        const Data data(len, static_cast<const opaque*>(buffer) + sent);
 
-    if (ssl.GetError()) return 0;
-    return data.get_length();
+        buildMessage(ssl, out, data);
+        ssl.Send(out.get_buffer(), out.get_size());
+
+        if (ssl.GetError()) return 0;
+        sent += len;
+        if (sent == sz) break;
+    }
+    ssl.useLog().ShowData(sent, true);
+    return sent;
 }
 
 

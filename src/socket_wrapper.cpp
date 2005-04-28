@@ -26,7 +26,7 @@
  */
 
 
-
+#include "runtime.hpp"
 #include "socket_wrapper.hpp"
 #include "yassl_error.hpp"
 

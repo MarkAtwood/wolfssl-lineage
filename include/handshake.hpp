@@ -52,7 +52,7 @@ void sendFinished(SSL&, ConnectionEnd, BufferOutput = buffered);
 void sendCertificate(SSL&, BufferOutput = buffered);
 void sendCertificateRequest(SSL&, BufferOutput = buffered);
 void sendCertificateVerify(SSL&, BufferOutput = buffered);
-int  sendData(SSL&, const Data&);
+int  sendData(SSL&, const void*, int);
 int  sendAlert(SSL& ssl, const Alert& alert);
 
 int  receiveData(SSL&, Data&); 

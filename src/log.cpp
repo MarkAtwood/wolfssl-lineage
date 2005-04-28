@@ -22,10 +22,10 @@
 /*  Debug logging functions
  */
 
-
+#include "runtime.hpp"
 #include "log.hpp"
 
-#ifndef NDEBUG
+#ifdef YASSL_LOG
     #include <ctime>
     #include <cstdio>
     #include <cstring>
@@ -36,7 +36,7 @@
 namespace yaSSL {
 
 
-#ifndef NDEBUG
+#ifdef YASSL_LOG
 
     enum { MAX_MSG = 81 };
 
@@ -89,7 +89,8 @@ namespace yaSSL {
     {
         sockaddr_in peeraddr;
         socklen_t   len = sizeof(peeraddr);
-        getpeername(fd, (sockaddr*)&peeraddr, &len);
+        if (getpeername(fd, (sockaddr*)&peeraddr, &len) != 0)
+            return;
 
         const char* p = reinterpret_cast<const char*>(&peeraddr.sin_addr);
         char msg[MAX_MSG];
@@ -133,7 +134,7 @@ namespace yaSSL {
     }
 
 
-#else // NDEBUG
+#else // no YASSL_LOG
 
 
     Log::Log(const char*) {}
@@ -143,5 +144,5 @@ namespace yaSSL {
     void Log::ShowData(uint, bool) {}
 
 
-#endif // NDEBUG
+#endif // YASSL_LOG
 } // namespace

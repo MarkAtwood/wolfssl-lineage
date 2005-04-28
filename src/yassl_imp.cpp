@@ -22,7 +22,7 @@
 /*  yaSSL source implements all SSL.v3 secification structures.
  */
 
-
+#include "runtime.hpp"
 #include "yassl_int.hpp"
 #include "handshake.hpp"
 
@@ -30,6 +30,20 @@
 
 
 namespace yaSSL {
+
+
+namespace { // locals
+
+bool isTLS(ProtocolVersion pv)
+{
+    if (pv.major_ >= 3 && pv.minor_ >= 1)
+        return true;
+
+    return false;
+}
+
+
+}  // namespace (locals)
 
 
 void hashHandShake(SSL&, const input_buffer&, uint);
@@ -66,6 +80,7 @@ void ServerKeyExchange::createKey(SSL& ssl)
 void EncryptedPreMasterSecret::build(SSL& ssl)
 {
     opaque tmp[SECRET_LEN];
+    memset(tmp, 0, sizeof(tmp));
     ssl.getCrypto().get_random().Fill(tmp, SECRET_LEN);
     ProtocolVersion pv = ssl.getSecurity().get_connection().version_;
     tmp[0] = pv.major_;
@@ -403,43 +418,93 @@ opaque* DH_Server::get_serverKey() const
 
 
 // set available suites
-Parameters::Parameters(ConnectionEnd ce, const Ciphers& ciphers) : entity_(ce)
+Parameters::Parameters(ConnectionEnd ce, const Ciphers& ciphers, 
+                       ProtocolVersion pv) : entity_(ce)
 {
     pending_ = true;	// suite not set yet
 
     if (ciphers.setSuites_) {   // use user set list
         suites_size_ = ciphers.suiteSz_;
         memcpy(suites_, ciphers.suites_, ciphers.suiteSz_);
+        SetCipherNames();
     }
-    else {  // defaults
-        int i = 0;
-        // available suites, best first
-        // when adding more, make sure cipher_names is updated and
-        //      MAX_CIPHER_LIST is big enough
+    else 
+        SetSuites(pv);  // defaults
+}
 
+
+void Parameters::SetSuites(ProtocolVersion pv)
+{
+    int i = 0;
+    // available suites, best first
+    // when adding more, make sure cipher_names is updated and
+    //      MAX_CIPHER_LIST is big enough
+
+    if (isTLS(pv)) {
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_RSA_WITH_AES_256_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_AES_256_CBC_SHA;
         suites_[i++] = 0x00;
         suites_[i++] = TLS_RSA_WITH_AES_256_CBC_SHA;
+
         suites_[i++] = 0x00;
         suites_[i++] = TLS_RSA_WITH_AES_128_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_RSA_WITH_AES_128_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_AES_128_CBC_SHA;
 
         suites_[i++] = 0x00;
-        suites_[i++] = SSL_RSA_WITH_3DES_EDE_CBC_SHA;
+        suites_[i++] = TLS_RSA_WITH_AES_256_CBC_RMD160;
         suites_[i++] = 0x00;
-        suites_[i++] = SSL_RSA_WITH_DES_CBC_SHA;
-  
+        suites_[i++] = TLS_RSA_WITH_AES_128_CBC_RMD160;
         suites_[i++] = 0x00;
-        suites_[i++] = SSL_DHE_RSA_WITH_DES_CBC_SHA;  
-        suites_[i++] = 0x00;
-        suites_[i++] = SSL_DHE_DSS_WITH_DES_CBC_SHA; 
+        suites_[i++] = TLS_RSA_WITH_3DES_EDE_CBC_RMD160;
 
         suites_[i++] = 0x00;
-        suites_[i++] = SSL_RSA_WITH_RC4_128_SHA;  
+        suites_[i++] = TLS_DHE_RSA_WITH_AES_256_CBC_RMD160;
         suites_[i++] = 0x00;
-        suites_[i++] = SSL_RSA_WITH_RC4_128_MD5;
-   
-        suites_size_ = i;
+        suites_[i++] = TLS_DHE_RSA_WITH_AES_128_CBC_RMD160;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_RSA_WITH_3DES_EDE_CBC_RMD160;
+
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_AES_256_CBC_RMD160;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_AES_128_CBC_RMD160;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_3DES_EDE_CBC_RMD160;
     }
 
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_RSA_WITH_RC4_128_SHA;  
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_RSA_WITH_RC4_128_MD5;
+
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_RSA_WITH_3DES_EDE_CBC_SHA;
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_RSA_WITH_DES_CBC_SHA;
+
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA;  
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA; 
+
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_DHE_RSA_WITH_DES_CBC_SHA;  
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_DHE_DSS_WITH_DES_CBC_SHA;
+
+    suites_size_ = i;
+
+    SetCipherNames();
+}
+
+
+void Parameters::SetCipherNames()
+{
     const int suites = suites_size_ / 2;
     int pos = 0;
 
@@ -1153,9 +1218,19 @@ void ServerHello::Process(input_buffer&, SSL& ssl)
 }
 
 
+ServerHello::ServerHello()
+{
+    memset(random_, 0, RAN_LEN);
+    memset(session_id_, 0, ID_LEN);
+}
+
+
 ServerHello::ServerHello(ProtocolVersion pv)
     : server_version_(pv)
-{}
+{
+    memset(random_, 0, RAN_LEN);
+    memset(session_id_, 0, ID_LEN);
+}
 
 
 input_buffer& ServerHello::set(input_buffer& in)
@@ -1286,9 +1361,11 @@ output_buffer& operator<<(output_buffer& output, const ClientHello& hello)
 // Client Hello processing handler
 void ClientHello::Process(input_buffer&, SSL& ssl)
 {
-    if (ssl.isTLS() && client_version_.minor_ == 0)
-        ssl.useSecurity().use_connection().TLS_ = false;
-
+    if (ssl.isTLS() && client_version_.minor_ == 0) {
+        ssl.useSecurity().use_connection().TurnOffTLS();
+        ProtocolVersion pv = ssl.getSecurity().get_connection().version_;
+        ssl.useSecurity().use_parms().SetSuites(pv);  // reset w/ SSL suites
+    }
     ssl.set_random(random_, client_end);
 
     while (id_len_) {  // trying to resume
@@ -1343,9 +1420,18 @@ const opaque* ClientHello::get_random() const
     return random_;
 }
 
+
+ClientHello::ClientHello()
+{
+    memset(random_, 0, RAN_LEN);
+}
+
+
 ClientHello::ClientHello(ProtocolVersion pv)
     : client_version_(pv)
-{}
+{
+    memset(random_, 0, RAN_LEN);
+}
 
 
 // output operator for ServerKeyExchange
@@ -1890,6 +1976,13 @@ Connection::~Connection()
 void Connection::AllocPreSecret(uint sz) 
 { 
     pre_master_secret_ = new (ys) opaque[pre_secret_len_ = sz];
+}
+
+
+void Connection::TurnOffTLS()
+{
+    TLS_ = false;
+    version_.minor_ = 0;
 }
 
 

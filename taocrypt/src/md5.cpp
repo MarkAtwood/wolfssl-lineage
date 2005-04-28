@@ -22,6 +22,7 @@
 
 /* based on Wei Dai's md5.cpp from CryptoPP */
 
+#include "runtime.hpp"
 #include "md5.hpp"
 #include "algorithm.hpp"    // mySTL::swap
 

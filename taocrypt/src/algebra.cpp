@@ -21,6 +21,7 @@
 
 /* based on Wei Dai's algebra.cpp from CryptoPP */
 
+#include "runtime.hpp"
 #include "algebra.hpp"
 #include "integer.hpp"
 #include "vector.hpp"   // mySTL::vector (simple)

@@ -24,6 +24,7 @@
  * with SSL types and sockets
  */
 
+#include "runtime.hpp"
 #include "buffer.hpp"
 #include "yassl_types.hpp"
 

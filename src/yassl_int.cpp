@@ -24,7 +24,7 @@
  * draft along with type conversion functions.
  */
 
-
+#include "runtime.hpp"
 #include "yassl_int.hpp"
 #include "handshake.hpp"
 #include "timer.hpp"
@@ -42,11 +42,22 @@ void* operator new(size_t sz, yaSSL::new_t)
 
 void* operator new[](size_t sz, yaSSL::new_t n)
 {
-    return operator new (sz, n);
+#if defined(_MSC_VER) && (_MSC_VER < 1300)
+    void* ptr = ::operator new(sz);         // no ::operator new[]
+#else
+    void* ptr = ::operator new[](sz);
+#endif
+
+    if (!ptr) abort();
+
+    return ptr;
 }
 
 
 namespace yaSSL {
+
+
+using mySTL::min;
 
 
 new_t ys;   // for library new
@@ -237,7 +248,7 @@ const ClientKeyFactory& sslFactory::getClientKey() const
 // extract context parameters and store
 SSL::SSL(SSL_CTX* ctx) 
     : secure_(ctx->getMethod()->getVersion(), crypto_.use_random(),
-              ctx->getMethod()->getSide(), ctx->GetCiphers())
+              ctx->getMethod()->getSide(), ctx->GetCiphers(), ctx)
 {
     if (int err = crypto_.get_random().GetError()) {
         SetError(YasslError(err));
@@ -389,6 +400,54 @@ void SSL::set_pending(Cipher suite)
                 MAX_SUITE_NAME);
         break;
 
+    case SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA:
+        parms.bulk_cipher_algorithm_ = triple_des;
+        parms.mac_algorithm_         = sha;
+        parms.kea_                   = diffie_hellman_kea;
+        parms.sig_algo_              = rsa_sa_algo;
+        parms.hash_size_ = SHA_LEN;
+        parms.key_size_  = DES_EDE_KEY_SZ;
+        parms.iv_size_   = DES_IV_SZ;
+        parms.cipher_type_ = block;
+        secure_.use_connection().send_server_key_  = true; // eph
+        crypto_.setDigest(new (ys) SHA);
+        crypto_.setCipher(new (ys) DES_EDE);
+        strncpy(parms.cipher_name_,
+              cipher_names[SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA], MAX_SUITE_NAME);
+        break;
+
+    case TLS_DHE_RSA_WITH_AES_256_CBC_SHA:
+        parms.bulk_cipher_algorithm_ = aes;
+        parms.mac_algorithm_         = sha;
+        parms.kea_                   = diffie_hellman_kea;
+        parms.sig_algo_              = rsa_sa_algo;
+        parms.hash_size_ = SHA_LEN;
+        parms.key_size_  = AES_256_KEY_SZ;
+        parms.iv_size_   = AES_BLOCK_SZ;
+        parms.cipher_type_ = block;
+        secure_.use_connection().send_server_key_  = true; // eph
+        crypto_.setDigest(new (ys) SHA);
+        crypto_.setCipher(new (ys) AES(AES_256_KEY_SZ));
+        strncpy(parms.cipher_name_,
+               cipher_names[TLS_DHE_RSA_WITH_AES_256_CBC_SHA], MAX_SUITE_NAME);
+        break;
+
+    case TLS_DHE_RSA_WITH_AES_128_CBC_SHA:
+        parms.bulk_cipher_algorithm_ = aes;
+        parms.mac_algorithm_         = sha;
+        parms.kea_                   = diffie_hellman_kea;
+        parms.sig_algo_              = rsa_sa_algo;
+        parms.hash_size_ = SHA_LEN;
+        parms.key_size_  = AES_128_KEY_SZ;
+        parms.iv_size_   = AES_BLOCK_SZ;
+        parms.cipher_type_ = block;
+        secure_.use_connection().send_server_key_  = true; // eph
+        crypto_.setDigest(new (ys) SHA);
+        crypto_.setCipher(new (ys) AES);
+        strncpy(parms.cipher_name_,
+               cipher_names[TLS_DHE_RSA_WITH_AES_128_CBC_SHA], MAX_SUITE_NAME);
+        break;
+
     case SSL_DHE_DSS_WITH_DES_CBC_SHA:
         parms.bulk_cipher_algorithm_ = des;
         parms.mac_algorithm_         = sha;
@@ -402,6 +461,198 @@ void SSL::set_pending(Cipher suite)
         crypto_.setDigest(new (ys) SHA);
         crypto_.setCipher(new (ys) DES);
         strncpy(parms.cipher_name_, cipher_names[SSL_DHE_DSS_WITH_DES_CBC_SHA],
+                MAX_SUITE_NAME);
+        break;
+
+    case SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA:
+        parms.bulk_cipher_algorithm_ = triple_des;
+        parms.mac_algorithm_         = sha;
+        parms.kea_                   = diffie_hellman_kea;
+        parms.sig_algo_              = dsa_sa_algo;
+        parms.hash_size_ = SHA_LEN;
+        parms.key_size_  = DES_EDE_KEY_SZ;
+        parms.iv_size_   = DES_IV_SZ;
+        parms.cipher_type_ = block;
+        secure_.use_connection().send_server_key_  = true; // eph
+        crypto_.setDigest(new (ys) SHA);
+        crypto_.setCipher(new (ys) DES_EDE);
+        strncpy(parms.cipher_name_,
+              cipher_names[SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA], MAX_SUITE_NAME);
+        break;
+
+    case TLS_DHE_DSS_WITH_AES_256_CBC_SHA:
+        parms.bulk_cipher_algorithm_ = aes;
+        parms.mac_algorithm_         = sha;
+        parms.kea_                   = diffie_hellman_kea;
+        parms.sig_algo_              = dsa_sa_algo;
+        parms.hash_size_ = SHA_LEN;
+        parms.key_size_  = AES_256_KEY_SZ;
+        parms.iv_size_   = AES_BLOCK_SZ;
+        parms.cipher_type_ = block;
+        secure_.use_connection().send_server_key_  = true; // eph
+        crypto_.setDigest(new (ys) SHA);
+        crypto_.setCipher(new (ys) AES(AES_256_KEY_SZ));
+        strncpy(parms.cipher_name_,
+               cipher_names[TLS_DHE_DSS_WITH_AES_256_CBC_SHA], MAX_SUITE_NAME);
+        break;
+
+    case TLS_DHE_DSS_WITH_AES_128_CBC_SHA:
+        parms.bulk_cipher_algorithm_ = aes;
+        parms.mac_algorithm_         = sha;
+        parms.kea_                   = diffie_hellman_kea;
+        parms.sig_algo_              = dsa_sa_algo;
+        parms.hash_size_ = SHA_LEN;
+        parms.key_size_  = AES_128_KEY_SZ;
+        parms.iv_size_   = AES_BLOCK_SZ;
+        parms.cipher_type_ = block;
+        secure_.use_connection().send_server_key_  = true; // eph
+        crypto_.setDigest(new (ys) SHA);
+        crypto_.setCipher(new (ys) AES);
+        strncpy(parms.cipher_name_,
+               cipher_names[TLS_DHE_DSS_WITH_AES_128_CBC_SHA], MAX_SUITE_NAME);
+        break;
+
+    case TLS_RSA_WITH_AES_256_CBC_RMD160:
+        parms.bulk_cipher_algorithm_ = aes;
+        parms.mac_algorithm_         = rmd;
+        parms.kea_                   = rsa_kea;
+        parms.hash_size_ = RMD_LEN;
+        parms.key_size_  = AES_256_KEY_SZ;
+        parms.iv_size_   = AES_BLOCK_SZ;
+        parms.cipher_type_ = block;
+        crypto_.setDigest(new (ys) RMD);
+        crypto_.setCipher(new (ys) AES(AES_256_KEY_SZ));
+        strncpy(parms.cipher_name_,
+                cipher_names[TLS_RSA_WITH_AES_256_CBC_RMD160], MAX_SUITE_NAME);
+        break;
+
+    case TLS_RSA_WITH_AES_128_CBC_RMD160:
+        parms.bulk_cipher_algorithm_ = aes;
+        parms.mac_algorithm_         = rmd;
+        parms.kea_                   = rsa_kea;
+        parms.hash_size_ = RMD_LEN;
+        parms.key_size_  = AES_128_KEY_SZ;
+        parms.iv_size_   = AES_BLOCK_SZ;
+        parms.cipher_type_ = block;
+        crypto_.setDigest(new (ys) RMD);
+        crypto_.setCipher(new (ys) AES);
+        strncpy(parms.cipher_name_,
+                cipher_names[TLS_RSA_WITH_AES_128_CBC_RMD160], MAX_SUITE_NAME);
+        break;
+
+    case TLS_RSA_WITH_3DES_EDE_CBC_RMD160:
+        parms.bulk_cipher_algorithm_ = triple_des;
+        parms.mac_algorithm_         = rmd;
+        parms.kea_                   = rsa_kea;
+        parms.hash_size_ = RMD_LEN;
+        parms.key_size_  = DES_EDE_KEY_SZ;
+        parms.iv_size_   = DES_IV_SZ;
+        parms.cipher_type_ = block;
+        crypto_.setDigest(new (ys) RMD);
+        crypto_.setCipher(new (ys) DES_EDE);
+        strncpy(parms.cipher_name_,
+               cipher_names[TLS_RSA_WITH_3DES_EDE_CBC_RMD160], MAX_SUITE_NAME);
+        break;
+
+    case TLS_DHE_RSA_WITH_3DES_EDE_CBC_RMD160:
+        parms.bulk_cipher_algorithm_ = triple_des;
+        parms.mac_algorithm_         = rmd;
+        parms.kea_                   = diffie_hellman_kea;
+        parms.sig_algo_              = rsa_sa_algo;
+        parms.hash_size_ = RMD_LEN;
+        parms.key_size_  = DES_EDE_KEY_SZ;
+        parms.iv_size_   = DES_IV_SZ;
+        parms.cipher_type_ = block;
+        secure_.use_connection().send_server_key_  = true; // eph
+        crypto_.setDigest(new (ys) RMD);
+        crypto_.setCipher(new (ys) DES_EDE);
+        strncpy(parms.cipher_name_,
+                cipher_names[TLS_DHE_RSA_WITH_3DES_EDE_CBC_RMD160],
+                MAX_SUITE_NAME);
+        break;
+
+    case TLS_DHE_RSA_WITH_AES_256_CBC_RMD160:
+        parms.bulk_cipher_algorithm_ = aes;
+        parms.mac_algorithm_         = rmd;
+        parms.kea_                   = diffie_hellman_kea;
+        parms.sig_algo_              = rsa_sa_algo;
+        parms.hash_size_ = RMD_LEN;
+        parms.key_size_  = AES_256_KEY_SZ;
+        parms.iv_size_   = AES_BLOCK_SZ;
+        parms.cipher_type_ = block;
+        secure_.use_connection().send_server_key_  = true; // eph
+        crypto_.setDigest(new (ys) RMD);
+        crypto_.setCipher(new (ys) AES(AES_256_KEY_SZ));
+        strncpy(parms.cipher_name_,
+                cipher_names[TLS_DHE_RSA_WITH_AES_256_CBC_RMD160],
+                MAX_SUITE_NAME);
+        break;
+
+    case TLS_DHE_RSA_WITH_AES_128_CBC_RMD160:
+        parms.bulk_cipher_algorithm_ = aes;
+        parms.mac_algorithm_         = rmd;
+        parms.kea_                   = diffie_hellman_kea;
+        parms.sig_algo_              = rsa_sa_algo;
+        parms.hash_size_ = RMD_LEN;
+        parms.key_size_  = AES_128_KEY_SZ;
+        parms.iv_size_   = AES_BLOCK_SZ;
+        parms.cipher_type_ = block;
+        secure_.use_connection().send_server_key_  = true; // eph
+        crypto_.setDigest(new (ys) RMD);
+        crypto_.setCipher(new (ys) AES);
+        strncpy(parms.cipher_name_,
+                cipher_names[TLS_DHE_RSA_WITH_AES_128_CBC_RMD160],
+                MAX_SUITE_NAME);
+        break;
+
+    case TLS_DHE_DSS_WITH_3DES_EDE_CBC_RMD160:
+        parms.bulk_cipher_algorithm_ = triple_des;
+        parms.mac_algorithm_         = rmd;
+        parms.kea_                   = diffie_hellman_kea;
+        parms.sig_algo_              = dsa_sa_algo;
+        parms.hash_size_ = RMD_LEN;
+        parms.key_size_  = DES_EDE_KEY_SZ;
+        parms.iv_size_   = DES_IV_SZ;
+        parms.cipher_type_ = block;
+        secure_.use_connection().send_server_key_  = true; // eph
+        crypto_.setDigest(new (ys) RMD);
+        crypto_.setCipher(new (ys) DES_EDE);
+        strncpy(parms.cipher_name_,
+                cipher_names[TLS_DHE_DSS_WITH_3DES_EDE_CBC_RMD160],
+                MAX_SUITE_NAME);
+        break;
+
+    case TLS_DHE_DSS_WITH_AES_256_CBC_RMD160:
+        parms.bulk_cipher_algorithm_ = aes;
+        parms.mac_algorithm_         = rmd;
+        parms.kea_                   = diffie_hellman_kea;
+        parms.sig_algo_              = dsa_sa_algo;
+        parms.hash_size_ = RMD_LEN;
+        parms.key_size_  = AES_256_KEY_SZ;
+        parms.iv_size_   = AES_BLOCK_SZ;
+        parms.cipher_type_ = block;
+        secure_.use_connection().send_server_key_  = true; // eph
+        crypto_.setDigest(new (ys) RMD);
+        crypto_.setCipher(new (ys) AES(AES_256_KEY_SZ));
+        strncpy(parms.cipher_name_,
+                cipher_names[TLS_DHE_DSS_WITH_AES_256_CBC_RMD160],
+                MAX_SUITE_NAME);
+        break;
+
+    case TLS_DHE_DSS_WITH_AES_128_CBC_RMD160:
+        parms.bulk_cipher_algorithm_ = aes;
+        parms.mac_algorithm_         = rmd;
+        parms.kea_                   = diffie_hellman_kea;
+        parms.sig_algo_              = dsa_sa_algo;
+        parms.hash_size_ = RMD_LEN;
+        parms.key_size_  = AES_128_KEY_SZ;
+        parms.iv_size_   = AES_BLOCK_SZ;
+        parms.cipher_type_ = block;
+        secure_.use_connection().send_server_key_  = true; // eph
+        crypto_.setDigest(new (ys) RMD);
+        crypto_.setCipher(new (ys) AES);
+        strncpy(parms.cipher_name_,
+                cipher_names[TLS_DHE_DSS_WITH_AES_128_CBC_RMD160],
                 MAX_SUITE_NAME);
         break;
 
@@ -689,17 +940,6 @@ uint SSL::bufferedData()
 {
     return mySTL::for_each(buffers_.getData().begin(),buffers_.getData().end(),
                            SumData()).total_;
-}
-
-
-#ifdef min
-    #undef min
-#endif 
-
-template<typename T>
-inline T min(T a, T b)
-{
-    return a < b ? a : b;
 }
 
 
@@ -1290,6 +1530,12 @@ const DH_Parms& SSL_CTX::GetDH_Parms() const
 }
 
 
+const Stats& SSL_CTX::GetStats() const
+{
+    return stats_;
+}
+
+
 void SSL_CTX::setVerifyPeer()
 {
     method_->setVerifyPeer();
@@ -1358,6 +1604,79 @@ bool SSL_CTX::SetCipherList(const char* list)
     }
 
     return ret;
+}
+
+
+void SSL_CTX::IncrementStats(StatsField fd)
+{
+
+    Lock guard(mutex_);
+    
+    switch (fd) {
+
+	case Accept:
+        ++stats_.accept_;
+        break;
+
+    case Connect:
+        ++stats_.connect_;
+        break;
+
+    case AcceptGood:
+        ++stats_.acceptGood_;
+        break;
+
+    case ConnectGood:
+        ++stats_.connectGood_;
+        break;
+
+    case AcceptRenegotiate:
+        ++stats_.acceptRenegotiate_;
+        break;
+
+    case ConnectRenegotiate:
+        ++stats_.connectRenegotiate_;
+        break;
+
+    case Hits:
+        ++stats_.hits_;
+        break;
+
+    case CbHits:
+        ++stats_.cbHits_;
+        break;
+
+    case CacheFull:
+        ++stats_.cacheFull_;
+        break;
+
+    case Misses:
+        ++stats_.misses_;
+        break;
+
+    case Timeouts:
+        ++stats_.timeouts_;
+        break;
+
+    case Number:
+        ++stats_.number_;
+        break;
+
+    case GetCacheSize:
+        ++stats_.getCacheSize_;
+        break;
+
+    case VerifyMode:
+        ++stats_.verifyMode_;
+        break;
+
+    case VerifyDepth:
+        ++stats_.verifyDepth_;
+        break;
+
+    default:
+        break;
+    }
 }
 
 
@@ -1548,14 +1867,21 @@ Buffers::outputList& Buffers::useHandShake()
 
 
 Security::Security(ProtocolVersion pv, RandomPool& ran, ConnectionEnd ce,
-                   const Ciphers& ciphers)
-   : conn_(pv, ran), parms_(ce, ciphers), resumeSession_(ran), resuming_(false)
+                   const Ciphers& ciphers, SSL_CTX* ctx)
+   : conn_(pv, ran), parms_(ce, ciphers, pv), resumeSession_(ran), ctx_(ctx),
+     resuming_(false)
 {}
 
 
 const Connection& Security::get_connection() const
 {
     return conn_;
+}
+
+
+const SSL_CTX* Security::GetContext() const
+{
+    return ctx_;
 }
 
 

@@ -32,12 +32,18 @@
 #   pragma warning(disable: 4250 4660 4661 4786 4355)
 #endif
 
+#include "runtime.hpp"
 #include "integer.hpp"
 #include "modarith.hpp"
 #include "asn.hpp"
 #include "stdexcept.hpp"
 
 #include "algebra.cpp"
+
+
+#ifdef __DECCXX
+    #include <c_asm.h>  // for asm multiply overflow
+#endif
 
 
 #ifdef SSE2_INTRINSICS_AVAILABLE
@@ -166,8 +172,14 @@ DWord() {}
             r.whole_ = (dword)a * b;
         #elif defined(__alpha__)
             r.halfs_.low = a*b;
-            __asm__("umulh %1,%2,%0" : "=r" (r.halfs_.high)
-                : "r" (a), "r" (b));
+            #ifdef __GNUC__
+                __asm__("umulh %1,%2,%0" : "=r" (r.halfs_.high)
+                    : "r" (a), "r" (b));
+            #elif defined(__DECCXX)
+                r.halfs_.high = asm("umulh %a0, %a1, %v0", a, b);
+            #else
+                #error unsupported alpha compiler for asm multiply overflow
+            #endif
         #elif defined(__ia64__)
             r.halfs_.low = a*b;
             __asm__("xmpy.hu %0=%1,%2" : "=f" (r.halfs_.high)
@@ -1341,11 +1353,6 @@ TAOCRYPT_NAKED word PentiumOptimized::Add(word *C, const word *A,
     AS2(    adc eax, 0)     // store carry into eax (return result register)
 
     AddEpilogue
-
-#ifdef __GNUC__
-#warning Assembler return issues non-void return warning by GCC, no way to \
-         disable for -Wall.  (For Add and Subtract)
-#endif
 }
 
 TAOCRYPT_NAKED word PentiumOptimized::Subtract(word *C, const word *A,

@@ -149,6 +149,10 @@ SOURCE=.\src\random.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\ripemd.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\rsa.cpp
 # End Source File
 # Begin Source File
@@ -238,6 +242,10 @@ SOURCE=.\include\modes.hpp
 # Begin Source File
 
 SOURCE=.\include\random.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\ripemd.hpp
 # End Source File
 # Begin Source File
 

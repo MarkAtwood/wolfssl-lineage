@@ -40,7 +40,7 @@ namespace mySTL {
 template<typename T>
 struct auto_ptr_ref {
     T* ptr_;
-    explicit auto_ptr_ref(T* p = 0) : ptr_(0) {}
+    explicit auto_ptr_ref(T* p) : ptr_(p) {}
 };
 
 

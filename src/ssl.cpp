@@ -32,7 +32,7 @@
 
 /*  see man pages for function descriptions */
 
-
+#include "runtime.hpp"
 #include "openssl/ssl.h"
 #include "handshake.hpp"
 #include "yassl_int.hpp"
@@ -40,6 +40,8 @@
 
 
 namespace yaSSL {
+
+using mySTL::min;
 
 
 SSL_METHOD* SSLv3_method()
@@ -141,14 +143,13 @@ int SSL_connect(SSL* ssl)
 
 int SSL_write(SSL* ssl, const void* buffer, int sz)
 {
-    const Data data(sz, static_cast<const opaque*>(buffer));
-    return sendData(*ssl, data);
+    return sendData(*ssl, buffer, sz);
 }
 
 
 int SSL_read(SSL* ssl, void* buffer, int sz)
 {
-    Data data(sz, static_cast<opaque*>(buffer));
+    Data data(min(sz, MAX_RECORD_SIZE), static_cast<opaque*>(buffer));
     return receiveData(*ssl, data);
 }
 
@@ -235,6 +236,9 @@ int SSL_session_reused(SSL* ssl)
 
 long SSL_SESSION_set_timeout(SSL_SESSION* sess, long t)
 {
+    if (!sess)
+        return SSL_ERROR_NONE;
+
     sess->SetTimeOut(t);
     return SSL_SUCCESS;
 }
@@ -329,17 +333,6 @@ int X509_STORE_CTX_get_error(X509_STORE_CTX* ctx)
 int X509_STORE_CTX_get_error_depth(X509_STORE_CTX* ctx)
 {
     return ctx->error_depth;
-}
-
-
-#ifdef min
-    #undef min
-#endif 
-
-template<typename T>
-inline T min(T a, T b)
-{
-    return a < b ? a : b;
 }
 
 
@@ -523,106 +516,106 @@ int SSL_CTX_check_private_key(SSL_CTX* /*ctx*/)
 
 
 // TODO: all session stats
-long SSL_CTX_sess_accept(SSL_CTX*)
+long SSL_CTX_sess_accept(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().accept_;
 }
 
 
-long SSL_CTX_sess_connect(SSL_CTX*)
+long SSL_CTX_sess_connect(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().connect_;
 }
 
 
-long SSL_CTX_sess_accept_good(SSL_CTX*)
+long SSL_CTX_sess_accept_good(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().acceptGood_;
 }
 
 
-long SSL_CTX_sess_connect_good(SSL_CTX*)
+long SSL_CTX_sess_connect_good(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().connectGood_;
 }
 
 
-long SSL_CTX_sess_accept_renegotiate(SSL_CTX*)
+long SSL_CTX_sess_accept_renegotiate(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().acceptRenegotiate_;
 }
 
 
-long SSL_CTX_sess_connect_renegotiate(SSL_CTX*)
+long SSL_CTX_sess_connect_renegotiate(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().connectRenegotiate_;
 }
 
 
-long SSL_CTX_sess_hits(SSL_CTX*)
+long SSL_CTX_sess_hits(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().hits_;
 }
 
 
-long SSL_CTX_sess_cb_hits(SSL_CTX*)
+long SSL_CTX_sess_cb_hits(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().cbHits_;
 }
 
 
-long SSL_CTX_sess_cache_full(SSL_CTX*)
+long SSL_CTX_sess_cache_full(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().cacheFull_;
 }
 
 
-long SSL_CTX_sess_misses(SSL_CTX*)
+long SSL_CTX_sess_misses(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().misses_;
 }
 
 
-long SSL_CTX_sess_timeouts(SSL_CTX*)
+long SSL_CTX_sess_timeouts(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().timeouts_;
 }
 
 
-long SSL_CTX_sess_number(SSL_CTX*)
+long SSL_CTX_sess_number(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().number_;
 }
 
 
-long SSL_CTX_sess_get_cache_size(SSL_CTX*)
+long SSL_CTX_sess_get_cache_size(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().getCacheSize_;
 }
 // end session stats TODO:
 
 
-int SSL_CTX_get_verify_mode(SSL_CTX*)
+int SSL_CTX_get_verify_mode(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().verifyMode_;
 }
 
 
-int SSL_get_verify_mode(SSL*)
+int SSL_get_verify_mode(SSL* ssl)
 {
-    return 0;  // TODO:
+    return ssl->getSecurity().GetContext()->GetStats().verifyMode_;
 }
 
 
-int SSL_CTX_get_verify_depth(SSL_CTX*)
+int SSL_CTX_get_verify_depth(SSL_CTX* ctx)
 {
-    return 0;  // TODO:
+    return ctx->GetStats().verifyDepth_;
 }
 
 
-int SSL_get_verify_depth(SSL*)
+int SSL_get_verify_depth(SSL* ssl)
 {
-    return 0;  // TODO:
+    return ssl->getSecurity().GetContext()->GetStats().verifyDepth_;
 }
 
 

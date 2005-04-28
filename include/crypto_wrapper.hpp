@@ -100,6 +100,25 @@ private:
 };
 
 
+// RIPEMD-160 Digest
+class RMD : public Digest {
+public:
+    void   get_digest(byte*);
+    void   get_digest(byte*, const byte*, unsigned int);
+    void   update(const byte*, unsigned int);
+    uint   get_digestSize() const;
+    uint   get_padSize()    const;
+    RMD();
+    ~RMD();
+    RMD(const RMD&);
+    RMD& operator=(const RMD&);
+private:
+    struct RMDImpl;
+    RMDImpl* pimpl_;
+
+};
+
+
 // HMAC_MD5
 class HMAC_MD5 : public Digest {
 public:
@@ -135,6 +154,25 @@ private:
 
     HMAC_SHA(const HMAC_SHA&);
     HMAC_SHA& operator=(const HMAC_SHA&);
+};
+
+
+// HMAC_RMD
+class HMAC_RMD : public Digest {
+public:
+    void   get_digest(byte*);
+    void   get_digest(byte*, const byte*, unsigned int);
+    void   update(const byte*, unsigned int);
+    uint   get_digestSize() const;
+    uint   get_padSize()    const;
+    HMAC_RMD(const byte*, unsigned int);
+    ~HMAC_RMD();
+private:
+    struct HMAC_RMDImpl;
+    HMAC_RMDImpl* pimpl_;
+
+    HMAC_RMD(const HMAC_RMD&);
+    HMAC_RMD& operator=(const HMAC_RMD&);
 };
 
 

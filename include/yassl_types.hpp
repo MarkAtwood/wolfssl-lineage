@@ -64,16 +64,18 @@ const int RAN_LEN           =  32;  // client and server random length
 const int MAC_BLOCK_SZ      =  64;  // MAC block size, & padding
 const int MD5_LEN           =  16;  // MD5 digest length
 const int SHA_LEN           =  20;  // SHA digest length
+const int RMD_LEN           =  20;  // RIPEMD-160 digest length
 const int PREFIX            =   3;  // up to 3 prefix letters for secret rounds
 const int KEY_PREFIX        =   7;  // up to 7 prefix letters for key rounds
 const int FORTEZZA_MAX      = 128;  // Maximum Fortezza Key length
 const int MAX_SUITE_SZ      =  64;  // 32 max suites * sizeof(suite)
 const int MAX_SUITE_NAME    =  48;  // max length of suite name
-const int MAX_CIPHER_LIST   = 128;  // max length of cipher list names
+const int MAX_CIPHER_LIST   = 512;  // max length of cipher list names
 const int SIZEOF_ENUM       =   1;  // SSL considers an enum 1 byte, not 4
 const int SIZEOF_SENDER     =   4;  // Sender constant, for finished generation
 const int PAD_MD5           =  48;  // pad length 1 and 2 for md5 finished
 const int PAD_SHA           =  40;  // should be 44, specd wrong by netscape
+const int PAD_RMD           =  44;  // pad length for RIPEMD-160, some use 40??
 const int CERT_HEADER       =   3;  // always use 3 bytes for certificate
 const int CERT_TYPES        =   7;  // certificate request types
 const int REQUEST_HEADER    =   2;  // request uses 2 bytes
@@ -105,6 +107,7 @@ const int KEY_LABEL_SZ      =  13;  // TLS key block expansion size
 const int FINISHED_LABEL_SZ =  15;  // TLS finished lable length
 const int SEED_LEN          = RAN_LEN * 2; // TLS seed, client + server random
 const int DEFAULT_TIMEOUT   = 500;  // Default Session timeout in seconds
+const int MAX_RECORD_SIZE   = 16384; // 2^14, max size by standard
 
 
 typedef uint8 Cipher;             // first byte is always 0x00 for SSLv3 & TLS
@@ -219,7 +222,8 @@ enum BulkCipherAlgorithm {
 enum MACAlgorithm { 
     no_mac,
     md5,
-    sha 
+    sha,
+    rmd
 };
 
 
@@ -279,16 +283,29 @@ const Cipher TLS_DHE_RSA_WITH_AES_256_CBC_SHA  = 57; // { 0x00, 0x39 }
 const Cipher TLS_DH_anon_WITH_AES_256_CBC_SHA  = 58; // { 0x00, 0x3A }
 
 
+// OpenPGP extensions
+
+const Cipher TLS_DHE_DSS_WITH_3DES_EDE_CBC_RMD160 = 114; // { 0x00, 0x72 };
+const Cipher TLS_DHE_DSS_WITH_AES_128_CBC_RMD160  = 115; // { 0x00, 0x73 };
+const Cipher TLS_DHE_DSS_WITH_AES_256_CBC_RMD160  = 116; // { 0x00, 0x74 };
+const Cipher TLS_DHE_RSA_WITH_3DES_EDE_CBC_RMD160 = 119; // { 0x00, 0x77 };
+const Cipher TLS_DHE_RSA_WITH_AES_128_CBC_RMD160  = 120; // { 0x00, 0x78 };
+const Cipher TLS_DHE_RSA_WITH_AES_256_CBC_RMD160  = 121; // { 0x00, 0x79 };
+const Cipher TLS_RSA_WITH_3DES_EDE_CBC_RMD160     = 124; // { 0x00, 0x7C };
+const Cipher TLS_RSA_WITH_AES_128_CBC_RMD160      = 125; // { 0x00, 0x7D };
+const Cipher TLS_RSA_WITH_AES_256_CBC_RMD160      = 126; // { 0x00, 0x7E };
+
+
 const char* const null_str = "";
 
-const char* const cipher_names[59] =
+const char* const cipher_names[128] =
 {
     null_str, // SSL_NULL_WITH_NULL_NULL                =  0
     null_str, // SSL_RSA_WITH_NULL_MD5                  =  1
     null_str, // SSL_RSA_WITH_NULL_SHA                  =  2
     null_str, // SSL_RSA_EXPORT_WITH_RC4_40_MD5         =  3
-    "RC4-MD5", // SSL_RSA_WITH_RC4_128_MD5               =  4
-    "RC4-SHA", // SSL_RSA_WITH_RC4_128_SHA               =  5
+    "RC4-MD5",  // SSL_RSA_WITH_RC4_128_MD5               =  4
+    "RC4-SHA",  // SSL_RSA_WITH_RC4_128_SHA               =  5
     null_str, // SSL_RSA_EXPORT_WITH_RC2_CBC_40_MD5     =  6
     null_str, // SSL_RSA_WITH_IDEA_CBC_SHA              =  7
     null_str, // SSL_RSA_EXPORT_WITH_DES40_CBC_SHA      =  8
@@ -302,12 +319,12 @@ const char* const cipher_names[59] =
     null_str, // SSL_DH_RSA_WITH_DES_CBC_SHA            = 15
     null_str, // SSL_DH_RSA_WITH_3DES_EDE_CBC_SHA       = 16
     null_str, // SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA  = 17
-    "EDH-DSS-DES-CBC-SHA", // SSL_DHE_DSS_WITH_DES_CBC_SHA           = 18
-    null_str, // SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA      = 19
+    "EDH-DSS-DES-CBC-SHA",  // SSL_DHE_DSS_WITH_DES_CBC_SHA           = 18
+    "EDH-DSS-DES-CBC3-SHA", // SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA      = 19
     null_str, // SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA  = 20
 
-    "EDH-RSA-DES-CBC-SHA", // SSL_DHE_RSA_WITH_DES_CBC_SHA           = 21
-    null_str, // SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA      = 22
+    "EDH-RSA-DES-CBC-SHA",  // SSL_DHE_RSA_WITH_DES_CBC_SHA           = 21
+    "EDH-RSA-DES-CBC3-SHA", // SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA      = 22
     null_str, // SSL_DH_anon_EXPORT_WITH_RC4_40_MD5     = 23
     null_str, // SSL_DH_anon_WITH_RC4_128_MD5           = 24
     null_str, // SSL_DH_anon_EXPORT_WITH_DES40_CBC_SHA  = 25
@@ -317,38 +334,54 @@ const char* const cipher_names[59] =
     null_str, // SSL_FORTEZZA_KEA_WITH_FORTEZZA_CBC_SHA = 29
     null_str, // SSL_FORTEZZA_KEA_WITH_RC4_128_SHA      = 30
 
-    null_str, // 31
-    null_str, // 32
-    null_str, // 33
-    null_str, // 34
-    null_str, // 35
-    null_str, // 36
-    null_str, // 37
-    null_str, // 38
-    null_str, // 39
-    null_str, // 40
-
-    null_str, // 41
-    null_str, // 42
-    null_str, // 43
-    null_str, // 44
-    null_str, // 45
+    null_str, null_str, null_str, null_str, null_str, // 31 - 35
+    null_str, null_str, null_str, null_str, null_str, // 36 - 40
+    null_str, null_str, null_str, null_str, null_str, // 41 - 45
     null_str, // 46
 
     // TLS AES extensions
     "AES128-SHA", // TLS_RSA_WITH_AES_128_CBC_SHA      = 47
     null_str, // TLS_DH_DSS_WITH_AES_128_CBC_SHA   = 48
     null_str, // TLS_DH_RSA_WITH_AES_128_CBC_SHA   = 49
-    null_str, // TLS_DHE_DSS_WITH_AES_128_CBC_SHA  = 50
-    null_str, // TLS_DHE_RSA_WITH_AES_128_CBC_SHA  = 51
+    "DHE-DSS-AES128-SHA", // TLS_DHE_DSS_WITH_AES_128_CBC_SHA  = 50
+    "DHE-RSA-AES128-SHA", // TLS_DHE_RSA_WITH_AES_128_CBC_SHA  = 51
     null_str, // TLS_DH_anon_WITH_AES_128_CBC_SHA  = 52
 
     "AES256-SHA", // TLS_RSA_WITH_AES_256_CBC_SHA      = 53
     null_str, // TLS_DH_DSS_WITH_AES_256_CBC_SHA   = 54
     null_str, // TLS_DH_RSA_WITH_AES_256_CBC_SHA   = 55
-    null_str, // TLS_DHE_DSS_WITH_AES_256_CBC_SHA  = 56
-    null_str, // TLS_DHE_RSA_WITH_AES_256_CBC_SHA  = 57
+    "DHE-DSS-AES256-SHA", // TLS_DHE_DSS_WITH_AES_256_CBC_SHA  = 56
+    "DHE-RSA-AES256-SHA", // TLS_DHE_RSA_WITH_AES_256_CBC_SHA  = 57
     null_str, // TLS_DH_anon_WITH_AES_256_CBC_SHA  = 58
+    
+    null_str, // 59
+    null_str, // 60
+    null_str, null_str, null_str, null_str, null_str, // 61 - 65
+    null_str, null_str, null_str, null_str, null_str, // 66 - 70
+    null_str, null_str, null_str, null_str, null_str, // 71 - 75
+    null_str, null_str, null_str, null_str, null_str, // 76 - 80
+    null_str, null_str, null_str, null_str, null_str, // 81 - 85
+    null_str, null_str, null_str, null_str, null_str, // 86 - 90
+    null_str, null_str, null_str, null_str, null_str, // 91 - 95
+    null_str, null_str, null_str, null_str, null_str, // 96 - 100
+    null_str, null_str, null_str, null_str, null_str, // 101 - 105
+    null_str, null_str, null_str, null_str, null_str, // 106 - 110
+    null_str, null_str, null_str,                     // 111 - 113
+
+    "DHE-DSS-DES-CBC3-RMD", //  TLS_DHE_DSS_WITH_3DES_EDE_CBC_RMD160 = 114
+    "DHE-DSS-AES128-RMD",   //  TLS_DHE_DSS_WITH_AES_128_CBC_RMD160  = 115
+    "DHE-DSS-AES256-RMD",   //  TLS_DHE_DSS_WITH_AES_256_CBC_RMD160  = 116
+    null_str, // 117
+    null_str, // 118
+    "DHE-RSA-DES-CBC3-RMD", //  TLS_DHE_RSA_WITH_3DES_EDE_CBC_RMD160 = 119
+    "DHE-RSA-AES128-RMD",   //  TLS_DHE_RSA_WITH_AES_128_CBC_RMD160  = 120
+    "DHE-RSA-AES256-RMD",   //  TLS_DHE_RSA_WITH_AES_256_CBC_RMD160  = 121
+    null_str, // 122
+    null_str, // 123
+    "DES-CBC3-RMD", //  TLS_RSA_WITH_3DES_EDE_CBC_RMD160     = 124
+    "AES128-RMD",   //  TLS_RSA_WITH_AES_128_CBC_RMD160      = 125
+    "AES256-RMD",   //  TLS_RSA_WITH_AES_256_CBC_RMD160      = 126
+    null_str, // 127
 };
 
 // fill with MD5 pad size since biggest required

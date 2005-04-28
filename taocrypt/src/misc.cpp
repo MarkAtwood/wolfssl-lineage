@@ -22,6 +22,7 @@
 /* based on Wei Dai's misc.cpp from CryptoPP */
 
 
+#include "runtime.hpp"
 #include "misc.hpp"
 #include <new>        // for NewHandler
 
@@ -37,7 +38,15 @@ void* operator new(size_t sz, TaoCrypt::new_t)
 
 void* operator new[](size_t sz, TaoCrypt::new_t tc)
 {
-    return operator new (sz, tc);
+#if defined(_MSC_VER) && (_MSC_VER < 1300)
+    void* ptr = ::operator new(sz);         // no ::operator new[]
+#else
+    void* ptr = ::operator new[](sz);
+#endif
+
+    if (!ptr) abort();
+
+    return ptr;
 }
 
 

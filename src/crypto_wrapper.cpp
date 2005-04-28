@@ -27,11 +27,13 @@
 
 #if !defined(USE_CRYPTOPP_LIB)
 
+#include "runtime.hpp"
 #include "crypto_wrapper.hpp"
 #include "cert_wrapper.hpp"
 
 #include "md5.hpp"
 #include "sha.hpp"
+#include "ripemd.hpp"
 #include "hmac.hpp"
 #include "modes.hpp"
 #include "des.hpp"
@@ -164,6 +166,64 @@ void SHA::update(const byte* in, unsigned int sz)
 }
 
 
+// RMD-160 Implementation
+struct RMD::RMDImpl {
+    TaoCrypt::RIPEMD160 rmd_;
+    RMDImpl() {}
+    explicit RMDImpl(const TaoCrypt::RIPEMD160& rmd) : rmd_(rmd) {}
+};
+
+
+RMD::RMD() : pimpl_(new (ys) RMDImpl) {}
+
+
+RMD::~RMD() { delete pimpl_; }
+
+
+RMD::RMD(const RMD& that) : Digest(), pimpl_(new (ys)
+                                             RMDImpl(that.pimpl_->rmd_)) {}
+
+RMD& RMD::operator=(const RMD& that)
+{
+    pimpl_->rmd_ = that.pimpl_->rmd_;
+    return *this;
+}
+
+
+uint RMD::get_digestSize() const
+{
+    return RMD_LEN;
+}
+
+
+uint RMD::get_padSize() const
+{
+    return PAD_RMD;
+}
+
+
+// Fill out with RMD digest from in that is sz bytes, out must be >= digest sz
+void RMD::get_digest(byte* out, const byte* in, unsigned int sz)
+{
+    pimpl_->rmd_.Update(in, sz);
+    pimpl_->rmd_.Final(out);
+}
+
+
+// Fill out with RMD digest from previous updates
+void RMD::get_digest(byte* out)
+{
+    pimpl_->rmd_.Final(out);
+}
+
+
+// Update the current digest
+void RMD::update(const byte* in, unsigned int sz)
+{
+    pimpl_->rmd_.Update(in, sz);
+}
+
+
 // HMAC_MD5 Implementation
 struct HMAC_MD5::HMAC_MD5Impl {
     TaoCrypt::HMAC<TaoCrypt::MD5> mac_;
@@ -259,6 +319,57 @@ void HMAC_SHA::get_digest(byte* out)
 
 // Update the current digest
 void HMAC_SHA::update(const byte* in, unsigned int sz)
+{
+    pimpl_->mac_.Update(in, sz);
+}
+
+
+
+// HMAC_RMD Implementation
+struct HMAC_RMD::HMAC_RMDImpl {
+    TaoCrypt::HMAC<TaoCrypt::RIPEMD160> mac_;
+    HMAC_RMDImpl() {}
+};
+
+
+HMAC_RMD::HMAC_RMD(const byte* secret, unsigned int len) 
+    : pimpl_(new (ys) HMAC_RMDImpl) 
+{
+    pimpl_->mac_.SetKey(secret, len);
+}
+
+
+HMAC_RMD::~HMAC_RMD() { delete pimpl_; }
+
+
+uint HMAC_RMD::get_digestSize() const
+{
+    return RMD_LEN;
+}
+
+
+uint HMAC_RMD::get_padSize() const
+{
+    return PAD_RMD;
+}
+
+
+// Fill out with RMD digest from in that is sz bytes, out must be >= digest sz
+void HMAC_RMD::get_digest(byte* out, const byte* in, unsigned int sz)
+{
+    pimpl_->mac_.Update(in, sz);
+    pimpl_->mac_.Final(out);
+}
+
+// Fill out with RMD digest from previous updates
+void HMAC_RMD::get_digest(byte* out)
+{
+    pimpl_->mac_.Final(out);
+}
+
+
+// Update the current digest
+void HMAC_RMD::update(const byte* in, unsigned int sz)
 {
     pimpl_->mac_.Update(in, sz);
 }
@@ -834,15 +945,15 @@ x509* PemToDer(const char* fname, CertType type)
         return 0;
     }
 
-    mySTL::auto_ptr<byte> tmp(new (ys) byte[end - begin]);
+    input_buffer tmp(end - begin);
     fseek(file, begin, SEEK_SET);
-    size_t bytes = fread(tmp.get(), end - begin, 1, file);
+    size_t bytes = fread(tmp.get_buffer(), end - begin, 1, file);
     if (bytes != 1) {
         fclose(file);
         return 0;
     }
     
-    Source der(tmp.get(), end - begin);
+    Source der(tmp.get_buffer(), end - begin);
     Base64Decoder b64Dec(der);
 
     uint sz = der.size();

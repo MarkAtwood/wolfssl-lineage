@@ -228,7 +228,7 @@ public:
     friend void buildClientHello(SSL&, ClientHello&, CompressionMethod);
     friend void ProcessOldClientHello(input_buffer& input, SSL& ssl);
 
-    ClientHello() {}
+    ClientHello();
     explicit ClientHello(ProtocolVersion pv);
 private:
     ClientHello(const ClientHello&);            // hide copy
@@ -247,7 +247,7 @@ class ServerHello : public HandShakeBase {
     CompressionMethod   compression_method_;
 public:
     explicit ServerHello(ProtocolVersion pv);
-    ServerHello() {}
+    ServerHello();
           
     friend input_buffer&  operator>>(input_buffer&, ServerHello&);
     friend output_buffer& operator<<(output_buffer&, const ServerHello&);
@@ -631,6 +631,7 @@ struct Connection {
     void AllocPreSecret(uint sz);
     void CleanPreMaster();
     void CleanMaster();
+    void TurnOffTLS();
 private:
     Connection(const Connection&);              // hide copy
     Connection& operator=(const Connection&);   // and assign
@@ -663,7 +664,10 @@ struct Parameters {
     char                 cipher_name_[MAX_SUITE_NAME];
     char                 cipher_list_[MAX_CIPHER_LIST];
 
-    Parameters(ConnectionEnd, const Ciphers&);
+    Parameters(ConnectionEnd, const Ciphers&, ProtocolVersion);
+
+    void SetSuites(ProtocolVersion pv);
+    void SetCipherNames();
 private:
     Parameters(const Parameters&);              // hide copy
     Parameters& operator=(const Parameters&);   // and assing

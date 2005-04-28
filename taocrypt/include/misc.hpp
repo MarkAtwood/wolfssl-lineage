@@ -67,6 +67,9 @@ typedef unsigned int   word32;
     #define WORD64_AVAILABLE
     typedef unsigned __int64 word64;
     #define W64LIT(x) x##ui64
+#elif defined(__DECCXX)
+    #define WORD64_AVAILABLE
+    typedef unsigned long word64;
 #endif
 
 // define largest word type
@@ -115,6 +118,13 @@ const word32 WORD_BITS = WORD_SIZE * 8;
         // instructions
 	#define FAST_ROTATE
 #endif
+
+
+// no gas on these systems ?, disable for now
+#if defined(__sun__) || defined (__QNX__)
+    #define TAOCRYPT_DISABLE_X86ASM
+#endif
+
 
 
 // CodeWarrior defines _MSC_VER

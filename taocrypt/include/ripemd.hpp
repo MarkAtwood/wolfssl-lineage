@@ -1,4 +1,4 @@
-/* md5.hpp                                
+/* ripemd.hpp                                
  *
  * Copyright (C) 2003 Sawtooth Consulting Ltd.
  *
@@ -19,39 +19,39 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-/* md5.hpp provides MD5 digest support, see RFC 1321
+/* ripemd.hpp provides RIPEMD digest support
 */
 
-#ifndef TAO_CRYPT_MD5_HPP
-#define TAO_CRYPT_MD5_HPP
+#ifndef TAO_CRYPT_RIPEMD_HPP
+#define TAO_CRYPT_RIPEMD_HPP
 
 #include "hash.hpp"
 
 namespace TaoCrypt {
 
 
-// MD5 digest
-class MD5 : public HASHwithTransform {
+// RIPEMD160 digest
+class RIPEMD160 : public HASHwithTransform {
 public:
-    enum { BLOCK_SIZE = 64, DIGEST_SIZE = 16, PAD_SIZE = 56,
+    enum { BLOCK_SIZE = 64, DIGEST_SIZE = 20, PAD_SIZE = 56,
            TAO_BYTE_ORDER = LittleEndianOrder };   // in Bytes
-    MD5() : HASHwithTransform(DIGEST_SIZE / sizeof(word32), BLOCK_SIZE) 
+    RIPEMD160() : HASHwithTransform(DIGEST_SIZE / sizeof(word32), BLOCK_SIZE)
                 { Init(); }
     ByteOrder getByteOrder()  const { return ByteOrder(TAO_BYTE_ORDER); }
     word32    getBlockSize()  const { return BLOCK_SIZE; }
     word32    getDigestSize() const { return DIGEST_SIZE; }
     word32    getPadSize()    const { return PAD_SIZE; }
 
-    MD5(const MD5&);
-    MD5& operator= (const MD5&);
+    RIPEMD160(const RIPEMD160&);
+    RIPEMD160& operator= (const RIPEMD160&);
 
     void Init();
-    void Swap(MD5&);
+    void Swap(RIPEMD160&);
 private:
     void Transform();
 };
 
-inline void swap(MD5& a, MD5& b)
+inline void swap(RIPEMD160& a, RIPEMD160& b)
 {
     a.Swap(b);
 }
@@ -59,5 +59,5 @@ inline void swap(MD5& a, MD5& b)
 
 } // namespace
 
-#endif // TAO_CRYPT_MD5_HPP
+#endif // TAO_CRYPT_RIPEMD_HPP
 

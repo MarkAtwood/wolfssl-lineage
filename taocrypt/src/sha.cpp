@@ -21,6 +21,7 @@
 
 /* based on Wei Dai's sha.cpp from CryptoPP */
 
+#include "runtime.hpp"
 #include <string.h>
 #include "algorithm.hpp"    // mySTL::swap
 #include "sha.hpp"

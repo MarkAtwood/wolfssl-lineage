@@ -260,6 +260,44 @@ struct DH_Parms {
 };
 
 
+enum StatsField { 
+    Accept, Connect, AcceptGood, ConnectGood, AcceptRenegotiate,
+    ConnectRenegotiate, Hits, CbHits, CacheFull, Misses, Timeouts, Number,
+    GetCacheSize, VerifyMode, VerifyDepth 
+};
+
+
+// SSL stats
+struct Stats {
+    long accept_;
+    long connect_;
+    long acceptGood_;
+    long connectGood_;
+    long acceptRenegotiate_;
+    long connectRenegotiate_;
+
+    long hits_;
+    long cbHits_;
+    long cacheFull_;
+    long misses_;
+    long timeouts_;
+    long number_;
+    long getCacheSize_;
+
+    int verifyMode_;
+    int verifyDepth_;
+public:
+    Stats() : accept_(0), connect_(0), acceptGood_(0), connectGood_(0),
+        acceptRenegotiate_(0), connectRenegotiate_(0), hits_(0), cbHits_(0),
+        cacheFull_(0), misses_(0), timeouts_(0), number_(0), getCacheSize_(0),
+        verifyMode_(0), verifyDepth_(0)
+    {}
+private:
+    Stats(const Stats&);            // hide copy
+    Stats& operator=(const Stats&); // and assign
+};
+
+
 // the SSL context
 class SSL_CTX {
 public:
@@ -271,6 +309,8 @@ private:
     CertList    caList_;
     Ciphers     ciphers_;
     DH_Parms    dhParms_;
+    Stats       stats_;
+    Mutex       mutex_;         // for Stats
 public:
     explicit SSL_CTX(SSL_METHOD* meth);
     ~SSL_CTX();
@@ -280,12 +320,14 @@ public:
     const SSL_METHOD* getMethod()   const;
     const Ciphers&    GetCiphers()  const;
     const DH_Parms&   GetDH_Parms() const;
+    const Stats&      GetStats()    const;
 
     void setVerifyPeer();
     void setFailNoCert();
     bool SetCipherList(const char*);
     bool SetDH(const DH&);
-
+   
+    void            IncrementStats(StatsField);
     void            AddCA(x509* ca);
     const CertList& GetCA_List() const;
 
@@ -382,10 +424,13 @@ class Security {
     Connection    conn_;                          // connection information
     Parameters    parms_;                         // may be pending
     SSL_SESSION   resumeSession_;                 // if resuming
+    SSL_CTX*      ctx_;                           // context used to init
     bool          resuming_;                      // trying to resume
 public:
-    Security(ProtocolVersion, RandomPool&, ConnectionEnd, const Ciphers&);
+    Security(ProtocolVersion, RandomPool&, ConnectionEnd, const Ciphers&,
+             SSL_CTX*);
 
+    const SSL_CTX*     GetContext()     const;
     const Connection&  get_connection() const;
     const Parameters&  get_parms()      const;
     const SSL_SESSION& get_resume()     const;

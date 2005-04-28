@@ -29,24 +29,34 @@
 #include <stdio.h>   /* ERR_print fp */
 #include "rsa.h"
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(YASSL_MYSQL_COMPATIBLE)
 namespace yaSSL {
 extern "C" {
 #endif
 
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(YASSL_MYSQL_COMPATIBLE)
     class SSL;
     class SSL_SESSION;
     class SSL_METHOD;
     class SSL_CTX;
     class SSL_CIPHER;
+
+    class RSA;
+
+    class X509;
+    class X509_NAME;
 #else
     typedef struct SSL         SSL;          
     typedef struct SSL_SESION  SSL_SESSION;
     typedef struct SSL_METHOD  SSL_METHOD;
     typedef struct SSL_CTX     SSL_CTX;
     typedef struct SSL_CIPHER  SSL_CIPHER;
+
+    typedef struct RSA RSA;
+
+    typedef struct X509       X509;
+    typedef struct X509_NAME  X509_NAME;
 #endif
 
 
@@ -67,24 +77,13 @@ DH*  DH_new(void);
 void DH_free(DH*);
 
 /* RSA stuff */
-#ifdef __cplusplus
-    class RSA;
-#else
-    typedef struct RSA RSA;
-#endif
 
 void RSA_free(RSA*);
 RSA* RSA_generate_key(int, unsigned long, void(*)(int, int, void*), void*);
 
 
 /* X509 stuff, different file? */
-#ifdef __cplusplus
-    class  X509;
-    class  X509_NAME;
-#else
-    typedef struct X509       X509;
-    typedef struct X509_NAME  X509_NAME;
-#endif
+
 typedef struct X509_STORE         X509_STORE;
 typedef struct X509_LOOKUP        X509_LOOKUP;
 typedef struct X509_OBJECT { char c; } X509_OBJECT;
@@ -391,7 +390,8 @@ int         RAND_load_file(const char*, long);
 
 
 
-#ifdef __cplusplus
+
+#if defined(__cplusplus) && !defined(YASSL_MYSQL_COMPATIBLE)
 }      /* namespace  */
 }      /* extern "C" */
 #endif
