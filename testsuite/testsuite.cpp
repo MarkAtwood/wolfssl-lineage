@@ -48,9 +48,9 @@ int main(int argc, char** argv)
 
             // setup args
     echo_args.argc = 3;
-    echo_args.argv = new (TaoCrypt::tc) char*[echo_args.argc];
+    echo_args.argv = new char*[echo_args.argc];
     for (int i = 0; i < echo_args.argc; i++)
-        echo_args.argv[i] = new (TaoCrypt::tc) char[32];
+        echo_args.argv[i] = new char[32];
    
     strcpy(echo_args.argv[0], "echoclient");
     strcpy(echo_args.argv[1], "input");

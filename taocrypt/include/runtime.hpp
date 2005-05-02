@@ -35,12 +35,20 @@
 
 static void* operator new (size_t sz)
 {
-    return malloc (sz ? sz : 1);
+    void* ptr = malloc (sz ? sz : 1);
+
+    if (!ptr) abort();
+
+    return ptr;
 }
 
 static void* operator new[](size_t sz)
 {
-    return malloc (sz ? sz : 1);
+    void* ptr = malloc (sz ? sz : 1);
+
+    if (!ptr) abort();
+
+    return ptr;
 }
 
 static void operator delete (void* ptr)
