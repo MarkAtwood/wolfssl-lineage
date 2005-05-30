@@ -22,7 +22,6 @@
 /* based on Wei Dai's misc.cpp from CryptoPP */
 
 
-#include "runtime.hpp"
 #include "misc.hpp"
 #include <new>        // for NewHandler
 

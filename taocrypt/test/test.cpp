@@ -1,7 +1,6 @@
 // test.cpp
 // test taocrypt functionality
 
-#include "runtime.hpp"
 #include <string.h>
 #include <stdio.h>
 
@@ -476,12 +475,17 @@ int des_test()
     const byte key[] = { 0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef };
     const byte iv[] =  { 0x12,0x34,0x56,0x78,0x90,0xab,0xcd,0xef };
 
-    const char vector[] = "Now is the time for all ";  // strlen == 24
+    const byte vector[] = { // "Now is the time for all " w/o trailing 0
+        0x4e,0x6f,0x77,0x20,0x69,0x73,0x20,0x74,
+        0x68,0x65,0x20,0x74,0x69,0x6d,0x65,0x20,
+        0x66,0x6f,0x72,0x20,0x61,0x6c,0x6c,0x20
+    };
+
     byte plain[24];
     byte cipher[24];
 
     enc.SetKey(key, sizeof(key));
-    enc.Process(cipher, (byte*)vector, strlen(vector));
+    enc.Process(cipher, vector, sizeof(vector));
     dec.SetKey(key, sizeof(key));
     dec.Process(plain, cipher, sizeof(cipher));
 
@@ -503,7 +507,7 @@ int des_test()
     DES_CBC_Decryption dec2;
 
     enc2.SetKey(key, sizeof(key), iv);
-    enc2.Process(cipher, (byte*)vector, strlen(vector));
+    enc2.Process(cipher, vector, sizeof(vector));
     dec2.SetKey(key, sizeof(key), iv);
     dec2.Process(plain, cipher, sizeof(cipher));
 
@@ -539,7 +543,7 @@ int des_test()
     };
 
     enc3.SetKey(key3, sizeof(key3), iv3);
-    enc3.Process(cipher, (byte*)vector, strlen(vector));
+    enc3.Process(cipher, vector, sizeof(vector));
     dec3.SetKey(key3, sizeof(key3), iv3);
     dec3.Process(plain, cipher, sizeof(cipher));
 
@@ -566,9 +570,15 @@ int aes_test()
     AES_CBC_Decryption dec;
     const int bs(TaoCrypt::AES::BLOCK_SIZE);
 
-    byte key[] = "0123456789abcdef";
-    byte iv[]  = "1234567890abcdef";
-    byte msg[] = "now is the time ";
+    const byte msg[] = { // "Now is the time for all " w/o trailing 0
+        0x6e,0x6f,0x77,0x20,0x69,0x73,0x20,0x74,
+        0x68,0x65,0x20,0x74,0x69,0x6d,0x65,0x20,
+        0x66,0x6f,0x72,0x20,0x61,0x6c,0x6c,0x20
+    };
+
+    byte key[] = "0123456789abcdef   ";  // align
+    byte iv[]  = "1234567890abcdef   ";  // align
+
     byte cipher[bs];
     byte plain [bs];
 

@@ -24,7 +24,6 @@
  * draft along with type conversion functions.
  */
 
-#include "runtime.hpp"
 #include "yassl_int.hpp"
 #include "handshake.hpp"
 #include "timer.hpp"

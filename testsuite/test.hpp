@@ -54,8 +54,26 @@ struct func_args {
     int    argc;
     char** argv;
     int    return_code;
+#ifndef _WIN32
+    pthread_mutex_t mutex_;
+    pthread_cond_t  cond_;
+#endif
 
-    func_args(int c = 0, char** v = 0) : argc(c), argv(v) {}
+    func_args(int c = 0, char** v = 0) : argc(c), argv(v) 
+    {
+    #ifndef _WIN32
+        pthread_mutex_init(&mutex_, 0);
+        pthread_cond_init(&cond_, 0);
+    #endif
+    }
+
+    ~func_args()
+    {
+    #ifndef _WIN32
+        pthread_mutex_destroy(&mutex_);
+        pthread_cond_destroy(&cond_);
+    #endif
+    }
 };
 
 typedef THREAD_RETURN YASSL_API THREAD_FUNC(void*);

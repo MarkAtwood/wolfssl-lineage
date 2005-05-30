@@ -232,7 +232,7 @@ void MemoryTracker::LogStats()
     log_ << " Bytes " << '\t' << "   Times\n";
 
     for (size_t i = 0; i < size_elements; ++i) {
-        log_ << " " << sizes[i].size_  << '\t';
+        log_ << " " << sizes[i].size_  << "  " << '\t';
         log_ << std::setiosflags(std::ios::right) << std::setw(8);
         log_ << sizes[i].count_ << '\n';
     }
@@ -282,7 +282,7 @@ void* operator new(size_t sz)
         return static_cast<char*>(ptr) + sizeof(alloc_node);
     }
     else
-        throw std::bad_alloc();
+        assert(0);
 }
 
 

@@ -1,4 +1,12 @@
-yaSSL Release notes, version 0.9.9
+yaSSL Release notes, version 1.0
+
+This release of yaSSL contains minor bug fixes, portability enhancements,
+GCC 4.0 support, testsuite, improvements, and API additions.
+
+Please see build instructions in the release notes for 0.9.6 below.
+
+
+******************yaSSL Release notes, version 0.9.9
 
 This release of yaSSL contains minor bug fixes, portability enchancements,
 MSVC 7 support, memory improvements, and API additions.

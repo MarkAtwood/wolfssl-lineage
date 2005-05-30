@@ -27,7 +27,6 @@
 
 #if !defined(USE_CRYPTOPP_LIB)
 
-#include "runtime.hpp"
 #include "crypto_wrapper.hpp"
 #include "cert_wrapper.hpp"
 

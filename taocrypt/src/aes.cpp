@@ -21,7 +21,6 @@
 
 /* based on Wei Dai's aes.cpp from CryptoPP */
 
-#include "runtime.hpp"
 #include "aes.hpp"
 #include "stdexcept.hpp"
 

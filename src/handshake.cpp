@@ -24,7 +24,6 @@
  * the various handshake messages.
  */
 
-#include "runtime.hpp"
 #include "handshake.hpp"
 #include "yassl_int.hpp"
 

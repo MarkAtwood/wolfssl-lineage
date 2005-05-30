@@ -25,7 +25,6 @@
 
 #include "dh.hpp"
 #include "asn.hpp"
-#include <cmath>
 
 namespace TaoCrypt {
 

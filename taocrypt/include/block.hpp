@@ -31,12 +31,8 @@
 #include "stdexcept.hpp"    // mySTL::runtime_error
 #include "misc.hpp"
 #include <string.h>         // memcpy
-#include <cstddef>          // ptrdiff_t
+#include <stddef.h>         // ptrdiff_t
 
-
-#if defined(_MSC_VER) && defined(_CRTAPI1)
-#define TAOCRYPT_MSVCRT6
-#endif
 
 
 namespace TaoCrypt {
@@ -47,17 +43,13 @@ template<class T>
 class AllocatorBase
 {
 public:
-    typedef T      value_type;
-    typedef size_t size_type;
-#ifdef TAOCRYPT_MSVCRT6
-    typedef ptrdiff_t      difference_type;
-#else
-    typedef std::ptrdiff_t difference_type;
-#endif
-    typedef T*       pointer;
-    typedef const T* const_pointer;
-    typedef T&       reference;
-    typedef const T& const_reference;
+    typedef T         value_type;
+    typedef size_t    size_type;
+    typedef ptrdiff_t difference_type;
+    typedef T*        pointer;
+    typedef const T*  const_pointer;
+    typedef T&        reference;
+    typedef const T&  const_reference;
 
     pointer       address(reference r) const {return (&r);}
     const_pointer address(const_reference r) const {return (&r); }

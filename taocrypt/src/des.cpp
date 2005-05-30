@@ -21,7 +21,6 @@
 
 /* based on Wei Dai's des.cpp from CryptoPP */
 
-#include "runtime.hpp"
 #include "des.hpp"
 #include <string.h>
 #include "algorithm.hpp"    // mySTL::swap

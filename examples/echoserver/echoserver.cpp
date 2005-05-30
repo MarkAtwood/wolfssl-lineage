@@ -49,6 +49,15 @@ THREAD_RETURN YASSL_API echoserver_test(void* args)
     DH* dh = set_tmpDH(ctx);
 
     bool shutdown(false);
+
+#if !defined(_WIN32) && defined(NO_MAIN_DRIVER) && defined(FIX_ME)
+    // signal ready to tcp_accept
+    func_args& server_args = *((func_args*)args);
+    pthread_mutex_lock(&server_args.mutex_);
+    pthread_cond_signal(&server_args.cond_);
+    pthread_mutex_unlock(&server_args.mutex_);
+#endif
+
     while (!shutdown) {
         sockaddr_in client;
         socklen_t   client_len = sizeof(client);

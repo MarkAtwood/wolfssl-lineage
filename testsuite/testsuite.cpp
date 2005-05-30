@@ -1,6 +1,5 @@
 // testsuite.cpp
 
-#include "runtime.hpp"
 #include "test.hpp"
 #include "md5.hpp"
 
@@ -18,7 +17,7 @@ THREAD_RETURN YASSL_API echoserver_test(void*);
 int main(int argc, char** argv)
 {
     func_args args(argc, argv);
-    func_args server_args(args);
+    func_args server_args(argc, argv);
 
     // *** Crypto Test ***
     taocrypt_test(&args);
@@ -27,10 +26,15 @@ int main(int argc, char** argv)
     
     // *** Simple yaSSL client server test ***
     THREAD_TYPE thread;
-
     start_thread(server_test, &server_args, &thread);
-#ifdef __GNUC__
-    usleep(1000);   // let server start first
+
+#ifndef _WIN32
+    sleep(1);
+    // fix early signal
+    // wait for server_test to tcp_accept
+    //pthread_mutex_lock(&server_args.mutex_);
+    //pthread_cond_wait(&server_args.cond_, &server_args.mutex_);
+    //pthread_mutex_unlock(&server_args.mutex_);
 #endif
     client_test(&args);
 
@@ -41,8 +45,13 @@ int main(int argc, char** argv)
 
     // *** Echo input yaSSL client server test ***
     start_thread(echoserver_test, &server_args, &thread);
-#ifdef __GNUC__
-    usleep(1);
+#ifndef _WIN32
+    sleep(1);
+    // fix early signal
+    // wait for echoserver to tcp_accept
+    //pthread_mutex_lock(&server_args.mutex_);
+    //pthread_cond_wait(&server_args.cond_, &server_args.mutex_);
+    //pthread_mutex_unlock(&server_args.mutex_);
 #endif
     func_args echo_args;
 

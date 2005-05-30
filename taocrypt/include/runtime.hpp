@@ -21,6 +21,8 @@
 
 /* runtime.hpp provides C++ runtime support functions when building a pure C
  * version of yaSSL, user must define YASSL_PURE_C
+ *
+ * Only include in one file per project
 */
 
 
@@ -30,10 +32,10 @@
 #define yaSSL_NEW_HPP
 
 
-#include <cstdlib>
+#include <stdlib.h>
 
 
-static void* operator new (size_t sz)
+void* operator new (size_t sz)
 {
     void* ptr = malloc (sz ? sz : 1);
 
@@ -42,7 +44,7 @@ static void* operator new (size_t sz)
     return ptr;
 }
 
-static void* operator new[](size_t sz)
+void* operator new[](size_t sz)
 {
     void* ptr = malloc (sz ? sz : 1);
 
@@ -51,12 +53,12 @@ static void* operator new[](size_t sz)
     return ptr;
 }
 
-static void operator delete (void* ptr)
+void operator delete (void* ptr)
 {
     if (ptr) free(ptr);
 }
 
-static void operator delete[] (void* ptr)
+void operator delete[] (void* ptr)
 {
     if (ptr) free(ptr);
 }
@@ -66,7 +68,7 @@ static void operator delete[] (void* ptr)
 
 extern "C" {
 
-static int __cxa_pure_virtual()
+int __cxa_pure_virtual()
 {
     // oops, pure virtual called!
     return 0;
@@ -82,12 +84,12 @@ static int __cxa_pure_virtual()
 typedef long long __guard;
 
 
-static int __cxa_guard_acquire(__guard* g)
+int __cxa_guard_acquire(__guard* g)
 {
     return !*(char*)g;
 }
 
-static void __cxa_guard_release(__guard* g)
+void __cxa_guard_release(__guard* g)
 {
     *(char*)g = 1;
 }

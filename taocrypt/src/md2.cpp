@@ -22,7 +22,6 @@
 
 /* based on Wei Dai's md2.cpp from CryptoPP */
 
-#include "runtime.hpp"
 #include "md2.hpp"
 #include <string.h>
 
