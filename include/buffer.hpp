@@ -28,7 +28,7 @@
 #define yaSSL_BUFFER_HPP
 
 #include <assert.h>             // assert
-#include "yassl_error.hpp"      // Error
+#include "yassl_types.hpp"      // ysDelete
 #include "memory.hpp"           // mySTL::auto_ptr
 #include "algorithm.hpp"        // mySTL::swap
 
@@ -183,7 +183,7 @@ inline void checked_delete(T* p)
 {
     typedef char complete_type[sizeof(T) ? 1 : -1];
     (void)sizeof(complete_type);
-    delete p;
+    ysDelete(p);
 }
 
 

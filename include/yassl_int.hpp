@@ -29,6 +29,7 @@
 #define yaSSL_INT_HPP
 
 #include "yassl_imp.hpp"
+#include "yassl_error.hpp"
 #include "crypto_wrapper.hpp"
 #include "cert_wrapper.hpp"
 #include "log.hpp"
@@ -122,10 +123,14 @@ public:
 
     friend sslFactory& GetSSL_Factory();        // singleton creator
 private:
+    static sslFactory instance_;
+
     sslFactory(const sslFactory&);              // hide copy
     sslFactory& operator=(const sslFactory&);   // and assign   
 };
 
+
+#undef X509_NAME  // wincrypt.h clash
 
 // openSSL X509 names
 class X509_NAME {
@@ -206,6 +211,8 @@ public:
 
     friend Sessions& GetSessions(); // singleton creator
 private:
+    static Sessions instance_;
+
     Sessions(const Sessions&);              // hide copy
     Sessions& operator=(const Sessions&);   // and assign
 };

@@ -255,6 +255,14 @@ SOURCE=.\include\rsa.hpp
 
 SOURCE=.\include\sha.hpp
 # End Source File
+# Begin Source File
+
+SOURCE=.\include\type_traits.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\types.hpp
+# End Source File
 # End Group
 # End Target
 # End Project

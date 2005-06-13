@@ -28,7 +28,7 @@
 #define mySTL_HELPERS_HPP
 
 #include <stdlib.h>
-
+#include <new>        // placement new
 
 namespace mySTL {
 

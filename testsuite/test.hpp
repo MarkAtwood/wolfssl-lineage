@@ -39,7 +39,7 @@
 #endif
 
 
-#ifdef _WIN32
+#ifndef _POSIX_THREADS
     typedef unsigned int  THREAD_RETURN;
     typedef unsigned long THREAD_TYPE;
     #define YASSL_API __stdcall
@@ -50,30 +50,36 @@
 #endif
 
 
+struct tcp_ready {
+#ifdef _POSIX_THREADS
+    pthread_mutex_t mutex_;
+    pthread_cond_t  cond_;
+    bool            ready_;   // predicate
+
+    tcp_ready() : ready_(false)
+    {
+        pthread_mutex_init(&mutex_, 0);
+        pthread_cond_init(&cond_, 0);
+    }
+
+    ~tcp_ready()
+    {
+        pthread_mutex_destroy(&mutex_);
+        pthread_cond_destroy(&cond_);
+    }
+#endif
+};    
+
+
 struct func_args {
     int    argc;
     char** argv;
     int    return_code;
-#ifndef _WIN32
-    pthread_mutex_t mutex_;
-    pthread_cond_t  cond_;
-#endif
+    tcp_ready* signal_;
 
-    func_args(int c = 0, char** v = 0) : argc(c), argv(v) 
-    {
-    #ifndef _WIN32
-        pthread_mutex_init(&mutex_, 0);
-        pthread_cond_init(&cond_, 0);
-    #endif
-    }
+    func_args(int c = 0, char** v = 0) : argc(c), argv(v) {}
 
-    ~func_args()
-    {
-    #ifndef _WIN32
-        pthread_mutex_destroy(&mutex_);
-        pthread_cond_destroy(&cond_);
-    #endif
-    }
+    void SetSignal(tcp_ready* p) { signal_ = p; }
 };
 
 typedef THREAD_RETURN YASSL_API THREAD_FUNC(void*);
@@ -270,12 +276,22 @@ inline void tcp_listen(SOCKET_T& sockfd)
 }
 
 
-inline void tcp_accept(SOCKET_T& sockfd, int& clientfd)
+inline void tcp_accept(SOCKET_T& sockfd, int& clientfd, func_args& args)
 {
     tcp_listen(sockfd);
 
     sockaddr_in client;
     socklen_t client_len = sizeof(client);
+
+#if defined(_POSIX_THREADS) && defined(NO_MAIN_DRIVER)
+    // signal ready to tcp_accept
+    tcp_ready& ready = *args.signal_;
+    pthread_mutex_lock(&ready.mutex_);
+    ready.ready_ = true;
+    pthread_cond_signal(&ready.cond_);
+    pthread_mutex_unlock(&ready.mutex_);
+#endif
+
     clientfd = accept(sockfd, (sockaddr*)&client, (ACCEPT_THIRD_T)&client_len);
 
     if (clientfd == -1)

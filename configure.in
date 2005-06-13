@@ -1,6 +1,7 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(yassl,1.0)
+AM_INIT_AUTOMAKE(yassl,1.0.1)
+AM_CONFIG_HEADER(taocrypt/include/config.h)
 
 
 AC_PROG_CXX
@@ -8,9 +9,18 @@ AC_PROG_INSTALL
 AC_PROG_RANLIB
 
 
+AC_CHECK_SIZEOF(long, 4)
+AC_CHECK_SIZEOF(long long, 8)
+if test "$ac_cv_sizeof_long_long" -eq 0
+then
+  AC_MSG_ERROR("yaSSL needs a long long type.")
+fi
+
 
 CXXFLAGS="-g -fno-exceptions -fno-rtti -D_REENTRANT"
 AC_SUBST(CXXFLAGS)
+
+#echo "$host_os"
 
 if expr "$host_os" : "solaris" > /dev/null
 then
@@ -23,11 +33,28 @@ AC_SUBST(EXTRA_SOCKET)
 
 if expr "$host_os" : ".*bsd.*" > /dev/null
 then
-    EXTRA_PTHREAD="-pthread"
+    if expr "$host_os" : "netbsd.*" > /dev/null
+    then
+        EXTRA_PTHREAD="-lpthread"
+    else
+        EXTRA_PTHREAD="-pthread"
+    fi
 else
     EXTRA_PTHREAD="-lpthread"
 fi
 AC_SUBST(EXTRA_PTHREAD)
+
+
+if expr "$host_os" : "netbsd.*" > /dev/null
+then
+    PTHREAD_CFLAGS=`pthread-config --cflags`
+    PTHREAD_LDFLAGS=`pthread-config --ldflags`
+else
+    PTHREAD_CFLAGS=""
+    PTHREAD_LDFLAGS=""
+fi
+AC_SUBST(PTHREAD_CFLAGS)
+AC_SUBST(PTHREAD_LDFLAGS)
 
 
 

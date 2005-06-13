@@ -50,12 +50,14 @@ THREAD_RETURN YASSL_API echoserver_test(void* args)
 
     bool shutdown(false);
 
-#if !defined(_WIN32) && defined(NO_MAIN_DRIVER) && defined(FIX_ME)
+#if defined(_POSIX_THREADS) && defined(NO_MAIN_DRIVER)
     // signal ready to tcp_accept
     func_args& server_args = *((func_args*)args);
-    pthread_mutex_lock(&server_args.mutex_);
-    pthread_cond_signal(&server_args.cond_);
-    pthread_mutex_unlock(&server_args.mutex_);
+    tcp_ready& ready = *server_args.signal_;
+    pthread_mutex_lock(&ready.mutex_);
+    ready.ready_ = true;
+    pthread_cond_signal(&ready.cond_);
+    pthread_mutex_unlock(&ready.mutex_);
 #endif
 
     while (!shutdown) {

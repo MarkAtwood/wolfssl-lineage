@@ -38,7 +38,7 @@ namespace TaoCrypt {
 // abcd = group.Add(a, group.Add(b, group.Add(c,d));
 
 // Abstract Group
-class TAOCRYPT_NO_VTABLE AbstractGroup
+class TAOCRYPT_NO_VTABLE AbstractGroup : public virtual_base
 {
 public:
     typedef Integer Element;
@@ -70,7 +70,7 @@ class TAOCRYPT_NO_VTABLE AbstractRing : public AbstractGroup
 public:
     typedef Integer Element;
 
-    AbstractRing() {m_mg.m_pRing = this;}
+    AbstractRing() : AbstractGroup() {m_mg.m_pRing = this;}
     AbstractRing(const AbstractRing &source) {m_mg.m_pRing = this;}
     AbstractRing& operator=(const AbstractRing &source) {return *this;}
 

@@ -46,6 +46,10 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+CC = @CC@
+CCDEPMODE = @CCDEPMODE@
+CFLAGS = @CFLAGS@
+CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXDEPMODE = @CXXDEPMODE@
@@ -56,6 +60,7 @@ DEPDIR = @DEPDIR@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
+EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 EXTRA_PTHREAD = @EXTRA_PTHREAD@
 EXTRA_SOCKET = @EXTRA_SOCKET@
@@ -76,14 +81,19 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
+PTHREAD_LDFLAGS = @PTHREAD_LDFLAGS@
 RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 VERSION = @VERSION@
+ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
+am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
+am__fastdepCC_TRUE = @am__fastdepCC_TRUE@
 am__fastdepCXX_FALSE = @am__fastdepCXX_FALSE@
 am__fastdepCXX_TRUE = @am__fastdepCXX_TRUE@
 am__include = @am__include@
@@ -127,6 +137,7 @@ EXTRA_DIST = yassl.dsp yassl.dsw certs/*.pem certs/*.d* certs/*.txt doc/*.html \
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = $(top_builddir)/taocrypt/include/config.h
 CONFIG_CLEAN_FILES =
 DIST_SOURCES =
 
@@ -135,10 +146,10 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive pdf-recursive \
 	all-recursive install-data-recursive install-exec-recursive \
 	installdirs-recursive install-recursive uninstall-recursive \
 	check-recursive installcheck-recursive
-DIST_COMMON = README $(srcdir)/Makefile.in $(srcdir)/configure AUTHORS \
-	COPYING ChangeLog INSTALL Makefile.am NEWS aclocal.m4 \
-	config.guess config.sub configure configure.in depcomp \
-	install-sh missing mkinstalldirs
+DIST_COMMON = README $(srcdir)/Makefile.in $(srcdir)/configure \
+	./taocrypt/include/config.h.in AUTHORS COPYING ChangeLog \
+	INSTALL Makefile.am NEWS aclocal.m4 config.guess config.sub \
+	configure configure.in depcomp install-sh missing mkinstalldirs
 DIST_SUBDIRS = $(SUBDIRS)
 all: all-recursive
 
@@ -159,6 +170,23 @@ $(srcdir)/configure:  $(srcdir)/configure.in $(ACLOCAL_M4) $(CONFIGURE_DEPENDENC
 
 $(ACLOCAL_M4):  configure.in 
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
+
+taocrypt/include/config.h: taocrypt/include/stamp-h1
+	@if test ! -f $@; then \
+	  rm -f taocrypt/include/stamp-h1; \
+	  $(MAKE) taocrypt/include/stamp-h1; \
+	else :; fi
+
+taocrypt/include/stamp-h1: $(srcdir)/./taocrypt/include/config.h.in $(top_builddir)/config.status
+	@rm -f taocrypt/include/stamp-h1
+	cd $(top_builddir) && $(SHELL) ./config.status taocrypt/include/config.h
+
+$(srcdir)/./taocrypt/include/config.h.in:  $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+	cd $(top_srcdir) && $(AUTOHEADER)
+	touch $(srcdir)/./taocrypt/include/config.h.in
+
+distclean-hdr:
+	-rm -f taocrypt/include/config.h taocrypt/include/stamp-h1
 uninstall-info-am:
 
 # This directory's subdirectories are mostly independent; you can cd
@@ -301,7 +329,7 @@ distcleancheck_listfiles = find . -type f -print
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkinstalldirs) $(distdir)/certs $(distdir)/doc $(distdir)/mySTL $(distdir)/stunnel $(distdir)/stunnel/src
+	$(mkinstalldirs) $(distdir)/./taocrypt/include $(distdir)/certs $(distdir)/doc $(distdir)/mySTL $(distdir)/stunnel $(distdir)/stunnel/src
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
@@ -447,7 +475,7 @@ clean-am: clean-generic mostlyclean-am
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -f Makefile
-distclean-am: clean-am distclean-generic distclean-tags
+distclean-am: clean-am distclean-generic distclean-hdr distclean-tags
 
 dvi: dvi-recursive
 
@@ -492,19 +520,19 @@ uninstall-info: uninstall-info-recursive
 .PHONY: $(RECURSIVE_TARGETS) CTAGS GTAGS all all-am check check-am clean \
 	clean-generic clean-recursive ctags ctags-recursive dist \
 	dist-all dist-gzip distcheck distclean distclean-generic \
-	distclean-recursive distclean-tags distcleancheck distdir \
-	distuninstallcheck dvi dvi-am dvi-recursive info info-am \
-	info-recursive install install-am install-data install-data-am \
-	install-data-recursive install-exec install-exec-am \
-	install-exec-recursive install-info install-info-am \
-	install-info-recursive install-man install-recursive \
-	install-strip installcheck installcheck-am installdirs \
-	installdirs-am installdirs-recursive maintainer-clean \
-	maintainer-clean-generic maintainer-clean-recursive mostlyclean \
-	mostlyclean-generic mostlyclean-recursive pdf pdf-am \
-	pdf-recursive ps ps-am ps-recursive tags tags-recursive \
-	uninstall uninstall-am uninstall-info-am \
-	uninstall-info-recursive uninstall-recursive
+	distclean-hdr distclean-recursive distclean-tags distcleancheck \
+	distdir distuninstallcheck dvi dvi-am dvi-recursive info \
+	info-am info-recursive install install-am install-data \
+	install-data-am install-data-recursive install-exec \
+	install-exec-am install-exec-recursive install-info \
+	install-info-am install-info-recursive install-man \
+	install-recursive install-strip installcheck installcheck-am \
+	installdirs installdirs-am installdirs-recursive \
+	maintainer-clean maintainer-clean-generic \
+	maintainer-clean-recursive mostlyclean mostlyclean-generic \
+	mostlyclean-recursive pdf pdf-am pdf-recursive ps ps-am \
+	ps-recursive tags tags-recursive uninstall uninstall-am \
+	uninstall-info-am uninstall-info-recursive uninstall-recursive
 
 
 lib-only:

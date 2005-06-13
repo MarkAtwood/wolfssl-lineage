@@ -18,15 +18,7 @@ THREAD_RETURN YASSL_API server_test(void* args)
     char**   argv     = 0;
 
     set_args(argc, argv, *static_cast<func_args*>(args));
-
-#if !defined(_WIN32) && defined(NO_MAIN_DRIVER) && defined(FIX_ME)
-    // signal ready to tcp_accept
-    func_args& server_args = *((func_args*)args);
-    pthread_mutex_lock(&server_args.mutex_);
-    pthread_cond_signal(&server_args.cond_);
-    pthread_mutex_unlock(&server_args.mutex_);
-#endif
-    tcp_accept(sockfd, clientfd);
+    tcp_accept(sockfd, clientfd, *static_cast<func_args*>(args));
 
 #ifdef WIN32
     closesocket(sockfd);

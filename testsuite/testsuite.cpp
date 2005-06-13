@@ -3,6 +3,7 @@
 #include "test.hpp"
 #include "md5.hpp"
 
+
 typedef unsigned char byte;
 
 void taocrypt_test(void*);
@@ -13,6 +14,10 @@ void echoclient_test(void*);
 
 THREAD_RETURN YASSL_API server_test(void*);
 THREAD_RETURN YASSL_API echoserver_test(void*);
+
+void wait_tcp_ready(func_args&);
+
+
 
 int main(int argc, char** argv)
 {
@@ -25,41 +30,38 @@ int main(int argc, char** argv)
     
     
     // *** Simple yaSSL client server test ***
-    THREAD_TYPE thread;
-    start_thread(server_test, &server_args, &thread);
+    tcp_ready ready;
+    server_args.SetSignal(&ready);
 
-#ifndef _WIN32
-    sleep(1);
-    // fix early signal
-    // wait for server_test to tcp_accept
-    //pthread_mutex_lock(&server_args.mutex_);
-    //pthread_cond_wait(&server_args.cond_, &server_args.mutex_);
-    //pthread_mutex_unlock(&server_args.mutex_);
-#endif
+    THREAD_TYPE serverThread;
+    start_thread(server_test, &server_args, &serverThread);
+    wait_tcp_ready(server_args);
+
     client_test(&args);
-
     assert(args.return_code == 0);
-    join_thread(thread);
+    join_thread(serverThread);
     assert(server_args.return_code == 0);
     
 
     // *** Echo input yaSSL client server test ***
-    start_thread(echoserver_test, &server_args, &thread);
-#ifndef _WIN32
-    sleep(1);
-    // fix early signal
-    // wait for echoserver to tcp_accept
-    //pthread_mutex_lock(&server_args.mutex_);
-    //pthread_cond_wait(&server_args.cond_, &server_args.mutex_);
-    //pthread_mutex_unlock(&server_args.mutex_);
-#endif
+    start_thread(echoserver_test, &server_args, &serverThread);
+    wait_tcp_ready(server_args);
     func_args echo_args;
 
             // setup args
-    echo_args.argc = 3;
-    echo_args.argv = new char*[echo_args.argc];
-    for (int i = 0; i < echo_args.argc; i++)
-        echo_args.argv[i] = new char[32];
+    const int numArgs = 3;
+    echo_args.argc = numArgs;
+    char* myArgv[numArgs];
+
+    char argc0[32];
+    char argc1[32];
+    char argc2[32];
+
+    myArgv[0] = argc0;
+    myArgv[1] = argc1;
+    myArgv[2] = argc2;
+
+    echo_args.argv = myArgv;
    
     strcpy(echo_args.argv[0], "echoclient");
     strcpy(echo_args.argv[1], "input");
@@ -77,7 +79,7 @@ int main(int argc, char** argv)
 
     echoclient_test(&echo_args);
     assert(echo_args.return_code == 0);
-    join_thread(thread);
+    join_thread(serverThread);
     assert(server_args.return_code == 0);
 
 
@@ -90,11 +92,6 @@ int main(int argc, char** argv)
 
     printf("\nAll tests passed!\n");
 
-    // cleanup
-    for (int j = echo_args.argc; j >= 0; j--)
-        delete[] echo_args.argv[j];
-    delete[] echo_args.argv;
-
     return 0;
 }
 
@@ -102,7 +99,7 @@ int main(int argc, char** argv)
 
 void start_thread(THREAD_FUNC fun, func_args* args, THREAD_TYPE* thread)
 {
-#ifdef _WIN32
+#ifndef _POSIX_THREADS
     *thread = _beginthreadex(0, 0, fun, args, 0, 0);
 #else
     pthread_create(thread, 0, fun, args);
@@ -112,7 +109,7 @@ void start_thread(THREAD_FUNC fun, func_args* args, THREAD_TYPE* thread)
 
 void join_thread(THREAD_TYPE thread)
 {
-#ifdef _WIN32
+#ifndef _POSIX_THREADS
     int res = WaitForSingleObject(reinterpret_cast<HANDLE>(thread), INFINITE);
     assert(res == WAIT_OBJECT_0);
     res = CloseHandle(reinterpret_cast<HANDLE>(thread));
@@ -122,6 +119,20 @@ void join_thread(THREAD_TYPE thread)
 #endif
 }
 
+
+
+void wait_tcp_ready(func_args& args)
+{
+#ifdef _POSIX_THREADS
+    pthread_mutex_lock(&args.signal_->mutex_);
+    
+    if (!args.signal_->ready_)
+        pthread_cond_wait(&args.signal_->cond_, &args.signal_->mutex_);
+    args.signal_->ready_ = false; // reset
+
+    pthread_mutex_unlock(&args.signal_->mutex_);
+#endif
+}
 
 
 int test_openSSL_des()
@@ -135,8 +146,8 @@ int test_openSSL_des()
                    (byte*)key, iv);
 
     byte cipher[16];
-    DES_ede3_cbc_encrypt((byte*)data, cipher, dataSz, &key[0], &key[8], &key[16],
-                         &iv, true);
+    DES_ede3_cbc_encrypt((byte*)data, cipher, dataSz, &key[0], &key[8],
+                         &key[16], &iv, true);
     byte plain[16];
     DES_ede3_cbc_encrypt(cipher, plain, 16, &key[0], &key[8], &key[16],
                          &iv, false);

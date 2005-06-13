@@ -22,7 +22,6 @@
 /* based on Wei Dai's aes.cpp from CryptoPP */
 
 #include "aes.hpp"
-#include "stdexcept.hpp"
 
 
 namespace TaoCrypt {
