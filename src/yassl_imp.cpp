@@ -22,6 +22,7 @@
 /*  yaSSL source implements all SSL.v3 secification structures.
  */
 
+#include "runtime.hpp"
 #include "yassl_int.hpp"
 #include "handshake.hpp"
 

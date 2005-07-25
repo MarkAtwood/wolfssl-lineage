@@ -31,13 +31,8 @@
 #include "type_traits.hpp"
 
 
-namespace GCC_ABI {
-    extern "C" int __cxa_pure_virtual();
-} 
 
 namespace TaoCrypt {
-
-using GCC_ABI::__cxa_pure_virtual;
 
 // library allocation
 struct new_t {};      // TaoCrypt New type
@@ -741,8 +736,6 @@ inline T1 SaturatingSubtract(T1 a, T2 b)
 unsigned int  BytePrecision(unsigned long value);
 unsigned int  BitPrecision(unsigned long);
 unsigned long Crop(unsigned long value, unsigned int size);
-
-void CallNewHandler();
 
 
 

@@ -26,9 +26,10 @@
  */
 
 
+#include "runtime.hpp"
 #include "socket_wrapper.hpp"
 
-#ifndef WIN32
+#ifndef _WIN32
     #include <errno.h>
     #include <netdb.h>
     #include <unistd.h>
@@ -36,19 +37,19 @@
     #include <netinet/in.h>
     #include <sys/ioctl.h>
     #include <string.h>
-#endif // WIN32
+#endif // _WIN32
 
 #ifdef __sun
     #include <sys/filio.h>
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
     const int SOCKET_EINVAL = WSAEINVAL;
     const int SOCKET_EWOULDBLOCK = WSAEWOULDBLOCK;
 #else
     const int SOCKET_EINVAL = EINVAL;
     const int SOCKET_EWOULDBLOCK = EWOULDBLOCK;
-#endif // WIN32
+#endif // _WIN32
 
 
 namespace yaSSL {
@@ -80,7 +81,7 @@ Socket::~Socket()
 void Socket::closeSocket()
 {
     if (socket_ != INVALID_SOCKET) {
-#ifdef WIN32
+#ifdef _WIN32
         closesocket(socket_);
 #else
         close(socket_);
@@ -94,7 +95,7 @@ uint Socket::get_ready() const
 {
     unsigned long ready = 0;
 
-#ifdef WIN32
+#ifdef _WIN32
     ioctlsocket(socket_, FIONREAD, &ready);
 #else
     ioctl(socket_, FIONREAD, &ready);
@@ -145,7 +146,7 @@ void Socket::shutDown(int how)
 
 int Socket::get_lastError()
 {
-#ifdef WIN32
+#ifdef _WIN32
     return WSAGetLastError();
 #else
     return errno;
@@ -155,7 +156,7 @@ int Socket::get_lastError()
 
 void Socket::set_lastError(int errorCode)
 {
-#ifdef WIN32
+#ifdef _WIN32
     WSASetLastError(errorCode);
 #else
     errno = errorCode;

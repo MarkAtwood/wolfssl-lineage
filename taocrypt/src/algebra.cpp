@@ -21,6 +21,7 @@
 
 /* based on Wei Dai's algebra.cpp from CryptoPP */
 
+#include "runtime.hpp"
 #include "algebra.hpp"
 #include "vector.hpp"   // mySTL::vector (simple)
 
@@ -317,3 +318,12 @@ void AbstractRing::SimultaneousExponentiate(Integer *results,
 
 
 } // namespace
+
+
+#ifdef HAVE_EXPLICIT_TEMPLATE_INSTANTIATION
+namespace mySTL {
+template TaoCrypt::WindowSlider* uninit_copy<TaoCrypt::WindowSlider*, TaoCrypt::WindowSlider*>(TaoCrypt::WindowSlider*, TaoCrypt::WindowSlider*, TaoCrypt::WindowSlider*);
+template void destroy<TaoCrypt::WindowSlider*>(TaoCrypt::WindowSlider*, TaoCrypt::WindowSlider*);
+}
+#endif
+

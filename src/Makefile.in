@@ -135,7 +135,7 @@ INCLUDES = -I../include -I../taocrypt/include -I../mySTL
 lib_LIBRARIES = libyassl.a
 libyassl_a_SOURCES = buffer.cpp cert_wrapper.cpp crypto_wrapper.cpp \
 	handshake.cpp lock.cpp log.cpp socket_wrapper.cpp ssl.cpp \
-	timer.cpp yassl_imp.cpp yassl_error.cpp yassl_int.cpp
+	template_instnt.cpp timer.cpp yassl_imp.cpp yassl_error.cpp yassl_int.cpp
 
 AM_CXXFLAGS = -Wall -Wno-unused $(PTHREAD_CFLAGS)
 EXTRA_DIST = ../include/*.hpp ../include/openssl/*.h
@@ -151,8 +151,8 @@ libyassl_a_LIBADD =
 am_libyassl_a_OBJECTS = buffer.$(OBJEXT) cert_wrapper.$(OBJEXT) \
 	crypto_wrapper.$(OBJEXT) handshake.$(OBJEXT) lock.$(OBJEXT) \
 	log.$(OBJEXT) socket_wrapper.$(OBJEXT) ssl.$(OBJEXT) \
-	timer.$(OBJEXT) yassl_imp.$(OBJEXT) yassl_error.$(OBJEXT) \
-	yassl_int.$(OBJEXT)
+	template_instnt.$(OBJEXT) timer.$(OBJEXT) yassl_imp.$(OBJEXT) \
+	yassl_error.$(OBJEXT) yassl_int.$(OBJEXT)
 libyassl_a_OBJECTS = $(am_libyassl_a_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/taocrypt/include
@@ -163,9 +163,9 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/crypto_wrapper.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/handshake.Po ./$(DEPDIR)/lock.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/log.Po ./$(DEPDIR)/socket_wrapper.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/ssl.Po ./$(DEPDIR)/timer.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/yassl_error.Po ./$(DEPDIR)/yassl_imp.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/yassl_int.Po
+@AMDEP_TRUE@	./$(DEPDIR)/ssl.Po ./$(DEPDIR)/template_instnt.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/timer.Po ./$(DEPDIR)/yassl_error.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/yassl_imp.Po ./$(DEPDIR)/yassl_int.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -235,6 +235,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/socket_wrapper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ssl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/template_instnt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/timer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yassl_error.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yassl_imp.Po@am__quote@

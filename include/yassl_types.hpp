@@ -447,4 +447,14 @@ const opaque key_label   [KEY_LABEL_SZ + 1]    = "key expansion";
 
 } // naemspace
 
+#if __GNUC__ == 2 && __GNUC_MINOR__ <= 96
+/*
+  gcc 2.96 bails out because of two declarations of byte: yaSSL::byte and
+  TaoCrypt::byte. TODO: define global types.hpp and move the declaration of
+  'byte' there.
+*/
+using yaSSL::byte;
+#endif
+
+
 #endif // yaSSL_TYPES_HPP

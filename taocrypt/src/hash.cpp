@@ -22,6 +22,7 @@
 /* hash.cpp implements a base for digest types
 */
 
+#include "runtime.hpp"
 #include <string.h>
 #include <assert.h>
 

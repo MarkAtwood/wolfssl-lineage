@@ -22,6 +22,7 @@
 
 /* based on Wei Dai's ripemd.cpp from CryptoPP */
 
+#include "runtime.hpp"
 #include "ripemd.hpp"
 #include "algorithm.hpp"    // mySTL::swap
 

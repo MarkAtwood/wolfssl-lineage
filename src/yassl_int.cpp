@@ -24,6 +24,7 @@
  * draft along with type conversion functions.
  */
 
+#include "runtime.hpp"
 #include "yassl_int.hpp"
 #include "handshake.hpp"
 #include "timer.hpp"
@@ -930,7 +931,7 @@ void SSL::setKeys()
 
 
 // local functors
-namespace {
+namespace yassl_int_cpp_local1 {  // for explicit templates
 
 struct SumData {
     uint total_;
@@ -946,6 +947,7 @@ struct SumBuffer {
 };
 
 } // namespace for locals
+using namespace yassl_int_cpp_local1;
 
 
 uint SSL::bufferedData()
@@ -1391,7 +1393,8 @@ Sessions::~Sessions()
 }
 
 
-namespace { // locals
+// locals
+namespace yassl_int_cpp_local2 { // for explicit templates
 
 typedef mySTL::list<SSL_SESSION*>::iterator iterator;
 
@@ -1409,6 +1412,7 @@ struct sess_match {
 
 
 } // local namespace
+using namespace yassl_int_cpp_local2;
 
 
 // lookup session by id, return a copy if space provided
@@ -1981,5 +1985,13 @@ X509_NAME* X509::GetSubject()
 
 
 
-
 } // namespace
+
+#ifdef HAVE_EXPLICIT_TEMPLATE_INSTANTIATION
+namespace mySTL {
+template yaSSL::yassl_int_cpp_local1::SumData for_each<mySTL::list<yaSSL::input_buffer*>::iterator, yaSSL::yassl_int_cpp_local1::SumData>(mySTL::list<yaSSL::input_buffer*>::iterator, mySTL::list<yaSSL::input_buffer*>::iterator, yaSSL::yassl_int_cpp_local1::SumData);
+template yaSSL::yassl_int_cpp_local1::SumBuffer for_each<mySTL::list<yaSSL::output_buffer*>::iterator, yaSSL::yassl_int_cpp_local1::SumBuffer>(mySTL::list<yaSSL::output_buffer*>::iterator, mySTL::list<yaSSL::output_buffer*>::iterator, yaSSL::yassl_int_cpp_local1::SumBuffer);
+template mySTL::list<yaSSL::SSL_SESSION*>::iterator find_if<mySTL::list<yaSSL::SSL_SESSION*>::iterator, yaSSL::yassl_int_cpp_local2::sess_match>(mySTL::list<yaSSL::SSL_SESSION*>::iterator, mySTL::list<yaSSL::SSL_SESSION*>::iterator, yaSSL::yassl_int_cpp_local2::sess_match);
+}
+#endif
+

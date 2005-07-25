@@ -23,6 +23,7 @@
 
 /* based on Wei Dai's integer.cpp from CryptoPP */
 
+#include "runtime.hpp"
 #include "integer.hpp"
 #include "modarith.hpp"
 #include "asn.hpp"
@@ -34,7 +35,9 @@
 #endif
 
 
-#if defined(_MSC_VER) && defined(_WIN64)  // 64 bit X overflow intrinsic
+// 64bit multiply overflow intrinsic
+#if defined(_MSC_VER) && defined(_WIN64) && !defined(__INTEL_COMPILER) && \
+   !defined(TAOCRYPT_NATIVE_DWORD_AVAILABLE)
     #ifdef __ia64__
         #define myUMULH __UMULH
     #elif  __x86_64__
@@ -88,16 +91,15 @@ CPP_TYPENAME AllocatorBase<T>::pointer AlignedAllocator<T>::allocate(
     {
         void* p;
     #ifdef TAOCRYPT_MM_MALLOC_AVAILABLE
-        while (!(p = _mm_malloc(sizeof(T)*n, 16)))
+        p = _mm_malloc(sizeof(T)*n, 16);
     #elif defined(TAOCRYPT_MEMALIGN_AVAILABLE)
-        while (!(p = memalign(16, sizeof(T)*n)))
+        p = memalign(16, sizeof(T)*n);
     #elif defined(TAOCRYPT_MALLOC_ALIGNMENT_IS_16)
-        while (!(p = malloc(sizeof(T)*n)))
+        p = malloc(sizeof(T)*n);
     #else
-        while (!(p = (byte *)malloc(sizeof(T)*n + 8)))
+        p = (byte *)malloc(sizeof(T)*n + 8);
         // assume malloc alignment is at least 8
     #endif
-        CallNewHandler();
 
     #ifdef TAOCRYPT_NO_ALIGNED_ALLOC
         assert(m_pBlock == 0);
@@ -3956,6 +3958,13 @@ Integer CRT(const Integer &xp, const Integer &p, const Integer &xq,
     return p * (u * (xq-xp) % q) + xp;
 }
 
+
+#ifdef HAVE_EXPLICIT_TEMPLATE_INSTANTIATION
+#ifndef TAOCRYPT_NATIVE_DWORD_AVAILABLE
+template hword DivideThreeWordsByTwo<hword, Word>(hword*, hword, hword, Word*);
+#endif
+template word DivideThreeWordsByTwo<word, DWord>(word*, word, word, DWord*);
+#endif
 
 
 } // namespace

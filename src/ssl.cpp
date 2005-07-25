@@ -32,6 +32,7 @@
 
 /*  see man pages for function descriptions */
 
+#include "runtime.hpp"
 #include "openssl/ssl.h"
 #include "handshake.hpp"
 #include "yassl_int.hpp"

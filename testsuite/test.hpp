@@ -3,12 +3,13 @@
 #ifndef yaSSL_TEST_HPP
 #define yaSSL_TEST_HPP
 
+#include "runtime.hpp"
 #include "openssl/ssl.h"   /* openssl compatibility test */
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
-#ifdef WIN32
+#ifdef _WIN32
     #include <winsock2.h>
     #include <process.h>
     #define SOCKET_T int
@@ -23,10 +24,10 @@
     #include <sys/socket.h>
     #include <pthread.h>
     #define SOCKET_T unsigned int
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 
-#if defined(__MACH__) || defined(WIN32)
+#if defined(__MACH__) || defined(_WIN32)
     typedef int socklen_t;
 #endif
 

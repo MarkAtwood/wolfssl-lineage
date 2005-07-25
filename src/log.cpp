@@ -22,6 +22,8 @@
 /*  Debug logging functions
  */
 
+
+#include "runtime.hpp"
 #include "log.hpp"
 
 #ifdef YASSL_LOG
@@ -78,8 +80,8 @@ namespace yaSSL {
     }
 
 
-    #if defined(WIN32) || defined(__MACH__) || defined(__hpux__)
-    typedef int socklen_t;
+    #if defined(_WIN32) || defined(__MACH__) || defined(__hpux__)
+        typedef int socklen_t;
     #endif
 
 

@@ -22,7 +22,7 @@
 /* asn.cpp implements ASN1 BER, PublicKey, and x509v3 decoding 
 */
 
-
+#include "runtime.hpp"
 #include "asn.hpp"
 #include "file.hpp"
 #include "integer.hpp"

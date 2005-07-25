@@ -25,14 +25,14 @@
 #ifndef TAO_CRYPT_TYPES_HPP
 #define TAO_CRYPT_TYPES_HPP
 
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+    #include "config.h"
+#endif
 
 namespace TaoCrypt {
 
-// define this if running on a big-endian CPU
-#if !defined(LITTLE_ENDIAN_ORDER) && (defined(__BIG_ENDIAN__) || \
-   defined(__sparc)  || defined(__sparc__) || defined(__hppa__) || \
-   defined(__mips__) || (defined(__MWERKS__) && !defined(__INTEL__)))
+
+#if defined(WORDS_BIGENDIAN) || (defined(__MWERKS__) && !defined(__INTEL__))
     #define BIG_ENDIAN_ORDER
 #endif
 
@@ -47,20 +47,26 @@ typedef unsigned int   word32;
 
 #if defined(_MSC_VER) || defined(__BCPLUSPLUS__)
     #define WORD64_AVAILABLE
+    #define WORD64_IS_DISTINCT_TYPE
     typedef unsigned __int64 word64;
 #elif SIZEOF_LONG == 8
     #define WORD64_AVAILABLE
     typedef unsigned long word64;
 #elif SIZEOF_LONG_LONG == 8 
     #define WORD64_AVAILABLE
+    #define WORD64_IS_DISTINCT_TYPE
     typedef unsigned long long word64;
 #endif
 
 
-// TODO: FIXME, add asm multiply for x86_64 on Solaris and remove !__sun 
+// compilers we've found 64-bit multiply insructions for
+#if defined(__GNUC__) || defined(_MSC_VER) || defined(__DECCXX)
+    #define HAVE_64_MULTIPLY
+#endif
+
     
-#if defined(__alpha__) || defined(__ia64__) || defined(_ARCH_PPC64) || \
-    defined(__mips64)  || (defined(__x86_64__) && !defined(__sun))
+#if defined(HAVE_64_MULTIPLY) && (defined(__alpha__) || defined(__ia64__) \
+    || defined(_ARCH_PPC64) || defined(__mips64)  || defined(__x86_64__)) 
 // These platforms have 64-bit CPU registers. Unfortunately most C++ compilers
 // don't allow any way to access the 64-bit by 64-bit multiply instruction
 // without using assembly, so in order to use word64 as word, the assembly
@@ -70,13 +76,14 @@ typedef unsigned int   word32;
 #else
     #define TAOCRYPT_NATIVE_DWORD_AVAILABLE
     #ifdef WORD64_AVAILABLE
-            typedef word16 hword;
-            typedef word32 word;
-            typedef word64 dword;
+        #define TAOCRYPT_SLOW_WORD64
+        typedef word16 hword;
+        typedef word32 word;
+        typedef word64 dword;
     #else
-            typedef byte   hword;
-            typedef word16 word;
-            typedef word32 dword;
+        typedef byte   hword;
+        typedef word16 word;
+        typedef word32 dword;
     #endif
 #endif
 

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "runtime.hpp"
 #include "sha.hpp"
 #include "md5.hpp"
 #include "md2.hpp"
