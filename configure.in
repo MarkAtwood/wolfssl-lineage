@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(yassl,1.0.3)
+AM_INIT_AUTOMAKE(yassl,1.0.4)
 AM_CONFIG_HEADER(taocrypt/include/config.h)
 
 

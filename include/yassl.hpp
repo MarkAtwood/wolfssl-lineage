@@ -31,21 +31,56 @@
 namespace yaSSL {
 
 
-class Client {
+#ifdef _WIN32
+    typedef unsigned int SOCKET_T;
+#else
+    typedef int          SOCKET_T;
+#endif
 
+
+class Client {
 public:
-    Client();   // default
+    Client();
     ~Client();
 
-    int Connect();
+    // basics
+    int Connect(SOCKET_T);
     int Write(const void*, int);
     int Read(void*, int);
+
+    // options
+    void SetCA(const char*);
+    void SetCert(const char*);
+    void SetKey(const char*);
 private:
     struct ClientImpl;
     ClientImpl* pimpl_;
 
     Client(const Client&);              // hide copy
     Client& operator=(const Client&);   // and assign  
+};
+
+
+class Server {
+public:
+    Server();
+    ~Server();
+
+    // basics
+    int Accept(SOCKET_T);
+    int Write(const void*, int);
+    int Read(void*, int);
+
+    // options
+    void SetCA(const char*);
+    void SetCert(const char*);
+    void SetKey(const char*);
+private:
+    struct ServerImpl;
+    ServerImpl* pimpl_;
+
+    Server(const Server&);              // hide copy
+    Server& operator=(const Server&);   // and assign
 };
 
 

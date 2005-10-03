@@ -15,10 +15,14 @@
 #include "rsa.hpp"
 #include "dsa.hpp"
 #include "aes.hpp"
+#include "twofish.hpp"
+#include "blowfish.hpp"
 #include "asn.hpp"
 #include "dh.hpp"
 #include "coding.hpp"
 #include "random.hpp"
+#include "pwdbased.hpp"
+
 
 using TaoCrypt::byte;
 using TaoCrypt::word32;
@@ -38,6 +42,14 @@ using TaoCrypt::AES_CBC_Encryption;
 using TaoCrypt::AES_CBC_Decryption;
 using TaoCrypt::AES_ECB_Encryption;
 using TaoCrypt::AES_ECB_Decryption;
+using TaoCrypt::Twofish_CBC_Encryption;
+using TaoCrypt::Twofish_CBC_Decryption;
+using TaoCrypt::Twofish_ECB_Encryption;
+using TaoCrypt::Twofish_ECB_Decryption;
+using TaoCrypt::Blowfish_CBC_Encryption;
+using TaoCrypt::Blowfish_CBC_Decryption;
+using TaoCrypt::Blowfish_ECB_Encryption;
+using TaoCrypt::Blowfish_ECB_Decryption;
 using TaoCrypt::RSA_PrivateKey;
 using TaoCrypt::RSA_PublicKey;
 using TaoCrypt::DSA_PrivateKey;
@@ -57,6 +69,7 @@ using TaoCrypt::CertDecoder;
 using TaoCrypt::DH;
 using TaoCrypt::EncodeDSA_Signature;
 using TaoCrypt::DecodeDSA_Signature;
+using TaoCrypt::PBKDF2_HMAC;
 
 
 
@@ -79,9 +92,12 @@ int  hmac_test();
 int  arc4_test();
 int  des_test();
 int  aes_test();
+int  twofish_test();
+int  blowfish_test();
 int  rsa_test();
 int  dsa_test();
 int  dh_test();
+int  pwdbased_test();
 
 TaoCrypt::RandomNumberGenerator rng;
 
@@ -107,59 +123,75 @@ void taocrypt_test(void* args)
 
     int ret = 0;
     if ( (ret = sha_test()) ) 
-        err_sys("SHA    test failed!\n", ret);
+        err_sys("SHA      test failed!\n", ret);
     else
-        printf( "SHA    test passed!\n");
+        printf( "SHA      test passed!\n");
 
     if ( (ret = md5_test()) ) 
-        err_sys("MD5    test failed!\n", ret);
+        err_sys("MD5      test failed!\n", ret);
     else
-        printf( "MD5    test passed!\n");
+        printf( "MD5      test passed!\n");
 
     if ( (ret = md2_test()) ) 
-        err_sys("MD2    test failed!\n", ret);
+        err_sys("MD2      test failed!\n", ret);
     else
-        printf( "MD2    test passed!\n");
+        printf( "MD2      test passed!\n");
 
     if ( (ret = ripemd_test()) )
-        err_sys("RIPEMD test failed!\n", ret);
+        err_sys("RIPEMD   test failed!\n", ret);
     else
-        printf( "RIPEMD test passed!\n");
+        printf( "RIPEMD   test passed!\n");
 
     if ( ( ret = hmac_test()) )
-        err_sys("HMAC   test failed!\n", ret);
+        err_sys("HMAC     test failed!\n", ret);
     else
-        printf( "HMAC   test passed!\n");
+        printf( "HMAC     test passed!\n");
 
     if ( (ret = arc4_test()) )
-        err_sys("ARC4   test failed!\n", ret);
+        err_sys("ARC4     test failed!\n", ret);
     else
-        printf( "ARC4   test passed!\n");
+        printf( "ARC4     test passed!\n");
 
     if ( (ret = des_test()) )
-        err_sys("DES    test failed!\n", ret);
+        err_sys("DES      test failed!\n", ret);
     else
-        printf( "DES    test passed!\n");
+        printf( "DES      test passed!\n");
 
     if ( (ret = aes_test()) )
-        err_sys("AES    test failed!\n", ret);
+        err_sys("AES      test failed!\n", ret);
     else
-        printf( "AES    test passed!\n");
+        printf( "AES      test passed!\n");
+
+    if ( (ret = twofish_test()) )
+        err_sys("TwoFish  test failed!\n", ret);
+    else
+        printf( "TwoFish  test passed!\n");
+
+    if ( (ret = blowfish_test()) )
+        err_sys("BlowFish test failed!\n", ret);
+    else
+        printf( "BlowFish test passed!\n");
 
     if ( (ret = rsa_test()) )
-        err_sys("RSA    test failed!\n", ret);
+        err_sys("RSA      test failed!\n", ret);
     else
-        printf( "RSA    test passed!\n");
+        printf( "RSA      test passed!\n");
 
     if ( (ret = dh_test()) )
-        err_sys("DH     test failed!\n", ret);
+        err_sys("DH       test failed!\n", ret);
     else
-        printf( "DH     test passed!\n");
+        printf( "DH       test passed!\n");
 
     if ( (ret = dsa_test()) )
-        err_sys("DSA    test failed!\n", ret);
+        err_sys("DSA      test failed!\n", ret);
     else
-        printf( "DSA    test passed!\n");
+        printf( "DSA      test passed!\n");
+
+    if ( (ret = pwdbased_test()) )
+        err_sys("PBKDF2   test failed!\n", ret);
+    else
+        printf( "PBKDF2   test passed!\n");
+
 
     ((func_args*)args)->return_code = ret;
 }
@@ -626,6 +658,128 @@ int aes_test()
 }
 
 
+int twofish_test()
+{
+    Twofish_CBC_Encryption enc;
+    Twofish_CBC_Decryption dec;
+    const int bs(TaoCrypt::Twofish::BLOCK_SIZE);
+
+    const byte msg[] = { // "Now is the time for all " w/o trailing 0
+        0x6e,0x6f,0x77,0x20,0x69,0x73,0x20,0x74,
+        0x68,0x65,0x20,0x74,0x69,0x6d,0x65,0x20,
+        0x66,0x6f,0x72,0x20,0x61,0x6c,0x6c,0x20
+    };
+
+    byte key[] = "0123456789abcdef   ";  // align
+    byte iv[]  = "1234567890abcdef   ";  // align
+
+    byte cipher[bs];
+    byte plain [bs];
+
+    enc.SetKey(key, bs, iv);
+    dec.SetKey(key, bs, iv);
+
+    enc.Process(cipher, msg, bs);
+    dec.Process(plain, cipher, bs);
+
+    if (memcmp(plain, msg, bs))
+        return -60;
+
+    const byte verify[] = 
+    {
+        0xD2,0xD7,0x47,0x47,0x4A,0x65,0x4E,0x16,
+        0x21,0x03,0x58,0x79,0x5F,0x02,0x27,0x2C
+    };
+
+    if (memcmp(cipher, verify, bs))
+        return -61;
+
+    Twofish_ECB_Encryption enc2;
+    Twofish_ECB_Decryption dec2;
+
+    enc2.SetKey(key, bs, iv);
+    dec2.SetKey(key, bs, iv);
+
+    enc2.Process(cipher, msg, bs);
+    dec2.Process(plain, cipher, bs);
+
+    if (memcmp(plain, msg, bs))
+        return -62;
+
+    const byte verify2[] = 
+    {
+        0x3B,0x6C,0x63,0x10,0x34,0xAB,0xB2,0x87,
+        0xC4,0xCD,0x6B,0x91,0x14,0xC5,0x3A,0x09
+    };
+
+    if (memcmp(cipher, verify2, bs))
+        return -63;
+
+    return 0;
+}
+
+
+int blowfish_test()
+{
+    Blowfish_CBC_Encryption enc;
+    Blowfish_CBC_Decryption dec;
+    const int bs(TaoCrypt::Blowfish::BLOCK_SIZE);
+
+    const byte msg[] = { // "Now is the time for all " w/o trailing 0
+        0x6e,0x6f,0x77,0x20,0x69,0x73,0x20,0x74,
+        0x68,0x65,0x20,0x74,0x69,0x6d,0x65,0x20,
+        0x66,0x6f,0x72,0x20,0x61,0x6c,0x6c,0x20
+    };
+
+    byte key[] = "0123456789abcdef   ";  // align
+    byte iv[]  = "1234567890abcdef   ";  // align
+
+    byte cipher[bs * 2];
+    byte plain [bs * 2];
+
+    enc.SetKey(key, 16, iv);
+    dec.SetKey(key, 16, iv);
+
+    enc.Process(cipher, msg, bs * 2);
+    dec.Process(plain, cipher, bs * 2);
+
+    if (memcmp(plain, msg, bs))
+        return -60;
+
+    const byte verify[] = 
+    {
+        0x0E,0x26,0xAA,0x29,0x11,0x25,0xAB,0xB5,
+        0xBC,0xD9,0x08,0xC4,0x94,0x6C,0x89,0xA3
+    };
+
+    if (memcmp(cipher, verify, bs))
+        return -61;
+
+    Blowfish_ECB_Encryption enc2;
+    Blowfish_ECB_Decryption dec2;
+
+    enc2.SetKey(key, 16, iv);
+    dec2.SetKey(key, 16, iv);
+
+    enc2.Process(cipher, msg, bs * 2);
+    dec2.Process(plain, cipher, bs * 2);
+
+    if (memcmp(plain, msg, bs))
+        return -62;
+
+    const byte verify2[] = 
+    {
+        0xE7,0x42,0xB9,0x37,0xC8,0x7D,0x93,0xCA,
+        0x8F,0xCE,0x39,0x32,0xDE,0xD7,0xBC,0x5B
+    };
+
+    if (memcmp(cipher, verify2, bs))
+        return -63;
+
+    return 0;
+}
+
+
 int rsa_test()
 {
     Source source;
@@ -752,6 +906,39 @@ int dsa_test()
 
     if (!verifier.Verify(digest, decoded))
         return -90;
+
+    return 0;
+}
+
+
+int pwdbased_test()
+{
+    PBKDF2_HMAC<SHA> pb;
+
+    byte derived[32];
+    const byte pwd1[] = "password   ";  // align
+    const byte salt[]  = { 0x12, 0x34, 0x56, 0x78, 0x78, 0x56, 0x34, 0x12 };
+    
+    pb.DeriveKey(derived, 8, pwd1, 8, salt, sizeof(salt), 5);
+
+    const byte verify1[] = { 0xD1, 0xDA, 0xA7, 0x86, 0x15, 0xF2, 0x87, 0xE6 };
+
+    if ( memcmp(derived, verify1, sizeof(verify1)) )
+        return -101;
+
+
+    const byte pwd2[] = "All n-entities must communicate with other n-entities"
+                        " via n-1 entiteeheehees   ";  // align
+
+    pb.DeriveKey(derived, 24, pwd2, 76, salt, sizeof(salt), 500);
+
+    const byte verify2[] = { 0x6A, 0x89, 0x70, 0xBF, 0x68, 0xC9, 0x2C, 0xAE,
+                             0xA8, 0x4A, 0x8D, 0xF2, 0x85, 0x10, 0x85, 0x86,
+                             0x07, 0x12, 0x63, 0x80, 0xCC, 0x47, 0xAB, 0x2D
+    };
+
+    if ( memcmp(derived, verify2, sizeof(verify2)) )
+        return -102;
 
     return 0;
 }

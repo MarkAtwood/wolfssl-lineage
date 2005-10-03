@@ -77,8 +77,6 @@ enum ServerState {
 
 // combines all states
 class States {
-    enum {MAX_ERROR_SZ = 80 };
-
     RecordLayerState recordLayer_;
     HandShakeState   handshakeLayer_;
     ClientState      clientState_;

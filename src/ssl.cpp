@@ -115,7 +115,12 @@ int SSL_set_fd(SSL* ssl, int fd)
 int SSL_connect(SSL* ssl)
 {
     sendClientHello(*ssl);
-    processReply(*ssl);
+    ClientState neededState = ssl->getSecurity().get_resuming() ?
+        serverFinishedComplete : serverHelloDoneComplete;
+    while (ssl->getStates().getClient() < neededState) {
+        if (ssl->GetError()) break;
+        processReply(*ssl);
+    }
 
     if(ssl->getCrypto().get_certManager().sendVerify())
         sendCertificate(*ssl);
@@ -130,7 +135,10 @@ int SSL_connect(SSL* ssl)
     sendFinished(*ssl, client_end);
     ssl->flushBuffer();
     if (!ssl->getSecurity().get_resuming())
-        processReply(*ssl);
+        while (ssl->getStates().getClient() < serverFinishedComplete) {
+            if (ssl->GetError()) break;
+            processReply(*ssl);
+        }
 
     ssl->verifyState(serverFinishedComplete);
     ssl->useLog().ShowTCP(ssl->getSocket().get_fd());
@@ -171,13 +179,20 @@ int SSL_accept(SSL* ssl)
         sendServerHelloDone(*ssl);
         ssl->flushBuffer();
 
-        processReply(*ssl);
+        while (ssl->getStates().getServer() < clientFinishedComplete) {
+            if (ssl->GetError()) break;
+            processReply(*ssl);
+        }
     }
     sendChangeCipher(*ssl);
     sendFinished(*ssl, server_end);
     ssl->flushBuffer();
-    if (ssl->getSecurity().get_resuming())
-        processReply(*ssl);
+    if (ssl->getSecurity().get_resuming()) {
+        while (ssl->getStates().getServer() < clientFinishedComplete) {
+            if (ssl->GetError()) break;
+            processReply(*ssl);
+        }
+    }
 
     ssl->useLog().ShowTCP(ssl->getSocket().get_fd());
 
@@ -690,12 +705,14 @@ void ERR_print_errors_fp(FILE* /*fp*/)
 }
 
 
-char* ERR_error_string(unsigned long /*err*/, char* buffer)
+char* ERR_error_string(unsigned long errNumber, char* buffer)
 {
-    // TODO:
-    static char* msg = "Not Implemented";
-    if (buffer)
-        return strncpy(buffer, msg, strlen(msg));
+    static char* msg = "Please supply a buffer for error string";
+
+    if (buffer) {
+        SetErrorString(YasslError(errNumber), buffer);
+        return buffer;
+    }
 
     return msg;
 }

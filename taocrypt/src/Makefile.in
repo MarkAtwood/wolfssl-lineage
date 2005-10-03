@@ -134,9 +134,9 @@ INCLUDES = -I../include -I../../mySTL
 
 lib_LIBRARIES = libtaocrypt.a
 libtaocrypt_a_SOURCES = aes.cpp aestables.cpp algebra.cpp arc4.cpp asn.cpp \
-	coding.cpp dh.cpp des.cpp dsa.cpp file.cpp hash.cpp integer.cpp \
-	md2.cpp md5.cpp misc.cpp random.cpp ripemd.cpp rsa.cpp sha.cpp \
-    template_instnt.cpp
+	bftables.cpp blowfish.cpp coding.cpp dh.cpp des.cpp dsa.cpp file.cpp \
+    hash.cpp integer.cpp md2.cpp md5.cpp misc.cpp random.cpp ripemd.cpp \
+    rsa.cpp sha.cpp template_instnt.cpp tftables.cpp twofish.cpp
 
 AM_CXXFLAGS = -Wall -Wno-return-type -Wno-unused
 EXTRA_DIST = ../include/*.hpp ../test/memory.cpp
@@ -150,11 +150,13 @@ LIBRARIES = $(lib_LIBRARIES)
 libtaocrypt_a_AR = $(AR) cru
 libtaocrypt_a_LIBADD =
 am_libtaocrypt_a_OBJECTS = aes.$(OBJEXT) aestables.$(OBJEXT) \
-	algebra.$(OBJEXT) arc4.$(OBJEXT) asn.$(OBJEXT) coding.$(OBJEXT) \
+	algebra.$(OBJEXT) arc4.$(OBJEXT) asn.$(OBJEXT) \
+	bftables.$(OBJEXT) blowfish.$(OBJEXT) coding.$(OBJEXT) \
 	dh.$(OBJEXT) des.$(OBJEXT) dsa.$(OBJEXT) file.$(OBJEXT) \
 	hash.$(OBJEXT) integer.$(OBJEXT) md2.$(OBJEXT) md5.$(OBJEXT) \
 	misc.$(OBJEXT) random.$(OBJEXT) ripemd.$(OBJEXT) rsa.$(OBJEXT) \
-	sha.$(OBJEXT) template_instnt.$(OBJEXT)
+	sha.$(OBJEXT) template_instnt.$(OBJEXT) tftables.$(OBJEXT) \
+	twofish.$(OBJEXT)
 libtaocrypt_a_OBJECTS = $(am_libtaocrypt_a_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/taocrypt/include
@@ -162,14 +164,16 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/aes.Po ./$(DEPDIR)/aestables.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/algebra.Po ./$(DEPDIR)/arc4.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/asn.Po ./$(DEPDIR)/coding.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/asn.Po ./$(DEPDIR)/bftables.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/blowfish.Po ./$(DEPDIR)/coding.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/des.Po ./$(DEPDIR)/dh.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/dsa.Po ./$(DEPDIR)/file.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/hash.Po ./$(DEPDIR)/integer.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/md2.Po ./$(DEPDIR)/md5.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/misc.Po ./$(DEPDIR)/random.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/ripemd.Po ./$(DEPDIR)/rsa.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/sha.Po ./$(DEPDIR)/template_instnt.Po
+@AMDEP_TRUE@	./$(DEPDIR)/sha.Po ./$(DEPDIR)/template_instnt.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/tftables.Po ./$(DEPDIR)/twofish.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -236,6 +240,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/algebra.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arc4.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asn.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bftables.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/blowfish.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/coding.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/des.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dh.Po@am__quote@
@@ -251,6 +257,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rsa.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sha.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/template_instnt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tftables.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/twofish.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" \
