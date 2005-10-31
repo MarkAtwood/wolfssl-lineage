@@ -1,2 +1,3 @@
-SUBDIRS = src test
-EXTRA_DIST = taocrypt.dsw taocrypt.dsp test.dsw test.dsp
+SUBDIRS = src test benchmark
+EXTRA_DIST = taocrypt.dsw taocrypt.dsp test.dsw test.dsp benchmark.dsw \
+    benchmark.dsp

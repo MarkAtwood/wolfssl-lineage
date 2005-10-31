@@ -19,11 +19,21 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-/* based on Wei Dai's twofish.cpp from CryptoPP */
+/* C++ based on Wei Dai's twofish.cpp from CryptoPP */
+/* x86 asm original */
+
+
+#if defined(TAOCRYPT_KERNEL_MODE)
+    #define DO_TAOCRYPT_KERNEL_MODE
+#endif                                  // only some modules now support this
 
 #include "runtime.hpp"
 #include "twofish.hpp"
-#include "block.hpp"
+
+
+#if defined(TAOCRYPT_X86ASM_AVAILABLE) && !defined(NO_TWOFISH_ASM)
+    #define DO_TWOFISH_ASM
+#endif
 
 
 namespace TaoCrypt {
@@ -31,13 +41,59 @@ namespace TaoCrypt {
 
 void Twofish::Process(byte* out, const byte* in, word32 sz)
 {
+    word32 blocks = sz / BLOCK_SIZE;
+
     if (mode_ == ECB)
-        ECB_Process(out, in, sz);
+        while (blocks--) {
+            #if defined(DO_TWOFISH_ASM)
+                if (dir_ == ENCRYPTION)
+                    AsmEncrypt(in, out);
+                else
+                    AsmDecrypt(in, out);
+            #else
+                ProcessAndXorBlock(in, 0, out);
+            #endif
+
+            out += BLOCK_SIZE;
+            in  += BLOCK_SIZE;
+        }
     else if (mode_ == CBC)
         if (dir_ == ENCRYPTION)
-            CBC_Encrypt(out, in, sz);
+            while (blocks--) {
+                r_[0] ^= *(word32*)in;
+                r_[1] ^= *(word32*)(in +  4);
+                r_[2] ^= *(word32*)(in +  8);
+                r_[3] ^= *(word32*)(in + 12);
+
+                #if defined(DO_TWOFISH_ASM)
+                    AsmEncrypt((byte*)r_, (byte*)r_);
+                #else
+                    ProcessAndXorBlock((byte*)r_, 0, (byte*)r_);
+                #endif
+
+                memcpy(out, r_, BLOCK_SIZE);
+
+                out += BLOCK_SIZE;
+                in  += BLOCK_SIZE;
+            }
         else
-            CBC_Decrypt(out, in, sz);
+            while (blocks--) {
+                #if defined(DO_TWOFISH_ASM)
+                    AsmDecrypt(in, out);
+                #else
+                    ProcessAndXorBlock(in, 0, out);
+                #endif
+            
+                *(word32*)out        ^= r_[0];
+                *(word32*)(out +  4) ^= r_[1];
+                *(word32*)(out +  8) ^= r_[2];
+                *(word32*)(out + 12) ^= r_[3];
+
+                memcpy(r_, in, BLOCK_SIZE);
+
+                out += BLOCK_SIZE;
+                in  += BLOCK_SIZE;
+            }
 }
 
 
@@ -96,29 +152,32 @@ void Twofish::SetKey(const byte* userKey, word32 keylen, CipherDir /*dummy*/)
 	assert(keylen >= 16 && keylen <= 32);
 
 	unsigned int len = (keylen <= 16 ? 2 : (keylen <= 24 ? 3 : 4));
-	Word32Block key(len*2);
-	GetUserKey(LittleEndianOrder, key.begin(), len*2, userKey, keylen);
+    word32 key[8];
+	GetUserKey(LittleEndianOrder, key, len*2, userKey, keylen);
 
 	unsigned int i;
 	for (i=0; i<40; i+=2) {
-		word32 a = h(i, key.get_buffer(), len);
+		word32 a = h(i, key, len);
 		word32 b = rotlFixed(h(i+1, key+1, len), 8);
 		k_[i] = a+b;
 		k_[i+1] = rotlFixed(a+2*b, 9);
 	}
 
-	Word32Block svec(2*len);
+	word32 svec[8];
 	for (i=0; i<len; i++)
 		svec[2*(len-i-1)] = ReedSolomon(key[2*i+1], key[2*i]);
 
 	for (i=0; i<256; i++) {
-		word32 t = h0(i, svec.get_buffer(), len);
+		word32 t = h0(i, svec, len);
 		s_[0][i] = mds_[0][GETBYTE(t, 0)];
 		s_[1][i] = mds_[1][GETBYTE(t, 1)];
 		s_[2][i] = mds_[2][GETBYTE(t, 2)];
 		s_[3][i] = mds_[3][GETBYTE(t, 3)];
 	}
 }
+
+
+#if !defined(DO_TWOFISH_ASM)
 
 
 void Twofish::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out)
@@ -174,6 +233,7 @@ void Twofish::encrypt(const byte* inBlock, const byte* xorBlock,
 	d ^= k_[3];
 
 	const word32 *k = k_+8;
+
 	ENCCYCLE (0);
 	ENCCYCLE (1);
 	ENCCYCLE (2);
@@ -224,5 +284,274 @@ void Twofish::decrypt(const byte* inBlock, const byte* xorBlock,
 
 
 
+#else // defined(DO_TWOFISH_ASM)
+    #ifdef __GNUC__
+        #define AS1(x)    asm(#x);
+        #define AS2(x, y) asm(#x ", " #y);
+
+        #define PROLOGUE()  \
+            asm(".intel_syntax noprefix"); \
+            AS2(    movd  mm3, edi                      )   \
+            AS2(    movd  mm4, ebx                      )   \
+            AS2(    movd  mm5, esi                      )   \
+            AS2(    movd  mm6, ebp                      )   \
+            AS2(    movd  mm7, esp                      )   \
+            AS2(    mov   ecx, DWORD PTR [ebp +  8]     )   \
+            AS2(    mov   esi, DWORD PTR [ebp + 12]     )
+
+        #define EPILOGUE()  \
+            AS2(    movd esp, mm7                  )   \
+            AS2(    movd esi, mm5                  )   \
+            AS2(    movd ebx, mm4                  )   \
+            AS2(    movd edi, mm3                  )   \
+            AS1(    emms                           )   \
+            asm(".att_syntax");
+    #else
+        #define AS1(x)    __asm x
+        #define AS2(x, y) __asm x, y
+
+        #define PROLOGUE() \
+            AS2(    mov   esi, DWORD PTR [ebp +  8]     )   \
+            AS2(    movd  mm6, ebp                      )   \
+            AS2(    movd  mm7, esp                      )
+
+        #define EPILOGUE()  \
+            AS2(    movd  esp, mm7                      )   \
+            AS1(    emms                                )
+            
+    #endif
+
+
+
+
+    // x = esi, y = ebp, s_ = esp
+    // edi always open for G1 and G2
+    // G1 also uses edx after save and restore
+    // G2 also uses eax after save and restore
+
+    // x = G1(a)   bytes(0,1,2,3)
+#define ASMG1(z, zl, zh) \
+    AS2(    movd  mm2, edx                          )   \
+    AS2(    movzx edi, zl                           )   \
+    AS2(    mov   esi, DWORD PTR     [esp + edi*4]  )   \
+    AS2(    movzx edx, zh                           )   \
+    AS2(    xor   esi, DWORD PTR 1024[esp + edx*4]  )   \
+                                                        \
+    AS2(    mov   edx, z                            )   \
+    AS2(    shr   edx, 16                           )   \
+    AS2(    movzx edi, dl                           )   \
+    AS2(    xor   esi, DWORD PTR 2048[esp + edi*4]  )   \
+    AS2(    movzx edx, dh                           )   \
+    AS2(    xor   esi, DWORD PTR 3072[esp + edx*4]  )   \
+    AS2(    movd  edx, mm2                          )
+
+
+    // y = G2(b)  bytes(3,0,1,2)
+#define ASMG2(z, zl, zh)    \
+    AS2(    movd  mm2, eax                          )   \
+    AS2(    mov   edi, z                            )   \
+    AS2(    shr   edi, 24                           )   \
+    AS2(    mov   ebp, DWORD PTR     [esp + edi*4]  )   \
+    AS2(    movzx eax, zl                           )   \
+    AS2(    xor   ebp, DWORD PTR 1024[esp + eax*4]  )   \
+                                                        \
+    AS2(    mov   eax, z                            )   \
+    AS2(    shr   eax, 16                           )   \
+    AS2(    movzx edi, zh                           )   \
+    AS2(    xor   ebp, DWORD PTR 2048[esp + edi*4]  )   \
+    AS2(    movzx eax, al                           )   \
+    AS2(    xor   ebp, DWORD PTR 3072[esp + eax*4]  )   \
+    AS2(    movd  eax, mm2                          )
+
+
+    // encrypt Round (n), 
+    // x = esi, y = ebp, k = esp, edi open
+#define ASMENCROUND(N, A, A2, A3, B, B2, B3, C, D)      \
+    /* setup s_  */                                     \
+    AS2(    movd  esp, mm1                          )   \
+    ASMG1(A, A2, A3)                                    \
+    ASMG2(B, B2, B3)                                    \
+    /* setup k  */                                      \
+    AS2(    movd  esp, mm0                          )   \
+    AS2(    add   esp, 32                           )   \
+    /* x += y   */                                      \
+    AS2(    add   esi, ebp                          )   \
+    /* y += x + k[2 * (n) + 1] */                       \
+    AS2(    add   ebp, esi                          )   \
+    AS2(    add   ebp, DWORD PTR [esp + 8 * N + 4]  )   \
+	/* (c) ^= x + k[2 * (n)] */                         \
+    AS2(    mov   edi, esi                          )   \
+    AS2(    add   edi, DWORD PTR [esp + 8 * N]      )   \
+    AS2(    xor   C,   edi                          )   \
+	/* (c) = rotrFixed(c, 1) */                         \
+    AS2(    ror   C,   1                            )   \
+	/* (d) = rotlFixed(d, 1) ^ y  */                    \
+    AS2(    rol   D,   1                            )   \
+    AS2(    xor   D,   ebp                          )
+
+
+    // decrypt Round (n), 
+    // x = esi, y = ebp, k = esp, edi open
+#define ASMDECROUND(N, A, A2, A3, B, B2, B3, C, D)      \
+    /* setup s_  */                                     \
+    AS2(    movd  esp, mm1                          )   \
+    ASMG1(A, A2, A3)                                    \
+    ASMG2(B, B2, B3)                                    \
+    /* setup k  */                                      \
+    AS2(    movd  esp, mm0                          )   \
+    AS2(    add   esp, 32                           )   \
+    /* x += y   */                                      \
+    AS2(    add   esi, ebp                          )   \
+    /* y += x     */                                    \
+    AS2(    add   ebp, esi                          )   \
+	/* (d) ^= y + k[2 * (n) + 1] */                     \
+    AS2(    mov   edi, ebp                          )   \
+    AS2(    add   edi, DWORD PTR [esp + 8 * N + 4]  )   \
+    AS2(    xor   D,   edi                          )   \
+	/* (d) = rotrFixed(d, 1)     */                     \
+    AS2(    ror   D,   1                            )   \
+	/* (c) = rotlFixed(c, 1)     */                     \
+    AS2(    rol   C,   1                            )   \
+	/* (c) ^= (x + k[2 * (n)])   */                     \
+    AS2(    mov   edi, esi                          )   \
+    AS2(    add   edi, DWORD PTR [esp + 8 * N]      )   \
+    AS2(    xor   C,   edi                          )
+
+
+void Twofish::AsmEncrypt(const byte* inBlock, byte* outBlock) const
+{
+    PROLOGUE()
+
+    AS2(    add   ecx, 24                       ) // k_
+    AS2(    mov   edi, ecx                      )
+    AS2(    movd  mm0, edi                      ) // store k_
+    AS2(    add   ecx, 160                      ) // s_[0]
+    AS2(    mov   esp, ecx                      )
+    AS2(    movd  mm1, ecx                      ) // store s_
+
+    AS2(    mov   eax, DWORD PTR [esi]          ) // a
+    AS2(    mov   ebx, DWORD PTR [esi +  4]     ) // b
+    AS2(    mov   ecx, DWORD PTR [esi +  8]     ) // c
+    AS2(    mov   edx, DWORD PTR [esi + 12]     ) // d
+
+    AS2(    xor   eax, DWORD PTR [edi]          ) // k_[0]
+    AS2(    xor   ebx, DWORD PTR [edi +  4]     ) //   [1]
+    AS2(    xor   ecx, DWORD PTR [edi +  8]     ) //   [2]
+    AS2(    xor   edx, DWORD PTR [edi + 12]     ) //   [3]
+
+
+    ASMENCROUND( 0, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMENCROUND( 1, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMENCROUND( 2, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMENCROUND( 3, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMENCROUND( 4, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMENCROUND( 5, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMENCROUND( 6, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMENCROUND( 7, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMENCROUND( 8, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMENCROUND( 9, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMENCROUND(10, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMENCROUND(11, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMENCROUND(12, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMENCROUND(13, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMENCROUND(14, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMENCROUND(15, ecx, cl, ch, edx, dl, dh, eax, ebx)
+
+
+    AS2(    movd  esi, mm0                      ) // k_
+    AS2(    movd  ebp, mm6                      )
+    #ifdef __GNUC__
+        AS2(    mov   edi, [ebp + 16]           ) // outBlock
+    #else
+        AS2(    mov   edi, [ebp + 12]           ) // outBlock
+    #endif
+
+    AS2(    xor   ecx, DWORD PTR [esi + 16]     ) // k_[4]
+    AS2(    xor   edx, DWORD PTR [esi + 20]     ) // k_[5]
+    AS2(    xor   eax, DWORD PTR [esi + 24]     ) // k_[6]
+    AS2(    xor   ebx, DWORD PTR [esi + 28]     ) // k_[7]
+
+    AS2(    mov   [edi],      ecx               ) // write out
+    AS2(    mov   [edi +  4], edx               ) // write out
+    AS2(    mov   [edi +  8], eax               ) // write out
+    AS2(    mov   [edi + 12], ebx               ) // write out
+
+
+    EPILOGUE()
+}
+
+
+
+void Twofish::AsmDecrypt(const byte* inBlock, byte* outBlock) const
+{
+    PROLOGUE()
+
+    AS2(    add   ecx, 24                       ) // k_
+    AS2(    mov   edi, ecx                      )
+    AS2(    movd  mm0, edi                      ) // store k_
+    AS2(    add   ecx, 160                      ) // s_[0]
+    AS2(    mov   esp, ecx                      )
+    AS2(    movd  mm1, ecx                      ) // store s_
+
+    AS2(    mov   ecx, DWORD PTR [esi]          ) // a
+    AS2(    mov   edx, DWORD PTR [esi +  4]     ) // b
+    AS2(    mov   eax, DWORD PTR [esi +  8]     ) // c
+    AS2(    mov   ebx, DWORD PTR [esi + 12]     ) // d
+
+    AS2(    xor   ecx, DWORD PTR [edi + 16]     ) // k_[4]
+    AS2(    xor   edx, DWORD PTR [edi + 20]     ) //   [5]
+    AS2(    xor   eax, DWORD PTR [edi + 24]     ) //   [6]
+    AS2(    xor   ebx, DWORD PTR [edi + 28]     ) //   [7]
+
+
+    ASMDECROUND(15, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMDECROUND(14, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMDECROUND(13, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMDECROUND(12, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMDECROUND(11, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMDECROUND(10, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMDECROUND( 9, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMDECROUND( 8, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMDECROUND( 7, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMDECROUND( 6, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMDECROUND( 5, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMDECROUND( 4, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMDECROUND( 3, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMDECROUND( 2, eax, al, ah, ebx, bl, bh, ecx, edx)
+    ASMDECROUND( 1, ecx, cl, ch, edx, dl, dh, eax, ebx)
+    ASMDECROUND( 0, eax, al, ah, ebx, bl, bh, ecx, edx)
+
+
+    AS2(    movd  esi, mm0                      ) // k_
+    AS2(    movd  ebp, mm6                      )
+    #ifdef __GNUC__
+        AS2(    mov   edi, [ebp + 16]           ) // outBlock
+    #else
+        AS2(    mov   edi, [ebp + 12]           ) // outBlock
+    #endif
+
+    AS2(    xor   eax, DWORD PTR [esi     ]     ) // k_[0]
+    AS2(    xor   ebx, DWORD PTR [esi +  4]     ) // k_[1]
+    AS2(    xor   ecx, DWORD PTR [esi +  8]     ) // k_[2]
+    AS2(    xor   edx, DWORD PTR [esi + 12]     ) // k_[3]
+
+    AS2(    mov   [edi],      eax               ) // write out
+    AS2(    mov   [edi +  4], ebx               ) // write out
+    AS2(    mov   [edi +  8], ecx               ) // write out
+    AS2(    mov   [edi + 12], edx               ) // write out
+
+
+    EPILOGUE()
+}
+
+
+
+#endif // defined(DO_TWOFISH_ASM)
+
+
+
+
+
 } // namespace
+
 

@@ -859,6 +859,12 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-dependency-tracking Speeds up one-time builds
   --enable-dependency-tracking  Do not reject slow dependency extractors
+  --enable-kernel-mode    Enable Taocrypt for Kernel Module (default: disabled)
+
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --without-debug         Build a production version without debugging code
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -1666,7 +1672,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=yassl
- VERSION=1.0.4
+ VERSION=1.0.5
 
 
 cat >>confdefs.h <<_ACEOF
@@ -1795,6 +1801,8 @@ INSTALL_STRIP_PROGRAM="\${SHELL} \$(install_sh) -c -s"
           ac_config_headers="$ac_config_headers taocrypt/include/config.h"
 
 
+# make sure configure doesn't add to CXXFLAGS
+CXXFLAGS="$CXXFLAGS $C_EXTRA_FLAGS"
 
 ac_ext=cc
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -5067,12 +5075,56 @@ echo "$as_me: error: \"yaSSL needs a long long type.\"" >&2;}
 fi
 
 
-CXXFLAGS="-g -fno-exceptions -fno-rtti -D_REENTRANT"
+OPTIMIZE_CXXFLAGS="-O3"
+DEBUG_CXXFLAGS="-g"
 
 
-#echo "$host_os"
 
-if expr "$host_os" : "solaris" > /dev/null
+# Check whether --with-debug or --without-debug was given.
+if test "${with_debug+set}" = set; then
+  withval="$with_debug"
+  with_debug=$withval
+else
+  with_debug=yes
+fi;
+if test "$with_debug" = "yes"
+then
+  # Full debug. Very slow in some cases
+  CXXFLAGS="$DEBUG_CXXFLAGS $CXXFLAGS"
+else
+  # Optimized version. No debug
+  CXXFLAGS="$OPTIMIZE_CXXFLAGS $CXXFLAGS"
+fi
+
+
+if test "$GCC" = "yes"
+then
+    CXXFLAGS="$CXXFLAGS -fno-exceptions -fno-rtti"
+    if test "$target_vendor" = "pc" && test "$with_debug" == "no"
+    then
+        CXXFLAGS="$CXXFLAGS -march=$target_cpu"
+    fi
+fi
+
+
+# Check whether --enable-kernel-mode or --disable-kernel-mode was given.
+if test "${enable_kernel_mode+set}" = set; then
+  enableval="$enable_kernel_mode"
+   ENABLED_KERNEL_MODE=$enableval
+else
+   ENABLED_KERNEL_MODE=no
+
+fi;
+
+if test "$ENABLED_KERNEL_MODE" = "yes"
+then
+    CXXFLAGS="$CXXFLAGS -DTAOCRYPT_KERNEL_MODE"
+fi
+
+
+
+
+if expr "$target_os" : "solaris" > /dev/null
 then
     EXTRA_SOCKET="-lnsl -lsocket"
 else
@@ -5081,9 +5133,9 @@ fi
 
 
 
-if expr "$host_os" : ".*bsd.*" > /dev/null
+if expr "$target_os" : ".*bsd.*" > /dev/null
 then
-    if expr "$host_os" : "netbsd.*" > /dev/null
+    if expr "$target_os" : "netbsd.*" > /dev/null
     then
         EXTRA_PTHREAD="-lpthread"
     else
@@ -5095,7 +5147,7 @@ fi
 
 
 
-if expr "$host_os" : "netbsd.*" > /dev/null
+if expr "$target_os" : "netbsd.*" > /dev/null
 then
     PTHREAD_CFLAGS=`pthread-config --cflags`
     PTHREAD_LDFLAGS=`pthread-config --ldflags`
@@ -5108,7 +5160,7 @@ fi
 
 
 
-                                                                                                              ac_config_files="$ac_config_files Makefile taocrypt/Makefile taocrypt/src/Makefile src/Makefile taocrypt/test/Makefile examples/Makefile examples/client/Makefile examples/server/Makefile examples/echoclient/Makefile examples/echoserver/Makefile testsuite/Makefile"
+                                                                                                                        ac_config_files="$ac_config_files Makefile taocrypt/Makefile taocrypt/src/Makefile src/Makefile taocrypt/test/Makefile taocrypt/benchmark/Makefile examples/Makefile examples/client/Makefile examples/server/Makefile examples/echoclient/Makefile examples/echoserver/Makefile testsuite/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -5672,6 +5724,7 @@ do
   "taocrypt/src/Makefile" ) CONFIG_FILES="$CONFIG_FILES taocrypt/src/Makefile" ;;
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
   "taocrypt/test/Makefile" ) CONFIG_FILES="$CONFIG_FILES taocrypt/test/Makefile" ;;
+  "taocrypt/benchmark/Makefile" ) CONFIG_FILES="$CONFIG_FILES taocrypt/benchmark/Makefile" ;;
   "examples/Makefile" ) CONFIG_FILES="$CONFIG_FILES examples/Makefile" ;;
   "examples/client/Makefile" ) CONFIG_FILES="$CONFIG_FILES examples/client/Makefile" ;;
   "examples/server/Makefile" ) CONFIG_FILES="$CONFIG_FILES examples/server/Makefile" ;;

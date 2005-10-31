@@ -26,7 +26,6 @@
 #ifndef TAO_CRYPT_TWOFISH_HPP
 #define TAO_CRYPT_TWOFISH_HPP
 
-#include <string.h>
 #include "misc.hpp"
 #include "modes.hpp"
 #include "algorithm.hpp"
@@ -37,20 +36,20 @@ enum { TWOFISH_BLOCK_SIZE = 16 };
 
 
 // Twofish encryption and decryption, see 
-class Twofish : public Mode_BASE {
+class Twofish {
 public:
     enum { BLOCK_SIZE = TWOFISH_BLOCK_SIZE };
 
-    Twofish(CipherDir DIR, Mode MODE)
-        : Mode_BASE(BLOCK_SIZE), dir_(DIR), mode_(MODE) {}
+    Twofish(CipherDir DIR, Mode MODE) : dir_(DIR), mode_(MODE) {}
 
     void Process(byte*, const byte*, word32);
-    void SetKey(const byte* iv, word32 sz, CipherDir fake = ENCRYPTION);
-
-    void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
+    void SetKey(const byte* key, word32 sz, CipherDir fake = ENCRYPTION);
+    void SetIV(const byte* iv) { memcpy(r_, iv, BLOCK_SIZE); }
 private:
     CipherDir dir_;
     Mode      mode_;
+
+    word32    r_[BLOCK_SIZE / sizeof(word32)];  // for CBC mode
 
 	static const byte     q_[2][256];
 	static const word32 mds_[4][256];
@@ -61,8 +60,13 @@ private:
 	static word32 h0(word32 x, const word32 *key, unsigned int kLen);
 	static word32 h(word32 x, const word32 *key, unsigned int kLen);
 
+    void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
+
     void encrypt(const byte*, const byte*, byte*) const;
     void decrypt(const byte*, const byte*, byte*) const;
+
+    void AsmEncrypt(const byte* inBlock, byte* outBlock) const;
+    void AsmDecrypt(const byte* inBlock, byte* outBlock) const;
 
     Twofish(const Twofish&);            // hide copy
     Twofish& operator=(const Twofish&); // and assign

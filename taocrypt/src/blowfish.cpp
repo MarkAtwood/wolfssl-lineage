@@ -19,10 +19,24 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-/* based on Wei Dai's blowfish.cpp from CryptoPP */
+/* C++ code based on Wei Dai's blowfish.cpp from CryptoPP */
+/* x86 asm is original */
+
+
+#if defined(TAOCRYPT_KERNEL_MODE)
+    #define DO_TAOCRYPT_KERNEL_MODE
+#endif                                  // only some modules now support this
+
 
 #include "runtime.hpp"
 #include "blowfish.hpp"
+
+
+
+#if defined(TAOCRYPT_X86ASM_AVAILABLE) && !defined(NO_BLOWFISH_ASM)
+    #define DO_BLOWFISH_ASM
+#endif
+
 
 
 namespace TaoCrypt {
@@ -30,13 +44,52 @@ namespace TaoCrypt {
 
 void Blowfish::Process(byte* out, const byte* in, word32 sz)
 {
+    word32 blocks = sz / BLOCK_SIZE;
+
     if (mode_ == ECB)
-        ECB_Process(out, in, sz);
+        while (blocks--) {
+            #if defined(DO_BLOWFISH_ASM)
+                AsmProcess(in, out);
+            #else
+                ProcessBlock((word32*)in, (word32*)out);  
+            #endif
+        
+            out += BLOCK_SIZE;
+            in  += BLOCK_SIZE;
+        }
     else if (mode_ == CBC)
         if (dir_ == ENCRYPTION)
-            CBC_Encrypt(out, in, sz);
+            while (blocks--) {
+                r_[0] ^= *(word32*)in;
+                r_[1] ^= *(word32*)(in + 4);
+
+                #if defined(DO_BLOWFISH_ASM)
+                    AsmProcess((byte*)r_, (byte*)r_);
+                #else
+                    ProcessBlock(r_, r_);
+                #endif
+
+                memcpy(out, r_, BLOCK_SIZE);
+
+                out += BLOCK_SIZE;
+                in  += BLOCK_SIZE;
+            }
         else
-            CBC_Decrypt(out, in, sz);
+            while (blocks--) {
+                #if defined(DO_BLOWFISH_ASM)
+                    AsmProcess(in, out);
+                #else
+                    ProcessBlock((word32*)in, (word32*)out);  
+                #endif
+                
+                *(word32*)out       ^= r_[0];
+                *(word32*)(out + 4) ^= r_[1];
+
+                memcpy(r_, in, BLOCK_SIZE);
+
+                out += BLOCK_SIZE;
+                in  += BLOCK_SIZE;
+            }
 }
 
 
@@ -74,60 +127,239 @@ void Blowfish::SetKey(const byte* key_string, word32 keylength, CipherDir dir)
 }
 
 
-void Blowfish::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out)
-    const
-{
-	typedef BlockGetAndPut<word32, BigEndian> gpBlock;
-
-	word32 left, right;
-	gpBlock::Get(in)(left)(right);
-
-	const word32 *const s = sbox_;
-	const word32*       p = pbox_;
-
-	left ^= p[0];
-
-	for (unsigned i=0; i<ROUNDS/2; i++) {
-		right ^= (((s[GETBYTE(left,3)] + s[256+GETBYTE(left,2)])
-			  ^ s[2*256+GETBYTE(left,1)]) + s[3*256+GETBYTE(left,0)])
-			  ^ p[2*i+1];
-
-		left ^= (((s[GETBYTE(right,3)] + s[256+GETBYTE(right,2)])
-			 ^ s[2*256+GETBYTE(right,1)]) + s[3*256+GETBYTE(right,0)])
-			 ^ p[2*i+2];
-	}
-
-	right ^= p[ROUNDS+1];
-
-	gpBlock::Put(xOr, out)(right)(left);
-}
+#define BFBYTE_0(x) ( x     &0xFF)
+#define BFBYTE_1(x) ((x>> 8)&0xFF)
+#define BFBYTE_2(x) ((x>>16)&0xFF)
+#define BFBYTE_3(x) ( x>>24)
 
 
+#define BF_S(Put, Get, I) (\
+        Put ^= p[I], \
+		tmp =  p[18 + BFBYTE_3(Get)],  \
+        tmp += p[274+ BFBYTE_2(Get)],  \
+        tmp ^= p[530+ BFBYTE_1(Get)],  \
+        tmp += p[786+ BFBYTE_0(Get)],  \
+        Put ^= tmp \
+    )
+
+
+#define BF_ROUNDS           \
+    BF_S(right, left,  1);  \
+    BF_S(left,  right, 2);  \
+    BF_S(right, left,  3);  \
+    BF_S(left,  right, 4);  \
+    BF_S(right, left,  5);  \
+    BF_S(left,  right, 6);  \
+    BF_S(right, left,  7);  \
+    BF_S(left,  right, 8);  \
+    BF_S(right, left,  9);  \
+    BF_S(left,  right, 10); \
+    BF_S(right, left,  11); \
+    BF_S(left,  right, 12); \
+    BF_S(right, left,  13); \
+    BF_S(left,  right, 14); \
+    BF_S(right, left,  15); \
+    BF_S(left,  right, 16); 
+
+#define BF_EXTRA_ROUNDS     \
+    BF_S(right, left,  17); \
+    BF_S(left,  right, 18); \
+    BF_S(right, left,  19); \
+    BF_S(left,  right, 20);
+
+
+// Used by key setup, no byte swapping
 void Blowfish::crypt_block(const word32 in[2], word32 out[2]) const
 {
 	word32 left  = in[0];
 	word32 right = in[1];
 
-	const word32 *const s = sbox_;
-	const word32*       p = pbox_;
+	const word32* p = pbox_;
+    word32 tmp;
 
 	left ^= p[0];
 
-	for (unsigned i=0; i<ROUNDS/2; i++) {
-		right ^= (((s[GETBYTE(left,3)] + s[256+GETBYTE(left,2)])
-			  ^ s[2*256+GETBYTE(left,1)]) + s[3*256+GETBYTE(left,0)])
-			  ^ p[2*i+1];
+    BF_ROUNDS
 
-		left ^= (((s[GETBYTE(right,3)] + s[256+GETBYTE(right,2)])
-			 ^ s[2*256+GETBYTE(right,1)]) + s[3*256+GETBYTE(right,0)])
-			 ^ p[2*i+2];
-	}
+#if ROUNDS == 20
+    BF_EXTRA_ROUNDS
+#endif
 
-	right ^= p[ROUNDS+1];
+	right ^= p[ROUNDS + 1];
 
 	out[0] = right;
 	out[1] = left;
 }
+
+
+void Blowfish::ProcessBlock(const word32 in[2], word32 out[2]) const
+{
+	word32 left  = LittleReverse(in[0]);
+	word32 right = LittleReverse(in[1]);
+
+	const word32* p = pbox_;
+    word32 tmp;
+
+	left ^= p[0];
+
+    BF_ROUNDS
+
+#if ROUNDS == 20
+    BF_EXTRA_ROUNDS
+#endif
+
+	right ^= p[ROUNDS + 1];
+
+	out[0] = LittleReverse(right);
+	out[1] = LittleReverse(left);
+}
+
+
+/* for future modes
+void Blowfish::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out)
+    const
+{
+	typedef BlockGetAndPut<word32, BigEndian> gpBlock;
+
+    word32 tmp;
+    const word32* p = pbox_;
+    
+    word32 left  = LittleReverse(*(word32*)(in));
+    word32 right = LittleReverse(*(word32*)(in + 4));
+   
+	left ^= p[0];
+
+    BF_ROUNDS
+
+#if ROUNDS == 20
+    BF_EXTRA_ROUNDS
+#endif
+
+	right ^= p[ROUNDS + 1];
+
+    right = LittleReverse(right) ^ (xOr ? *(word32*)xOr : 0);
+    left  = LittleReverse(left)  ^ (xOr ? *(word32*)(xOr + 4) : 0);
+    memcpy(out, &right, 4);
+    memcpy(out + 4, &left, 4);
+}
+*/
+
+
+
+#if defined(DO_BLOWFISH_ASM)
+    #ifdef __GNUC__
+        #define AS1(x)    asm(#x);
+        #define AS2(x, y) asm(#x ", " #y);
+
+        #define PROLOGUE()  \
+            asm(".intel_syntax noprefix"); \
+            AS2(    movd  mm3, edi                      )   \
+            AS2(    movd  mm4, ebx                      )   \
+            AS2(    movd  mm5, esi                      )   \
+            AS2(    mov   ecx, DWORD PTR [ebp +  8]     )   \
+            AS2(    mov   esi, DWORD PTR [ebp + 12]     )
+
+        #define EPILOGUE()  \
+            AS2(    movd esi, mm5                  )   \
+            AS2(    movd ebx, mm4                  )   \
+            AS2(    movd edi, mm3                  )   \
+            AS1(    emms                           )   \
+            asm(".att_syntax");
+    #else
+        #define AS1(x)    __asm x
+        #define AS2(x, y) __asm x, y
+
+        #define PROLOGUE() \
+            AS2(    mov   esi, DWORD PTR [ebp +  8]     )   \
+
+        #define EPILOGUE()  \
+            AS1(    emms                                )
+            
+    #endif
+
+
+#define BF_ROUND(P, G, I)   \
+    /* Put ^= p[I]  */                              \
+    AS2(    xor   P,   [edi + I*4]              )   \
+    /* tmp =  p[18 + BFBYTE_3(Get)] */              \
+    AS2(    mov   ecx, G                        )   \
+    AS2(    shr   ecx, 16                       )   \
+    AS2(    movzx edx, ch                       )   \
+    AS2(    mov   esi, [edi + edx*4 +   72]     )   \
+    /* tmp += p[274+ BFBYTE_2(Get)] */              \
+    AS2(    movzx ecx, cl                       )   \
+    AS2(    add   esi, [edi + ecx*4 + 1096]     )   \
+    /* tmp ^= p[530+ BFBYTE_1(Get)] */              \
+    AS2(    mov   ecx, G                        )   \
+    AS2(    movzx edx, ch                       )   \
+    AS2(    xor   esi, [edi + edx*4 + 2120]     )   \
+    /* tmp += p[786+ BFBYTE_0(Get)] */              \
+    AS2(    movzx ecx, cl                       )   \
+    AS2(    add   esi, [edi + ecx*4 + 3144]     )   \
+    /* Put ^= tmp */                                \
+    AS2(    xor   P,   esi                      )
+
+
+void Blowfish::AsmProcess(const byte* inBlock, byte* outBlock) const
+{
+    PROLOGUE()
+
+    AS2(    add   ecx, 16                       )   // pbox
+    AS2(    mov   edi, ecx                      )   // edi keeps
+
+    AS2(    mov   eax, DWORD PTR [esi]                                  )
+    AS1(    bswap eax                                                   )
+    AS2(    mov   edx, DWORD PTR [edi]                                  )
+    AS2(    xor   eax, edx                      )   // left
+
+    AS2(    mov   ebx, DWORD PTR [esi + 4]                              )
+    AS1(    bswap ebx                           )   // right
+
+
+    BF_ROUND(ebx, eax, 1)
+    BF_ROUND(eax, ebx, 2)
+    BF_ROUND(ebx, eax, 3)
+    BF_ROUND(eax, ebx, 4)
+    BF_ROUND(ebx, eax, 5)
+    BF_ROUND(eax, ebx, 6)
+    BF_ROUND(ebx, eax, 7)
+    BF_ROUND(eax, ebx, 8)
+    BF_ROUND(ebx, eax, 9)
+    BF_ROUND(eax, ebx, 10)
+    BF_ROUND(ebx, eax, 11)
+    BF_ROUND(eax, ebx, 12)
+    BF_ROUND(ebx, eax, 13)
+    BF_ROUND(eax, ebx, 14)
+    BF_ROUND(ebx, eax, 15)
+    BF_ROUND(eax, ebx, 16)
+    #if ROUNDS == 20
+        BF_ROUND(ebx, eax, 17)
+        BF_ROUND(eax, ebx, 18)
+        BF_ROUND(ebx, eax, 19)
+        BF_ROUND(eax, ebx, 20)
+
+        AS2(    xor   ebx, [edi + 84]           )   // 20 + 1 (x4)
+    #else
+        AS2(    xor   ebx, [edi + 68]           )   // 16 + 1 (x4)
+    #endif
+
+    #ifdef __GNUC__
+        AS2(    mov   edi, [ebp + 16]           ) // outBlock
+    #else
+        AS2(    mov   edi, [ebp + 12]           ) // outBlock
+    #endif
+
+    AS1(    bswap ebx                           )
+    AS1(    bswap eax                           )
+
+    AS2(    mov   [edi]    , ebx                )
+    AS2(    mov   [edi + 4], eax                )
+
+    EPILOGUE()
+}
+
+
+#endif  // DO_BLOWFISH_ASM
 
 
 } // namespace

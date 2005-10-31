@@ -1,4 +1,4 @@
-/* aestables.cpp                                
+/* kernelc.hpp                                
  *
  * Copyright (C) 2003 Sawtooth Consulting Ltd.
  *
@@ -19,21 +19,31 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-/* based on Wei Dai's aestables.cpp from CryptoPP */
+/* kernelc.hpp provides support for C std lib when compiled in kernel mode
+*/
 
-#include "runtime.hpp"
-#include "aes.hpp"
+#ifndef TAOCRYPT_KERNELC_HPP
+#define TAOCRYPT_KERNELC_HPP
+
+#include <linux/types.h>   // get right size_t
+
+// system functions that c++ doesn't like headers for 
+
+extern "C" void* memcpy(void*, const void*, size_t);
+extern "C" void* memset(void*, int, size_t);
+extern "C" void  printk(char *fmt, ...);
+
+#define KERN_ERR "<3>"   /* error conditions */
+
+#if defined(NDEBUG)
+    #define assert(p)  	((void)0)
+#else
+    #define assert(expr)   \
+    if (!(expr))         { \
+         printk(KERN_ERR "Assertion failed! %s,%s,%s,line=%d\n", \
+         #expr,__FILE__,__FUNCTION__,__LINE__); }
+#endif
 
 
-namespace TaoCrypt {
 
-
-const word32 AES::rcon_[] = {
-    0x01000000, 0x02000000, 0x04000000, 0x08000000,
-    0x10000000, 0x20000000, 0x40000000, 0x80000000,
-    0x1B000000, 0x36000000, 
-    /* for 128-bit blocks, Rijndael never uses more than 10 rcon values */
-};
-
-
-} // namespace
+#endif // TAOCRYPT_KERNELC_HPP

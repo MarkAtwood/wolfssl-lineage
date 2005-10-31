@@ -24,9 +24,15 @@
 #ifndef TAO_CRYPT_MISC_HPP
 #define TAO_CRYPT_MISC_HPP
 
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
+
+#if !defined(DO_TAOCRYPT_KERNEL_MODE)
+    #include <stdlib.h>
+    #include <assert.h>
+    #include <string.h>
+#else
+    #include "kernelc.hpp"
+#endif
+
 #include "types.hpp"
 #include "type_traits.hpp"
 
@@ -423,6 +429,58 @@ inline void ByteReverseIf(T* out, const T* in, word32 bc, ByteOrder order)
     else if (out != in)
         memcpy(out, in, bc);
 }
+
+
+
+// do Asm Reverse is host is Little and x86asm 
+#ifdef LITTLE_ENDIAN_ORDER
+    #ifdef TAOCRYPT_X86ASM_AVAILABLE
+        #define LittleReverse AsmReverse
+    #else
+        #define LittleReverse ByteReverse
+    #endif
+#else
+    #define LittleReverse
+#endif
+
+
+// do Asm Reverse is host is Big and x86asm 
+#ifdef BIG_ENDIAN_ORDER
+    #ifdef TAOCRYPT_X86ASM_AVAILABLE
+        #define BigReverse AsmReverse
+    #else
+        #define BigReverse ByteReverse
+    #endif
+#else
+    #define BigReverse
+#endif
+
+
+#ifdef TAOCRYPT_X86ASM_AVAILABLE
+
+    // faster than rotate, use bswap
+
+    inline word32 AsmReverse(word32 wd)
+    {
+    #ifdef __GNUC__
+        __asm__ 
+        (
+            "bswap %1"
+            : "=r"(wd)
+            : "0"(wd)
+        );
+    #else
+        __asm 
+        {
+            mov   eax, wd
+            bswap eax
+            mov   wd, eax
+        }
+    #endif
+        return wd;
+    }
+
+#endif 
 
 
 template <class T>

@@ -1,8 +1,10 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(yassl,1.0.4)
+AM_INIT_AUTOMAKE(yassl,1.0.5)
 AM_CONFIG_HEADER(taocrypt/include/config.h)
 
+# make sure configure doesn't add to CXXFLAGS
+CXXFLAGS="$CXXFLAGS $C_EXTRA_FLAGS"    
 
 AC_PROG_CXX
 AC_PROG_INSTALL
@@ -19,12 +21,49 @@ then
 fi
 
 
-CXXFLAGS="-g -fno-exceptions -fno-rtti -D_REENTRANT"
+OPTIMIZE_CXXFLAGS="-O3"
+DEBUG_CXXFLAGS="-g"
+
+
+AC_ARG_WITH(debug,
+    [  --without-debug         Build a production version without debugging code],
+    [with_debug=$withval],
+    [with_debug=yes])
+if test "$with_debug" = "yes"
+then
+  # Full debug. Very slow in some cases
+  CXXFLAGS="$DEBUG_CXXFLAGS $CXXFLAGS"
+else
+  # Optimized version. No debug
+  CXXFLAGS="$OPTIMIZE_CXXFLAGS $CXXFLAGS"
+fi
+
+
+if test "$GCC" = "yes"
+then
+    CXXFLAGS="$CXXFLAGS -fno-exceptions -fno-rtti"
+    if test "$target_vendor" = "pc" && test "$with_debug" == "no"
+    then
+        CXXFLAGS="$CXXFLAGS -march=$target_cpu"
+    fi
+fi
+
+
+AC_ARG_ENABLE(kernel-mode,
+    [  --enable-kernel-mode    Enable Taocrypt for Kernel Module (default: disabled)],
+    [ ENABLED_KERNEL_MODE=$enableval ],
+    [ ENABLED_KERNEL_MODE=no ]
+    )
+
+if test "$ENABLED_KERNEL_MODE" = "yes"
+then
+    CXXFLAGS="$CXXFLAGS -DTAOCRYPT_KERNEL_MODE"
+fi
+
 AC_SUBST(CXXFLAGS)
 
-#echo "$host_os"
 
-if expr "$host_os" : "solaris" > /dev/null
+if expr "$target_os" : "solaris" > /dev/null
 then
     EXTRA_SOCKET="-lnsl -lsocket"
 else
@@ -33,9 +72,9 @@ fi
 AC_SUBST(EXTRA_SOCKET)
 
 
-if expr "$host_os" : ".*bsd.*" > /dev/null
+if expr "$target_os" : ".*bsd.*" > /dev/null
 then
-    if expr "$host_os" : "netbsd.*" > /dev/null
+    if expr "$target_os" : "netbsd.*" > /dev/null
     then
         EXTRA_PTHREAD="-lpthread"
     else
@@ -47,7 +86,7 @@ fi
 AC_SUBST(EXTRA_PTHREAD)
 
 
-if expr "$host_os" : "netbsd.*" > /dev/null
+if expr "$target_os" : "netbsd.*" > /dev/null
 then
     PTHREAD_CFLAGS=`pthread-config --cflags`
     PTHREAD_LDFLAGS=`pthread-config --ldflags`
@@ -65,6 +104,7 @@ AC_CONFIG_FILES(Makefile dnl
         taocrypt/src/Makefile dnl
         src/Makefile dnl
         taocrypt/test/Makefile dnl
+        taocrypt/benchmark/Makefile dnl
         examples/Makefile dnl
         examples/client/Makefile dnl
         examples/server/Makefile dnl

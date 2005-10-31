@@ -26,7 +26,6 @@
 #ifndef TAO_CRYPT_MODES_HPP
 #define TAO_CRYPT_MODES_HPP
 
-#include <string.h>
 #include "misc.hpp"
 
 namespace TaoCrypt {
@@ -75,7 +74,7 @@ public:
     void CBC_Decrypt(byte*, const byte*, word32);
 
     void SetIV(const byte* iv) { memcpy(reg_, iv, blockSz_); }
-private:
+protected:
     int   blockSz_;
     byte* reg_;
     byte* tmp_;

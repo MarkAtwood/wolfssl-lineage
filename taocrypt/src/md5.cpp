@@ -36,7 +36,8 @@ void MD5::Init()
     digest_[3] = 0x10325476L;
 
     buffLen_ = 0;
-    length_  = 0;
+    loLen_  = 0;
+    hiLen_  = 0;
 }
 
 
@@ -44,7 +45,8 @@ MD5::MD5(const MD5& that) : HASHwithTransform(DIGEST_SIZE / sizeof(word32),
                                               BLOCK_SIZE) 
 { 
     buffLen_ = that.buffLen_;
-    length_  = that.length_;
+    loLen_  =  that.loLen_;
+    hiLen_  =  that.hiLen_;
 
     memcpy(digest_, that.digest_, DIGEST_SIZE);
     memcpy(buffer_, that.buffer_, BLOCK_SIZE);
@@ -61,7 +63,8 @@ MD5& MD5::operator= (const MD5& that)
 
 void MD5::Swap(MD5& other)
 {
-    mySTL::swap(length_,  other.length_);
+    mySTL::swap(loLen_,   other.loLen_);
+    mySTL::swap(hiLen_,   other.hiLen_);
     mySTL::swap(buffLen_, other.buffLen_);
 
     memcpy(digest_, other.digest_, DIGEST_SIZE);
@@ -161,9 +164,6 @@ void MD5::Transform()
 
     // Wipe variables
     a = b = c = d = 0;
-
-    buffLen_ = 0;
-    length_ += 512;
 }
 
 } // namespace

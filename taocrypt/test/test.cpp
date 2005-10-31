@@ -163,14 +163,14 @@ void taocrypt_test(void* args)
         printf( "AES      test passed!\n");
 
     if ( (ret = twofish_test()) )
-        err_sys("TwoFish  test failed!\n", ret);
+        err_sys("Twofish  test failed!\n", ret);
     else
-        printf( "TwoFish  test passed!\n");
+        printf( "Twofish  test passed!\n");
 
     if ( (ret = blowfish_test()) )
-        err_sys("BlowFish test failed!\n", ret);
+        err_sys("Blowfish test failed!\n", ret);
     else
-        printf( "BlowFish test passed!\n");
+        printf( "Blowfish test passed!\n");
 
     if ( (ret = rsa_test()) )
         err_sys("RSA      test failed!\n", ret);

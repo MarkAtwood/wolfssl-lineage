@@ -26,7 +26,6 @@
 #ifndef TAO_CRYPT_BLOWFISH_HPP
 #define TAO_CRYPT_BLOWFISH_HPP
 
-#include <string.h>
 #include "misc.hpp"
 #include "modes.hpp"
 #include "algorithm.hpp"
@@ -37,20 +36,20 @@ enum { BLOWFISH_BLOCK_SIZE = 8 };
 
 
 // Blowfish encryption and decryption, see 
-class Blowfish : public Mode_BASE {
+class Blowfish {
 public:
     enum { BLOCK_SIZE = BLOWFISH_BLOCK_SIZE, ROUNDS = 16 };
 
-    Blowfish(CipherDir DIR, Mode MODE)
-        : Mode_BASE(BLOCK_SIZE), dir_(DIR), mode_(MODE) {}
+    Blowfish(CipherDir DIR, Mode MODE) : dir_(DIR), mode_(MODE) {}
 
     void Process(byte*, const byte*, word32);
-    void SetKey(const byte* iv, word32 sz, CipherDir fake = ENCRYPTION);
-
-    void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
+    void SetKey(const byte* key, word32 sz, CipherDir fake = ENCRYPTION);
+    void SetIV(const byte* iv) { memcpy(r_, iv, BLOCK_SIZE); }
 private:
     CipherDir dir_;
     Mode      mode_;
+
+    word32 r_[BLOCK_SIZE / sizeof(word32)];  // for CBC mode
 
 	static const word32 p_init_[ROUNDS + 2];
 	static const word32 s_init_[4 * 256];
@@ -59,6 +58,10 @@ private:
 	word32 sbox_[4 * 256];
 
     void crypt_block(const word32 in[2], word32 out[2]) const;
+
+    //void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
+    void ProcessBlock(const word32 in[2], word32 out[2]) const;
+    void AsmProcess(const byte* in, byte* out) const;
 
     Blowfish(const Blowfish&);            // hide copy
     Blowfish& operator=(const Blowfish&); // and assign

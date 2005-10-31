@@ -60,7 +60,8 @@ void SHA::Init()
     digest_[4] = 0xC3D2E1F0L;
 
     buffLen_ = 0;
-    length_  = 0;
+    loLen_  = 0;
+    hiLen_  = 0;
 }
 
 
@@ -68,7 +69,8 @@ SHA::SHA(const SHA& that) : HASHwithTransform(DIGEST_SIZE / sizeof(word32),
                                               BLOCK_SIZE) 
 { 
     buffLen_ = that.buffLen_;
-    length_  = that.length_;
+    loLen_   = that.loLen_;
+    hiLen_   = that.hiLen_;
 
     memcpy(digest_, that.digest_, DIGEST_SIZE);
     memcpy(buffer_, that.buffer_, BLOCK_SIZE);
@@ -85,7 +87,8 @@ SHA& SHA::operator= (const SHA& that)
 
 void SHA::Swap(SHA& other)
 {
-    mySTL::swap(length_,  other.length_);
+    mySTL::swap(loLen_,   other.loLen_);
+    mySTL::swap(hiLen_,   other.hiLen_);
     mySTL::swap(buffLen_, other.buffLen_);
 
     memcpy(digest_, other.digest_, DIGEST_SIZE);
@@ -136,9 +139,6 @@ void SHA::Transform()
     // Wipe variables
     a = b = c = d = e = 0;
     memset(W, 0, sizeof(W));
-
-    buffLen_ = 0;
-    length_ += 512;
 }
 
 

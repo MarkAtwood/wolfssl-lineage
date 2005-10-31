@@ -1,4 +1,33 @@
-yaSSL Release notes, version 1.0.1
+yaSSL Release notes, version 1.0.5
+
+This release of yaSSL contains minor bug fixes, portability enhancements,
+x86 assembly for AES, 3DES, BLOWFISH, and TWOFISH, --without-debug configure
+option, and --enable-kernel-mode configure option for using TaoCrypt with
+kernel modules.
+
+--To build on Linux, Solaris, *BSD, Mac OS X, or Cygwin:
+
+    ./configure
+    make
+
+    run testsuite from yaSSL-Home/testsuite to test the build
+
+to make a release build:
+
+    ./configure --without-debug
+    make
+
+    run testsuite from yaSSL-Home/testsuite to test the build
+
+
+--To build on Win32
+
+Choose (Re)Build All from the project workspace
+
+run Debug\testsuite.exe from yaSSL-Home\testsuite to test the build
+
+
+******************yaSSL Release notes, version 1.0.1
 
 This release of yaSSL contains minor bug fixes, portability enhancements,
 GCC 3.4.4 support, MSVC 2003 support, and more documentation.

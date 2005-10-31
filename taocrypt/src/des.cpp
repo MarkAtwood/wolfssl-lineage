@@ -19,12 +19,23 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-/* based on Wei Dai's des.cpp from CryptoPP */
+/* C++ part based on Wei Dai's des.cpp from CryptoPP */
+/* x86 asm is original */
+
+
+#if defined(TAOCRYPT_KERNEL_MODE)
+    #define DO_TAOCRYPT_KERNEL_MODE
+#endif                                  // only some modules now support this
+
 
 #include "runtime.hpp"
 #include "des.hpp"
-#include <string.h>
 #include "algorithm.hpp"    // mySTL::swap
+
+
+#if defined(TAOCRYPT_X86ASM_AVAILABLE) && !defined(NO_DES_ASM)
+    #define DO_DES_ASM
+#endif
 
 
 namespace TaoCrypt {
@@ -68,7 +79,7 @@ static const int bytebit[] = {
 };
 
 
-void DES::SetKey(const byte* key, word32 /*length*/, CipherDir dir)
+void BasicDES::SetKey(const byte* key, word32 /*length*/, CipherDir dir)
 {
     byte buffer[56+56+8];
     byte *const pc1m = buffer;                 /* place to modify pc1 into */
@@ -124,15 +135,19 @@ static inline void IPERM(word32& left, word32& right)
     right = rotlFixed(right, 4U);
     work = (left ^ right) & 0xf0f0f0f0;
     left ^= work;
+
     right = rotrFixed(right^work, 20U);
     work = (left ^ right) & 0xffff0000;
     left ^= work;
+
     right = rotrFixed(right^work, 18U);
     work = (left ^ right) & 0x33333333;
     left ^= work;
+
     right = rotrFixed(right^work, 6U);
     work = (left ^ right) & 0x00ff00ff;
     left ^= work;
+
     right = rotlFixed(right^work, 9U);
     work = (left ^ right) & 0xaaaaaaaa;
     left = rotlFixed(left^work, 1U);
@@ -161,7 +176,11 @@ static inline void FPERM(word32& left, word32& right)
     left = rotrFixed(left^work, 4U);
 }
 
-const word32 Spbox[DES::BOXES][DES::BOX_SIZE] = {
+
+#ifdef __CYGWIN__       // otherwise won't be global symbol
+    extern "C"          // needed for .equ becuase of _ prefix
+#endif
+const word32 Spbox[8][64] = {
 {
 0x01010400,0x00000000,0x00010000,0x01010404,
 0x01010004,0x00010404,0x00000004,0x00010000,
@@ -302,7 +321,7 @@ const word32 Spbox[DES::BOXES][DES::BOX_SIZE] = {
 
 
 
-void DES::RawProcessBlock(word32& lIn, word32& rIn) const
+void BasicDES::RawProcessBlock(word32& lIn, word32& rIn) const
 {
     word32 l = lIn, r = rIn;
     const word32* kptr = k_;
@@ -336,7 +355,7 @@ void DES::RawProcessBlock(word32& lIn, word32& rIn) const
 }
 
 
-void DES_BASE::Process(byte* out, const byte* in, word32 sz)
+void DES::Process(byte* out, const byte* in, word32 sz)
 {
     if (mode_ == ECB)
         ECB_Process(out, in, sz);
@@ -347,8 +366,6 @@ void DES_BASE::Process(byte* out, const byte* in, word32 sz)
             CBC_Decrypt(out, in, sz);
 }
 
-
-
 typedef BlockGetAndPut<word32, BigEndian> Block;
 
 
@@ -358,37 +375,23 @@ void DES::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out) const
     Block::Get(in)(l)(r);
     IPERM(l,r);
 
-    const word32* kptr = k_;
-
-    for (unsigned i = 0; i < 8; i++)
-    {
-        word32 work = rotrFixed(r, 4U) ^ kptr[4*i+0];
-        l ^= Spbox[6][(work) & 0x3f]
-          ^  Spbox[4][(work >> 8) & 0x3f]
-          ^  Spbox[2][(work >> 16) & 0x3f]
-          ^  Spbox[0][(work >> 24) & 0x3f];
-        work = r ^ kptr[4*i+1];
-        l ^= Spbox[7][(work) & 0x3f]
-          ^  Spbox[5][(work >> 8) & 0x3f]
-          ^  Spbox[3][(work >> 16) & 0x3f]
-          ^  Spbox[1][(work >> 24) & 0x3f];
-
-        work = rotrFixed(l, 4U) ^ kptr[4*i+2];
-        r ^= Spbox[6][(work) & 0x3f]
-          ^  Spbox[4][(work >> 8) & 0x3f]
-          ^  Spbox[2][(work >> 16) & 0x3f]
-          ^  Spbox[0][(work >> 24) & 0x3f];
-        work = l ^ kptr[4*i+3];
-        r ^= Spbox[7][(work) & 0x3f]
-          ^  Spbox[5][(work >> 8) & 0x3f]
-          ^  Spbox[3][(work >> 16) & 0x3f]
-          ^  Spbox[1][(work >> 24) & 0x3f];
-    }
+    RawProcessBlock(l, r);
 
     FPERM(l,r);
     Block::Put(xOr, out)(r)(l);
 }
 
+
+void DES_EDE2::Process(byte* out, const byte* in, word32 sz)
+{
+    if (mode_ == ECB)
+        ECB_Process(out, in, sz);
+    else if (mode_ == CBC)
+        if (dir_ == ENCRYPTION)
+            CBC_Encrypt(out, in, sz);
+        else
+            CBC_Decrypt(out, in, sz);
+}
 
 void DES_EDE2::SetKey(const byte* key, word32 sz, CipherDir dir)
 {
@@ -403,9 +406,11 @@ void DES_EDE2::ProcessAndXorBlock(const byte* in, const byte* xOr,
     word32 l,r;
     Block::Get(in)(l)(r);
     IPERM(l,r);
+
     des1_.RawProcessBlock(l, r);
     des2_.RawProcessBlock(r, l);
     des1_.RawProcessBlock(l, r);
+
     FPERM(l,r);
     Block::Put(xOr, out)(r)(l);
 }
@@ -418,18 +423,345 @@ void DES_EDE3::SetKey(const byte* key, word32 sz, CipherDir dir)
     des3_.SetKey(key+(dir==DECRYPTION?0:2*8), sz, dir);
 }
 
+
+void DES_EDE3::Process(byte* out, const byte* in, word32 sz)
+{
+    word32 blocks = sz / DES_BLOCK_SIZE;
+
+    if (mode_ == CBC)    
+        if (dir_ == ENCRYPTION)
+            while (blocks--) {
+                r_[0] ^= *(word32*)in;
+                r_[1] ^= *(word32*)(in + 4);
+
+                #if defined(DO_DES_ASM)
+                    AsmProcess((byte*)r_, (byte*)r_);
+                #else
+                    ProcessAndXorBlock(reg_, 0, reg_);
+                #endif
+
+                memcpy(out, r_, DES_BLOCK_SIZE);
+
+                in  += DES_BLOCK_SIZE;
+                out += DES_BLOCK_SIZE;
+            }
+        else
+            while (blocks--) {
+               
+                #if defined(DO_DES_ASM)
+                    AsmProcess(in, out);
+                #else
+                    ProcessAndXorBlock(in, 0, out);
+                #endif
+
+                *(word32*)out       ^= r_[0];
+                *(word32*)(out + 4) ^= r_[1];
+
+                memcpy(r_, in, DES_BLOCK_SIZE);
+
+                out += DES_BLOCK_SIZE;
+                in  += DES_BLOCK_SIZE;
+            }
+    else
+        while (blocks--) {
+               
+            #if defined(DO_DES_ASM)
+                AsmProcess(in, out);
+            #else
+                ProcessAndXorBlock(in, 0, out);
+            #endif
+
+            out += DES_BLOCK_SIZE;
+            in  += DES_BLOCK_SIZE;
+        }
+}
+
+
 void DES_EDE3::ProcessAndXorBlock(const byte* in, const byte* xOr,
                                   byte* out) const
 {
     word32 l,r;
     Block::Get(in)(l)(r);
     IPERM(l,r);
+
     des1_.RawProcessBlock(l, r);
     des2_.RawProcessBlock(r, l);
     des3_.RawProcessBlock(l, r);
+
     FPERM(l,r);
     Block::Put(xOr, out)(r)(l);
 }
+
+
+#if defined(DO_DES_ASM)
+
+/* Uses IPERM algorithm from above
+
+   left  is in aex
+   right is in ebx
+
+   uses ecx
+*/
+#define AsmIPERM() {\
+    AS2(    rol   ebx, 4                        )   \
+    AS2(    mov   ecx, eax                      )   \
+    AS2(    xor   ecx, ebx                      )   \
+    AS2(    and   ecx, 0xf0f0f0f0               )   \
+    AS2(    xor   ebx, ecx                      )   \
+    AS2(    xor   eax, ecx                      )   \
+    AS2(    ror   ebx, 20                       )   \
+    AS2(    mov   ecx, eax                      )   \
+    AS2(    xor   ecx, ebx                      )   \
+    AS2(    and   ecx, 0xffff0000               )   \
+    AS2(    xor   ebx, ecx                      )   \
+    AS2(    xor   eax, ecx                      )   \
+    AS2(    ror   ebx, 18                       )   \
+    AS2(    mov   ecx, eax                      )   \
+    AS2(    xor   ecx, ebx                      )   \
+    AS2(    and   ecx, 0x33333333               )   \
+    AS2(    xor   ebx, ecx                      )   \
+    AS2(    xor   eax, ecx                      )   \
+    AS2(    ror   ebx, 6                        )   \
+    AS2(    mov   ecx, eax                      )   \
+    AS2(    xor   ecx, ebx                      )   \
+    AS2(    and   ecx, 0x00ff00ff               )   \
+    AS2(    xor   ebx, ecx                      )   \
+    AS2(    xor   eax, ecx                      )   \
+    AS2(    rol   ebx, 9                        )   \
+    AS2(    mov   ecx, eax                      )   \
+    AS2(    xor   ecx, ebx                      )   \
+    AS2(    and   ecx, 0xaaaaaaaa               )   \
+    AS2(    xor   eax, ecx                      )   \
+    AS2(    rol   eax, 1                        )   \
+    AS2(    xor   ebx, ecx                      ) }
+
+
+/* Uses FPERM algorithm from above
+
+   left  is in aex
+   right is in ebx
+
+   uses ecx
+*/
+#define AsmFPERM()    {\
+    AS2(    ror  ebx, 1                     )    \
+    AS2(    mov  ecx, eax                   )    \
+    AS2(    xor  ecx, ebx                   )    \
+    AS2(    and  ecx, 0xaaaaaaaa            )    \
+    AS2(    xor  eax, ecx                   )    \
+    AS2(    xor  ebx, ecx                   )    \
+    AS2(    ror  eax, 9                     )    \
+    AS2(    mov  ecx, ebx                   )    \
+    AS2(    xor  ecx, eax                   )    \
+    AS2(    and  ecx, 0x00ff00ff            )    \
+    AS2(    xor  eax, ecx                   )    \
+    AS2(    xor  ebx, ecx                   )    \
+    AS2(    rol  eax, 6                     )    \
+    AS2(    mov  ecx, ebx                   )    \
+    AS2(    xor  ecx, eax                   )    \
+    AS2(    and  ecx, 0x33333333            )    \
+    AS2(    xor  eax, ecx                   )    \
+    AS2(    xor  ebx, ecx                   )    \
+    AS2(    rol  eax, 18                    )    \
+    AS2(    mov  ecx, ebx                   )    \
+    AS2(    xor  ecx, eax                   )    \
+    AS2(    and  ecx, 0xffff0000            )    \
+    AS2(    xor  eax, ecx                   )    \
+    AS2(    xor  ebx, ecx                   )    \
+    AS2(    rol  eax, 20                    )    \
+    AS2(    mov  ecx, ebx                   )    \
+    AS2(    xor  ecx, eax                   )    \
+    AS2(    and  ecx, 0xf0f0f0f0            )    \
+    AS2(    xor  eax, ecx                   )    \
+    AS2(    xor  ebx, ecx                   )    \
+    AS2(    ror  eax, 4                     ) }
+
+
+
+
+/* DesRound implements this algorithm:
+
+        word32 work = rotrFixed(r, 4U) ^ key[0];
+        l ^= Spbox[6][(work) & 0x3f]
+          ^  Spbox[4][(work >> 8) & 0x3f]
+          ^  Spbox[2][(work >> 16) & 0x3f]
+          ^  Spbox[0][(work >> 24) & 0x3f];
+        work = r ^ key[1];
+        l ^= Spbox[7][(work) & 0x3f]
+          ^  Spbox[5][(work >> 8) & 0x3f]
+          ^  Spbox[3][(work >> 16) & 0x3f]
+          ^  Spbox[1][(work >> 24) & 0x3f];
+
+        work = rotrFixed(l, 4U) ^ key[2];
+        r ^= Spbox[6][(work) & 0x3f]
+          ^  Spbox[4][(work >> 8) & 0x3f]
+          ^  Spbox[2][(work >> 16) & 0x3f]
+          ^  Spbox[0][(work >> 24) & 0x3f];
+        work = l ^ key[3];
+        r ^= Spbox[7][(work) & 0x3f]
+          ^  Spbox[5][(work >> 8) & 0x3f]
+          ^  Spbox[3][(work >> 16) & 0x3f]
+          ^  Spbox[1][(work >> 24) & 0x3f];
+
+   left  is in aex
+   right is in ebx
+   key   is in edx
+
+   edvances key for next round
+
+   uses ecx, esi, and edi
+*/
+#define DesRound() {\
+    AS2(    mov   ecx,  ebx                     )\
+    AS2(    ror   ecx,  4                       )\
+    AS2(    xor   ecx,  DWORD PTR [edx]         )\
+    AS2(    and   ecx,  0x3f3f3f3f              )\
+    AS2(    movzx esi,  cl                      )\
+    AS2(    movzx edi,  ch                      )\
+    AS2(    xor   eax,  Spbox[esi*4 + 6*256]    )\
+    AS2(    shr   ecx,  16                      )\
+    AS2(    xor   eax,  Spbox[edi*4 + 4*256]    )\
+    AS2(    movzx esi,  cl                      )\
+    AS2(    xor   eax,  Spbox[esi*4 + 2*256]    )\
+    AS2(    movzx edi,  ch                      )\
+    AS2(    xor   eax,  Spbox[edi*4]            )\
+    AS2(    mov   ecx,  ebx                     )\
+    AS2(    xor   ecx,  DWORD PTR [edx + 4]     )\
+    AS2(    and   ecx,  0x3f3f3f3f              )\
+    AS2(    movzx esi,  cl                      )\
+    AS2(    movzx edi,  ch                      )\
+    AS2(    xor   eax,  Spbox[esi*4 + 7*256]    )\
+    AS2(    shr   ecx,  16                      )\
+    AS2(    xor   eax,  Spbox[edi*4 + 5*256]    )\
+    AS2(    movzx esi,  cl                      )\
+    AS2(    xor   eax,  Spbox[esi*4 + 3*256]    )\
+    AS2(    movzx edi,  ch                      )\
+    AS2(    xor   eax,  Spbox[edi*4 + 1*256]    )\
+    AS2(    mov   ecx,  eax                     )\
+    AS2(    ror   ecx,  4                       )\
+    AS2(    xor   ecx,  DWORD PTR [edx + 8]     )\
+    AS2(    and   ecx,  0x3f3f3f3f              )\
+    AS2(    movzx esi,  cl                      )\
+    AS2(    movzx edi,  ch                      )\
+    AS2(    xor   ebx,  Spbox[esi*4 + 6*256]    )\
+    AS2(    shr   ecx,  16                      )\
+    AS2(    xor   ebx,  Spbox[edi*4 + 4*256]    )\
+    AS2(    movzx esi,  cl                      )\
+    AS2(    xor   ebx,  Spbox[esi*4 + 2*256]    )\
+    AS2(    movzx edi,  ch                      )\
+    AS2(    xor   ebx,  Spbox[edi*4]            )\
+    AS2(    mov   ecx,  eax                     )\
+    AS2(    xor   ecx,  DWORD PTR [edx + 12]    )\
+    AS2(    and   ecx,  0x3f3f3f3f              )\
+    AS2(    movzx esi,  cl                      )\
+    AS2(    movzx edi,  ch                      )\
+    AS2(    xor   ebx,  Spbox[esi*4 + 7*256]    )\
+    AS2(    shr   ecx,  16                      )\
+    AS2(    xor   ebx,  Spbox[edi*4 + 5*256]    )\
+    AS2(    movzx esi,  cl                      )\
+    AS2(    xor   ebx,  Spbox[esi*4 + 3*256]    )\
+    AS2(    movzx edi,  ch                      )\
+    AS2(    xor   ebx,  Spbox[edi*4 + 1*256]    )\
+    AS2(    add   edx,  16                      ) }
+
+
+void DES_EDE3::AsmProcess(const byte* in, byte* out) const
+{
+#ifdef __GNUC__
+    #define AS1(x)    asm(#x);
+    #define AS2(x, y) asm(#x ", " #y);
+    #ifdef __CYGWIN__
+        asm(".equ Spbox, _Spbox");
+    #else
+        asm(".equ Spbox, _ZN8TaoCrypt5SpboxE");
+    #endif
+    asm(".intel_syntax noprefix");
+    AS2(    movd  mm3, edi                      )   // save edi
+    AS2(    movd  mm4, ebx                      )   // save ebx
+    AS2(    movd  mm5, esi                      )   // save esi
+    AS2(    mov   esi, DWORD PTR [ebp + 12]     )   // inBlock
+    AS2(    mov   edx, DWORD PTR [ebp +  8]     )   // this
+#else
+    #define AS1(x)      __asm x
+    #define AS2(x, y)   __asm x, y
+    AS2(    mov   esi, DWORD PTR [ebp +  8]     )   // inBlock
+    AS2(    mov   edx, ecx                      )   // this 
+#endif
+
+    AS2(    movd  mm2, edx                      )
+    AS2(    add   edx, 8                        )   // des1 = des1 key
+
+    AS2(    mov   eax, DWORD PTR [esi]          )
+    AS1(    bswap eax                           )    // left
+
+    AS2(    mov   ebx, DWORD PTR [esi + 4]      )
+    AS1(    bswap ebx                           )    // right
+
+    AsmIPERM()
+
+    DesRound() // 1
+    DesRound() // 2
+    DesRound() // 3
+    DesRound() // 4
+    DesRound() // 5
+    DesRound() // 6
+    DesRound() // 7
+    DesRound() // 8
+
+    // swap left and right 
+    AS2(    xchg  eax, ebx                      )
+
+    DesRound() // 1
+    DesRound() // 2
+    DesRound() // 3
+    DesRound() // 4
+    DesRound() // 5
+    DesRound() // 6
+    DesRound() // 7
+    DesRound() // 8
+
+    // swap left and right
+    AS2(    xchg  eax, ebx                      )
+
+    DesRound() // 1
+    DesRound() // 2
+    DesRound() // 3
+    DesRound() // 4
+    DesRound() // 5
+    DesRound() // 6
+    DesRound() // 7
+    DesRound() // 8
+
+    AsmFPERM()
+
+    // swap and write out
+    AS1(    bswap ebx                           )
+    AS1(    bswap eax                           )
+
+#ifdef __GNUC__
+    AS2(    mov   esi, DWORD PTR [ebp +  16]    )   // outBlock
+#else
+    AS2(    mov   esi, DWORD PTR [ebp +  12]    )   // outBlock
+#endif
+
+    AS2(    mov   DWORD PTR [esi],     ebx      )   // right first
+    AS2(    mov   DWORD PTR [esi + 4], eax      )
+
+#ifdef __GNUC__
+    AS2(    movd  edi, mm3                      )   // restore edi
+    AS2(    movd  ebx, mm4                      )   // restore ebx
+    AS2(    movd  esi, mm5                      )   // restore esi
+    AS1(    emms                                )
+    asm(".att_syntax");
+#else
+    AS1(    emms                                )
+#endif
+   
+}
+
+
+
+#endif // defined(DO_DES_ASM)
 
 
 }  // namespace

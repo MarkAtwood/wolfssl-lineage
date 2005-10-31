@@ -37,7 +37,8 @@ void RIPEMD160::Init()
     digest_[4] = 0xc3d2e1f0L;
 
     buffLen_ = 0;
-    length_  = 0;
+    loLen_  = 0;
+    hiLen_  = 0;
 }
 
 
@@ -45,7 +46,8 @@ RIPEMD160::RIPEMD160(const RIPEMD160& that)
     : HASHwithTransform(DIGEST_SIZE / sizeof(word32), BLOCK_SIZE) 
 { 
     buffLen_ = that.buffLen_;
-    length_  = that.length_;
+    loLen_   = that.loLen_;
+    hiLen_   = that.hiLen_;
 
     memcpy(digest_, that.digest_, DIGEST_SIZE);
     memcpy(buffer_, that.buffer_, BLOCK_SIZE);
@@ -63,7 +65,8 @@ RIPEMD160& RIPEMD160::operator= (const RIPEMD160& that)
 
 void RIPEMD160::Swap(RIPEMD160& other)
 {
-    mySTL::swap(length_,  other.length_);
+    mySTL::swap(loLen_,   other.loLen_);
+    mySTL::swap(hiLen_,   other.hiLen_);
     mySTL::swap(buffLen_, other.buffLen_);
 
     memcpy(digest_, other.digest_, DIGEST_SIZE);
@@ -281,9 +284,6 @@ void RIPEMD160::Transform()
     digest_[3] = digest_[4] + a1 + b2;
     digest_[4] = digest_[0] + b1 + c2;
     digest_[0] = c1;
-
-    buffLen_ = 0;
-    length_ += 512;
 }
 
 
