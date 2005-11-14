@@ -232,7 +232,12 @@ enum KeyType  { DSAk = 515, RSAk = 645 };     // sums of algo OID
 // an x509v Certificate BER Decoder
 class CertDecoder : public BER_Decoder {
 public:
-    explicit CertDecoder(Source&, bool decode = true, SignerList* = 0);
+    enum DateType { BEFORE, AFTER };   
+    enum NameType { ISSUER, SUBJECT };
+    enum CertType { CA, USER };
+
+    explicit CertDecoder(Source&, bool decode = true, SignerList* sl = 0,
+                         CertType ct = USER);
     ~CertDecoder();
 
     const PublicKey& GetPublicKey()  const { return key_; }
@@ -242,9 +247,6 @@ public:
     const byte*      GetHash()       const { return subjectHash_; }
 
     void DecodeToKey();
-
-    enum DateType { BEFORE, AFTER };   
-    enum NameType { ISSUER, SUBJECT };
 private:
     PublicKey key_;
     word32    certBegin_;               // offset to start of cert
@@ -259,7 +261,7 @@ private:
     char*     subject_;                 // CommonName
 
     void   ReadHeader();
-    void   Decode(SignerList*);
+    void   Decode(SignerList*, CertType);
     void   StoreKey();
     void   AddDSA();
     bool   ValidateSelfSignature();

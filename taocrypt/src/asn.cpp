@@ -421,12 +421,13 @@ void DH_Decoder::Decode(DH& key)
 }
 
 
-CertDecoder::CertDecoder(Source& s, bool decode, SignerList* signers)
+CertDecoder::CertDecoder(Source& s, bool decode, SignerList* signers,
+                         CertType ct)
     : BER_Decoder(s), certBegin_(0), sigIndex_(0), sigLength_(0),
       signature_(0), issuer_(0), subject_(0)
 { 
     if (decode)
-        Decode(signers); 
+        Decode(signers, ct); 
 }
 
 
@@ -455,7 +456,7 @@ void CertDecoder::ReadHeader()
 
 
 // Decode a x509v3 Certificate
-void CertDecoder::Decode(SignerList* signers)
+void CertDecoder::Decode(SignerList* signers, CertType ct)
 {
     if (source_.GetError().What()) return;
     DecodeToKey();
@@ -473,13 +474,17 @@ void CertDecoder::Decode(SignerList* signers)
         return;
     }
 
-    if ( memcmp(issuerHash_, subjectHash_, SHA::DIGEST_SIZE) == 0 ) {
-        if (!ValidateSelfSignature())
-            source_.SetError(SIG_CONFIRM_E);
+    if (ct == CA) {
+        if ( memcmp(issuerHash_, subjectHash_, SHA::DIGEST_SIZE) == 0 ) {
+            if (!ValidateSelfSignature())
+                source_.SetError(SIG_CONFIRM_E);
+        }
+        else
+            if (!ValidateSignature(signers))
+                source_.SetError(SIG_OTHER_E);
     }
-    else
-        if (!ValidateSignature(signers))
-            source_.SetError(SIG_OTHER_E);
+    else if (!ValidateSignature(signers))
+        source_.SetError(SIG_OTHER_E);
 }
 
 
@@ -802,7 +807,7 @@ bool CertDecoder::ValidateSignature(SignerList* signers)
 }
 
 
-// RSA confirm
+// confirm certificate signature
 bool CertDecoder::ConfirmSignature(Source& pub)
 {
     HashType ht;

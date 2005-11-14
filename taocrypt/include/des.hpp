@@ -52,10 +52,11 @@ public:
         : Mode_BASE(DES_BLOCK_SIZE), dir_(DIR), mode_(MODE) {}
 
     void Process(byte*, const byte*, word32);
-    void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
 private:
     CipherDir dir_;
     Mode      mode_;
+
+    void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
 
     DES(const DES&);              // hide copy
     DES& operator=(const DES&);   // and assign
@@ -70,13 +71,14 @@ public:
 
     void SetKey(const byte*, word32, CipherDir dir);
     void Process(byte*, const byte*, word32);
-    void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
 private:
     CipherDir dir_;
     Mode      mode_;
 
     BasicDES  des1_;
     BasicDES  des2_;
+
+    void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
 
     DES_EDE2(const DES_EDE2&);              // hide copy
     DES_EDE2& operator=(const DES_EDE2&);   // and assign
@@ -85,9 +87,10 @@ private:
 
 
 // DES_EDE3
-class DES_EDE3 {
+class DES_EDE3 : public Mode_BASE {
 public:
-    DES_EDE3(CipherDir DIR, Mode MODE) : dir_(DIR), mode_(MODE) {}
+    DES_EDE3(CipherDir DIR, Mode MODE)
+        : Mode_BASE(DES_BLOCK_SIZE), dir_(DIR), mode_(MODE) {}
 
     void SetKey(const byte*, word32, CipherDir dir);
     void SetIV(const byte* iv) { memcpy(r_, iv, DES_BLOCK_SIZE); }
@@ -100,10 +103,8 @@ private:
     BasicDES  des2_;
     BasicDES  des3_;
 
-    word32    r_[DES_BLOCK_SIZE / sizeof(word32)];  // for CBC mode
-
+    void AsmProcess(const byte* in, byte* out, void* box) const;
     void ProcessAndXorBlock(const byte*, const byte*, byte*) const;
-    void AsmProcess(const byte* in, byte* out) const;
 
     DES_EDE3(const DES_EDE3&);              // hide copy
     DES_EDE3& operator=(const DES_EDE3&);   // and assign

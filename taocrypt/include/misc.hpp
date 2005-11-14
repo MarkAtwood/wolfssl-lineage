@@ -102,12 +102,20 @@ public:
 #endif
 
 
-
+// Turn on ia32 ASM for Big Integer
 // CodeWarrior defines _MSC_VER
 #if !defined(TAOCRYPT_DISABLE_X86ASM) && ((defined(_MSC_VER) && \
    !defined(__MWERKS__) && defined(_M_IX86)) || \
    (defined(__GNUC__) && defined(__i386__)))
     #define TAOCRYPT_X86ASM_AVAILABLE
+#endif
+
+
+// Turn on ia32 ASM for Ciphers and Message Digests
+// For GCC user has to enable during ./configure because of problems with
+// intel syntax addressing on older gas versions
+#if defined(TAOCRYPT_X86ASM_AVAILABLE) && defined(_MSC_VER)
+    #define TAO_ASM
 #endif
 
 

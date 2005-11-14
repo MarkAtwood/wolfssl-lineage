@@ -161,7 +161,8 @@ void CertManager::CopySelfCert(const x509* x)
 int CertManager::CopyCaCert(const x509* x)
 {
     TaoCrypt::Source source(x->get_buffer(), x->get_length());
-    TaoCrypt::CertDecoder cert(source, true, &signers_);
+    TaoCrypt::CertDecoder cert(source, true, &signers_,
+                               TaoCrypt::CertDecoder::CA);
 
     if (!cert.GetError().What()) {
         const TaoCrypt::PublicKey& key = cert.GetPublicKey();

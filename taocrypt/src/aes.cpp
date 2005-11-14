@@ -30,13 +30,31 @@
 #include "aes.hpp"
 
 
-#if defined(TAOCRYPT_X86ASM_AVAILABLE) && !defined(NO_AES_ASM)
+#if defined(TAOCRYPT_X86ASM_AVAILABLE) && defined(TAO_ASM)
     #define DO_AES_ASM
 #endif
+
 
 namespace TaoCrypt {
 
 
+#if !defined(DO_AES_ASM)
+
+// Generic Version
+void AES::Process(byte* out, const byte* in, word32 sz)
+{
+    if (mode_ == ECB)
+        ECB_Process(out, in, sz);
+    else if (mode_ == CBC)
+        if (dir_ == ENCRYPTION)
+            CBC_Encrypt(out, in, sz);
+        else
+            CBC_Decrypt(out, in, sz);
+}
+
+#else
+
+// ia32 optimized version
 void AES::Process(byte* out, const byte* in, word32 sz)
 {
     word32 blocks = sz / BLOCK_SIZE;
@@ -44,18 +62,9 @@ void AES::Process(byte* out, const byte* in, word32 sz)
     if (mode_ == ECB)
         while (blocks--) {
             if (dir_ == ENCRYPTION)
-                #if defined(DO_AES_ASM)
-                    AsmEncrypt(in, out);
-                #else
-                    encrypt(in, 0, out);
-                #endif
+                AsmEncrypt(in, out, (void*)Te0);
             else
-                #if defined(DO_AES_ASM)
-                    AsmDecrypt(in, out);
-                #else
-                    decrypt(in, 0, out);
-                #endif
-
+                AsmDecrypt(in, out, (void*)Td0);               
             out += BLOCK_SIZE;
             in  += BLOCK_SIZE;
         }
@@ -67,38 +76,28 @@ void AES::Process(byte* out, const byte* in, word32 sz)
                 r_[2] ^= *(word32*)(in +  8);
                 r_[3] ^= *(word32*)(in + 12);
 
-                #if defined(DO_AES_ASM)
-                    AsmEncrypt((byte*)r_, (byte*)r_);
-                #else
-                    encrypt((byte*)r_, 0, (byte*)r_);
-                #endif
+                AsmEncrypt((byte*)r_, (byte*)r_, (void*)Te0);
 
                 memcpy(out, r_, BLOCK_SIZE);
-
                 out += BLOCK_SIZE;
                 in  += BLOCK_SIZE;
             }
         else
             while (blocks--) {
-                #if defined(DO_AES_ASM)
-                    AsmDecrypt(in, out);
-                #else
-                    decrypt(in, 0, out);
-                #endif
-
+                AsmDecrypt(in, out, (void*)Td0);
+                
                 *(word32*)out        ^= r_[0];
                 *(word32*)(out +  4) ^= r_[1];
                 *(word32*)(out +  8) ^= r_[2];
                 *(word32*)(out + 12) ^= r_[3];
 
                 memcpy(r_, in, BLOCK_SIZE);
-
                 out += BLOCK_SIZE;
                 in  += BLOCK_SIZE;
             }
 }
 
-
+#endif // DO_AES_ASM
 
 
 void AES::SetKey(const byte* userKey, word32 keylen, CipherDir /*dummy*/)
@@ -119,10 +118,10 @@ void AES::SetKey(const byte* userKey, word32 keylen, CipherDir /*dummy*/)
         {
             temp  = rk[3];
             rk[4] = rk[0] ^
-                (lTe4[GETBYTE(temp, 2)] & 0xff000000) ^
-                (lTe4[GETBYTE(temp, 1)] & 0x00ff0000) ^
-                (lTe4[GETBYTE(temp, 0)] & 0x0000ff00) ^
-                (lTe4[GETBYTE(temp, 3)] & 0x000000ff) ^
+                (Te4[GETBYTE(temp, 2)] & 0xff000000) ^
+                (Te4[GETBYTE(temp, 1)] & 0x00ff0000) ^
+                (Te4[GETBYTE(temp, 0)] & 0x0000ff00) ^
+                (Te4[GETBYTE(temp, 3)] & 0x000000ff) ^
                 rcon_[i];
             rk[5] = rk[1] ^ rk[4];
             rk[6] = rk[2] ^ rk[5];
@@ -138,10 +137,10 @@ void AES::SetKey(const byte* userKey, word32 keylen, CipherDir /*dummy*/)
         {
             temp = rk[ 5];
             rk[ 6] = rk[ 0] ^
-                (lTe4[GETBYTE(temp, 2)] & 0xff000000) ^
-                (lTe4[GETBYTE(temp, 1)] & 0x00ff0000) ^
-                (lTe4[GETBYTE(temp, 0)] & 0x0000ff00) ^
-                (lTe4[GETBYTE(temp, 3)] & 0x000000ff) ^
+                (Te4[GETBYTE(temp, 2)] & 0xff000000) ^
+                (Te4[GETBYTE(temp, 1)] & 0x00ff0000) ^
+                (Te4[GETBYTE(temp, 0)] & 0x0000ff00) ^
+                (Te4[GETBYTE(temp, 3)] & 0x000000ff) ^
                 rcon_[i];
             rk[ 7] = rk[ 1] ^ rk[ 6];
             rk[ 8] = rk[ 2] ^ rk[ 7];
@@ -159,10 +158,10 @@ void AES::SetKey(const byte* userKey, word32 keylen, CipherDir /*dummy*/)
         {
             temp = rk[ 7];
             rk[ 8] = rk[ 0] ^
-                (lTe4[GETBYTE(temp, 2)] & 0xff000000) ^
-                (lTe4[GETBYTE(temp, 1)] & 0x00ff0000) ^
-                (lTe4[GETBYTE(temp, 0)] & 0x0000ff00) ^
-                (lTe4[GETBYTE(temp, 3)] & 0x000000ff) ^
+                (Te4[GETBYTE(temp, 2)] & 0xff000000) ^
+                (Te4[GETBYTE(temp, 1)] & 0x00ff0000) ^
+                (Te4[GETBYTE(temp, 0)] & 0x0000ff00) ^
+                (Te4[GETBYTE(temp, 3)] & 0x000000ff) ^
                 rcon_[i];
             rk[ 9] = rk[ 1] ^ rk[ 8];
             rk[10] = rk[ 2] ^ rk[ 9];
@@ -171,10 +170,10 @@ void AES::SetKey(const byte* userKey, word32 keylen, CipherDir /*dummy*/)
                 break;
             temp = rk[11];
             rk[12] = rk[ 4] ^
-                (lTe4[GETBYTE(temp, 3)] & 0xff000000) ^
-                (lTe4[GETBYTE(temp, 2)] & 0x00ff0000) ^
-                (lTe4[GETBYTE(temp, 1)] & 0x0000ff00) ^
-                (lTe4[GETBYTE(temp, 0)] & 0x000000ff);
+                (Te4[GETBYTE(temp, 3)] & 0xff000000) ^
+                (Te4[GETBYTE(temp, 2)] & 0x00ff0000) ^
+                (Te4[GETBYTE(temp, 1)] & 0x0000ff00) ^
+                (Te4[GETBYTE(temp, 0)] & 0x000000ff);
             rk[13] = rk[ 5] ^ rk[12];
             rk[14] = rk[ 6] ^ rk[13];
             rk[15] = rk[ 7] ^ rk[14];
@@ -201,52 +200,59 @@ void AES::SetKey(const byte* userKey, word32 keylen, CipherDir /*dummy*/)
         for (i = 1; i < rounds_; i++) {
             rk += 4;
             rk[0] =
-                lTd0[lTe4[GETBYTE(rk[0], 3)] & 0xff] ^
-                lTd1[lTe4[GETBYTE(rk[0], 2)] & 0xff] ^
-                lTd2[lTe4[GETBYTE(rk[0], 1)] & 0xff] ^
-                lTd3[lTe4[GETBYTE(rk[0], 0)] & 0xff];
+                Td0[Te4[GETBYTE(rk[0], 3)] & 0xff] ^
+                Td1[Te4[GETBYTE(rk[0], 2)] & 0xff] ^
+                Td2[Te4[GETBYTE(rk[0], 1)] & 0xff] ^
+                Td3[Te4[GETBYTE(rk[0], 0)] & 0xff];
             rk[1] =
-                lTd0[lTe4[GETBYTE(rk[1], 3)] & 0xff] ^
-                lTd1[lTe4[GETBYTE(rk[1], 2)] & 0xff] ^
-                lTd2[lTe4[GETBYTE(rk[1], 1)] & 0xff] ^
-                lTd3[lTe4[GETBYTE(rk[1], 0)] & 0xff];
+                Td0[Te4[GETBYTE(rk[1], 3)] & 0xff] ^
+                Td1[Te4[GETBYTE(rk[1], 2)] & 0xff] ^
+                Td2[Te4[GETBYTE(rk[1], 1)] & 0xff] ^
+                Td3[Te4[GETBYTE(rk[1], 0)] & 0xff];
             rk[2] =
-                lTd0[lTe4[GETBYTE(rk[2], 3)] & 0xff] ^
-                lTd1[lTe4[GETBYTE(rk[2], 2)] & 0xff] ^
-                lTd2[lTe4[GETBYTE(rk[2], 1)] & 0xff] ^
-                lTd3[lTe4[GETBYTE(rk[2], 0)] & 0xff];
+                Td0[Te4[GETBYTE(rk[2], 3)] & 0xff] ^
+                Td1[Te4[GETBYTE(rk[2], 2)] & 0xff] ^
+                Td2[Te4[GETBYTE(rk[2], 1)] & 0xff] ^
+                Td3[Te4[GETBYTE(rk[2], 0)] & 0xff];
             rk[3] =
-                lTd0[lTe4[GETBYTE(rk[3], 3)] & 0xff] ^
-                lTd1[lTe4[GETBYTE(rk[3], 2)] & 0xff] ^
-                lTd2[lTe4[GETBYTE(rk[3], 1)] & 0xff] ^
-                lTd3[lTe4[GETBYTE(rk[3], 0)] & 0xff];
+                Td0[Te4[GETBYTE(rk[3], 3)] & 0xff] ^
+                Td1[Te4[GETBYTE(rk[3], 2)] & 0xff] ^
+                Td2[Te4[GETBYTE(rk[3], 1)] & 0xff] ^
+                Td3[Te4[GETBYTE(rk[3], 0)] & 0xff];
         }
     }
 }
 
 
-#if !defined(DO_AES_ASM)
+void AES::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out) const
+{
+    if (dir_ == ENCRYPTION)
+        encrypt(in, xOr, out);
+    else
+        decrypt(in, xOr, out);
+}
 
 
+typedef BlockGetAndPut<word32, BigEndian> gpBlock;
+
+	
 void AES::encrypt(const byte* inBlock, const byte* xorBlock,
                   byte* outBlock) const
 {
-    word32 s[4];
+    word32 s0, s1, s2, s3;
     word32 t0, t1, t2, t3;
 
-    const word32 *rk = key_.get_buffer();
+    const word32 *rk = key_;
     /*
      * map byte array block to cipher state
      * and add initial round key:
      */
-    {
-        word32* in = (word32*)inBlock;
-        s[0] = LittleReverse(*in++) ^ rk[0];
-        s[1] = LittleReverse(*in++) ^ rk[1];
-        s[2] = LittleReverse(*in++) ^ rk[2];
-        s[3] = LittleReverse(*in)   ^ rk[3];
-    }
-
+    gpBlock::Get(inBlock)(s0)(s1)(s2)(s3);
+    s0 ^= rk[0];
+    s1 ^= rk[1];
+    s2 ^= rk[2];
+    s3 ^= rk[3];
+   
     /*
      * Nr - 1 full rounds:
      */
@@ -254,28 +260,28 @@ void AES::encrypt(const byte* inBlock, const byte* xorBlock,
     unsigned int r = rounds_ >> 1;
     for (;;) {
         t0 =
-            lTe0[GETBYTE(s[0], 3)] ^
-            lTe1[GETBYTE(s[1], 2)]  ^
-            lTe2[GETBYTE(s[2], 1)]  ^
-            lTe3[GETBYTE(s[3], 0)]  ^
+            Te0[GETBYTE(s0, 3)] ^
+            Te1[GETBYTE(s1, 2)]  ^
+            Te2[GETBYTE(s2, 1)]  ^
+            Te3[GETBYTE(s3, 0)]  ^
             rk[4];
         t1 =
-            lTe0[GETBYTE(s[1], 3)] ^
-            lTe1[GETBYTE(s[2], 2)]  ^
-            lTe2[GETBYTE(s[3], 1)]  ^
-            lTe3[GETBYTE(s[0], 0)]  ^
+            Te0[GETBYTE(s1, 3)] ^
+            Te1[GETBYTE(s2, 2)]  ^
+            Te2[GETBYTE(s3, 1)]  ^
+            Te3[GETBYTE(s0, 0)]  ^
             rk[5];
         t2 =
-            lTe0[GETBYTE(s[2], 3)] ^
-            lTe1[GETBYTE(s[3], 2)]  ^
-            lTe2[GETBYTE(s[0], 1)]  ^
-            lTe3[GETBYTE(s[1], 0)]  ^
+            Te0[GETBYTE(s2, 3)] ^
+            Te1[GETBYTE(s3, 2)]  ^
+            Te2[GETBYTE(s0, 1)]  ^
+            Te3[GETBYTE(s1, 0)]  ^
             rk[6];
         t3 =
-            lTe0[GETBYTE(s[3], 3)] ^
-            lTe1[GETBYTE(s[0], 2)]  ^
-            lTe2[GETBYTE(s[1], 1)]  ^
-            lTe3[GETBYTE(s[2], 0)]  ^
+            Te0[GETBYTE(s3, 3)] ^
+            Te1[GETBYTE(s0, 2)]  ^
+            Te2[GETBYTE(s1, 1)]  ^
+            Te3[GETBYTE(s2, 0)]  ^
             rk[7];
 
         rk += 8;
@@ -283,29 +289,29 @@ void AES::encrypt(const byte* inBlock, const byte* xorBlock,
             break;
         }
         
-        s[0] =
-            lTe0[GETBYTE(t0, 3)] ^
-            lTe1[GETBYTE(t1, 2)] ^
-            lTe2[GETBYTE(t2, 1)] ^
-            lTe3[GETBYTE(t3, 0)] ^
+        s0 =
+            Te0[GETBYTE(t0, 3)] ^
+            Te1[GETBYTE(t1, 2)] ^
+            Te2[GETBYTE(t2, 1)] ^
+            Te3[GETBYTE(t3, 0)] ^
             rk[0];
-        s[1] =
-            lTe0[GETBYTE(t1, 3)] ^
-            lTe1[GETBYTE(t2, 2)] ^
-            lTe2[GETBYTE(t3, 1)] ^
-            lTe3[GETBYTE(t0, 0)] ^
+        s1 =
+            Te0[GETBYTE(t1, 3)] ^
+            Te1[GETBYTE(t2, 2)] ^
+            Te2[GETBYTE(t3, 1)] ^
+            Te3[GETBYTE(t0, 0)] ^
             rk[1];
-        s[2] =
-            lTe0[GETBYTE(t2, 3)] ^
-            lTe1[GETBYTE(t3, 2)] ^
-            lTe2[GETBYTE(t0, 1)] ^
-            lTe3[GETBYTE(t1, 0)] ^
+        s2 =
+            Te0[GETBYTE(t2, 3)] ^
+            Te1[GETBYTE(t3, 2)] ^
+            Te2[GETBYTE(t0, 1)] ^
+            Te3[GETBYTE(t1, 0)] ^
             rk[2];
-        s[3] =
-            lTe0[GETBYTE(t3, 3)] ^
-            lTe1[GETBYTE(t0, 2)] ^
-            lTe2[GETBYTE(t1, 1)] ^
-            lTe3[GETBYTE(t2, 0)] ^
+        s3 =
+            Te0[GETBYTE(t3, 3)] ^
+            Te1[GETBYTE(t0, 2)] ^
+            Te2[GETBYTE(t1, 1)] ^
+            Te3[GETBYTE(t2, 0)] ^
             rk[3];
     }
 
@@ -314,58 +320,52 @@ void AES::encrypt(const byte* inBlock, const byte* xorBlock,
      * map cipher state to byte array block:
      */
 
-    s[0] =
-        (lTe4[GETBYTE(t0, 3)] & 0xff000000) ^
-        (lTe4[GETBYTE(t1, 2)] & 0x00ff0000) ^
-        (lTe4[GETBYTE(t2, 1)] & 0x0000ff00) ^
-        (lTe4[GETBYTE(t3, 0)] & 0x000000ff) ^
+    s0 =
+        (Te4[GETBYTE(t0, 3)] & 0xff000000) ^
+        (Te4[GETBYTE(t1, 2)] & 0x00ff0000) ^
+        (Te4[GETBYTE(t2, 1)] & 0x0000ff00) ^
+        (Te4[GETBYTE(t3, 0)] & 0x000000ff) ^
         rk[0];
-    s[1] =
-        (lTe4[GETBYTE(t1, 3)] & 0xff000000) ^
-        (lTe4[GETBYTE(t2, 2)] & 0x00ff0000) ^
-        (lTe4[GETBYTE(t3, 1)] & 0x0000ff00) ^
-        (lTe4[GETBYTE(t0, 0)] & 0x000000ff) ^
+    s1 =
+        (Te4[GETBYTE(t1, 3)] & 0xff000000) ^
+        (Te4[GETBYTE(t2, 2)] & 0x00ff0000) ^
+        (Te4[GETBYTE(t3, 1)] & 0x0000ff00) ^
+        (Te4[GETBYTE(t0, 0)] & 0x000000ff) ^
         rk[1];
-    s[2] =
-        (lTe4[GETBYTE(t2, 3)] & 0xff000000) ^
-        (lTe4[GETBYTE(t3, 2)] & 0x00ff0000) ^
-        (lTe4[GETBYTE(t0, 1)] & 0x0000ff00) ^
-        (lTe4[GETBYTE(t1, 0)] & 0x000000ff) ^
+    s2 =
+        (Te4[GETBYTE(t2, 3)] & 0xff000000) ^
+        (Te4[GETBYTE(t3, 2)] & 0x00ff0000) ^
+        (Te4[GETBYTE(t0, 1)] & 0x0000ff00) ^
+        (Te4[GETBYTE(t1, 0)] & 0x000000ff) ^
         rk[2];
-    s[3] =
-        (lTe4[GETBYTE(t3, 3)] & 0xff000000) ^
-        (lTe4[GETBYTE(t0, 2)] & 0x00ff0000) ^
-        (lTe4[GETBYTE(t1, 1)] & 0x0000ff00) ^
-        (lTe4[GETBYTE(t2, 0)] & 0x000000ff) ^
+    s3 =
+        (Te4[GETBYTE(t3, 3)] & 0xff000000) ^
+        (Te4[GETBYTE(t0, 2)] & 0x00ff0000) ^
+        (Te4[GETBYTE(t1, 1)] & 0x0000ff00) ^
+        (Te4[GETBYTE(t2, 0)] & 0x000000ff) ^
         rk[3];
 
-    s[0] = LittleReverse(s[0]);
-    s[1] = LittleReverse(s[1]);
-    s[2] = LittleReverse(s[2]);
-    s[3] = LittleReverse(s[3]);
 
-    memcpy(outBlock, &s[0], BLOCK_SIZE);    
+    gpBlock::Put(xorBlock, outBlock)(s0)(s1)(s2)(s3);
 }
 
 
 void AES::decrypt(const byte* inBlock, const byte* xorBlock,
                   byte* outBlock) const
 {
-    word32 s[4];
+    word32 s0, s1, s2, s3;
     word32 t0, t1, t2, t3;
-    const word32* rk = key_.get_buffer();
+    const word32* rk = key_;
 
     /*
      * map byte array block to cipher state
      * and add initial round key:
      */
-    {
-        word32* in = (word32*)inBlock;
-        s[0] = LittleReverse(*in++) ^ rk[0];
-        s[1] = LittleReverse(*in++) ^ rk[1];
-        s[2] = LittleReverse(*in++) ^ rk[2];
-        s[3] = LittleReverse(*in)   ^ rk[3];
-    }
+    gpBlock::Get(inBlock)(s0)(s1)(s2)(s3);
+    s0 ^= rk[0];
+    s1 ^= rk[1];
+    s2 ^= rk[2];
+    s3 ^= rk[3];
 
     /*
      * Nr - 1 full rounds:
@@ -374,28 +374,28 @@ void AES::decrypt(const byte* inBlock, const byte* xorBlock,
     unsigned int r = rounds_ >> 1;
     for (;;) {
         t0 =
-            lTd0[GETBYTE(s[0], 3)] ^
-            lTd1[GETBYTE(s[3], 2)] ^
-            lTd2[GETBYTE(s[2], 1)] ^
-            lTd3[GETBYTE(s[1], 0)] ^
+            Td0[GETBYTE(s0, 3)] ^
+            Td1[GETBYTE(s3, 2)] ^
+            Td2[GETBYTE(s2, 1)] ^
+            Td3[GETBYTE(s1, 0)] ^
             rk[4];
         t1 =
-            lTd0[GETBYTE(s[1], 3)] ^
-            lTd1[GETBYTE(s[0], 2)] ^
-            lTd2[GETBYTE(s[3], 1)] ^
-            lTd3[GETBYTE(s[2], 0)] ^
+            Td0[GETBYTE(s1, 3)] ^
+            Td1[GETBYTE(s0, 2)] ^
+            Td2[GETBYTE(s3, 1)] ^
+            Td3[GETBYTE(s2, 0)] ^
             rk[5];
         t2 =
-            lTd0[GETBYTE(s[2], 3)] ^
-            lTd1[GETBYTE(s[1], 2)] ^
-            lTd2[GETBYTE(s[0], 1)] ^
-            lTd3[GETBYTE(s[3], 0)] ^
+            Td0[GETBYTE(s2, 3)] ^
+            Td1[GETBYTE(s1, 2)] ^
+            Td2[GETBYTE(s0, 1)] ^
+            Td3[GETBYTE(s3, 0)] ^
             rk[6];
         t3 =
-            lTd0[GETBYTE(s[3], 3)] ^
-            lTd1[GETBYTE(s[2], 2)] ^
-            lTd2[GETBYTE(s[1], 1)] ^
-            lTd3[GETBYTE(s[0], 0)] ^
+            Td0[GETBYTE(s3, 3)] ^
+            Td1[GETBYTE(s2, 2)] ^
+            Td2[GETBYTE(s1, 1)] ^
+            Td3[GETBYTE(s0, 0)] ^
             rk[7];
 
         rk += 8;
@@ -403,130 +403,127 @@ void AES::decrypt(const byte* inBlock, const byte* xorBlock,
             break;
         }
 
-        s[0] =
-            lTd0[GETBYTE(t0, 3)] ^
-            lTd1[GETBYTE(t3, 2)] ^
-            lTd2[GETBYTE(t2, 1)] ^
-            lTd3[GETBYTE(t1, 0)] ^
+        s0 =
+            Td0[GETBYTE(t0, 3)] ^
+            Td1[GETBYTE(t3, 2)] ^
+            Td2[GETBYTE(t2, 1)] ^
+            Td3[GETBYTE(t1, 0)] ^
             rk[0];
-        s[1] =
-            lTd0[GETBYTE(t1, 3)] ^
-            lTd1[GETBYTE(t0, 2)] ^
-            lTd2[GETBYTE(t3, 1)] ^
-            lTd3[GETBYTE(t2, 0)] ^
+        s1 =
+            Td0[GETBYTE(t1, 3)] ^
+            Td1[GETBYTE(t0, 2)] ^
+            Td2[GETBYTE(t3, 1)] ^
+            Td3[GETBYTE(t2, 0)] ^
             rk[1];
-        s[2] =
-            lTd0[GETBYTE(t2, 3)] ^
-            lTd1[GETBYTE(t1, 2)] ^
-            lTd2[GETBYTE(t0, 1)] ^
-            lTd3[GETBYTE(t3, 0)] ^
+        s2 =
+            Td0[GETBYTE(t2, 3)] ^
+            Td1[GETBYTE(t1, 2)] ^
+            Td2[GETBYTE(t0, 1)] ^
+            Td3[GETBYTE(t3, 0)] ^
             rk[2];
-        s[3] =
-            lTd0[GETBYTE(t3, 3)] ^
-            lTd1[GETBYTE(t2, 2)] ^
-            lTd2[GETBYTE(t1, 1)] ^
-            lTd3[GETBYTE(t0, 0)] ^
+        s3 =
+            Td0[GETBYTE(t3, 3)] ^
+            Td1[GETBYTE(t2, 2)] ^
+            Td2[GETBYTE(t1, 1)] ^
+            Td3[GETBYTE(t0, 0)] ^
             rk[3];
     }
     /*
      * apply last round and
      * map cipher state to byte array block:
      */
-    s[0] =
-        (lTd4[GETBYTE(t0, 3)] & 0xff000000) ^
-        (lTd4[GETBYTE(t3, 2)] & 0x00ff0000) ^
-        (lTd4[GETBYTE(t2, 1)] & 0x0000ff00) ^
-        (lTd4[GETBYTE(t1, 0)] & 0x000000ff) ^
+    s0 =
+        (Td4[GETBYTE(t0, 3)] & 0xff000000) ^
+        (Td4[GETBYTE(t3, 2)] & 0x00ff0000) ^
+        (Td4[GETBYTE(t2, 1)] & 0x0000ff00) ^
+        (Td4[GETBYTE(t1, 0)] & 0x000000ff) ^
         rk[0];
-    s[1] =
-        (lTd4[GETBYTE(t1, 3)] & 0xff000000) ^
-        (lTd4[GETBYTE(t0, 2)] & 0x00ff0000) ^
-        (lTd4[GETBYTE(t3, 1)] & 0x0000ff00) ^
-        (lTd4[GETBYTE(t2, 0)] & 0x000000ff) ^
+    s1 =
+        (Td4[GETBYTE(t1, 3)] & 0xff000000) ^
+        (Td4[GETBYTE(t0, 2)] & 0x00ff0000) ^
+        (Td4[GETBYTE(t3, 1)] & 0x0000ff00) ^
+        (Td4[GETBYTE(t2, 0)] & 0x000000ff) ^
         rk[1];
-    s[2] =
-        (lTd4[GETBYTE(t2, 3)] & 0xff000000) ^
-        (lTd4[GETBYTE(t1, 2)] & 0x00ff0000) ^
-        (lTd4[GETBYTE(t0, 1)] & 0x0000ff00) ^
-        (lTd4[GETBYTE(t3, 0)] & 0x000000ff) ^
+    s2 =
+        (Td4[GETBYTE(t2, 3)] & 0xff000000) ^
+        (Td4[GETBYTE(t1, 2)] & 0x00ff0000) ^
+        (Td4[GETBYTE(t0, 1)] & 0x0000ff00) ^
+        (Td4[GETBYTE(t3, 0)] & 0x000000ff) ^
         rk[2];
-    s[3] =
-        (lTd4[GETBYTE(t3, 3)] & 0xff000000) ^
-        (lTd4[GETBYTE(t2, 2)] & 0x00ff0000) ^
-        (lTd4[GETBYTE(t1, 1)] & 0x0000ff00) ^
-        (lTd4[GETBYTE(t0, 0)] & 0x000000ff) ^
+    s3 =
+        (Td4[GETBYTE(t3, 3)] & 0xff000000) ^
+        (Td4[GETBYTE(t2, 2)] & 0x00ff0000) ^
+        (Td4[GETBYTE(t1, 1)] & 0x0000ff00) ^
+        (Td4[GETBYTE(t0, 0)] & 0x000000ff) ^
         rk[3];
 
-    s[0] = LittleReverse(s[0]);
-    s[1] = LittleReverse(s[1]);
-    s[2] = LittleReverse(s[2]);
-    s[3] = LittleReverse(s[3]);
-
-    memcpy(outBlock, &s[0], BLOCK_SIZE);
+    gpBlock::Put(xorBlock, outBlock)(s0)(s1)(s2)(s3);
 }
 
 
-#else // defined(DO_AES_ASM)
+#if defined(DO_AES_ASM)
     #ifdef __GNUC__
         #define AS1(x)    asm(#x);
         #define AS2(x, y) asm(#x ", " #y);
 
-        #define PROLOGUE()  \
+        #define PROLOG()  \
             asm(".intel_syntax noprefix"); \
             AS2(    movd  mm3, edi                      )   \
             AS2(    movd  mm4, ebx                      )   \
+            AS2(    movd  mm7, ebp                      )   \
             AS2(    mov   [ebp - 4], esi                )   \
             AS2(    mov   ecx, DWORD PTR [ebp +  8]     )   \
-            AS2(    mov   esi, DWORD PTR [ebp + 12]     )
+            AS2(    mov   esi, DWORD PTR [ebp + 12]     )   \
+            AS2(    mov   ebp, DWORD PTR [ebp + 20]     )
 
-        #define EPILOGUE()  \
-            AS2( mov  esi, [ebp - 4]            )   \
-            AS2( movd ebx, mm4                  )   \
-            AS2( movd edi, mm3                  )   \
-            AS1( emms                           )   \
+        #define EPILOG()  \
+            AS2(    movd esp, mm7                   )   \
+            AS2(    mov  esi, [ebp - 4]             )   \
+            AS2(    movd ebx, mm4                   )   \
+            AS2(    movd edi, mm3                   )   \
+            AS1(    emms                            )   \
             asm(".att_syntax");
     #else
         #define AS1(x)    __asm x
         #define AS2(x, y) __asm x, y
 
-        #define PROLOGUE() \
-            AS2(    mov   esi, DWORD PTR [ebp +  8]     )   // inBlock
+        #define PROLOG() \
+            AS1(    push  ebp                           )   \
+            AS2(    mov   ebp, esp                      )   \
+            AS2(    movd  mm3, edi                      )   \
+            AS2(    movd  mm4, ebx                      )   \
+            AS2(    movd  mm7, ebp                      )   \
+            AS2(    mov   [ebp - 4], esi                )   \
+            AS2(    mov   esi, DWORD PTR [ebp +  8]     )   \
+            AS2(    mov   ebp, DWORD PTR [ebp + 16]     )
 
-        #define EPILOGUE()  \
-            AS1(    emms        )
+        // ebp is restored at end
+        #define EPILOG()  \
+            AS2(    mov   esi, [ebp - 4]                )   \
+            AS2(    movd  ebx, mm4                      )   \
+            AS2(    movd  edi, mm3                      )   \
+            AS2(    mov   esp, ebp                      )   \
+            AS1(    pop   ebp                           )   \
+            AS1(    emms                                )   \
+            AS1(    ret   12                            )
+            
             
     #endif
 
 
-
-void AES::AsmEncrypt(const byte* inBlock, byte* outBlock) const
-{
-#ifdef __GNUC__
-    #ifdef __CYGWIN__
-        asm(".equ lTe0, _lTe0");
-        asm(".equ lTe1, _lTe1");
-        asm(".equ lTe2, _lTe2");
-        asm(".equ lTe3, _lTe3");
-        asm(".equ lTe4, _lTe4");
-    #else
-       asm(".equ lTe0, _ZN8TaoCrypt4lTe0E");
-       asm(".equ lTe1, _ZN8TaoCrypt4lTe1E");
-       asm(".equ lTe2, _ZN8TaoCrypt4lTe2E");
-       asm(".equ lTe3, _ZN8TaoCrypt4lTe3E");
-       asm(".equ lTe4, _ZN8TaoCrypt4lTe4E");    
-    #endif
+#ifdef _MSC_VER
+    __declspec(naked) 
 #endif
+void AES::AsmEncrypt(const byte* inBlock, byte* outBlock, void* boxes) const
+{
 
-    PROLOGUE()
+    PROLOG()
 
-    AS2(    mov   edi, ecx                      )   
-    AS2(    add   edi, 12                       )   // rk 
-    AS2(    mov   edx, DWORD PTR [ecx +  8]     )   // rounds
+    AS2(    mov   edx, DWORD PTR [ecx + 56]     )   // rounds
+    AS2(    lea   edi, [ecx + 60]               )   // rk
 
-
-    AS2(    movd  mm7, esp                      )   // save Stack Pointer
-    AS2(    movd  mm6, edi                      )   // save rk
     AS1(    dec   edx                           )
+    AS2(    movd  mm6, edi                      )   // save rk
     AS2(    movd  mm5, edx                      )   // save rounds
   
     AS2(    mov   eax, DWORD PTR [esi]                                  )
@@ -559,18 +556,18 @@ void AES::AsmEncrypt(const byte* inBlock, byte* outBlock) const
        
     AS2(    mov   esi, eax                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   esp, DWORD PTR lTe0[esi*4]                            )
+    AS2(    mov   esp, DWORD PTR [ebp + esi*4]                          )
                                                     
     AS2(    mov   edi, ebx                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    xor   esp, DWORD PTR lTe1[edi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 1024 + edi*4]                   )
 
     AS2(    movzx esi, ch                                               )
-    AS2(    xor   esp, DWORD PTR lTe2[esi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 2048 + esi*4]                   )
 
     AS2(    movzx edi, dl                                               )
-    AS2(    xor   esp, DWORD PTR lTe3[edi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 3072 + edi*4]                   )
 
     AS2(    movd  mm0, esp                                              )
 
@@ -583,18 +580,18 @@ void AES::AsmEncrypt(const byte* inBlock, byte* outBlock) const
 
     AS2(    mov   esi, ebx                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   esp, DWORD PTR lTe0[esi*4]                            )
+    AS2(    mov   esp, DWORD PTR [ebp + esi*4]                          )
 
     AS2(    mov   edi, ecx                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    xor   esp, DWORD PTR lTe1[edi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 1024 + edi*4]                   )
 
     AS2(    movzx esi, dh                                               )
-    AS2(    xor   esp, DWORD PTR lTe2[esi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 2048 + esi*4]                   )
 
     AS2(    movzx edi, al                                               )
-    AS2(    xor   esp, DWORD PTR lTe3[edi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 3072 + edi*4]                   )
 
     AS2(    movd  mm1, esp                                              )
 
@@ -608,18 +605,18 @@ void AES::AsmEncrypt(const byte* inBlock, byte* outBlock) const
 
     AS2(    mov   esi, ecx                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   esp, DWORD PTR lTe0[esi*4]                            )
+    AS2(    mov   esp, DWORD PTR [ebp + esi*4]                          )
 
     AS2(    mov   edi, edx                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    xor   esp, DWORD PTR lTe1[edi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 1024 + edi*4]                   )
 
     AS2(    movzx esi, ah                                               )
-    AS2(    xor   esp, DWORD PTR lTe2[esi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 2048 + esi*4]                   )
 
     AS2(    movzx edi, bl                                               )
-    AS2(    xor   esp, DWORD PTR lTe3[edi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 3072 + edi*4]                   )
 
     AS2(    movd  mm2, esp                                              )
 
@@ -632,18 +629,18 @@ void AES::AsmEncrypt(const byte* inBlock, byte* outBlock) const
 
     AS2(    mov   esi, edx                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   edx, DWORD PTR lTe0[esi*4]                            )
+    AS2(    mov   edx, DWORD PTR [ebp + esi*4]                          )
 
     AS2(    mov   edi, eax                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    xor   edx, DWORD PTR lTe1[edi*4]                            )
+    AS2(    xor   edx, DWORD PTR [ebp + 1024 + edi*4]                   )
 
     AS2(    movzx esi, bh                                               )
-    AS2(    xor   edx, DWORD PTR lTe2[esi*4]                            )
+    AS2(    xor   edx, DWORD PTR [ebp + 2048 + esi*4]                   )
 
     AS2(    movzx edi, cl                                               )
-    AS2(    xor   edx, DWORD PTR lTe3[edi*4]                            )
+    AS2(    xor   edx, DWORD PTR [ebp + 3072 + edi*4]                   )
 
             // xOr
 
@@ -676,23 +673,23 @@ void AES::AsmEncrypt(const byte* inBlock, byte* outBlock) const
             */
     AS2(    mov   esi, eax                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   esp, DWORD PTR lTe4[esi*4]                            )
+    AS2(    mov   esp, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   esp, 4278190080                                       )
 
     AS2(    mov   edi, ebx                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    mov   esi, DWORD PTR lTe4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 16711680                                         )
     AS2(    xor   esp, esi                                              )
 
     AS2(    movzx esi, ch                                               )
-    AS2(    mov   edi, DWORD PTR lTe4[esi*4]                            )
+    AS2(    mov   edi, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   edi, 65280                                            )
     AS2(    xor   esp, edi                                              )
 
     AS2(    movzx edi, dl                                               )
-    AS2(    mov   esi, DWORD PTR lTe4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 255                                              )
     AS2(    xor   esp, esi                                              )
 
@@ -707,23 +704,23 @@ void AES::AsmEncrypt(const byte* inBlock, byte* outBlock) const
             */
     AS2(    mov   esi, ebx                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   esp, DWORD PTR lTe4[esi*4]                            )
+    AS2(    mov   esp, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   esp, 4278190080                                       )
 
     AS2(    mov   edi, ecx                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    mov   esi, DWORD PTR lTe4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 16711680                                         )
     AS2(    xor   esp, esi                                              )
 
     AS2(    movzx esi, dh                                               )
-    AS2(    mov   edi, DWORD PTR lTe4[esi*4]                            )
+    AS2(    mov   edi, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   edi, 65280                                            )
     AS2(    xor   esp, edi                                              )
 
     AS2(    movzx edi, al                                               )
-    AS2(    mov   esi, DWORD PTR lTe4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 255                                              )
     AS2(    xor   esp, esi                                              )
 
@@ -738,23 +735,23 @@ void AES::AsmEncrypt(const byte* inBlock, byte* outBlock) const
             */
     AS2(    mov   esi, ecx                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   esp, DWORD PTR lTe4[esi*4]                            )
+    AS2(    mov   esp, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   esp, 4278190080                                       )
 
     AS2(    mov   edi, edx                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    mov   esi, DWORD PTR lTe4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 16711680                                         )
     AS2(    xor   esp, esi                                              )
 
     AS2(    movzx esi, ah                                               )
-    AS2(    mov   edi, DWORD PTR lTe4[esi*4]                            )
+    AS2(    mov   edi, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   edi, 65280                                            )
     AS2(    xor   esp, edi                                              )
 
     AS2(    movzx edi, bl                                               )
-    AS2(    mov   esi, DWORD PTR lTe4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 255                                              )
     AS2(    xor   esp, esi                                              )
 
@@ -769,23 +766,23 @@ void AES::AsmEncrypt(const byte* inBlock, byte* outBlock) const
             */
     AS2(    mov   esi, edx                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   edx, DWORD PTR lTe4[esi*4]                            )
+    AS2(    mov   edx, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   edx, 4278190080                                       )
 
     AS2(    mov   edi, eax                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    mov   esi, DWORD PTR lTe4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 16711680                                         )
     AS2(    xor   edx, esi                                              )
 
     AS2(    movzx esi, bh                                               )
-    AS2(    mov   edi, DWORD PTR lTe4[esi*4]                            )
+    AS2(    mov   edi, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   edi, 65280                                            )
     AS2(    xor   edx, edi                                              )
 
     AS2(    movzx edi, cl                                               )
-    AS2(    mov   esi, DWORD PTR lTe4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 255                                              )
     AS2(    xor   edx, esi                                              )
 
@@ -802,6 +799,9 @@ void AES::AsmEncrypt(const byte* inBlock, byte* outBlock) const
     AS2(    xor   ebx, DWORD PTR [esi +  4]                             )
     AS2(    xor   ecx, DWORD PTR [esi +  8]                             )
     AS2(    xor   edx, DWORD PTR [esi + 12]                             )
+
+    // end
+    AS2(    movd  ebp, mm7                                              )
 
             // swap
     AS1(    bswap eax                                                   )
@@ -820,42 +820,24 @@ void AES::AsmEncrypt(const byte* inBlock, byte* outBlock) const
     AS2(    mov DWORD PTR [esi +  8], ecx                               )
     AS2(    mov DWORD PTR [esi + 12], edx                               )
 
-            // end
-    AS2(    movd esp, mm7                       )   //  restore stack
 
-    EPILOGUE()
+    EPILOG()
 }
 
 
-
-void AES::AsmDecrypt(const byte* inBlock, byte* outBlock) const
-{
-#ifdef __GNUC__
-    #ifdef __CYGWIN__
-        asm(".equ lTd0, _lTd0");
-        asm(".equ lTd1, _lTd1");
-        asm(".equ lTd2, _lTd2");
-        asm(".equ lTd3, _lTd3");
-        asm(".equ lTd4, _lTd4");
-    #else
-       asm(".equ lTd0, _ZN8TaoCrypt4lTd0E");
-       asm(".equ lTd1, _ZN8TaoCrypt4lTd1E");
-       asm(".equ lTd2, _ZN8TaoCrypt4lTd2E");
-       asm(".equ lTd3, _ZN8TaoCrypt4lTd3E");
-       asm(".equ lTd4, _ZN8TaoCrypt4lTd4E");    
-    #endif
+#ifdef _MSC_VER
+    __declspec(naked) 
 #endif
+void AES::AsmDecrypt(const byte* inBlock, byte* outBlock, void* boxes) const
+{
 
-    PROLOGUE()
+    PROLOG()
 
-    AS2(    mov   edi, ecx                      )   
-    AS2(    add   edi, 12                       )   // rk 
-    AS2(    mov   edx, DWORD PTR [ecx +  8]     )   // rounds
-
-
-    AS2(    movd  mm7, esp                      )   // save Stack Pointer
-    AS2(    movd  mm6, edi                      )   // save rk
+    AS2(    mov   edx, DWORD PTR [ecx + 56]     )   // rounds
+    AS2(    lea   edi, [ecx + 60]               )   // rk 
+   
     AS1(    dec   edx                           )
+    AS2(    movd  mm6, edi                      )   // save rk
     AS2(    movd  mm5, edx                      )   // save rounds
   
     AS2(    mov   eax, DWORD PTR [esi]                                  )
@@ -887,18 +869,18 @@ void AES::AsmDecrypt(const byte* inBlock, byte* outBlock) const
         */
     AS2(    mov   esi, eax                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   esp, DWORD PTR lTd0[esi*4]                            )
+    AS2(    mov   esp, DWORD PTR [ebp + esi*4]                          )
                                                     
     AS2(    mov   edi, edx                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    xor   esp, DWORD PTR lTd1[edi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 1024 + edi*4]                   )
 
     AS2(    movzx esi, ch                                               )
-    AS2(    xor   esp, DWORD PTR lTd2[esi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 2048 + esi*4]                   )
 
     AS2(    movzx edi, bl                                               )
-    AS2(    xor   esp, DWORD PTR lTd3[edi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 3072 + edi*4]                   )
 
     AS2(    movd  mm0, esp                                              )
 
@@ -910,18 +892,18 @@ void AES::AsmDecrypt(const byte* inBlock, byte* outBlock) const
         */
     AS2(    mov   esi, ebx                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   esp, DWORD PTR lTd0[esi*4]                            )
+    AS2(    mov   esp, DWORD PTR [ebp + esi*4]                          )
                                                     
     AS2(    mov   edi, eax                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    xor   esp, DWORD PTR lTd1[edi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 1024 + edi*4]                   )
 
     AS2(    movzx esi, dh                                               )
-    AS2(    xor   esp, DWORD PTR lTd2[esi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 2048 + esi*4]                   )
 
     AS2(    movzx edi, cl                                               )
-    AS2(    xor   esp, DWORD PTR lTd3[edi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 3072 + edi*4]                   )
 
     AS2(    movd  mm1, esp                                              )
 
@@ -933,18 +915,18 @@ void AES::AsmDecrypt(const byte* inBlock, byte* outBlock) const
       */
     AS2(    mov   esi, ecx                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   esp, DWORD PTR lTd0[esi*4]                            )
+    AS2(    mov   esp, DWORD PTR [ebp + esi*4]                          )
                                                     
     AS2(    mov   edi, ebx                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    xor   esp, DWORD PTR lTd1[edi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 1024 + edi*4]                   )
 
     AS2(    movzx esi, ah                                               )
-    AS2(    xor   esp, DWORD PTR lTd2[esi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 2048 + esi*4]                   )
 
     AS2(    movzx edi, dl                                               )
-    AS2(    xor   esp, DWORD PTR lTd3[edi*4]                            )
+    AS2(    xor   esp, DWORD PTR [ebp + 3072 + edi*4]                   )
 
     AS2(    movd  mm2, esp                                              )
 
@@ -956,18 +938,18 @@ void AES::AsmDecrypt(const byte* inBlock, byte* outBlock) const
       */
     AS2(    mov   esi, edx                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   edx, DWORD PTR lTd0[esi*4]                            )
+    AS2(    mov   edx, DWORD PTR [ebp + esi*4]                          )
                                                     
     AS2(    mov   edi, ecx                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    xor   edx, DWORD PTR lTd1[edi*4]                            )
+    AS2(    xor   edx, DWORD PTR [ebp + 1024 + edi*4]                   )
 
     AS2(    movzx esi, bh                                               )
-    AS2(    xor   edx, DWORD PTR lTd2[esi*4]                            )
+    AS2(    xor   edx, DWORD PTR [ebp + 2048 + esi*4]                   )
 
     AS2(    movzx edi, al                                               )
-    AS2(    xor   edx, DWORD PTR lTd3[edi*4]                            )
+    AS2(    xor   edx, DWORD PTR [ebp + 3072 + edi*4]                   )
 
 
             // xOr
@@ -1001,23 +983,23 @@ void AES::AsmDecrypt(const byte* inBlock, byte* outBlock) const
             */
     AS2(    mov   esi, eax                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   esp, DWORD PTR lTd4[esi*4]                            )
+    AS2(    mov   esp, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   esp, 4278190080                                       )
 
     AS2(    mov   edi, edx                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    mov   esi, DWORD PTR lTd4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 16711680                                         )
     AS2(    xor   esp, esi                                              )
 
     AS2(    movzx esi, ch                                               )
-    AS2(    mov   edi, DWORD PTR lTd4[esi*4]                            )
+    AS2(    mov   edi, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   edi, 65280                                            )
     AS2(    xor   esp, edi                                              )
 
     AS2(    movzx edi, bl                                               )
-    AS2(    mov   esi, DWORD PTR lTd4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 255                                              )
     AS2(    xor   esp, esi                                              )
 
@@ -1032,23 +1014,23 @@ void AES::AsmDecrypt(const byte* inBlock, byte* outBlock) const
             */
     AS2(    mov   esi, ebx                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   esp, DWORD PTR lTd4[esi*4]                            )
+    AS2(    mov   esp, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   esp, 4278190080                                       )
 
     AS2(    mov   edi, eax                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    mov   esi, DWORD PTR lTd4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 16711680                                         )
     AS2(    xor   esp, esi                                              )
 
     AS2(    movzx esi, dh                                               )
-    AS2(    mov   edi, DWORD PTR lTd4[esi*4]                            )
+    AS2(    mov   edi, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   edi, 65280                                            )
     AS2(    xor   esp, edi                                              )
 
     AS2(    movzx edi, cl                                               )
-    AS2(    mov   esi, DWORD PTR lTd4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 255                                              )
     AS2(    xor   esp, esi                                              )
 
@@ -1063,23 +1045,23 @@ void AES::AsmDecrypt(const byte* inBlock, byte* outBlock) const
             */
     AS2(    mov   esi, ecx                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   esp, DWORD PTR lTd4[esi*4]                            )
+    AS2(    mov   esp, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   esp, 4278190080                                       )
 
     AS2(    mov   edi, ebx                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    mov   esi, DWORD PTR lTd4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 16711680                                         )
     AS2(    xor   esp, esi                                              )
 
     AS2(    movzx esi, ah                                               )
-    AS2(    mov   edi, DWORD PTR lTd4[esi*4]                            )
+    AS2(    mov   edi, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   edi, 65280                                            )
     AS2(    xor   esp, edi                                              )
 
     AS2(    movzx edi, dl                                               )
-    AS2(    mov   esi, DWORD PTR lTd4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 255                                              )
     AS2(    xor   esp, esi                                              )
 
@@ -1094,23 +1076,23 @@ void AES::AsmDecrypt(const byte* inBlock, byte* outBlock) const
             */
     AS2(    mov   esi, edx                                              )
     AS2(    shr   esi, 24                                               )
-    AS2(    mov   edx, DWORD PTR lTd4[esi*4]                            )
+    AS2(    mov   edx, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   edx, 4278190080                                       )
 
     AS2(    mov   edi, ecx                                              )
     AS2(    shr   edi, 16                                               )
     AS2(    and   edi, 255                                              )
-    AS2(    mov   esi, DWORD PTR lTd4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 16711680                                         )
     AS2(    xor   edx, esi                                              )
 
     AS2(    movzx esi, bh                                               )
-    AS2(    mov   edi, DWORD PTR lTd4[esi*4]                            )
+    AS2(    mov   edi, DWORD PTR [ebp + 4096 + esi*4]                   )
     AS2(    and   edi, 65280                                            )
     AS2(    xor   edx, edi                                              )
 
     AS2(    movzx edi, al                                               )
-    AS2(    mov   esi, DWORD PTR lTd4[edi*4]                            )
+    AS2(    mov   esi, DWORD PTR [ebp + 4096 + edi*4]                   )
     AS2(    and   esi, 255                                              )
     AS2(    xor   edx, esi                                              )
 
@@ -1127,6 +1109,9 @@ void AES::AsmDecrypt(const byte* inBlock, byte* outBlock) const
     AS2(    xor   ebx, DWORD PTR [esi +  4]                             )
     AS2(    xor   ecx, DWORD PTR [esi +  8]                             )
     AS2(    xor   edx, DWORD PTR [esi + 12]                             )
+
+    // end
+    AS2(    movd  ebp, mm7                                              )
 
             // swap
     AS1(    bswap eax                                                   )
@@ -1145,10 +1130,8 @@ void AES::AsmDecrypt(const byte* inBlock, byte* outBlock) const
     AS2(    mov DWORD PTR [esi +  8], ecx                               )
     AS2(    mov DWORD PTR [esi + 12], edx                               )
 
-            // end
-    AS2(    movd esp, mm7                       )   //  restore stack
 
-    EPILOGUE()
+    EPILOG()
 }
 
 
@@ -1156,10 +1139,9 @@ void AES::AsmDecrypt(const byte* inBlock, byte* outBlock) const
 #endif // defined(DO_AES_ASM)
 
 
-#ifdef __CYGWIN__       // otherwise won't be global symbol
-    extern "C"          // needed for .equ becuase of _ prefix
-#endif
-const word32 lTe0[256] = {
+
+const word32 AES::Te[5][256] = {
+{
     0xc66363a5U, 0xf87c7c84U, 0xee777799U, 0xf67b7b8dU,
     0xfff2f20dU, 0xd66b6bbdU, 0xde6f6fb1U, 0x91c5c554U,
     0x60303050U, 0x02010103U, 0xce6767a9U, 0x562b2b7dU,
@@ -1224,12 +1206,8 @@ const word32 lTe0[256] = {
     0x65bfbfdaU, 0xd7e6e631U, 0x844242c6U, 0xd06868b8U,
     0x824141c3U, 0x299999b0U, 0x5a2d2d77U, 0x1e0f0f11U,
     0x7bb0b0cbU, 0xa85454fcU, 0x6dbbbbd6U, 0x2c16163aU,
-};
-
-#ifdef __CYGWIN__       // otherwise won't be global symbol
-    extern "C"          // needed for .equ becuase of _ prefix
-#endif
-const word32 lTe1[256] = {
+},
+{
     0xa5c66363U, 0x84f87c7cU, 0x99ee7777U, 0x8df67b7bU,
     0x0dfff2f2U, 0xbdd66b6bU, 0xb1de6f6fU, 0x5491c5c5U,
     0x50603030U, 0x03020101U, 0xa9ce6767U, 0x7d562b2bU,
@@ -1294,12 +1272,8 @@ const word32 lTe1[256] = {
     0xda65bfbfU, 0x31d7e6e6U, 0xc6844242U, 0xb8d06868U,
     0xc3824141U, 0xb0299999U, 0x775a2d2dU, 0x111e0f0fU,
     0xcb7bb0b0U, 0xfca85454U, 0xd66dbbbbU, 0x3a2c1616U,
-};
-
-#ifdef __CYGWIN__       // otherwise won't be global symbol
-    extern "C"          // needed for .equ becuase of _ prefix
-#endif
-const word32 lTe2[256] = {
+},
+{
     0x63a5c663U, 0x7c84f87cU, 0x7799ee77U, 0x7b8df67bU,
     0xf20dfff2U, 0x6bbdd66bU, 0x6fb1de6fU, 0xc55491c5U,
     0x30506030U, 0x01030201U, 0x67a9ce67U, 0x2b7d562bU,
@@ -1364,12 +1338,8 @@ const word32 lTe2[256] = {
     0xbfda65bfU, 0xe631d7e6U, 0x42c68442U, 0x68b8d068U,
     0x41c38241U, 0x99b02999U, 0x2d775a2dU, 0x0f111e0fU,
     0xb0cb7bb0U, 0x54fca854U, 0xbbd66dbbU, 0x163a2c16U,
-};
-
-#ifdef __CYGWIN__       // otherwise won't be global symbol
-    extern "C"          // needed for .equ becuase of _ prefix
-#endif
-const word32 lTe3[256] = {
+},
+{
     0x6363a5c6U, 0x7c7c84f8U, 0x777799eeU, 0x7b7b8df6U,
     0xf2f20dffU, 0x6b6bbdd6U, 0x6f6fb1deU, 0xc5c55491U,
     0x30305060U, 0x01010302U, 0x6767a9ceU, 0x2b2b7d56U,
@@ -1434,12 +1404,8 @@ const word32 lTe3[256] = {
     0xbfbfda65U, 0xe6e631d7U, 0x4242c684U, 0x6868b8d0U,
     0x4141c382U, 0x9999b029U, 0x2d2d775aU, 0x0f0f111eU,
     0xb0b0cb7bU, 0x5454fca8U, 0xbbbbd66dU, 0x16163a2cU,
-};
-
-#ifdef __CYGWIN__       // otherwise won't be global symbol
-    extern "C"          // needed for .equ becuase of _ prefix
-#endif
-const word32 lTe4[256] = {
+},
+{
     0x63636363U, 0x7c7c7c7cU, 0x77777777U, 0x7b7b7b7bU,
     0xf2f2f2f2U, 0x6b6b6b6bU, 0x6f6f6f6fU, 0xc5c5c5c5U,
     0x30303030U, 0x01010101U, 0x67676767U, 0x2b2b2b2bU,
@@ -1504,13 +1470,12 @@ const word32 lTe4[256] = {
     0xbfbfbfbfU, 0xe6e6e6e6U, 0x42424242U, 0x68686868U,
     0x41414141U, 0x99999999U, 0x2d2d2d2dU, 0x0f0f0f0fU,
     0xb0b0b0b0U, 0x54545454U, 0xbbbbbbbbU, 0x16161616U,
+}
 };
 
 
-#ifdef __CYGWIN__       // otherwise won't be global symbol
-    extern "C"          // needed for .equ becuase of _ prefix
-#endif
-const word32 lTd0[256] = {
+const word32 AES::Td[5][256] = {
+{
     0x51f4a750U, 0x7e416553U, 0x1a17a4c3U, 0x3a275e96U,
     0x3bab6bcbU, 0x1f9d45f1U, 0xacfa58abU, 0x4be30393U,
     0x2030fa55U, 0xad766df6U, 0x88cc7691U, 0xf5024c25U,
@@ -1575,12 +1540,8 @@ const word32 lTd0[256] = {
     0x161dc372U, 0xbce2250cU, 0x283c498bU, 0xff0d9541U,
     0x39a80171U, 0x080cb3deU, 0xd8b4e49cU, 0x6456c190U,
     0x7bcb8461U, 0xd532b670U, 0x486c5c74U, 0xd0b85742U,
-};
-
-#ifdef __CYGWIN__       // otherwise won't be global symbol
-    extern "C"          // needed for .equ becuase of _ prefix
-#endif
-const word32 lTd1[256] = {
+},
+{
     0x5051f4a7U, 0x537e4165U, 0xc31a17a4U, 0x963a275eU,
     0xcb3bab6bU, 0xf11f9d45U, 0xabacfa58U, 0x934be303U,
     0x552030faU, 0xf6ad766dU, 0x9188cc76U, 0x25f5024cU,
@@ -1645,12 +1606,8 @@ const word32 lTd1[256] = {
     0x72161dc3U, 0x0cbce225U, 0x8b283c49U, 0x41ff0d95U,
     0x7139a801U, 0xde080cb3U, 0x9cd8b4e4U, 0x906456c1U,
     0x617bcb84U, 0x70d532b6U, 0x74486c5cU, 0x42d0b857U,
-};
-
-#ifdef __CYGWIN__       // otherwise won't be global symbol
-    extern "C"          // needed for .equ becuase of _ prefix
-#endif
-const word32 lTd2[256] = {
+},
+{
     0xa75051f4U, 0x65537e41U, 0xa4c31a17U, 0x5e963a27U,
     0x6bcb3babU, 0x45f11f9dU, 0x58abacfaU, 0x03934be3U,
     0xfa552030U, 0x6df6ad76U, 0x769188ccU, 0x4c25f502U,
@@ -1716,12 +1673,8 @@ const word32 lTd2[256] = {
     0xc372161dU, 0x250cbce2U, 0x498b283cU, 0x9541ff0dU,
     0x017139a8U, 0xb3de080cU, 0xe49cd8b4U, 0xc1906456U,
     0x84617bcbU, 0xb670d532U, 0x5c74486cU, 0x5742d0b8U,
-};
-
-#ifdef __CYGWIN__       // otherwise won't be global symbol
-    extern "C"          // needed for .equ becuase of _ prefix
-#endif
-const word32 lTd3[256] = {
+},
+{
     0xf4a75051U, 0x4165537eU, 0x17a4c31aU, 0x275e963aU,
     0xab6bcb3bU, 0x9d45f11fU, 0xfa58abacU, 0xe303934bU,
     0x30fa5520U, 0x766df6adU, 0xcc769188U, 0x024c25f5U,
@@ -1786,12 +1739,8 @@ const word32 lTd3[256] = {
     0x1dc37216U, 0xe2250cbcU, 0x3c498b28U, 0x0d9541ffU,
     0xa8017139U, 0x0cb3de08U, 0xb4e49cd8U, 0x56c19064U,
     0xcb84617bU, 0x32b670d5U, 0x6c5c7448U, 0xb85742d0U,
-};
-
-#ifdef __CYGWIN__       // otherwise won't be global symbol
-    extern "C"          // needed for .equ becuase of _ prefix
-#endif
-const word32 lTd4[256] = {
+},
+{
     0x52525252U, 0x09090909U, 0x6a6a6a6aU, 0xd5d5d5d5U,
     0x30303030U, 0x36363636U, 0xa5a5a5a5U, 0x38383838U,
     0xbfbfbfbfU, 0x40404040U, 0xa3a3a3a3U, 0x9e9e9e9eU,
@@ -1856,7 +1805,21 @@ const word32 lTd4[256] = {
     0xbabababaU, 0x77777777U, 0xd6d6d6d6U, 0x26262626U,
     0xe1e1e1e1U, 0x69696969U, 0x14141414U, 0x63636363U,
     0x55555555U, 0x21212121U, 0x0c0c0c0cU, 0x7d7d7d7dU,
+}
 };
+
+
+const word32* AES::Te0 = AES::Te[0];
+const word32* AES::Te1 = AES::Te[1];
+const word32* AES::Te2 = AES::Te[2];
+const word32* AES::Te3 = AES::Te[3];
+const word32* AES::Te4 = AES::Te[4];
+
+const word32* AES::Td0 = AES::Td[0];
+const word32* AES::Td1 = AES::Td[1];
+const word32* AES::Td2 = AES::Td[2];
+const word32* AES::Td3 = AES::Td[3];
+const word32* AES::Td4 = AES::Td[4];
 
 
 

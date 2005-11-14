@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(yassl,1.0.5)
+AM_INIT_AUTOMAKE(yassl,1.0.6)
 AM_CONFIG_HEADER(taocrypt/include/config.h)
 
 # make sure configure doesn't add to CXXFLAGS
@@ -25,11 +25,12 @@ OPTIMIZE_CXXFLAGS="-O3"
 DEBUG_CXXFLAGS="-g"
 
 
-AC_ARG_WITH(debug,
-    [  --without-debug         Build a production version without debugging code],
-    [with_debug=$withval],
-    [with_debug=yes])
-if test "$with_debug" = "yes"
+AC_ARG_ENABLE(debug,
+    [  --enable-debug          Enable yaSSL debugging support (default: enabled)],
+    [ ENABLED_DEBUG=$enableval ],
+    [ ENABLED_DEBUG=yes ]
+    )
+if test "$ENABLED_DEBUG" = "yes"
 then
   # Full debug. Very slow in some cases
   CXXFLAGS="$DEBUG_CXXFLAGS $CXXFLAGS"
@@ -42,7 +43,7 @@ fi
 if test "$GCC" = "yes"
 then
     CXXFLAGS="$CXXFLAGS -fno-exceptions -fno-rtti"
-    if test "$target_vendor" = "pc" && test "$with_debug" == "no"
+    if test "$target_vendor" = "pc" && test "$ENABLED_DEBUG" == "no"
     then
         CXXFLAGS="$CXXFLAGS -march=$target_cpu"
     fi
@@ -50,7 +51,7 @@ fi
 
 
 AC_ARG_ENABLE(kernel-mode,
-    [  --enable-kernel-mode    Enable Taocrypt for Kernel Module (default: disabled)],
+    [  --enable-kernel-mode    Enable TaoCrypt for Kernel Module (default: disabled)],
     [ ENABLED_KERNEL_MODE=$enableval ],
     [ ENABLED_KERNEL_MODE=no ]
     )
@@ -58,6 +59,18 @@ AC_ARG_ENABLE(kernel-mode,
 if test "$ENABLED_KERNEL_MODE" = "yes"
 then
     CXXFLAGS="$CXXFLAGS -DTAOCRYPT_KERNEL_MODE"
+fi
+
+
+AC_ARG_ENABLE(ia32-asm,
+    [  --enable-ia32-asm       Enable TaoCrypt ia32 assembly (default: disabled)],
+    [ ENABLED_IA32ASM=$enableval ],
+    [ ENABLED_IA32ASM=no ]
+    )
+
+if test "$ENABLED_IA32ASM" = "yes"
+then
+    CXXFLAGS="$CXXFLAGS -DTAO_ASM"
 fi
 
 AC_SUBST(CXXFLAGS)

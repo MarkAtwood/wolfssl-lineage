@@ -9,22 +9,29 @@
 #include "aes.hpp"
 #include "twofish.hpp"
 #include "blowfish.hpp"
+#include "arc4.hpp"
+#include "md5.hpp"
+#include "sha.hpp"
+#include "ripemd.hpp"
 
 
 using namespace TaoCrypt;
 
-void err_sys(const char* msg, int es)
-{
-    printf("%s", msg);
-    exit(es);    
-}
 
 void bench_des();
 void bench_aes();
 void bench_blowfish();
 void bench_twofish();
+void bench_arc4();
+
+void bench_md5();
+void bench_sha();
+void bench_ripemd();
 
 double current_time();
+
+
+
 
 int main(int argc, char** argv)
 {
@@ -32,6 +39,11 @@ int main(int argc, char** argv)
     bench_aes();
     bench_blowfish();
     bench_twofish();
+    bench_arc4();
+
+    bench_md5();
+    bench_sha();
+    bench_ripemd();
 
     return 0;
 }
@@ -133,6 +145,98 @@ void bench_blowfish()
     printf("Blowfish %d megs took %f seconds, %5.2f MB/s\n", megs, total,
                                                              persec);
 }
+
+
+void bench_arc4()
+{
+    ARC4 enc;
+    enc.SetKey(key, 16);
+
+    double start = current_time();
+
+    for(int i = 0; i < megs; i++)
+        enc.Process(cipher, plain, sizeof(plain));
+
+    double total = current_time() - start;
+
+    double persec = 1 / total * megs;
+
+    printf("ARC4     %d megs took %f seconds, %5.2f MB/s\n", megs, total,
+                                                             persec);
+}
+
+
+void bench_md5()
+{
+    MD5 hash;
+    byte digest[MD5::DIGEST_SIZE];
+
+    double start = current_time();
+
+    
+    for(int i = 0; i < megs; i++)
+        hash.Update(plain, sizeof(plain));
+   
+    hash.Final(digest);
+
+    double total = current_time() - start;
+
+    double persec = 1 / total * megs;
+
+    printf("MD5      %d megs took %f seconds, %5.2f MB/s\n", megs, total,
+                                                             persec);
+}
+
+
+void bench_sha()
+{
+    SHA hash;
+    byte digest[SHA::DIGEST_SIZE];
+
+    double start = current_time();
+
+    
+    for(int i = 0; i < megs; i++)
+        hash.Update(plain, sizeof(plain));
+   
+    hash.Final(digest);
+
+    /*
+    for(int i = 0; i < megs; i++)
+        hash.AsmTransform(plain, 16384);
+    */
+
+
+    double total = current_time() - start;
+
+    double persec = 1 / total * megs;
+
+    printf("SHA      %d megs took %f seconds, %5.2f MB/s\n", megs, total,
+                                                             persec);
+}
+
+
+void bench_ripemd()
+{
+    RIPEMD160 hash;
+    byte digest[RIPEMD160::DIGEST_SIZE];
+
+    double start = current_time();
+
+    
+    for(int i = 0; i < megs; i++)
+        hash.Update(plain, sizeof(plain));
+   
+    hash.Final(digest);
+
+    double total = current_time() - start;
+
+    double persec = 1 / total * megs;
+
+    printf("RIPEMD   %d megs took %f seconds, %5.2f MB/s\n", megs, total,
+                                                             persec);
+}
+
 
 
 #ifdef _WIN32

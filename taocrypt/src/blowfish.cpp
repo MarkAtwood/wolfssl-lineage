@@ -33,7 +33,7 @@
 
 
 
-#if defined(TAOCRYPT_X86ASM_AVAILABLE) && !defined(NO_BLOWFISH_ASM)
+#if defined(TAOCRYPT_X86ASM_AVAILABLE) && defined(TAO_ASM)
     #define DO_BLOWFISH_ASM
 #endif
 
@@ -42,18 +42,30 @@
 namespace TaoCrypt {
 
 
+#if !defined(DO_BLOWFISH_ASM)
+
+// Generic Version
+void Blowfish::Process(byte* out, const byte* in, word32 sz)
+{
+    if (mode_ == ECB)
+        ECB_Process(out, in, sz);
+    else if (mode_ == CBC)
+        if (dir_ == ENCRYPTION)
+            CBC_Encrypt(out, in, sz);
+        else
+            CBC_Decrypt(out, in, sz);
+}
+
+#else
+
+// ia32 optimized version
 void Blowfish::Process(byte* out, const byte* in, word32 sz)
 {
     word32 blocks = sz / BLOCK_SIZE;
 
     if (mode_ == ECB)
         while (blocks--) {
-            #if defined(DO_BLOWFISH_ASM)
-                AsmProcess(in, out);
-            #else
-                ProcessBlock((word32*)in, (word32*)out);  
-            #endif
-        
+            AsmProcess(in, out);
             out += BLOCK_SIZE;
             in  += BLOCK_SIZE;
         }
@@ -63,12 +75,8 @@ void Blowfish::Process(byte* out, const byte* in, word32 sz)
                 r_[0] ^= *(word32*)in;
                 r_[1] ^= *(word32*)(in + 4);
 
-                #if defined(DO_BLOWFISH_ASM)
-                    AsmProcess((byte*)r_, (byte*)r_);
-                #else
-                    ProcessBlock(r_, r_);
-                #endif
-
+                AsmProcess((byte*)r_, (byte*)r_);
+                
                 memcpy(out, r_, BLOCK_SIZE);
 
                 out += BLOCK_SIZE;
@@ -76,11 +84,7 @@ void Blowfish::Process(byte* out, const byte* in, word32 sz)
             }
         else
             while (blocks--) {
-                #if defined(DO_BLOWFISH_ASM)
-                    AsmProcess(in, out);
-                #else
-                    ProcessBlock((word32*)in, (word32*)out);  
-                #endif
+                AsmProcess(in, out);
                 
                 *(word32*)out       ^= r_[0];
                 *(word32*)(out + 4) ^= r_[1];
@@ -91,6 +95,8 @@ void Blowfish::Process(byte* out, const byte* in, word32 sz)
                 in  += BLOCK_SIZE;
             }
 }
+
+#endif // DO_BLOWFISH_ASM
 
 
 void Blowfish::SetKey(const byte* key_string, word32 keylength, CipherDir dir)
@@ -192,41 +198,15 @@ void Blowfish::crypt_block(const word32 in[2], word32 out[2]) const
 }
 
 
-void Blowfish::ProcessBlock(const word32 in[2], word32 out[2]) const
-{
-	word32 left  = LittleReverse(in[0]);
-	word32 right = LittleReverse(in[1]);
+typedef BlockGetAndPut<word32, BigEndian> gpBlock;
 
-	const word32* p = pbox_;
-    word32 tmp;
-
-	left ^= p[0];
-
-    BF_ROUNDS
-
-#if ROUNDS == 20
-    BF_EXTRA_ROUNDS
-#endif
-
-	right ^= p[ROUNDS + 1];
-
-	out[0] = LittleReverse(right);
-	out[1] = LittleReverse(left);
-}
-
-
-/* for future modes
 void Blowfish::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out)
     const
 {
-	typedef BlockGetAndPut<word32, BigEndian> gpBlock;
-
-    word32 tmp;
+    word32 tmp, left, right;
     const word32* p = pbox_;
     
-    word32 left  = LittleReverse(*(word32*)(in));
-    word32 right = LittleReverse(*(word32*)(in + 4));
-   
+    gpBlock::Get(in)(left)(right);
 	left ^= p[0];
 
     BF_ROUNDS
@@ -237,13 +217,8 @@ void Blowfish::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out)
 
 	right ^= p[ROUNDS + 1];
 
-    right = LittleReverse(right) ^ (xOr ? *(word32*)xOr : 0);
-    left  = LittleReverse(left)  ^ (xOr ? *(word32*)(xOr + 4) : 0);
-    memcpy(out, &right, 4);
-    memcpy(out + 4, &left, 4);
+    gpBlock::Put(xOr, out)(right)(left);
 }
-*/
-
 
 
 #if defined(DO_BLOWFISH_ASM)
@@ -251,7 +226,7 @@ void Blowfish::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out)
         #define AS1(x)    asm(#x);
         #define AS2(x, y) asm(#x ", " #y);
 
-        #define PROLOGUE()  \
+        #define PROLOG()  \
             asm(".intel_syntax noprefix"); \
             AS2(    movd  mm3, edi                      )   \
             AS2(    movd  mm4, ebx                      )   \
@@ -259,7 +234,7 @@ void Blowfish::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out)
             AS2(    mov   ecx, DWORD PTR [ebp +  8]     )   \
             AS2(    mov   esi, DWORD PTR [ebp + 12]     )
 
-        #define EPILOGUE()  \
+        #define EPILOG()  \
             AS2(    movd esi, mm5                  )   \
             AS2(    movd ebx, mm4                  )   \
             AS2(    movd edi, mm3                  )   \
@@ -269,11 +244,22 @@ void Blowfish::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out)
         #define AS1(x)    __asm x
         #define AS2(x, y) __asm x, y
 
-        #define PROLOGUE() \
-            AS2(    mov   esi, DWORD PTR [ebp +  8]     )   \
+        #define PROLOG() \
+            AS1(    push  ebp                           )   \
+            AS2(    mov   ebp, esp                      )   \
+            AS2(    movd  mm3, edi                      )   \
+            AS2(    movd  mm4, ebx                      )   \
+            AS2(    movd  mm5, esi                      )   \
+            AS2(    mov   esi, DWORD PTR [ebp +  8]     )
 
-        #define EPILOGUE()  \
-            AS1(    emms                                )
+        #define EPILOG()  \
+            AS2(    movd esi, mm5                       )   \
+            AS2(    movd ebx, mm4                       )   \
+            AS2(    movd edi, mm3                       )   \
+            AS2(    mov  esp, ebp                       )   \
+            AS1(    pop  ebp                            )   \
+            AS1(    emms                                )   \
+            AS1(    ret 8                               )
             
     #endif
 
@@ -300,19 +286,22 @@ void Blowfish::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out)
     AS2(    xor   P,   esi                      )
 
 
+#ifdef _MSC_VER
+    __declspec(naked) 
+#endif
 void Blowfish::AsmProcess(const byte* inBlock, byte* outBlock) const
 {
-    PROLOGUE()
+    PROLOG()
 
-    AS2(    add   ecx, 16                       )   // pbox
+    AS2(    add   ecx, 56                       )   // pbox
     AS2(    mov   edi, ecx                      )   // edi keeps
 
     AS2(    mov   eax, DWORD PTR [esi]                                  )
-    AS1(    bswap eax                                                   )
     AS2(    mov   edx, DWORD PTR [edi]                                  )
-    AS2(    xor   eax, edx                      )   // left
+    AS1(    bswap eax                                                   )
 
     AS2(    mov   ebx, DWORD PTR [esi + 4]                              )
+    AS2(    xor   eax, edx                      )   // left
     AS1(    bswap ebx                           )   // right
 
 
@@ -355,7 +344,7 @@ void Blowfish::AsmProcess(const byte* inBlock, byte* outBlock) const
     AS2(    mov   [edi]    , ebx                )
     AS2(    mov   [edi + 4], eax                )
 
-    EPILOGUE()
+    EPILOG()
 }
 
 

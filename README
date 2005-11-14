@@ -1,4 +1,45 @@
-yaSSL Release notes, version 1.0.5
+yaSSL Release notes, version 1.0.6
+
+This release of yaSSL contains minor bug fixes, portability enhancements,
+x86 assembly for ARC4, SHA, MD5, and RIPEMD, --enable-ia32-asm configure
+option, and a security patch for certificate chain processing.
+
+--To build on Linux, Solaris, *BSD, Mac OS X, or Cygwin:
+
+    ./configure
+    make
+
+    run testsuite from yaSSL-Home/testsuite to test the build
+
+to make a release build:
+
+    ./configure --disable-debug
+    make
+
+    run testsuite from yaSSL-Home/testsuite to test the build
+
+
+--To build on Win32
+
+Choose (Re)Build All from the project workspace
+
+run Debug\testsuite.exe from yaSSL-Home\testsuite to test the build
+
+
+--To enable ia32 assembly for TaoCrypt ciphers and message digests
+
+    On MSVC this is always on
+
+    On GCC **, use ./configure --enable-ia32-asm
+    
+    ** This isn't on by default because of the use of intel syntax and the
+    problem that olders versions of gas have with some addressing statements.
+    If you enable this and get assemler errors during compilation or can't
+    pass the TaoCrypt tests, please send todd@yassl.com a message and disable
+    this option in the meantime.
+
+
+***************** yaSSL Release notes, version 1.0.5
 
 This release of yaSSL contains minor bug fixes, portability enhancements,
 x86 assembly for AES, 3DES, BLOWFISH, and TWOFISH, --without-debug configure

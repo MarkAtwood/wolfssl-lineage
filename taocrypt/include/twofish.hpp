@@ -36,11 +36,12 @@ enum { TWOFISH_BLOCK_SIZE = 16 };
 
 
 // Twofish encryption and decryption, see 
-class Twofish {
+class Twofish : public Mode_BASE {
 public:
     enum { BLOCK_SIZE = TWOFISH_BLOCK_SIZE };
 
-    Twofish(CipherDir DIR, Mode MODE) : dir_(DIR), mode_(MODE) {}
+    Twofish(CipherDir DIR, Mode MODE)
+        : Mode_BASE(BLOCK_SIZE), dir_(DIR), mode_(MODE) {}
 
     void Process(byte*, const byte*, word32);
     void SetKey(const byte* key, word32 sz, CipherDir fake = ENCRYPTION);
@@ -48,8 +49,6 @@ public:
 private:
     CipherDir dir_;
     Mode      mode_;
-
-    word32    r_[BLOCK_SIZE / sizeof(word32)];  // for CBC mode
 
 	static const byte     q_[2][256];
 	static const word32 mds_[4][256];

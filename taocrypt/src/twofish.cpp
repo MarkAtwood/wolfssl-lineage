@@ -31,7 +31,7 @@
 #include "twofish.hpp"
 
 
-#if defined(TAOCRYPT_X86ASM_AVAILABLE) && !defined(NO_TWOFISH_ASM)
+#if defined(TAOCRYPT_X86ASM_AVAILABLE) && defined(TAO_ASM)
     #define DO_TWOFISH_ASM
 #endif
 
@@ -39,21 +39,34 @@
 namespace TaoCrypt {
 
 
+#if !defined(DO_TWOFISH_ASM)
+
+// Generic Version
+void Twofish::Process(byte* out, const byte* in, word32 sz)
+{
+    if (mode_ == ECB)
+        ECB_Process(out, in, sz);
+    else if (mode_ == CBC)
+        if (dir_ == ENCRYPTION)
+            CBC_Encrypt(out, in, sz);
+        else
+            CBC_Decrypt(out, in, sz);
+}
+
+#else
+
+// ia32 optimized version
 void Twofish::Process(byte* out, const byte* in, word32 sz)
 {
     word32 blocks = sz / BLOCK_SIZE;
 
     if (mode_ == ECB)
         while (blocks--) {
-            #if defined(DO_TWOFISH_ASM)
-                if (dir_ == ENCRYPTION)
-                    AsmEncrypt(in, out);
-                else
-                    AsmDecrypt(in, out);
-            #else
-                ProcessAndXorBlock(in, 0, out);
-            #endif
-
+            if (dir_ == ENCRYPTION)
+                AsmEncrypt(in, out);
+            else
+                AsmDecrypt(in, out);
+        
             out += BLOCK_SIZE;
             in  += BLOCK_SIZE;
         }
@@ -65,12 +78,7 @@ void Twofish::Process(byte* out, const byte* in, word32 sz)
                 r_[2] ^= *(word32*)(in +  8);
                 r_[3] ^= *(word32*)(in + 12);
 
-                #if defined(DO_TWOFISH_ASM)
-                    AsmEncrypt((byte*)r_, (byte*)r_);
-                #else
-                    ProcessAndXorBlock((byte*)r_, 0, (byte*)r_);
-                #endif
-
+                AsmEncrypt((byte*)r_, (byte*)r_);
                 memcpy(out, r_, BLOCK_SIZE);
 
                 out += BLOCK_SIZE;
@@ -78,12 +86,8 @@ void Twofish::Process(byte* out, const byte* in, word32 sz)
             }
         else
             while (blocks--) {
-                #if defined(DO_TWOFISH_ASM)
-                    AsmDecrypt(in, out);
-                #else
-                    ProcessAndXorBlock(in, 0, out);
-                #endif
-            
+                AsmDecrypt(in, out);
+               
                 *(word32*)out        ^= r_[0];
                 *(word32*)(out +  4) ^= r_[1];
                 *(word32*)(out +  8) ^= r_[2];
@@ -95,6 +99,8 @@ void Twofish::Process(byte* out, const byte* in, word32 sz)
                 in  += BLOCK_SIZE;
             }
 }
+
+#endif // DO_TWOFISH_ASM
 
 
 namespace {     // locals
@@ -175,9 +181,6 @@ void Twofish::SetKey(const byte* userKey, word32 keylen, CipherDir /*dummy*/)
 		s_[3][i] = mds_[3][GETBYTE(t, 3)];
 	}
 }
-
-
-#if !defined(DO_TWOFISH_ASM)
 
 
 void Twofish::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out)
@@ -284,23 +287,22 @@ void Twofish::decrypt(const byte* inBlock, const byte* xorBlock,
 
 
 
-#else // defined(DO_TWOFISH_ASM)
+#if defined(DO_TWOFISH_ASM)
     #ifdef __GNUC__
         #define AS1(x)    asm(#x);
         #define AS2(x, y) asm(#x ", " #y);
 
-        #define PROLOGUE()  \
+        #define PROLOG()  \
             asm(".intel_syntax noprefix"); \
             AS2(    movd  mm3, edi                      )   \
             AS2(    movd  mm4, ebx                      )   \
             AS2(    movd  mm5, esi                      )   \
             AS2(    movd  mm6, ebp                      )   \
-            AS2(    movd  mm7, esp                      )   \
             AS2(    mov   ecx, DWORD PTR [ebp +  8]     )   \
             AS2(    mov   esi, DWORD PTR [ebp + 12]     )
 
-        #define EPILOGUE()  \
-            AS2(    movd esp, mm7                  )   \
+        #define EPILOG()  \
+            AS2(    movd esp, mm6                  )   \
             AS2(    movd esi, mm5                  )   \
             AS2(    movd ebx, mm4                  )   \
             AS2(    movd edi, mm3                  )   \
@@ -310,14 +312,24 @@ void Twofish::decrypt(const byte* inBlock, const byte* xorBlock,
         #define AS1(x)    __asm x
         #define AS2(x, y) __asm x, y
 
-        #define PROLOGUE() \
-            AS2(    mov   esi, DWORD PTR [ebp +  8]     )   \
+        #define PROLOG() \
+            AS1(    push  ebp                           )   \
+            AS2(    mov   ebp, esp                      )   \
+            AS2(    movd  mm3, edi                      )   \
+            AS2(    movd  mm4, ebx                      )   \
+            AS2(    movd  mm5, esi                      )   \
             AS2(    movd  mm6, ebp                      )   \
-            AS2(    movd  mm7, esp                      )
+            AS2(    mov   esi, DWORD PTR [ebp +  8]     )
 
-        #define EPILOGUE()  \
-            AS2(    movd  esp, mm7                      )   \
-            AS1(    emms                                )
+        /* ebp already set */
+        #define EPILOG()  \
+            AS2(    movd esi, mm5                   )   \
+            AS2(    movd ebx, mm4                   )   \
+            AS2(    movd edi, mm3                   )   \
+            AS2(    mov  esp, ebp                   )   \
+            AS1(    pop  ebp                        )   \
+            AS1(    emms                            )   \
+            AS1(    ret 8                           )    
             
     #endif
 
@@ -418,11 +430,14 @@ void Twofish::decrypt(const byte* inBlock, const byte* xorBlock,
     AS2(    xor   C,   edi                          )
 
 
+#ifdef _MSC_VER
+    __declspec(naked) 
+#endif
 void Twofish::AsmEncrypt(const byte* inBlock, byte* outBlock) const
 {
-    PROLOGUE()
+    PROLOG()
 
-    AS2(    add   ecx, 24                       ) // k_
+    AS2(    add   ecx, 56                       ) // k_
     AS2(    mov   edi, ecx                      )
     AS2(    movd  mm0, edi                      ) // store k_
     AS2(    add   ecx, 160                      ) // s_[0]
@@ -477,16 +492,18 @@ void Twofish::AsmEncrypt(const byte* inBlock, byte* outBlock) const
     AS2(    mov   [edi + 12], ebx               ) // write out
 
 
-    EPILOGUE()
+    EPILOG()
 }
 
 
-
+#ifdef _MSC_VER
+    __declspec(naked) 
+#endif
 void Twofish::AsmDecrypt(const byte* inBlock, byte* outBlock) const
 {
-    PROLOGUE()
+    PROLOG()
 
-    AS2(    add   ecx, 24                       ) // k_
+    AS2(    add   ecx, 56                       ) // k_
     AS2(    mov   edi, ecx                      )
     AS2(    movd  mm0, edi                      ) // store k_
     AS2(    add   ecx, 160                      ) // s_[0]
@@ -541,7 +558,7 @@ void Twofish::AsmDecrypt(const byte* inBlock, byte* outBlock) const
     AS2(    mov   [edi + 12], edx               ) // write out
 
 
-    EPILOGUE()
+    EPILOG()
 }
 
 

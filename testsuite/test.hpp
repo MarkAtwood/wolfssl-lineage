@@ -89,17 +89,8 @@ void start_thread(THREAD_FUNC, func_args*, THREAD_TYPE*);
 void join_thread(THREAD_TYPE);
 
 // yaSSL
-const char* const loopback  = "127.0.0.1";
-const short yasslPort = 11111;
-
-// keybank test NSS
-//const char* const loopback  = "156.77.66.219";
-//const short yasslPort = 443;
-
-// www.gnutls.org
-//const char* const loopback  = "62.1.205.36";
-//const short yasslPort = 5555;
-
+const char* const yasslIP   = "127.0.0.1";
+const short       yasslPort = 11111;
 
 
 // client
@@ -158,6 +149,12 @@ inline void store_ca(SSL_CTX* ctx)
         if (SSL_CTX_load_verify_locations(ctx, caCert2, 0) != SSL_SUCCESS)
             if (SSL_CTX_load_verify_locations(ctx, caCert3, 0) != SSL_SUCCESS)
                 err_sys("failed to use certificate: certs/cacert.pem");
+
+    // load client CA for server verify
+    if (SSL_CTX_load_verify_locations(ctx, cert, 0) != SSL_SUCCESS)
+        if (SSL_CTX_load_verify_locations(ctx, certSuite, 0) != SSL_SUCCESS)
+            if (SSL_CTX_load_verify_locations(ctx, certDebug,0) != SSL_SUCCESS)
+                err_sys("failed to use certificate: certs/client-cert.pem");
 }
 
 
@@ -251,7 +248,7 @@ inline void tcp_socket(SOCKET_T& sockfd, sockaddr_in& addr)
     addr.sin_family = AF_INET;
 
     addr.sin_port = htons(yasslPort);
-    addr.sin_addr.s_addr = inet_addr(loopback);
+    addr.sin_addr.s_addr = inet_addr(yasslIP);
 }
 
 

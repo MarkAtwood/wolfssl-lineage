@@ -823,7 +823,7 @@ int rsa_test()
                 err_sys("where's your certs dir?", -79);
         }
     }
-    CertDecoder cd(source2);
+    CertDecoder cd(source2, true, 0, CertDecoder::CA);
     Source source3(cd.GetPublicKey().GetKey(), cd.GetPublicKey().size());
     RSA_PublicKey pub(source3);
  
