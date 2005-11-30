@@ -1,6 +1,6 @@
 SUBDIRS = taocrypt src examples testsuite
 EXTRA_DIST = yassl.dsp yassl.dsw certs/*.pem certs/*.d* certs/*.txt doc/*.html \
-	mySTL/*.hpp stunnel/stunnel.* stunnel/*.txt stunnel/src/*.c
+	doc/*.png mySTL/*.hpp stunnel/stunnel.* stunnel/*.txt stunnel/src/*.c
 
 
 lib-only:

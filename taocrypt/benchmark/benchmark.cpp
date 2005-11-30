@@ -17,9 +17,8 @@
 
 using namespace TaoCrypt;
 
-
+void bench_aes(bool show);
 void bench_des();
-void bench_aes();
 void bench_blowfish();
 void bench_twofish();
 void bench_arc4();
@@ -35,8 +34,8 @@ double current_time();
 
 int main(int argc, char** argv)
 {
-    bench_des();
-    bench_aes();
+    bench_aes(false);
+    bench_aes(true);
     bench_blowfish();
     bench_twofish();
     bench_arc4();
@@ -44,6 +43,8 @@ int main(int argc, char** argv)
     bench_md5();
     bench_sha();
     bench_ripemd();
+
+    bench_des();
 
     return 0;
 }
@@ -89,7 +90,7 @@ void bench_des()
 }
 
 
-void bench_aes()
+void bench_aes(bool show)
 {
     AES_CBC_Encryption enc;
     enc.SetKey(key, 16, iv);
@@ -103,8 +104,9 @@ void bench_aes()
 
     double persec = 1 / total * megs;
 
-    printf("AES      %d megs took %f seconds, %5.2f MB/s\n", megs, total,
-                                                             persec);
+    if (show)
+        printf("AES      %d megs took %f seconds, %5.2f MB/s\n", megs, total,
+                                                                 persec);
 }
 
 

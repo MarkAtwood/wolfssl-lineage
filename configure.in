@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(yassl,1.0.6)
+AM_INIT_AUTOMAKE(yassl,1.1.1)
 AM_CONFIG_HEADER(taocrypt/include/config.h)
 
 # make sure configure doesn't add to CXXFLAGS
@@ -63,14 +63,14 @@ fi
 
 
 AC_ARG_ENABLE(ia32-asm,
-    [  --enable-ia32-asm       Enable TaoCrypt ia32 assembly (default: disabled)],
+    [  --enable-ia32-asm       Enable TaoCrypt ia32 assembly (default: enabled)],
     [ ENABLED_IA32ASM=$enableval ],
-    [ ENABLED_IA32ASM=no ]
+    [ ENABLED_IA32ASM=yes ]
     )
 
-if test "$ENABLED_IA32ASM" = "yes"
+if test "$ENABLED_IA32ASM" = "no"
 then
-    CXXFLAGS="$CXXFLAGS -DTAO_ASM"
+    CXXFLAGS="$CXXFLAGS -DDISALBE_TAO_ASM"
 fi
 
 AC_SUBST(CXXFLAGS)

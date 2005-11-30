@@ -112,10 +112,16 @@ public:
 
 
 // Turn on ia32 ASM for Ciphers and Message Digests
-// For GCC user has to enable during ./configure because of problems with
-// intel syntax addressing on older gas versions
-#if defined(TAOCRYPT_X86ASM_AVAILABLE) && defined(_MSC_VER)
+// Seperate define since these are more complex, use member offsets
+// and user may want to turn off while leaving Big Integer optos on 
+#if defined(TAOCRYPT_X86ASM_AVAILABLE) && !defined(DISABLE_TAO_ASM)
     #define TAO_ASM
+#endif
+
+
+//  Extra word in older vtable implementations, for ASM member offset
+#if defined(__GNUC__) && __GNUC__ < 3
+    #define OLD_GCC_OFFSET
 #endif
 
 

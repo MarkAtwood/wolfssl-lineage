@@ -132,7 +132,7 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 SUBDIRS = taocrypt src examples testsuite
 EXTRA_DIST = yassl.dsp yassl.dsw certs/*.pem certs/*.d* certs/*.txt doc/*.html \
-	mySTL/*.hpp stunnel/stunnel.* stunnel/*.txt stunnel/src/*.c
+	doc/*.png mySTL/*.hpp stunnel/stunnel.* stunnel/*.txt stunnel/src/*.c
 
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
