@@ -24,6 +24,7 @@
 #include "pwdbased.hpp"
 
 
+
 using TaoCrypt::byte;
 using TaoCrypt::word32;
 using TaoCrypt::SHA;
@@ -823,7 +824,7 @@ int rsa_test()
                 err_sys("where's your certs dir?", -79);
         }
     }
-    CertDecoder cd(source2, true, 0, CertDecoder::CA);
+    CertDecoder cd(source2, true, 0, false, CertDecoder::CA);
     Source source3(cd.GetPublicKey().GetKey(), cd.GetPublicKey().size());
     RSA_PublicKey pub(source3);
  
