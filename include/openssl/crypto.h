@@ -1,7 +1,7 @@
 /* crypto.h for openSSL */
 
-#ifndef ysSSL_crypto_h__
-#define yaSSL_crypto_h__
+#ifndef CysSSL_crypto_h__
+#define CyaSSL_crypto_h__
 
 const char* SSLeay_version(int type);
 
@@ -9,5 +9,5 @@ const char* SSLeay_version(int type);
 #define SSLEAY_VERSION_NUMBER SSLEAY_VERSION
 
 
-#endif /* yaSSL_crypto_h__ */
+#endif /* CyaSSL_crypto_h__ */
 

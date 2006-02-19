@@ -1,1 +1,3 @@
-SUBDIRS = client server echoclient echoserver
+SUBDIRS = client
+EXTRA_DIST = test.h 
+

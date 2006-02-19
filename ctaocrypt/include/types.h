@@ -1,0 +1,87 @@
+/* types.h
+ *
+ * Copyright (C) 2006 Sawtooth Consulting Ltd.
+ *
+ * This file is part of CyaSSL.
+ *
+ * CyaSSL is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * CyaSSL is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
+ */
+
+
+#ifndef CTAO_CRYPT_TYPES_H
+#define CTAO_CRYPT_TYPES_H
+
+#ifdef HAVE_CONFIG_H
+    #include "config.h"
+#endif
+
+
+#if defined(WORDS_BIGENDIAN) || (defined(__MWERKS__) && !defined(__INTEL__))
+    #define BIG_ENDIAN_ORDER
+#endif
+
+#ifndef BIG_ENDIAN_ORDER
+    #define LITTLE_ENDIAN_ORDER
+#endif
+
+
+typedef unsigned char  byte;
+typedef unsigned short word16;
+typedef unsigned int   word32;
+
+#if defined(_MSC_VER) || defined(__BCPLUSPLUS__)
+    #define WORD64_AVAILABLE
+    #define WORD64_IS_DISTINCT_TYPE
+    typedef unsigned __int64 word64;
+#elif SIZEOF_LONG == 8
+    #define WORD64_AVAILABLE
+    typedef unsigned long word64;
+#elif SIZEOF_LONG_LONG == 8 
+    #define WORD64_AVAILABLE
+    #define WORD64_IS_DISTINCT_TYPE
+    typedef unsigned long long word64;
+#endif
+
+
+/* These platforms have 64-bit CPU registers.  */
+#if (defined(__alpha__) || defined(__ia64__) || defined(_ARCH_PPC64) || \
+     defined(__mips64)  || defined(__x86_64__)) 
+    typedef word32 hword;
+    typedef word64 word;
+#else
+    typedef word16 hword;
+    typedef word32 word;
+    typedef word64 dword;
+#endif
+
+
+enum {
+    WORD_SIZE  = sizeof(word),
+    WORD_BITS  = WORD_SIZE * 8
+};
+
+
+/* use inlining if compiler allows */
+#ifdef _MSC_VER
+    #define INLINE __inline
+#elif __GNUC__
+    #define INLINE inline
+#else
+    #define INLINE 
+#endif
+
+
+#endif /* CTAO_CRYPT_TYPES_H */
+

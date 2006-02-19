@@ -1,0 +1,308 @@
+/* keys.c
+ *
+ * Copyright (C) 2006 Sawtooth Consulting Ltd.
+ *
+ * This file is part of CyaSSL.
+ *
+ * CyaSSL is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * CyaSSL is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
+ */
+
+
+
+#include "openssl/ssl.h"
+#include "cyassl_int.h"
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
+
+int SetCipherSpecs(SSL* ssl)
+{
+    switch (ssl->cipherSuite) {
+
+#ifdef BUILD_SSL_RSA_WITH_RC4_128_SHA
+    case SSL_RSA_WITH_RC4_128_SHA :
+        ssl->specs.bulk_cipher_algorithm = rc4;
+        ssl->specs.cipher_type           = stream;
+        ssl->specs.mac_algorithm         = sha_mac;
+        ssl->specs.kea                   = rsa_kea;
+        ssl->specs.hash_size             = SHA_DIGEST_SIZE;
+        ssl->specs.pad_size              = PAD_SHA;
+        ssl->specs.key_size              = RC4_KEY_SIZE;
+        ssl->specs.iv_size               = 0;
+
+        break;
+#endif
+
+#ifdef BUILD_SSL_RSA_WITH_RC4_128_MD5
+    case SSL_RSA_WITH_RC4_128_MD5 :
+        ssl->specs.bulk_cipher_algorithm = rc4;
+        ssl->specs.cipher_type           = stream;
+        ssl->specs.mac_algorithm         = md5_mac;
+        ssl->specs.kea                   = rsa_kea;
+        ssl->specs.hash_size             = MD5_DIGEST_SIZE;
+        ssl->specs.pad_size              = PAD_MD5;
+        ssl->specs.key_size              = RC4_KEY_SIZE;
+        ssl->specs.iv_size               = 0;
+
+        break;
+#endif
+
+#ifdef BUILD_SSL_RSA_WITH_3DES_EDE_CBC_SHA
+    case SSL_RSA_WITH_3DES_EDE_CBC_SHA :
+        ssl->specs.bulk_cipher_algorithm = triple_des;
+        ssl->specs.cipher_type           = block;
+        ssl->specs.mac_algorithm         = sha_mac;
+        ssl->specs.kea                   = rsa_kea;
+        ssl->specs.hash_size             = SHA_DIGEST_SIZE;
+        ssl->specs.pad_size              = PAD_SHA;
+        ssl->specs.key_size              = DES3_KEY_SIZE;
+        ssl->specs.block_size            = DES_BLOCK_SIZE;
+        ssl->specs.iv_size               = DES_IV_SIZE;
+
+        break;
+#endif
+
+    default:
+        return -1; /* unsupported/unknown suite */
+
+    }
+
+    return 0;
+}
+
+
+enum KeyStuff {
+    MASTER_ROUNDS = 3,
+    PREFIX        = 3,     /* up to three letters for master prefix */
+    KEY_PREFIX    = 7      /* up to 7 prefix letters for key rounds */
+
+
+};
+
+
+/* true or false, zero for error */
+static int SetPrefix(byte* sha_input, int index)
+{
+    switch (index) {
+    case 0:
+        memcpy(sha_input, "A", 1);
+        break;
+    case 1:
+        memcpy(sha_input, "BB", 2);
+        break;
+    case 2:
+        memcpy(sha_input, "CCC", 3);
+        break;
+    case 3:
+        memcpy(sha_input, "DDDD", 4);
+        break;
+    case 4:
+        memcpy(sha_input, "EEEEE", 5);
+        break;
+    case 5:
+        memcpy(sha_input, "FFFFFF", 6);
+        break;
+    case 6:
+        memcpy(sha_input, "GGGGGGG", 7);
+        break;
+    default:
+        return 0;  /* prefix_error */
+    }
+    return 1;
+}
+
+
+static int SetKeys(SSL* ssl)
+{
+    word32 sz = ssl->specs.key_size;
+
+#ifdef BUILD_ARC4
+    if (ssl->specs.bulk_cipher_algorithm == rc4) {
+        if (ssl->side == CLIENT_END) {
+            Arc4SetKey(&ssl->encrypt.arc4, ssl->keys.client_write_key, sz);
+            Arc4SetKey(&ssl->decrypt.arc4, ssl->keys.server_write_key, sz);
+        }
+        else {
+            Arc4SetKey(&ssl->encrypt.arc4, ssl->keys.server_write_key, sz);
+            Arc4SetKey(&ssl->decrypt.arc4, ssl->keys.client_write_key, sz);
+        }
+    }
+#endif
+    
+#ifdef BUILD_DES3
+    if (ssl->specs.bulk_cipher_algorithm == triple_des) {
+        if (ssl->side == CLIENT_END) {
+            Des3_SetKey(&ssl->encrypt.des3, ssl->keys.client_write_key,
+                        ssl->keys.client_write_IV, DES_ENCRYPTION);
+            Des3_SetKey(&ssl->decrypt.des3, ssl->keys.server_write_key,
+                        ssl->keys.server_write_IV, DES_DECRYPTION);
+        }
+        else {
+            Des3_SetKey(&ssl->encrypt.des3, ssl->keys.server_write_key,
+                        ssl->keys.server_write_IV, DES_ENCRYPTION);
+            Des3_SetKey(&ssl->decrypt.des3, ssl->keys.client_write_key,
+                ssl->keys.client_write_IV, DES_DECRYPTION);
+        }
+    }
+#endif
+
+    ssl->keys.sequence_number      = 0;
+    ssl->keys.peer_sequence_number = 0;
+    ssl->keys.encryptionOn         = 0;
+
+    return 0;
+}
+
+
+static int StoreKeys(SSL* ssl, const byte* keyData)
+{
+    int sz = ssl->specs.hash_size, i;
+
+    memcpy(ssl->keys.client_write_MAC_secret, keyData, sz);
+    i = sz;
+    memcpy(ssl->keys.server_write_MAC_secret,&keyData[i], sz);
+    i += sz;
+
+    sz = ssl->specs.key_size;
+    memcpy(ssl->keys.client_write_key, &keyData[i], sz);
+    i += sz;
+    memcpy(ssl->keys.server_write_key, &keyData[i], sz);
+    i += sz;
+
+    sz = ssl->specs.iv_size;
+    memcpy(ssl->keys.client_write_IV, &keyData[i], sz);
+    i += sz;
+    memcpy(ssl->keys.server_write_IV, &keyData[i], sz);
+
+    return SetKeys(ssl);
+}
+
+
+static int DeriveKeys(SSL* ssl)
+{
+    int length = 2 * ssl->specs.hash_size + 
+                 2 * ssl->specs.key_size  +
+                 2 * ssl->specs.iv_size;
+    int rounds = (length + MD5_DIGEST_SIZE - 1 ) / MD5_DIGEST_SIZE, i;
+
+    byte shaOutput[SHA_DIGEST_SIZE];
+    byte md5Input[SECRET_LEN + SHA_DIGEST_SIZE];
+    byte shaInput[KEY_PREFIX + SECRET_LEN + 2 * RAN_LEN];
+  
+    Md5 md5;
+    Sha sha;
+
+    byte keyData[KEY_PREFIX * MD5_DIGEST_SIZE];  /* max size */
+
+    InitMd5(&md5);
+    InitSha(&sha);
+
+    memcpy(md5Input, ssl->masterSecret, SECRET_LEN);
+
+    for (i = 0; i < rounds; ++i) {
+        int j   = i + 1;
+        int idx = j;
+
+        if (!SetPrefix(shaInput, i)) {
+            return -1; /* prefix error */
+        }
+
+        memcpy(shaInput + idx, ssl->masterSecret, SECRET_LEN);
+        idx += SECRET_LEN;
+        memcpy(shaInput + idx, ssl->serverRandom, RAN_LEN);
+        idx += RAN_LEN;
+        memcpy(shaInput + idx, ssl->clientRandom, RAN_LEN);
+        idx += RAN_LEN;
+
+        ShaUpdate(&sha, shaInput, sizeof(shaInput) - KEY_PREFIX + j);
+        ShaFinal(&sha, shaOutput);
+
+        memcpy(&md5Input[SECRET_LEN], shaOutput, SHA_DIGEST_SIZE);
+        Md5Update(&md5, md5Input, sizeof(md5Input));
+        Md5Final(&md5, keyData + i * MD5_DIGEST_SIZE);
+    }
+
+    return StoreKeys(ssl, keyData);
+}
+
+
+void CleanPreMaster(SSL* ssl)
+{
+    int i;
+
+    for (i = 0; i < SECRET_LEN; i++)
+        ssl->preMasterSecret[i] = 0;
+
+    RNG_GenerateBlock(&ssl->rng, ssl->preMasterSecret, SECRET_LEN);
+
+    for (i = 0; i < SECRET_LEN; i++)
+        ssl->preMasterSecret[i] = 0;
+
+}
+
+
+/* Create and store the master secret see page 32, 6.1 */
+int MakeMasterSecret(SSL* ssl)
+{
+    byte   shaOutput[SHA_DIGEST_SIZE];
+    byte   md5Input[SECRET_LEN + SHA_DIGEST_SIZE];
+    byte   shaInput[PREFIX + SECRET_LEN + 2 * RAN_LEN];
+    int    i;
+    word32 idx;
+
+    Md5 md5;
+    Sha sha;
+
+    InitMd5(&md5);
+    InitSha(&sha);
+
+    memcpy(md5Input, ssl->preMasterSecret, SECRET_LEN);
+
+    for (i = 0; i < MASTER_ROUNDS; ++i) {
+        byte prefix[PREFIX];
+        if (!SetPrefix(prefix, i)) {
+            return -1;  /* prefix error */
+        }
+
+        idx = 0;
+        memcpy(shaInput, prefix, i + 1);
+        idx += i + 1;
+
+        memcpy(shaInput + idx, ssl->preMasterSecret, SECRET_LEN);
+        idx += SECRET_LEN;
+        memcpy(shaInput + idx, ssl->clientRandom, RAN_LEN);
+        idx += RAN_LEN;
+        memcpy(shaInput + idx, ssl->serverRandom, RAN_LEN);
+        idx += RAN_LEN;
+        ShaUpdate(&sha, shaInput, idx);
+        ShaFinal(&sha, shaOutput);
+
+        idx = SECRET_LEN;  /* preSz */
+        memcpy(md5Input + idx, shaOutput, SHA_DIGEST_SIZE);
+        idx += SHA_DIGEST_SIZE;
+        Md5Update(&md5, md5Input, idx);
+        Md5Final(&md5, &ssl->masterSecret[i * MD5_DIGEST_SIZE]);
+    }
+    DeriveKeys(ssl);
+
+    CleanPreMaster(ssl);
+
+    return 0;
+}
+
+
+
+

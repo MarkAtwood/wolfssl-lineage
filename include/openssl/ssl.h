@@ -1,15 +1,15 @@
 /* ssl.h                                
  *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
+ * Copyright (C) 2006 Sawtooth Consulting Ltd.
  *
- * This file is part of yaSSL.
+ * This file is part of CyaSSL.
  *
- * yaSSL is free software; you can redistribute it and/or modify
+ * CyaSSL is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * yaSSL is distributed in the hope that it will be useful,
+ * CyaSSL is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -19,48 +19,36 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+
 /*  ssl.h defines openssl compatibility layer 
  *
  */
 
 
 
-#ifndef ysSSL_openssl_h__
-#define yaSSL_openssl_h__
+#ifndef CysSSL_openssl_h__
+#define CyaSSL_openssl_h__
 
 #include <stdio.h>   /* ERR_print fp */
 #include "rsa.h"
 
-#if defined(__cplusplus) && !defined(YASSL_MYSQL_COMPATIBLE)
-namespace yaSSL {
-extern "C" {
-#endif
 
 #undef X509_NAME   /* wincrypt.h clash */
 
-#if defined(__cplusplus) && !defined(YASSL_MYSQL_COMPATIBLE)
-    class SSL;
-    class SSL_SESSION;
-    class SSL_METHOD;
-    class SSL_CTX;
-    class SSL_CIPHER;
-
-    class RSA;
-
-    class X509;
-    class X509_NAME;
-#else
-    typedef struct SSL         SSL;          
-    typedef struct SSL_SESION  SSL_SESSION;
-    typedef struct SSL_METHOD  SSL_METHOD;
-    typedef struct SSL_CTX     SSL_CTX;
-    typedef struct SSL_CIPHER  SSL_CIPHER;
-
-    typedef struct RSA RSA;
-
-    typedef struct X509       X509;
-    typedef struct X509_NAME  X509_NAME;
+#ifdef __cplusplus
+    extern "C" {
 #endif
+
+typedef struct SSL         SSL;          
+typedef struct SSL_SESION  SSL_SESSION;
+typedef struct SSL_METHOD  SSL_METHOD;
+typedef struct SSL_CTX     SSL_CTX;
+typedef struct SSL_CIPHER  SSL_CIPHER;
+
+typedef struct RSA RSA;
+
+typedef struct X509       X509;
+typedef struct X509_NAME  X509_NAME;
 
 
 /* Big Number stuff, different file? */
@@ -396,10 +384,9 @@ int         RAND_load_file(const char*, long);
 
 
 
-#if defined(__cplusplus) && !defined(YASSL_MYSQL_COMPATIBLE)
-}      /* namespace  */
-}      /* extern "C" */
+#ifdef __cplusplus
+    } /* extern "C" */
 #endif
 
 
-#endif /* yaSSL_openssl_h__ */
+#endif /* CyaSSL_openssl_h__ */
