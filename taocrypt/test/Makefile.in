@@ -135,6 +135,7 @@ bin_PROGRAMS = test
 test_SOURCES = test.cpp
 test_LDFLAGS = -L../src
 test_LDADD = -ltaocrypt
+EXTRA_DIST = make.bat
 subdir = taocrypt/test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs

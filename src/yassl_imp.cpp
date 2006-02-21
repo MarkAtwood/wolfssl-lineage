@@ -29,6 +29,7 @@
 #include "asn.hpp"  // provide crypto wrapper??
 
 
+
 namespace yaSSL {
 
 
@@ -111,11 +112,15 @@ void ClientDiffieHellmanPublic::build(SSL& ssl)
     uint keyLength = dhClient.get_agreedKeyLength(); // pub and agree same
 
     alloc(keyLength, true);
-    dhClient.makeAgreement(dhServer.get_publicKey());
+    dhClient.makeAgreement(dhServer.get_publicKey(), keyLength);
     c16toa(keyLength, Yc_);
     memcpy(Yc_ + KEY_OFFSET, dhClient.get_publicKey(), keyLength);
 
-    ssl.set_preMaster(dhClient.get_agreedKey(), keyLength);
+    // because of encoding first byte might be zero, don't use it for preMaster
+    if (*dhClient.get_agreedKey() == 0) 
+        ssl.set_preMaster(dhClient.get_agreedKey() + 1, keyLength - 1);
+    else
+        ssl.set_preMaster(dhClient.get_agreedKey(), keyLength);
 }
 
 
@@ -269,10 +274,14 @@ void ClientDiffieHellmanPublic::read(SSL& ssl, input_buffer& input)
     ato16(tmp, keyLength);
 
     alloc(keyLength);
-    input.read(Yc_, length_);
-    dh.makeAgreement(Yc_);
+    input.read(Yc_, keyLength);
+    dh.makeAgreement(Yc_, keyLength); 
 
-    ssl.set_preMaster(dh.get_agreedKey(), keyLength);
+    // because of encoding, first byte might be 0, don't use for preMaster 
+    if (*dh.get_agreedKey() == 0) 
+        ssl.set_preMaster(dh.get_agreedKey() + 1, dh.get_agreedKeyLength() - 1);
+    else
+        ssl.set_preMaster(dh.get_agreedKey(), dh.get_agreedKeyLength());
     ssl.makeMasterSecret();
 }
 

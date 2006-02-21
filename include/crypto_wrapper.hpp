@@ -380,7 +380,7 @@ public:
     uint        get_agreedKeyLength() const;
     const byte* get_agreedKey()       const;
     const byte* get_publicKey()       const;
-    void        makeAgreement(const byte*);
+    void        makeAgreement(const byte*, unsigned int);
 
     void        set_sizes(int&, int&, int&) const;
     void        get_parms(byte*, byte*, byte*) const;

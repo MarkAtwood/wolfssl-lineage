@@ -4,7 +4,6 @@
 #include "../../testsuite/test.hpp"
 
 
-
 THREAD_RETURN YASSL_API server_test(void* args)
 {
 #ifdef WIN32

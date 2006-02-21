@@ -7,4 +7,4 @@ testsuite_SOURCES  = testsuite.cpp ../taocrypt/test/test.cpp \
 testsuite_LDFLAGS  = -L../src/ -L../taocrypt/src $(PTHREAD_LDFLAGS)
 testsuite_CXXFLAGS = -DNO_MAIN_DRIVER -Wall -Wno-unused $(PTHREAD_CFLAGS)
 testsuite_LDADD    = -lyassl -ltaocrypt $(EXTRA_PTHREAD) $(EXTRA_SOCKET)
-EXTRA_DIST = testsuite.dsp test.hpp input quit
+EXTRA_DIST = testsuite.dsp test.hpp input quit make.bat

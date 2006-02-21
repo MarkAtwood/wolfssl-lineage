@@ -149,7 +149,7 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive pdf-recursive \
 DIST_COMMON = README $(srcdir)/Makefile.in $(srcdir)/configure \
 	./taocrypt/include/config.h.in AUTHORS COPYING ChangeLog \
 	INSTALL Makefile.am NEWS aclocal.m4 config.guess config.sub \
-	configure configure.in depcomp install-sh missing mkinstalldirs
+	configure.in depcomp install-sh missing mkinstalldirs
 DIST_SUBDIRS = $(SUBDIRS)
 all: all-recursive
 

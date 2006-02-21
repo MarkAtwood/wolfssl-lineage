@@ -51,9 +51,7 @@ void client_test(void* args)
     SSL_free(ssl);
 
 #ifdef TEST_RESUME
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (connect(sockfd, (const sockaddr*)&servaddr, sizeof(servaddr)) != 0)
-        err_sys("tcp connect failed");
+    tcp_connect(sockfd);
     SSL_set_fd(sslResume, sockfd);
     SSL_set_session(sslResume, session);
     

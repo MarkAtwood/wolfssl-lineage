@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(yassl,1.1.5)
+AM_INIT_AUTOMAKE(yassl,1.2.0)
 AM_CONFIG_HEADER(taocrypt/include/config.h)
 
 # make sure configure doesn't add to CXXFLAGS
@@ -36,7 +36,7 @@ then
   CXXFLAGS="$DEBUG_CXXFLAGS $CXXFLAGS"
 else
   # Optimized version. No debug
-  CXXFLAGS="$OPTIMIZE_CXXFLAGS $CXXFLAGS"
+  CXXFLAGS="$OPTIMIZE_CXXFLAGS $CXXFLAGS -DNDEBUG"
 fi
 
 
