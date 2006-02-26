@@ -23,6 +23,7 @@
 
 #include "openssl/ssl.h"
 #include "cyassl_int.h"
+#include "cyassl_error.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -76,8 +77,7 @@ int SetCipherSpecs(SSL* ssl)
 #endif
 
     default:
-        return -1; /* unsupported/unknown suite */
-
+        return UNSUPPORTED_SUITE;
     }
 
     return 0;
@@ -119,7 +119,7 @@ static int SetPrefix(byte* sha_input, int index)
         memcpy(sha_input, "GGGGGGG", 7);
         break;
     default:
-        return 0;  /* prefix_error */
+        return 0; 
     }
     return 1;
 }
@@ -191,7 +191,7 @@ static int StoreKeys(SSL* ssl, const byte* keyData)
 }
 
 
-static int DeriveKeys(SSL* ssl)
+int DeriveKeys(SSL* ssl)
 {
     int length = 2 * ssl->specs.hash_size + 
                  2 * ssl->specs.key_size  +
@@ -217,7 +217,7 @@ static int DeriveKeys(SSL* ssl)
         int idx = j;
 
         if (!SetPrefix(shaInput, i)) {
-            return -1; /* prefix error */
+            return PREFIX_ERROR;
         }
 
         memcpy(shaInput + idx, ssl->masterSecret, SECRET_LEN);
@@ -274,7 +274,7 @@ int MakeMasterSecret(SSL* ssl)
     for (i = 0; i < MASTER_ROUNDS; ++i) {
         byte prefix[PREFIX];
         if (!SetPrefix(prefix, i)) {
-            return -1;  /* prefix error */
+            return PREFIX_ERROR;
         }
 
         idx = 0;

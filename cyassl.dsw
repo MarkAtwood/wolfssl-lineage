@@ -3,6 +3,21 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
+Project: "benchmark"=.\CTAOCRYPT\benchmark\benchmark.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ctaocrypt
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "client"=.\examples\client\client.dsp - Package Owner=<4>
 
 Package=<5>
@@ -40,6 +55,51 @@ Package=<4>
 {{{
     Begin Project Dependency
     Project_Dep_Name ctaocrypt
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "echoclient"=.\examples\echoclient\echoclient.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name cyassl
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "echoserver"=.\examples\echoserver\echoserver.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name cyassl
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "server"=.\examples\server\server.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name cyassl
     End Project Dependency
 }}}
 

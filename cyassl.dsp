@@ -101,6 +101,10 @@ SOURCE=.\src\ssl.c
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
+SOURCE=.\include\cyassl_error.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\include\cyassl_int.h
 # End Source File
 # End Group

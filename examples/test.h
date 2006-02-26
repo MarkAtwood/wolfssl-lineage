@@ -50,6 +50,11 @@
 #endif
 
 
+static const char* caCert = "../../certs/ca-cert.pem";
+static const char* svrCert = "../../certs/server-cert.pem";
+static const char* svrKey  = "../../certs/server-key.pem";
+
+
 typedef struct tcp_ready {
     /* put in pthread stuff later */
     int ready;  /* predicate */
@@ -118,7 +123,7 @@ INLINE void tcp_listen(SOCKET_T* sockfd)
 }
 
 
-INLINE void tcp_accept(SOCKET_T* sockfd, int* clientfd, func_args* args)
+INLINE void tcp_accept(SOCKET_T* sockfd, int* clientfd)
 {
     struct sockaddr_in client;
     socklen_t client_len = sizeof(client);

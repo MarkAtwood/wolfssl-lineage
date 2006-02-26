@@ -24,9 +24,12 @@
 #include <assert.h>
 
 
-#define BAD 0xFF  /* invalid encoding */
-#define PAD '='
-#define PEM_LINE_SZ 64
+enum {
+    BAD         = 0xFF,  /* invalid encoding */
+    PAD         = '=',
+    PEM_LINE_SZ = 64
+};
+
 
 static
 const byte base64Decode[] = { 62, BAD, BAD, BAD, 63,   /* + starts at 0x2B */

@@ -396,7 +396,7 @@ int rsa_test()
 
     InitDecodedCert(&cert, (byte*)&tmp2);
 
-    ret = ParseCert(&cert, bytes2);
+    ret = ParseCert(&cert, bytes2, CERT_TYPE, VERIFY, 0);
     if (ret != 0) return -48;
 
     FreeDecodedCert(&cert);

@@ -1,3 +1,3 @@
-SUBDIRS = src test
+SUBDIRS = src test benchmark
 EXTRA_DIST = ctaocrypt.dsw ctaocrypt.dsp
 

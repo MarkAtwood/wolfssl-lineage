@@ -1,8 +1,15 @@
-CyaSSL version 0.2.0 (02/19/2006)
+CyaSSL version 0.3.0 (02/26/2006)
+
+This release of CyaSSL adds SSLv3 server support and session resumption. 
+
+See notes below for build instructions.
+
+
+*****************CyaSSL version 0.2.0 (02/19/2006)
 
 
 This is the first release of CyaSSL and its crypt brother, CTaoCrypt.  CyaSSL
-is written in ASNI C with the idea of a small code size, footprint, and memory
+is written in ANSI C with the idea of a small code size, footprint, and memory
 usage in mind.  CTaoCrypt can be as small as 32K, and the current client
 version of CyaSSL can be as small as 12K.
 
@@ -19,10 +26,10 @@ with support for SHA-1 and MD5 digests.  Ciphers include 3DES and RC4.
     ./configure
     make
 
-    run ctaocrypt/test from the ctaocrypt directory to test the crypt build
-    run examples/client from the examples directory to test the SSLv3 client
-        build against any SSLv3 server, e.g., yaSSL or OpenSSL. The client
-        expects a response from the server.
+    run ctaocrypt/test/test from ctaocrypt/test/ to test the crypt build
+    run examples/client/client from the examples/client/ to test the SSLv3
+        client build against any SSLv3 server, e.g., yaSSL or OpenSSL.
+        The client expects a response from the server.
 
 to make a debug build:
 
@@ -35,8 +42,8 @@ to make a debug build:
 
 Choose (Re)Build All from the project workspace
 
-run ctaocrypt\test.exe from ctaocrypt\ to test the crypt build
-run examples\client from the examples directory to test the SSLv3 client
+run ctaocrypt\test\test.exe  from ctaocrypt\test\ to test the crypt build
+run examples\client\client.exe from examples\client\ to test the SSLv3 client
     build against any SSLv3 server, e.g., yaSSL or OpenSSL. The client
     expects a response from the server.
 

@@ -36,6 +36,7 @@
 #include <ctype.h>
 #include <limits.h>
 
+#include "types.h"       /* will set MP_xxBIT if not default */
 #include "mpi_class.h"
 
 #ifndef MIN

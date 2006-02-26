@@ -22,6 +22,7 @@
 
 #ifndef NO_DES3
 #include "des3.h"
+#include "misc.c"
 #include <string.h>
 
 
@@ -202,39 +203,6 @@ const word32 Spbox[8][64] = {
 };
 
 
-static INLINE word32 rotlFixed(word32 x, word32 y)
-{
-    return (x << y) | (x >> (sizeof(y) * 8 - y));
-}   
-
-
-static INLINE word32 rotrFixed(word32 x, word32 y)
-{
-    return (x >> y) | (x << (sizeof(y) * 8 - y));
-}
-
-
-#ifdef LITTLE_ENDIAN_ORDER
-
-static INLINE word32 ByteReverseWord32(word32 value)
-{
-#ifdef PPC_INTRINSICS
-    // PPC: load reverse indexed instruction
-    return (word32)__lwbrx(&value,0);
-#elif defined(FAST_ROTATE)
-    // 5 instructions with rotate instruction, 9 without
-    return (rotrFixed(value, 8U) & 0xff00ff00) |
-           (rotlFixed(value, 8U) & 0x00ff00ff);
-#else
-    // 6 instructions with rotate instruction, 8 without
-    value = ((value & 0xFF00FF00) >> 8) | ((value & 0x00FF00FF) << 8);
-    return rotlFixed(value, 16U);
-#endif
-}
-
-#endif /* LITTLE_ENDIAN_ORDER */
-
-
 static INLINE void IPERM(word32* left, word32* right)
 {
     word32 work;
@@ -358,25 +326,6 @@ void Des3_SetKey(Des3* des, const byte* key, const byte* iv, int dir)
     DesSetKey(key + (dir == DES_DECRYPTION ? 0 : 16), dir, des->key[2]);
     
     memcpy(des->reg, iv, DES_BLOCK_SIZE);
-}
-
-
-static INLINE void XorWords(word* r, const word* a, word32 n)
-{
-    word32 i;
-
-    for (i = 0; i < n; i++) r[i] ^= a[i];
-}
-
-
-void xorbuf(byte* buf, const byte* mask, word32 count)
-{
-    if (((size_t)buf | (size_t)mask | count) % WORD_SIZE == 0)
-        XorWords( (word*)buf, (const word*)mask, count / WORD_SIZE);
-    else {
-        word32 i;
-        for (i = 0; i < count; i++) buf[i] ^= mask[i];
-    }
 }
 
 

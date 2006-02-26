@@ -29,16 +29,18 @@
 #include <assert.h> 
 
 
-#define ISSUER  0
-#define SUBJECT 1
+enum {
+    ISSUER  = 0,
+    SUBJECT = 1,
 
-#define BEFORE 0
-#define AFTER  1
+    BEFORE  = 0,
+    AFTER   = 1
+};
 
 
-int GetLength(const byte* input, word32* inOutIdx, word32* len)
+int GetLength(const byte* input, word32* inOutIdx, int* len)
 {
-    word32  length = 0;
+    int     length = 0;
     word32  i = *inOutIdx;
 
     byte b = input[i++];
@@ -60,9 +62,9 @@ int GetLength(const byte* input, word32* inOutIdx, word32* len)
 }
 
 
-int GetSequence(const byte* input, word32* inOutIdx, word32* len)
+int GetSequence(const byte* input, word32* inOutIdx, int* len)
 {
-    word32 length = -1;
+    int    length = -1;
     word32 idx    = *inOutIdx;
 
     if (input[idx++] != (ASN_SEQUENCE | ASN_CONSTRUCTED) ||
@@ -76,9 +78,9 @@ int GetSequence(const byte* input, word32* inOutIdx, word32* len)
 }
 
 
-int GetSet(const byte* input, word32* inOutIdx, word32* len)
+int GetSet(const byte* input, word32* inOutIdx, int* len)
 {
-    word32 length = -1;
+    int    length = -1;
     word32 idx    = *inOutIdx;
 
     if (input[idx++] != (ASN_SET | ASN_CONSTRUCTED) ||
@@ -130,7 +132,7 @@ int GetInt(mp_int* mpi, const byte* input, word32* inOutIdx )
 {
     word32 i = *inOutIdx;
     byte   b = input[i++];
-    word32 length;
+    int    length;
 
     if (b != ASN_INTEGER)
         return ASN_PARSE_E;
@@ -157,13 +159,13 @@ int GetInt(mp_int* mpi, const byte* input, word32* inOutIdx )
 int RsaPrivateKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
                         word32 inSz)
 {
-    word32 begin = *inOutIdx, length;
-    int    version;
+    word32 begin = *inOutIdx;
+    int    version, length;
 
     if (GetSequence(input, inOutIdx, &length) < 0)
         return ASN_PARSE_E;
 
-    if (length > (inSz - (*inOutIdx - begin)))
+    if ((word32)length > (inSz - (*inOutIdx - begin)))
         return ASN_INPUT_E;
 
     if (GetVersion(input, inOutIdx, &version) < 0)
@@ -187,12 +189,13 @@ int RsaPrivateKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
 int RsaPublicKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
                        word32 inSz)
 {
-    word32 begin = *inOutIdx, length;
+    word32 begin = *inOutIdx;
+    int    length;
 
     if (GetSequence(input, inOutIdx, &length) < 0)
         return ASN_PARSE_E;
 
-    if (length > (inSz - (*inOutIdx - begin)))
+    if ((word32)length > (inSz - (*inOutIdx - begin)))
         return ASN_INPUT_E;
 
     key->type = RSA_PUBLIC;
@@ -226,19 +229,19 @@ void FreeDecodedCert(DecodedCert* cert)
 
 static int GetCertHeader(DecodedCert* cert, word32 inSz)
 {
-    int    ret = 0, version;
-    word32 begin = cert->srcIdx, len;
+    int    ret = 0, version, len;
+    word32 begin = cert->srcIdx;
     mp_int mpi;
 
     if (GetSequence(cert->source, &cert->srcIdx, &len) < 0)
         return ASN_PARSE_E;
 
-    if (len > (inSz - (cert->srcIdx - begin))) return ASN_INPUT_E;
+    if ((word32)len > (inSz - (cert->srcIdx - begin))) return ASN_INPUT_E;
 
     cert->certBegin = cert->srcIdx;
 
-    GetSequence(cert->source, &cert->srcIdx, &cert->sigIndex);
-    cert->sigIndex += cert->srcIdx;
+    GetSequence(cert->source, &cert->srcIdx, &len);
+    cert->sigIndex = len + cert->srcIdx;
 
     if (GetExplicitVersion(cert->source, &cert->srcIdx, &version) < 0)
         return ASN_PARSE_E;
@@ -253,7 +256,7 @@ static int GetCertHeader(DecodedCert* cert, word32 inSz)
 
 static int GetAlgoId(DecodedCert* cert, word32* oid)
 {
-    word32 length;
+    int    length;
     byte   b;
     *oid = 0;
 
@@ -288,7 +291,7 @@ static int GetAlgoId(DecodedCert* cert, word32* oid)
 
 static int StoreKey(DecodedCert* cert)
 {
-    word32 length;
+    int    length;
     word32 read = cert->srcIdx;
 
     if (GetSequence(cert->source, &cert->srcIdx, &length) < 0)
@@ -301,7 +304,7 @@ static int StoreKey(DecodedCert* cert)
        cert->srcIdx--;
 
     cert->pubKeySize = length;
-    if ( !(cert->publicKey = malloc(length)) )
+    if ( !(cert->publicKey = (byte*) malloc(length)) )
         return MEMORY_E;
 
     memcpy(cert->publicKey, cert->source + cert->srcIdx, length);
@@ -313,7 +316,7 @@ static int StoreKey(DecodedCert* cert)
 
 static int GetKey(DecodedCert* cert)
 {
-    word32 length;
+    int length;
 
     if (GetSequence(cert->source, &cert->srcIdx, &length) < 0)
         return ASN_PARSE_E;
@@ -345,8 +348,8 @@ static int GetKey(DecodedCert* cert)
 static int GetName(DecodedCert* cert, int nameType)
 {
     Sha    sha;
-    word32 length;  /* length of all distinguished names */
-    word32 dummy;
+    int    length;  /* length of all distinguished names */
+    int    dummy;
 
     InitSha(&sha);
 
@@ -355,10 +358,10 @@ static int GetName(DecodedCert* cert, int nameType)
 
     length += cert->srcIdx;
 
-    while (cert->srcIdx < length) {
+    while (cert->srcIdx < (word32)length) {
         byte   b;
         byte   joint[2];
-        word32 oidSz;
+        int    oidSz;
 
         if (GetSet(cert->source, &cert->srcIdx, &dummy) < 0)
             return ASN_PARSE_E;
@@ -378,7 +381,7 @@ static int GetName(DecodedCert* cert, int nameType)
         /* v1 name types */
         if (joint[0] == 0x55 && joint[1] == 0x04) {
             byte   id;
-            word32 strLen;
+            int    strLen;
 
             cert->srcIdx += 2;
             id = cert->source[cert->srcIdx++]; 
@@ -390,7 +393,7 @@ static int GetName(DecodedCert* cert, int nameType)
             if (id == ASN_COMMON_NAME) {
                 char** pp = (nameType == ISSUER) ? 
                     &cert->issuer : &cert->subject;
-                *pp = malloc(strLen + 1);
+                *pp = (char*) malloc(strLen + 1);
                 if (!*pp)
                     return MEMORY_E;
                 memcpy(*pp, &cert->source[cert->srcIdx], strLen);
@@ -401,7 +404,7 @@ static int GetName(DecodedCert* cert, int nameType)
         }
         else {
             /* skip */
-            word32 adv;
+            int adv;
             cert->srcIdx += oidSz + 1;
 
             if (GetLength(cert->source, &cert->srcIdx, &adv) < 0)
@@ -516,7 +519,7 @@ static int ValidateDate(const byte* date, byte format, int dateType)
 
 static int GetDate(DecodedCert* cert, int dateType)
 {
-    word32 length;
+    int    length;
     byte   date[MAX_DATE_SIZE];
     byte   b = cert->source[cert->srcIdx++];
 
@@ -545,7 +548,7 @@ static int GetDate(DecodedCert* cert, int dateType)
 
 static int GetValidity(DecodedCert* cert)
 {
-    word32 length;
+    int length;
 
     if (GetSequence(cert->source, &cert->srcIdx, &length) < 0)
         return ASN_PARSE_E;
@@ -586,13 +589,16 @@ static int DecodeToKey(DecodedCert* cert, word32 inSz)
 
 static int GetSignature(DecodedCert* cert)
 {
+    int    length;
     byte   b = cert->source[cert->srcIdx++];
 
     if (b != ASN_BIT_STRING)
         return ASN_BITSTR_E;
 
-    if (GetLength(cert->source, &cert->srcIdx, &cert->sigLength) < 0)
+    if (GetLength(cert->source, &cert->srcIdx, &length) < 0)
         return ASN_PARSE_E;
+
+    cert->sigLength = length;
 
     b = cert->source[cert->srcIdx++];
     if (b != 0x00)
@@ -600,7 +606,7 @@ static int GetSignature(DecodedCert* cert)
 
     cert->sigLength--;
 
-    cert->signature = malloc(cert->sigLength);
+    cert->signature = (byte*) malloc(cert->sigLength);
     if (!cert->signature)
         return MEMORY_E;
     
@@ -728,6 +734,7 @@ static word32 EncodeSignature(byte* out, const byte* digest, word32 digSz,
 }
                            
 
+/* return true (1) for Confirmation */
 static int ConfirmSignature(DecodedCert* cert, const byte* key, word32 keySz)
 {
     byte digest[SHA_DIGEST_SIZE]; /* max size */
@@ -785,10 +792,12 @@ static int ConfirmSignature(DecodedCert* cert, const byte* key, word32 keySz)
 }
 
 
-int ParseCert(DecodedCert* cert, word32 inSz)
+int ParseCert(DecodedCert* cert, word32 inSz, int type, int verify,
+              Signer* signers)
 {
     word32 confirmOID;
     int    ret;
+    int    confirm = 0;
 
     if ((ret = DecodeToKey(cert, inSz)) < 0)
         return ret;
@@ -805,11 +814,28 @@ int ParseCert(DecodedCert* cert, word32 inSz)
     if (confirmOID != cert->signatureOID)
         return ASN_SIG_OID_E;
 
-    /* assume CA for now, and verify */
-    {
+    if (verify) {
         if (memcmp(cert->issuerHash, cert->subjectHash, SHA_DIGEST_SIZE) == 0){
             /* self confirm */
              if (!ConfirmSignature(cert, cert->publicKey, cert->pubKeySize))
+                return ASN_SIG_CONFIRM_E;
+        }
+        else {  /* try to find in signers */
+            while (signers) {
+                if (memcmp(cert->issuerHash, signers->hash, SHA_DIGEST_SIZE)
+                           == 0) {
+                    /* other confirm */
+                    if (!ConfirmSignature(cert, signers->publicKey,
+                                          signers->pubKeySize))
+                        return ASN_SIG_CONFIRM_E;
+                    else {
+                        confirm = 1;
+                        break;
+                    }
+                }
+                signers = signers->next;
+            }
+            if (!confirm)
                 return ASN_SIG_CONFIRM_E;
         }
     }
@@ -817,5 +843,30 @@ int ParseCert(DecodedCert* cert, word32 inSz)
     return 0;
 }
 
+
+Signer* MakeSigner()
+{
+    Signer* signer = (Signer*) malloc(sizeof(Signer));
+    if (signer) {
+        signer->name      = 0;
+        signer->publicKey = 0;
+        signer->next      = 0;
+    }
+
+    return signer;
+}
+
+
+void FreeSigners(Signer* signer)
+{
+    Signer* next = signer;
+
+    while( (signer = next) ) {
+        next = signer->next;
+        free(signer->name);
+        free(signer->publicKey);
+        free(signer);
+    }
+}
 
 

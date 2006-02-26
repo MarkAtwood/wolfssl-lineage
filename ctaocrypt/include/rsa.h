@@ -56,6 +56,8 @@ int  RsaSSL_Sign(const byte* in, word32 inLen, byte* out, word32 outLen,
 int  RsaSSL_Verify(const byte* in, word32 inLen, byte* out, word32 outLen,
                    RsaKey* key);
 
+int  RsaEncryptSize(RsaKey* key);
+
 
 #ifdef __cplusplus
     } /* extern "C" */

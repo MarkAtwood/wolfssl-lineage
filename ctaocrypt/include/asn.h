@@ -25,6 +25,7 @@
 
 #include "types.h"
 #include "rsa.h"
+#include "sha.h"
 
 
 #ifdef __cplusplus
@@ -86,6 +87,20 @@ enum Key_Sum {
 };
 
 
+/* Certificate file Type */
+enum CertType {
+    CERT_TYPE       = 0, 
+    PRIVATEKEY_TYPE,
+    CA_TYPE
+};
+
+
+enum VerifyType {
+    NO_VERIFY = 0,
+    VERIFY    = 1
+};
+
+
 typedef struct DecodedCert {
     byte*   publicKey;
     word32  pubKeySize;
@@ -104,9 +119,26 @@ typedef struct DecodedCert {
     word32  srcIdx;                  /* current offset into buffer       */
 } DecodedCert;
 
+
+typedef struct Signer Signer;
+
+/* CA Signers */
+struct Signer {
+    byte*   publicKey;
+    word32  pubKeySize;
+    char*   name;                    /* common name */
+    byte    hash[SHA_DIGEST_SIZE];   /* sha hash of names in certificate */
+    Signer* next;
+};
+
+
 void InitDecodedCert(DecodedCert*, byte*);
 void FreeDecodedCert(DecodedCert*);
-int  ParseCert(DecodedCert*, word32);
+int  ParseCert(DecodedCert*, word32, int type, int verify, Signer* signer);
+
+Signer* MakeSigner();
+void    FreeSigners(Signer*);
+
 
 int RsaPrivateKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
                         word32);

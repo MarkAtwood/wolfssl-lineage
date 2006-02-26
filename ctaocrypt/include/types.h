@@ -28,6 +28,11 @@
 #endif
 
 
+#ifdef __cplusplus
+    extern "C" {
+#endif
+
+
 #if defined(WORDS_BIGENDIAN) || (defined(__MWERKS__) && !defined(__INTEL__))
     #define BIG_ENDIAN_ORDER
 #endif
@@ -52,6 +57,9 @@ typedef unsigned int   word32;
     #define WORD64_AVAILABLE
     #define WORD64_IS_DISTINCT_TYPE
     typedef unsigned long long word64;
+#else
+    #define MP_16BIT   /* for mp_int, mp_word needs to be twice as big as
+                          mp_digit, no 64 bit type so make mp_digit 16 bit */
 #endif
 
 
@@ -63,7 +71,9 @@ typedef unsigned int   word32;
 #else
     typedef word16 hword;
     typedef word32 word;
-    typedef word64 dword;
+    #ifdef WORD64_AVAILABLE
+        typedef word64 dword;
+    #endif
 #endif
 
 
@@ -80,6 +90,25 @@ enum {
     #define INLINE inline
 #else
     #define INLINE 
+#endif
+
+
+/* set up rotate style */
+#if defined(_MSC_VER) || defined(__BCPLUSPLUS__)
+	#define INTEL_INTRINSICS
+	#define FAST_ROTATE
+#elif defined(__MWERKS__) && TARGET_CPU_PPC
+	#define PPC_INTRINSICS
+	#define FAST_ROTATE
+#elif defined(__GNUC__) && defined(__i386__)
+        /* GCC does peephole optimizations which should result in using rotate
+           instructions  */
+	#define FAST_ROTATE
+#endif
+
+
+#ifdef __cplusplus
+    }   /* extern "C" */
 #endif
 
 

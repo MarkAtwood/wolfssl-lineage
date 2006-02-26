@@ -28,14 +28,15 @@
 #include <assert.h>
 
 
-#define RSA_PUBLIC_ENCRYPT  0
-#define RSA_PUBLIC_DECRYPT  1
-#define RSA_PRIVATE_ENCRYPT 2
-#define RSA_PRIVATE_DECRYPT 3
+enum {
+    RSA_PUBLIC_ENCRYPT  = 0,
+    RSA_PUBLIC_DECRYPT  = 1,
+    RSA_PRIVATE_ENCRYPT = 2,
+    RSA_PRIVATE_DECRYPT = 3,
 
-#define RSA_BLOCK_TYPE_1 1
-#define RSA_BLOCK_TYPE_2 2
-
+    RSA_BLOCK_TYPE_1 = 1,
+    RSA_BLOCK_TYPE_2 = 2
+};
 
 
 void InitRsaKey(RsaKey* key)
@@ -125,20 +126,64 @@ static word32 RsaUnPad(const byte *pkcsBlock, unsigned int pkcsBlockLen,
 static int RsaFunction(const byte* in, word32 inLen, byte* out, word32* outLen,
                        int type, RsaKey* key)
 {
-#define ERROR_OUT(x) { mp_clear(&tmp); return x; }
+    #define ERROR_OUT(x) { ret = x; goto done;}
 
     mp_int tmp;
+    int    ret = 0;
     word32 keyLen, len;
 
     if (mp_init(&tmp) != MP_OKAY)
-        ERROR_OUT(MP_INIT_E);
+        return MP_INIT_E;
 
     if (mp_read_unsigned_bin(&tmp, (byte*)in, inLen) != MP_OKAY)
         ERROR_OUT(MP_READ_E);
 
     if (type == RSA_PRIVATE_DECRYPT || type == RSA_PRIVATE_ENCRYPT) {
-        if (mp_exptmod(&tmp, &key->d, &key->n, &tmp) != MP_OKAY)
-            ERROR_OUT(MP_EXPTMOD_E);
+        #ifdef RSA_LOW_MEM      /* half as much memory but twice as slow */
+            if (mp_exptmod(&tmp, &key->d, &key->n, &tmp) != MP_OKAY)
+                ERROR_OUT(MP_EXPTMOD_E);
+        #else
+            #define INNER_ERROR_OUT(x) { ret = x; goto inner_done; }
+
+            mp_int tmpa, tmpb;
+
+            if (mp_init(&tmpa) != MP_OKAY)
+                ERROR_OUT(MP_INIT_E);
+
+            if (mp_init(&tmpb) != MP_OKAY) {
+                mp_clear(&tmpa);
+                ERROR_OUT(MP_INIT_E);
+            }
+
+            /* tmpa = tmp^dP mod p */
+            if (mp_exptmod(&tmp, &key->dP, &key->p, &tmpa) != MP_OKAY)
+                INNER_ERROR_OUT(MP_EXPTMOD_E);
+
+            /* tmpb = tmp^dQ mod q */
+            if (mp_exptmod(&tmp, &key->dQ, &key->q, &tmpb) != MP_OKAY)
+                INNER_ERROR_OUT(MP_EXPTMOD_E);
+
+            /* tmp = (tmpa - tmpb) * qInv (mod p) */
+            if (mp_sub(&tmpa, &tmpb, &tmp) != MP_OKAY)
+                INNER_ERROR_OUT(MP_SUB_E);
+
+            if (mp_mulmod(&tmp, &key->u, &key->p, &tmp) != MP_OKAY)
+                INNER_ERROR_OUT(MP_MULMOD_E);
+
+            /* tmp = tmpb + q * tmp */
+            if (mp_mul(&tmp, &key->q, &tmp) != MP_OKAY)
+                INNER_ERROR_OUT(MP_MUL_E);
+
+            if (mp_add(&tmp, &tmpb, &tmp) != MP_OKAY)
+                INNER_ERROR_OUT(MP_ADD_E);
+
+        inner_done:
+            mp_clear(&tmpa);
+            mp_clear(&tmpb);
+
+            if (ret != 0) return ret;
+
+        #endif   /* RSA_LOW_MEM */
     }
     else if (type == RSA_PUBLIC_ENCRYPT || type == RSA_PUBLIC_DECRYPT) {
         if (mp_exptmod(&tmp, &key->e, &key->n, &tmp) != MP_OKAY)
@@ -164,9 +209,10 @@ static int RsaFunction(const byte* in, word32 inLen, byte* out, word32* outLen,
     /* convert */
     if (mp_to_unsigned_bin(&tmp, out) != MP_OKAY)
         ERROR_OUT(MP_TO_E);
-    
+   
+done: 
     mp_clear(&tmp);
-    return 0;
+    return ret;
 }
 
 
@@ -262,4 +308,9 @@ int RsaSSL_Sign(const byte* in, word32 inLen, byte* out, word32 outLen,
     return sz;
 }
 
+
+int RsaEncryptSize(RsaKey* key)
+{
+    return mp_unsigned_bin_size(&key->n);
+}
 

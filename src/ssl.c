@@ -37,15 +37,6 @@
 
 
 
-SSL_METHOD* SSLv3_client_method()
-{
-    SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
-    if (method)
-        InitSSL_Method(method, MakeSSLv3());
-    return method;
-}
-
-
 SSL_CTX* SSL_CTX_new(SSL_METHOD* method)
 {
     SSL_CTX* ctx = (SSL_CTX*) malloc(sizeof(SSL_CTX));
@@ -58,7 +49,6 @@ SSL_CTX* SSL_CTX_new(SSL_METHOD* method)
 void SSL_CTX_free(SSL_CTX* ctx)
 {
     FreeSSL_Ctx(ctx);
-    ctx = 0;
 }
 
 
@@ -66,7 +56,10 @@ SSL* SSL_new(SSL_CTX* ctx)
 {
     SSL* ssl = (SSL*) malloc(sizeof(SSL));
     if (ssl)
-        InitSSL(ssl, ctx);
+        if (InitSSL(ssl, ctx) < 0) {
+            FreeSSL(ssl);
+            ssl = 0;
+        }
     return ssl;
 }
 
@@ -74,42 +67,12 @@ SSL* SSL_new(SSL_CTX* ctx)
 void SSL_free(SSL* ssl)
 {
     FreeSSL(ssl);
-    ssl = 0;
 }
 
 
 int SSL_set_fd(SSL* ssl, int fd)
 {
     ssl->socket = fd;
-    return SSL_SUCCESS;
-}
-
-
-int SSL_connect(SSL* ssl)
-{
-    /* always send client hello first */
-    if (SendClientHello(ssl) != 0)
-        return SSL_FATAL_ERROR;
-
-    /* get response */
-    while (ssl->serverState < SERVER_HELLODONE_COMPLETE)
-        if (ProcessReply(ssl) < 0)
-            return SSL_FATAL_ERROR;
-
-    if (SendClientKeyExchange(ssl) != 0)
-        return SSL_FATAL_ERROR;
-
-    if (SendChangeCipher(ssl) != 0)
-        return SSL_FATAL_ERROR;
-
-    if (SendFinished(ssl) != 0)
-        return SSL_FATAL_ERROR;
-
-    /* get response */
-    while (ssl->serverState < SERVER_FINISHED_COMPLETE)
-        if (ProcessReply(ssl) < 0)
-            return SSL_FATAL_ERROR;
-          
     return SSL_SUCCESS;
 }
 
@@ -122,7 +85,7 @@ int SSL_write(SSL* ssl, const void* buffer, int sz)
 
 int SSL_read(SSL* ssl, void* buffer, int sz)
 {
-    return ReceiveData(ssl, buffer, min(sz, MAX_RECORD_SIZE));
+    return ReceiveData(ssl, (byte*)buffer, min(sz, MAX_RECORD_SIZE));
 }
 
 
@@ -139,7 +102,143 @@ int SSL_shutdown(SSL* ssl)
 int SSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file,
                                   const char* path)
 {
-    return read_file(ctx, file, SSL_FILETYPE_PEM, CA_TYPE);
+    return ProcessFile(ctx, file, SSL_FILETYPE_PEM, CA_TYPE);
 }
 
 
+int SSL_CTX_use_certificate_file(SSL_CTX* ctx, const char* file, int type)
+{
+    return ProcessFile(ctx, file, type, CERT_TYPE);
+}
+
+
+int SSL_CTX_use_PrivateKey_file(SSL_CTX* ctx, const char* file, int type)
+{
+    return ProcessFile(ctx, file, type, PRIVATEKEY_TYPE);
+}
+
+
+void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback vc)
+{
+    if (mode & SSL_VERIFY_PEER)
+        ctx->verifyPeer = 1;
+
+    if (mode == SSL_VERIFY_NONE)
+        ctx->verifyNone = 1;
+
+    if (mode & SSL_VERIFY_FAIL_IF_NO_PEER_CERT)
+        ctx->failNoCert = 1;
+}
+
+
+SSL_SESSION* SSL_get_session(SSL* ssl)
+{
+    return GetSession(ssl->sessionID);
+}
+
+
+int SSL_set_session(SSL* ssl, SSL_SESSION* session)
+{
+    return SetSession(ssl, session);
+}
+
+
+
+/* client only parts */
+#ifndef NO_CYASSL_CLIENT
+
+    SSL_METHOD* SSLv3_client_method()
+    {
+        SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
+        if (method)
+            InitSSL_Method(method, MakeSSLv3());
+        return method;
+    }
+
+
+    int SSL_connect(SSL* ssl)
+    {
+        int neededState;
+
+        /* always send client hello first */
+        if (SendClientHello(ssl) != 0)
+            return SSL_FATAL_ERROR;
+
+        neededState = ssl->resuming ? SERVER_FINISHED_COMPLETE :
+                                      SERVER_HELLODONE_COMPLETE;
+        /* get response */
+        while (ssl->serverState < neededState)
+            if (ProcessReply(ssl) < 0)
+                return SSL_FATAL_ERROR;
+
+        if (!ssl->resuming)
+            if (SendClientKeyExchange(ssl) != 0)
+                return SSL_FATAL_ERROR;
+
+        if (SendChangeCipher(ssl) != 0)
+            return SSL_FATAL_ERROR;
+
+        if (SendFinished(ssl) != 0)
+            return SSL_FATAL_ERROR;
+
+        /* get response */
+        while (ssl->serverState < SERVER_FINISHED_COMPLETE)
+            if (ProcessReply(ssl) < 0)
+                return SSL_FATAL_ERROR;
+          
+        return SSL_SUCCESS;
+    }
+
+#endif /* NO_CYASSL_CLIENT */
+
+
+/* server only parts */
+#ifndef NO_CYASSL_SERVER
+
+    SSL_METHOD* SSLv3_server_method()
+    {
+        SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
+        if (method) {
+            InitSSL_Method(method, MakeSSLv3());
+            method->side = SERVER_END;
+        }
+        return method;
+    }
+
+
+    int SSL_accept(SSL* ssl)
+    {
+        /* get response */
+        while (ssl->clientState < CLIENT_HELLO_COMPLETE)
+            if (ProcessReply(ssl) < 0)
+                return SSL_FATAL_ERROR;
+
+        if (SendServerHello(ssl) != 0)
+            return SSL_FATAL_ERROR;
+
+        if (!ssl->resuming) {
+            if (SendCertificate(ssl) != 0)
+                return SSL_FATAL_ERROR;
+
+            if (SendServerHelloDone(ssl) != 0)
+                return SSL_FATAL_ERROR;
+
+            while (ssl->clientState < CLIENT_FINISHED_COMPLETE)
+                if (ProcessReply(ssl) < 0)
+                    return SSL_FATAL_ERROR;
+        }
+        if (SendChangeCipher(ssl) != 0)
+            return SSL_FATAL_ERROR;
+
+        if (SendFinished(ssl) != 0)
+            return SSL_FATAL_ERROR;
+
+        if (ssl->resuming)
+            while (ssl->clientState < CLIENT_FINISHED_COMPLETE)
+                if (ProcessReply(ssl) < 0)
+                    return SSL_FATAL_ERROR;
+
+        return SSL_SUCCESS;
+    }
+
+#endif /* NO_CYASSL_SERVER */

@@ -42,6 +42,10 @@ enum {
     MP_READ_E          = -111,  /* mp_read error state */
     MP_EXPTMOD_E       = -112,  /* mp_exptmod error state */
     MP_TO_E            = -113,  /* mp_to_xxx error state, can't convert */
+    MP_SUB_E           = -114,  /* mp_sub error state, can't subtract */
+    MP_ADD_E           = -115,  /* mp_add error state, can't add */
+    MP_MUL_E           = -116,  /* mp_mul error state, can't multiply */
+    MP_MULMOD_E        = -117,  /* mp_mulmod error state, can't multiply mod */
 
     MEMORY_E           = -120,  /* out of memory error */
 

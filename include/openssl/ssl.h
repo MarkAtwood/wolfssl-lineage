@@ -39,11 +39,16 @@
     extern "C" {
 #endif
 
-typedef struct SSL         SSL;          
-typedef struct SSL_SESION  SSL_SESSION;
-typedef struct SSL_METHOD  SSL_METHOD;
-typedef struct SSL_CTX     SSL_CTX;
-typedef struct SSL_CIPHER  SSL_CIPHER;
+
+void InitCyaSSL();   /* need to call once to load library (session cache) */
+void FreeCyaSSL();   /* call when done to free session cache */
+
+
+typedef struct SSL          SSL;          
+typedef struct SSL_SESSION  SSL_SESSION;
+typedef struct SSL_METHOD   SSL_METHOD;
+typedef struct SSL_CTX      SSL_CTX;
+typedef struct SSL_CIPHER   SSL_CIPHER;
 
 typedef struct RSA RSA;
 
@@ -248,6 +253,7 @@ int SSL_pending(SSL*);
 
 
 enum { /* ssl Constants */
+    SSL_BAD_CERTTYPE    = -8,
     SSL_BAD_STAT        = -7,
     SSL_BAD_PATH        = -6,
     SSL_BAD_FILETYPE    = -5,

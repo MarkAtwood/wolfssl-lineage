@@ -24,19 +24,30 @@
 #ifndef CyaSSL_INT_H
 #define CyaSSL_INT_H
 
+
 #include "types.h"
 #include "random.h"
-#include "sha.h"
 #include "md5.h"
 #include "des3.h"
+#include "asn.h"
+
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <unistd.h>
+    #include <pthread.h>
+#endif
+
+#ifdef __cplusplus
+    extern "C" {
+#endif
 
 
 #ifdef _WIN32
-    typedef int SOCKET_T;
-#else
     typedef unsigned int SOCKET_T;
+#else
+    typedef int SOCKET_T;
 #endif
-
 
 
 typedef byte word24[3];
@@ -115,7 +126,8 @@ enum Misc {
     AES_IV_SIZE         = 16,  /* always block size       */
 
     MAX_HELLO_SZ       = 128,  /* max client or server hello */
-    CLIENT_HELLO_FIRST =  35   /* Protocol + RAN_LEN + sizeof(id_len) */
+    CLIENT_HELLO_FIRST =  35,  /* Protocol + RAN_LEN + sizeof(id_len) */
+    DEFAULT_TIMEOUT    = 500   /* default resumption timeout in seconds */
 };
 
 
@@ -179,26 +191,16 @@ typedef struct Suites {
 void InitSuites(Suites*);
 
 
-/* CA Signers */
-typedef struct Signer {
-    buffer publicKey;
-    char*  name;                    /* common name */
-    byte   hash[SHA_DIGEST_SIZE];   /* sha hash of names in certificate */
-} Signer;
-
-
-void InitSigner(Signer*);
-void FreeSigner(Signer*);
-
-typedef Signer SignerList;  /* just one for now */
-
 /* OpenSSL context type */
 struct SSL_CTX {
     SSL_METHOD* method;
     buffer      certificate;
     buffer      privateKey;
-    SignerList  caList;
+    Signer*     caList;         /* SSL_CTX owns this, SSL will reference */
     Suites      suites;
+    byte        verifyPeer;
+    byte        verifyNone;
+    byte        failNoCert;
 };
 
 
@@ -290,6 +292,20 @@ typedef struct Hashes {
 } Hashes;
 
 
+/* openSSL session type */
+struct SSL_SESSION {
+    byte         sessionID[ID_LEN];
+    byte         masterSecret[SECRET_LEN];
+    word32       bornOn;                        /* create time in seconds   */
+    word32       timeout;                       /* timeout in seconds       */
+    SSL_SESSION* next;
+};
+
+
+SSL_SESSION* GetSession(const byte*);
+int          SetSession(SSL*, SSL_SESSION*);
+
+
 /* OpenSSL ssl type */
 struct SSL {
     int             error;
@@ -308,6 +324,8 @@ struct SSL {
     byte            serverRandom[RAN_LEN];
     byte            sessionID[ID_LEN];
     byte            cipherSuite;
+    buffer          certificate;
+    buffer          key;
     buffer          peerCert;
     buffer          peerKey;
     buffer          bufferedData;
@@ -317,10 +335,16 @@ struct SSL {
     byte            side;                   /* client or server end */
     byte            preMasterSecret[SECRET_LEN];
     byte            masterSecret[SECRET_LEN];
+    byte            verifyPeer;
+    byte            verifyNone;
+    byte            failNoCert;
+    byte            resuming;
+    Signer*         caList;             /* doesn't own, SSL_CTX does */
+    SSL_SESSION     session;
 };
 
 
-void InitSSL(SSL*, SSL_CTX*);
+int  InitSSL(SSL*, SSL_CTX*);
 void FreeSSL(SSL*);
 
 
@@ -392,20 +416,10 @@ enum AlertLevel {
 };
 
 
-/* Certificate file Type */
-enum CertType {
-    CERT_TYPE       = 0, 
-    PRIVATEKEY_TYPE,
-    CA_TYPE
-};
-
-
- 
 /* internal functions */
-int SendClientHello(SSL*);
-int SendClientKeyExchange(SSL*);
 int SendChangeCipher(SSL*);
 int SendData(SSL*, const void*, int);
+int SendCertificate(SSL*);
 int ReceiveData(SSL*, byte*, int);
 int SendFinished(SSL*);
 int SendAlert(SSL*, int, int);
@@ -414,7 +428,66 @@ int ProcessReply(SSL*);
 int SetCipherSpecs(SSL*);
 int MakeMasterSecret(SSL*);
 
-int read_file(SSL_CTX*, const char*, int format, int type);
+int ProcessFile(SSL_CTX*, const char*, int format, int type);
+
+void AddSession(SSL*);
+int  DeriveKeys(SSL* ssl);
+
+
+#ifndef NO_CYASSL_CLIENT
+    int SendClientHello(SSL*);
+    int SendClientKeyExchange(SSL*);
+#endif /* NO_CYASSL_CLIENT */
+
+#ifndef NO_CYASSL_SERVER
+    int SendServerHello(SSL*);
+    int SendServerHelloDone(SSL*);
+#endif /* NO_CYASSL_SERVER */
+
+
+
+typedef double timer_d;
+
+timer_d Timer();
+word32  LowResTimer();
+
+
+#ifdef SINGLE_THREADED
+    typedef int CyaSSL_Mutex;
+
+    #define InitMutex(m)
+    #define FreeMutex(m)
+    #define LockMutex(m)
+    #define UnLockMutex(m)
+
+#else /* SINGLE_THREADED */
+
+    #ifdef _WIN32
+        typedef CRITICAL_SECTION CyaSSL_Mutex;
+
+        #define InitMutex(m)     InitializeCriticalSection(m)
+        #define FreeMutex(m)     DeleteCriticalSection(m)
+        #define LockMutex(m)     EnterCriticalSection(m)
+        #define UnLockMutex(m)   LeaveCriticalSection(m)
+
+    #elif defined(_POSIX_THREADS)
+        typedef pthread_mutex_t CyaSSL_Mutex;
+
+        #define InitMutex(m)     pthread_mutex_init(m, 0)
+        #define FreeMutex(m)     pthread_mutex_destroy(m)
+        #define LockMutex(m)     pthread_mutex_lock(m) 
+        #define UnLockMutex(m)   pthread_mutex_unlock(m)
+
+    #else
+        #error Need a mutex type in multithreaded mode
+    #endif /* _WIN32 */
+
+#endif /* SINGLE_THREADED */
+
+
+#ifdef __cplusplus
+    }  /* extern "C" */
+#endif
 
 #endif /* CyaSSL_INT_H */
 

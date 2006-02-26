@@ -21,58 +21,11 @@
 
 
 #include "sha.h"
+#include "misc.c"
 #include <string.h>
 #include <assert.h>
 
 
-
-
-static INLINE word32 min(word32 a, word32 b)
-{
-    return a > b ? b : a;
-}
-
-static INLINE word32 rotlFixed(word32 x, word32 y)
-{
-    return (x << y) | (x >> (sizeof(y) * 8 - y));
-}   
-
-
-static INLINE word32 ByteReverseWord32(word32 value)
-{
-#ifdef PPC_INTRINSICS
-    // PPC: load reverse indexed instruction
-    return (word32)__lwbrx(&value,0);
-#elif defined(FAST_ROTATE)
-    // 5 instructions with rotate instruction, 9 without
-    return (rotrFixed(value, 8U) & 0xff00ff00) |
-           (rotlFixed(value, 8U) & 0x00ff00ff);
-#else
-    // 6 instructions with rotate instruction, 8 without
-    value = ((value & 0xFF00FF00) >> 8) | ((value & 0x00FF00FF) << 8);
-    return rotlFixed(value, 16U);
-#endif
-}
-
-static INLINE void ByteReverseWords(word32* out, const word32* in,
-                                    word32 byteCount)
-{
-    word32 count = byteCount/sizeof(word32), i;
-
-    assert(byteCount % sizeof(word32) == 0);
-
-    for (i = 0; i < count; i++)
-        out[i] = ByteReverseWord32(in[i]);
-
-}
-
-static INLINE void ByteReverseBytes(byte* out, const byte* in, word32 byteCount)
-{
-    word32* op       = (word32*)out;
-    const word32* ip = (const word32*)in;
-
-    ByteReverseWords(op, ip, byteCount);
-}
 
 void InitSha(Sha* sha)
 {
