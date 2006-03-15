@@ -3,10 +3,12 @@
 #include "openssl/ssl.h"
 #include "../test.h"
 
-/* #define TEST_RESUME */
 
+/*
+#define TEST_RESUME 
+*/
 
-int main(int argc, char** argv)
+void client_test(void* args)
 {
     SOCKET_T sockfd = 0;
 
@@ -18,13 +20,8 @@ int main(int argc, char** argv)
     char msg[] = "hello cyassl!";
     char reply[1024];
 
-#ifdef _WIN32
-    WSADATA wsd;
-    WSAStartup(0x0002, &wsd);
-#endif
-
-    InitCyaSSL();
-    method  = SSLv3_client_method();
+    ((func_args*)args)->return_code = -1; /* error state */
+    method  = TLSv1_client_method();
     ctx     = SSL_CTX_new(method);
     
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
@@ -50,13 +47,7 @@ int main(int argc, char** argv)
 
     SSL_shutdown(ssl);
     SSL_free(ssl);
-
-#ifdef _WIN32
-    closesocket(sockfd);
-#else
-    close(sockfd);
-#endif
-
+    CloseSocket(sockfd);
 
 #ifdef TEST_RESUME
     tcp_connect(&sockfd);
@@ -76,13 +67,30 @@ int main(int argc, char** argv)
 #endif /* TEST_RESUME */
 
     SSL_CTX_free(ctx);
+    CloseSocket(sockfd);
 
-#ifdef _WIN32
-    closesocket(sockfd);
-#else
-    close(sockfd);
-#endif
-
-    FreeCyaSSL();
-    return 0;
+    ((func_args*)args)->return_code = 0;
 }
+
+
+/* so overall tests can pull in test function */
+#ifndef NO_MAIN_DRIVER
+
+    int main(int argc, char** argv)
+    {
+        func_args args;
+
+        StartTCP();
+
+        args.argc = argc;
+        args.argv = argv;
+
+        InitCyaSSL();
+        client_test(&args);
+        FreeCyaSSL();
+
+        return args.return_code;
+    }
+
+#endif /* NO_MAIN_DRIVER */
+

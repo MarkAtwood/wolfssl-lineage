@@ -39,58 +39,76 @@
 #endif
 
 
-#ifndef _POSIX_THREADS
-    typedef unsigned int  THREAD_RETURN;
-    typedef unsigned long THREAD_TYPE;
-    #define YASSL_API __stdcall
+#ifdef _WIN32
+    #define CloseSocket(s) closesocket(s)
+    #define StartTCP() { WSADATA wsd; WSAStartup(0x0002, &wsd); }
 #else
-    typedef void*         THREAD_RETURN;
-    typedef pthread_t     THREAD_TYPE;
-    #define YASSL_API 
+    #define CloseSocket(s) close(s)
+    #define StartTCP() 
 #endif
 
 
-static const char* caCert = "../../certs/ca-cert.pem";
-static const char* svrCert = "../../certs/server-cert.pem";
-static const char* svrKey  = "../../certs/server-key.pem";
+#ifndef _POSIX_THREADS
+    typedef unsigned int  THREAD_RETURN;
+    typedef unsigned long THREAD_TYPE;
+    #define CYASSL_API __stdcall
+#else
+    typedef void*         THREAD_RETURN;
+    typedef pthread_t     THREAD_TYPE;
+    #define CYASSL_API 
+#endif
+
+
+#ifndef NO_MAIN_DRIVER
+    static const char* caCert = "../../certs/ca-cert.pem";
+    static const char* svrCert = "../../certs/server-cert.pem";
+    static const char* svrKey  = "../../certs/server-key.pem";
+#else
+    static const char* caCert = "../certs/ca-cert.pem";
+    static const char* svrCert = "../certs/server-cert.pem";
+    static const char* svrKey  = "../certs/server-key.pem";
+#endif
 
 
 typedef struct tcp_ready {
-    /* put in pthread stuff later */
-    int ready;  /* predicate */
+    int ready;              /* predicate */
+#ifdef _POSIX_THREADS
+    pthread_mutex_t mutex;
+    pthread_cond_t  cond;
+#endif
 } tcp_ready;    
+
+
+void InitTcpReady();
+void FreeTcpReady();
 
 
 typedef struct func_args {
     int    argc;
     char** argv;
     int    return_code;
-    tcp_ready* signal_;
+    tcp_ready* signal;
 } func_args;
 
-/*
-func_args(int c = 0, char** v = 0) : argc(c), argv(v) {}
-void SetSignal(tcp_ready* p) { signal_ = p; }
-*/
 
-typedef THREAD_RETURN YASSL_API THREAD_FUNC(void*);
+typedef THREAD_RETURN CYASSL_API THREAD_FUNC(void*);
 
 void start_thread(THREAD_FUNC, func_args*, THREAD_TYPE*);
 void join_thread(THREAD_TYPE);
 
 /* yaSSL */
-const char* const yasslIP   = "127.0.0.1";
-const word16      yasslPort = 11111;
+static const char* const yasslIP   = "127.0.0.1";
+static const word16      yasslPort = 11111;
 
 
-INLINE void err_sys(const char* msg)
+static INLINE void err_sys(const char* msg)
 {
     printf("yassl error: %s\n", msg);
     exit(EXIT_FAILURE);
 }
 
 
-INLINE void tcp_socket(SOCKET_T* sockfd, struct sockaddr_in* addr)
+static INLINE void tcp_socket(SOCKET_T* sockfd, struct sockaddr_in* addr)
 {
     *sockfd = socket(AF_INET, SOCK_STREAM, 0);
     memset(addr, 0, sizeof(struct sockaddr_in));
@@ -101,7 +119,7 @@ INLINE void tcp_socket(SOCKET_T* sockfd, struct sockaddr_in* addr)
 }
 
 
-INLINE void tcp_connect(SOCKET_T* sockfd)
+static INLINE void tcp_connect(SOCKET_T* sockfd)
 {
     struct sockaddr_in addr;
     tcp_socket(sockfd, &addr);
@@ -111,7 +129,7 @@ INLINE void tcp_connect(SOCKET_T* sockfd)
 }
 
 
-INLINE void tcp_listen(SOCKET_T* sockfd)
+static INLINE void tcp_listen(SOCKET_T* sockfd)
 {
     struct sockaddr_in addr;
     tcp_socket(sockfd, &addr);
@@ -123,7 +141,7 @@ INLINE void tcp_listen(SOCKET_T* sockfd)
 }
 
 
-INLINE void tcp_accept(SOCKET_T* sockfd, int* clientfd)
+static INLINE void tcp_accept(SOCKET_T* sockfd, int* clientfd, func_args* args)
 {
     struct sockaddr_in client;
     socklen_t client_len = sizeof(client);
@@ -132,11 +150,13 @@ INLINE void tcp_accept(SOCKET_T* sockfd, int* clientfd)
 
 #if defined(_POSIX_THREADS) && defined(NO_MAIN_DRIVER)
     /* signal ready to tcp_accept */
-    tcp_ready* ready = *args->signal_;
-    pthread_mutex_lock(&ready->mutex_);
-    ready->ready_ = true;
-    pthread_cond_signal(&ready->cond_);
-    pthread_mutex_unlock(&ready->mutex_);
+    {
+    tcp_ready* ready = args->signal;
+    pthread_mutex_lock(&ready->mutex);
+    ready->ready = 1;
+    pthread_cond_signal(&ready->cond);
+    pthread_mutex_unlock(&ready->mutex);
+    }
 #endif
 
     *clientfd = accept(*sockfd, (struct sockaddr*)&client,

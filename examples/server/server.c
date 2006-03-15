@@ -5,7 +5,7 @@
 
 
 
-int main(int argc, char** argv)
+THREAD_RETURN CYASSL_API server_test(void* args)
 {
     SOCKET_T sockfd   = 0;
     int      clientfd = 0;
@@ -17,13 +17,8 @@ int main(int argc, char** argv)
     char msg[] = "I hear you fa shizzle!";
     char input[1024];
 
-#ifdef _WIN32
-    WSADATA wsd;
-    WSAStartup(0x0002, &wsd);
-#endif
-
-    InitCyaSSL();
-    method = SSLv3_server_method();
+    ((func_args*)args)->return_code = -1; /* error state */
+    method = TLSv1_server_method();
     ctx    = SSL_CTX_new(method);
 
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
@@ -38,13 +33,8 @@ int main(int argc, char** argv)
         err_sys("can't load server key file");
 
     ssl = SSL_new(ctx);
-    tcp_accept(&sockfd, &clientfd);
-
-#ifdef _WIN32
-    closesocket(sockfd);
-#else
-    close(sockfd);
-#endif
+    tcp_accept(&sockfd, &clientfd, (func_args*)args);
+    CloseSocket(sockfd);
 
     SSL_set_fd(ssl, clientfd);
 
@@ -58,15 +48,35 @@ int main(int argc, char** argv)
         err_sys("SSL_write failed");
 
     SSL_shutdown(ssl);
-    SSL_CTX_free(ctx);
     SSL_free(ssl);
-
-#ifdef _WIN32
-    closesocket(clientfd);
-#else
-    close(clientfd);
-#endif
-
-    FreeCyaSSL();
+    SSL_CTX_free(ctx);
+    
+    CloseSocket(clientfd);
+    ((func_args*)args)->return_code = 0;
     return 0;
 }
+
+
+/* so overall tests can pull in test function */
+#ifndef NO_MAIN_DRIVER
+
+    int main(int argc, char** argv)
+    {
+        func_args args;
+
+        StartTCP();
+
+        args.argc = argc;
+        args.argv = argv;
+
+        InitCyaSSL();
+        server_test(&args);
+        FreeCyaSSL();
+
+        return args.return_code;
+    }
+
+#endif /* NO_MAIN_DRIVER */
+
+
+

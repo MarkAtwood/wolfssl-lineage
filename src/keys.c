@@ -21,12 +21,19 @@
 
 
 
-#include "openssl/ssl.h"
 #include "cyassl_int.h"
 #include "cyassl_error.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
+
+#ifndef NO_TLS
+    int MakeTlsMasterSecret(SSL*);
+#endif
+
+void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
+              int content, int verify);
 
 
 int SetCipherSpecs(SSL* ssl)
@@ -78,6 +85,12 @@ int SetCipherSpecs(SSL* ssl)
 
     default:
         return UNSUPPORTED_SUITE;
+    }
+
+    /* set TLS if it hasn't been turned off */
+    if (ssl->version.major == 3 && ssl->version.minor == 1) {
+        ssl->tls = 1;
+        ssl->hmac = TLS_hmac;
     }
 
     return 0;
@@ -167,7 +180,8 @@ static int SetKeys(SSL* ssl)
 }
 
 
-static int StoreKeys(SSL* ssl, const byte* keyData)
+/* TLS can call too */
+int StoreKeys(SSL* ssl, const byte* keyData)
 {
     int sz = ssl->specs.hash_size, i;
 
@@ -265,6 +279,8 @@ int MakeMasterSecret(SSL* ssl)
 
     Md5 md5;
     Sha sha;
+
+    if (ssl->tls) return MakeTlsMasterSecret(ssl);
 
     InitMd5(&md5);
     InitSha(&sha);

@@ -101,6 +101,10 @@ SOURCE=.\src\des3.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\hmac.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\integer.c
 # End Source File
 # Begin Source File
@@ -142,6 +146,10 @@ SOURCE=.\include\des3.h
 # Begin Source File
 
 SOURCE=.\include\error.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\hmac.h
 # End Source File
 # Begin Source File
 

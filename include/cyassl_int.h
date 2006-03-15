@@ -30,6 +30,7 @@
 #include "md5.h"
 #include "des3.h"
 #include "asn.h"
+//#include "openssl/ssl.h"
 
 #ifdef _WIN32
     #include <windows.h>
@@ -103,6 +104,7 @@ enum Misc {
     PAD_MD5        = 48,       /* pad length for finished */
     PAD_SHA        = 40,       /* pad length for finished */
     LENGTH_SZ      =  2,       /* length field for HMAC, data only */
+    VERSION_SZ     =  2,       /* length of proctocol version */
     SEQ_SZ         =  8,       /* 64 bit sequence number  */
     BYTE3_LEN      =  3,       /* up to 24 bit byte lengths */
     ALERT_SIZE     =  2,       /* level + description     */
@@ -110,6 +112,7 @@ enum Misc {
 
     MAX_SUITE_SZ = 64,         /* only 32 suites for now! */
     RAN_LEN      = 32,         /* random length           */
+    SEED_LEN     = RAN_LEN * 2, /* tls prf seed length    */
     ID_LEN       = 32,         /* session id length       */
     SUITE_LEN    =  2,         /* cipher suite sz length  */
     ENUM_LEN     =  1,         /* always a byte           */
@@ -118,6 +121,14 @@ enum Misc {
     HANDSHAKE_HEADER_SZ = 4,   /* type + length(3)        */
     RECORD_HEADER_SZ    = 5,   /* type + version + len(2) */
     CERT_HEADER_SZ      = 3,   /* always 3 bytes          */
+
+    FINISHED_LABEL_SZ   = 15,  /* TLS finished label size */
+    TLS_FINISHED_SZ     = 12,  /* TLS has a shorter size  */
+    MASTER_LABEL_SZ     = 13,  /* TLS master secret label sz */
+    KEY_LABEL_SZ        = 13,  /* TLS key block expansion sz */
+    MAX_PRF_HALF        = 48,  /* Maximum half secret len */
+    MAX_PRF_LABSEED     = 80,  /* Maximum label + seed len */
+    MAX_PRF_DIG         = 148, /* Maximum digest len      */
 
     RC4_KEY_SIZE        = 16,  /* always 128bit           */
     DES3_KEY_SIZE       = 24,  /* 3 des ede               */
@@ -147,6 +158,14 @@ enum states {
 
     HANDSHAKE_DONE
 };
+
+
+#ifndef SSL_TYPES_DEFINED
+    typedef struct SSL_METHOD  SSL_METHOD;
+    typedef struct SSL_CTX     SSL_CTX;
+    typedef struct SSL_SESSION SSL_SESSION;
+    typedef struct SSL         SSL;
+#endif /* SSL_TYPES_DEFINED */
 
 
 /* SSL Version */
@@ -292,6 +311,7 @@ typedef struct Hashes {
 } Hashes;
 
 
+
 /* openSSL session type */
 struct SSL_SESSION {
     byte         sessionID[ID_LEN];
@@ -305,6 +325,7 @@ struct SSL_SESSION {
 SSL_SESSION* GetSession(const byte*);
 int          SetSession(SSL*, SSL_SESSION*);
 
+typedef void (*hmacfp) (SSL*, byte*, const byte*, word32, int, int);
 
 /* OpenSSL ssl type */
 struct SSL {
@@ -324,8 +345,8 @@ struct SSL {
     byte            serverRandom[RAN_LEN];
     byte            sessionID[ID_LEN];
     byte            cipherSuite;
-    buffer          certificate;
-    buffer          key;
+    buffer          certificate;            /* SSL_CTX owns */
+    buffer          key;                    /* SSL_CTX owns */
     buffer          peerCert;
     buffer          peerKey;
     buffer          bufferedData;
@@ -339,8 +360,10 @@ struct SSL {
     byte            verifyNone;
     byte            failNoCert;
     byte            resuming;
-    Signer*         caList;             /* doesn't own, SSL_CTX does */
+    byte            tls;                /* using TLS ? */
+    Signer*         caList;             /* SSL_CTX owns */
     SSL_SESSION     session;
+    hmacfp          hmac;
 };
 
 
@@ -416,6 +439,13 @@ enum AlertLevel {
 };
 
 
+static const byte client[SIZEOF_SENDER] = { 0x43, 0x4C, 0x4E, 0x54 };
+static const byte server[SIZEOF_SENDER] = { 0x53, 0x52, 0x56, 0x52 };
+
+static const byte tls_client[FINISHED_LABEL_SZ + 1] = "client finished";
+static const byte tls_server[FINISHED_LABEL_SZ + 1] = "server finished";
+
+
 /* internal functions */
 int SendChangeCipher(SSL*);
 int SendData(SSL*, const void*, int);
@@ -428,10 +458,9 @@ int ProcessReply(SSL*);
 int SetCipherSpecs(SSL*);
 int MakeMasterSecret(SSL*);
 
-int ProcessFile(SSL_CTX*, const char*, int format, int type);
-
 void AddSession(SSL*);
 int  DeriveKeys(SSL* ssl);
+int  StoreKeys(SSL* ssl, const byte* keyData);
 
 
 #ifndef NO_CYASSL_CLIENT
@@ -443,6 +472,12 @@ int  DeriveKeys(SSL* ssl);
     int SendServerHello(SSL*);
     int SendServerHelloDone(SSL*);
 #endif /* NO_CYASSL_SERVER */
+
+
+#ifndef NO_TLS
+    
+
+#endif /* NO_TLS */
 
 
 

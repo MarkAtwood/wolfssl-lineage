@@ -1,0 +1,71 @@
+/* hmac.h
+ *
+ * Copyright (C) 2006 Sawtooth Consulting Ltd.
+ *
+ * This file is part of CyaSSL.
+ *
+ * CyaSSL is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * CyaSSL is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
+ */
+
+
+#ifndef CTAO_CRYPT_HMAC_H
+#define CTAO_CRYPT_HMAC_H
+
+#include "md5.h"
+#include "sha.h"
+
+#ifdef __cplusplus
+    extern "C" {
+#endif
+
+
+
+enum {
+    MD5  = 0,
+    SHA  = 1,
+    IPAD = 0x36,
+    OPAD = 0x5C,
+    HMAC_BLOCK_SIZE = MD5_BLOCK_SIZE
+};
+
+
+/* hash union */
+typedef union {
+    Md5 md5;
+    Sha sha;
+} Hash;
+
+/* Hmac digest */
+typedef struct Hmac {
+    Hash    hash;
+    word32  ipad[HMAC_BLOCK_SIZE  / sizeof(word32)];  /* same block size all*/
+    word32  opad[HMAC_BLOCK_SIZE  / sizeof(word32)]; 
+    word32  innerHash[SHA_DIGEST_SIZE / sizeof(word32)]; /* max size */
+    byte    macType;                                     /* md5 or sha */
+    byte    innerHashKeyed;                              /* keyed flag */
+} Hmac;
+
+
+void HmacSetKey(Hmac*, int type, const byte* key, word32 keySz); /* does init */
+void HmacUpdate(Hmac*, const byte*, word32);
+void HmacFinal(Hmac*, byte*);
+
+
+#ifdef __cplusplus
+    } /* extern "C" */
+#endif
+
+#endif /* CTAO_CRYPT_HMAC_H */
+

@@ -4,7 +4,7 @@
 #include "../test.h"
 
 
-void echoclient_test(void* args)
+int main(int argc, char** argv)
 {
     SOCKET_T sockfd = 0;
 
@@ -21,12 +21,10 @@ void echoclient_test(void* args)
     SSL_CTX*    ctx    = 0;
     SSL*        ssl    = 0;
 
-    int argc    = 0;
-    char** argv = 0;
-
-    ((func_args*)args)->return_code = -1; /* error state */
-    argc = ((func_args*)args)->argc;
-    argv = ((func_args*)args)->argv;
+#ifdef _WIN32
+    WSADATA wsd;
+    WSAStartup(0x0002, &wsd);
+#endif
 
     if (argc >= 2) {
         fin  = fopen(argv[1], "r"); 
@@ -42,7 +40,7 @@ void echoclient_test(void* args)
 
     tcp_connect(&sockfd);
 
-    method = TLSv1_client_method();
+    method = SSLv3_client_method();
     ctx    = SSL_CTX_new(method);
 
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
@@ -77,31 +75,13 @@ void echoclient_test(void* args)
     if (inCreated)  fclose(fin);
     if (outCreated) fclose(fout);
 
-    CloseSocket(sockfd);
-    ((func_args*)args)->return_code = 0; 
+#ifdef _WIN32
+    closesocket(sockfd);
+#else
+    close(sockfd);
+#endif
+
+    return 0;
 }
-
-
-/* so overall tests can pull in test function */
-#ifndef NO_MAIN_DRIVER
-
-    int main(int argc, char** argv)
-    {
-        func_args args;
-
-        StartTCP();
-
-        args.argc = argc;
-        args.argv = argv;
-
-        InitCyaSSL();
-        echoclient_test(&args);
-        FreeCyaSSL();
-
-        return args.return_code;
-    }
-
-#endif /* NO_MAIN_DRIVER */
-
 
 

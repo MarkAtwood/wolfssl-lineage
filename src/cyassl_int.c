@@ -21,11 +21,9 @@
 
 
 
-#include "openssl/ssl.h"
 #include "cyassl_int.h"
 #include "cyassl_error.h"
 #include "asn.h"
-#include "coding.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -41,7 +39,6 @@
     #include <arpa/inet.h>
     #include <netinet/in.h>
     #include <sys/ioctl.h>
-    #include <string.h>
 #endif // _WIN32
 
 #ifdef __sun
@@ -79,6 +76,10 @@ static void Hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
                  int content, int verify);
 
 
+void BuildTlsFinished(SSL* ssl, Hashes* hashes, const byte* sender);
+int  DeriveTlsKeys(SSL* ssl);
+
+
 #ifndef min
 
     static INLINE word32 min(word32 a, word32 b)
@@ -87,38 +88,6 @@ static void Hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
     }
 
 #endif /* min */
-
-
-static SSL_SESSION* sessions = 0;
-
-/* quiet compiler */
-#ifndef SINGLE_THREADED
-    static CyaSSL_Mutex mutex; /* sessions mutex */
-#endif
-
-
-void InitCyaSSL()
-{
-    InitMutex(&mutex);
-}
-
-
-void FreeCyaSSL()
-{
-    SSL_SESSION* next;
-
-    LockMutex(&mutex);
-
-    next = sessions;
-    while( (sessions = next) ) {
-        next = sessions->next;
-        free(sessions);
-    }
-
-    UnLockMutex(&mutex);
-
-    FreeMutex(&mutex);
-}
 
 
 void InitSSL_Method(SSL_METHOD* method, ProtocolVersion pv)
@@ -212,26 +181,13 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->failNoCert = ctx->failNoCert;
     
     ssl->resuming = 0;
+    ssl->hmac = Hmac;    /* default to SSLv3 */
+    ssl->tls  = 0;
 
-    if (ctx->certificate.buffer) {
-        ssl->certificate.buffer = (byte*) malloc(ctx->certificate.length);
-        if (!ssl->certificate.buffer)
-            return MEMORY_ERROR;
-        memcpy(ssl->certificate.buffer, ctx->certificate.buffer,
-               ctx->certificate.length);
-        ssl->certificate.length = ctx->certificate.length;
-    }
-
-    if (ctx->privateKey.buffer) {
-        ssl->key.buffer = (byte*) malloc(ctx->privateKey.length);
-        if (!ssl->key.buffer)
-            return MEMORY_ERROR;
-        memcpy(ssl->key.buffer, ctx->privateKey.buffer,
-               ctx->privateKey.length);
-        ssl->key.length = ctx->privateKey.length;
-    }
-
-    ssl->caList = ctx->caList;  /* SSL_CTX still owns */
+    /* SSL_CTX still owns certificate, key, and caList buffers */
+    ssl->certificate = ctx->certificate;
+    ssl->key = ctx->privateKey;
+    ssl->caList = ctx->caList;
 
     return 0;
 }
@@ -242,8 +198,6 @@ void FreeSSL(SSL* ssl)
     free(ssl->bufferedData.buffer);
     free(ssl->peerKey.buffer);
     free(ssl->peerCert.buffer);
-    free(ssl->key.buffer);
-    free(ssl->certificate.buffer);
 
     free(ssl);
 }
@@ -447,9 +401,6 @@ static int GetHandShakeHeader(SSL* ssl, const byte* input, word32* inOutIdx,
 }
 
 
-static const byte client[SIZEOF_SENDER] = { 0x43, 0x4C, 0x4E, 0x54 };
-static const byte server[SIZEOF_SENDER] = { 0x53, 0x52, 0x56, 0x52 };
-
 /* fill with MD5 pad size since biggest required */
 static const byte PAD1[PAD_MD5] = 
                               { 0x36, 0x36, 0x36, 0x36, 0x36, 0x36, 0x36, 0x36,
@@ -524,8 +475,12 @@ static void BuildFinished(SSL* ssl, Hashes* hashes, const byte* sender)
     Md5 md5 = ssl->hashMd5;
     Sha sha = ssl->hashSha;
 
-    BuildMD5(ssl, hashes, sender);
-    BuildSHA(ssl, hashes, sender);
+    if (ssl->tls)
+        BuildTlsFinished(ssl, hashes, sender);
+    else {
+        BuildMD5(ssl, hashes, sender);
+        BuildSHA(ssl, hashes, sender);
+    }
     
     /* restore */
     ssl->hashMd5 = md5;
@@ -600,18 +555,19 @@ static int DoFinished(SSL* ssl, const byte* input, word32* inOutIdx)
     byte   verifyMAC[SHA_DIGEST_SIZE],
            mac[SHA_DIGEST_SIZE],
            fill;
-    word32 macSz = FINISHED_SZ + HANDSHAKE_HEADER_SZ,
+    int    finishedSz = ssl->tls ? TLS_FINISHED_SZ : FINISHED_SZ;
+    word32 macSz = finishedSz + HANDSHAKE_HEADER_SZ,
            idx = *inOutIdx,
-           padSz = ssl->keys.encryptSz - HANDSHAKE_HEADER_SZ - FINISHED_SZ -
+           padSz = ssl->keys.encryptSz - HANDSHAKE_HEADER_SZ - finishedSz -
                    ssl->specs.hash_size,
            i;
 
-    if (memcmp(input + idx, &ssl->verifyHashes, FINISHED_SZ))
+    if (memcmp(input + idx, &ssl->verifyHashes, finishedSz))
         return VERIFY_FINISHED_ERROR;
 
-    Hmac(ssl, verifyMAC, input + idx - HANDSHAKE_HEADER_SZ, macSz,
+    ssl->hmac(ssl, verifyMAC, input + idx - HANDSHAKE_HEADER_SZ, macSz,
          handshake, 1);
-    idx += FINISHED_SZ;
+    idx += finishedSz;
 
     /* read mac and fill */
     memcpy(mac, input + idx, ssl->specs.hash_size);
@@ -788,7 +744,7 @@ static int DoApplicationData(SSL* ssl, byte* input, word32* inOutIdx)
         ssl->bufferedData.buffer = data;
         ssl->bufferedData.length = dataSz;
 
-        Hmac(ssl, verify, data, dataSz, application_data, 1);
+        ssl->hmac(ssl, verify, data, dataSz, application_data, 1);
     }
 
     /* read mac and fill */
@@ -828,7 +784,7 @@ static int DoAlert(SSL* ssl, byte* input, word32* inOutIdx)
         byte fill;
         int  padSz = ssl->keys.encryptSz - aSz - ssl->specs.hash_size;
         
-        Hmac(ssl, verify, input + *inOutIdx - aSz, aSz, alert, 1);
+        ssl->hmac(ssl, verify, input + *inOutIdx - aSz, aSz, alert, 1);
 
         /* read mac and fill */
         memcpy(mac, input + *inOutIdx, ssl->specs.hash_size);
@@ -1044,7 +1000,7 @@ static int BuildMessage(SSL* ssl, byte* output, const byte* input, int inSz,
 
     if (type == handshake)
         HashOutput(ssl, output, RECORD_HEADER_SZ + inSz);
-    Hmac(ssl, digest, output + RECORD_HEADER_SZ, inSz, type, 0);
+    ssl->hmac(ssl, digest, output + RECORD_HEADER_SZ, inSz, type, 0);
            
     memcpy(output + idx, digest, digestSz);
     idx += digestSz;
@@ -1062,8 +1018,9 @@ static int BuildMessage(SSL* ssl, byte* output, const byte* input, int inSz,
 
 int SendFinished(SSL* ssl)
 {
-    int             sendSz;
-    byte            input[FINISHED_SZ + HANDSHAKE_HEADER_SZ];
+    int             sendSz, 
+                    finishedSz = ssl->tls ? TLS_FINISHED_SZ : FINISHED_SZ;
+    byte            input[FINISHED_SZ + HANDSHAKE_HEADER_SZ];   /* max size */
     byte            output[sizeof(input) + MAX_MSG_EXTRA];
     byte            alen[BYTE3_LEN];
     Hashes          hashes;
@@ -1073,15 +1030,15 @@ int SendFinished(SSL* ssl)
 
     /* make handshake header */
     hs.type = finished;
-    c32to24(FINISHED_SZ, alen);
+    c32to24(finishedSz, alen);
     memcpy(&hs.length, alen, sizeof(hs.length));
 
     /* write to input for message */
     memcpy(input, &hs, HANDSHAKE_HEADER_SZ);
-    memcpy(input + HANDSHAKE_HEADER_SZ, &hashes, FINISHED_SZ);
+    memcpy(input + HANDSHAKE_HEADER_SZ, &hashes, finishedSz);
 
     if ( (sendSz = BuildMessage(ssl, output, input, HANDSHAKE_HEADER_SZ +
-                                FINISHED_SZ, handshake)) == -1)
+                                finishedSz, handshake)) == -1)
         return BUILD_MSG_ERROR;
 
     if (send(ssl->socket, output, sendSz, 0) != sendSz)
@@ -1272,219 +1229,6 @@ int SendAlert(SSL* ssl, int severity, int type)
 }
 
 
-/* owns der */
-static int AddCA(SSL_CTX* ctx, buffer der)
-{
-    word32      ret;
-    DecodedCert cert;
-    Signer*     signer = 0;
-
-    InitDecodedCert(&cert, der.buffer);
-    ret = ParseCert(&cert, der.length, CA_TYPE, NO_VERIFY, 0);
-
-    if (ret == 0) {
-        /* take over signer parts */
-        signer = MakeSigner();
-        if (!signer)
-            ret = MEMORY_ERROR;
-        else {
-            signer->publicKey  = cert.publicKey;
-            signer->pubKeySize = cert.pubKeySize;
-            signer->name = cert.subject;
-            memcpy(signer->hash, cert.subjectHash, SHA_DIGEST_SIZE);
-
-            cert.publicKey = 0;  /* don't free here */
-            cert.subject   = 0;
-        }
-    }
-
-    signer->next = ctx->caList;
-    ctx->caList  = signer;   /* takes ownership */
-
-    FreeDecodedCert(&cert);
-    free(der.buffer);
-
-    return ret;
-}
-
-
-static int PemToDer(const char* fileName, int type, buffer* der)
-{
-    long   begin    = -1;
-    long   end      =  0;
-    int    foundEnd =  0;
-    word32 sz       =  0;
-
-    char  line[80];
-    char  header[80];
-    char  footer[80];
-
-    FILE* file;
-    byte* tmp = 0;
-
-    if (type == CERT_TYPE) {
-        strncpy(header, "-----BEGIN CERTIFICATE-----", sizeof(header));
-        strncpy(footer, "-----END CERTIFICATE-----", sizeof(footer));
-    } else {
-        strncpy(header, "-----BEGIN RSA PRIVATE KEY-----", sizeof(header));
-        strncpy(footer, "-----END RSA PRIVATE KEY-----", sizeof(header));
-    }
-
-    file = fopen(fileName, "rb");
-    if (!file)
-        return SSL_BAD_FILE;
-
-    while(fgets(line, sizeof(line), file))
-        if (strncmp(header, line, strlen(header)) == 0) {
-            begin = ftell(file);
-            break;
-        }
-
-    while(fgets(line, sizeof(line), file))
-        if (strncmp(footer, line, strlen(footer)) == 0) {
-            foundEnd = 1;
-            break;
-        }
-        else
-            end = ftell(file);
-
-    if (begin == -1 || !foundEnd) {
-        fclose(file);
-        return SSL_BAD_FILE;
-    }
-
-    sz = end - begin;
-    tmp = (byte*) malloc(sz);
-    if (!tmp) {
-        fclose(file);
-        return MEMORY_ERROR;
-    }
-
-    fseek(file, begin, SEEK_SET);
-    if (fread(tmp, sz, 1, file) != 1 || 
-            (der->buffer = (byte*) malloc(sz)) == 0) {
-        free(tmp);
-        fclose(file);
-        return FREAD_ERROR;
-    }
-   
-    der->length = sz; 
-    Base64Decode(tmp, sz, der->buffer, &der->length);
-
-    free(tmp);
-    fclose(file);
-
-    return 0;
-}
-
-
-int ProcessFile(SSL_CTX* ctx, const char* file, int format, int type)
-{
-    buffer der; 
-    der.buffer = 0;
-
-    if (format != SSL_FILETYPE_ASN1 && format != SSL_FILETYPE_PEM)
-        return SSL_BAD_FILETYPE;
-
-    if (format == SSL_FILETYPE_PEM) {
-        if (PemToDer(file, type == PRIVATEKEY_TYPE ? type : CERT_TYPE, &der)
-                < 0) {
-            free(der.buffer);
-            return SSL_BAD_FILE;
-        }
-    }
-    else {  /* ASN1 (DER) */
-        long   sz;
-        FILE*  input = fopen(file, "rb");
-
-        if (!input)
-            return SSL_BAD_FILE;
-        
-        fseek(input, 0, SEEK_END);
-        sz = ftell(input);
-        rewind(input);
-
-        der.buffer = (byte*) malloc(sz);
-        if (!der.buffer) return MEMORY_ERROR;
-        der.length = sz;
-        sz = fread(der.buffer, sz, 1, input);
-        if (sz != 1) {
-            fclose(input);
-            free(der.buffer);
-            return SSL_BAD_FILE;
-        }
-        fclose(input);
-    }
-
-    if (type == CA_TYPE)
-        AddCA(ctx, der);            /* takes der over */
-    else if (type == CERT_TYPE)
-        ctx->certificate = der;     /* takes der over */
-    else if (type == PRIVATEKEY_TYPE)
-        ctx->privateKey = der;      /* takes der over */
-    else {
-        free(der.buffer);
-        return SSL_BAD_CERTTYPE;
-    }
-
-    return SSL_SUCCESS;
-}
-
-
-SSL_SESSION* GetSession(const byte* id)
-{
-    SSL_SESSION* current, *ret = 0;
-
-    LockMutex(&mutex);
-
-    current = sessions;
-    while (current) {
-        if (memcmp(current->sessionID, id, ID_LEN) == 0) {
-            if (LowResTimer() < (current->bornOn + current->timeout))
-                ret = current;
-            break;
-        }
-        current = current->next;
-    }
-
-    UnLockMutex(&mutex);
-
-    return ret;
-}
-
-
-int SetSession(SSL* ssl, SSL_SESSION* session)
-{
-    if (LowResTimer() < (session->bornOn + session->timeout)) {
-        ssl->session  = *session;
-        ssl->resuming = 1;
-
-        return SSL_SUCCESS;
-    }
-    return SSL_FAILURE;  /* session timed out */
-}
-
-
-void AddSession(SSL* ssl)
-{
-    SSL_SESSION* sess = (SSL_SESSION*) malloc(sizeof(SSL_SESSION));
-    if (sess) {
-        memcpy(sess->masterSecret, ssl->masterSecret, SECRET_LEN);
-        memcpy(sess->sessionID, ssl->sessionID, ID_LEN);
-
-        sess->timeout = DEFAULT_TIMEOUT;
-        sess->bornOn  = LowResTimer();
-
-        LockMutex(&mutex);
-
-        sess->next = sessions;
-        sessions   = sess;
-
-        UnLockMutex(&mutex);
-    }
-}
-
-
 /* client only parts */
 #ifndef NO_CYASSL_CLIENT
 
@@ -1585,7 +1329,10 @@ void AddSession(SSL* ssl)
                 if (SetCipherSpecs(ssl) == 0) {
                     memcpy(ssl->masterSecret, ssl->session.masterSecret,
                            SECRET_LEN);
-                    DeriveKeys(ssl);
+                    if (ssl->tls)
+                        DeriveTlsKeys(ssl);
+                    else
+                        DeriveKeys(ssl);
                     ssl->serverState = SERVER_HELLODONE_COMPLETE;
                     return 0;
                 }
@@ -1674,6 +1421,7 @@ void AddSession(SSL* ssl)
                 int               sendSz;
                 RecordLayerHeader rl;
                 HandShakeHeader   hs;
+                word32            tlsSz = ssl->tls ? 2 : 0;
 
                 encSz = ret;
                 ret   = 0;
@@ -1681,13 +1429,13 @@ void AddSession(SSL* ssl)
 
                 /* handshake header */
                 hs.type = client_key_exchange;
-                c32to24(encSz, alen);
+                c32to24(encSz + tlsSz, alen);
                 memcpy(&hs.length, alen, sizeof(hs.length));
 
                 /* record layer header */
                 rl.type    = handshake;
                 rl.version = ssl->version;
-                c16toa((word16)(encSz + HANDSHAKE_HEADER_SZ), alen);
+                c16toa((word16)(encSz + tlsSz + HANDSHAKE_HEADER_SZ), alen);
                 memcpy(&rl.length, alen, sizeof(rl.length));
 
                 /* now write to output */
@@ -1695,10 +1443,15 @@ void AddSession(SSL* ssl)
                 idx += RECORD_HEADER_SZ;
                 memcpy(output + idx, &hs, HANDSHAKE_HEADER_SZ);
                 idx += HANDSHAKE_HEADER_SZ;
+                if (tlsSz) {
+                    c16toa((word16)encSz, alen);
+                    output[idx++] = alen[0];
+                    output[idx++] = alen[1];
+                }
                 memcpy(output + idx, encSecret, encSz);
                 idx += encSz;
 
-                sendSz = encSz + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
+                sendSz = encSz + tlsSz + HANDSHAKE_HEADER_SZ +RECORD_HEADER_SZ;
                 HashOutput(ssl, output, sendSz);
 
                 if (send(ssl->socket, output, sendSz, 0) != sendSz)
@@ -1857,7 +1610,10 @@ void AddSession(SSL* ssl)
 
             memcpy(ssl->masterSecret, session->masterSecret, SECRET_LEN);
             RNG_GenerateBlock(&ssl->rng, ssl->serverRandom, RAN_LEN);
-            DeriveKeys(ssl);
+            if (ssl->tls)
+                DeriveTlsKeys(ssl);
+            else
+                DeriveKeys(ssl);
             ssl->clientState = CLIENT_KEYEXCHANGE_COMPLETE;
 
             return 0;
@@ -1908,6 +1664,7 @@ void AddSession(SSL* ssl)
         word32 idx = 0;
         RsaKey key;
         byte*  tmp = 0;
+        byte   sz[2];    /* for tls length */
         word32 length;
 
 
@@ -1924,6 +1681,10 @@ void AddSession(SSL* ssl)
             tmp = (byte*) malloc(length);
             if (!tmp) return MEMORY_ERROR;
 
+            if (ssl->tls) {
+                sz[0] = input[(*inOutIdx)++];
+                sz[1] = input[(*inOutIdx)++];
+            }   
             memcpy(tmp, input + *inOutIdx, length);
             *inOutIdx += length;
 

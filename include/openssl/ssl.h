@@ -56,6 +56,10 @@ typedef struct X509       X509;
 typedef struct X509_NAME  X509_NAME;
 
 
+/* redeclare guard */
+#define SSL_TYPES_DEFINED
+
+
 /* Big Number stuff, different file? */
 typedef struct BIGNUM BIGNUM;
 

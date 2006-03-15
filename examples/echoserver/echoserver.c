@@ -3,33 +3,34 @@
 #include "openssl/ssl.h"
 #include "../test.h"
 
-#define ECHO_OUT
+#ifndef NO_MAIN_DRIVER
+    #define ECHO_OUT
+#endif
 
-int main(int argc, char** argv)
+
+THREAD_RETURN CYASSL_API echoserver_test(void* args)
 {
     SOCKET_T    sockfd = 0;
     SSL_METHOD* method = 0;
     SSL_CTX*    ctx    = 0;
 
-    int   shutdown = 0;
-    FILE* fout;
-
-#ifdef _WIN32
-    WSADATA wsd;
-    WSAStartup(0x0002, &wsd);
-#endif
-
+    int    shutdown = 0;
+    int    argc    = 0;
+    char** argv = 0;
 
 #ifdef ECHO_OUT
-    fout = stdout;
+    FILE* fout = stdout;
     if (argc >= 2) fout = fopen(argv[1], "w");
     if (!fout) err_sys("can't open output file");
 #endif
 
+    ((func_args*)args)->return_code = -1; /* error state */
+    argc = ((func_args*)args)->argc;
+    argv = ((func_args*)args)->argv;
+
     tcp_listen(&sockfd);
 
-    InitCyaSSL();
-    method = SSLv3_server_method();
+    method = TLSv1_server_method();
     ctx    = SSL_CTX_new(method);
 
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
@@ -45,12 +46,14 @@ int main(int argc, char** argv)
 
 #if defined(_POSIX_THREADS) && defined(NO_MAIN_DRIVER)
     /* signal ready to tcp_accept */
-    func_args& server_args = *((func_args*)args);
-    tcp_ready& ready = *server_args.signal_;
-    pthread_mutex_lock(&ready.mutex_);
-    ready.ready_ = true;
-    pthread_cond_signal(&ready.cond_);
-    pthread_mutex_unlock(&ready.mutex_);
+    {
+    func_args* server_args = (func_args*)args;
+    tcp_ready* ready = server_args->signal;
+    pthread_mutex_lock(&ready->mutex);
+    ready->ready = 1;
+    pthread_cond_signal(&ready->cond);
+    pthread_mutex_unlock(&ready->mutex);
+    }
 #endif
 
     while (!shutdown) {
@@ -79,7 +82,7 @@ int main(int argc, char** argv)
                 char type[]   = "HTTP/1.0 200 ok\r\nContent-type:"
                                 " text/html\r\n\r\n";
                 char header[] = "<html><body BGCOLOR=\"#ffffff\">\n<pre>\n";
-                char body[]   = "greetings from yaSSL\n";
+                char body[]   = "greetings from CyaSSL\n";
                 char footer[] = "</body></html>\r\n\r\n";
             
                 strncpy(command, type, sizeof(type));
@@ -98,30 +101,45 @@ int main(int argc, char** argv)
             }
             command[echoSz] = 0;
 
-        #ifdef ECHO_OUT
-            fputs(command, fout);
-        #endif
+            #ifdef ECHO_OUT
+                fputs(command, fout);
+            #endif
 
             if (SSL_write(ssl, command, echoSz) != echoSz)
                 err_sys("SSL_write failed");
         }
         SSL_free(ssl);
-        #ifdef _WIN32
-            closesocket(clientfd);
-        #else
-            close(clientfd);
-        #endif
+        CloseSocket(clientfd);
     }
 
-#ifdef _WIN32
-    closesocket(sockfd);
-#else
-    close(sockfd);
-#endif
-
+    CloseSocket(sockfd);
     SSL_CTX_free(ctx);
-    FreeCyaSSL();
 
+    ((func_args*)args)->return_code = 0;
     return 0;
 }
+
+
+/* so overall tests can pull in test function */
+#ifndef NO_MAIN_DRIVER
+
+    int main(int argc, char** argv)
+    {
+        func_args args;
+
+        StartTCP();
+
+        args.argc = argc;
+        args.argv = argv;
+
+        InitCyaSSL();
+        echoserver_test(&args);
+        FreeCyaSSL();
+
+        return args.return_code;
+    }
+
+#endif /* NO_MAIN_DRIVER */
+
+
 

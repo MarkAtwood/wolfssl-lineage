@@ -1,4 +1,11 @@
-CyaSSL version 0.3.0 (02/26/2006)
+CyaSSL version 0.4.0 (03/15/2006)
+
+This release of CyaSSL adds TLSv1 client/server support and libtool. 
+
+See notes below for build instructions.
+
+
+*****************CyaSSL version 0.3.0 (02/26/2006)
 
 This release of CyaSSL adds SSLv3 server support and session resumption. 
 
@@ -26,14 +33,11 @@ with support for SHA-1 and MD5 digests.  Ciphers include 3DES and RC4.
     ./configure
     make
 
-    run ctaocrypt/test/test from ctaocrypt/test/ to test the crypt build
-    run examples/client/client from the examples/client/ to test the SSLv3
-        client build against any SSLv3 server, e.g., yaSSL or OpenSSL.
-        The client expects a response from the server.
+    from the ./testsuite/ directory run ./testsuite 
 
 to make a debug build:
 
-    ./configure --enable-debug
+    ./configure --enable-debug --disable-shared
     make
 
 
@@ -42,11 +46,7 @@ to make a debug build:
 
 Choose (Re)Build All from the project workspace
 
-run ctaocrypt\test\test.exe  from ctaocrypt\test\ to test the crypt build
-run examples\client\client.exe from examples\client\ to test the SSLv3 client
-    build against any SSLv3 server, e.g., yaSSL or OpenSSL. The client
-    expects a response from the server.
-
+Run the testsuite program
 
 
 

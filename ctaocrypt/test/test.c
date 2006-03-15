@@ -12,6 +12,7 @@
 #include "coding.h"
 #include "asn.h"
 #include "des3.h"
+#include "hmac.h"
 
 
 typedef struct testVector {
@@ -23,6 +24,7 @@ typedef struct testVector {
 
 int  md5_test();
 int  sha_test();
+int  hmac_test();
 int  arc4_test();
 int  des3_test();
 int  rsa_test();
@@ -51,7 +53,6 @@ void ctaocrypt_test(void* args)
 
     ((func_args*)args)->return_code = -1; /* error state */
     
-
     if ( (ret = md5_test()) ) 
         err_sys("MD5      test failed!\n", ret);
     else
@@ -61,6 +62,11 @@ void ctaocrypt_test(void* args)
         err_sys("SHA      test failed!\n", ret);
     else
         printf( "SHA      test passed!\n");
+
+    if ( (ret = hmac_test()) ) 
+        err_sys("HMAC     test failed!\n", ret);
+    else
+        printf( "HMAC     test passed!\n");
 
     if ( (ret = arc4_test()) )
         err_sys("ARC4     test failed!\n", ret);
@@ -219,6 +225,61 @@ int sha_test()
 }
 
 
+int hmac_test()
+{
+    Hmac hmac;
+    byte hash[MD5_DIGEST_SIZE];
+
+    const char* keys[]=
+    {
+        "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b",
+        "Jefe",
+        "\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA"
+    };
+
+    testVector a, b, c;
+    testVector test_hmac[3];
+
+    int times = sizeof(test_hmac) / sizeof(testVector), i;
+
+    a.input  = "Hi There";
+    a.output = "\x92\x94\x72\x7a\x36\x38\xbb\x1c\x13\xf4\x8e\xf8\x15\x8b\xfc"
+               "\x9d";
+    a.inLen  = strlen(a.input);
+    a.outLen = strlen(a.output);
+
+    b.input  = "what do ya want for nothing?";
+    b.output = "\x75\x0c\x78\x3e\x6a\xb0\xb5\x03\xea\xa8\x6e\x31\x0a\x5d\xb7"
+               "\x38";
+    b.inLen  = strlen(b.input);
+    b.outLen = strlen(b.output);
+
+    c.input  = "\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD"
+               "\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD"
+               "\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD"
+               "\xDD\xDD\xDD\xDD\xDD\xDD";
+    c.output = "\x56\xbe\x34\x52\x1d\x14\x4c\x88\xdb\xb8\xc7\x33\xf0\xe8\xb3"
+               "\xf6";
+    c.inLen  = strlen(c.input);
+    c.outLen = strlen(c.output);
+
+    test_hmac[0] = a;
+    test_hmac[1] = b;
+    test_hmac[2] = c;
+
+    for (i = 0; i < times; ++i) {
+        HmacSetKey(&hmac, MD5, (byte*)keys[i], strlen(keys[i]));
+        HmacUpdate(&hmac, test_hmac[i].input, test_hmac[i].inLen);
+        HmacFinal(&hmac, hash);
+
+        if (memcmp(hash, test_hmac[i].output, MD5_DIGEST_SIZE) != 0)
+            return -20 - i;
+    }
+
+    return 0;
+}
+
+
 int arc4_test()
 {
     byte cipher[16];
@@ -348,6 +409,15 @@ int random_test()
 }
 
 
+#ifndef NO_MAIN_DRIVER
+    static const char* clientKey  = "../../certs/client-key.der";
+    static const char* clientCert = "../../certs/client-cert.der";
+#else
+    static const char* clientKey  = "../certs/client-key.der";
+    static const char* clientCert = "../certs/client-cert.der";
+#endif
+
+
 int rsa_test()
 {
     byte   tmp[1024], tmp2[2048];
@@ -362,7 +432,7 @@ int rsa_test()
     byte   plain[64];
     DecodedCert cert;
 
-    FILE*  file = fopen("client-key.der", "rb"), * file2;
+    FILE*  file = fopen(clientKey, "rb"), * file2;
 
     if (!file)
         return -40;
@@ -388,7 +458,7 @@ int rsa_test()
 
     if (memcmp(plain, in, ret)) return -46;
 
-    file2 = fopen("client-cert.der", "rb");
+    file2 = fopen(clientCert, "rb");
     if (!file2)
         return -47;
 

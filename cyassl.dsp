@@ -95,6 +95,10 @@ SOURCE=.\src\keys.c
 
 SOURCE=.\src\ssl.c
 # End Source File
+# Begin Source File
+
+SOURCE=.\src\tls.c
+# End Source File
 # End Group
 # Begin Group "Header Files"
 
