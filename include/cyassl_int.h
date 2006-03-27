@@ -29,8 +29,8 @@
 #include "random.h"
 #include "md5.h"
 #include "des3.h"
+#include "aes.h"
 #include "asn.h"
-//#include "openssl/ssl.h"
 
 #ifdef _WIN32
     #include <windows.h>
@@ -54,7 +54,7 @@
 typedef byte word24[3];
 
 /* Define or comment out the cipher suites you'd like to be compiled in
-   make sure to use at least one BUILD_SSL_xxx is defined
+   make sure to use at least one BUILD_SSL_xxx or BUILD_TLS_xxx is defined
 */
 #ifndef NO_RC4
     #define BUILD_SSL_RSA_WITH_RC4_128_SHA
@@ -63,6 +63,11 @@ typedef byte word24[3];
 
 #ifndef NO_DES3
     #define BUILD_SSL_RSA_WITH_3DES_EDE_CBC_SHA
+#endif
+
+#if !defined(NO_AES) && !defined(NO_TLS)
+    #define BUILD_TLS_RSA_WITH_AES_128_CBC_SHA
+    #define BUILD_TLS_RSA_WITH_AES_256_CBC_SHA
 #endif
 
 
@@ -76,17 +81,28 @@ typedef byte word24[3];
     #define BUILD_DES3
 #endif
 
+#if defined(BUILD_TLS_RSA_WITH_AES_128_CBC_SHA) || \
+    defined(BUILD_TLS_RSA_WITH_AES_256_CBC_SHA)
+    #define BUILD_AES
+#endif
+
 
 #ifdef NO_DES3
     #define DES_BLOCK_SIZE 8
 #endif
 
+#ifdef NO_AES
+    #define AES_BLOCK_SIZE 16
+#endif
+
 
 /* actual cipher values, 2nd byte */
 enum {
+    TLS_RSA_WITH_AES_256_CBC_SHA  = 0x35,
+    TLS_RSA_WITH_AES_128_CBC_SHA  = 0x2F,
     SSL_RSA_WITH_RC4_128_SHA      = 0x05,
     SSL_RSA_WITH_RC4_128_MD5      = 0x04,
-    SSL_RSA_WITH_3DES_EDE_CBC_SHA = 0x0a
+    SSL_RSA_WITH_3DES_EDE_CBC_SHA = 0x0A
 };
 
 
@@ -135,6 +151,7 @@ enum Misc {
     DES_IV_SIZE         = DES_BLOCK_SIZE,
     AES_256_KEY_SIZE    = 32,  /* for 256 bit             */
     AES_IV_SIZE         = 16,  /* always block size       */
+    AES_128_KEY_SIZE    = 16,  /* for 128 bit             */
 
     MAX_HELLO_SZ       = 128,  /* max client or server hello */
     CLIENT_HELLO_FIRST =  35,  /* Protocol + RAN_LEN + sizeof(id_len) */
@@ -300,6 +317,9 @@ typedef union {
 #endif
 #ifdef BUILD_DES3
     Des3 des3;
+#endif
+#ifdef BUILD_AES
+    Aes  aes;
 #endif
 } Ciphers;
 

@@ -12,6 +12,7 @@
 #include "coding.h"
 #include "asn.h"
 #include "des3.h"
+#include "aes.h"
 #include "hmac.h"
 
 
@@ -27,6 +28,7 @@ int  sha_test();
 int  hmac_test();
 int  arc4_test();
 int  des3_test();
+int  aes_test();
 int  rsa_test();
 int  random_test();
 
@@ -73,10 +75,19 @@ void ctaocrypt_test(void* args)
     else
         printf( "ARC4     test passed!\n");
 
+#ifndef NO_DES
     if ( (ret = des3_test()) )
         err_sys("DES3     test failed!\n", ret);
     else
         printf( "DES3     test passed!\n");
+#endif
+
+#ifndef NO_AES
+    if ( (ret = aes_test()) )
+        err_sys("AES      test failed!\n", ret);
+    else
+        printf( "AES      test passed!\n");
+#endif
 
     if ( (ret = random_test()) )
         err_sys("RANDOM   test failed!\n", ret);
@@ -345,6 +356,7 @@ int arc4_test()
 }
 
 
+#ifndef NO_DES
 int des3_test()
 {
     const byte vector[] = { /* "Now is the time for all " w/o trailing 0 */
@@ -394,6 +406,48 @@ int des3_test()
 
     return 0;
 }
+#endif /* NO_DES */
+
+
+#ifndef NO_AES
+int aes_test()
+{
+    Aes enc;
+    Aes dec;
+
+    const byte msg[] = { // "Now is the time for all " w/o trailing 0
+        0x6e,0x6f,0x77,0x20,0x69,0x73,0x20,0x74,
+        0x68,0x65,0x20,0x74,0x69,0x6d,0x65,0x20,
+        0x66,0x6f,0x72,0x20,0x61,0x6c,0x6c,0x20
+    };
+
+    const byte verify[] = 
+    {
+        0x95,0x94,0x92,0x57,0x5f,0x42,0x81,0x53,
+        0x2c,0xcc,0x9d,0x46,0x77,0xa2,0x33,0xcb
+    };
+
+    byte key[] = "0123456789abcdef   ";  // align
+    byte iv[]  = "1234567890abcdef   ";  // align
+
+    byte cipher[AES_BLOCK_SIZE];
+    byte plain [AES_BLOCK_SIZE];
+
+    AesSetKey(&enc, key, AES_BLOCK_SIZE, iv, AES_ENCRYPTION);
+    AesSetKey(&dec, key, AES_BLOCK_SIZE, iv, AES_DECRYPTION);
+
+    AesCbcEncrypt(&enc, cipher, msg,   AES_BLOCK_SIZE);
+    AesCbcDecrypt(&dec, plain, cipher, AES_BLOCK_SIZE);
+
+    if (memcmp(plain, msg, AES_BLOCK_SIZE))
+        return -60;
+
+    if (memcmp(cipher, verify, AES_BLOCK_SIZE))
+        return -61;
+
+    return 0;
+}
+#endif /* NO_AES */
 
 
 int random_test()

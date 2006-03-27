@@ -1,4 +1,4 @@
-/* des3.h
+/* aes.h
  *
  * Copyright (C) 2006 Sawtooth Consulting Ltd.
  *
@@ -19,11 +19,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+#ifndef NO_AES
+#ifndef CTAO_CRYPT_AES_H
+#define CTAO_CRYPT_AES_H
 
-#ifndef CTAO_CRYPT_DES3_H
-#define CTAO_CRYPT_DES3_H
-
-#ifndef NO_DES3
 
 #include "types.h"
 
@@ -32,31 +31,33 @@
     extern "C" {
 #endif
 
-enum {
-    DES_BLOCK_SIZE  = 8,
-    DES_KEY_SIZE    = 32,
 
-    DES_ENCRYPTION  = 0,
-    DES_DECRYPTION  = 1,
+enum {
+    AES_ENCRYPTION = 0,
+    AES_DECRYPTION = 1,
+    AES_BLOCK_SIZE = 16
 };
 
 
-/* DES3 encryption and decryption */
-typedef struct Des3 {
-    word32 key[3][DES_KEY_SIZE];
-    word32 reg[DES_BLOCK_SIZE / sizeof(word32)];      /* for CBC mode */
-    word32 tmp[DES_BLOCK_SIZE / sizeof(word32)];      /* same         */
-} Des3;
+typedef struct Aes {
+    word32 rounds;
+    word32 key[60];
+
+    word32 reg[AES_BLOCK_SIZE / sizeof(word32)];        /* for CBC mode */
+    word32 tmp[AES_BLOCK_SIZE / sizeof(word32)];        /* same         */
+} Aes;
 
 
-void Des3_SetKey(Des3* des, const byte* key, const byte* iv, int dir);
-void Des3_CbcEncrypt(Des3* des, byte* out, const byte* in, word32 sz);
-void Des3_CbcDecrypt(Des3* des, byte* out, const byte* in, word32 sz);
+void AesSetKey(Aes* aes, const byte* key, word32 len, const byte* iv, int dir);
+void AesCbcEncrypt(Aes* aes, byte* out, const byte* in, word32 sz);
+void AesCbcDecrypt(Aes* aes, byte* out, const byte* in, word32 sz);
+
 
 #ifdef __cplusplus
     } /* extern "C" */
 #endif
 
-#endif /* NO_DES3 */
-#endif /* CTAO_CRYPT_DES3_H */
+
+#endif /* CTAO_CRYPT_AES_H */
+#endif /* NO_AES */
 

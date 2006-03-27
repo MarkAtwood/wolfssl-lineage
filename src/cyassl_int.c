@@ -133,6 +133,16 @@ void InitSuites(Suites* suites)
 
     suites->setSuites = 0;  /* user hasn't set yet */
 
+#ifdef BUILD_TLS_RSA_WITH_AES_256_CBC_SHA
+    suites->suites[idx++] = 0; 
+    suites->suites[idx++] = TLS_RSA_WITH_AES_256_CBC_SHA;
+#endif
+
+#ifdef BUILD_TLS_RSA_WITH_AES_128_CBC_SHA
+    suites->suites[idx++] = 0; 
+    suites->suites[idx++] = TLS_RSA_WITH_AES_128_CBC_SHA;
+#endif
+
 #ifdef BUILD_SSL_RSA_WITH_RC4_128_SHA
     suites->suites[idx++] = 0; 
     suites->suites[idx++] = SSL_RSA_WITH_RC4_128_SHA;
@@ -660,6 +670,12 @@ static INLINE void Encrypt(SSL* ssl, byte* out, const byte* input, word32 sz)
                 Des3_CbcEncrypt(&ssl->encrypt.des3, out, input, sz);
                 break;
         #endif
+
+        #ifdef BUILD_AES
+            case aes:
+                AesCbcEncrypt(&ssl->encrypt.aes, out, input, sz);
+                break;
+        #endif
     }
 }
 
@@ -676,6 +692,12 @@ static INLINE void Decrypt(SSL* ssl, byte* plain, const byte* input, word32 sz)
         #ifdef BUILD_DES3
             case triple_des:
                 Des3_CbcDecrypt(&ssl->decrypt.des3, plain, input, sz);
+                break;
+        #endif
+
+        #ifdef BUILD_AES
+            case aes:
+                AesCbcDecrypt(&ssl->decrypt.aes, plain, input, sz);
                 break;
         #endif
     }

@@ -83,6 +83,36 @@ int SetCipherSpecs(SSL* ssl)
         break;
 #endif
 
+#ifdef BUILD_TLS_RSA_WITH_AES_128_CBC_SHA
+    case TLS_RSA_WITH_AES_128_CBC_SHA :
+        ssl->specs.bulk_cipher_algorithm = aes;
+        ssl->specs.cipher_type           = block;
+        ssl->specs.mac_algorithm         = sha_mac;
+        ssl->specs.kea                   = rsa_kea;
+        ssl->specs.hash_size             = SHA_DIGEST_SIZE;
+        ssl->specs.pad_size              = PAD_SHA;
+        ssl->specs.key_size              = AES_128_KEY_SIZE;
+        ssl->specs.block_size            = AES_BLOCK_SIZE;
+        ssl->specs.iv_size               = AES_IV_SIZE;
+
+        break;
+#endif
+
+#ifdef BUILD_TLS_RSA_WITH_AES_256_CBC_SHA
+    case TLS_RSA_WITH_AES_256_CBC_SHA :
+        ssl->specs.bulk_cipher_algorithm = aes;
+        ssl->specs.cipher_type           = block;
+        ssl->specs.mac_algorithm         = sha_mac;
+        ssl->specs.kea                   = rsa_kea;
+        ssl->specs.hash_size             = SHA_DIGEST_SIZE;
+        ssl->specs.pad_size              = PAD_SHA;
+        ssl->specs.key_size              = AES_256_KEY_SIZE;
+        ssl->specs.block_size            = AES_BLOCK_SIZE;
+        ssl->specs.iv_size               = AES_IV_SIZE;
+
+        break;
+#endif
+
     default:
         return UNSUPPORTED_SUITE;
     }
@@ -168,6 +198,27 @@ static int SetKeys(SSL* ssl)
                         ssl->keys.server_write_IV, DES_ENCRYPTION);
             Des3_SetKey(&ssl->decrypt.des3, ssl->keys.client_write_key,
                 ssl->keys.client_write_IV, DES_DECRYPTION);
+        }
+    }
+#endif
+
+#ifdef BUILD_AES
+    if (ssl->specs.bulk_cipher_algorithm == aes) {
+        if (ssl->side == CLIENT_END) {
+            AesSetKey(&ssl->encrypt.aes, ssl->keys.client_write_key,
+                      ssl->specs.key_size, ssl->keys.client_write_IV,
+                      AES_ENCRYPTION);
+            AesSetKey(&ssl->decrypt.aes, ssl->keys.server_write_key,
+                      ssl->specs.key_size, ssl->keys.server_write_IV,
+                      AES_DECRYPTION);
+        }
+        else {
+            AesSetKey(&ssl->encrypt.aes, ssl->keys.server_write_key,
+                      ssl->specs.key_size, ssl->keys.server_write_IV,
+                      AES_ENCRYPTION);
+            AesSetKey(&ssl->decrypt.aes, ssl->keys.client_write_key,
+                      ssl->specs.key_size, ssl->keys.client_write_IV,
+                      AES_DECRYPTION);
         }
     }
 #endif
