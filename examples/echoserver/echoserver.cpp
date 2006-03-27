@@ -23,7 +23,7 @@
 
 THREAD_RETURN YASSL_API echoserver_test(void* args)
 {
-#ifdef WIN32
+#ifdef _WIN32
     WSADATA wsd;
     WSAStartup(0x0002, &wsd);
 #endif
@@ -112,7 +112,7 @@ THREAD_RETURN YASSL_API echoserver_test(void* args)
         SSL_free(ssl);
     }
 
-#ifdef WIN32
+#ifdef _WIN32
     closesocket(sockfd);
 #else
     close(sockfd);

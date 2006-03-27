@@ -1,6 +1,18 @@
 <html>
+<link rel="stylesheet" href="yassl.css" type="text/css" />
+
+<body bgcolor="black">
+&nbsp;
+<table align="center" width="859" height="700" border="0" cellspacing="0" cellpadding="0" bgcolor="#E6F3FF">
+<td width="2%" valign="top">
+<td width="96%" valign="top">
+<br />
+
 <a name="build">
+<span class="pageName">
 <h2>Building yaSSL</h2>
+</span>
+<span class="bodyText">
 <h4>Linux/Unix:</h4>
 gzip -cd yassl-(build number).tar.gz | tar xvf -
 <br>./configure
@@ -20,42 +32,51 @@ To test the build:
 <br>Run the testsuite program
 
 </a>
+</span>
+
 
 <a name="threading">
+<span class="pageName">
 <h2>Thread Safety</h2>
+</span>
+<span class="bodyText">
 yaSSL is thread safe by design.  Multiple threads can enter the library
 simultaneously without creating conflicts because yaSSL avoids global data,
 static data, and the sharing of objects.  The user must still take care to
 avoid potential problems in two areas.
 
-A client may share an SSL object across multiple threads but access must be
+<p>A client may share an SSL object across multiple threads but access must be
 synchronized, i.e., trying to read/write at the same time from two different
 threads with the same SSL pointer is not supported.
 
-yaSSL could take a more aggressive (constrictive) stance and lock out other
+<p>yaSSL could take a more aggressive (constrictive) stance and lock out other
 users when a function is entered that cannot be shared but this level of
 granularity seems counterintuitive, all users (even single threaded ones)
 will pay for the locking and multi-thread ones won't be able to re-enter the
 library even if they aren't sharing objects across threads.  This penalty seems
-much to high and yaSSL leaves the responsibility of synchronizing shared
+much too high and yaSSL leaves the responsibility of synchronizing shared
 objects in the hands of the user.
 
-Besides sharing SSL pointers, users must also take care to completely
+<p>Besides sharing SSL pointers, users must also take care to completely
 initialize an SSL_CTX before passing the structure to <i>SSL_new()</i>.  The
 same SSL_CTX can create multiple SSLs but the SSL_CTX is only read during
 <i>SSL_new()</i> creation and any future (or simultaneous changes) to the
 SSL_CTX will not be reflected once the SSL object is created.
 
-Again, multiple threads should synchronize writing access to a SSL_CTX and it
+<p>Again, multiple threads should synchronize writing access to a SSL_CTX and it
 is advised that a single thread initialize the SSL_CTX to avoid the
 synchronization and update problem described above.
 
-Update: See note below about Session Caching and Multiple Threads.
+<p>Update: See note below about Session Caching and Multiple Threads.
 </a>
+</span>
 
 
 <a name="sessions">
+<span class="pageName">
 <h2>Session Caching</h2>
+</span>
+<span class="bodyText">
 yaSSL now supports session caching which can greatly decrease the connection
 processing time when clients re-issue connects within a relatively short time
 (the default is to cache for 500 seconds). Access to the cache is internally
@@ -65,10 +86,14 @@ using session caching and don't want to pay for the locking of this cache,
 please define SINGLE_THREADED when compiling yaSSL.
 
 </a>
+</span>
 
 
 <a name="memory">
+<span class="pageName">
 <h2>Memory</h2>
+</span>
+<span class="bodyText">
 yaSSL doesn't pre-allocate any memory up front for a connection.  This allows
 users to create a large pool of connection objects without paying for a large
 memory hit.  yaSSL only requests memory when it needs it, and returns it to the
@@ -85,11 +110,15 @@ Users wishing to pre-allocate memory, or take over the memory handling in any
 way, can implement their own ::operator new and delete.
 
 </a>
+</span>
 
 
 <a name="suites">
+<span class="pageName">
 <h2>Supported Cipher Suites</h2>
-SSL_RSA_WITH_RC4_128_MD5
+</span>
+<span class="bodyText">
+<p>SSL_RSA_WITH_RC4_128_MD5
 <br>SSL_RSA_WITH_RC4_128_SHA
 <br>SSL_RSA_WITH_DES_CBC_SHA
 <br>SSL_RSA_WITH_3DES_EDE_CBC_SHA
@@ -114,9 +143,14 @@ SSL_RSA_WITH_RC4_128_MD5
 <br>TLS_RSA_WITH_AES_256_CBC_RMD160
 
 </a>
+</span>
+
 
 <a name="purec">
+<span class="pageName">
 <h2>No C++</h2>
+</span>
+<span class="bodyText">
 yaSSL is implemented in C++.  For those users wishing to use a version of yaSSL
 without any global C++ symbols, there is a way to achieve this using GCC.  Just
 define YASSL_PURE_C when building yaSSL.  No exceptions, RTTI, std library, or
@@ -124,10 +158,19 @@ global allocators will be defined.
 
 
 </a>
+</span>
 
 
 
-<p><a href="http://yassl.com/" target="_top">Home</a>
+<p><a href="http://yassl.com/">Home</a>
+<br />
+&nbsp;
+
+<td width="2%" valign="top">
+
+</td>
+</table>
+</body>
 
 
 </html>

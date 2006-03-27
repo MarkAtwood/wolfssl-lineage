@@ -12,7 +12,7 @@
 #ifdef _WIN32
     #include <winsock2.h>
     #include <process.h>
-    #define SOCKET_T int
+    #define SOCKET_T unsigned int
 #else
     #include <string.h>
     #include <unistd.h>
@@ -23,7 +23,7 @@
     #include <sys/types.h>
     #include <sys/socket.h>
     #include <pthread.h>
-    #define SOCKET_T unsigned int
+    #define SOCKET_T int
 #endif /* _WIN32 */
 
 
@@ -89,8 +89,8 @@ void start_thread(THREAD_FUNC, func_args*, THREAD_TYPE*);
 void join_thread(THREAD_TYPE);
 
 // yaSSL
-const char* const yasslIP   = "127.0.0.1";
-const short       yasslPort = 11111;
+const char* const    yasslIP   = "127.0.0.1";
+const unsigned short yasslPort = 11111;
 
 
 // client

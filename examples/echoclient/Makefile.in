@@ -136,6 +136,7 @@ echoclient_SOURCES = echoclient.cpp
 echoclient_CXXFLAGS = -Wall -Wno-unused $(PTHREAD_CFLAGS)
 echoclient_LDFLAGS = -L../../src/ -L../../taocrypt/src
 echoclient_LDADD = -lyassl -ltaocrypt $(EXTRA_SOCKET)
+echoclient_DEPENDENCIES = ../../src/libyassl.a ../../taocrypt/src/libtaocrypt.a
 EXTRA_DIST = echoclient.dsp input quit
 subdir = examples/echoclient
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -147,7 +148,6 @@ PROGRAMS = $(bin_PROGRAMS)
 
 am_echoclient_OBJECTS = echoclient-echoclient.$(OBJEXT)
 echoclient_OBJECTS = $(am_echoclient_OBJECTS)
-echoclient_DEPENDENCIES =
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/taocrypt/include
 depcomp = $(SHELL) $(top_srcdir)/depcomp

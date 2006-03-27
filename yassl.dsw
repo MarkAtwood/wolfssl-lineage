@@ -3,7 +3,7 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
-Project: "benchmark"=.\taocrypt\benchmark.dsp - Package Owner=<4>
+Project: "benchmark"=.\taocrypt\benchmark\benchmark.dsp - Package Owner=<4>
 
 Package=<5>
 {{{

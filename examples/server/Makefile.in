@@ -136,6 +136,7 @@ server_SOURCES = server.cpp
 server_CXXFLAGS = -Wall -Wno-unused $(PTHREAD_CFLAGS)
 server_LDFLAGS = -L../../src/ -L../../taocrypt/src
 server_LDADD = -lyassl -ltaocrypt $(EXTRA_SOCKET)
+server_DEPENDENCIES = ../../src/libyassl.a ../../taocrypt/src/libtaocrypt.a
 EXTRA_DIST = server.dsp
 subdir = examples/server
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -147,7 +148,6 @@ PROGRAMS = $(bin_PROGRAMS)
 
 am_server_OBJECTS = server-server.$(OBJEXT)
 server_OBJECTS = $(am_server_OBJECTS)
-server_DEPENDENCIES =
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/taocrypt/include
 depcomp = $(SHELL) $(top_srcdir)/depcomp

@@ -447,7 +447,7 @@ void Parameters::SetSuites(ProtocolVersion pv)
     int i = 0;
     // available suites, best first
     // when adding more, make sure cipher_names is updated and
-    //      MAX_CIPHER_LIST is big enough
+    //      MAX_CIPHERS is big enough
 
     if (isTLS(pv)) {
         suites_[i++] = 0x00;
@@ -519,13 +519,10 @@ void Parameters::SetCipherNames()
 
     for (int j = 0; j < suites; j++) {
         int index = suites_[j*2 + 1];  // every other suite is suite id
-        int len = strlen(cipher_names[index]);
-        memcpy(&cipher_list_[pos], cipher_names[index], len);
-        pos += len;
-        cipher_list_[pos++] = ':';
+        int len = strlen(cipher_names[index]) + 1;
+        strncpy(cipher_list_[pos++], cipher_names[index], len);
     }
-    if (suites)
-        cipher_list_[--pos] = 0;
+    cipher_list_[pos][0] = 0;
 }
 
 
@@ -1639,8 +1636,11 @@ output_buffer& operator<<(output_buffer& output,
 // CertificateRequest processing handler
 void CertificateRequest::Process(input_buffer&, SSL& ssl)
 {
-    if (ssl.useCrypto().use_certManager().get_cert())
-        ssl.useCrypto().use_certManager().setSendVerify();
+    CertManager& cm = ssl.useCrypto().use_certManager();
+
+    // make sure user provided cert and key before sending and using
+    if (cm.get_cert() && cm.get_privateKey())
+        cm.setSendVerify();
 }
 
 

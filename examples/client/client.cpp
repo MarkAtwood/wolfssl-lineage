@@ -7,7 +7,7 @@
 
 void client_test(void* args)
 {
-#ifdef WIN32
+#ifdef _WIN32
     WSADATA wsd;
     WSAStartup(0x0002, &wsd);
 #endif
@@ -30,7 +30,15 @@ void client_test(void* args)
     if (SSL_connect(ssl) != SSL_SUCCESS) err_sys("SSL_connect failed");
     showPeer(ssl);
 
-    printf("cipherlist: %s\n", SSL_get_cipher_list(ssl, 0));
+    const char* cipher = 0;
+    int index = 0;
+    char list[1024];
+    strcpy(list, "cipherlist");
+    while ( (cipher = SSL_get_cipher_list(ssl, index++)) ) {
+        strcat(list, ":");
+        strcat(list, cipher);
+    }
+    printf("%s\n", list);
     printf("Using Cipher Suite %s\n", SSL_get_cipher(ssl));
 
     char msg[] = "hello yassl!";
@@ -47,7 +55,6 @@ void client_test(void* args)
 #endif
 
     SSL_shutdown(ssl);
-    SSL_CTX_free(ctx);
     SSL_free(ssl);
 
 #ifdef TEST_RESUME
@@ -63,9 +70,11 @@ void client_test(void* args)
     reply[SSL_read(sslResume, reply, sizeof(reply))] = 0;
     printf("Server response: %s\n", reply);
 
+    SSL_shutdown(sslResume);
     SSL_free(sslResume);
 #endif // TEST_RESUME
 
+    SSL_CTX_free(ctx);
     ((func_args*)args)->return_code = 0;
 }
 

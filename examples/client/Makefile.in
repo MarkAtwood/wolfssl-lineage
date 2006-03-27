@@ -136,6 +136,7 @@ client_SOURCES = client.cpp
 client_CXXFLAGS = -Wall -Wno-unused $(PTHREAD_CFLAGS)
 client_LDFLAGS = -L../../src/ -L../../taocrypt/src
 client_LDADD = -lyassl -ltaocrypt $(EXTRA_SOCKET)
+client_DEPENDENCIES = ../../src/libyassl.a ../../taocrypt/src/libtaocrypt.a
 EXTRA_DIST = client.dsp
 subdir = examples/client
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -147,7 +148,6 @@ PROGRAMS = $(bin_PROGRAMS)
 
 am_client_OBJECTS = client-client.$(OBJEXT)
 client_OBJECTS = $(am_client_OBJECTS)
-client_DEPENDENCIES =
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/taocrypt/include
 depcomp = $(SHELL) $(top_srcdir)/depcomp

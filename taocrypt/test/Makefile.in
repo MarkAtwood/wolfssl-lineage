@@ -135,6 +135,7 @@ bin_PROGRAMS = test
 test_SOURCES = test.cpp
 test_LDFLAGS = -L../src
 test_LDADD = -ltaocrypt
+test_DEPENDENCIES = ../src/libtaocrypt.a
 EXTRA_DIST = make.bat
 subdir = taocrypt/test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -146,7 +147,6 @@ PROGRAMS = $(bin_PROGRAMS)
 
 am_test_OBJECTS = test.$(OBJEXT)
 test_OBJECTS = $(am_test_OBJECTS)
-test_DEPENDENCIES =
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/taocrypt/include
 depcomp = $(SHELL) $(top_srcdir)/depcomp

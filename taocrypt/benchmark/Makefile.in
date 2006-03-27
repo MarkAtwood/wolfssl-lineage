@@ -135,7 +135,8 @@ bin_PROGRAMS = benchmark
 benchmark_SOURCES = benchmark.cpp
 benchmark_LDFLAGS = -L../src
 benchmark_LDADD = -ltaocrypt
-EXTRA_DIST = rsa1024.der dh1024.der dsa1024.der make.bat
+benchmark_DEPENDENCIES = ../src/libtaocrypt.a
+EXTRA_DIST = benchmark.dsp rsa1024.der dh1024.der dsa1024.der make.bat
 subdir = taocrypt/benchmark
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -146,7 +147,6 @@ PROGRAMS = $(bin_PROGRAMS)
 
 am_benchmark_OBJECTS = benchmark.$(OBJEXT)
 benchmark_OBJECTS = $(am_benchmark_OBJECTS)
-benchmark_DEPENDENCIES =
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/taocrypt/include
 depcomp = $(SHELL) $(top_srcdir)/depcomp

@@ -136,6 +136,7 @@ echoserver_SOURCES = echoserver.cpp
 echoserver_CXXFLAGS = -Wall -Wno-unused $(PTHREAD_CFLAGS)
 echoserver_LDFLAGS = -L../../src/ -L../../taocrypt/src
 echoserver_LDADD = -lyassl -ltaocrypt $(EXTRA_SOCKET)
+echoserver_DEPENDENCIES = ../../src/libyassl.a ../../taocrypt/src/libtaocrypt.a
 EXTRA_DIST = echoserver.dsp
 subdir = examples/echoserver
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -147,7 +148,6 @@ PROGRAMS = $(bin_PROGRAMS)
 
 am_echoserver_OBJECTS = echoserver-echoserver.$(OBJEXT)
 echoserver_OBJECTS = $(am_echoserver_OBJECTS)
-echoserver_DEPENDENCIES =
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/taocrypt/include
 depcomp = $(SHELL) $(top_srcdir)/depcomp

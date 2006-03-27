@@ -237,6 +237,8 @@ void file_test(char* file, byte* check)
         printf( "%02x", md5sum[j] );
    
     printf("  %s\n", file);
+
+    fclose(f);
 }
 
 

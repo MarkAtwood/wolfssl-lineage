@@ -41,8 +41,8 @@
 namespace yaSSL {
 
 
-// Digest policy should implement a get_digest, update, and get sizes for pad and 
-// digest
+// Digest policy should implement a get_digest, update, and get sizes for pad
+// and  digest
 struct Digest : public virtual_base {
     virtual void   get_digest(byte*) = 0;
     virtual void   get_digest(byte*, const byte*, unsigned int) = 0;

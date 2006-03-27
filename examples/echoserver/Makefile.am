@@ -4,4 +4,5 @@ echoserver_SOURCES  = echoserver.cpp
 echoserver_CXXFLAGS = -Wall -Wno-unused $(PTHREAD_CFLAGS)
 echoserver_LDFLAGS  = -L../../src/ -L../../taocrypt/src
 echoserver_LDADD    = -lyassl -ltaocrypt $(EXTRA_SOCKET)
+echoserver_DEPENDENCIES = ../../src/libyassl.a ../../taocrypt/src/libtaocrypt.a
 EXTRA_DIST = echoserver.dsp
