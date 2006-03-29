@@ -555,7 +555,7 @@ static word AtomicInverseModPower2(word A)
     for (unsigned i=3; i<WORD_BITS; i*=2)
         R = R*(2-R*A);
 
-    assert(R*A==1);
+    assert(word(R*A)==1);
     return R;
 }
 
