@@ -68,6 +68,7 @@
 
 #ifndef NO_CYASSL_SERVER
     static int DoClientHello(SSL* ssl, const byte* input, word32*);
+    static int ProcessOldClientHello(SSL*, const byte*, word32*, word32);
     static int DoClientKeyExchange(SSL* ssl, const byte* input, word32*);
 #endif
 
@@ -107,7 +108,7 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->privateKey.buffer  = 0;
 
     ctx->caList = 0;
-    InitSuites(&ctx->suites);
+    InitSuites(&ctx->suites, method->version);
 
     ctx->verifyPeer = 0;
     ctx->verifyNone = 0;
@@ -127,20 +128,25 @@ void FreeSSL_Ctx(SSL_CTX* ctx)
 }
 
 
-void InitSuites(Suites* suites)
+void InitSuites(Suites* suites, ProtocolVersion pv)
 {
     word32 idx = 0;
+    int    tls = pv.major == 3 && pv.minor == 1;
 
     suites->setSuites = 0;  /* user hasn't set yet */
 
 #ifdef BUILD_TLS_RSA_WITH_AES_256_CBC_SHA
-    suites->suites[idx++] = 0; 
-    suites->suites[idx++] = TLS_RSA_WITH_AES_256_CBC_SHA;
+    if (tls) {
+        suites->suites[idx++] = 0; 
+        suites->suites[idx++] = TLS_RSA_WITH_AES_256_CBC_SHA;
+    }
 #endif
 
 #ifdef BUILD_TLS_RSA_WITH_AES_128_CBC_SHA
-    suites->suites[idx++] = 0; 
-    suites->suites[idx++] = TLS_RSA_WITH_AES_128_CBC_SHA;
+    if (tls) {
+        suites->suites[idx++] = 0; 
+        suites->suites[idx++] = TLS_RSA_WITH_AES_128_CBC_SHA;
+    }
 #endif
 
 #ifdef BUILD_SSL_RSA_WITH_RC4_128_SHA
@@ -838,7 +844,13 @@ int ProcessReply(SSL* ssl)
     input = (byte*) malloc(inSz);
     if (!input) return MEMORY_ERROR;
     if (Receive(ssl->socket, input, inSz, 0) != inSz)
-        ERROR_OUT(SOCKET_ERROR_E);;
+        ERROR_OUT(SOCKET_ERROR_E);
+
+    if ( ssl->side == SERVER_END && ssl->clientState == NULL_STATE)
+        /* see if sending SSLv2 client hello */
+        if (input[idx] != handshake)
+            if (ProcessOldClientHello(ssl, input, &idx, inSz - idx) != 0)
+                ERROR_OUT(BAD_HELLO);
 
     while (idx < inSz) {
         /* each record */
@@ -1588,6 +1600,112 @@ int SendAlert(SSL* ssl, int severity, int type)
     }
 
 
+    /* process alert, return level */
+    static int ProcessOldClientHello(SSL* ssl, const byte* input,
+                                     word32* inOutIdx, word32 inSz)
+    {
+        word32          idx = *inOutIdx;
+        word16          sessionSz;
+        word16          randomSz;
+        word16          i, j;
+        ProtocolVersion pv;
+        Suites          clSuites;
+
+        byte b0 = input[idx++];
+        byte b1 = input[idx++];
+        byte len[2];
+
+        word16 sz = ((b0 & 0x7f) << 8) | b1;
+        if (sz > inSz - 2)
+            return INCOMPLETE_DATA;
+
+        /* manually hash input since different format */
+        Md5Update(&ssl->hashMd5, input + idx, sz);
+        ShaUpdate(&ssl->hashSha, input + idx, sz);
+
+        b1 = input[idx++];  /* does this value mean client_hello? */
+
+        /* version */
+        pv.major = input[idx++];
+        pv.minor = input[idx++];
+
+        if (ssl->version.minor > 0 && pv.minor == 0) {
+            /* turn off tls */
+            ssl->tls = 0;
+            ssl->version.minor = 0;
+            InitSuites(&ssl->suites, ssl->version);
+        }
+
+        /* suite size */
+        len[0] = input[idx++];
+        len[1] = input[idx++];
+        ato16(len, &clSuites.suiteSz);
+
+        /* session size */
+        len[0] = input[idx++];
+        len[1] = input[idx++];
+        ato16(len, &sessionSz);
+    
+        /* random size */
+        len[0] = input[idx++];
+        len[1] = input[idx++];
+        ato16(len, &randomSz);
+
+        /* suites */
+        for (i = 0, j = 0; i < clSuites.suiteSz; i += 3) {    
+            byte first = input[idx++];
+            if (first) { /* sslv2 type */
+                len[0] = input[idx++];  /* skip */
+                len[1] = input[idx++];
+            }
+            else {
+                clSuites.suites[j++] = input[idx++];
+                clSuites.suites[j++] = input[idx++];
+            }
+        }
+        clSuites.suiteSz = j;
+
+        /* session id */
+        if (sessionSz) {
+            memcpy(ssl->sessionID, input + idx, sessionSz);
+            idx += sessionSz;
+            ssl->resuming = 1;
+        }
+
+        /* random */
+        if (randomSz < RAN_LEN)
+            memset(ssl->clientRandom, 0, RAN_LEN - randomSz);
+        memcpy(&ssl->clientRandom[RAN_LEN - randomSz], input + idx, randomSz);
+        idx += randomSz;
+
+        ssl->clientState = CLIENT_HELLO_COMPLETE;
+        *inOutIdx = idx;
+
+        /* DoClientHello uses same resume code */
+        while (ssl->resuming) {  /* let's try */
+            SSL_SESSION* session = GetSession(ssl->sessionID);
+            if (!session) {
+                ssl->resuming = 0;
+                break;   /* session lookup failed */
+            }
+            if (MatchSuite(ssl, &clSuites) < 0)
+                return UNSUPPORTED_SUITE;
+
+            memcpy(ssl->masterSecret, session->masterSecret, SECRET_LEN);
+            RNG_GenerateBlock(&ssl->rng, ssl->serverRandom, RAN_LEN);
+            if (ssl->tls)
+                DeriveTlsKeys(ssl);
+            else
+                DeriveKeys(ssl);
+            ssl->clientState = CLIENT_KEYEXCHANGE_COMPLETE;
+
+            return 0;
+        }
+
+        return MatchSuite(ssl, &clSuites);
+    }
+
+
     static int DoClientHello(SSL* ssl, const byte* input, word32* inOutIdx)
     {
         byte b;
@@ -1598,6 +1716,12 @@ int SendAlert(SSL* ssl, int severity, int type)
 
         memcpy(&pv, input + i, sizeof(pv));
         i += sizeof(pv);
+        if (ssl->version.minor > 0 && pv.minor == 0) {
+            /* turn off tls */
+            ssl->tls = 0;
+            ssl->version.minor = 0;
+            InitSuites(&ssl->suites, ssl->version);
+        }
         memcpy(ssl->clientRandom, input + i, RAN_LEN);
         i += RAN_LEN;
         b = input[i++];
@@ -1621,6 +1745,7 @@ int SendAlert(SSL* ssl, int severity, int type)
         ssl->clientState = CLIENT_HELLO_COMPLETE;
 
         *inOutIdx = i;
+        /* ProcessOld uses same resume code */
         while (ssl->resuming) {  /* let's try */
             SSL_SESSION* session = GetSession(ssl->sessionID);
             if (!session) {

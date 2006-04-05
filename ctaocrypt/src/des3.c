@@ -21,6 +21,7 @@
 
 
 #ifndef NO_DES3
+
 #include "des3.h"
 #include "misc.c"
 #include <string.h>

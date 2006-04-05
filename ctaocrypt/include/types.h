@@ -79,7 +79,8 @@ typedef unsigned int   word32;
 
 enum {
     WORD_SIZE  = sizeof(word),
-    WORD_BITS  = WORD_SIZE * 8
+    BIT_SIZE   = 8,
+    WORD_BITS  = WORD_SIZE * BIT_SIZE
 };
 
 

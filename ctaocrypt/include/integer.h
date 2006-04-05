@@ -312,6 +312,10 @@ int  mp_2expt (mp_int * a, int b);
 int  mp_reduce_2k_setup(mp_int *a, mp_digit *d);
 /* end support added functions */
 
+/* added */
+int mp_init_multi(mp_int* a, mp_int* b, mp_int* c, mp_int* d, mp_int* e,
+                  mp_int* f);
+
 
 #ifdef __cplusplus
    }

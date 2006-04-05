@@ -6,20 +6,24 @@
 
 #include "des3.h"
 #include "arc4.h"
+#include "aes.h"
 #include "md5.h"
 #include "sha.h"
 #include "rsa.h"
+#include "dh.h"
 #include "asn.h"
 
 
 
 void bench_des();
 void bench_arc4();
+void bench_aes();
 
 void bench_md5();
 void bench_sha();
 
 void bench_rsa();
+void bench_dh();
 
 double current_time();
 
@@ -27,6 +31,7 @@ double current_time();
 
 int main(int argc, char** argv)
 {
+    bench_aes();
     bench_arc4();
     bench_des();
     
@@ -38,6 +43,7 @@ int main(int argc, char** argv)
     printf("\n");
     
     bench_rsa();
+    bench_dh();
 
     return 0;
 }
@@ -63,6 +69,27 @@ const byte iv[] =
 
 byte plain [1024*1024];
 byte cipher[1024*1024];
+
+
+void bench_aes()
+{
+    Aes    enc;
+    double start, total, persec;
+    int    i;
+
+    AesSetKey(&enc, key, 24, iv, AES_ENCRYPTION);
+    start = current_time();
+
+    for(i = 0; i < megs; i++)
+        AesCbcEncrypt(&enc, plain, cipher, sizeof(plain));
+
+    total = current_time() - start;
+
+    persec = 1 / total * megs;
+
+    printf("AES      %d megs took %5.3f seconds, %5.2f MB/s\n", megs, total,
+                                                             persec);
+}
 
 
 void bench_des()
@@ -189,7 +216,7 @@ void bench_rsa()
     each  = total / times;   /* per second   */
     milliEach = each * 1000; /* milliseconds */
 
-    printf("RSA 1024 encryption took  %3.2f milliseconds, avg over %d" 
+    printf("RSA 1024 encryption took %6.2f milliseconds, avg over %d" 
            " iterations\n", milliEach, times);
 
     start = current_time();
@@ -201,11 +228,67 @@ void bench_rsa()
     each  = total / times;   /* per second   */
     milliEach = each * 1000; /* milliseconds */
 
-    printf("RSA 1024 decryption took %3.2f milliseconds, avg over %d" 
+    printf("RSA 1024 decryption took %6.2f milliseconds, avg over %d" 
            " iterations\n", milliEach, times);
 
     fclose(file);
     FreeRsaKey(&key);
+}
+
+
+void bench_dh()
+{
+    int    i;
+    byte   tmp[1024];
+    size_t bytes;
+    word32 idx = 0, pubSz, privSz, pubSz2, privSz2, agreeSz;
+
+    byte   pub[128];    /* for 1024 bit */
+    byte   priv[128];   /* for 1024 bit */
+    byte   pub2[128];   /* for 1024 bit */
+    byte   priv2[128];  /* for 1024 bit */
+    byte   agree[128];  /* for 1024 bit */
+    
+    double start, total, each, milliEach;
+    DhKey  key;
+    FILE*  file = fopen("./dh1024.der", "rb");
+
+    if (!file) {
+        printf("can't find ./dh1024.der\n");
+        return;
+    }
+
+    bytes = fread(tmp, 1, 1024, file);
+    InitDhKey(&key);
+    bytes = DhKeyDecode(tmp, &idx, &key, bytes);
+
+    start = current_time();
+
+    for (i = 0; i < times; i++)
+        DhGenerateKeyPair(&key, &rng, priv, &privSz, pub, &pubSz);
+
+    total = current_time() - start;
+    each  = total / times;   /* per second   */
+    milliEach = each * 1000; /* milliseconds */
+
+    printf("DH  1024 key generation  %6.2f milliseconds, avg over %d" 
+           " iterations\n", milliEach, times);
+
+    DhGenerateKeyPair(&key, &rng, priv2, &privSz2, pub2, &pubSz2);
+    start = current_time();
+
+    for (i = 0; i < times; i++)
+        DhAgree(&key, agree, &agreeSz, priv, privSz, pub2, pubSz2);
+
+    total = current_time() - start;
+    each  = total / times;   /* per second   */
+    milliEach = each * 1000; /* milliseconds */
+
+    printf("DH  1024 key agreement   %6.2f milliseconds, avg over %d" 
+           " iterations\n", milliEach, times);
+
+    fclose(file);
+    FreeDhKey(&key);
 }
 
 

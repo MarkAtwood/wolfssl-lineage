@@ -25,6 +25,7 @@
 
 #include "types.h"
 #include "rsa.h"
+#include "dh.h"
 #include "sha.h"
 
 
@@ -144,6 +145,8 @@ int RsaPrivateKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
                         word32);
 int RsaPublicKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
                        word32);
+
+int DhKeyDecode(const byte* input, word32* inOutIdx, DhKey* key, word32);
 
 
 #ifdef __cplusplus

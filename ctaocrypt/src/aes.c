@@ -20,6 +20,7 @@
  */
 
 #ifndef NO_AES
+
 #include "aes.h"
 #include "misc.c"
 #include <assert.h>

@@ -50,7 +50,9 @@ enum CyaSSL_ErrorCodes {
     NO_PRIVATE_KEY         = -217,            /* need the private key     */
     RSA_PRIVATE_ERROR      = -218,            /* error during rsa priv op */
     MATCH_SUITE_ERROR      = -219,            /* can't match cipher suite */
-    BUILD_MSG_ERROR        = -220             /* build message failure    */
+    BUILD_MSG_ERROR        = -220,            /* build message failure    */
+
+    BAD_HELLO              = -221             /* client hello malformed   */
 };
 
 

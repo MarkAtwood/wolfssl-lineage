@@ -30,28 +30,38 @@
 
 
 /* handle up to 6 inits */
-static int mp_init_multi(mp_int* a, mp_int* b, mp_int* c, mp_int* d, mp_int* e,
-                         mp_int* f)
+int mp_init_multi(mp_int* a, mp_int* b, mp_int* c, mp_int* d, mp_int* e,
+                  mp_int* f)
 {
     int res = MP_OKAY;
 
     if (a && ((res = mp_init(a)) != MP_OKAY))
         return res;
 
-    if (b && ((res = mp_init(b)) != MP_OKAY))
+    if (b && ((res = mp_init(b)) != MP_OKAY)) {
+        mp_clear(a);
         return res;
+    }
 
-    if (c && ((res = mp_init(c)) != MP_OKAY))
+    if (c && ((res = mp_init(c)) != MP_OKAY)) {
+        mp_clear(a); mp_clear(b);
         return res;
+    }
 
-    if (d && ((res = mp_init(d)) != MP_OKAY))
+    if (d && ((res = mp_init(d)) != MP_OKAY)) {
+        mp_clear(a); mp_clear(b); mp_clear(c);
         return res;
+    }
 
-    if (e && ((res = mp_init(e)) != MP_OKAY))
+    if (e && ((res = mp_init(e)) != MP_OKAY)) {
+        mp_clear(a); mp_clear(b); mp_clear(c); mp_clear(d);
         return res;
+    }
 
-    if (f)
-       res = mp_init(f);
+    if (f && ((res = mp_init(f)) != MP_OKAY)) {
+        mp_clear(a); mp_clear(b); mp_clear(c); mp_clear(d); mp_clear(e);
+        return res;
+    }
 
     return res;
 }

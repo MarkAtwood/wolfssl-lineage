@@ -105,6 +105,10 @@ SOURCE=.\src\des3.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\dh.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\hmac.c
 # End Source File
 # Begin Source File
@@ -150,6 +154,10 @@ SOURCE=.\include\coding.h
 # Begin Source File
 
 SOURCE=.\include\des3.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\dh.h
 # End Source File
 # Begin Source File
 

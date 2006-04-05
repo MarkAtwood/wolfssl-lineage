@@ -21,7 +21,6 @@
 
 
 #include "asn.h"
-#include "rsa.h"
 #include "sha.h"
 #include "md5.h"
 #include "error.h"
@@ -205,6 +204,28 @@ int RsaPublicKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
 
     return 0;
 }
+
+
+#ifndef NO_DH
+
+int DhKeyDecode(const byte* input, word32* inOutIdx, DhKey* key, word32 inSz)
+{
+    word32 begin = *inOutIdx;
+    int    length;
+
+    if (GetSequence(input, inOutIdx, &length) < 0)
+        return ASN_PARSE_E;
+
+    if ((word32)length > (inSz - (*inOutIdx - begin)))
+        return ASN_INPUT_E;
+
+    if (GetInt(&key->p,  input, inOutIdx) < 0 ||
+        GetInt(&key->g,  input, inOutIdx) < 0 )  return ASN_DH_KEY_E;
+
+    return 0;
+}
+
+#endif /* NO_DH */
 
 
 void InitDecodedCert(DecodedCert* cert, byte* source)

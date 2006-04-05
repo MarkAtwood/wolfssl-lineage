@@ -19,11 +19,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+#ifndef NO_DES3
 
 #ifndef CTAO_CRYPT_DES3_H
 #define CTAO_CRYPT_DES3_H
 
-#ifndef NO_DES3
 
 #include "types.h"
 

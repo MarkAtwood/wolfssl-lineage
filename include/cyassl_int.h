@@ -224,7 +224,7 @@ typedef struct Suites {
 } Suites;
 
 
-void InitSuites(Suites*);
+void InitSuites(Suites*, ProtocolVersion);
 
 
 /* OpenSSL context type */

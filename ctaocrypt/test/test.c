@@ -14,6 +14,7 @@
 #include "des3.h"
 #include "aes.h"
 #include "hmac.h"
+#include "dh.h"
 
 
 typedef struct testVector {
@@ -30,6 +31,7 @@ int  arc4_test();
 int  des3_test();
 int  aes_test();
 int  rsa_test();
+int  dh_test();
 int  random_test();
 
 int PemToDer(const char* inName, const char* outName);
@@ -98,6 +100,13 @@ void ctaocrypt_test(void* args)
         err_sys("RSA      test failed!\n", ret);
     else
         printf( "RSA      test passed!\n");
+
+#ifndef NO_DH
+    if ( (ret = dh_test()) ) 
+        err_sys("DH       test failed!\n", ret);
+    else
+        printf( "DH       test passed!\n");
+#endif
 
     ((func_args*)args)->return_code = ret;
 }
@@ -531,3 +540,67 @@ int rsa_test()
 
     return 0;
 }
+
+
+#ifndef NO_MAIN_DRIVER
+    static const char* dhKey = "../../certs/dh1024.der";
+#else
+    static const char* dhKey = "../certs/dh1024.der";
+#endif
+
+#ifndef NO_DH
+
+int dh_test()
+{
+    int    ret;
+    size_t bytes;
+    word32 idx = 0, privSz, pubSz, privSz2, pubSz2, agreeSz, agreeSz2;
+    byte   tmp[1024];
+    byte   priv[128];
+    byte   pub[128];
+    byte   priv2[128];
+    byte   pub2[128];
+    byte   agree[128];
+    byte   agree2[128];
+    DhKey  key;
+    DhKey  key2;
+    RNG    rng;
+    FILE*  file = fopen(dhKey, "rb");
+
+    if (!file)
+        return -50;
+
+    bytes = fread(tmp, 1, 1024, file);
+  
+    InitDhKey(&key);  
+    InitDhKey(&key2);  
+    ret = DhKeyDecode(tmp, &idx, &key, bytes);
+    if (ret != 0) return -51;
+
+    idx = 0;
+    ret = DhKeyDecode(tmp, &idx, &key2, bytes);
+    if (ret != 0) return -52;
+
+    ret = InitRng(&rng);
+    if (ret != 0) return -53;
+
+    ret = DhGenerateKeyPair(&key, &rng, priv, &privSz, pub, &pubSz);
+    ret = DhGenerateKeyPair(&key2, &rng, priv2, &privSz2, pub2, &pubSz2);
+    if (ret != 0) return -54;
+
+    ret = DhAgree(&key, agree, &agreeSz, priv, privSz, pub2, pubSz2);
+    ret = DhAgree(&key, agree2, &agreeSz2, priv2, privSz2, pub, pubSz);
+    if (ret != 0) return -55;
+
+    if (memcmp(agree, agree2, sizeof(agree)))
+        return - 56;
+
+    FreeDhKey(&key);
+    FreeDhKey(&key2);
+    fclose(file);
+
+    return 0;
+}
+
+#endif /* NO_DH */
+

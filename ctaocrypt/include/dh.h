@@ -1,4 +1,4 @@
-/* aes.h
+/* dh.h
  *
  * Copyright (C) 2006 Sawtooth Consulting Ltd.
  *
@@ -19,46 +19,41 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-#ifndef NO_AES
+#ifndef NO_DH
 
-#ifndef CTAO_CRYPT_AES_H
-#define CTAO_CRYPT_AES_H
-
+#ifndef CTAO_CRYPT_DH_H
+#define CTAO_CRYPT_DH_H
 
 #include "types.h"
-
+#include "integer.h"
+#include "random.h"
 
 #ifdef __cplusplus
     extern "C" {
 #endif
 
 
-enum {
-    AES_ENCRYPTION = 0,
-    AES_DECRYPTION = 1,
-    AES_BLOCK_SIZE = 16
-};
+
+/* Diffie-Hellman Key */
+typedef struct DhKey {
+    mp_int p, g;                            /* group parameters  */
+} DhKey;
 
 
-typedef struct Aes {
-    word32 rounds;
-    word32 key[60];
+void InitDhKey(DhKey* key);
+void FreeDhKey(DhKey* key);
 
-    word32 reg[AES_BLOCK_SIZE / sizeof(word32)];        /* for CBC mode */
-    word32 tmp[AES_BLOCK_SIZE / sizeof(word32)];        /* same         */
-} Aes;
-
-
-void AesSetKey(Aes* aes, const byte* key, word32 len, const byte* iv, int dir);
-void AesCbcEncrypt(Aes* aes, byte* out, const byte* in, word32 sz);
-void AesCbcDecrypt(Aes* aes, byte* out, const byte* in, word32 sz);
+int DhGenerateKeyPair(DhKey* key, RNG* rng, byte* priv, word32* privSz,
+                      byte* pub, word32* pubSz);
+int DhAgree(DhKey* key, byte* agree, word32* agreeSz, const byte* priv,
+            word32 privSz, const byte* otherPub, word32 pubSz);
 
 
 #ifdef __cplusplus
     } /* extern "C" */
 #endif
 
+#endif /* CTAO_CRYPT_DH_H */
 
-#endif /* CTAO_CRYPT_AES_H */
-#endif /* NO_AES */
+#endif /* NO_DH */
 

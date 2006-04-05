@@ -69,7 +69,8 @@ enum {
     ASN_INPUT_E        = -154,  /* ASN input error, not enough data */
     ASN_SIG_CONFIRM_E  = -155,  /* ASN sig error, self confirm failure */
     ASN_SIG_HASH_E     = -156,  /* ASN sig error, unsupported hash type */
-    ASN_SIG_KEY_E      = -157   /* ASN sig error, unsupported key  type */
+    ASN_SIG_KEY_E      = -157,  /* ASN sig error, unsupported key  type */
+    ASN_DH_KEY_E       = -158   /* ASN key init error, invalid input */
 };
 
 

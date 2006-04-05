@@ -20,6 +20,8 @@
  */
 
 
+#ifndef NO_HMAC
+
 #include "hmac.h"
 #include <assert.h>
 #include <string.h>
@@ -119,4 +121,5 @@ void HmacFinal(Hmac* hmac, byte* hash)
 }
 
 
+#endif /* NO_HMAC */
 

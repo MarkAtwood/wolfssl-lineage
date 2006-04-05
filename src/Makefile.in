@@ -150,7 +150,7 @@ libcyassl_la_SOURCES = cyassl_int.c keys.c ssl.c tls.c ../ctaocrypt/src/arc4.c \
     ../ctaocrypt/src/asn.c ../ctaocrypt/src/coding.c ../ctaocrypt/src/des3.c \
     ../ctaocrypt/src/hmac.c ../ctaocrypt/src/integer.c ../ctaocrypt/src/md5.c \
     ../ctaocrypt/src/misc.c ../ctaocrypt/src/random.c ../ctaocrypt/src/rsa.c \
-    ../ctaocrypt/src/sha.c  ../ctaocrypt/src/aes.c
+    ../ctaocrypt/src/sha.c  ../ctaocrypt/src/aes.c ../ctaocrypt/src/dh.c
 
 libcyassl_la_LDFLAGS = -no-undefined -version-info 0:0:0
 AM_CFLAGS = -Wall
@@ -165,7 +165,7 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 libcyassl_la_LIBADD =
 am_libcyassl_la_OBJECTS = cyassl_int.lo keys.lo ssl.lo tls.lo arc4.lo \
 	asn.lo coding.lo des3.lo hmac.lo integer.lo md5.lo misc.lo \
-	random.lo rsa.lo sha.lo aes.lo
+	random.lo rsa.lo sha.lo aes.lo dh.lo
 libcyassl_la_OBJECTS = $(am_libcyassl_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/ctaocrypt/include
@@ -174,11 +174,12 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/aes.Plo ./$(DEPDIR)/arc4.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/asn.Plo ./$(DEPDIR)/coding.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/cyassl_int.Plo ./$(DEPDIR)/des3.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/hmac.Plo ./$(DEPDIR)/integer.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/keys.Plo ./$(DEPDIR)/md5.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/misc.Plo ./$(DEPDIR)/random.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/rsa.Plo ./$(DEPDIR)/sha.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/ssl.Plo ./$(DEPDIR)/tls.Plo
+@AMDEP_TRUE@	./$(DEPDIR)/dh.Plo ./$(DEPDIR)/hmac.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/integer.Plo ./$(DEPDIR)/keys.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/md5.Plo ./$(DEPDIR)/misc.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/random.Plo ./$(DEPDIR)/rsa.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/sha.Plo ./$(DEPDIR)/ssl.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/tls.Plo
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -242,6 +243,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/coding.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cyassl_int.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/des3.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dh.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hmac.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/integer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/keys.Plo@am__quote@
@@ -681,6 +683,39 @@ aes.lo: ../ctaocrypt/src/aes.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/aes.Plo' tmpdepfile='$(DEPDIR)/aes.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o aes.lo `test -f '../ctaocrypt/src/aes.c' || echo '$(srcdir)/'`../ctaocrypt/src/aes.c
+
+dh.o: ../ctaocrypt/src/dh.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT dh.o -MD -MP -MF "$(DEPDIR)/dh.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o dh.o `test -f '../ctaocrypt/src/dh.c' || echo '$(srcdir)/'`../ctaocrypt/src/dh.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/dh.Tpo" "$(DEPDIR)/dh.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/dh.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../ctaocrypt/src/dh.c' object='dh.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/dh.Po' tmpdepfile='$(DEPDIR)/dh.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o dh.o `test -f '../ctaocrypt/src/dh.c' || echo '$(srcdir)/'`../ctaocrypt/src/dh.c
+
+dh.obj: ../ctaocrypt/src/dh.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT dh.obj -MD -MP -MF "$(DEPDIR)/dh.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o dh.obj `if test -f '../ctaocrypt/src/dh.c'; then $(CYGPATH_W) '../ctaocrypt/src/dh.c'; else $(CYGPATH_W) '$(srcdir)/../ctaocrypt/src/dh.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/dh.Tpo" "$(DEPDIR)/dh.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/dh.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../ctaocrypt/src/dh.c' object='dh.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/dh.Po' tmpdepfile='$(DEPDIR)/dh.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o dh.obj `if test -f '../ctaocrypt/src/dh.c'; then $(CYGPATH_W) '../ctaocrypt/src/dh.c'; else $(CYGPATH_W) '$(srcdir)/../ctaocrypt/src/dh.c'; fi`
+
+dh.lo: ../ctaocrypt/src/dh.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT dh.lo -MD -MP -MF "$(DEPDIR)/dh.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o dh.lo `test -f '../ctaocrypt/src/dh.c' || echo '$(srcdir)/'`../ctaocrypt/src/dh.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/dh.Tpo" "$(DEPDIR)/dh.Plo"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/dh.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../ctaocrypt/src/dh.c' object='dh.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/dh.Plo' tmpdepfile='$(DEPDIR)/dh.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o dh.lo `test -f '../ctaocrypt/src/dh.c' || echo '$(srcdir)/'`../ctaocrypt/src/dh.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
