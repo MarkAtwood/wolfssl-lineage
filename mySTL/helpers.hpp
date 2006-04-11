@@ -28,7 +28,9 @@
 #define mySTL_HELPERS_HPP
 
 #include <stdlib.h>
-#include <new>
+#ifdef _MSC_VER
+    #include <new>
+#endif
 
 /*
       Workaround for the lack of operator new(size_t, void*)
