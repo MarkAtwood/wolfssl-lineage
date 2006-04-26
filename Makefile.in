@@ -133,7 +133,7 @@ target_vendor = @target_vendor@
 SUBDIRS = taocrypt src examples testsuite
 EXTRA_DIST = yassl.dsp yassl.dsw certs/*.pem certs/*.d* certs/*.txt doc/*.html \
 	doc/*.png doc/*.gif doc/*.css mySTL/*.hpp stunnel/stunnel.* stunnel/*.txt \
-    stunnel/src/*.c
+    stunnel/src/*.c lib/dummy
 
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -330,7 +330,7 @@ distcleancheck_listfiles = find . -type f -print
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkinstalldirs) $(distdir)/./taocrypt/include $(distdir)/certs $(distdir)/doc $(distdir)/mySTL $(distdir)/stunnel $(distdir)/stunnel/src
+	$(mkinstalldirs) $(distdir)/./taocrypt/include $(distdir)/certs $(distdir)/doc $(distdir)/lib $(distdir)/mySTL $(distdir)/stunnel $(distdir)/stunnel/src
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
@@ -538,6 +538,10 @@ uninstall-info: uninstall-info-recursive
 
 lib-only:
 	cd taocrypt/src; make; cd ../../src; make; cd ../
+
+openssl-links:
+	cd lib; ln -s ../taocrypt/src/libtaocrypt.a libcrypto.a; \
+    ln -s ../src/libyassl.a libssl.a; cd ../
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
