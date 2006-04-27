@@ -28,7 +28,7 @@ See normal build instructions below under 1.0.6.
     yaSSL-Home\include and yaSSL-Home\include\openssl to the include list, and
     define USE_SSLEAY and USE_OPENSSL
 
-    please email todd@yassl.com if you have any questions
+    please email todd@yassl.com if you have any questions.
     
 
 *******************yaSSL Release notes, version 1.2.2 (03/27/06)
