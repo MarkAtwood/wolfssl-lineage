@@ -20,6 +20,10 @@
  */
 
 
+/* on HPUX 11 you may need to install /dev/random see
+   http://h20293.www2.hp.com/portal/swdepot/displayProductInfo.do?productNumber=KRNG11I
+
+*/
 
 #include "random.h"
 #include "error.h"
