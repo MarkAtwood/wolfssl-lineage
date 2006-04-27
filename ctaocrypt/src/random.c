@@ -91,8 +91,12 @@ int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
 int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
 {
     os->fd = open("/dev/urandom",O_RDONLY);
-    if (os->fd == -1)
-        return OPEN_RAN_E;
+    if (os->fd == -1) {
+        /* may still have /dev/random */
+        os->fd = open("/dev/random",O_RDONLY);
+        if (os->fd == -1)
+            return OPEN_RAN_E;
+    }
 
     while (sz) {
         int len = read(os->fd, output, sz);
