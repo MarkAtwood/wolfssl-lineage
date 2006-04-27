@@ -806,15 +806,13 @@ const char* X509_verify_cert_error_string(long /* error */)
 
 const EVP_MD* EVP_md5(void)
 {
-    // TODO: FIX add to some list for destruction
-    return NEW_YS MD5;
+    return GetCryptProvider().NewMd5();
 }
 
 
 const EVP_CIPHER* EVP_des_ede3_cbc(void)
 {
-    // TODO: FIX add to some list for destruction
-    return NEW_YS DES_EDE;
+    return GetCryptProvider().NewDesEde();
 }
 
 

@@ -1382,9 +1382,43 @@ sslFactory& GetSSL_Factory()
 }
 
 
+static CryptProvider* cryptProviderInstance = 0;
+
+CryptProvider& GetCryptProvider()
+{
+    if (!cryptProviderInstance)
+        cryptProviderInstance = NEW_YS CryptProvider;
+    return *cryptProviderInstance;
+}
+
+
+CryptProvider::~CryptProvider()
+{
+    mySTL::for_each(digestList_.begin(), digestList_.end(), del_ptr_zero());
+    mySTL::for_each(cipherList_.begin(), cipherList_.end(), del_ptr_zero());
+}
+
+
+Digest* CryptProvider::NewMd5()
+{
+    Digest* ptr = NEW_YS MD5();
+    digestList_.push_back(ptr);
+    return ptr;
+}
+
+
+BulkCipher* CryptProvider::NewDesEde()
+{
+    BulkCipher* ptr = NEW_YS DES_EDE();
+    cipherList_.push_back(ptr);
+    return ptr;
+}
+
+
 void CleanUp()
 {
     TaoCrypt::CleanUp();
+    ysDelete(cryptProviderInstance);
     ysDelete(sslFactoryInstance);
     ysDelete(sessionsInstance);
 }
