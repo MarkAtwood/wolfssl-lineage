@@ -144,6 +144,7 @@ private:
     CryptProvider& operator=(const CryptProvider&); // and assign
 };
 
+CryptProvider& GetCryptProvider();
 
 #undef X509_NAME  // wincrypt.h clash
 
