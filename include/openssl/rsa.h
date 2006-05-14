@@ -1,10 +1,10 @@
 /* rsa.h for openSSL */
 
 
-#ifndef CysSSL_rsa_h__
-#define CyaSSL_rsa_h__
+#ifndef CYASSL_RSA_H_
+#define CYASSL_RSA_H_
 
 enum { RSA_F4 = 1 };
 
 
-#endif /* CyaSSL_rsa_h__ */
+#endif /* header */

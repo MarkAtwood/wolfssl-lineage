@@ -21,8 +21,8 @@
 
 
 
-#ifndef CyaSSL_ERROR_H
-#define CyaSSL_ERROR_H
+#ifndef CYASSL_ERROR_H
+#define CYASSL_ERROR_H
 
 
 #ifdef __cplusplus

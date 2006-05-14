@@ -67,7 +67,7 @@
 
 
 #ifndef NO_CYASSL_SERVER
-    static int DoClientHello(SSL* ssl, const byte* input, word32*);
+    static int DoClientHello(SSL* ssl, const byte* input, word32*, word32);
     static int ProcessOldClientHello(SSL*, const byte*, word32*, word32);
     static int DoClientKeyExchange(SSL* ssl, const byte* input, word32*);
 #endif
@@ -612,12 +612,16 @@ static int DoFinished(SSL* ssl, const byte* input, word32* inOutIdx)
 }
 
 
-static int DoHandShakeMsg(SSL* ssl, const byte* input, word32* inOutIdx)
+static int DoHandShakeMsg(SSL* ssl, const byte* input, word32* inOutIdx,
+                          word32 totalSz)
 {
     HandShakeHeader hs;
 
     if (GetHandShakeHeader(ssl, input, inOutIdx, &hs) != 0)
         return PARSE_ERROR;
+
+    if (*inOutIdx + hs.size > totalSz)
+        return INCOMPLETE_DATA;
     
     HashInput(ssl, input + *inOutIdx, hs.size);
 
@@ -647,7 +651,7 @@ static int DoHandShakeMsg(SSL* ssl, const byte* input, word32* inOutIdx)
         break;
 
     case client_hello:
-        return DoClientHello(ssl, input, inOutIdx);
+        return DoClientHello(ssl, input, inOutIdx, totalSz);
         break;
 
     case client_key_exchange:
@@ -874,7 +878,7 @@ int ProcessReply(SSL* ssl)
                     ERROR_OUT(DECRYPT_ERROR);
             switch (rh.type) {
                 case handshake :
-                    if (DoHandShakeMsg(ssl, input, &idx) != 0)
+                    if (DoHandShakeMsg(ssl, input, &idx, inSz) != 0)
                         ERROR_OUT(PARSE_ERROR);
                     break;
 
@@ -1706,13 +1710,18 @@ int SendAlert(SSL* ssl, int severity, int type)
     }
 
 
-    static int DoClientHello(SSL* ssl, const byte* input, word32* inOutIdx)
+    static int DoClientHello(SSL* ssl, const byte* input, word32* inOutIdx,
+                             word32 totalSz)
     {
         byte b;
         byte tmp[2];
         ProtocolVersion pv;
         Suites          clSuites;
         word32 i = *inOutIdx;
+
+        /* make sure can read up to session */
+        if (i + sizeof(pv) + RAN_LEN + ENUM_LEN > totalSz)
+            return INCOMPLETE_DATA;
 
         memcpy(&pv, input + i, sizeof(pv));
         i += sizeof(pv);
@@ -1726,21 +1735,30 @@ int SendAlert(SSL* ssl, int severity, int type)
         i += RAN_LEN;
         b = input[i++];
         if (b) {
+            if (i + ID_LEN > totalSz)
+                return INCOMPLETE_DATA;
             memcpy(ssl->sessionID, input + i, ID_LEN);
             i += b;
             ssl->resuming= 1; /* client wants to resume */
         }
 
+        if (i + 2 > totalSz)
+            return INCOMPLETE_DATA;
         /* suites */
         tmp[0] = input[i++];
         tmp[1] = input[i++];
         ato16(tmp, &clSuites.suiteSz);
 
+        /* suites and comp len */
+        if (i + clSuites.suiteSz + ENUM_LEN > totalSz)
+            return INCOMPLETE_DATA;
         memcpy(clSuites.suites, input + i, clSuites.suiteSz);
         i += clSuites.suiteSz;
 
-        i++;  /* comp len */
-        i++;  /* ignore compression for now */
+        b = input[i++];  /* comp len */
+        if (i + b > totalSz)
+            return INCOMPLETE_DATA;
+        i += b;  /* ignore compression for now */
 
         ssl->clientState = CLIENT_HELLO_COMPLETE;
 

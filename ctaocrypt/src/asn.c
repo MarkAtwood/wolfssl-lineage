@@ -228,6 +228,56 @@ int DhKeyDecode(const byte* input, word32* inOutIdx, DhKey* key, word32 inSz)
 #endif /* NO_DH */
 
 
+#ifndef NO_DSA
+
+int DsaPublicKeyDecode(const byte* input, word32* inOutIdx, DsaKey* key,
+                        word32 inSz)
+{
+    word32 begin = *inOutIdx;
+    int    length;
+
+    if (GetSequence(input, inOutIdx, &length) < 0)
+        return ASN_PARSE_E;
+
+    if ((word32)length > (inSz - (*inOutIdx - begin)))
+        return ASN_INPUT_E;
+
+    if (GetInt(&key->p,  input, inOutIdx) < 0 ||
+        GetInt(&key->q,  input, inOutIdx) < 0 ||
+        GetInt(&key->g,  input, inOutIdx) < 0 ||
+        GetInt(&key->y,  input, inOutIdx) < 0 )  return ASN_DH_KEY_E;
+
+    return 0;
+}
+
+
+int DsaPrivateKeyDecode(const byte* input, word32* inOutIdx, DsaKey* key,
+                        word32 inSz)
+{
+    word32 begin = *inOutIdx;
+    int    length, version;
+
+    if (GetSequence(input, inOutIdx, &length) < 0)
+        return ASN_PARSE_E;
+
+    if ((word32)length > (inSz - (*inOutIdx - begin)))
+        return ASN_INPUT_E;
+
+    if (GetVersion(input, inOutIdx, &version) < 0)
+        return ASN_PARSE_E;
+
+    if (GetInt(&key->p,  input, inOutIdx) < 0 ||
+        GetInt(&key->q,  input, inOutIdx) < 0 ||
+        GetInt(&key->g,  input, inOutIdx) < 0 ||
+        GetInt(&key->y,  input, inOutIdx) < 0 ||
+        GetInt(&key->x,  input, inOutIdx) < 0 )  return ASN_DH_KEY_E;
+
+    return 0;
+}
+
+#endif /* NO_DSA */
+
+
 void InitDecodedCert(DecodedCert* cert, byte* source)
 {
     cert->publicKey = 0;

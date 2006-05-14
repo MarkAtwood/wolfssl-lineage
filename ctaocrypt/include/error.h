@@ -46,6 +46,8 @@ enum {
     MP_ADD_E           = -115,  /* mp_add error state, can't add */
     MP_MUL_E           = -116,  /* mp_mul error state, can't multiply */
     MP_MULMOD_E        = -117,  /* mp_mulmod error state, can't multiply mod */
+    MP_MOD_E           = -118,  /* mp_mod error state, can't mod */
+    MP_INVMOD_E        = -119,  /* mp_invmod error state, can't inv mod */
 
     MEMORY_E           = -120,  /* out of memory error */
 

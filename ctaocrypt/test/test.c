@@ -15,6 +15,7 @@
 #include "aes.h"
 #include "hmac.h"
 #include "dh.h"
+#include "dsa.h"
 
 
 typedef struct testVector {
@@ -32,6 +33,7 @@ int  des3_test();
 int  aes_test();
 int  rsa_test();
 int  dh_test();
+int  dsa_test();
 int  random_test();
 
 int PemToDer(const char* inName, const char* outName);
@@ -106,6 +108,13 @@ void ctaocrypt_test(void* args)
         err_sys("DH       test failed!\n", ret);
     else
         printf( "DH       test passed!\n");
+#endif
+
+#ifndef NO_DSA
+    if ( (ret = dsa_test()) ) 
+        err_sys("DSA      test failed!\n", ret);
+    else
+        printf( "DSA      test passed!\n");
 #endif
 
     ((func_args*)args)->return_code = ret;
@@ -571,7 +580,7 @@ int dh_test()
         return -50;
 
     bytes = fread(tmp, 1, 1024, file);
-  
+
     InitDhKey(&key);  
     InitDhKey(&key2);  
     ret = DhKeyDecode(tmp, &idx, &key, bytes);
@@ -583,7 +592,7 @@ int dh_test()
 
     ret = InitRng(&rng);
     if (ret != 0) return -53;
-
+    
     ret = DhGenerateKeyPair(&key, &rng, priv, &privSz, pub, &pubSz);
     ret = DhGenerateKeyPair(&key2, &rng, priv2, &privSz2, pub2, &pubSz2);
     if (ret != 0) return -54;
@@ -604,3 +613,53 @@ int dh_test()
 
 #endif /* NO_DH */
 
+
+#ifndef NO_MAIN_DRIVER
+    static const char* dsaKey = "../../certs/dsa512.der";
+#else
+    static const char* dsaKey = "../certs/dsa512.der";
+#endif
+
+#ifndef NO_DSA
+
+int dsa_test()
+{
+    int    ret, answer;
+    size_t bytes;
+    word32 idx = 0;
+    byte   tmp[1024];
+    DsaKey key;
+    RNG    rng;
+    FILE*  file = fopen(dsaKey, "rb");
+    Sha    sha;
+    byte   hash[SHA_DIGEST_SIZE];
+    byte   signature[40];
+
+    if (!file)
+        return -60;
+
+    bytes = fread(tmp, 1, sizeof(tmp), file);
+  
+    InitSha(&sha);
+    ShaUpdate(&sha, tmp, bytes);
+    ShaFinal(&sha, hash);
+
+    InitDsaKey(&key);
+    ret = DsaPrivateKeyDecode(tmp, &idx, &key, bytes);
+    if (ret != 0) return -61;
+
+    ret = InitRng(&rng);
+    if (ret != 0) return -62;
+
+    ret = DsaSign(hash, signature, &key, &rng);
+    if (ret != 0) return -63;
+
+    ret = DsaVerify(hash, signature, &key, &answer);
+    if (ret != 0) return -64;
+    if (answer != 1) return -65;
+    
+    return 0;
+}
+
+
+#endif /* NO_DSA */

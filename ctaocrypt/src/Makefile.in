@@ -146,7 +146,7 @@ target_vendor = @target_vendor@
 INCLUDES = -I../include
 
 lib_LTLIBRARIES = libctaocrypt.la
-libctaocrypt_la_SOURCES = aes.c arc4.c asn.c coding.c des3.c dh.c hmac.c \
+libctaocrypt_la_SOURCES = aes.c arc4.c asn.c coding.c des3.c dsa.c dh.c hmac.c \
     integer.c md5.c random.c rsa.c sha.c
 
 libctaocrypt_la_LDFLAGS = -no-undefined -version-info 0:0:0
@@ -161,7 +161,7 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 
 libctaocrypt_la_LIBADD =
 am_libctaocrypt_la_OBJECTS = aes.lo arc4.lo asn.lo coding.lo des3.lo \
-	dh.lo hmac.lo integer.lo md5.lo random.lo rsa.lo sha.lo
+	dsa.lo dh.lo hmac.lo integer.lo md5.lo random.lo rsa.lo sha.lo
 libctaocrypt_la_OBJECTS = $(am_libctaocrypt_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/ctaocrypt/include
@@ -170,9 +170,10 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/aes.Plo ./$(DEPDIR)/arc4.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/asn.Plo ./$(DEPDIR)/coding.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/des3.Plo ./$(DEPDIR)/dh.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/hmac.Plo ./$(DEPDIR)/integer.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/md5.Plo ./$(DEPDIR)/random.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/rsa.Plo ./$(DEPDIR)/sha.Plo
+@AMDEP_TRUE@	./$(DEPDIR)/dsa.Plo ./$(DEPDIR)/hmac.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/integer.Plo ./$(DEPDIR)/md5.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/random.Plo ./$(DEPDIR)/rsa.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/sha.Plo
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -236,6 +237,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/coding.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/des3.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dh.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dsa.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hmac.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/integer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Plo@am__quote@

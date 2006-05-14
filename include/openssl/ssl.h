@@ -26,8 +26,8 @@
 
 
 
-#ifndef CysSSL_openssl_h__
-#define CyaSSL_openssl_h__
+#ifndef CYASSL_OPENSSL_H_
+#define CYASSL_OPENSSL_H_
 
 #include <stdio.h>   /* ERR_print fp */
 #include "rsa.h"

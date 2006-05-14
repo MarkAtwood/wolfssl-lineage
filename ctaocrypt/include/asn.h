@@ -26,6 +26,7 @@
 #include "types.h"
 #include "rsa.h"
 #include "dh.h"
+#include "dsa.h"
 #include "sha.h"
 
 
@@ -141,12 +142,13 @@ Signer* MakeSigner();
 void    FreeSigners(Signer*);
 
 
-int RsaPrivateKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
-                        word32);
-int RsaPublicKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
-                       word32);
+int RsaPrivateKeyDecode(const byte* input, word32* inOutIdx, RsaKey*, word32);
+int RsaPublicKeyDecode(const byte* input, word32* inOutIdx, RsaKey*, word32);
 
 int DhKeyDecode(const byte* input, word32* inOutIdx, DhKey* key, word32);
+
+int DsaPublicKeyDecode(const byte* input, word32* inOutIdx, DsaKey*, word32);
+int DsaPrivateKeyDecode(const byte* input, word32* inOutIdx, DsaKey*, word32);
 
 
 #ifdef __cplusplus

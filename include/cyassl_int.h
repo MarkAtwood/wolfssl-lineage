@@ -21,8 +21,8 @@
 
 
 
-#ifndef CyaSSL_INT_H
-#define CyaSSL_INT_H
+#ifndef CYASSL_INT_H
+#define CYASSL_INT_H
 
 
 #include "types.h"
