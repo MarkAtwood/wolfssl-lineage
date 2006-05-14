@@ -26,6 +26,7 @@
 #include "runtime.hpp"
 #include "yassl_error.hpp"
 #include "error.hpp"        // TaoCrypt error numbers
+#include "openssl/ssl.h"    // SSL_ERROR_WANT_READ
 
 namespace yaSSL {
 
@@ -115,7 +116,12 @@ void SetErrorString(YasslError error, char* buffer)
 
     case certificate_error :
         strncpy(buffer, "unable to proccess cerificate", max);
-        break; 
+        break;
+        
+        // openssl errors
+    case SSL_ERROR_WANT_READ :
+        strncpy(buffer, "the read operation would block", max);
+        break;
 
         // TaoCrypt errors
     case NO_ERROR :

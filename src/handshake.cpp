@@ -656,7 +656,7 @@ mySTL::auto_ptr<input_buffer>
 DoProcessReply(SSL& ssl, mySTL::auto_ptr<input_buffer> buffered)
 {
     // wait for input if blocking
-    if (!ssl.getSocket().wait()) {
+    if (!ssl.useSocket().wait()) {
         ssl.SetError(receive_error);
         buffered.reset(0);
         return buffered;
@@ -673,7 +673,7 @@ DoProcessReply(SSL& ssl, mySTL::auto_ptr<input_buffer> buffered)
     }
 
     // add new data
-    uint read  = ssl.getSocket().receive(buffer.get_buffer() + buffSz, ready);
+    uint read  = ssl.useSocket().receive(buffer.get_buffer() + buffSz, ready);
     buffer.add_size(read);
     uint offset = 0;
     const MessageFactory& mf = ssl.getFactory().getMessage();
@@ -893,6 +893,9 @@ int sendAlert(SSL& ssl, const Alert& alert)
 // process input data
 int receiveData(SSL& ssl, Data& data)
 {
+    if (ssl.GetError() == SSL_ERROR_WANT_READ)
+        ssl.SetError(no_error);
+
     ssl.verfiyHandShakeComplete();
     if (ssl.GetError()) return 0;
 
@@ -902,6 +905,11 @@ int receiveData(SSL& ssl, Data& data)
     ssl.useLog().ShowData(data.get_length());
 
     if (ssl.GetError()) return 0;
+
+    if (data.get_length() == 0 && ssl.getSocket().WouldBlock()) {
+        ssl.SetError(YasslError(SSL_ERROR_WANT_READ));
+        return SSL_WOULD_BLOCK;
+    }
     return data.get_length(); 
 }
 

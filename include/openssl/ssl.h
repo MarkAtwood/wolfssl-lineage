@@ -273,6 +273,7 @@ int SSL_pending(SSL*);
 
 
 enum { /* ssl Constants */
+    SSL_WOULD_BLOCK     = -8,
     SSL_BAD_STAT        = -7,
     SSL_BAD_PATH        = -6,
     SSL_BAD_FILETYPE    = -5,
