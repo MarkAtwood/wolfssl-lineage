@@ -858,6 +858,9 @@ void sendFinished(SSL& ssl, ConnectionEnd side, BufferOutput buffer)
 // send data
 int sendData(SSL& ssl, const void* buffer, int sz)
 {
+    if (ssl.GetError() == SSL_ERROR_WANT_READ)
+        ssl.SetError(no_error);
+
     ssl.verfiyHandShakeComplete();
     if (ssl.GetError()) return 0;
     int sent = 0;
