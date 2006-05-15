@@ -495,7 +495,7 @@ ASN1_TIME* X509_get_notAfter(X509* x);
 
 
 typedef struct MD4_CTX {
-    void* ptr;
+    int buffer[32];      /* big enough to hold, check size in Init */
 } MD4_CTX;
 
 void MD4_Init(MD4_CTX*);

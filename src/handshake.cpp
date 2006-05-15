@@ -858,7 +858,7 @@ void sendFinished(SSL& ssl, ConnectionEnd side, BufferOutput buffer)
 // send data
 int sendData(SSL& ssl, const void* buffer, int sz)
 {
-    if (ssl.GetError() == SSL_ERROR_WANT_READ)
+    if (ssl.GetError() == YasslError(SSL_ERROR_WANT_READ))
         ssl.SetError(no_error);
 
     ssl.verfiyHandShakeComplete();
@@ -896,7 +896,7 @@ int sendAlert(SSL& ssl, const Alert& alert)
 // process input data
 int receiveData(SSL& ssl, Data& data)
 {
-    if (ssl.GetError() == SSL_ERROR_WANT_READ)
+    if (ssl.GetError() == YasslError(SSL_ERROR_WANT_READ))
         ssl.SetError(no_error);
 
     ssl.verfiyHandShakeComplete();
