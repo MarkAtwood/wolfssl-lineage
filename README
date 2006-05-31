@@ -17,8 +17,8 @@ See normal build instructions below under 1.0.6.
     make
     make openssl-links
 
-    (then go to your libcurl home and tell libcurl about yaSSL)
-    ./configure --with-ssl=/yaSSL-HomeDir
+    (then go to your libcurl home and tell libcurl about yaSSL build dir)
+    ./configure --with-ssl=/yaSSL-HomeDir LDFLAGS=-lm
     make
 
 
