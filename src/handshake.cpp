@@ -697,19 +697,27 @@ DoProcessReply(SSL& ssl, mySTL::auto_ptr<input_buffer> buffered)
     while(!buffer.eof()) {
         // each record
         RecordLayerHeader hdr;
-        buffer >> hdr;
-        ssl.verifyState(hdr);
+        bool              needHdr = false;
+
+        if (static_cast<uint>(RECORD_HEADER) > buffer.get_remaining())
+            needHdr = true;
+        else {
+            buffer >> hdr;
+            ssl.verifyState(hdr);
+        }
 
         // make sure we have enough input in buffer to process this record
-        if (hdr.length_ > buffer.get_remaining()) { 
-            uint sz = buffer.get_remaining() + RECORD_HEADER;
+        if (needHdr || hdr.length_ > buffer.get_remaining()) {
+            // put header in front for next time processing
+            uint extra = needHdr ? 0 : RECORD_HEADER;
+            uint sz = buffer.get_remaining() + extra;
             buffered.reset(NEW_YS input_buffer(sz, buffer.get_buffer() +
-                           buffer.get_current() - RECORD_HEADER, sz));
+                           buffer.get_current() - extra, sz));
             break;
         }
 
         while (buffer.get_current() < hdr.length_ + RECORD_HEADER + offset) {
-            // each message in record
+            // each message in record, can be more than 1 if not encrypted
             if (ssl.getSecurity().get_parms().pending_ == false) // cipher on
                 decrypt_message(ssl, buffer, hdr.length_);
             mySTL::auto_ptr<Message> msg(mf.CreateObject(hdr.type_), ysDelete);
@@ -727,7 +735,7 @@ DoProcessReply(SSL& ssl, mySTL::auto_ptr<input_buffer> buffered)
         }
         offset += hdr.length_ + RECORD_HEADER;
     }
-    return buffered;  // done, don't call again
+    return buffered;
 }
 
 
