@@ -458,6 +458,11 @@ void ProcessOldClientHello(input_buffer& input, SSL& ssl)
 
     uint16 sz = ((b0 & 0x7f) << 8) | b1;
 
+    if (sz > input.get_remaining()) {
+        ssl.SetError(bad_input);
+        return;
+    }
+
     // hashHandShake manually
     const opaque* buffer = input.get_buffer() + input.get_current();
     ssl.useHashes().use_MD5().update(buffer, sz);
@@ -681,8 +686,13 @@ DoProcessReply(SSL& ssl, mySTL::auto_ptr<input_buffer> buffered)
     // old style sslv2 client hello?
     if (ssl.getSecurity().get_parms().entity_ == server_end &&
                   ssl.getStates().getServer() == clientNull) 
-        if (buffer.peek() != handshake)
+        if (buffer.peek() != handshake) {
             ProcessOldClientHello(buffer, ssl);
+            if (ssl.GetError()) {
+                buffered.reset(0);
+                return buffered;
+            }
+        }
 
     while(!buffer.eof()) {
         // each record
