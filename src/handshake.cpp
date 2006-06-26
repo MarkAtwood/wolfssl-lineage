@@ -912,7 +912,7 @@ int sendAlert(SSL& ssl, const Alert& alert)
 
 
 // process input data
-int receiveData(SSL& ssl, Data& data)
+int receiveData(SSL& ssl, Data& data, bool peek)
 {
     if (ssl.GetError() == YasslError(SSL_ERROR_WANT_READ))
         ssl.SetError(no_error);
@@ -922,9 +922,13 @@ int receiveData(SSL& ssl, Data& data)
 
     if (!ssl.bufferedData())
         processReply(ssl);
-    ssl.fillData(data);
-    ssl.useLog().ShowData(data.get_length());
 
+    if (peek)
+        ssl.PeekData(data);
+    else
+        ssl.fillData(data);
+
+    ssl.useLog().ShowData(data.get_length());
     if (ssl.GetError()) return -1;
 
     if (data.get_length() == 0 && ssl.getSocket().WouldBlock()) {

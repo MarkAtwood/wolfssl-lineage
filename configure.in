@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(yassl,1.3.5)
+AM_INIT_AUTOMAKE(yassl,1.3.7)
 AM_CONFIG_HEADER(taocrypt/include/config.h)
 
 # make sure configure doesn't add to CXXFLAGS

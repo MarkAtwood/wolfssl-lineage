@@ -521,6 +521,7 @@ public:
     void makeTLSMasterSecret();
     void addData(input_buffer* data);
     void fillData(Data&);
+    void PeekData(Data&);
     void addBuffer(output_buffer* b);
     void flushBuffer();
     void verifyState(const RecordLayerHeader&);
