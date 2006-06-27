@@ -986,6 +986,34 @@ void SSL::fillData(Data& data)
 }
 
 
+// like Filee but keep data in buffer
+void SSL::PeekData(Data& data)
+{
+    if (GetError()) return;
+    uint dataSz   = data.get_length();        // input, data size to fill
+    uint elements = buffers_.getData().size();
+
+    data.set_length(0);                         // output, actual data filled
+    dataSz = min(dataSz, bufferedData());
+
+    Buffers::inputList::iterator front = buffers_.getData().begin();
+
+    while (elements) {
+        uint frontSz = (*front)->get_remaining();
+        uint readSz  = min(dataSz - data.get_length(), frontSz);
+
+        (*front)->read(data.set_buffer() + data.get_length(), readSz);
+        data.set_length(data.get_length() + readSz);
+
+        if (data.get_length() == dataSz)
+            break;
+
+        elements--;
+        front++;
+    }
+}
+
+
 // flush output buffer
 void SSL::flushBuffer()
 {

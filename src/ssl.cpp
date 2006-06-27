@@ -1188,6 +1188,25 @@ void MD5_Final(unsigned char* hash, MD5_CTX* md5)
 }
 
 
+int RAND_bytes(unsigned char* buf, int num)
+{
+    RandomPool ran;
+
+    if (ran.GetError()) return 0;
+
+    ran.Fill(buf, num);
+    return 1;
+}
+
+
+int SSL_peek(SSL* ssl, void* buffer, int sz)
+{
+    Data data(min(sz, MAX_RECORD_SIZE), static_cast<opaque*>(buffer));
+    return receiveData(*ssl, data, true);
+}
+
+
+
     // functions for stunnel
 
     void RAND_screen()

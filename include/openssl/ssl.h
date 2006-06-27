@@ -414,6 +414,7 @@ int         RAND_load_file(const char*, long);
 
 /* for libcurl */
 int  RAND_status(void);
+int  RAND_bytes(unsigned char* buf, int num);
 
 int  DES_set_key(const_DES_cblock*, DES_key_schedule*);
 void DES_set_odd_parity(DES_cblock*);
@@ -421,6 +422,7 @@ void DES_ecb_encrypt(DES_cblock*, DES_cblock*, DES_key_schedule*, int);
 
 void SSL_CTX_set_default_passwd_cb_userdata(SSL_CTX*, void* userdata);
 void SSL_SESSION_free(SSL_SESSION* session);
+int  SSL_peek(SSL* ssl, void* buf, int num);
 
 X509*     SSL_get_certificate(SSL* ssl);
 EVP_PKEY* SSL_get_privatekey(SSL* ssl);
@@ -512,6 +514,8 @@ typedef struct MD5_CTX {
 void MD5_Init(MD5_CTX*);
 void MD5_Update(MD5_CTX*, const void*, unsigned long);
 void MD5_Final(unsigned char*, MD5_CTX*);
+
+#define MD5_DIGEST_LENGTH 16
 
 
 #define SSL_DEFAULT_CIPHER_LIST ""   /* default all */
