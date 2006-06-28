@@ -36,6 +36,10 @@
 #include "opensslv.h" /* for version number */
 #include "rsa.h"
 
+
+#define YASSL_VERSION "1.3.7"
+
+
 #if defined(__cplusplus)
 extern "C" {
 #endif

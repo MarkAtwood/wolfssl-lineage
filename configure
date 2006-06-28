@@ -1795,7 +1795,7 @@ INSTALL_STRIP_PROGRAM="\${SHELL} \$(install_sh) -c -s"
 # some platforms.
 
 
-
+ # !!! also change in ssl.h !!!
           ac_config_headers="$ac_config_headers taocrypt/include/config.h"
 
 
