@@ -986,7 +986,7 @@ void SSL::fillData(Data& data)
 }
 
 
-// like Filee but keep data in buffer
+// like Fill but keep data in buffer
 void SSL::PeekData(Data& data)
 {
     if (GetError()) return;
