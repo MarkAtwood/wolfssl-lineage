@@ -1001,9 +1001,11 @@ void SSL::PeekData(Data& data)
     while (elements) {
         uint frontSz = (*front)->get_remaining();
         uint readSz  = min(dataSz - data.get_length(), frontSz);
+        uint before  = (*front)->get_current();
 
         (*front)->read(data.set_buffer() + data.get_length(), readSz);
         data.set_length(data.get_length() + readSz);
+        (*front)->set_current(before);
 
         if (data.get_length() == dataSz)
             break;
