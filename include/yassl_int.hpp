@@ -429,9 +429,10 @@ private:
 
 // holds input and output buffers
 class Buffers {
+public: 
     typedef mySTL::list<input_buffer*>  inputList;
     typedef mySTL::list<output_buffer*> outputList;
-
+private:
     inputList  dataList_;                // list of users app data / handshake
     outputList handShakeList_;           // buffered handshake msgs
 public:
