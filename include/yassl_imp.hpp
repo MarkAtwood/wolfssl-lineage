@@ -664,9 +664,9 @@ struct Parameters {
     char                 cipher_name_[MAX_SUITE_NAME];
     char                 cipher_list_[MAX_CIPHERS][MAX_SUITE_NAME];
 
-    Parameters(ConnectionEnd, const Ciphers&, ProtocolVersion);
+    Parameters(ConnectionEnd, const Ciphers&, ProtocolVersion, bool haveDH);
 
-    void SetSuites(ProtocolVersion pv);
+    void SetSuites(ProtocolVersion pv, bool removeDH = false);
     void SetCipherNames();
 private:
     Parameters(const Parameters&);              // hide copy

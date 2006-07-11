@@ -459,7 +459,7 @@ class Security {
     bool          resuming_;                      // trying to resume
 public:
     Security(ProtocolVersion, RandomPool&, ConnectionEnd, const Ciphers&,
-             SSL_CTX*);
+             SSL_CTX*, bool);
 
     const SSL_CTX*     GetContext()     const;
     const Connection&  get_connection() const;

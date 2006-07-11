@@ -260,7 +260,8 @@ const ClientKeyFactory& sslFactory::getClientKey() const
 // extract context parameters and store
 SSL::SSL(SSL_CTX* ctx) 
     : secure_(ctx->getMethod()->getVersion(), crypto_.use_random(),
-              ctx->getMethod()->getSide(), ctx->GetCiphers(), ctx)
+              ctx->getMethod()->getSide(), ctx->GetCiphers(), ctx,
+              ctx->GetDH_Parms().set_)
 {
     if (int err = crypto_.get_random().GetError()) {
         SetError(YasslError(err));
@@ -1940,9 +1941,9 @@ Buffers::outputList& Buffers::useHandShake()
 
 
 Security::Security(ProtocolVersion pv, RandomPool& ran, ConnectionEnd ce,
-                   const Ciphers& ciphers, SSL_CTX* ctx)
-   : conn_(pv, ran), parms_(ce, ciphers, pv), resumeSession_(ran), ctx_(ctx),
-     resuming_(false)
+                   const Ciphers& ciphers, SSL_CTX* ctx, bool haveDH)
+   : conn_(pv, ran), parms_(ce, ciphers, pv, haveDH), resumeSession_(ran),
+     ctx_(ctx), resuming_(false)
 {}
 
 
