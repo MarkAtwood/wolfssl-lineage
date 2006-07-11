@@ -458,11 +458,11 @@ void Parameters::SetSuites(ProtocolVersion pv)
         suites_[i++] = TLS_RSA_WITH_AES_256_CBC_SHA;
 
         suites_[i++] = 0x00;
-        suites_[i++] = TLS_RSA_WITH_AES_128_CBC_SHA;
-        suites_[i++] = 0x00;
         suites_[i++] = TLS_DHE_RSA_WITH_AES_128_CBC_SHA;
         suites_[i++] = 0x00;
         suites_[i++] = TLS_DHE_DSS_WITH_AES_128_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_RSA_WITH_AES_128_CBC_SHA;
 
         suites_[i++] = 0x00;
         suites_[i++] = TLS_RSA_WITH_AES_256_CBC_RMD160;

@@ -1206,6 +1206,16 @@ int SSL_peek(SSL* ssl, void* buffer, int sz)
 }
 
 
+int SSL_pending(SSL* ssl)
+{
+    // Just in case there's pending data that hasn't been processed yet...
+    char c;
+    SSL_peek(ssl, &c, 1);
+    
+    return ssl->bufferedData();
+}
+
+
 
     // functions for stunnel
 
@@ -1365,12 +1375,6 @@ int SSL_peek(SSL* ssl, void* buffer, int sz)
 
 
     int SSL_set_wfd(SSL*, int)
-    {
-        return SSL_SUCCESS; // TODO:
-    }
-
-
-    int SSL_pending(SSL*)
     {
         return SSL_SUCCESS; // TODO:
     }
