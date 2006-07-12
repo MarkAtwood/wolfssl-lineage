@@ -475,17 +475,8 @@ void CertDecoder::Decode(SignerList* signers, CertType ct)
         source_.SetError(SIG_OID_E);
         return;
     }
-
-    if (ct == CA) {
-        if ( memcmp(issuerHash_, subjectHash_, SHA::DIGEST_SIZE) == 0 ) {
-            if (!ValidateSelfSignature() && verify_)
-                source_.SetError(SIG_CONFIRM_E);
-        }
-        else
-            if (!ValidateSignature(signers) && verify_)
-                source_.SetError(SIG_OTHER_E);
-    }
-    else if (!ValidateSignature(signers) && verify_)
+    
+    if (ct != CA && verify_ && !ValidateSignature(signers))
         source_.SetError(SIG_OTHER_E);
 }
 

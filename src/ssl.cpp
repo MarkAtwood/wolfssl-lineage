@@ -67,12 +67,15 @@ int read_file(SSL_CTX* ctx, const char* file, int format, CertType type)
         return SSL_BAD_FILE;
 
     if (type == CA) {
-        x509* ptr = PemToDer(file, Cert);
-        if (!ptr) {
+        // may have a bunch of CAs
+        x509* ptr;
+        while ( (ptr = PemToDer(input, Cert)) )
+            ctx->AddCA(ptr);
+
+        if (!feof(input)) {
             fclose(input);
             return SSL_BAD_FILE;
         }
-        ctx->AddCA(ptr);  // takes ownership
     }
     else {
         x509*& x = (type == Cert) ? ctx->certificate_ : ctx->privateKey_;
@@ -89,7 +92,7 @@ int read_file(SSL_CTX* ctx, const char* file, int format, CertType type)
             }
         }
         else {
-            x = PemToDer(file, type);
+            x = PemToDer(input, type);
             if (!x) {
                 fclose(input);
                 return SSL_BAD_FILE;

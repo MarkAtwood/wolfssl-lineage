@@ -40,6 +40,7 @@
 #define yaSSL_CRYPTO_WRAPPER_HPP
 
 #include "yassl_types.hpp"
+#include <stdio.h>   // FILE
 
 
 namespace yaSSL {
@@ -414,7 +415,8 @@ private:
 
 class x509;
 
-x509* PemToDer(const char*, CertType);
+
+x509* PemToDer(FILE*, CertType);
 
 
 } // naemspace

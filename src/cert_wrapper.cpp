@@ -186,7 +186,8 @@ int CertManager::CopyCaCert(const x509* x)
         signers_.push_back(NEW_YS TaoCrypt::Signer(key.GetKey(), key.size(),
                                         cert.GetCommonName(), cert.GetHash()));
     }
-    return cert.GetError().What();
+    // just don't add, not an error return cert.GetError().What();
+    return 0;
 }
 
 
