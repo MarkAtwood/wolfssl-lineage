@@ -1172,7 +1172,7 @@ input_buffer& operator>>(input_buffer& input, ServerHello& hello)
     
     // Session
     hello.id_len_ = input[AUTO];
-    input.read(hello.session_id_, ID_LEN);
+    input.read(hello.session_id_, hello.id_len_);
  
     // Suites
     hello.cipher_suite_[0] = input[AUTO];
