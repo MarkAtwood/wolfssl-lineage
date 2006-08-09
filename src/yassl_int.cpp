@@ -1213,8 +1213,10 @@ void SSL::matchSuite(const opaque* peer, uint length)
 
 void SSL::set_session(SSL_SESSION* s) 
 { 
-    if (s && GetSessions().lookup(s->GetID(), &secure_.use_resume()))
+    if (s && GetSessions().lookup(s->GetID(), &secure_.use_resume())) {
         secure_.set_resuming(true);
+        crypto_.use_certManager().setPeerX509(s->GetPeerX509());
+    }
 }
 
 
@@ -1314,9 +1316,25 @@ void SSL::addBuffer(output_buffer* b)
 }
 
 
+void SSL_SESSION::CopyX509(X509* x)
+{
+    assert(peerX509_ == 0);
+    if (x == 0) return;
+
+    X509_NAME* issuer   = x->GetIssuer();
+    X509_NAME* subject  = x->GetSubject();
+    ASN1_STRING* before = x->GetBefore();
+    ASN1_STRING* after  = x->GetAfter();
+
+    peerX509_ = NEW_YS X509(issuer->GetName(), issuer->GetLength(),
+        subject->GetName(), subject->GetLength(), (const char*) before->data,
+        before->length, (const char*) after->data, after->length);
+}
+
+
 // store connection parameters
 SSL_SESSION::SSL_SESSION(const SSL& ssl, RandomPool& ran) 
-    : timeout_(DEFAULT_TIMEOUT), random_(ran)
+    : timeout_(DEFAULT_TIMEOUT), random_(ran), peerX509_(0)
 {
     const Connection& conn = ssl.getSecurity().get_connection();
 
@@ -1325,12 +1343,14 @@ SSL_SESSION::SSL_SESSION(const SSL& ssl, RandomPool& ran)
     memcpy(suite_, ssl.getSecurity().get_parms().suite_, SUITE_LEN);
 
     bornOn_ = lowResTimer();
+
+    CopyX509(ssl.getCrypto().get_certManager().get_peerX509());
 }
 
 
 // for resumption copy in ssl::parameters
 SSL_SESSION::SSL_SESSION(RandomPool& ran) 
-    : bornOn_(0), timeout_(0), random_(ran)
+    : bornOn_(0), timeout_(0), random_(ran), peerX509_(0)
 {
     memset(sessionID_, 0, ID_LEN);
     memset(master_secret_, 0, SECRET_LEN);
@@ -1346,6 +1366,12 @@ SSL_SESSION& SSL_SESSION::operator=(const SSL_SESSION& that)
     
     bornOn_  = that.bornOn_;
     timeout_ = that.timeout_;
+
+    if (peerX509_) {
+        ysDelete(peerX509_);
+        peerX509_ = 0;
+    }
+    CopyX509(that.peerX509_);
 
     return *this;
 }
@@ -1366,6 +1392,12 @@ const opaque* SSL_SESSION::GetSecret() const
 const Cipher* SSL_SESSION::GetSuite() const
 {
     return suite_;
+}
+
+
+X509* SSL_SESSION::GetPeerX509() const
+{
+    return peerX509_;
 }
 
 
@@ -1395,6 +1427,8 @@ SSL_SESSION::~SSL_SESSION()
 {
     volatile opaque* p = master_secret_;
     clean(p, SECRET_LEN, random_);
+
+    ysDelete(peerX509_);
 }
 
 
@@ -2026,9 +2060,15 @@ X509_NAME::~X509_NAME()
 }
 
 
-char* X509_NAME::GetName()
+const char* X509_NAME::GetName() const
 {
     return name_;
+}
+
+
+size_t X509_NAME::GetLength() const
+{
+    return sz_;
 }
 
 
@@ -2037,7 +2077,7 @@ X509::X509(const char* i, size_t iSz, const char* s, size_t sSz,
     : issuer_(i, iSz), subject_(s, sSz),
       beforeDate_(b, bSz), afterDate_(a, aSz)
 {}
-   
+
 
 X509_NAME* X509::GetIssuer()
 {

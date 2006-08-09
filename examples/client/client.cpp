@@ -63,6 +63,7 @@ void client_test(void* args)
     SSL_set_session(sslResume, session);
     
     if (SSL_connect(sslResume) != SSL_SUCCESS) err_sys("SSL resume failed");
+    showPeer(sslResume);
   
     if (SSL_write(sslResume, msg, sizeof(msg)) != sizeof(msg))
         err_sys("SSL_write failed");

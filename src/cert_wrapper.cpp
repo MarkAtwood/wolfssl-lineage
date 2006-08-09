@@ -310,6 +310,23 @@ int CertManager::SetPrivateKey(const x509& key)
 }
 
 
+// Store OpenSSL type peer's cert
+void CertManager::setPeerX509(X509* x)
+{
+    assert(peerX509_ == 0);
+    if (x == 0) return;
+
+    X509_NAME* issuer   = x->GetIssuer();
+    X509_NAME* subject  = x->GetSubject();
+    ASN1_STRING* before = x->GetBefore();
+    ASN1_STRING* after  = x->GetAfter();
+
+    peerX509_ = NEW_YS X509(issuer->GetName(), issuer->GetLength(),
+        subject->GetName(), subject->GetLength(), (const char*) before->data,
+        before->length, (const char*) after->data, after->length);
+}
+
+
 #if defined(USE_CML_LIB)
 
 // Get the peer's certificate, extract and save public key

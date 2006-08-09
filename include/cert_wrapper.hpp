@@ -120,6 +120,7 @@ public:
     void setVerifyNone();
     void setFailNoCert();
     void setSendVerify();
+    void setPeerX509(X509*);
 private:
     CertManager(const CertManager&);            // hide copy
     CertManager& operator=(const CertManager&); // and assign

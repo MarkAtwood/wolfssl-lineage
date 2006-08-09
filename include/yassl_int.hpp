@@ -142,8 +142,9 @@ public:
     X509_NAME(const char*, size_t sz);
     ~X509_NAME();
 
-    char*        GetName();
+    const char*  GetName() const;
     ASN1_STRING* GetEntry(int i);
+    size_t       GetLength() const;
 private:
     X509_NAME(const X509_NAME&);                // hide copy
     X509_NAME& operator=(const X509_NAME&);     // and assign
@@ -157,6 +158,9 @@ public:
     ~StringHolder();
 
     ASN1_STRING* GetString();
+private:
+    StringHolder(const StringHolder&);                // hide copy
+    StringHolder& operator=(const StringHolder&);     // and assign
 };
 
 
@@ -176,6 +180,7 @@ public:
 
     ASN1_STRING* GetBefore();
     ASN1_STRING* GetAfter();
+
 private:
     X509(const X509&);              // hide copy
     X509& operator=(const X509&);   // and assign
@@ -202,21 +207,25 @@ class SSL_SESSION {
     uint        bornOn_;                        // create time in seconds
     uint        timeout_;                       // timeout in seconds
     RandomPool& random_;                        // will clean master secret
+    X509*       peerX509_;
 public:
     explicit SSL_SESSION(RandomPool&);
     SSL_SESSION(const SSL&, RandomPool&);
     ~SSL_SESSION();
 
-    const opaque* GetID()      const;
-    const opaque* GetSecret()  const;
-    const Cipher* GetSuite()   const;
-          uint    GetBornOn()  const;
-          uint    GetTimeOut() const;
+    const opaque* GetID()       const;
+    const opaque* GetSecret()   const;
+    const Cipher* GetSuite()    const;
+          uint    GetBornOn()   const;
+          uint    GetTimeOut()  const;
+          X509*   GetPeerX509() const;
           void    SetTimeOut(uint);
 
     SSL_SESSION& operator=(const SSL_SESSION&); // allow assign for resumption
 private:
     SSL_SESSION(const SSL_SESSION&);            // hide copy
+
+    void CopyX509(X509*);
 };
 
 
