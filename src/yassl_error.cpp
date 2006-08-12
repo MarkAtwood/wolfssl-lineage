@@ -235,6 +235,10 @@ void SetErrorString(YasslError error, char* buffer)
         strncpy(buffer, "ASN: bad other signature confirmation", max);
         break;
 
+    case CERTFICATE_ERROR :
+        strncpy(buffer, "Unable to verify certificate", max);
+        break;
+
     default :
         strncpy(buffer, "unknown error number", max);
     }

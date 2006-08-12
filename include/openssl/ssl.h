@@ -505,6 +505,8 @@ ASN1_TIME* X509_get_notAfter(X509* x);
 #define V_ASN1_UTF8STRING 12
 #define GEN_DNS            2
 
+#define CERTFICATE_ERROR 0x14090086  /* SSLv3 error */
+
 
 typedef struct MD4_CTX {
     int buffer[32];      /* big enough to hold, check size in Init */

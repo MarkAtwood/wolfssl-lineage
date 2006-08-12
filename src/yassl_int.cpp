@@ -33,6 +33,10 @@
 #include "handshake.hpp"
 #include "timer.hpp"
 
+#ifdef _POSIX_THREADS
+    #include "pthread.h"
+#endif
+
 
 #ifdef YASSL_PURE_C
 
@@ -1452,6 +1456,15 @@ sslFactory& GetSSL_Factory()
 }
 
 
+static Errors* errorsInstance = 0;
+
+Errors& GetErrors()
+{
+    if (!errorsInstance)
+        errorsInstance = NEW_YS Errors;
+    return *errorsInstance;
+}
+
 
 typedef Mutex::Lock Lock;
 
@@ -1474,7 +1487,8 @@ Sessions::~Sessions()
 // locals
 namespace yassl_int_cpp_local2 { // for explicit templates
 
-typedef mySTL::list<SSL_SESSION*>::iterator iterator;
+typedef mySTL::list<SSL_SESSION*>::iterator sess_iterator;
+typedef mySTL::list<ThreadError>::iterator  thr_iterator;
 
 struct sess_match {
     const opaque* id_;
@@ -1489,6 +1503,28 @@ struct sess_match {
 };
 
 
+THREAD_ID_T GetSelf()
+{
+#ifndef _POSIX_THREADS
+    return GetCurrentThreadId();
+#else
+    return pthread_self();
+#endif
+}
+
+struct thr_match {
+    THREAD_ID_T id_;
+    explicit thr_match() : id_(GetSelf()) {}
+
+    bool operator()(ThreadError thr)
+    {
+        if (thr.threadID_ == id_)
+            return true;
+        return false;
+    }
+};
+
+
 } // local namespace
 using namespace yassl_int_cpp_local2;
 
@@ -1497,8 +1533,8 @@ using namespace yassl_int_cpp_local2;
 SSL_SESSION* Sessions::lookup(const opaque* id, SSL_SESSION* copy)
 {
     Lock guard(mutex_);
-    iterator find = mySTL::find_if(list_.begin(), list_.end(), sess_match(id));
-
+    sess_iterator find = mySTL::find_if(list_.begin(), list_.end(),
+                                        sess_match(id));
     if (find != list_.end()) {
         uint current = lowResTimer();
         if ( ((*find)->GetBornOn() + (*find)->GetTimeOut()) < current) {
@@ -1518,12 +1554,54 @@ SSL_SESSION* Sessions::lookup(const opaque* id, SSL_SESSION* copy)
 void Sessions::remove(const opaque* id)
 {
     Lock guard(mutex_);
-    iterator find = mySTL::find_if(list_.begin(), list_.end(), sess_match(id));
-
+    sess_iterator find = mySTL::find_if(list_.begin(), list_.end(),
+                                        sess_match(id));
     if (find != list_.end()) {
         del_ptr_zero()(*find);
         list_.erase(find);
     }
+}
+
+
+// remove a self thread error
+void Errors::Remove()
+{
+    Lock guard(mutex_);
+    thr_iterator find = mySTL::find_if(list_.begin(), list_.end(),
+                                       thr_match());
+    if (find != list_.end())
+        list_.erase(find);
+}
+
+
+// lookup self error code
+int Errors::Lookup(bool peek)
+{
+    Lock guard(mutex_);
+    thr_iterator find = mySTL::find_if(list_.begin(), list_.end(),
+                                       thr_match());
+    if (find != list_.end()) {
+        int ret = find->errorID_;
+        if (!peek)
+            list_.erase(find);
+        return ret;
+    }
+    else
+        return 0;
+}
+
+
+// add a new error code for self
+void Errors::Add(int error)
+{
+    ThreadError add;
+    add.errorID_  = error;
+    add.threadID_ = GetSelf();
+
+    Remove();   // may have old error
+
+    Lock guard(mutex_);
+    list_.push_back(add);
 }
 
 
@@ -2154,10 +2232,12 @@ extern "C" void yaSSL_CleanUp()
     TaoCrypt::CleanUp();
     yaSSL::ysDelete(yaSSL::sslFactoryInstance);
     yaSSL::ysDelete(yaSSL::sessionsInstance);
+    yaSSL::ysDelete(yaSSL::errorsInstance);
 
     // In case user calls more than once, prevent seg fault
     yaSSL::sslFactoryInstance = 0;
     yaSSL::sessionsInstance = 0;
+    yaSSL::errorsInstance = 0;
 }
 
 
@@ -2166,6 +2246,7 @@ namespace mySTL {
 template yaSSL::yassl_int_cpp_local1::SumData for_each<mySTL::list<yaSSL::input_buffer*>::iterator, yaSSL::yassl_int_cpp_local1::SumData>(mySTL::list<yaSSL::input_buffer*>::iterator, mySTL::list<yaSSL::input_buffer*>::iterator, yaSSL::yassl_int_cpp_local1::SumData);
 template yaSSL::yassl_int_cpp_local1::SumBuffer for_each<mySTL::list<yaSSL::output_buffer*>::iterator, yaSSL::yassl_int_cpp_local1::SumBuffer>(mySTL::list<yaSSL::output_buffer*>::iterator, mySTL::list<yaSSL::output_buffer*>::iterator, yaSSL::yassl_int_cpp_local1::SumBuffer);
 template mySTL::list<yaSSL::SSL_SESSION*>::iterator find_if<mySTL::list<yaSSL::SSL_SESSION*>::iterator, yaSSL::yassl_int_cpp_local2::sess_match>(mySTL::list<yaSSL::SSL_SESSION*>::iterator, mySTL::list<yaSSL::SSL_SESSION*>::iterator, yaSSL::yassl_int_cpp_local2::sess_match);
+template mySTL::list<yaSSL::ThreadError>::iterator find_if<mySTL::list<yaSSL::ThreadError>::iterator, yaSSL::yassl_int_cpp_local2::thr_match>(mySTL::list<yaSSL::ThreadError>::iterator, mySTL::list<yaSSL::ThreadError>::iterator, yaSSL::yassl_int_cpp_local2::thr_match);
 }
 #endif
 

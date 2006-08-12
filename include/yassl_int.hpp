@@ -250,8 +250,42 @@ private:
 };
 
 
+#ifdef _POSIX_THREADS
+    typedef pthread_t THREAD_ID_T;
+#else
+    typedef DWORD     THREAD_ID_T;
+#endif
+
+// thread error data
+struct ThreadError {
+    THREAD_ID_T threadID_;
+    int         errorID_;
+};
+
+
+// holds all errors
+class Errors {
+    mySTL::list<ThreadError> list_;
+    Mutex                    mutex_;
+
+    Errors() {}                         // only GetErrors can create
+public:
+    int  Lookup(bool peek);             // self lookup
+    void Add(int);              
+    void Remove();                      // remove self
+
+    ~Errors() {}
+
+    friend Errors& GetErrors(); // singleton creator
+private:
+    Errors(const Errors&);              // hide copy
+    Errors& operator=(const Errors);    // and assign
+};
+
+
 Sessions&   GetSessions();      // forward singletons
 sslFactory& GetSSL_Factory();
+Errors&     GetErrors();
 
 
 // openSSL method and context types

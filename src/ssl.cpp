@@ -206,8 +206,10 @@ int SSL_connect(SSL* ssl)
     ssl->verifyState(serverFinishedComplete);
     ssl->useLog().ShowTCP(ssl->getSocket().get_fd());
 
-    if (ssl->GetError())
+    if (ssl->GetError()) {
+        GetErrors().Add(ssl->GetError());
         return SSL_FATAL_ERROR;
+    }
     return SSL_SUCCESS;
 }
 
@@ -259,8 +261,10 @@ int SSL_accept(SSL* ssl)
 
     ssl->useLog().ShowTCP(ssl->getSocket().get_fd());
 
-    if (ssl->GetError())
+    if (ssl->GetError()) {
+        GetErrors().Add(ssl->GetError());
         return SSL_FATAL_ERROR;
+    }
     return SSL_SUCCESS;
 }
 
@@ -277,6 +281,8 @@ int SSL_do_handshake(SSL* ssl)
 int SSL_clear(SSL* ssl)
 {
     ssl->useSocket().closeSocket();
+    GetErrors().Remove();
+
     return SSL_SUCCESS;
 }
 
@@ -287,6 +293,8 @@ int SSL_shutdown(SSL* ssl)
     sendAlert(*ssl, alert);
     ssl->useLog().ShowTCP(ssl->getSocket().get_fd(), true);
     ssl->useSocket().closeSocket();
+
+    GetErrors().Remove();
 
     return SSL_SUCCESS;
 }
@@ -1427,7 +1435,7 @@ int SSL_pending(SSL* ssl)
 
     void ERR_remove_state(unsigned long)
     {
-        // TODO:
+        GetErrors().Remove();
     }
 
 
@@ -1436,16 +1444,30 @@ int SSL_pending(SSL* ssl)
         return l & 0xfff;
     }
 
+    unsigned long err_helper(bool peek = false)
+    {
+        int ysError = GetErrors().Lookup(peek);
+
+        // translate cert error for libcurl, it uses OpenSSL hex code
+        switch (ysError) {
+        case TaoCrypt::SIG_OTHER_E:
+            return CERTFICATE_ERROR;
+            break;
+        default :
+            return 0;
+        }
+    }
+
 
     unsigned long ERR_peek_error()
     {
-        return 0;  // TODO:
+        return err_helper(true);
     }
 
 
     unsigned long ERR_get_error()
     {
-        return ERR_peek_error();
+        return err_helper();
     }
 
 
