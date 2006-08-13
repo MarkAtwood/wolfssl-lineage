@@ -40,6 +40,10 @@
 #include "lock.hpp"
 #include "openssl/ssl.h"  // ASN1_STRING and DH
 
+#ifdef _POSIX_THREADS
+    #include <pthread.h>
+#endif
+
 
 namespace yaSSL {
 
@@ -80,12 +84,35 @@ enum ServerState {
 };
 
 
+// client connect state for nonblocking restart
+enum ConnectState {
+    CONNECT_BEGIN = 0,
+    CLIENT_HELLO_SENT,
+    FIRST_REPLY_DONE,
+    FINISHED_DONE,
+    SECOND_REPLY_DONE
+};
+
+
+// server accpet state for nonblocking restart
+enum AcceptState {
+    ACCEPT_BEGIN = 0,
+    ACCEPT_FIRST_REPLY_DONE,
+    SERVER_HELLO_DONE,
+    ACCEPT_SECOND_REPLY_DONE,
+    ACCEPT_FINISHED_DONE,
+    ACCEPT_THIRD_REPLY_DONE
+};
+
+
 // combines all states
 class States {
     RecordLayerState recordLayer_;
     HandShakeState   handshakeLayer_;
     ClientState      clientState_;
     ServerState      serverState_;
+    ConnectState     connectState_;
+    AcceptState      acceptState_;
     char             errorString_[MAX_ERROR_SZ];
     YasslError       what_;
 public:
@@ -95,6 +122,8 @@ public:
     const HandShakeState&   getHandShake() const;
     const ClientState&      getClient()    const;
     const ServerState&      getServer()    const;
+    const ConnectState&     GetConnect()   const;
+    const AcceptState&      GetAccept()    const;
     const char*             getString()    const;
           YasslError        What()         const;
 
@@ -102,6 +131,8 @@ public:
     HandShakeState&   useHandShake();
     ClientState&      useClient();
     ServerState&      useServer();
+    ConnectState&     UseConnect();
+    AcceptState&      UseAccept();
     char*             useString();
     void              SetError(YasslError);
 private:
@@ -480,10 +511,11 @@ public:
     typedef mySTL::list<input_buffer*>  inputList;
     typedef mySTL::list<output_buffer*> outputList;
 private:
-    inputList  dataList_;                // list of users app data / handshake
-    outputList handShakeList_;           // buffered handshake msgs
+    inputList     dataList_;             // list of users app data / handshake
+    outputList    handShakeList_;        // buffered handshake msgs
+    input_buffer* rawInput_;             // buffered raw input yet to process
 public:
-    Buffers() {}
+    Buffers();
     ~Buffers();
 
     const inputList&  getData()      const;
@@ -491,9 +523,12 @@ public:
 
     inputList&  useData();
     outputList& useHandShake();
+
+    void          SetRawInput(input_buffer*);  // takes ownership
+    input_buffer* TakeRawInput();              // takes ownership 
 private:
     Buffers(const Buffers&);             // hide copy
-    Buffers& operator=(const Buffers&); // and assign   
+    Buffers& operator=(const Buffers&);  // and assign   
 };
 
 
@@ -552,6 +587,7 @@ public:
     sslHashes& useHashes();
     Socket&    useSocket();
     Log&       useLog();
+    Buffers&   useBuffers();
 
     // sets
     void set_pending(Cipher suite);

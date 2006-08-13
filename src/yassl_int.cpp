@@ -159,6 +159,7 @@ void c32toa(uint32 u32, opaque* c)
 
 States::States() : recordLayer_(recordReady), handshakeLayer_(preHandshake),
            clientState_(serverNull),  serverState_(clientNull),
+           connectState_(CONNECT_BEGIN), acceptState_(ACCEPT_BEGIN),
            what_(no_error) {}
 
 const RecordLayerState& States::getRecord() const 
@@ -182,6 +183,18 @@ const ClientState& States::getClient() const
 const ServerState& States::getServer() const
 {
     return serverState_;
+}
+
+
+const ConnectState& States::GetConnect() const
+{
+    return connectState_;
+}
+
+
+const AcceptState& States::GetAccept() const
+{
+    return acceptState_;
 }
 
 
@@ -218,6 +231,18 @@ ClientState& States::useClient()
 ServerState& States::useServer()
 {
     return serverState_;
+}
+
+
+ConnectState& States::UseConnect()
+{
+    return connectState_;
+}
+
+
+AcceptState& States::UseAccept()
+{
+    return acceptState_;
 }
 
 
@@ -723,6 +748,12 @@ void SSL::SetError(YasslError ye)
     states_.SetError(ye);
     //strncpy(states_.useString(), e.what(), mySTL::named_exception::NAME_SIZE);
     // TODO: add string here
+}
+
+
+Buffers& SSL::useBuffers()
+{
+    return buffers_;
 }
 
 
@@ -2026,12 +2057,33 @@ Hashes& sslHashes::use_certVerify()
 }
 
 
+Buffers::Buffers() : rawInput_(0)
+{}
+
+
 Buffers::~Buffers()
 {
     mySTL::for_each(handShakeList_.begin(), handShakeList_.end(),
                   del_ptr_zero()) ;
     mySTL::for_each(dataList_.begin(), dataList_.end(),
                   del_ptr_zero()) ;
+    ysDelete(rawInput_);
+}
+
+
+void Buffers::SetRawInput(input_buffer* ib)
+{
+    assert(rawInput_ == 0);
+    rawInput_ = ib;
+}
+
+
+input_buffer* Buffers::TakeRawInput()
+{
+    input_buffer* ret = rawInput_;
+    rawInput_ = 0;
+
+    return ret;
 }
 
 
