@@ -38,6 +38,8 @@
 
 namespace yaSSL {
 
+#define YASSL_LIB
+
 
 #ifdef YASSL_PURE_C
 
@@ -120,6 +122,39 @@ typedef uint8  opaque;
 typedef opaque byte;
 
 typedef unsigned int uint;
+
+
+#ifdef USE_SYS_STL
+    // use system STL
+    #define STL_VECTOR_FILE    <vector>
+    #define STL_LIST_FILE      <list>
+    #define STL_ALGORITHM_FILE <algorithm>
+    #define STL_MEMORY_FILE    <memory>
+    #define STL_PAIR_FILE      <utility>
+    
+    #define STL_NAMESPACE       std
+#else
+    // use mySTL
+    #define STL_VECTOR_FILE    "vector.hpp"
+    #define STL_LIST_FILE      "list.hpp"
+    #define STL_ALGORITHM_FILE "algorithm.hpp"
+    #define STL_MEMORY_FILE    "memory.hpp"
+    #define STL_PAIR_FILE      "pair.hpp"
+
+    #define STL_NAMESPACE       mySTL
+#endif
+
+
+#ifdef min
+    #undef min
+#endif 
+
+template <typename T>
+T min(T a, T b)
+{
+    return a < b ? a : b;
+}
+
 
  
 // all length constants in bytes

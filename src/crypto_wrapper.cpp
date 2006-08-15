@@ -956,7 +956,7 @@ x509* PemToDer(FILE* file, CertType type)
     Base64Decoder b64Dec(der);
 
     uint sz = der.size();
-    mySTL::auto_ptr<x509> x(NEW_YS x509(sz), ysDelete);
+    mySTL::auto_ptr<x509> x(NEW_YS x509(sz));
     memcpy(x->use_buffer(), der.get_buffer(), sz);
 
     return x.release();

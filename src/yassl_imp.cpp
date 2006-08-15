@@ -139,7 +139,7 @@ void DH_Server::build(SSL& ssl)
                        parms_.alloc_pub(pubSz));
 
     short sigSz = 0;
-    mySTL::auto_ptr<Auth> auth(ysDelete);
+    mySTL::auto_ptr<Auth> auth;
     const CertManager& cert = ssl.getCrypto().get_certManager();
     
     if (ssl.getSecurity().get_parms().sig_algo_ == rsa_sa_algo)
@@ -612,7 +612,7 @@ void HandShakeHeader::Process(input_buffer& input, SSL& ssl)
 {
     ssl.verifyState(*this);
     const HandShakeFactory& hsf = ssl.getFactory().getHandShake();
-    mySTL::auto_ptr<HandShakeBase> hs(hsf.CreateObject(type_), ysDelete);
+    mySTL::auto_ptr<HandShakeBase> hs(hsf.CreateObject(type_));
     if (!hs.get()) {
         ssl.SetError(factory_error);
         return;
@@ -1541,7 +1541,7 @@ CertificateRequest::CertificateRequest()
 CertificateRequest::~CertificateRequest()
 {
 
-    mySTL::for_each(certificate_authorities_.begin(),
+    STL::for_each(certificate_authorities_.begin(),
                   certificate_authorities_.end(),
                   del_ptr_zero()) ;
 }
@@ -1634,9 +1634,9 @@ output_buffer& operator<<(output_buffer& output,
            request.typeTotal_ - REQUEST_HEADER, tmp);
     output.write(tmp, sizeof(tmp));
 
-    mySTL::list<DistinguishedName>::const_iterator first =
+    STL::list<DistinguishedName>::const_iterator first =
                                     request.certificate_authorities_.begin();
-    mySTL::list<DistinguishedName>::const_iterator last =
+    STL::list<DistinguishedName>::const_iterator last =
                                     request.certificate_authorities_.end();
     while (first != last) {
         uint16 sz;
@@ -1684,7 +1684,7 @@ void CertificateVerify::Build(SSL& ssl)
 
     uint16 sz = 0;
     byte   len[VERIFY_HEADER];
-    mySTL::auto_ptr<byte> sig(ysArrayDelete);
+    mySTL::auto_array<byte> sig;
 
     // sign
     const CertManager& cert = ssl.getCrypto().get_certManager();

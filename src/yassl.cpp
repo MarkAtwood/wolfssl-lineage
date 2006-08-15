@@ -50,7 +50,6 @@ void operator delete[](void* ptr)
 
 namespace yaSSL {
 
-using mySTL::min;
 
 
 struct Base {

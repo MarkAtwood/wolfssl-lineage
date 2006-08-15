@@ -78,7 +78,6 @@
 namespace yaSSL {
 
 
-using mySTL::min;
 
 
 
@@ -994,7 +993,7 @@ using namespace yassl_int_cpp_local1;
 
 uint SSL::bufferedData()
 {
-    return mySTL::for_each(buffers_.getData().begin(),buffers_.getData().end(),
+    return STL::for_each(buffers_.getData().begin(),buffers_.getData().end(),
                            SumData()).total_;
 }
 
@@ -1037,7 +1036,7 @@ void SSL::PeekData(Data& data)
     data.set_length(0);                         // output, actual data filled
     dataSz = min(dataSz, bufferedData());
 
-    Buffers::inputList::iterator front = buffers_.getData().begin();
+    Buffers::inputList::iterator front = buffers_.useData().begin();
 
     while (elements) {
         uint frontSz = (*front)->get_remaining();
@@ -1062,7 +1061,7 @@ void SSL::flushBuffer()
 {
     if (GetError()) return;
 
-    uint sz = mySTL::for_each(buffers_.getHandShake().begin(),
+    uint sz = STL::for_each(buffers_.getHandShake().begin(),
                             buffers_.getHandShake().end(),
                             SumBuffer()).total_;
     output_buffer out(sz);
@@ -1511,15 +1510,15 @@ void Sessions::add(const SSL& ssl)
 
 Sessions::~Sessions() 
 { 
-    mySTL::for_each(list_.begin(), list_.end(), del_ptr_zero()); 
+    STL::for_each(list_.begin(), list_.end(), del_ptr_zero()); 
 }
 
 
 // locals
 namespace yassl_int_cpp_local2 { // for explicit templates
 
-typedef mySTL::list<SSL_SESSION*>::iterator sess_iterator;
-typedef mySTL::list<ThreadError>::iterator  thr_iterator;
+typedef STL::list<SSL_SESSION*>::iterator sess_iterator;
+typedef STL::list<ThreadError>::iterator  thr_iterator;
 
 struct sess_match {
     const opaque* id_;
@@ -1564,7 +1563,7 @@ using namespace yassl_int_cpp_local2;
 SSL_SESSION* Sessions::lookup(const opaque* id, SSL_SESSION* copy)
 {
     Lock guard(mutex_);
-    sess_iterator find = mySTL::find_if(list_.begin(), list_.end(),
+    sess_iterator find = STL::find_if(list_.begin(), list_.end(),
                                         sess_match(id));
     if (find != list_.end()) {
         uint current = lowResTimer();
@@ -1585,7 +1584,7 @@ SSL_SESSION* Sessions::lookup(const opaque* id, SSL_SESSION* copy)
 void Sessions::remove(const opaque* id)
 {
     Lock guard(mutex_);
-    sess_iterator find = mySTL::find_if(list_.begin(), list_.end(),
+    sess_iterator find = STL::find_if(list_.begin(), list_.end(),
                                         sess_match(id));
     if (find != list_.end()) {
         del_ptr_zero()(*find);
@@ -1598,7 +1597,7 @@ void Sessions::remove(const opaque* id)
 void Errors::Remove()
 {
     Lock guard(mutex_);
-    thr_iterator find = mySTL::find_if(list_.begin(), list_.end(),
+    thr_iterator find = STL::find_if(list_.begin(), list_.end(),
                                        thr_match());
     if (find != list_.end())
         list_.erase(find);
@@ -1609,7 +1608,7 @@ void Errors::Remove()
 int Errors::Lookup(bool peek)
 {
     Lock guard(mutex_);
-    thr_iterator find = mySTL::find_if(list_.begin(), list_.end(),
+    thr_iterator find = STL::find_if(list_.begin(), list_.end(),
                                        thr_match());
     if (find != list_.end()) {
         int ret = find->errorID_;
@@ -1701,7 +1700,7 @@ SSL_CTX::~SSL_CTX()
     ysDelete(certificate_);
     ysDelete(privateKey_);
 
-    mySTL::for_each(caList_.begin(), caList_.end(), del_ptr_zero());
+    STL::for_each(caList_.begin(), caList_.end(), del_ptr_zero());
 }
 
 
@@ -2063,9 +2062,9 @@ Buffers::Buffers() : rawInput_(0)
 
 Buffers::~Buffers()
 {
-    mySTL::for_each(handShakeList_.begin(), handShakeList_.end(),
+    STL::for_each(handShakeList_.begin(), handShakeList_.end(),
                   del_ptr_zero()) ;
-    mySTL::for_each(dataList_.begin(), dataList_.end(),
+    STL::for_each(dataList_.begin(), dataList_.end(),
                   del_ptr_zero()) ;
     ysDelete(rawInput_);
 }

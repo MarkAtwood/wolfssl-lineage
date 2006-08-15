@@ -45,6 +45,9 @@
 #endif
 
 
+namespace STL = STL_NAMESPACE;
+
+
 namespace yaSSL {
 
 
@@ -262,7 +265,7 @@ private:
 
 // holds all sessions
 class Sessions {
-    mySTL::list<SSL_SESSION*> list_;
+    STL::list<SSL_SESSION*> list_;
     RandomPool random_;                 // for session cleaning
     Mutex      mutex_;                  // no-op for single threaded
 
@@ -296,7 +299,7 @@ struct ThreadError {
 
 // holds all errors
 class Errors {
-    mySTL::list<ThreadError> list_;
+    STL::list<ThreadError> list_;
     Mutex                    mutex_;
 
     Errors() {}                         // only GetErrors can create
@@ -408,7 +411,7 @@ private:
 // the SSL context
 class SSL_CTX {
 public:
-    typedef mySTL::list<x509*> CertList;
+    typedef STL::list<x509*> CertList;
 private:
     SSL_METHOD* method_;
     x509*       certificate_;
@@ -508,8 +511,8 @@ private:
 // holds input and output buffers
 class Buffers {
 public: 
-    typedef mySTL::list<input_buffer*>  inputList;
-    typedef mySTL::list<output_buffer*> outputList;
+    typedef STL::list<input_buffer*>  inputList;
+    typedef STL::list<output_buffer*> outputList;
 private:
     inputList     dataList_;             // list of users app data / handshake
     outputList    handShakeList_;        // buffered handshake msgs

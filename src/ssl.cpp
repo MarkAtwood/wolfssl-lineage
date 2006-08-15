@@ -41,6 +41,7 @@
 #include "yassl_int.hpp"
 #include "md5.hpp"              // for TaoCrypt MD5 size assert
 #include "md4.hpp"              // for TaoCrypt MD4 size assert
+#include "helpers.hpp"          // for placement new hack
 #include <stdio.h>
 
 #ifdef _WIN32
@@ -54,7 +55,6 @@
 
 namespace yaSSL {
 
-using mySTL::min;
 
 
 int read_file(SSL_CTX* ctx, const char* file, int format, CertType type)
@@ -828,9 +828,8 @@ void DH_free(DH* dh)
 // be created
 BIGNUM* BN_bin2bn(const unsigned char* num, int sz, BIGNUM* retVal)
 {
-    using mySTL::auto_ptr;
     bool created = false;
-    auto_ptr<BIGNUM> bn(ysDelete);
+    mySTL::auto_ptr<BIGNUM> bn;
 
     if (!retVal) {
         created = true;
