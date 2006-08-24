@@ -44,7 +44,7 @@
     #include <fcntl.h>
 #endif // _WIN32
 
-#if defined(__sun) || defined(__SCO_VERSION__)
+#if defined(__sun) || defined(__SCO_VERSION__) || defined(__NETWARE__)
     #include <sys/filio.h>
 #endif
 
