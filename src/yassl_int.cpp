@@ -1690,7 +1690,8 @@ bool SSL_METHOD::failNoCert() const
 
 
 SSL_CTX::SSL_CTX(SSL_METHOD* meth) 
-    : method_(meth), certificate_(0), privateKey_(0)
+    : method_(meth), certificate_(0), privateKey_(0), passwordCb_(0),
+      userData_(0)
 {}
 
 
@@ -1750,6 +1751,30 @@ const DH_Parms& SSL_CTX::GetDH_Parms() const
 const Stats& SSL_CTX::GetStats() const
 {
     return stats_;
+}
+
+
+pem_password_cb SSL_CTX::GetPasswordCb() const
+{
+    return passwordCb_;
+}
+
+
+void SSL_CTX::SetPasswordCb(pem_password_cb cb)
+{
+    passwordCb_ = cb;
+}
+
+
+void* SSL_CTX::GetUserData() const
+{
+    return userData_;
+}
+
+
+void SSL_CTX::SetUserData(void* data)
+{
+    userData_ = data;
 }
 
 

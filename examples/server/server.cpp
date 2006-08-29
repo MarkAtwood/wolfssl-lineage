@@ -38,7 +38,7 @@ THREAD_RETURN YASSL_API server_test(void* args)
    
     if (SSL_accept(ssl) != SSL_SUCCESS) err_sys("SSL_accept failed");
     showPeer(ssl);
-    printf("Using Cipher Suite %s\n", SSL_get_cipher(ssl));
+    printf("Using Cipher Suite: %s\n", SSL_get_cipher(ssl));
 
     char command[1024];
     command[SSL_read(ssl, command, sizeof(command))] = 0;

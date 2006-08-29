@@ -908,7 +908,7 @@ void DiffieHellman::get_parms(byte* bp, byte* bg, byte* bpub) const
 
 
 // convert PEM file to DER x509 type
-x509* PemToDer(FILE* file, CertType type)
+x509* PemToDer(FILE* file, CertType type, EncryptedInfo* info)
 {
     using namespace TaoCrypt;
 
@@ -934,6 +934,37 @@ x509* PemToDer(FILE* file, CertType type)
             begin = ftell(file);
             break;
         }
+
+    // remove encrypted header if there
+    if (fgets(line, sizeof(line), file)) {
+        char encHeader[] = "Proc-Type";
+        if (strncmp(encHeader, line, strlen(encHeader)) == 0 &&
+            fgets(line,sizeof(line), file)) {
+
+            char* start  = strstr(line, "DES");
+            char* finish = strstr(line, ",");
+            if (!start)
+                start    = strstr(line, "AES");
+
+            if (!info) return 0;
+
+            if ( start && finish && (start < finish)) {
+                memcpy(info->name, start, finish - start);
+                info->name[finish - start] = 0;
+                memcpy(info->iv, finish + 1, sizeof(info->iv));
+
+                char* newline = strstr(line, "\r");
+                if (!newline) newline = strstr(line, "\n");
+                if (newline && (newline > finish)) {
+                    info->ivSz = newline - (finish + 1);
+                    info->set = true;
+                }
+            }
+            fgets(line,sizeof(line), file); // get blank line
+            begin = ftell(file);
+        }
+          
+    }
 
     while(fgets(line, sizeof(line), file))
         if (strncmp(footer, line, strlen(footer)) == 0) {

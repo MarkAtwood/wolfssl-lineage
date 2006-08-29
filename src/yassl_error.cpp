@@ -131,7 +131,7 @@ void SetErrorString(YasslError error, char* buffer)
         break;
 
         // TaoCrypt errors
-    case NO_ERROR :
+    case NO_ERROR_E :
         strncpy(buffer, "not in error state", max);
         break;
 

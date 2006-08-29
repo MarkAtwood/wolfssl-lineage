@@ -413,30 +413,36 @@ class SSL_CTX {
 public:
     typedef STL::list<x509*> CertList;
 private:
-    SSL_METHOD* method_;
-    x509*       certificate_;
-    x509*       privateKey_;
-    CertList    caList_;
-    Ciphers     ciphers_;
-    DH_Parms    dhParms_;
-    Stats       stats_;
-    Mutex       mutex_;         // for Stats
+    SSL_METHOD*     method_;
+    x509*           certificate_;
+    x509*           privateKey_;
+    CertList        caList_;
+    Ciphers         ciphers_;
+    DH_Parms        dhParms_;
+    pem_password_cb passwordCb_;
+    void*           userData_;
+    Stats           stats_;
+    Mutex           mutex_;         // for Stats
 public:
     explicit SSL_CTX(SSL_METHOD* meth);
     ~SSL_CTX();
 
-    const x509*       getCert()     const;
-    const x509*       getKey()      const;
-    const SSL_METHOD* getMethod()   const;
-    const Ciphers&    GetCiphers()  const;
-    const DH_Parms&   GetDH_Parms() const;
-    const Stats&      GetStats()    const;
+    const x509*       getCert()       const;
+    const x509*       getKey()        const;
+    const SSL_METHOD* getMethod()     const;
+    const Ciphers&    GetCiphers()    const;
+    const DH_Parms&   GetDH_Parms()   const;
+    const Stats&      GetStats()      const;
+    pem_password_cb   GetPasswordCb() const;
+          void*       GetUserData()   const;
 
     void setVerifyPeer();
     void setVerifyNone();
     void setFailNoCert();
     bool SetCipherList(const char*);
     bool SetDH(const DH&);
+    void SetPasswordCb(pem_password_cb cb);
+    void SetUserData(void*);
    
     void            IncrementStats(StatsField);
     void            AddCA(x509* ca);

@@ -242,7 +242,7 @@ uint CertManager::get_privateKeyLength() const
 // Validate the peer's certificate list, from root to peer (last to first)
 int CertManager::Validate()
 {
-    CertList::reverse_iterator last = peerList_.rbegin();  // fix this
+    CertList::reverse_iterator last = peerList_.rbegin();
     int count = peerList_.size();
 
     while ( count > 1 ) {

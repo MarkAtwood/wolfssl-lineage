@@ -41,6 +41,8 @@
 #include "yassl_int.hpp"
 #include "md5.hpp"              // for TaoCrypt MD5 size assert
 #include "md4.hpp"              // for TaoCrypt MD4 size assert
+#include "file.hpp"             // for TaoCrypt Source
+#include "coding.hpp"           // HexDecoder
 #include "helpers.hpp"          // for placement new hack
 #include <stdio.h>
 
@@ -92,10 +94,54 @@ int read_file(SSL_CTX* ctx, const char* file, int format, CertType type)
             }
         }
         else {
-            x = PemToDer(input, type);
+            EncryptedInfo info;
+            x = PemToDer(input, type, &info);
             if (!x) {
                 fclose(input);
                 return SSL_BAD_FILE;
+            }
+            if (info.set) {
+                // decrypt
+                char password[80];
+                pem_password_cb cb = ctx->GetPasswordCb();
+                if (!cb) {
+                    fclose(input);
+                    return SSL_BAD_FILE;
+                }
+                int passwordSz = cb(password, sizeof(password), 0,
+                                    ctx->GetUserData());
+                byte key[AES_256_KEY_SZ];  // max sizes
+                byte iv[AES_IV_SZ];
+                
+                // use file's salt for key derivation, but not real iv
+                TaoCrypt::Source source(info.iv, info.ivSz);
+                TaoCrypt::HexDecoder dec(source);
+                memcpy(info.iv, source.get_buffer(), min((uint)sizeof(info.iv),
+                                                         source.size()));
+                EVP_BytesToKey(info.name, "MD5", info.iv, (byte*)password,
+                               passwordSz, 1, key, iv);
+
+                STL::auto_ptr<BulkCipher> cipher;
+                if (strncmp(info.name, "DES-CBC", 7) == 0)
+                    cipher.reset(NEW_YS DES);
+                else if (strncmp(info.name, "DES-EDE3-CBC", 13) == 0)
+                    cipher.reset(NEW_YS DES_EDE);
+                else if (strncmp(info.name, "AES-128-CBC", 13) == 0)
+                    cipher.reset(NEW_YS AES(AES_128_KEY_SZ));
+                else if (strncmp(info.name, "AES-192-CBC", 13) == 0)
+                    cipher.reset(NEW_YS AES(AES_192_KEY_SZ));
+                else if (strncmp(info.name, "AES-256-CBC", 13) == 0)
+                    cipher.reset(NEW_YS AES(AES_256_KEY_SZ));
+                else {
+                    fclose(input);
+                    return SSL_BAD_FILE;
+                }
+                cipher->set_decryptKey(key, info.iv);
+                STL::auto_ptr<x509> newx(NEW_YS x509(x->get_length()));   
+                cipher->decrypt(newx->use_buffer(), x->get_buffer(),
+                                x->get_length());
+                ysDelete(x);
+                x = newx.release();
             }
         }
     }
@@ -890,7 +936,7 @@ const EVP_MD* EVP_md5(void)
 
 const EVP_CIPHER* EVP_des_ede3_cbc(void)
 {
-    static const char* type = "DES_EDE3_CBC";
+    static const char* type = "DES-EDE3-CBC";
     return type;
 }
 
@@ -901,16 +947,37 @@ int EVP_BytesToKey(const EVP_CIPHER* type, const EVP_MD* md, const byte* salt,
     // only support MD5 for now
     if (strncmp(md, "MD5", 3)) return 0;
 
-    // only support DES_EDE3_CBC for now
-    if (strncmp(type, "DES_EDE3_CBC", 12)) return 0; 
+    int keyLen = 0;
+    int ivLen  = 0;
+
+    // only support CBC DES and AES for now
+    if (strncmp(type, "DES-CBC", 7) == 0) {
+        keyLen = DES_KEY_SZ;
+        ivLen  = DES_IV_SZ;
+    }
+    else if (strncmp(type, "DES-EDE3-CBC", 12) == 0) {
+        keyLen = DES_EDE_KEY_SZ;
+        ivLen  = DES_IV_SZ;
+    }
+    else if (strncmp(type, "AES-128-CBC", 11) == 0) {
+        keyLen = AES_128_KEY_SZ;
+        ivLen  = AES_IV_SZ;
+    }
+    else if (strncmp(type, "AES-192-CBC", 11) == 0) {
+        keyLen = AES_192_KEY_SZ;
+        ivLen  = AES_IV_SZ;
+    }
+    else if (strncmp(type, "AES-256-CBC", 11) == 0) {
+        keyLen = AES_256_KEY_SZ;
+        ivLen  = AES_IV_SZ;
+    }
+    else
+        return 0;
 
     yaSSL::MD5 myMD;
     uint digestSz = myMD.get_digestSize();
     byte digest[SHA_LEN];                   // max size
 
-    yaSSL::DES_EDE cipher;
-    int keyLen    = cipher.get_keySize();
-    int ivLen     = cipher.get_ivSize();
     int keyLeft   = keyLen;
     int ivLeft    = ivLen;
     int keyOutput = 0;
@@ -943,7 +1010,7 @@ int EVP_BytesToKey(const EVP_CIPHER* type, const EVP_MD* md, const byte* salt,
 
         if (ivLeft && digestLeft) {
             int store = min(ivLeft, digestLeft);
-            memcpy(&iv[ivLen - ivLeft], digest, store);
+            memcpy(&iv[ivLen - ivLeft], &digest[digestSz - digestLeft], store);
 
             keyOutput += store;
             ivLeft    -= store;
@@ -1019,10 +1086,9 @@ void DES_ecb_encrypt(DES_cblock* input, DES_cblock* output,
 }
 
 
-void SSL_CTX_set_default_passwd_cb_userdata(SSL_CTX*, void* userdata)
+void SSL_CTX_set_default_passwd_cb_userdata(SSL_CTX* ctx, void* userdata)
 {
-    // yaSSL doesn't support yet, unencrypt your PEM file with userdata
-    // before handing off to yaSSL
+    ctx->SetUserData(userdata);
 }
 
 
@@ -1428,9 +1494,9 @@ int SSL_pending(SSL* ssl)
     }
 
 
-    void SSL_CTX_set_default_passwd_cb(SSL_CTX*, pem_password_cb)
+    void SSL_CTX_set_default_passwd_cb(SSL_CTX* ctx, pem_password_cb cb)
     {
-        // TDOD:
+        ctx->SetPasswordCb(cb);
     }
 
 

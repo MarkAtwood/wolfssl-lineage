@@ -148,6 +148,13 @@ inline void err_sys(const char* msg)
 }
 
 
+static int PasswordCallBack(char* passwd, int sz, int rw, void* userdata)
+{
+    strncpy(passwd, "12345678", sz);
+    return 8;
+}
+
+
 inline void store_ca(SSL_CTX* ctx)
 {
     // To allow testing from serveral dirs
@@ -193,6 +200,7 @@ inline void set_certs(SSL_CTX* ctx)
 inline void set_serverCerts(SSL_CTX* ctx)
 {
     store_ca(ctx);
+    SSL_CTX_set_default_passwd_cb(ctx, PasswordCallBack);
 
     // To allow testing from serveral dirs
     if (SSL_CTX_use_certificate_file(ctx, svrCert, SSL_FILETYPE_PEM)

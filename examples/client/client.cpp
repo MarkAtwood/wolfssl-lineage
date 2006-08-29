@@ -39,7 +39,7 @@ void client_test(void* args)
         strncat(list, cipher, strlen(cipher) + 1);
     }
     printf("%s\n", list);
-    printf("Using Cipher Suite %s\n", SSL_get_cipher(ssl));
+    printf("Using Cipher Suite: %s\n", SSL_get_cipher(ssl));
 
     char msg[] = "hello yassl!";
     if (SSL_write(ssl, msg, sizeof(msg)) != sizeof(msg))

@@ -198,6 +198,7 @@ const int DES_BLOCK         =   8;  // DES is always fixed block size 8
 const int DES_IV_SZ         = DES_BLOCK;    // Init Vector length for DES
 const int RC4_KEY_SZ        =  16;  // RC4 Key length
 const int AES_128_KEY_SZ    =  16;  // AES 128bit Key length
+const int AES_192_KEY_SZ    =  24;  // AES 192bit Key length
 const int AES_256_KEY_SZ    =  32;  // AES 256bit Key length
 const int AES_BLOCK_SZ      =  16;  // AES 128bit block size, rfc 3268
 const int AES_IV_SZ         = AES_BLOCK_SZ; // AES Init Vector length

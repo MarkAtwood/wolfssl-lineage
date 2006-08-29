@@ -1,4 +1,4 @@
-/* mySTL memory.hpp                                
+/* mySTL memory_array.hpp                                
  *
  * Copyright (C) 2003 Sawtooth Consulting Ltd.
  *

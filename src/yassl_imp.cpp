@@ -151,9 +151,11 @@ void DH_Server::build(SSL& ssl)
         sigSz += DSS_ENCODED_EXTRA;
     }
     
-
     sigSz += auth->get_signatureLength();
-
+    if (!sigSz) {
+        ssl.SetError(YasslError(privateKey_error));
+        return;
+    }
 
     length_ = 8; // pLen + gLen + YsLen + SigLen
     length_ += pSz + gSz + pubSz + sigSz;
