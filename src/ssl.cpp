@@ -185,8 +185,17 @@ SSL_METHOD* TLSv1_client_method()
 
 SSL_METHOD* SSLv23_server_method()
 {
-    // compatibility only, no version 2 support
-    return SSLv3_server_method();
+    // compatibility only, no version 2 support, but does SSL 3 and TLS 1
+    return NEW_YS SSL_METHOD(server_end, ProtocolVersion(3,1), true);
+}
+
+
+SSL_METHOD* SSLv23_client_method()
+{
+    // compatibility only, no version 2 support, but does SSL 3 and TLS 1
+    // though it sends TLS1 hello not SSLv2 so SSLv3 only servers will decline
+    // TODO: maybe add support to send SSLv2 hello ???
+    return NEW_YS SSL_METHOD(client_end, ProtocolVersion(3,1), true);
 }
 
 
@@ -1162,12 +1171,6 @@ ASN1_TIME* X509_get_notAfter(X509* x)
 {
     if (x) return x->GetAfter();
     return 0;
-}
-
-
-SSL_METHOD* SSLv23_client_method(void)  /* doesn't actually roll back */
-{
-    return SSLv3_client_method();
 }
 
 

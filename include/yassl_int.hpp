@@ -329,8 +329,10 @@ class SSL_METHOD {
     bool            verifyPeer_;    // request or send certificate
     bool            verifyNone_;    // whether to verify certificate
     bool            failNoCert_;
+    bool            multipleProtocol_;  // for SSLv23 compatibility
 public:
-    explicit SSL_METHOD(ConnectionEnd ce, ProtocolVersion pv);
+    SSL_METHOD(ConnectionEnd ce, ProtocolVersion pv,
+               bool multipleProtocol = false);
 
     ProtocolVersion getVersion() const;
     ConnectionEnd   getSide()    const;
@@ -342,6 +344,7 @@ public:
     bool verifyPeer() const;
     bool verifyNone() const;
     bool failNoCert() const;
+    bool multipleProtocol() const;
 private:
     SSL_METHOD(const SSL_METHOD&);              // hide copy
     SSL_METHOD& operator=(const SSL_METHOD&);   // and assign
@@ -589,6 +592,7 @@ public:
     const sslFactory& getFactory()  const;
     const Socket&     getSocket()   const;
           YasslError  GetError()    const;
+          bool        GetMultiProtocol() const;
 
     Crypto&    useCrypto();
     Security&  useSecurity();

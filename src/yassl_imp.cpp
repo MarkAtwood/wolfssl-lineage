@@ -153,7 +153,7 @@ void DH_Server::build(SSL& ssl)
     
     sigSz += auth->get_signatureLength();
     if (!sigSz) {
-        ssl.SetError(YasslError(privateKey_error));
+        ssl.SetError(privateKey_error);
         return;
     }
 
@@ -1216,6 +1216,20 @@ output_buffer& operator<<(output_buffer& output, const ServerHello& hello)
 // Server Hello processing handler
 void ServerHello::Process(input_buffer&, SSL& ssl)
 {
+    if (ssl.GetMultiProtocol()) {   // SSLv23 support
+        if (ssl.isTLS() && server_version_.minor_ < 1)
+            // downgrade to SSLv3
+            ssl.useSecurity().use_connection().TurnOffTLS();
+    }
+    else if (ssl.isTLS() && server_version_.minor_ < 1) {
+        ssl.SetError(badVersion_error);
+        return;
+    }
+    else if (!ssl.isTLS() && (server_version_.major_ == 3 &&
+                              server_version_.minor_ >= 1)) {
+        ssl.SetError(badVersion_error);
+        return;
+    }
     ssl.set_pending(cipher_suite_[1]);
     ssl.set_random(random_, server_end);
     if (id_len_)
@@ -1386,10 +1400,22 @@ output_buffer& operator<<(output_buffer& output, const ClientHello& hello)
 // Client Hello processing handler
 void ClientHello::Process(input_buffer&, SSL& ssl)
 {
-    if (ssl.isTLS() && client_version_.minor_ == 0) {
-        ssl.useSecurity().use_connection().TurnOffTLS();
-        ProtocolVersion pv = ssl.getSecurity().get_connection().version_;
-        ssl.useSecurity().use_parms().SetSuites(pv);  // reset w/ SSL suites
+    if (ssl.GetMultiProtocol()) {   // SSLv23 support
+        if (ssl.isTLS() && client_version_.minor_ < 1) {
+            // downgrade to SSLv3
+            ssl.useSecurity().use_connection().TurnOffTLS();
+            ProtocolVersion pv = ssl.getSecurity().get_connection().version_;
+            ssl.useSecurity().use_parms().SetSuites(pv);  // reset w/ SSL suites
+        }
+    }
+    else if (ssl.isTLS() && client_version_.minor_ < 1) {
+        ssl.SetError(badVersion_error);
+        return;
+    }
+    else if (!ssl.isTLS() && (client_version_.major_ == 3 &&
+                              client_version_.minor_ >= 1)) {
+        ssl.SetError(badVersion_error);
+        return;
     }
     ssl.set_random(random_, client_end);
 

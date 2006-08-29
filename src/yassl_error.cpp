@@ -124,6 +124,14 @@ void SetErrorString(YasslError error, char* buffer)
     case certificate_error :
         strncpy(buffer, "unable to proccess cerificate", max);
         break;
+
+    case privateKey_error :
+        strncpy(buffer, "unable to proccess private key, bad format", max);
+        break;
+
+    case badVersion_error :
+        strncpy(buffer, "protocl version mismatch", max);
+        break;
         
         // openssl errors
     case SSL_ERROR_WANT_READ :

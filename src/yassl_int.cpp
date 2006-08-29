@@ -1296,6 +1296,12 @@ YasslError SSL::GetError() const
 }
 
 
+bool SSL::GetMultiProtocol() const
+{
+    return secure_.GetContext()->getMethod()->multipleProtocol();
+}
+
+
 Crypto& SSL::useCrypto()
 {
     return crypto_;
@@ -1635,9 +1641,9 @@ void Errors::Add(int error)
 }
 
 
-SSL_METHOD::SSL_METHOD(ConnectionEnd ce, ProtocolVersion pv) 
+SSL_METHOD::SSL_METHOD(ConnectionEnd ce, ProtocolVersion pv, bool multiProto) 
     : version_(pv), side_(ce), verifyPeer_(false), verifyNone_(false),
-      failNoCert_(false) 
+      failNoCert_(false), multipleProtocol_(multiProto)
 {}
 
 
@@ -1686,6 +1692,12 @@ bool SSL_METHOD::verifyNone() const
 bool SSL_METHOD::failNoCert() const
 {
     return failNoCert_;
+}
+
+
+bool SSL_METHOD::multipleProtocol() const
+{
+    return multipleProtocol_;
 }
 
 
