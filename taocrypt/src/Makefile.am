@@ -1,4 +1,4 @@
-INCLUDES = -I../include -I../../mySTL
+INCLUDES = -I../include -I../mySTL
 
 lib_LIBRARIES = libtaocrypt.a
 libtaocrypt_a_SOURCES  = aes.cpp aestables.cpp algebra.cpp arc4.cpp asn.cpp \

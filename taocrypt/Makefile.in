@@ -131,7 +131,7 @@ target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@
 SUBDIRS = src test benchmark
-EXTRA_DIST = taocrypt.dsw taocrypt.dsp test.dsw test.dsp
+EXTRA_DIST = taocrypt.dsw taocrypt.dsp certs/*.der certs/*.dat mySTL/*.hpp
 subdir = taocrypt
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -144,7 +144,9 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive pdf-recursive \
 	all-recursive install-data-recursive install-exec-recursive \
 	installdirs-recursive install-recursive uninstall-recursive \
 	check-recursive installcheck-recursive
-DIST_COMMON = $(srcdir)/Makefile.in Makefile.am
+DIST_COMMON = README $(srcdir)/Makefile.in AUTHORS COPYING ChangeLog \
+	INSTALL Makefile.am NEWS config.guess config.sub configure \
+	configure.in depcomp install-sh missing mkinstalldirs
 DIST_SUBDIRS = $(SUBDIRS)
 all: all-recursive
 
@@ -285,6 +287,7 @@ top_distdir = ..
 distdir = $(top_distdir)/$(PACKAGE)-$(VERSION)
 
 distdir: $(DISTFILES)
+	$(mkinstalldirs) $(distdir)/certs $(distdir)/mySTL
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \

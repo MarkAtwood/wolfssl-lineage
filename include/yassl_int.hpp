@@ -300,7 +300,7 @@ struct ThreadError {
 // holds all errors
 class Errors {
     STL::list<ThreadError> list_;
-    Mutex                    mutex_;
+    Mutex                  mutex_;
 
     Errors() {}                         // only GetErrors can create
 public:

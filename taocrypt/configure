@@ -308,7 +308,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO AMTAR install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM AWK SET_MAKE am__leading_dot CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE RANLIB ac_ct_RANLIB CC CFLAGS ac_ct_CC CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CPP EGREP EXTRA_SOCKET EXTRA_PTHREAD PTHREAD_CFLAGS PTHREAD_LDFLAGS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO AMTAR install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM AWK SET_MAKE am__leading_dot CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE RANLIB ac_ct_RANLIB CC CFLAGS ac_ct_CC CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CPP EGREP LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -859,7 +859,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-dependency-tracking Speeds up one-time builds
   --enable-dependency-tracking  Do not reject slow dependency extractors
-  --enable-debug          Enable yaSSL debugging support (default: enabled)
+  --enable-debug          Enable TaoCrypt debugging support (default: enabled)
   --enable-kernel-mode    Enable TaoCrypt for Kernel Module (default: disabled)
   --enable-pure-c         Enable a Pure C build, see docs (default: disabled)
   --enable-ia32-asm       Enable TaoCrypt ia32 assembly (default: enabled)
@@ -1669,8 +1669,8 @@ fi
 
 
 # Define the identity of the package.
- PACKAGE=yassl
- VERSION=1.4.2
+ PACKAGE=taocrypt
+ VERSION=0.9.0
 
 
 cat >>confdefs.h <<_ACEOF
@@ -1795,8 +1795,8 @@ INSTALL_STRIP_PROGRAM="\${SHELL} \$(install_sh) -c -s"
 # some platforms.
 
 
- # !!! also change in ssl.h !!!
-          ac_config_headers="$ac_config_headers taocrypt/include/config.h"
+
+          ac_config_headers="$ac_config_headers include/config.h"
 
 
 # make sure configure doesn't add to CXXFLAGS
@@ -5067,8 +5067,8 @@ _ACEOF
 
 if test "$ac_cv_sizeof_long_long" -eq 0
 then
-  { { echo "$as_me:$LINENO: error: \"yaSSL needs a long long type.\"" >&5
-echo "$as_me: error: \"yaSSL needs a long long type.\"" >&2;}
+  { { echo "$as_me:$LINENO: error: \"TaoCrypt needs a long long type.\"" >&5
+echo "$as_me: error: \"TaoCrypt needs a long long type.\"" >&2;}
    { (exit 1); exit 1; }; }
 fi
 
@@ -5152,43 +5152,8 @@ fi
 
 
 
-if expr "$target_os" : "solaris" > /dev/null
-then
-    EXTRA_SOCKET="-lnsl -lsocket"
-else
-    EXTRA_SOCKET=""
-fi
 
-
-
-if expr "$target_os" : ".*bsd.*" > /dev/null
-then
-    if expr "$target_os" : "netbsd.*" > /dev/null
-    then
-        EXTRA_PTHREAD="-lpthread"
-    else
-        EXTRA_PTHREAD="-pthread"
-    fi
-else
-    EXTRA_PTHREAD="-lpthread"
-fi
-
-
-
-if expr "$target_os" : "netbsd.*" > /dev/null
-then
-    PTHREAD_CFLAGS=`pthread-config --cflags`
-    PTHREAD_LDFLAGS=`pthread-config --ldflags`
-else
-    PTHREAD_CFLAGS=""
-    PTHREAD_LDFLAGS=""
-fi
-
-
-
-
-
-                                                                                                                        ac_config_files="$ac_config_files Makefile taocrypt/Makefile taocrypt/src/Makefile src/Makefile taocrypt/test/Makefile taocrypt/benchmark/Makefile examples/Makefile examples/client/Makefile examples/server/Makefile examples/echoclient/Makefile examples/echoserver/Makefile testsuite/Makefile"
+                                        ac_config_files="$ac_config_files Makefile src/Makefile test/Makefile benchmark/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -5749,19 +5714,11 @@ do
   case "$ac_config_target" in
   # Handling of arguments.
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
-  "taocrypt/Makefile" ) CONFIG_FILES="$CONFIG_FILES taocrypt/Makefile" ;;
-  "taocrypt/src/Makefile" ) CONFIG_FILES="$CONFIG_FILES taocrypt/src/Makefile" ;;
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
-  "taocrypt/test/Makefile" ) CONFIG_FILES="$CONFIG_FILES taocrypt/test/Makefile" ;;
-  "taocrypt/benchmark/Makefile" ) CONFIG_FILES="$CONFIG_FILES taocrypt/benchmark/Makefile" ;;
-  "examples/Makefile" ) CONFIG_FILES="$CONFIG_FILES examples/Makefile" ;;
-  "examples/client/Makefile" ) CONFIG_FILES="$CONFIG_FILES examples/client/Makefile" ;;
-  "examples/server/Makefile" ) CONFIG_FILES="$CONFIG_FILES examples/server/Makefile" ;;
-  "examples/echoclient/Makefile" ) CONFIG_FILES="$CONFIG_FILES examples/echoclient/Makefile" ;;
-  "examples/echoserver/Makefile" ) CONFIG_FILES="$CONFIG_FILES examples/echoserver/Makefile" ;;
-  "testsuite/Makefile" ) CONFIG_FILES="$CONFIG_FILES testsuite/Makefile" ;;
+  "test/Makefile" ) CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
+  "benchmark/Makefile" ) CONFIG_FILES="$CONFIG_FILES benchmark/Makefile" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
-  "taocrypt/include/config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS taocrypt/include/config.h" ;;
+  "include/config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS include/config.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
    { (exit 1); exit 1; }; };;
@@ -5904,10 +5861,6 @@ s,@am__fastdepCC_TRUE@,$am__fastdepCC_TRUE,;t t
 s,@am__fastdepCC_FALSE@,$am__fastdepCC_FALSE,;t t
 s,@CPP@,$CPP,;t t
 s,@EGREP@,$EGREP,;t t
-s,@EXTRA_SOCKET@,$EXTRA_SOCKET,;t t
-s,@EXTRA_PTHREAD@,$EXTRA_PTHREAD,;t t
-s,@PTHREAD_CFLAGS@,$PTHREAD_CFLAGS,;t t
-s,@PTHREAD_LDFLAGS@,$PTHREAD_LDFLAGS,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF

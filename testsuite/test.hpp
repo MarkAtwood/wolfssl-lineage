@@ -175,6 +175,7 @@ inline void store_ca(SSL_CTX* ctx)
 inline void set_certs(SSL_CTX* ctx)
 {
     store_ca(ctx);
+    SSL_CTX_set_default_passwd_cb(ctx, PasswordCallBack);
 
     // To allow testing from serveral dirs
     if (SSL_CTX_use_certificate_file(ctx, cert, SSL_FILETYPE_PEM)
