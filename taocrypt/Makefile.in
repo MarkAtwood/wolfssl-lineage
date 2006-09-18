@@ -146,7 +146,7 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive pdf-recursive \
 	check-recursive installcheck-recursive
 DIST_COMMON = README $(srcdir)/Makefile.in AUTHORS COPYING ChangeLog \
 	INSTALL Makefile.am NEWS config.guess config.sub configure \
-	configure.in depcomp install-sh missing mkinstalldirs
+	configure.in depcomp
 DIST_SUBDIRS = $(SUBDIRS)
 all: all-recursive
 
