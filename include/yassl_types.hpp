@@ -62,20 +62,20 @@ namespace yaSSL {
     template<typename T>
     void ysDelete(T* ptr)
     {
-        if (ptr) ptr->~T();
-        ::operator delete(ptr, yaSSL::ys);
+    if (ptr) ptr->~T();
+    ::operator delete(ptr, yaSSL::ys);
     }
 
     template<typename T>
     void ysArrayDelete(T* ptr)
     {
-        // can't do array placement destruction since not tracking size in
-        // allocation, only allow builtins to use array placement since they
-        // don't need destructors called
-        typedef char builtin[TaoCrypt::IsFundamentalType<T>::Yes ? 1 : -1];
-        (void)sizeof(builtin);
+    // can't do array placement destruction since not tracking size in
+    // allocation, only allow builtins to use array placement since they
+    // don't need destructors called
+    typedef char builtin[TaoCrypt::IsFundamentalType<T>::Yes ? 1 : -1];
+    (void)sizeof(builtin);
 
-        ::operator delete[](ptr, yaSSL::ys);
+    ::operator delete[](ptr, yaSSL::ys);
     }
 
     #define NEW_YS new (yaSSL::ys)
@@ -84,11 +84,12 @@ namespace yaSSL {
     // virtual destructors (when on stack), make sure doesn't get called
     class virtual_base {
     public:
-        static void operator delete(void*) { assert(0); }
+    static void operator delete(void*) { assert(0); }
     };
 
 
 #else   // YASSL_PURE_C
+
 
     template<typename T>
     void ysDelete(T* ptr)
@@ -122,7 +123,7 @@ typedef opaque byte;
 
 typedef unsigned int uint;
 
-
+ 
 #ifdef USE_SYS_STL
     // use system STL
     #define STL_VECTOR_FILE    <vector>

@@ -29,42 +29,32 @@
 #include "runtime.hpp"
 #include "misc.hpp"
 
-#if !defined(YASSL_MYSQL_COMPATIBLE)
-extern "C" {
-
-    // for libcurl configure test, these are the signatures they use
-    // locking handled internally by library
-    char CRYPTO_lock() { return 0;}
-    char CRYPTO_add_lock() { return 0;}
-}  // extern "C"
-#endif
-
 #ifdef YASSL_PURE_C
 
     void* operator new(size_t sz, TaoCrypt::new_t)
     {
-        void* ptr = malloc(sz ? sz : 1);
-        if (!ptr) abort();
+    void* ptr = malloc(sz ? sz : 1);
+    if (!ptr) abort();
 
-        return ptr;
+    return ptr;
     }
 
 
     void operator delete(void* ptr, TaoCrypt::new_t)
     {
-        if (ptr) free(ptr);
+    if (ptr) free(ptr);
     }
 
 
     void* operator new[](size_t sz, TaoCrypt::new_t nt)
     {
-        return ::operator new(sz, nt);
+    return ::operator new(sz, nt);
     }
 
 
     void operator delete[](void* ptr, TaoCrypt::new_t nt)
     {
-        ::operator delete(ptr, nt);
+    ::operator delete(ptr, nt);
     }
 
 

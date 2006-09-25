@@ -31,7 +31,7 @@ THREAD_RETURN YASSL_API server_test(void* args)
 
     SSL* ssl = SSL_new(ctx);
     SSL_set_fd(ssl, clientfd);
-
+   
     if (SSL_accept(ssl) != SSL_SUCCESS)
     {
         SSL_CTX_free(ctx);
@@ -55,7 +55,7 @@ THREAD_RETURN YASSL_API server_test(void* args)
         SSL_free(ssl);
         tcp_close(sockfd);
         tcp_close(clientfd);
-        err_sys("SSL_write failed");
+        err_sys("SSL_write failed"); 
     }
 
     DH_free(dh);

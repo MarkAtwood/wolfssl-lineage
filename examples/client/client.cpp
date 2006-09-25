@@ -73,7 +73,7 @@ void client_test(void* args)
     tcp_connect(sockfd);
     SSL_set_fd(sslResume, sockfd);
     SSL_set_session(sslResume, session);
-
+    
     if (SSL_connect(sslResume) != SSL_SUCCESS)
     {
         SSL_CTX_free(ctx);
@@ -82,13 +82,13 @@ void client_test(void* args)
         err_sys("SSL resume failed");
     }
     showPeer(sslResume);
-
+  
     if (SSL_write(sslResume, msg, sizeof(msg)) != sizeof(msg))
     {
       SSL_CTX_free(ctx);
       SSL_free(ssl);
       tcp_close(sockfd);
-      err_sys("SSL_write failed");
+        err_sys("SSL_write failed");
     }
 
     reply[SSL_read(sslResume, reply, sizeof(reply))] = 0;

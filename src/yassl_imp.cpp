@@ -124,7 +124,7 @@ void ClientDiffieHellmanPublic::build(SSL& ssl)
     if (*dhClient.get_agreedKey() == 0) 
         ssl.set_preMaster(dhClient.get_agreedKey() + 1, keyLength - 1);
     else
-        ssl.set_preMaster(dhClient.get_agreedKey(), keyLength);
+    ssl.set_preMaster(dhClient.get_agreedKey(), keyLength);
 }
 
 
@@ -457,19 +457,19 @@ void Parameters::SetSuites(ProtocolVersion pv, bool removeDH)
 
     if (isTLS(pv)) {
         if (!removeDH) {
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_RSA_WITH_AES_256_CBC_SHA;
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_DSS_WITH_AES_256_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_RSA_WITH_AES_256_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_AES_256_CBC_SHA;
         }
         suites_[i++] = 0x00;
         suites_[i++] = TLS_RSA_WITH_AES_256_CBC_SHA;
 
         if (!removeDH) {
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_RSA_WITH_AES_128_CBC_SHA;
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_DSS_WITH_AES_128_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_RSA_WITH_AES_128_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_AES_128_CBC_SHA;
         }
         suites_[i++] = 0x00;
         suites_[i++] = TLS_RSA_WITH_AES_128_CBC_SHA;
@@ -482,20 +482,20 @@ void Parameters::SetSuites(ProtocolVersion pv, bool removeDH)
         suites_[i++] = TLS_RSA_WITH_3DES_EDE_CBC_RMD160;
 
         if (!removeDH) {
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_RSA_WITH_AES_256_CBC_RMD160;
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_RSA_WITH_AES_128_CBC_RMD160;
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_RSA_WITH_3DES_EDE_CBC_RMD160;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_RSA_WITH_AES_256_CBC_RMD160;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_RSA_WITH_AES_128_CBC_RMD160;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_RSA_WITH_3DES_EDE_CBC_RMD160;
 
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_DSS_WITH_AES_256_CBC_RMD160;
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_DSS_WITH_AES_128_CBC_RMD160;
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_DSS_WITH_3DES_EDE_CBC_RMD160;
-        }
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_AES_256_CBC_RMD160;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_AES_128_CBC_RMD160;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_3DES_EDE_CBC_RMD160;
+    }
     }
 
     suites_[i++] = 0x00;
@@ -509,15 +509,15 @@ void Parameters::SetSuites(ProtocolVersion pv, bool removeDH)
     suites_[i++] = SSL_RSA_WITH_DES_CBC_SHA;
 
     if (!removeDH) {
-        suites_[i++] = 0x00;
-        suites_[i++] = SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA;  
-        suites_[i++] = 0x00;
-        suites_[i++] = SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA; 
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA;  
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA; 
 
-        suites_[i++] = 0x00;
-        suites_[i++] = SSL_DHE_RSA_WITH_DES_CBC_SHA;  
-        suites_[i++] = 0x00;
-        suites_[i++] = SSL_DHE_DSS_WITH_DES_CBC_SHA;
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_DHE_RSA_WITH_DES_CBC_SHA;  
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_DHE_DSS_WITH_DES_CBC_SHA;
     }
 
     suites_size_ = i;
@@ -1233,7 +1233,7 @@ void ServerHello::Process(input_buffer&, SSL& ssl)
     ssl.set_pending(cipher_suite_[1]);
     ssl.set_random(random_, server_end);
     if (id_len_)
-        ssl.set_sessionID(session_id_);
+    ssl.set_sessionID(session_id_);
     else
         ssl.useSecurity().use_connection().sessionID_Set_ = false;
 
@@ -1362,7 +1362,7 @@ input_buffer& operator>>(input_buffer& input, ClientHello& hello)
     // Compression
     hello.comp_len_ = input[AUTO];
     while (hello.comp_len_--)  // ignore for now
-        hello.compression_methods_ = CompressionMethod(input[AUTO]);
+    hello.compression_methods_ = CompressionMethod(input[AUTO]);
 
     return input;
 }
@@ -1403,10 +1403,10 @@ void ClientHello::Process(input_buffer&, SSL& ssl)
     if (ssl.GetMultiProtocol()) {   // SSLv23 support
         if (ssl.isTLS() && client_version_.minor_ < 1) {
             // downgrade to SSLv3
-            ssl.useSecurity().use_connection().TurnOffTLS();
-            ProtocolVersion pv = ssl.getSecurity().get_connection().version_;
-            ssl.useSecurity().use_parms().SetSuites(pv);  // reset w/ SSL suites
-        }
+        ssl.useSecurity().use_connection().TurnOffTLS();
+        ProtocolVersion pv = ssl.getSecurity().get_connection().version_;
+        ssl.useSecurity().use_parms().SetSuites(pv);  // reset w/ SSL suites
+    }
     }
     else if (ssl.isTLS() && client_version_.minor_ < 1) {
         ssl.SetError(badVersion_error);

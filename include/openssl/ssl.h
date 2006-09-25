@@ -36,7 +36,7 @@
 #include "prefix_ssl.h"
 #endif
 
-#include <stdio.h>    /* ERR_print fp */
+#include <stdio.h>   /* ERR_print fp */
 #include "opensslv.h" /* for version number */
 #include "rsa.h"
 
@@ -49,9 +49,9 @@ extern "C" {
 #endif
 
  void yaSSL_CleanUp();   /* call once at end of application use to
-                            free static singleton memory holders,
-                            not a leak per se, but helpful when
-                            looking for them                      */
+                                      free static singleton memory holders,
+                                      not a leak per se, but helpful when 
+                                      looking for them                      */
 
 #if defined(__cplusplus)
 } // extern
@@ -76,11 +76,11 @@ extern "C" {
     class X509;
     class X509_NAME;
 #else
-    typedef struct SSL          SSL;          
+    typedef struct SSL         SSL;          
     typedef struct SSL_SESSION  SSL_SESSION;
-    typedef struct SSL_METHOD   SSL_METHOD;
-    typedef struct SSL_CTX      SSL_CTX;
-    typedef struct SSL_CIPHER   SSL_CIPHER;
+    typedef struct SSL_METHOD  SSL_METHOD;
+    typedef struct SSL_CTX     SSL_CTX;
+    typedef struct SSL_CIPHER  SSL_CIPHER;
 
     typedef struct RSA RSA;
 

@@ -123,7 +123,7 @@ void SetErrorString(YasslError error, char* buffer)
 
     case certificate_error :
         strncpy(buffer, "unable to proccess cerificate", max);
-        break;
+        break; 
 
     case privateKey_error :
         strncpy(buffer, "unable to proccess private key, bad format", max);

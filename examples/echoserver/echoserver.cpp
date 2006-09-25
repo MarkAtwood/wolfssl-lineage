@@ -88,7 +88,7 @@ THREAD_RETURN YASSL_API echoserver_test(void* args)
         char command[1024];
         int echoSz(0);
         while ( (echoSz = SSL_read(ssl, command, sizeof(command))) > 0) {
-
+           
             if ( strncmp(command, "quit", 4) == 0) {
                 printf("client sent quit command: shutting down!\n");
                 shutdown = true;
@@ -100,7 +100,7 @@ THREAD_RETURN YASSL_API echoserver_test(void* args)
                 char header[] = "<html><body BGCOLOR=\"#ffffff\">\n<pre>\n";
                 char body[]   = "greetings from yaSSL\n";
                 char footer[] = "</body></html>\r\n\r\n";
-
+            
                 strncpy(command, type, sizeof(type));
                 echoSz = sizeof(type) - 1;
 
@@ -135,7 +135,7 @@ THREAD_RETURN YASSL_API echoserver_test(void* args)
                 tcp_close(sockfd);
                 tcp_close(clientfd);
                 err_sys("SSL_write failed");
-            }
+        }
         }
         SSL_free(ssl);
         tcp_close(clientfd);

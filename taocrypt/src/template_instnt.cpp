@@ -68,6 +68,7 @@ template class PBKDF2_HMAC<SHA>;
 template class HMAC<MD5>;
 template class HMAC<SHA>;
 template class HMAC<RIPEMD160>;
+
 }
 
 namespace mySTL {

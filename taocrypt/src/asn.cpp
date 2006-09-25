@@ -220,9 +220,9 @@ void PublicKey::AddToEnd(const byte* data, word32 len)
 Signer::Signer(const byte* k, word32 kSz, const char* n, const byte* h)
     : key_(k, kSz)
 {
-    int sz = strlen(n);
-    memcpy(name_, n, sz);
-    name_[sz] = 0;
+        int sz = strlen(n);
+        memcpy(name_, n, sz);
+        name_[sz] = 0;
 
     memcpy(hash_, h, SHA::DIGEST_SIZE);
 }
@@ -426,12 +426,12 @@ CertDecoder::CertDecoder(Source& s, bool decode, SignerList* signers,
                          bool noVerify, CertType ct)
     : BER_Decoder(s), certBegin_(0), sigIndex_(0), sigLength_(0),
       signature_(0), verify_(!noVerify)
-{
+{ 
     issuer_[0] = 0;
     subject_[0] = 0;
 
     if (decode)
-        Decode(signers, ct);
+        Decode(signers, ct); 
 
 }
 
@@ -476,9 +476,9 @@ void CertDecoder::Decode(SignerList* signers, CertType ct)
         source_.SetError(SIG_OID_E);
         return;
     }
-    
+
     if (ct != CA && verify_ && !ValidateSignature(signers))
-        source_.SetError(SIG_OTHER_E);
+            source_.SetError(SIG_OTHER_E);
 }
 
 
@@ -668,7 +668,7 @@ void CertDecoder::GetName(NameType nt)
     word32 length = GetSequence();  // length of all distinguished names
     assert (length < ASN_NAME_MAX);
     length += source_.get_index();
-    
+
     char*  ptr = (nt == ISSUER) ? issuer_ : subject_;
     word32 idx = 0;
 

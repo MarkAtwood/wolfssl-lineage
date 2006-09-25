@@ -80,15 +80,15 @@ void HASHwithTransform::Update(const byte* data, word32 len)
 // Final process, place digest in hash
 void HASHwithTransform::Final(byte* hash)
 {
-    word32    blockSz  = getBlockSize();
-    word32    digestSz = getDigestSize();
-    word32    padSz    = getPadSize();
-    ByteOrder order    = getByteOrder();
+    word32    blockSz   = getBlockSize();
+    word32    digestSz  = getDigestSize();
+    word32    padSz     = getPadSize();
+    ByteOrder order     = getByteOrder();
 
     AddLength(buffLen_);                        // before adding pads
     HashLengthType preLoLen = GetBitCountLo();
     HashLengthType preHiLen = GetBitCountHi();
-    byte*     local         = reinterpret_cast<byte*>(buffer_);
+    byte*     local     = reinterpret_cast<byte*>(buffer_);
 
     local[buffLen_++] = 0x80;  // add 1
 
@@ -102,7 +102,7 @@ void HASHwithTransform::Final(byte* hash)
         buffLen_ = 0;
     }
     memset(&local[buffLen_], 0, padSz - buffLen_);
-   
+
     ByteReverseIf(local, local, blockSz, order);
     
     memcpy(&local[padSz],   order ? &preHiLen : &preLoLen, sizeof(preLoLen));

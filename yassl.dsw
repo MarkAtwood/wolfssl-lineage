@@ -90,7 +90,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "test"=.\taocrypt\test\test.dsp - Package Owner=<4>
+Project: "test"=.\taocrypt\test.dsp - Package Owner=<4>
 
 Package=<5>
 {{{

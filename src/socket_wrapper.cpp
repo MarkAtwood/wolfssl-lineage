@@ -127,8 +127,8 @@ uint Socket::send(const byte* buf, unsigned int sz, int flags) const
         int sent = ::send(socket_, reinterpret_cast<const char *>(pos),
                           static_cast<int>(end - pos), flags);
 
-        if (sent == -1)
-            return 0;
+    if (sent == -1)
+        return 0;
 
         pos += sent;
     }
@@ -150,8 +150,8 @@ uint Socket::receive(byte* buf, unsigned int sz, int flags)
             get_lastError() == SOCKET_EAGAIN) {
             wouldBlock_ = true;
             blocking_   = true; // socket can block, only way to tell for win32
-            return 0;
-        }
+        return 0;
+    }
     }
     else if (recvd == 0)
         return static_cast<uint>(-1);

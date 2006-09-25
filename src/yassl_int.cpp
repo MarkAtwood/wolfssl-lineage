@@ -42,28 +42,28 @@
 
     void* operator new(size_t sz, yaSSL::new_t)
     {
-        void* ptr = malloc(sz ? sz : 1);
-        if (!ptr) abort();
+    void* ptr = malloc(sz ? sz : 1);
+    if (!ptr) abort();
 
-        return ptr;
+    return ptr;
     }
 
 
     void operator delete(void* ptr, yaSSL::new_t)
     {
-        if (ptr) free(ptr);
+    if (ptr) free(ptr);
     }
 
 
     void* operator new[](size_t sz, yaSSL::new_t nt)
     {
-        return ::operator new(sz, nt);
+    return ::operator new(sz, nt);
     }
 
 
     void operator delete[](void* ptr, yaSSL::new_t nt)
     {
-        ::operator delete(ptr, nt);
+    ::operator delete(ptr, nt);
     }
 
     namespace yaSSL {
@@ -1508,8 +1508,8 @@ typedef Mutex::Lock Lock;
 void Sessions::add(const SSL& ssl) 
 {
     if (ssl.getSecurity().get_connection().sessionID_Set_) {
-        Lock guard(mutex_);
-        list_.push_back(NEW_YS SSL_SESSION(ssl, random_));
+    Lock guard(mutex_);
+    list_.push_back(NEW_YS SSL_SESSION(ssl, random_));
     }
 }
 
@@ -2243,7 +2243,7 @@ X509::X509(const char* i, size_t iSz, const char* s, size_t sSz,
     : issuer_(i, iSz), subject_(s, sSz),
       beforeDate_(b, bSz), afterDate_(a, aSz)
 {}
-
+   
 
 X509_NAME* X509::GetIssuer()
 {

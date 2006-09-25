@@ -69,20 +69,20 @@ void CleanUp();
     template<typename T>
     void tcDelete(T* ptr)
     {
-        if (ptr) ptr->~T();
-        ::operator delete(ptr, TaoCrypt::tc);
+    if (ptr) ptr->~T();
+    ::operator delete(ptr, TaoCrypt::tc);
     }
 
     template<typename T>
     void tcArrayDelete(T* ptr)
     {
-        // can't do array placement destruction since not tracking size in
-        // allocation, only allow builtins to use array placement since they
-        // don't need destructors called
-        typedef char builtin[IsFundamentalType<T>::Yes ? 1 : -1];
-        (void)sizeof(builtin);
+    // can't do array placement destruction since not tracking size in
+    // allocation, only allow builtins to use array placement since they
+    // don't need destructors called
+    typedef char builtin[IsFundamentalType<T>::Yes ? 1 : -1];
+    (void)sizeof(builtin);
 
-        ::operator delete[](ptr, TaoCrypt::tc);
+    ::operator delete[](ptr, TaoCrypt::tc);
     }
 
     #define NEW_TC new (TaoCrypt::tc)
@@ -92,7 +92,7 @@ void CleanUp();
     // virtual destructors (when on stack), make sure doesn't get called
     class virtual_base {
     public:
-        static void operator delete(void*) { assert(0); }
+    static void operator delete(void*) { assert(0); }
     };
 
 #else // YASSL_PURE_C
