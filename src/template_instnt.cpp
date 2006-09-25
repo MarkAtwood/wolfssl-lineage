@@ -107,8 +107,8 @@ template void ysDelete<Errors>(Errors*);
 template void ysArrayDelete<unsigned char>(unsigned char*);
 template void ysArrayDelete<char>(char*);
 
-template int yaSSL::min<int>(int, int);
-template unsigned int yaSSL::min<unsigned int>(unsigned int, unsigned int);
+template int min<int>(int, int);
+template unsigned int min<unsigned int>(unsigned int, unsigned int);
 }
 
 #endif // HAVE_EXPLICIT_TEMPLATE_INSTANTIATION
