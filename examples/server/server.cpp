@@ -63,7 +63,6 @@ THREAD_RETURN YASSL_API server_test(void* args)
     SSL_free(ssl);
 
     tcp_close(clientfd);
-    tcp_close(sockfd);
 
     ((func_args*)args)->return_code = 0;
     return 0;
