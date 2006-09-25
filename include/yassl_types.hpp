@@ -78,7 +78,7 @@ namespace yaSSL {
         ::operator delete[](ptr, yaSSL::ys);
     }
 
-    #define NEW_YS new (ys) 
+    #define NEW_YS new (yaSSL::ys)
 
     // to resolve compiler generated operator delete on base classes with
     // virtual destructors (when on stack), make sure doesn't get called
@@ -89,7 +89,6 @@ namespace yaSSL {
 
 
 #else   // YASSL_PURE_C
-
 
     template<typename T>
     void ysDelete(T* ptr)
