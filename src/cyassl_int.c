@@ -174,11 +174,12 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->suites  = ctx->suites;
     ssl->socket  = INVALID_SOCKET;
    
-    ssl->certificate.buffer  = 0;
-    ssl->key.buffer          = 0;
-    ssl->peerCert.buffer     = 0;
-    ssl->peerKey.buffer      = 0;
-    ssl->bufferedData.buffer = 0;
+    ssl->certificate.buffer   = 0;
+    ssl->key.buffer           = 0;
+    ssl->peerCert.buffer      = 0;
+    ssl->peerKey.buffer       = 0;
+    ssl->bufferedData.buffer  = 0;
+    ssl->bufferedInput.buffer = 0;
 
     InitRng(&ssl->rng);
     InitMd5(&ssl->hashMd5);
@@ -211,6 +212,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
 
 void FreeSSL(SSL* ssl)
 {
+    free(ssl->bufferedInput.buffer);
     free(ssl->bufferedData.buffer);
     free(ssl->peerKey.buffer);
     free(ssl->peerCert.buffer);
@@ -392,6 +394,27 @@ static word32 GetReady(SOCKET_T socket)
 #endif
 
     return ready;
+}
+
+
+/* Send tcp data in a loop if needed */
+int Send(SOCKET_T socket, const byte* buf, int sz, int flags)
+{
+    const byte* pos = buf;
+    const byte* end = pos + sz;
+
+    assert(socket != INVALID_SOCKET);
+
+    while (pos != end) {
+        int sent = send(socket, (const char *)pos, (int)(end - pos), flags);
+
+        if (sent == -1)
+            return 0;
+
+        pos += sent;
+    }
+
+    return sz;
 }
 
 
@@ -774,9 +797,9 @@ static int DoApplicationData(SSL* ssl, byte* input, word32* inOutIdx)
         if (oldSz)
             free(ssl->bufferedData.buffer);
         ssl->bufferedData.buffer = data;
-        ssl->bufferedData.length = dataSz;
+        ssl->bufferedData.length = dataSz + oldSz;
 
-        ssl->hmac(ssl, verify, data, dataSz, application_data, 1);
+        ssl->hmac(ssl, verify, data + oldSz, dataSz, application_data, 1);
     }
 
     /* read mac and fill */
@@ -833,10 +856,14 @@ static int DoAlert(SSL* ssl, byte* input, word32* inOutIdx)
 }
 
 
-int ProcessReply(SSL* ssl)
+int DoProcessReply(SSL* ssl)
 {
     byte*  input = 0;
-    word32 inSz, idx = 0, offset = 0;
+    word32 inSz,
+           idx = 0, 
+           offset = 0,
+           bufferedSz;
+
     #define ERROR_OUT(x) { free(input); return x; }
 
     if (!Wait(ssl->socket))
@@ -845,10 +872,22 @@ int ProcessReply(SSL* ssl)
     if (!(inSz = GetReady(ssl->socket)))
         return SOCKET_NODATA;
 
-    input = (byte*) malloc(inSz);
+    bufferedSz = ssl->bufferedInput.buffer ? ssl->bufferedInput.length : 0;
+    input = (byte*) malloc(inSz + bufferedSz);
     if (!input) return MEMORY_ERROR;
-    if (Receive(ssl->socket, input, inSz, 0) != inSz)
+    if ( (inSz = Receive(ssl->socket, input + bufferedSz, inSz, 0)) == -1)
         ERROR_OUT(SOCKET_ERROR_E);
+
+    if (bufferedSz) {
+        /* prepend old data */
+        memcpy(input, ssl->bufferedInput.buffer, ssl->bufferedInput.length);
+
+        free(ssl->bufferedInput.buffer);
+        ssl->bufferedInput.buffer = 0;
+        ssl->bufferedInput.length = 0;
+
+        inSz += bufferedSz;
+    }
 
     if ( ssl->side == SERVER_END && ssl->clientState == NULL_STATE)
         /* see if sending SSLv2 client hello */
@@ -858,18 +897,32 @@ int ProcessReply(SSL* ssl)
 
     while (idx < inSz) {
         /* each record */
+        int needHdr = 0;
         RecordLayerHeader rh;
 
         /* make sure enough data left */
         if ( (inSz - idx) < RECORD_HEADER_SZ)
-            ERROR_OUT(INCOMPLETE_DATA);
-
-        if (GetRecordHeader(ssl, input, &idx, &rh) != 0)
+            needHdr = 1;
+        else if (GetRecordHeader(ssl, input, &idx, &rh) != 0)
             ERROR_OUT(PARSE_ERROR);
 
         /* make sure enough data left */
-        if ( (inSz - idx) < rh.size)
+        if ( needHdr || (inSz - idx) < rh.size) {
+            /* buffer for next call */
+            word32 extra = needHdr ? 0 : RECORD_HEADER_SZ;
+            word32 sz = inSz - idx + extra;
+
+            byte*  data = (byte*)malloc(sz);
+            if (!data) ERROR_OUT(MEMORY_ERROR);
+            memcpy(data, input + idx - extra, sz);
+
+            assert(ssl->bufferedInput.buffer == 0);
+            ssl->bufferedInput.buffer = data;
+            ssl->bufferedInput.length = sz;
+            
+            /* let caller decide */
             ERROR_OUT(INCOMPLETE_DATA);
+        }
 
         /* each message in record, can be more than 1 */
         while ( idx < rh.size + RECORD_HEADER_SZ + offset) {
@@ -913,6 +966,17 @@ int ProcessReply(SSL* ssl)
 }
 
 
+int ProcessReply(SSL* ssl)
+{
+    int ret;
+
+    while( (ret = DoProcessReply(ssl)) == INCOMPLETE_DATA)
+        ; /* nothing */
+
+    return ret;
+}
+
+
 int SendChangeCipher(SSL* ssl)
 {
     byte              output[RECORD_HEADER_SZ + ENUM_LEN];
@@ -927,7 +991,7 @@ int SendChangeCipher(SSL* ssl)
     memcpy(output, &rl, RECORD_HEADER_SZ);
     output[RECORD_HEADER_SZ] = 1;             /* turn it on */
 
-    if (send(ssl->socket, output, sendSz, 0) != sendSz)
+    if (Send(ssl->socket, output, sendSz, 0) != sendSz)
         return SOCKET_ERROR_E;
 
     return 0;
@@ -1079,7 +1143,7 @@ int SendFinished(SSL* ssl)
                                 finishedSz, handshake)) == -1)
         return BUILD_MSG_ERROR;
 
-    if (send(ssl->socket, output, sendSz, 0) != sendSz)
+    if (Send(ssl->socket, output, sendSz, 0) != sendSz)
         return SOCKET_ERROR_E;
 
     if (!ssl->resuming) {
@@ -1150,7 +1214,7 @@ int SendCertificate(SSL* ssl)
     i += ssl->certificate.length;
 
     HashOutput(ssl, output, sendSz);
-    if (send(ssl->socket, output, sendSz, 0) != sendSz)
+    if (Send(ssl->socket, output, sendSz, 0) != sendSz)
         ret = SOCKET_ERROR_E;
 
     if (ssl->side == SERVER_END)
@@ -1176,7 +1240,7 @@ int SendData(SSL* ssl, const void* buffer, int sz)
 
         sendSz = BuildMessage(ssl, out, (byte*)buffer + sent, len,
                               application_data);
-        if (send(ssl->socket, out, sendSz, 0) != sendSz) {
+        if (Send(ssl->socket, out, sendSz, 0) != sendSz) {
             free(out);
             return SOCKET_ERROR_E;
         }
@@ -1222,11 +1286,11 @@ static int FillData(SSL* ssl, byte* output, int sz)
 int ReceiveData(SSL* ssl, byte* output, int sz)
 {
     if (ssl->handShakeState != HANDSHAKE_DONE)
-        return 0;  /* not ready */
+        return -1;  /* not ready */
 
     if (!ssl->bufferedData.buffer)
-        if (ProcessReply(ssl) != 0)
-            return 0;  /* error */
+        if ( (ssl->error = ProcessReply(ssl)) != 0)
+            return -1;  /* error */
 
     return FillData(ssl, output, sz);
 }
@@ -1260,7 +1324,7 @@ int SendAlert(SSL* ssl, int severity, int type)
         sendSz = RECORD_HEADER_SZ + sizeof(input);
     }
 
-    if (send(ssl->socket, output, sendSz, 0) != sendSz)
+    if (Send(ssl->socket, output, sendSz, 0) != sendSz)
         return SOCKET_ERROR_E;
 
     return 0;
@@ -1330,7 +1394,7 @@ int SendAlert(SSL* ssl, int severity, int type)
         sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
         HashOutput(ssl, output, sendSz);
 
-        if (send(ssl->socket, output, sendSz, 0) != sendSz)
+        if (Send(ssl->socket, output, sendSz, 0) != sendSz)
             return SOCKET_ERROR_E;
 
         ssl->clientState = CLIENT_HELLO_COMPLETE;
@@ -1431,7 +1495,7 @@ int SendAlert(SSL* ssl, int severity, int type)
 
     int SendClientKeyExchange(SSL* ssl)
     {
-        byte   encSecret[2 * SECRET_LEN];
+        byte   encSecret[ENCRYPT_LEN];
         word32 encSz;
         RsaKey key;
         word32 idx = 0;
@@ -1492,7 +1556,7 @@ int SendAlert(SSL* ssl, int severity, int type)
                 sendSz = encSz + tlsSz + HANDSHAKE_HEADER_SZ +RECORD_HEADER_SZ;
                 HashOutput(ssl, output, sendSz);
 
-                if (send(ssl->socket, output, sendSz, 0) != sendSz)
+                if (Send(ssl->socket, output, sendSz, 0) != sendSz)
                     ret = SOCKET_ERROR_E;
             }
         }
@@ -1571,7 +1635,7 @@ int SendAlert(SSL* ssl, int severity, int type)
         sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
         HashOutput(ssl, output, sendSz);
 
-        if (send(ssl->socket, output, sendSz, 0) != sendSz)
+        if (Send(ssl->socket, output, sendSz, 0) != sendSz)
             return SOCKET_ERROR_E;
 
         ssl->serverState = SERVER_HELLO_COMPLETE;
@@ -1814,7 +1878,7 @@ int SendAlert(SSL* ssl, int severity, int type)
         idx += HANDSHAKE_HEADER_SZ;
 
         HashOutput(ssl, output, sendSz);
-        if (send(ssl->socket, output, sendSz, 0) != sendSz)
+        if (Send(ssl->socket, output, sendSz, 0) != sendSz)
             return SOCKET_ERROR_E;
 
         ssl->serverState = SERVER_HELLODONE_COMPLETE;

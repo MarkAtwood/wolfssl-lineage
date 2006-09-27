@@ -298,7 +298,7 @@ int hmac_test()
 
     for (i = 0; i < times; ++i) {
         HmacSetKey(&hmac, MD5, (byte*)keys[i], strlen(keys[i]));
-        HmacUpdate(&hmac, test_hmac[i].input, test_hmac[i].inLen);
+        HmacUpdate(&hmac, (byte*)test_hmac[i].input, test_hmac[i].inLen);
         HmacFinal(&hmac, hash);
 
         if (memcmp(hash, test_hmac[i].output, MD5_DIGEST_SIZE) != 0)

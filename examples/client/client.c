@@ -39,7 +39,7 @@ void client_test(void* args)
 
     reply[SSL_read(ssl, reply, sizeof(reply))] = 0;
     printf("Server response: %s\n", reply);
-
+   
 #ifdef TEST_RESUME
     session   = SSL_get_session(ssl);
     sslResume = SSL_new(ctx);

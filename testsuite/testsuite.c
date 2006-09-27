@@ -37,7 +37,7 @@ int main(int argc, char** argv)
     /* CTaoCrypt test */
     ctaocrypt_test(&args);
     if (args.return_code != 0) return args.return_code;
-
+ 
     /* Simple CyaSSL client server test */
     InitCyaSSL();
     InitTcpReady(&ready);

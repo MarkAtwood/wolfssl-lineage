@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(cyassl,0.5.1)
+AM_INIT_AUTOMAKE(cyassl,0.5.5)
 AM_CONFIG_HEADER(ctaocrypt/include/config.h)
 
 # make sure configure doesn't add to CFLAGS

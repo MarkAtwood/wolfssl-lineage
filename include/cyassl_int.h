@@ -112,6 +112,7 @@ enum Misc {
 
     NO_COMPRESSION  =  0,
     SECRET_LEN      = 48,       /* pre RSA and all master */
+    ENCRYPT_LEN     = 256,      /* allow 2048 bit static buffer */
     SIZEOF_SENDER   =  4,       /* clnt or srvr           */
     FINISHED_SZ     = MD5_DIGEST_SIZE + SHA_DIGEST_SIZE,
     MAX_RECORD_SIZE = 16384,    /* 2^14, max size by standard */
@@ -369,7 +370,8 @@ struct SSL {
     buffer          key;                    /* SSL_CTX owns */
     buffer          peerCert;
     buffer          peerKey;
-    buffer          bufferedData;
+    buffer          bufferedData;           /* decrypted data */
+    buffer          bufferedInput;          /* raw partial input */
     byte            serverState;
     byte            clientState;
     byte            handShakeState;

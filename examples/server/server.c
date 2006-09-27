@@ -16,7 +16,7 @@ THREAD_RETURN CYASSL_API server_test(void* args)
 
     char msg[] = "I hear you fa shizzle!";
     char input[1024];
-
+   
     ((func_args*)args)->return_code = -1; /* error state */
     method = TLSv1_server_method();
     ctx    = SSL_CTX_new(method);
@@ -43,7 +43,7 @@ THREAD_RETURN CYASSL_API server_test(void* args)
 
     input[SSL_read(ssl, input, sizeof(input))] = 0;
     printf("Client message: %s\n", input);
-
+    
     if (SSL_write(ssl, msg, sizeof(msg)) != sizeof(msg))
         err_sys("SSL_write failed");
 

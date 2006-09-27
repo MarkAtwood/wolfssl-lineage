@@ -26,6 +26,7 @@
 #include "coding.h"
 
 #include <stdlib.h>
+#include <assert.h>
 
 
 static int ProcessFile(SSL_CTX*, const char*, int format, int type);
@@ -45,6 +46,7 @@ static int ProcessFile(SSL_CTX*, const char*, int format, int type);
 SSL_CTX* SSL_CTX_new(SSL_METHOD* method)
 {
     SSL_CTX* ctx = (SSL_CTX*) malloc(sizeof(SSL_CTX));
+    assert(method);
     if (ctx)
         InitSSL_Ctx(ctx, method);
     return ctx;
@@ -100,6 +102,18 @@ int SSL_shutdown(SSL* ssl)
     SendAlert(ssl, alert_warning, close_notify);
 
     return SSL_SUCCESS;
+}
+
+
+int SSL_get_error(SSL* ssl, int dummy)
+{
+    return ssl->error;
+}
+
+
+int SSL_pending(SSL* ssl)
+{
+    return ssl->bufferedData.buffer ? ssl->bufferedData.length : 0;
 }
 
 
@@ -165,6 +179,10 @@ int SSL_set_session(SSL* ssl, SSL_SESSION* session)
     {
         int neededState;
 
+        assert(ssl->side == CLIENT_END);
+        if (ssl->serverState == SERVER_FINISHED_COMPLETE)
+            return SSL_FATAL_ERROR;
+
         /* always send client hello first */
         if (SendClientHello(ssl) != 0)
             return SSL_FATAL_ERROR;
@@ -213,6 +231,10 @@ int SSL_set_session(SSL* ssl, SSL_SESSION* session)
 
     int SSL_accept(SSL* ssl)
     {
+        assert(ssl->side == SERVER_END);
+        if (ssl->clientState == CLIENT_FINISHED_COMPLETE)
+            return SSL_FATAL_ERROR;
+
         /* get response */
         while (ssl->clientState < CLIENT_HELLO_COMPLETE)
             if (ProcessReply(ssl) < 0)
