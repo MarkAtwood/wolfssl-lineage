@@ -664,7 +664,7 @@ int DoProcessReply(SSL& ssl)
 {
     // wait for input if blocking
     if (!ssl.useSocket().wait()) {
-        ssl.SetError(receive_error);
+      ssl.SetError(receive_error);
         return 0;
     }
     uint ready = ssl.getSocket().get_ready();
@@ -703,8 +703,8 @@ int DoProcessReply(SSL& ssl)
         if (static_cast<uint>(RECORD_HEADER) > buffer.get_remaining())
             needHdr = true;
         else {
-            buffer >> hdr;
-            ssl.verifyState(hdr);
+        buffer >> hdr;
+        ssl.verifyState(hdr);
         }
 
         // make sure we have enough input in buffer to process this record
@@ -741,14 +741,14 @@ int DoProcessReply(SSL& ssl)
 void processReply(SSL& ssl)
 {
     if (ssl.GetError()) return;
-  
+
     if (DoProcessReply(ssl))
         // didn't complete process
         if (!ssl.getSocket().IsBlocking()) {
             // keep trying now
             while (!ssl.GetError())
                 if (DoProcessReply(ssl) == 0) break;
-        }
+    }
         else
             // user will have try again later
             ssl.SetError(YasslError(SSL_ERROR_WANT_READ));
@@ -925,7 +925,7 @@ int receiveData(SSL& ssl, Data& data, bool peek)
     if (peek)
         ssl.PeekData(data);
     else
-        ssl.fillData(data);
+    ssl.fillData(data);
 
     ssl.useLog().ShowData(data.get_length());
     if (ssl.GetError()) return -1;

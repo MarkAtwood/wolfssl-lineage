@@ -87,13 +87,13 @@ THREAD_RETURN YASSL_API echoserver_test(void* args)
 
         SSL* ssl = SSL_new(ctx);
         SSL_set_fd(ssl, clientfd);
-        if (SSL_accept(ssl) != SSL_SUCCESS) 
+        if (SSL_accept(ssl) != SSL_SUCCESS)
             EchoError(ctx, ssl, sockfd, clientfd, "SSL_accept failed");
-       
+
         char command[1024];
         int echoSz(0);
         while ( (echoSz = SSL_read(ssl, command, sizeof(command))) > 0) {
-
+           
             if ( strncmp(command, "quit", 4) == 0) {
                 printf("client sent quit command: shutting down!\n");
                 shutdown = true;
@@ -105,7 +105,7 @@ THREAD_RETURN YASSL_API echoserver_test(void* args)
                 char header[] = "<html><body BGCOLOR=\"#ffffff\">\n<pre>\n";
                 char body[]   = "greetings from yaSSL\n";
                 char footer[] = "</body></html>\r\n\r\n";
-
+            
                 strncpy(command, type, sizeof(type));
                 echoSz = sizeof(type) - 1;
 
@@ -118,7 +118,7 @@ THREAD_RETURN YASSL_API echoserver_test(void* args)
 
                 if (SSL_write(ssl, command, echoSz) != echoSz)
                     EchoError(ctx, ssl, sockfd, clientfd, "SSL_write failed");
-               
+
                 break;
             }
             command[echoSz] = 0;

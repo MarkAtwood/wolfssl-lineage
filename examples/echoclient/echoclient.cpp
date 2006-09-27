@@ -52,7 +52,7 @@ void echoclient_test(void* args)
 
     char send[1024];
     char reply[1024];
-
+ 
     while (fgets(send, sizeof(send), fin)) {
 
         int sendSz = strlen(send) + 1;
@@ -69,7 +69,7 @@ void echoclient_test(void* args)
             break;
         }
 
-        if (SSL_read(ssl, reply, sizeof(reply)) > 0)
+        if (SSL_read(ssl, reply, sizeof(reply)) > 0) 
             fputs(reply, fout);
     }
 

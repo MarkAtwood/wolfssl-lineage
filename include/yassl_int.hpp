@@ -169,7 +169,7 @@ private:
 
 // openSSL X509 names
 class X509_NAME {
-    char*       name_;
+    char* name_;
     size_t      sz_;
     ASN1_STRING entry_;
 public:
@@ -247,11 +247,11 @@ public:
     SSL_SESSION(const SSL&, RandomPool&);
     ~SSL_SESSION();
 
-    const opaque* GetID()       const;
-    const opaque* GetSecret()   const;
-    const Cipher* GetSuite()    const;
-          uint    GetBornOn()   const;
-          uint    GetTimeOut()  const;
+    const opaque* GetID()      const;
+    const opaque* GetSecret()  const;
+    const Cipher* GetSuite()   const;
+          uint    GetBornOn()  const;
+          uint    GetTimeOut() const;
           X509*   GetPeerX509() const;
           void    SetTimeOut(uint);
 
@@ -416,26 +416,26 @@ class SSL_CTX {
 public:
     typedef STL::list<x509*> CertList;
 private:
-    SSL_METHOD*     method_;
-    x509*           certificate_;
-    x509*           privateKey_;
-    CertList        caList_;
-    Ciphers         ciphers_;
-    DH_Parms        dhParms_;
+    SSL_METHOD* method_;
+    x509*       certificate_;
+    x509*       privateKey_;
+    CertList    caList_;
+    Ciphers     ciphers_;
+    DH_Parms    dhParms_;
     pem_password_cb passwordCb_;
     void*           userData_;
-    Stats           stats_;
-    Mutex           mutex_;         // for Stats
+    Stats       stats_;
+    Mutex       mutex_;         // for Stats
 public:
     explicit SSL_CTX(SSL_METHOD* meth);
     ~SSL_CTX();
 
-    const x509*       getCert()       const;
-    const x509*       getKey()        const;
-    const SSL_METHOD* getMethod()     const;
-    const Ciphers&    GetCiphers()    const;
-    const DH_Parms&   GetDH_Parms()   const;
-    const Stats&      GetStats()      const;
+    const x509*       getCert()     const;
+    const x509*       getKey()      const;
+    const SSL_METHOD* getMethod()   const;
+    const Ciphers&    GetCiphers()  const;
+    const DH_Parms&   GetDH_Parms() const;
+    const Stats&      GetStats()    const;
     pem_password_cb   GetPasswordCb() const;
           void*       GetUserData()   const;
 
@@ -523,8 +523,8 @@ public:
     typedef STL::list<input_buffer*>  inputList;
     typedef STL::list<output_buffer*> outputList;
 private:
-    inputList     dataList_;             // list of users app data / handshake
-    outputList    handShakeList_;        // buffered handshake msgs
+    inputList  dataList_;                // list of users app data / handshake
+    outputList handShakeList_;           // buffered handshake msgs
     input_buffer* rawInput_;             // buffered raw input yet to process
 public:
     Buffers();
@@ -540,7 +540,7 @@ public:
     input_buffer* TakeRawInput();              // takes ownership 
 private:
     Buffers(const Buffers&);             // hide copy
-    Buffers& operator=(const Buffers&);  // and assign   
+    Buffers& operator=(const Buffers&); // and assign   
 };
 
 
