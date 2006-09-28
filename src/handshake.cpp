@@ -456,6 +456,10 @@ void buildSHA_CertVerify(SSL& ssl, byte* digest)
 // some clients still send sslv2 client hello
 void ProcessOldClientHello(input_buffer& input, SSL& ssl)
 {
+    if (input.get_remaining() < 2) {
+        ssl.SetError(bad_input);
+        return;
+    }
     byte b0 = input[AUTO];
     byte b1 = input[AUTO];
 

@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
+//#define NON_BLOCKING  // test server and client example (not echos)
+
 #ifdef _WIN32
     #include <winsock2.h>
     #include <process.h>
@@ -23,6 +25,9 @@
     #include <sys/types.h>
     #include <sys/socket.h>
     #include <pthread.h>
+#ifdef NON_BLOCKING
+    #include <fcntl.h>
+#endif
     #define SOCKET_T int
 #endif /* _WIN32 */
 
@@ -259,6 +264,20 @@ inline void set_args(int& argc, char**& argv, func_args& args)
 }
 
 
+inline void tcp_set_nonblocking(SOCKET_T& sockfd)
+{
+#ifdef NON_BLOCKING
+    #ifdef _WIN32
+        unsigned long blocking = 1;
+        int ret = ioctlsocket(sockfd, FIONBIO, &blocking);
+    #else
+        int flags = fcntl(sockfd, F_GETFL, 0);
+        int ret = fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+    #endif
+#endif
+}
+
+
 inline void tcp_socket(SOCKET_T& sockfd, sockaddr_in& addr)
 {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -286,8 +305,7 @@ inline void tcp_connect(SOCKET_T& sockfd)
     sockaddr_in addr;
     tcp_socket(sockfd, addr);
 
-    if (connect(sockfd, (const sockaddr*)&addr, sizeof(addr)) != 0)
-    {
+    if (connect(sockfd, (const sockaddr*)&addr, sizeof(addr)) != 0) {
         tcp_close(sockfd);
         err_sys("tcp connect failed");
     }
@@ -299,17 +317,16 @@ inline void tcp_listen(SOCKET_T& sockfd)
     sockaddr_in addr;
     tcp_socket(sockfd, addr);
 
-    if (bind(sockfd, (const sockaddr*)&addr, sizeof(addr)) != 0)
-    {
+    if (bind(sockfd, (const sockaddr*)&addr, sizeof(addr)) != 0) {
         tcp_close(sockfd);
         err_sys("tcp bind failed");
     }
-    if (listen(sockfd, 3) != 0)
-    {
+    if (listen(sockfd, 3) != 0) {
         tcp_close(sockfd);
         err_sys("tcp listen failed");
     }
 }
+
 
 
 inline void tcp_accept(SOCKET_T& sockfd, SOCKET_T& clientfd, func_args& args)
@@ -330,11 +347,14 @@ inline void tcp_accept(SOCKET_T& sockfd, SOCKET_T& clientfd, func_args& args)
 
     clientfd = accept(sockfd, (sockaddr*)&client, (ACCEPT_THIRD_T)&client_len);
 
-    if (clientfd == -1)
-    {
+    if (clientfd == -1) {
         tcp_close(sockfd);
         err_sys("tcp accept failed");
     }
+
+#ifdef NON_BLOCKING
+    tcp_set_nonblocking(clientfd);
+#endif
 }
 
 
