@@ -437,6 +437,7 @@ Parameters::Parameters(ConnectionEnd ce, const Ciphers& ciphers,
                        ProtocolVersion pv, bool haveDH) : entity_(ce)
 {
     pending_ = true;	// suite not set yet
+    strncpy(cipher_name_, "NONE", 5);
 
     if (ciphers.setSuites_) {   // use user set list
         suites_size_ = ciphers.suiteSz_;
@@ -445,6 +446,7 @@ Parameters::Parameters(ConnectionEnd ce, const Ciphers& ciphers,
     }
     else 
         SetSuites(pv, ce == server_end && !haveDH);  // defaults
+
 }
 
 
