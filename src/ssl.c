@@ -295,15 +295,16 @@ static int AddCA(SSL_CTX* ctx, buffer der)
 
             cert.publicKey = 0;  /* don't free here */
             cert.subject   = 0;
+
+            signer->next = ctx->caList;
+            ctx->caList  = signer;   /* takes ownership */
         }
     }
-
-    signer->next = ctx->caList;
-    ctx->caList  = signer;   /* takes ownership */
 
     FreeDecodedCert(&cert);
     free(der.buffer);
 
+    if (ret == 0) return SSL_SUCCESS;
     return ret;
 }
 
@@ -417,7 +418,7 @@ static int ProcessFile(SSL_CTX* ctx, const char* file, int format, int type)
     }
 
     if (type == CA_TYPE)
-        AddCA(ctx, der);            /* takes der over */
+        return AddCA(ctx, der);     /* takes der over */
     else if (type == CERT_TYPE)
         ctx->certificate = der;     /* takes der over */
     else if (type == PRIVATEKEY_TYPE)

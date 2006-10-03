@@ -584,6 +584,9 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
     if (ret == 0 && ssl->side == CLIENT_END)
         ssl->serverState = SERVER_CERT_COMPLETE;
 
+    if (ret != 0)
+        ssl->error = ret;
+
     *inOutIdx = i;
     return ret;
 }
