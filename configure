@@ -1670,7 +1670,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=yassl
- VERSION=1.4.3
+ VERSION=1.4.4
 
 
 cat >>confdefs.h <<_ACEOF
@@ -5146,7 +5146,7 @@ fi;
 
 if test "$ENABLED_IA32ASM" = "no"
 then
-    CXXFLAGS="$CXXFLAGS -DDISABLE_TAO_ASM"
+    CXXFLAGS="$CXXFLAGS -DTAOCRYPT_DISABLE_X86ASM"
 fi
 
 

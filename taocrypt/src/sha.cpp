@@ -28,7 +28,11 @@
 #include "runtime.hpp"
 #include <string.h>
 #include "sha.hpp"
-#include STL_ALGORITHM_FILE
+#ifdef USE_SYS_STL
+    #include <algorithm>
+#else
+    #include "algorithm.hpp"
+#endif
 
 
 namespace STL = STL_NAMESPACE;
@@ -111,6 +115,13 @@ void SHA::Swap(SHA& other)
 // Update digest with data of size len, do in blocks
 void SHA::Update(const byte* data, word32 len)
 {
+#ifdef DO_SHA_ASM
+    if (!isMMX) {
+        HASHwithTransform::Update(data, len);
+        return;
+    }
+#endif
+
     byte* local = (byte*)buffer_;
 
     // remove buffered data if possible

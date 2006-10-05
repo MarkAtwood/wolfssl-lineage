@@ -30,6 +30,13 @@
 #include "misc.hpp"
 
 
+#ifdef __GNUC__
+    #include <signal.h>
+    #include <setjmp.h>
+#endif
+
+
+
 #ifdef YASSL_PURE_C
 
     void* operator new(size_t sz, TaoCrypt::new_t)
@@ -154,6 +161,115 @@ unsigned long Crop(unsigned long value, unsigned int size)
     else
         return value;
 }
+
+
+
+#ifdef TAOCRYPT_X86ASM_AVAILABLE
+
+#ifndef _MSC_VER
+    static jmp_buf s_env;
+    static void SigIllHandler(int)
+    {
+        longjmp(s_env, 1);
+    }
+#endif
+
+
+bool IsPentium()
+{
+#ifdef _MSC_VER
+    __try
+    {
+        __asm
+        {
+            mov eax, 0
+            cpuid
+        }            
+    }
+    __except (1)
+    {
+        return false;
+    }
+    return true;
+#else
+    typedef void (*SigHandler)(int);
+
+    SigHandler oldHandler = signal(SIGILL, SigIllHandler);
+    if (oldHandler == SIG_ERR)
+        return false;
+
+    bool result = true;
+    if (setjmp(s_env))
+        result = false;
+    else 
+        __asm__
+        (
+            "mov $0, %%eax; cpuid"
+            : 
+            :
+            : "%ebx", "%ecx", "%edx" 
+        );
+
+    signal(SIGILL, oldHandler);
+    return result;
+#endif
+}
+
+
+void CpuId(word32 input, word32 *output)
+{
+#ifdef __GNUC__
+    __asm__
+    (
+        // save ebx in case -fPIC is being used
+        "push %%ebx; cpuid; mov %%ebx, %%edi; pop %%ebx"
+        : "=a" (output[0]), "=D" (output[1]), "=c" (output[2]), "=d"(output[3])
+        : "a" (input)
+    );
+#else
+    __asm
+    {
+        mov eax, input
+        cpuid
+        mov edi, output
+        mov [edi], eax
+        mov [edi+4], ebx
+        mov [edi+8], ecx
+        mov [edi+12], edx
+    }
+#endif
+}
+
+
+
+static bool IsMMx()
+{
+    if (!IsPentium())
+        return false;
+
+    word32 cpuid[4];
+
+    CpuId(0, cpuid);
+    word32 tmp = cpuid[2];
+    cpuid[2] = cpuid[3];
+    cpuid[3] = tmp;
+    if (memcmp(cpuid+1, "GenuineIntel", 12) != 0)
+        return false;
+
+    CpuId(1, cpuid);
+    if ((cpuid[3] & (1 << 23)) == 0)
+        return false;
+
+    return true;
+}
+
+
+bool isMMX = IsMMx();
+
+
+#endif // TAOCRYPT_X86ASM_AVAILABLE
+
+
 
 
 }  // namespace

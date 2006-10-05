@@ -28,7 +28,11 @@
 
 #include "runtime.hpp"
 #include "ripemd.hpp"
-#include STL_ALGORITHM_FILE
+#ifdef USE_SYS_STL
+    #include <algorithm>
+#else
+    #include "algorithm.hpp"
+#endif
 
 
 namespace STL = STL_NAMESPACE;
@@ -89,6 +93,13 @@ void RIPEMD160::Swap(RIPEMD160& other)
 // Update digest with data of size len, do in blocks
 void RIPEMD160::Update(const byte* data, word32 len)
 {
+#ifdef DO_RIPEMD_ASM
+    if (!isMMX) {
+        HASHwithTransform::Update(data, len);
+        return;
+    }
+#endif
+
     byte* local = (byte*)buffer_;
 
     // remove buffered data if possible
