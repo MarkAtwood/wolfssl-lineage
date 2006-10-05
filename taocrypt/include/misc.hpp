@@ -152,6 +152,7 @@ void CleanUp();
 
 
 #ifdef TAOCRYPT_X86ASM_AVAILABLE
+    bool HaveCpuId();
     bool IsPentium();
     void CpuId(word32 input, word32 *output);
 

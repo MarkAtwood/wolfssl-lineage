@@ -35,6 +35,13 @@
     #include <setjmp.h>
 #endif
 
+#ifdef USE_SYS_STL
+    #include <algorithm>
+#else
+    #include "algorithm.hpp"
+#endif
+
+namespace STL = STL_NAMESPACE;
 
 
 #ifdef YASSL_PURE_C
@@ -175,7 +182,7 @@ unsigned long Crop(unsigned long value, unsigned int size)
 #endif
 
 
-bool IsPentium()
+bool HaveCpuId()
 {
 #ifdef _MSC_VER
     __try
@@ -241,20 +248,34 @@ void CpuId(word32 input, word32 *output)
 }
 
 
-
-static bool IsMMx()
+bool IsPentium()
 {
-    if (!IsPentium())
+    if (!HaveCpuId())
         return false;
 
     word32 cpuid[4];
 
     CpuId(0, cpuid);
-    word32 tmp = cpuid[2];
-    cpuid[2] = cpuid[3];
-    cpuid[3] = tmp;
+    STL::swap(cpuid[2], cpuid[3]);
     if (memcmp(cpuid+1, "GenuineIntel", 12) != 0)
         return false;
+
+    CpuId(1, cpuid);
+    byte family = ((cpuid[0] >> 8) & 0xf);
+    if (family < 5)
+        return false;
+
+    return true;
+}
+
+
+
+static bool IsMmx()
+{
+    if (!IsPentium())
+        return false;
+
+    word32 cpuid[4];
 
     CpuId(1, cpuid);
     if ((cpuid[3] & (1 << 23)) == 0)
@@ -264,7 +285,7 @@ static bool IsMMx()
 }
 
 
-bool isMMX = IsMMx();
+bool isMMX = IsMmx();
 
 
 #endif // TAOCRYPT_X86ASM_AVAILABLE

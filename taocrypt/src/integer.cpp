@@ -1031,6 +1031,9 @@ void Portable::Multiply8Bottom(word *R, const word *A, const word *B)
 
 static bool HasSSE2()
 {
+    if (!IsPentium())
+        return false;
+
     word32 cpuid[4];
     CpuId(1, cpuid);
     if ((cpuid[3] & (1 << 26)) == 0)
@@ -1068,12 +1071,10 @@ static bool HasSSE2()
 
 static bool IsP4()
 {
-    word32 cpuid[4];
-
-    CpuId(0, cpuid);
-    STL::swap(cpuid[2], cpuid[3]);
-    if (memcmp(cpuid+1, "GenuineIntel", 12) != 0)
+    if (!IsPentium())
         return false;
+
+    word32 cpuid[4];
 
     CpuId(1, cpuid);
     return ((cpuid[0] >> 8) & 0xf) == 0xf;

@@ -111,7 +111,9 @@ void ARC4::Process(byte* out, const byte* in, word32 length)
 #ifdef DO_ARC4_ASM
 
 #ifdef _MSC_VER
-    __declspec(naked) 
+    __declspec(naked)
+#else
+    __attribute__ ((noinline))
 #endif
 void ARC4::AsmProcess(byte* out, const byte* in, word32 length)
 {
