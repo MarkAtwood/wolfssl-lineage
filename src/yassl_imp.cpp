@@ -881,9 +881,13 @@ Data::Data(uint16 len, opaque* b)
 {}
 
 
-Data::Data(uint16 len, const opaque* w)
-    : length_(len), buffer_(0), write_buffer_(w)
-{}
+void Data::SetData(uint16 len, const opaque* buffer)
+{
+    assert(write_buffer_ == 0);
+
+    length_ = len;
+    write_buffer_ = buffer;
+}
 
 input_buffer& Data::set(input_buffer& in)
 {
@@ -909,16 +913,11 @@ uint16 Data::get_length() const
 }
 
 
-const opaque* Data::get_buffer() const
-{
-    return write_buffer_;
-}
-
-
 void Data::set_length(uint16 l)
 {
     length_ = l;
 }
+
 
 opaque* Data::set_buffer()
 {
@@ -949,16 +948,29 @@ void Data::Process(input_buffer& input, SSL& ssl)
 
     // read data
     if (dataSz) {
-        input_buffer* data;
-        ssl.addData(data = NEW_YS input_buffer(dataSz));
-        input.read(data->get_buffer(), dataSz);
-        data->add_size(dataSz);
+        const byte* rawData = input.get_buffer() + input.get_current();
+                               // could be compressed
+        if (ssl.CompressionOn()) {
+            input_buffer tmp;
+            if (DeCompress(input, dataSz, tmp) == -1) {
+                ssl.SetError(decompress_error);
+                return;
+            }
+            ssl.addData(NEW_YS input_buffer(tmp.get_size(),
+                                            tmp.get_buffer(), tmp.get_size()));
+        }
+        else {
+            input_buffer* data;
+            ssl.addData(data = NEW_YS input_buffer(dataSz));
+            input.read(data->get_buffer(), dataSz);
+            data->add_size(dataSz);
+        }
 
         if (ssl.isTLS())
-            TLS_hmac(ssl, verify, data->get_buffer(), dataSz, application_data,
+            TLS_hmac(ssl, verify, rawData, dataSz, application_data,
                      true);
         else
-            hmac(ssl, verify, data->get_buffer(), dataSz, application_data,
+            hmac(ssl, verify, rawData, dataSz, application_data,
                  true);
     }
 
@@ -1254,6 +1266,10 @@ void ServerHello::Process(input_buffer&, SSL& ssl)
             ssl.useSecurity().set_resuming(false);
             ssl.useLog().Trace("server denied resumption");
         }
+
+    if (ssl.CompressionOn() && !compression_method_)
+        ssl.UnSetCompression(); // server isn't supporting yaSSL zlib request
+
     ssl.useStates().useClient() = serverHelloComplete;
 }
 
@@ -1265,8 +1281,9 @@ ServerHello::ServerHello()
 }
 
 
-ServerHello::ServerHello(ProtocolVersion pv)
-    : server_version_(pv)
+ServerHello::ServerHello(ProtocolVersion pv, bool useCompression)
+    : server_version_(pv),
+      compression_method_(useCompression ? zlib : no_compression)
 {
     memset(random_, 0, RAN_LEN);
     memset(session_id_, 0, ID_LEN);
@@ -1363,8 +1380,12 @@ input_buffer& operator>>(input_buffer& input, ClientHello& hello)
 
     // Compression
     hello.comp_len_ = input[AUTO];
-    while (hello.comp_len_--)  // ignore for now
-        hello.compression_methods_ = CompressionMethod(input[AUTO]);
+    hello.compression_methods_ = no_compression;
+    while (hello.comp_len_--) {
+        CompressionMethod cm = CompressionMethod(input[AUTO]);
+        if (cm == zlib)
+            hello.compression_methods_ = zlib;
+    }
 
     return input;
 }
@@ -1446,6 +1467,9 @@ void ClientHello::Process(input_buffer&, SSL& ssl)
     ssl.matchSuite(cipher_suites_, suite_len_);
     ssl.set_pending(ssl.getSecurity().get_parms().suite_[1]);
 
+    if (compression_methods_ == zlib)
+        ssl.SetCompression();
+
     ssl.useStates().useServer() = clientHelloComplete;
 }
 
@@ -1480,8 +1504,9 @@ ClientHello::ClientHello()
 }
 
 
-ClientHello::ClientHello(ProtocolVersion pv)
-    : client_version_(pv)
+ClientHello::ClientHello(ProtocolVersion pv, bool useCompression)
+    : client_version_(pv),
+      compression_methods_(useCompression ? zlib : no_compression)
 {
     memset(random_, 0, RAN_LEN);
 }
@@ -2020,7 +2045,8 @@ void clean(volatile opaque* p, uint sz, RandomPool& ran)
 Connection::Connection(ProtocolVersion v, RandomPool& ran)
     : pre_master_secret_(0), sequence_number_(0), peer_sequence_number_(0),
       pre_secret_len_(0), send_server_key_(false), master_clean_(false),
-      TLS_(v.major_ >= 3 && v.minor_ >= 1), version_(v), random_(ran) 
+      TLS_(v.major_ >= 3 && v.minor_ >= 1), compression_(false), version_(v),
+      random_(ran)
 {
     memset(sessionID_, 0, sizeof(sessionID_));
 }

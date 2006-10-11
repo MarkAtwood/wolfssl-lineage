@@ -40,8 +40,7 @@ namespace yaSSL {
 
 
 // Build a client hello message from cipher suites and compression method
-void buildClientHello(SSL& ssl, ClientHello& hello,
-                      CompressionMethod compression = no_compression)
+void buildClientHello(SSL& ssl, ClientHello& hello)
 {
     ssl.getCrypto().get_random().Fill(hello.random_, RAN_LEN);
     if (ssl.getSecurity().get_resuming()) {
@@ -54,8 +53,7 @@ void buildClientHello(SSL& ssl, ClientHello& hello,
     hello.suite_len_ = ssl.getSecurity().get_parms().suites_size_;
     memcpy(hello.cipher_suites_, ssl.getSecurity().get_parms().suites_,
            hello.suite_len_);
-    hello.comp_len_ = 1;                   
-    hello.compression_methods_ = compression;   
+    hello.comp_len_ = 1;
 
     hello.set_length(sizeof(ProtocolVersion) +
                      RAN_LEN +
@@ -83,7 +81,7 @@ void buildServerHello(SSL& ssl, ServerHello& hello)
 
     hello.cipher_suite_[0] = ssl.getSecurity().get_parms().suite_[0];
     hello.cipher_suite_[1] = ssl.getSecurity().get_parms().suite_[1];
-    hello.compression_method_ = no_compression;
+    hello.compression_method_ = hello.compression_method_;
 
     hello.set_length(sizeof(ProtocolVersion) + RAN_LEN + ID_LEN +
                      sizeof(hello.id_len_) + SUITE_LEN + SIZEOF_ENUM);
@@ -725,6 +723,7 @@ int DoProcessReply(SSL& ssl)
             // each message in record, can be more than 1 if not encrypted
             if (ssl.getSecurity().get_parms().pending_ == false) // cipher on
                 decrypt_message(ssl, buffer, hdr.length_);
+                
             mySTL::auto_ptr<Message> msg(mf.CreateObject(hdr.type_));
             if (!msg.get()) {
                 ssl.SetError(factory_error);
@@ -765,7 +764,8 @@ void sendClientHello(SSL& ssl)
     ssl.verifyState(serverNull);
     if (ssl.GetError()) return;
 
-    ClientHello       ch(ssl.getSecurity().get_connection().version_);
+    ClientHello       ch(ssl.getSecurity().get_connection().version_,
+                         ssl.getSecurity().get_connection().compression_);
     RecordLayerHeader rlHeader;
     HandShakeHeader   hsHeader;
     output_buffer     out;
@@ -889,7 +889,20 @@ int sendData(SSL& ssl, const void* buffer, int sz)
     for (;;) {
         int len = min(sz - sent, MAX_RECORD_SIZE);
         output_buffer out;
-        const Data data(len, static_cast<const opaque*>(buffer) + sent);
+        input_buffer tmp;
+
+        Data data;
+
+        if (ssl.CompressionOn()) {
+            if (Compress(static_cast<const opaque*>(buffer) + sent, len,
+                         tmp) == -1) {
+                ssl.SetError(compress_error);
+                return -1;
+            }
+            data.SetData(tmp.get_size(), tmp.get_buffer());
+        }
+        else
+            data.SetData(len, static_cast<const opaque*>(buffer) + sent);
 
         buildMessage(ssl, out, data);
         ssl.Send(out.get_buffer(), out.get_size());
@@ -951,7 +964,8 @@ void sendServerHello(SSL& ssl, BufferOutput buffer)
         ssl.verifyState(clientHelloComplete);
     if (ssl.GetError()) return;
 
-    ServerHello       sh(ssl.getSecurity().get_connection().version_);
+    ServerHello       sh(ssl.getSecurity().get_connection().version_,
+                         ssl.getSecurity().get_connection().compression_);
     RecordLayerHeader rlHeader;
     HandShakeHeader   hsHeader;
     mySTL::auto_ptr<output_buffer> out(NEW_YS output_buffer);

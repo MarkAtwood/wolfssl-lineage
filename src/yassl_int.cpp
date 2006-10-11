@@ -38,6 +38,11 @@
 #endif
 
 
+#ifdef HAVE_LIBZ
+    #include "zlib.h"
+#endif
+
+
 #ifdef YASSL_PURE_C
 
     void* operator new(size_t sz, yaSSL::new_t)
@@ -724,6 +729,32 @@ void SSL::set_preMaster(const opaque* pre, uint sz)
 {
     secure_.use_connection().AllocPreSecret(sz);
     memcpy(secure_.use_connection().pre_master_secret_, pre, sz);
+}
+
+
+// set yaSSL zlib type compression
+int SSL::SetCompression()
+{
+#ifdef HAVE_LIBZ
+    secure_.use_connection().compression_ = true;
+    return 0;
+#else
+    return -1;  // not built in
+#endif
+}
+
+
+// unset yaSSL zlib type compression
+void SSL::UnSetCompression()
+{
+    secure_.use_connection().compression_ = false;
+}
+
+
+// is yaSSL zlib compression on
+bool SSL::CompressionOn() const
+{
+    return secure_.get_connection().compression_;
 }
 
 
@@ -2312,7 +2343,108 @@ ASN1_STRING* StringHolder::GetString()
 }
 
 
+#ifdef HAVE_LIBZ
+
+    void* myAlloc(void* /* opaque */, unsigned int item, unsigned int size)
+    {
+        return NEW_YS unsigned char[item * size];
+    }
+
+
+    void myFree(void* /* opaque */, void* memory)
+    {
+        unsigned char* ptr = static_cast<unsigned char*>(memory);
+        yaSSL::ysArrayDelete(ptr);
+    }
+
+
+    // put size in front of compressed data
+    int Compress(const byte* in, int sz, input_buffer& buffer)
+    {
+        byte     tmp[LENGTH_SZ];
+        z_stream c_stream; /* compression stream */
+
+        buffer.allocate(sz + sizeof(uint16) + COMPRESS_EXTRA);
+
+        c_stream.zalloc = myAlloc;
+        c_stream.zfree  = myFree;
+        c_stream.opaque = (voidpf)0;
+
+        c_stream.next_in   = const_cast<byte*>(in);
+        c_stream.avail_in  = sz;
+        c_stream.next_out  = buffer.get_buffer() + sizeof(tmp);
+        c_stream.avail_out = buffer.get_capacity() - sizeof(tmp);
+
+        if (deflateInit(&c_stream, 8) != Z_OK) return -1;
+        int err = deflate(&c_stream, Z_FINISH);
+        deflateEnd(&c_stream);
+        if (err != Z_OK && err != Z_STREAM_END) return -1;
+
+        c16toa(sz, tmp);
+        memcpy(buffer.get_buffer(), tmp, sizeof(tmp));
+        buffer.add_size(c_stream.total_out + sizeof(tmp));
+
+        return 0;
+    }
+
+
+    // get uncompressed size in front
+    int DeCompress(input_buffer& in, int sz, input_buffer& out)
+    {
+        byte tmp[LENGTH_SZ];
+    
+        in.read(tmp, sizeof(tmp));
+
+        uint16 len;
+        ato16(tmp, len);
+
+        out.allocate(len);
+
+        z_stream d_stream; /* decompression stream */
+
+        d_stream.zalloc = myAlloc;
+        d_stream.zfree  = myFree;
+        d_stream.opaque = (voidpf)0;
+
+        d_stream.next_in   = in.get_buffer() + in.get_current();
+        d_stream.avail_in  = sz - sizeof(tmp);
+        d_stream.next_out  = out.get_buffer();
+        d_stream.avail_out = out.get_capacity();
+
+        if (inflateInit(&d_stream) != Z_OK) return -1;
+        int err = inflate(&d_stream, Z_FINISH);
+        inflateEnd(&d_stream);
+        if (err != Z_OK && err != Z_STREAM_END) return -1;
+
+        out.add_size(d_stream.total_out);
+        in.set_current(in.get_current() + sz - sizeof(tmp));
+
+        return 0;
+    }
+
+
+#else  // LIBZ
+
+    // these versions should never get called
+    int Compress(const byte* in, int sz, input_buffer& buffer)
+    {
+        assert(0);  
+        return -1;
+    } 
+
+
+    int DeCompress(input_buffer& in, int sz, input_buffer& out)
+    {
+        assert(0);  
+        return -1;
+    } 
+
+
+#endif // LIBZ
+
+
 } // namespace
+
 
 
 extern "C" void yaSSL_CleanUp()

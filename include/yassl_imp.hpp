@@ -132,7 +132,6 @@ class Data : public Message {
 public:
     Data();
     Data(uint16 len, opaque* b);
-    Data(uint16 len, const opaque* w);
 
     friend output_buffer& operator<<(output_buffer&, const Data&);
 
@@ -141,9 +140,9 @@ public:
 
     ContentType   get_type()     const;
     uint16        get_length()   const;
-    const opaque* get_buffer()   const;
     void          set_length(uint16 l);
     opaque*       set_buffer();
+    void          SetData(uint16, const opaque*);
     void Process(input_buffer&, SSL&);
 private:
     Data(const Data&);            // hide copy
@@ -232,11 +231,11 @@ public:
     void Process(input_buffer&, SSL&);
 
     const opaque* get_random() const;
-    friend void buildClientHello(SSL&, ClientHello&, CompressionMethod);
+    friend void buildClientHello(SSL&, ClientHello&);
     friend void ProcessOldClientHello(input_buffer& input, SSL& ssl);
 
     ClientHello();
-    explicit ClientHello(ProtocolVersion pv);
+    ClientHello(ProtocolVersion pv, bool useCompression);
 private:
     ClientHello(const ClientHello&);            // hide copy
     ClientHello& operator=(const ClientHello&); // and assign
@@ -253,7 +252,7 @@ class ServerHello : public HandShakeBase {
     opaque              cipher_suite_[SUITE_LEN];
     CompressionMethod   compression_method_;
 public:
-    explicit ServerHello(ProtocolVersion pv);
+    ServerHello(ProtocolVersion pv, bool useCompression);
     ServerHello();
           
     friend input_buffer&  operator>>(input_buffer&, ServerHello&);
@@ -630,6 +629,7 @@ struct Connection {
     bool            master_clean_;                     // master secret clean?
     bool            TLS_;                              // TLSv1 or greater
     bool            sessionID_Set_;                    // do we have a session
+    bool            compression_;                      // zlib compression?
     ProtocolVersion version_;
     RandomPool&     random_;
 

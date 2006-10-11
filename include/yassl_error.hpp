@@ -56,7 +56,9 @@ enum YasslError {
     receive_error       = 114,
     certificate_error   = 115,
     privateKey_error    = 116,
-    badVersion_error    = 117
+    badVersion_error    = 117,
+    compress_error      = 118,
+    decompress_error    = 119
 
     // !!!! add error message to .cpp !!!!
 

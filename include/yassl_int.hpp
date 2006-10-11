@@ -593,6 +593,7 @@ public:
     const Socket&     getSocket()   const;
           YasslError  GetError()    const;
           bool        GetMultiProtocol() const;
+          bool        CompressionOn()    const;
 
     Crypto&    useCrypto();
     Security&  useSecurity();
@@ -610,6 +611,8 @@ public:
     void set_preMaster(const opaque*, uint);
     void set_masterSecret(const opaque*);
     void SetError(YasslError);
+    int  SetCompression();
+    void UnSetCompression();
 
     // helpers
     bool isTLS() const;
@@ -645,6 +648,10 @@ private:
     const SSL& operator=(const SSL&);   // and assign
 };
 
+
+// compression
+int Compress(const byte*, int, input_buffer&);
+int DeCompress(input_buffer&, int, input_buffer&);
 
 
 // conversion functions

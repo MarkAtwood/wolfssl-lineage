@@ -511,6 +511,19 @@ int SSL_get_error(SSL* ssl, int /*previous*/)
 }
 
 
+
+/* turn on yaSSL zlib compression
+   returns 0 for success, else error (not built in)
+   only need to turn on for client, becuase server on by default if built in
+   but calling for server will tell you whether it's available or not
+*/
+int SSL_set_compression(SSL* ssl)
+{
+    return ssl->SetCompression();
+}
+
+
+
 X509* SSL_get_peer_certificate(SSL* ssl)
 {
     return ssl->getCrypto().get_certManager().get_peerX509();

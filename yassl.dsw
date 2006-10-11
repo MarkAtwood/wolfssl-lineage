@@ -114,10 +114,10 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name taocrypt
+    Project_Dep_Name yassl
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name yassl
+    Project_Dep_Name zlib
     End Project Dependency
 }}}
 
@@ -134,6 +134,18 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name taocrypt
     End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "zlib"="..\test\zlib\zlib-1.2.3\projects\visualc6\zlib.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
 }}}
 
 ###############################################################################

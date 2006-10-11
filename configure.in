@@ -1,7 +1,12 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(yassl,1.4.4) # !!! also change in ssl.h !!!
+AM_INIT_AUTOMAKE(yassl,1.4.5) # !!! also change in ssl.h !!!
 AM_CONFIG_HEADER(taocrypt/include/config.h)
+
+dnl Include m4
+sinclude(check_zlib.m4)
+sinclude(lib_socket_nsl.m4)
+sinclude(acx_pthread.m4)
 
 # make sure configure doesn't add to CXXFLAGS
 CXXFLAGS="$CXXFLAGS $C_EXTRA_FLAGS"    
@@ -85,43 +90,19 @@ then
     CXXFLAGS="$CXXFLAGS -DTAOCRYPT_DISABLE_X86ASM"
 fi
 
+
+
+CHECK_ZLIB
+
+ACX_PTHREAD
+
+LIBS="$PTHREAD_LIBS $LIBS"
+CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
+
+LIB_SOCKET_NSL
+
 AC_SUBST(CXXFLAGS)
-
-
-if expr "$target_os" : "solaris" > /dev/null
-then
-    EXTRA_SOCKET="-lnsl -lsocket"
-else
-    EXTRA_SOCKET=""
-fi
-AC_SUBST(EXTRA_SOCKET)
-
-
-if expr "$target_os" : ".*bsd.*" > /dev/null
-then
-    if expr "$target_os" : "netbsd.*" > /dev/null
-    then
-        EXTRA_PTHREAD="-lpthread"
-    else
-        EXTRA_PTHREAD="-pthread"
-    fi
-else
-    EXTRA_PTHREAD="-lpthread"
-fi
-AC_SUBST(EXTRA_PTHREAD)
-
-
-if expr "$target_os" : "netbsd.*" > /dev/null
-then
-    PTHREAD_CFLAGS=`pthread-config --cflags`
-    PTHREAD_LDFLAGS=`pthread-config --ldflags`
-else
-    PTHREAD_CFLAGS=""
-    PTHREAD_LDFLAGS=""
-fi
-AC_SUBST(PTHREAD_CFLAGS)
-AC_SUBST(PTHREAD_LDFLAGS)
-
+AC_SUBST(LIBS)
 
 
 AC_CONFIG_FILES(Makefile dnl

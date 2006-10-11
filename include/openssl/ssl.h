@@ -41,7 +41,7 @@
 #include "rsa.h"
 
 
-#define YASSL_VERSION "1.4.4"
+#define YASSL_VERSION "1.4.5"
 
 
 #if defined(__cplusplus)
@@ -529,6 +529,10 @@ void MD5_Final(unsigned char*, MD5_CTX*);
 
 
 #define SSL_DEFAULT_CIPHER_LIST ""   /* default all */
+
+
+/* yaSSL adds */
+int SSL_set_compression(SSL*);   /* turn on yaSSL zlib compression */
 
 
 

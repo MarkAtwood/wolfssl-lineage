@@ -1060,7 +1060,7 @@ static bool HasSSE2()
     if (setjmp(s_env))
         result = false;
     else
-        __asm __volatile ("xorps %xmm0, %xmm0");
+        __asm __volatile ("xorpd %xmm0, %xmm0");
 
     signal(SIGILL, oldHandler);
     return result;
