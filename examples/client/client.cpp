@@ -58,7 +58,6 @@ void client_test(void* args)
     SSL* ssl = SSL_new(ctx);
 
     SSL_set_fd(ssl, sockfd);
-    SSL_set_compression(ssl);
 
 
 #ifdef NON_BLOCKING
