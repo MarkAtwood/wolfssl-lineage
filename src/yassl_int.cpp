@@ -1375,6 +1375,12 @@ bool SSL::isTLS() const
 }
 
 
+bool SSL::isTLSv1_1() const
+{
+    return secure_.get_connection().TLSv1_1_;
+}
+
+
 void SSL::addData(input_buffer* data)
 {
     buffers_.useData().push_back(data);
