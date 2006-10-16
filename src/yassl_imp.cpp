@@ -840,6 +840,14 @@ void Alert::Process(input_buffer& input, SSL& ssl)
         int            aSz = get_length();  // alert size already read on input
         opaque         verify[SHA_LEN];
         const  opaque* data = input.get_buffer() + input.get_current() - aSz;
+        int            ivExtra = 0;
+
+        if (ssl.getSecurity().get_parms().cipher_type_ == block)
+            if (ssl.isTLSv1_1())  {   // IV
+                int blockSz = ssl.getCrypto().get_cipher().get_blockSize();
+                aSz  += blockSz;
+                data -= blockSz;
+            }
 
         if (ssl.isTLS())
             TLS_hmac(ssl, verify, data, aSz, alert, true);
@@ -851,11 +859,13 @@ void Alert::Process(input_buffer& input, SSL& ssl)
         opaque mac[SHA_LEN];
         input.read(mac, digestSz);
 
-        opaque fill;
-        int    padSz = ssl.getSecurity().get_parms().encrypt_size_ - aSz -
-                       digestSz;
-        for (int i = 0; i < padSz; i++) 
-            fill = input[AUTO];
+        if (ssl.getSecurity().get_parms().cipher_type_ == block) {
+            opaque fill;
+            int    padSz = ssl.getSecurity().get_parms().encrypt_size_ - aSz -
+                           digestSz;
+            for (int i = 0; i < padSz; i++) 
+                fill = input[AUTO];
+        }
 
         // verify
         if (memcmp(mac, verify, digestSz)) {
@@ -938,18 +948,23 @@ void Data::Process(input_buffer& input, SSL& ssl)
 {
     int msgSz = ssl.getSecurity().get_parms().encrypt_size_;
     int pad   = 0, padByte = 0;
+    int ivExtra = 0;
+
     if (ssl.getSecurity().get_parms().cipher_type_ == block) {
-        pad = *(input.get_buffer() + input.get_current() + msgSz - 1);
+        if (ssl.isTLSv1_1())  // IV
+            ivExtra = ssl.getCrypto().get_cipher().get_blockSize();
+        pad = *(input.get_buffer() + input.get_current() + msgSz -ivExtra - 1);
         padByte = 1;
     }
     int digestSz = ssl.getCrypto().get_digest().get_digestSize();
-    int dataSz = msgSz - digestSz - pad - padByte;   
+    int dataSz = msgSz - ivExtra - digestSz - pad - padByte;   
     opaque verify[SHA_LEN];
 
+    const byte* rawData = input.get_buffer() + input.get_current() - ivExtra;
+    int         rawSize = dataSz + ivExtra;
+
     // read data
-    if (dataSz) {
-        const byte* rawData = input.get_buffer() + input.get_current();
-                               // could be compressed
+    if (dataSz) {                               // could be compressed
         if (ssl.CompressionOn()) {
             input_buffer tmp;
             if (DeCompress(input, dataSz, tmp) == -1) {
@@ -967,11 +982,9 @@ void Data::Process(input_buffer& input, SSL& ssl)
         }
 
         if (ssl.isTLS())
-            TLS_hmac(ssl, verify, rawData, dataSz, application_data,
-                     true);
+            TLS_hmac(ssl, verify, rawData, rawSize, application_data, true);
         else
-            hmac(ssl, verify, rawData, dataSz, application_data,
-                 true);
+            hmac(ssl, verify, rawData, rawSize, application_data, true);
     }
 
     // read mac and fill
@@ -1946,6 +1959,11 @@ void Finished::Process(input_buffer& input, SSL& ssl)
     // verify hashes
     const  Finished& verify = ssl.getHashes().get_verify();
     uint finishedSz = ssl.isTLS() ? TLS_FINISHED_SZ : FINISHED_SZ;
+    uint ivExtra =  0;
+    
+    if (ssl.getSecurity().get_parms().cipher_type_ == block)
+        if (ssl.isTLSv1_1())
+            ivExtra = ssl.getCrypto().get_cipher().get_blockSize(); // IV
 
     input.read(hashes_.md5_, finishedSz);
 
@@ -1956,7 +1974,7 @@ void Finished::Process(input_buffer& input, SSL& ssl)
 
     // read verify mac
     opaque verifyMAC[SHA_LEN];
-    uint macSz = finishedSz + HANDSHAKE_HEADER;
+    uint macSz = finishedSz + HANDSHAKE_HEADER + ivExtra;
 
     if (ssl.isTLS())
         TLS_hmac(ssl, verifyMAC, input.get_buffer() + input.get_current()
@@ -1971,7 +1989,7 @@ void Finished::Process(input_buffer& input, SSL& ssl)
     input.read(mac, digestSz);
 
     opaque fill;
-    int    padSz = ssl.getSecurity().get_parms().encrypt_size_ -
+    int    padSz = ssl.getSecurity().get_parms().encrypt_size_ - ivExtra -
                      HANDSHAKE_HEADER - finishedSz - digestSz;
     for (int i = 0; i < padSz; i++) 
         fill = input[AUTO];
@@ -2045,8 +2063,9 @@ void clean(volatile opaque* p, uint sz, RandomPool& ran)
 Connection::Connection(ProtocolVersion v, RandomPool& ran)
     : pre_master_secret_(0), sequence_number_(0), peer_sequence_number_(0),
       pre_secret_len_(0), send_server_key_(false), master_clean_(false),
-      TLS_(v.major_ >= 3 && v.minor_ >= 1), compression_(false), version_(v),
-      random_(ran)
+      TLS_(v.major_ >= 3 && v.minor_ >= 1),
+      TLSv1_1_(v.major_ >= 3 && v.minor_ >= 2), compression_(false),
+      version_(v), random_(ran)
 {
     memset(sessionID_, 0, sizeof(sessionID_));
 }

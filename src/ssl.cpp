@@ -183,6 +183,18 @@ SSL_METHOD* TLSv1_client_method()
 }
 
 
+SSL_METHOD* TLSv1_1_server_method()
+{
+    return NEW_YS SSL_METHOD(server_end, ProtocolVersion(3,2));
+}
+
+
+SSL_METHOD* TLSv1_1_client_method()
+{
+    return NEW_YS SSL_METHOD(client_end, ProtocolVersion(3,2));
+}
+
+
 SSL_METHOD* SSLv23_server_method()
 {
     // compatibility only, no version 2 support, but does SSL 3 and TLS 1

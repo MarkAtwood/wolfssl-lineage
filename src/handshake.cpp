@@ -149,11 +149,17 @@ void buildHeaders(SSL& ssl, HandShakeHeader& hsHeader,
 
 
 // add handshake from buffer into md5 and sha hashes, exclude record header
-void hashHandShake(SSL& ssl, const output_buffer& output)
+void hashHandShake(SSL& ssl, const output_buffer& output, bool removeIV = false)
 {
     uint sz = output.get_size() - RECORD_HEADER;
 
     const opaque* buffer = output.get_buffer() + RECORD_HEADER;
+
+    if (removeIV) {  // TLSv1_1 IV
+        uint blockSz = ssl.getCrypto().get_cipher().get_blockSize();
+        sz     -= blockSz;
+        buffer += blockSz;
+    }
 
     ssl.useHashes().use_MD5().update(buffer, sz);
     ssl.useHashes().use_SHA().update(buffer, sz);
@@ -227,6 +233,18 @@ void decrypt_message(SSL& ssl, input_buffer& input, uint sz)
     ssl.useCrypto().use_cipher().decrypt(plain.get_buffer(), cipher, sz);
     memcpy(cipher, plain.get_buffer(), sz);
     ssl.useSecurity().use_parms().encrypt_size_ = sz;
+
+    if (ssl.isTLSv1_1())  // IV
+        input.set_current(input.get_current() +
+              ssl.getCrypto().get_cipher().get_blockSize());
+}
+
+
+// output operator for input_buffer
+output_buffer& operator<<(output_buffer& output, const input_buffer& input)
+{
+    output.write(input.get_buffer(), input.get_size());
+    return output;
 }
 
 
@@ -237,9 +255,12 @@ void cipherFinished(SSL& ssl, Finished& fin, output_buffer& output)
     uint finishedSz = ssl.isTLS() ? TLS_FINISHED_SZ : FINISHED_SZ;
     uint sz  = RECORD_HEADER + HANDSHAKE_HEADER + finishedSz + digestSz;
     uint pad = 0;
+    uint blockSz = ssl.getCrypto().get_cipher().get_blockSize();
+
     if (ssl.getSecurity().get_parms().cipher_type_ == block) {
+        if (ssl.isTLSv1_1())
+            sz += blockSz;            // IV
         sz += 1;       // pad byte
-        uint blockSz = ssl.getCrypto().get_cipher().get_blockSize();
         pad = (sz - RECORD_HEADER) % blockSz;
         pad = blockSz - pad;
         sz += pad;
@@ -250,10 +271,16 @@ void cipherFinished(SSL& ssl, Finished& fin, output_buffer& output)
     buildHeaders(ssl, hsHeader, rlHeader, fin);
     rlHeader.length_ = sz - RECORD_HEADER;   // record header includes mac
                                              // and pad, hanshake doesn't
+    input_buffer iv;
+    if (ssl.isTLSv1_1()) {  // IV
+        iv.allocate(blockSz);
+        ssl.getCrypto().get_random().Fill(iv.get_buffer(), blockSz);
+        iv.add_size(blockSz);
+    }
     output.allocate(sz);
-    output << rlHeader << hsHeader << fin;
+    output << rlHeader << iv << hsHeader << fin;
     
-    hashHandShake(ssl, output);
+    hashHandShake(ssl, output, ssl.isTLSv1_1() ? true : false);
     opaque digest[SHA_LEN];                  // max size
     if (ssl.isTLS())
         TLS_hmac(ssl, digest, output.get_buffer() + RECORD_HEADER,
@@ -280,9 +307,12 @@ void buildMessage(SSL& ssl, output_buffer& output, const Message& msg)
     uint digestSz = ssl.getCrypto().get_digest().get_digestSize();
     uint sz  = RECORD_HEADER + msg.get_length() + digestSz;                
     uint pad = 0;
+    uint blockSz = ssl.getCrypto().get_cipher().get_blockSize();
+
     if (ssl.getSecurity().get_parms().cipher_type_ == block) {
+        if (ssl.isTLSv1_1())  // IV
+            sz += blockSz;
         sz += 1;       // pad byte
-        uint blockSz = ssl.getCrypto().get_cipher().get_blockSize();
         pad = (sz - RECORD_HEADER) % blockSz;
         pad = blockSz - pad;
         sz += pad;
@@ -292,8 +322,15 @@ void buildMessage(SSL& ssl, output_buffer& output, const Message& msg)
     buildHeader(ssl, rlHeader, msg);
     rlHeader.length_ = sz - RECORD_HEADER;   // record header includes mac
                                              // and pad, hanshake doesn't
+    input_buffer iv;
+    if (ssl.isTLSv1_1()) {  // IV
+        iv.allocate(blockSz);
+        ssl.getCrypto().get_random().Fill(iv.get_buffer(), blockSz);
+        iv.add_size(blockSz);
+    }
+
     output.allocate(sz);
-    output << rlHeader << msg;
+    output << rlHeader << iv << msg;
     
     opaque digest[SHA_LEN];                  // max size
     if (ssl.isTLS())

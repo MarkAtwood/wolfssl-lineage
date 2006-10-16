@@ -616,6 +616,7 @@ public:
 
     // helpers
     bool isTLS() const;
+    bool isTLSv1_1() const;
     void order_error();
     void makeMasterSecret();
     void makeTLSMasterSecret();
