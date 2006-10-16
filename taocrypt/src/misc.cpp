@@ -211,10 +211,11 @@ bool HaveCpuId()
     else 
         __asm__
         (
-            "mov $0, %%eax; cpuid"
+            // save ebx in case -fPIC is being used
+            "push %%ebx; mov $0, %%eax; cpuid; pop %%ebx"
             : 
             :
-            : "%ebx", "%ecx", "%edx" 
+            : "%ecx", "%edx" 
         );
 
     signal(SIGILL, oldHandler);
