@@ -82,6 +82,7 @@ THREAD_RETURN YASSL_API server_test(void* args)
     if (SSL_write(ssl, msg, sizeof(msg)) != sizeof(msg))
         ServerError(ctx, ssl, clientfd, "SSL_write failed");
 
+    SSL_read(ssl, command, sizeof(command));
     DH_free(dh);
     SSL_CTX_free(ctx);
     SSL_free(ssl);

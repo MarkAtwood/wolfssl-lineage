@@ -44,7 +44,7 @@ void echoclient_test(void* args)
 
     tcp_connect(sockfd);
 
-    SSL_METHOD* method = TLSv1_client_method();
+    SSL_METHOD* method = SSLv23_client_method();
     SSL_CTX*    ctx = SSL_CTX_new(method);
     set_certs(ctx);
     SSL*        ssl = SSL_new(ctx);

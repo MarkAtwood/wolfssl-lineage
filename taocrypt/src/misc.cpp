@@ -209,13 +209,13 @@ bool HaveCpuId()
     if (setjmp(s_env))
         result = false;
     else 
-        __asm__
+        __asm__ __volatile
         (
             // save ebx in case -fPIC is being used
             "push %%ebx; mov $0, %%eax; cpuid; pop %%ebx"
             : 
             :
-            : "%ecx", "%edx" 
+            : "%eax", "%ecx", "%edx" 
         );
 
     signal(SIGILL, oldHandler);

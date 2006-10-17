@@ -641,6 +641,7 @@ struct Connection {
     void CleanPreMaster();
     void CleanMaster();
     void TurnOffTLS();
+    void TurnOffTLS1_1();
 private:
     Connection(const Connection&);              // hide copy
     Connection& operator=(const Connection&);   // and assign

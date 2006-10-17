@@ -272,19 +272,20 @@ void cipherFinished(SSL& ssl, Finished& fin, output_buffer& output)
     rlHeader.length_ = sz - RECORD_HEADER;   // record header includes mac
                                              // and pad, hanshake doesn't
     input_buffer iv;
-    if (ssl.isTLSv1_1()) {  // IV
+    if (ssl.isTLSv1_1() && ssl.getSecurity().get_parms().cipher_type_== block){
         iv.allocate(blockSz);
         ssl.getCrypto().get_random().Fill(iv.get_buffer(), blockSz);
         iv.add_size(blockSz);
     }
+    uint ivSz = iv.get_size();
     output.allocate(sz);
     output << rlHeader << iv << hsHeader << fin;
     
     hashHandShake(ssl, output, ssl.isTLSv1_1() ? true : false);
     opaque digest[SHA_LEN];                  // max size
     if (ssl.isTLS())
-        TLS_hmac(ssl, digest, output.get_buffer() + RECORD_HEADER,
-                 output.get_size() - RECORD_HEADER, handshake);
+        TLS_hmac(ssl, digest, output.get_buffer() + RECORD_HEADER + ivSz,
+                 output.get_size() - RECORD_HEADER - ivSz, handshake);
     else
         hmac(ssl, digest, output.get_buffer() + RECORD_HEADER,
              output.get_size() - RECORD_HEADER, handshake);
@@ -323,19 +324,20 @@ void buildMessage(SSL& ssl, output_buffer& output, const Message& msg)
     rlHeader.length_ = sz - RECORD_HEADER;   // record header includes mac
                                              // and pad, hanshake doesn't
     input_buffer iv;
-    if (ssl.isTLSv1_1()) {  // IV
+    if (ssl.isTLSv1_1() && ssl.getSecurity().get_parms().cipher_type_== block){
         iv.allocate(blockSz);
         ssl.getCrypto().get_random().Fill(iv.get_buffer(), blockSz);
         iv.add_size(blockSz);
     }
-
+    
+    uint ivSz = iv.get_size();
     output.allocate(sz);
     output << rlHeader << iv << msg;
     
     opaque digest[SHA_LEN];                  // max size
     if (ssl.isTLS())
-        TLS_hmac(ssl, digest, output.get_buffer() + RECORD_HEADER,
-                 output.get_size() - RECORD_HEADER, msg.get_type());
+        TLS_hmac(ssl, digest, output.get_buffer() + RECORD_HEADER + ivSz,
+                 output.get_size() - RECORD_HEADER - ivSz, msg.get_type());
     else
         hmac(ssl, digest, output.get_buffer() + RECORD_HEADER,
              output.get_size() - RECORD_HEADER, msg.get_type());

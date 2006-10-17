@@ -615,14 +615,18 @@ output_buffer& operator<<(output_buffer& output, const HandShakeHeader& hdr)
 void HandShakeHeader::Process(input_buffer& input, SSL& ssl)
 {
     ssl.verifyState(*this);
+    if (ssl.GetError()) return;
     const HandShakeFactory& hsf = ssl.getFactory().getHandShake();
     mySTL::auto_ptr<HandShakeBase> hs(hsf.CreateObject(type_));
     if (!hs.get()) {
         ssl.SetError(factory_error);
         return;
     }
-    hashHandShake(ssl, input, c24to32(length_));
 
+    uint len = c24to32(length_);
+    hashHandShake(ssl, input, len);
+
+    hs->set_length(len);
     input >> *hs;
     hs->Process(input, ssl);
 }
@@ -840,14 +844,6 @@ void Alert::Process(input_buffer& input, SSL& ssl)
         int            aSz = get_length();  // alert size already read on input
         opaque         verify[SHA_LEN];
         const  opaque* data = input.get_buffer() + input.get_current() - aSz;
-        int            ivExtra = 0;
-
-        if (ssl.getSecurity().get_parms().cipher_type_ == block)
-            if (ssl.isTLSv1_1())  {   // IV
-                int blockSz = ssl.getCrypto().get_cipher().get_blockSize();
-                aSz  += blockSz;
-                data -= blockSz;
-            }
 
         if (ssl.isTLS())
             TLS_hmac(ssl, verify, data, aSz, alert, true);
@@ -860,9 +856,13 @@ void Alert::Process(input_buffer& input, SSL& ssl)
         input.read(mac, digestSz);
 
         if (ssl.getSecurity().get_parms().cipher_type_ == block) {
+            int    ivExtra = 0;
             opaque fill;
-            int    padSz = ssl.getSecurity().get_parms().encrypt_size_ - aSz -
-                           digestSz;
+
+            if (ssl.isTLSv1_1())
+                ivExtra = ssl.getCrypto().get_cipher().get_blockSize();
+            int padSz = ssl.getSecurity().get_parms().encrypt_size_ - ivExtra -
+                        aSz - digestSz;
             for (int i = 0; i < padSz; i++) 
                 fill = input[AUTO];
         }
@@ -960,8 +960,7 @@ void Data::Process(input_buffer& input, SSL& ssl)
     int dataSz = msgSz - ivExtra - digestSz - pad - padByte;   
     opaque verify[SHA_LEN];
 
-    const byte* rawData = input.get_buffer() + input.get_current() - ivExtra;
-    int         rawSize = dataSz + ivExtra;
+    const byte* rawData = input.get_buffer() + input.get_current();
 
     // read data
     if (dataSz) {                               // could be compressed
@@ -982,9 +981,9 @@ void Data::Process(input_buffer& input, SSL& ssl)
         }
 
         if (ssl.isTLS())
-            TLS_hmac(ssl, verify, rawData, rawSize, application_data, true);
+            TLS_hmac(ssl, verify, rawData, dataSz, application_data, true);
         else
-            hmac(ssl, verify, rawData, rawSize, application_data, true);
+            hmac(ssl, verify, rawData, dataSz, application_data, true);
     }
 
     // read mac and fill
@@ -1247,6 +1246,13 @@ void ServerHello::Process(input_buffer&, SSL& ssl)
         if (ssl.isTLS() && server_version_.minor_ < 1)
             // downgrade to SSLv3
             ssl.useSecurity().use_connection().TurnOffTLS();
+        else if (ssl.isTLSv1_1() && server_version_.minor_ == 1)
+            // downdrage to TLSv1
+            ssl.useSecurity().use_connection().TurnOffTLS1_1();
+    }
+    else if (ssl.isTLSv1_1() && server_version_.minor_ < 2) {
+        ssl.SetError(badVersion_error);
+        return;
     }
     else if (ssl.isTLS() && server_version_.minor_ < 1) {
         ssl.SetError(badVersion_error);
@@ -1373,6 +1379,8 @@ opaque* ClientKeyBase::get_clientKey() const
 // input operator for Client Hello
 input_buffer& operator>>(input_buffer& input, ClientHello& hello)
 {
+    uint begin = input.get_current();  // could have extensions at end
+
     // Protocol
     hello.client_version_.major_ = input[AUTO];
     hello.client_version_.minor_ = input[AUTO];
@@ -1399,6 +1407,13 @@ input_buffer& operator>>(input_buffer& input, ClientHello& hello)
         if (cm == zlib)
             hello.compression_methods_ = zlib;
     }
+
+    uint read = input.get_current() - begin;
+    uint expected = hello.get_length();
+
+    // ignore client hello extensions for now
+    if (read < expected)
+        input.set_current(input.get_current() + expected - read);
 
     return input;
 }
@@ -1443,6 +1458,13 @@ void ClientHello::Process(input_buffer&, SSL& ssl)
             ProtocolVersion pv = ssl.getSecurity().get_connection().version_;
             ssl.useSecurity().use_parms().SetSuites(pv);  // reset w/ SSL suites
         }
+        else if (ssl.isTLSv1_1() && client_version_.minor_ == 1)
+            // downgrade to TLSv1
+            ssl.useSecurity().use_connection().TurnOffTLS1_1();
+    }
+    else if (ssl.isTLSv1_1() && client_version_.minor_ < 2) {
+        ssl.SetError(badVersion_error);
+        return;
     }
     else if (ssl.isTLS() && client_version_.minor_ < 1) {
         ssl.SetError(badVersion_error);
@@ -1959,12 +1981,7 @@ void Finished::Process(input_buffer& input, SSL& ssl)
     // verify hashes
     const  Finished& verify = ssl.getHashes().get_verify();
     uint finishedSz = ssl.isTLS() ? TLS_FINISHED_SZ : FINISHED_SZ;
-    uint ivExtra =  0;
     
-    if (ssl.getSecurity().get_parms().cipher_type_ == block)
-        if (ssl.isTLSv1_1())
-            ivExtra = ssl.getCrypto().get_cipher().get_blockSize(); // IV
-
     input.read(hashes_.md5_, finishedSz);
 
     if (memcmp(&hashes_, &verify.hashes_, finishedSz)) {
@@ -1974,7 +1991,7 @@ void Finished::Process(input_buffer& input, SSL& ssl)
 
     // read verify mac
     opaque verifyMAC[SHA_LEN];
-    uint macSz = finishedSz + HANDSHAKE_HEADER + ivExtra;
+    uint macSz = finishedSz + HANDSHAKE_HEADER;
 
     if (ssl.isTLS())
         TLS_hmac(ssl, verifyMAC, input.get_buffer() + input.get_current()
@@ -1987,6 +2004,11 @@ void Finished::Process(input_buffer& input, SSL& ssl)
     opaque mac[SHA_LEN];   // max size
     int    digestSz = ssl.getCrypto().get_digest().get_digestSize();
     input.read(mac, digestSz);
+
+    uint ivExtra = 0;
+    if (ssl.getSecurity().get_parms().cipher_type_ == block)
+        if (ssl.isTLSv1_1())
+            ivExtra = ssl.getCrypto().get_cipher().get_blockSize();
 
     opaque fill;
     int    padSz = ssl.getSecurity().get_parms().encrypt_size_ - ivExtra -
@@ -2087,6 +2109,13 @@ void Connection::TurnOffTLS()
 {
     TLS_ = false;
     version_.minor_ = 0;
+}
+
+
+void Connection::TurnOffTLS1_1()
+{
+    TLSv1_1_ = false;
+    version_.minor_ = 1;
 }
 
 
