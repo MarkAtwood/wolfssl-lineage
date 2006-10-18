@@ -233,6 +233,10 @@ void EncryptedPreMasterSecret::read(SSL& ssl, input_buffer& input)
     rsa.decrypt(preMasterSecret, secret_, length_, 
                 ssl.getCrypto().get_random());
 
+    ProtocolVersion pv = ssl.getSecurity().get_connection().version_;
+    if (pv.major_ != preMasterSecret[0] || pv.minor_ != preMasterSecret[1])
+        ssl.SetError(pms_version_error); // continue deriving for timing attack
+
     ssl.set_preMaster(preMasterSecret, SECRET_LEN);
     ssl.makeMasterSecret();
 }
@@ -1451,6 +1455,10 @@ output_buffer& operator<<(output_buffer& output, const ClientHello& hello)
 // Client Hello processing handler
 void ClientHello::Process(input_buffer&, SSL& ssl)
 {
+    if (client_version_.major_ != 3) {
+        ssl.SetError(badVersion_error);
+        return;
+    }
     if (ssl.GetMultiProtocol()) {   // SSLv23 support
         if (ssl.isTLS() && client_version_.minor_ < 1) {
             // downgrade to SSLv3
@@ -1459,7 +1467,7 @@ void ClientHello::Process(input_buffer&, SSL& ssl)
             ssl.useSecurity().use_parms().SetSuites(pv);  // reset w/ SSL suites
         }
         else if (ssl.isTLSv1_1() && client_version_.minor_ == 1)
-            // downgrade to TLSv1
+            // downgrade to TLSv1, but use same suites
             ssl.useSecurity().use_connection().TurnOffTLS1_1();
     }
     else if (ssl.isTLSv1_1() && client_version_.minor_ < 2) {
@@ -1470,11 +1478,11 @@ void ClientHello::Process(input_buffer&, SSL& ssl)
         ssl.SetError(badVersion_error);
         return;
     }
-    else if (!ssl.isTLS() && (client_version_.major_ == 3 &&
-                              client_version_.minor_ >= 1)) {
+    else if (!ssl.isTLS() && client_version_.minor_ >= 1) {
         ssl.SetError(badVersion_error);
         return;
     }
+
     ssl.set_random(random_, client_end);
 
     while (id_len_) {  // trying to resume

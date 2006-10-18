@@ -17,8 +17,8 @@ void ServerError(SSL_CTX* ctx, SSL* ssl, SOCKET_T& sockfd, const char* msg)
     void NonBlockingSSL_Accept(SSL* ssl, SSL_CTX* ctx, SOCKET_T& clientfd)
     {
         int ret = SSL_accept(ssl);
-        while (ret == SSL_FATAL_ERROR && SSL_get_error(ssl, 0) ==
-                                         SSL_ERROR_WANT_READ) {
+        while (ret =! SSL_SUCCESS && SSL_get_error(ssl, 0) ==
+                                     SSL_ERROR_WANT_READ) {
             printf("... server would block\n");
             #ifdef _WIN32
                 Sleep(1000);
@@ -53,7 +53,7 @@ THREAD_RETURN YASSL_API server_test(void* args)
     SSL_METHOD* method = TLSv1_server_method();
     SSL_CTX*    ctx = SSL_CTX_new(method);
 
-    //SSL_CTX_set_cipher_list(ctx, "RC4-SHA");
+    //SSL_CTX_set_cipher_list(ctx, "ARC4-SHA");
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
     set_serverCerts(ctx);
     DH* dh = set_tmpDH(ctx);
@@ -82,9 +82,9 @@ THREAD_RETURN YASSL_API server_test(void* args)
     if (SSL_write(ssl, msg, sizeof(msg)) != sizeof(msg))
         ServerError(ctx, ssl, clientfd, "SSL_write failed");
 
-    SSL_read(ssl, command, sizeof(command));
     DH_free(dh);
     SSL_CTX_free(ctx);
+    SSL_shutdown(ssl);
     SSL_free(ssl);
 
     tcp_close(clientfd);

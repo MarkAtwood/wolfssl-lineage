@@ -222,7 +222,7 @@ typedef opaque* DistinguishedName;
 typedef bool IsExportable;
 
 
-enum CompressionMethod { no_compression = 0, zlib = 21 };
+enum CompressionMethod { no_compression = 0, zlib = 221 };
 
 enum CipherType { stream, block };
 
