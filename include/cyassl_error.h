@@ -52,8 +52,15 @@ enum CyaSSL_ErrorCodes {
     MATCH_SUITE_ERROR      = -219,            /* can't match cipher suite */
     BUILD_MSG_ERROR        = -220,            /* build message failure    */
 
-    BAD_HELLO              = -221             /* client hello malformed   */
+    BAD_HELLO              = -221,            /* client hello malformed   */
+    DOMAIN_NAME_MISMATCH   = -222             /* peer subject name mismatch */
+
+    /* add strings to SetErrorString !!!!! */
 };
+
+
+
+void SetErrorString(int error, char* buffer);
 
 
 #ifdef __cplusplus

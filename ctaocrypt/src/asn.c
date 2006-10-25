@@ -25,7 +25,11 @@
 #include "md5.h"
 #include "error.h"
 #include <time.h> 
-#include <assert.h> 
+#include <assert.h>
+
+
+#define NO_DH   /* remove for now */
+#define NO_DSA  /* remove for now */
 
 
 enum {

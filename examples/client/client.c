@@ -21,7 +21,11 @@ void client_test(void* args)
     char reply[1024];
 
     ((func_args*)args)->return_code = -1; /* error state */
+#ifndef NO_TLS
     method  = TLSv1_client_method();
+#else
+    method  = SSLv3_client_method();
+#endif
     ctx     = SSL_CTX_new(method);
     
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
@@ -30,6 +34,7 @@ void client_test(void* args)
     ssl = SSL_new(ctx);
     tcp_connect(&sockfd);
     SSL_set_fd(ssl, sockfd);
+    CyaSSL_check_domain_name(ssl, "www.taosoftdev.com");
 
     if (SSL_connect(ssl) != SSL_SUCCESS)
         err_sys("SSL_connect failed");

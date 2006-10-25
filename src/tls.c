@@ -288,17 +288,32 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
         return method;
     }
 
+
+
+
 #endif /* NO_CYASSL_SERVER */
 
+#else /* NO_TLS */
+
+/* catch CyaSSL programming errors */
+void BuildTlsFinished(SSL* ssl, Hashes* hashes, const byte* sender)
+{
+    assert(0);
+}
 
 
+int DeriveTlsKeys(SSL* ssl)
+{
+    assert(0);
+    return -1;
+}
 
 
-
-
-
-
-
-
+int MakeTlsMasterSecret(SSL* ssl)
+{ 
+    assert(0);
+    return -1;
+}
 
 #endif /* NO_TLS */
+

@@ -10,6 +10,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
 
+/* Define if you have POSIX threads libraries and header files. */
+#define HAVE_PTHREAD 1
+
 /* Define to 1 if you have the <stdint.h> header file. */
 #define HAVE_STDINT_H 1
 
@@ -49,6 +52,10 @@
 /* Define to the version of this package. */
 #define PACKAGE_VERSION ""
 
+/* Define to necessary symbol if this constant uses a non-standard name on
+   your system. */
+/* #undef PTHREAD_CREATE_JOINABLE */
+
 /* The size of a `long', as computed by sizeof. */
 #define SIZEOF_LONG 4
 
@@ -59,7 +66,7 @@
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "0.5.5"
+#define VERSION "0.6.0"
 
 /* Define to 1 if your processor stores words with the most significant byte
    first (like Motorola and SPARC, unlike Intel and VAX). */

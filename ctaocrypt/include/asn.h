@@ -145,10 +145,14 @@ void    FreeSigners(Signer*);
 int RsaPrivateKeyDecode(const byte* input, word32* inOutIdx, RsaKey*, word32);
 int RsaPublicKeyDecode(const byte* input, word32* inOutIdx, RsaKey*, word32);
 
+#ifndef NO_DH
 int DhKeyDecode(const byte* input, word32* inOutIdx, DhKey* key, word32);
+#endif
 
+#ifndef NO_DSA
 int DsaPublicKeyDecode(const byte* input, word32* inOutIdx, DsaKey*, word32);
 int DsaPrivateKeyDecode(const byte* input, word32* inOutIdx, DsaKey*, word32);
+#endif
 
 
 #ifdef __cplusplus

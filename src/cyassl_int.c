@@ -67,7 +67,8 @@
 
 
 #ifndef NO_CYASSL_SERVER
-    static int DoClientHello(SSL* ssl, const byte* input, word32*, word32);
+    static int DoClientHello(SSL* ssl, const byte* input, word32*, word32,
+                             word32);
     static int ProcessOldClientHello(SSL*, const byte*, word32*, word32);
     static int DoClientKeyExchange(SSL* ssl, const byte* input, word32*);
 #endif
@@ -113,6 +114,7 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->verifyPeer = 0;
     ctx->verifyNone = 0;
     ctx->failNoCert = 0;
+    ctx->sessionCacheOff = 0;  /* initially on */
 }
 
 
@@ -132,6 +134,7 @@ void InitSuites(Suites* suites, ProtocolVersion pv)
 {
     word32 idx = 0;
     int    tls = pv.major == 3 && pv.minor == 1;
+    (void)tls;  /* shut up compiler */
 
     suites->setSuites = 0;  /* user hasn't set yet */
 
@@ -180,6 +183,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->peerKey.buffer       = 0;
     ssl->bufferedData.buffer  = 0;
     ssl->bufferedInput.buffer = 0;
+    ssl->domainName.buffer    = 0;
 
     InitRng(&ssl->rng);
     InitMd5(&ssl->hashMd5);
@@ -192,6 +196,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->clientState = NULL_STATE;
 
     ssl->keys.encryptionOn = 0;     /* initially off */
+    ssl->sessionCacheOff = ctx->sessionCacheOff;
 
     ssl->verifyPeer = ctx->verifyPeer;
     ssl->verifyNone = ctx->verifyNone;
@@ -212,6 +217,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
 
 void FreeSSL(SSL* ssl)
 {
+    free(ssl->domainName.buffer);
     free(ssl->bufferedInput.buffer);
     free(ssl->bufferedData.buffer);
     free(ssl->peerKey.buffer);
@@ -569,6 +575,11 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
             if ( (ssl->peerKey.buffer = (byte*)malloc(dCert.pubKeySize))) {
                 memcpy(ssl->peerKey.buffer, dCert.publicKey, dCert.pubKeySize);
                 ssl->peerKey.length = dCert.pubKeySize;
+
+                if (!ssl->verifyNone && ssl->domainName.buffer)
+                    if (strncmp(ssl->domainName.buffer, dCert.subject,
+                                ssl->domainName.length - 1))
+                        ret = DOMAIN_NAME_MISMATCH;
             }
             else
                 ret = MEMORY_ERROR;
@@ -652,12 +663,10 @@ static int DoHandShakeMsg(SSL* ssl, const byte* input, word32* inOutIdx,
     HashInput(ssl, input + *inOutIdx, hs.size);
 
     switch (hs.type) {
+
+#ifndef NO_CYASSL_CLIENT
     case server_hello:
         return DoServerHello(ssl, input, inOutIdx);
-        break;
-
-    case certificate:
-        return DoCertificate(ssl, input, inOutIdx);
         break;
 
     case certificate_request:
@@ -666,6 +675,11 @@ static int DoHandShakeMsg(SSL* ssl, const byte* input, word32* inOutIdx,
 
     case server_key_exchange:
         return DoServerKeyExchange(ssl, input, inOutIdx);
+        break;
+#endif
+
+    case certificate:
+        return DoCertificate(ssl, input, inOutIdx);
         break;
 
     case server_hello_done:
@@ -676,13 +690,15 @@ static int DoHandShakeMsg(SSL* ssl, const byte* input, word32* inOutIdx,
         return DoFinished(ssl, input, inOutIdx);
         break;
 
+#ifndef NO_CYASSL_SERVER
     case client_hello:
-        return DoClientHello(ssl, input, inOutIdx, totalSz);
+        return DoClientHello(ssl, input, inOutIdx, totalSz, hs.size);
         break;
 
     case client_key_exchange:
         return DoClientKeyExchange(ssl, input, inOutIdx);
         break;
+#endif
 
     default:
         return UNKNOWN_HANDSHAKE_TYPE;
@@ -892,11 +908,13 @@ int DoProcessReply(SSL* ssl)
         inSz += bufferedSz;
     }
 
+#ifndef NO_CYASSL_SERVER
     if ( ssl->side == SERVER_END && ssl->clientState == NULL_STATE)
         /* see if sending SSLv2 client hello */
         if (input[idx] != handshake)
             if (ProcessOldClientHello(ssl, input, &idx, inSz - idx) != 0)
                 ERROR_OUT(BAD_HELLO);
+#endif
 
     while (idx < inSz) {
         /* each record */
@@ -1334,6 +1352,222 @@ int SendAlert(SSL* ssl, int severity, int type)
 }
 
 
+
+void SetErrorString(int error, char* buffer)
+{
+    const int max = MAX_ERROR_SZ;  /* shorthand */
+
+#ifdef NO_ERROR_STRINGS
+
+    strncpy(buffer, "no support for error strings built in", max);
+
+#else
+
+    switch (error) {
+
+    case UNSUPPORTED_SUITE :
+        strncpy(buffer, "unsupported cipher suite", max);
+        break;
+
+    case PREFIX_ERROR :
+        strncpy(buffer, "bad index to key rounds", max);
+        break;
+
+    case MEMORY_ERROR :
+        strncpy(buffer, "out of memory", max);
+        break;
+
+    case VERIFY_FINISHED_ERROR :
+        strncpy(buffer, "verify problem on finished", max);
+        break;
+
+    case VERIFY_MAC_ERROR :
+        strncpy(buffer, "verify mac problem", max);
+        break;
+
+    case PARSE_ERROR :
+        strncpy(buffer, "parse error on header", max);
+        break;
+
+    case UNKNOWN_HANDSHAKE_TYPE :
+        strncpy(buffer, "weird handshake type", max);
+        break;
+
+    case SOCKET_ERROR_E :
+        strncpy(buffer, "error state on socket", max);
+        break;
+
+    case SOCKET_NODATA :
+        strncpy(buffer, "expected data, not there", max);
+        break;
+
+    case INCOMPLETE_DATA :
+        strncpy(buffer, "don't have enough data to complete task", max);
+        break;
+
+    case UNKOWN_RECORD_TYPE :
+        strncpy(buffer, "unknown type in record hdr", max);
+        break;
+
+    case DECRYPT_ERROR :
+        strncpy(buffer, "error during decryption", max);
+        break;
+
+    case FATAL_ERROR :
+        strncpy(buffer, "revcd alert fatal error", max);
+        break;
+
+    case ENCRYPT_ERROR :
+        strncpy(buffer, "error during encryption", max);
+        break;
+
+    case FREAD_ERROR :
+        strncpy(buffer, "fread problem", max);
+        break;
+
+    case NO_PEER_KEY :
+        strncpy(buffer, "need peer's key", max);
+        break;
+
+    case NO_PRIVATE_KEY :
+        strncpy(buffer, "need the private key", max);
+        break;
+
+    case RSA_PRIVATE_ERROR :
+        strncpy(buffer, "error during rsa priv op", max);
+        break;
+
+    case MATCH_SUITE_ERROR :
+        strncpy(buffer, "can't match cipher suite", max);
+        break;
+
+    case BUILD_MSG_ERROR :
+        strncpy(buffer, "build message failure", max);
+        break;
+
+    case BAD_HELLO :
+        strncpy(buffer, "client hello malformed", max);
+        break;
+
+    case DOMAIN_NAME_MISMATCH :
+        strncpy(buffer, "peer subject name mismatch", max);
+        break;
+
+    default :
+        strncpy(buffer, "unknown error number", max);
+    }
+
+#endif /* NO_ERROR_STRINGS */
+}
+
+
+
+/* be sure to add to cipher_name_idx too !!!! */
+const char* const cipher_names[] = 
+{
+#ifdef BUILD_SSL_RSA_WITH_RC4_128_SHA
+    "RC4-SHA",
+#endif
+
+#ifdef BUILD_SSL_RSA_WITH_RC4_128_MD5
+    "RC4-MD5",
+#endif
+
+#ifdef BUILD_SSL_RSA_WITH_3DES_EDE_CBC_SHA
+    "DES-CBC3-SHA",
+#endif
+
+#ifdef BUILD_TLS_RSA_WITH_AES_128_CBC_SHA
+    "AES128-SHA",
+#endif
+
+#ifdef BUILD_TLS_RSA_WITH_AES_256_CBC_SHA
+    "AES256-SHA",
+#endif
+
+};
+
+
+
+/* cipher suite number that matches above name table */
+int cipher_name_idx[] =
+{
+
+#ifdef BUILD_SSL_RSA_WITH_RC4_128_SHA
+    SSL_RSA_WITH_RC4_128_SHA,
+#endif
+
+#ifdef BUILD_SSL_RSA_WITH_RC4_128_MD5
+    SSL_RSA_WITH_RC4_128_MD5,
+#endif
+
+#ifdef BUILD_SSL_RSA_WITH_3DES_EDE_CBC_SHA
+    SSL_RSA_WITH_3DES_EDE_CBC_SHA,
+#endif
+
+#ifdef BUILD_TLS_RSA_WITH_AES_128_CBC_SHA
+    TLS_RSA_WITH_AES_128_CBC_SHA,    
+#endif
+
+#ifdef BUILD_TLS_RSA_WITH_AES_256_CBC_SHA
+    TLS_RSA_WITH_AES_256_CBC_SHA,
+#endif
+
+};
+
+
+/* return true if set, else false */
+/* only supports full name from cipher_name[] delimited by : */
+int SetCipherList(SSL_CTX* ctx, const char* list)
+{
+    int  ret = 0, i;
+    char name[MAX_SUITE_NAME];
+
+    char  needle[] = ":";
+    char* haystack = (char*)list;
+    char* prev;
+
+    const int suiteSz = sizeof(cipher_names) / sizeof(cipher_names[0]);
+    int idx = 0;
+
+    if (!list)
+        return 0;
+
+    for(;;) {
+        int len;
+        prev = haystack;
+        haystack = strstr(haystack, needle);
+
+        if (!haystack)    /* last cipher */
+            len = min(sizeof(name), strlen(prev));
+        else
+            len = min(sizeof(name), (size_t)(haystack - prev));
+
+        strncpy(name, prev, len);
+        name[(len == sizeof(name)) ? len - 1 : len] = 0;
+
+        for (i = 0; i < suiteSz; i++)
+            if (strncmp(name, cipher_names[i], sizeof(name)) == 0) {
+
+                ctx->suites.suites[idx++] = 0x00;  /* first byte always zero */
+                ctx->suites.suites[idx++] = cipher_name_idx[i];
+
+                if (!ret) ret = 1;   /* found at least one */
+                break;
+            }
+        if (!haystack) break;
+        haystack++;
+    }
+
+    if (ret) {
+        ctx->suites.setSuites = 1;
+        ctx->suites.suiteSz   = idx;
+    }
+
+    return ret;
+}
+
+
 /* client only parts */
 #ifndef NO_CYASSL_CLIENT
 
@@ -1754,7 +1988,7 @@ int SendAlert(SSL* ssl, int severity, int type)
 
         /* DoClientHello uses same resume code */
         while (ssl->resuming) {  /* let's try */
-            SSL_SESSION* session = GetSession(ssl->sessionID);
+            SSL_SESSION* session = GetSession(ssl);
             if (!session) {
                 ssl->resuming = 0;
                 break;   /* session lookup failed */
@@ -1778,13 +2012,14 @@ int SendAlert(SSL* ssl, int severity, int type)
 
 
     static int DoClientHello(SSL* ssl, const byte* input, word32* inOutIdx,
-                             word32 totalSz)
+                             word32 totalSz, word32 helloSz)
     {
         byte b;
         byte tmp[2];
         ProtocolVersion pv;
         Suites          clSuites;
         word32 i = *inOutIdx;
+        word32 begin = i;
 
         /* make sure can read up to session */
         if (i + sizeof(pv) + RAN_LEN + ENUM_LEN > totalSz)
@@ -1830,9 +2065,12 @@ int SendAlert(SSL* ssl, int severity, int type)
         ssl->clientState = CLIENT_HELLO_COMPLETE;
 
         *inOutIdx = i;
+        if ( (i - begin) < helloSz)
+            *inOutIdx = begin + helloSz;  /* skip extensions */
+        
         /* ProcessOld uses same resume code */
         while (ssl->resuming) {  /* let's try */
-            SSL_SESSION* session = GetSession(ssl->sessionID);
+            SSL_SESSION* session = GetSession(ssl);
             if (!session) {
                 ssl->resuming = 0;
                 break;   /* session lookup failed */

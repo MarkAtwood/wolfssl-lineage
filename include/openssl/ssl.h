@@ -103,6 +103,22 @@ int  SSL_CTX_load_verify_locations(SSL_CTX*, const char*, const char*);
 int  SSL_pending(SSL*);
 
 
+void SSL_load_error_strings(void);
+int  SSL_library_init();
+long SSL_CTX_set_session_cache_mode(SSL_CTX*, long);
+int  SSL_CTX_use_certificate_chain_file(SSL_CTX *ctx, const char *file);
+
+/* only supports full name from cipher_name[] delimited by : */
+int  SSL_CTX_set_cipher_list(SSL_CTX*, const char*);
+
+char* ERR_error_string(unsigned long,char*);
+void  ERR_error_string_n(unsigned long e, char *buf, size_t len);
+
+/* CyaSSL extension, provide last error from SSL_get_error
+   since not using thread storage error queue */
+void  ERR_print_errors_fp(FILE*, int err);
+
+
 enum { /* ssl Constants */
     SSL_BAD_CERTTYPE    = -8,
     SSL_BAD_STAT        = -7,
@@ -197,6 +213,14 @@ enum {  /* ERR Constants */
     ERR_TXT_STRING = 1,
     EVP_R_BAD_DECRYPT = 2
 };
+
+
+
+/* CyaSSL extensions */
+
+/* call before SSL_connect, if verifying will add name check to
+   date check and signature check */
+int CyaSSL_check_domain_name(SSL* ssl, const char* dn);
 
 
 

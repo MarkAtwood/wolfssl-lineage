@@ -42,7 +42,11 @@ void echoclient_test(void* args)
 
     tcp_connect(&sockfd);
 
+#ifndef NO_TLS
     method = TLSv1_client_method();
+#else
+    method = SSLv3_client_method();
+#endif
     ctx    = SSL_CTX_new(method);
 
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)

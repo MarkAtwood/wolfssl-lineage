@@ -14,8 +14,14 @@
 #include "des3.h"
 #include "aes.h"
 #include "hmac.h"
+
+/*
 #include "dh.h"
 #include "dsa.h"
+*/
+
+#define NO_DH  /* remove for now */
+#define NO_DSA /* remove for now */
 
 
 typedef struct testVector {
@@ -69,17 +75,19 @@ void ctaocrypt_test(void* args)
     else
         printf( "SHA      test passed!\n");
 
+#ifndef NO_HMAC
     if ( (ret = hmac_test()) ) 
         err_sys("HMAC     test failed!\n", ret);
     else
         printf( "HMAC     test passed!\n");
+#endif
 
     if ( (ret = arc4_test()) )
         err_sys("ARC4     test failed!\n", ret);
     else
         printf( "ARC4     test passed!\n");
 
-#ifndef NO_DES
+#ifndef NO_DES3
     if ( (ret = des3_test()) )
         err_sys("DES3     test failed!\n", ret);
     else
@@ -254,6 +262,7 @@ int sha_test()
 }
 
 
+#ifndef NO_HMAC
 int hmac_test()
 {
     Hmac hmac;
@@ -307,6 +316,7 @@ int hmac_test()
 
     return 0;
 }
+#endif
 
 
 int arc4_test()
@@ -374,7 +384,7 @@ int arc4_test()
 }
 
 
-#ifndef NO_DES
+#ifndef NO_DES3
 int des3_test()
 {
     const byte vector[] = { /* "Now is the time for all " w/o trailing 0 */

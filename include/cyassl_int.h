@@ -55,6 +55,8 @@ typedef byte word24[3];
 
 /* Define or comment out the cipher suites you'd like to be compiled in
    make sure to use at least one BUILD_SSL_xxx or BUILD_TLS_xxx is defined
+
+   When adding cipher suites, add name to cipher_names, idx to cipher_name_idx
 */
 #ifndef NO_RC4
     #define BUILD_SSL_RSA_WITH_RC4_128_SHA
@@ -156,6 +158,8 @@ enum Misc {
 
     MAX_HELLO_SZ       = 128,  /* max client or server hello */
     CLIENT_HELLO_FIRST =  35,  /* Protocol + RAN_LEN + sizeof(id_len) */
+    MAX_ERROR_SZ       =  80,  /* user supplied buffer size is bigger 120 */
+    MAX_SUITE_NAME     =  48,  /* maximum length of cipher suite string */
     DEFAULT_TIMEOUT    = 500   /* default resumption timeout in seconds */
 };
 
@@ -210,7 +214,7 @@ struct SSL_METHOD {
 void InitSSL_Method(SSL_METHOD*, ProtocolVersion);
 
 
-/* CyaSSK buffer type */
+/* CyaSSL buffer type */
 typedef struct buffer {
     word32 length;
     byte*  buffer;
@@ -226,6 +230,7 @@ typedef struct Suites {
 
 
 void InitSuites(Suites*, ProtocolVersion);
+int  SetCipherList(SSL_CTX* ctx, const char* list);
 
 
 /* OpenSSL context type */
@@ -238,6 +243,7 @@ struct SSL_CTX {
     byte        verifyPeer;
     byte        verifyNone;
     byte        failNoCert;
+    byte        sessionCacheOff;
 };
 
 
@@ -343,7 +349,7 @@ struct SSL_SESSION {
 };
 
 
-SSL_SESSION* GetSession(const byte*);
+SSL_SESSION* GetSession(SSL*);
 int          SetSession(SSL*, SSL_SESSION*);
 
 typedef void (*hmacfp) (SSL*, byte*, const byte*, word32, int, int);
@@ -365,6 +371,7 @@ struct SSL {
     byte            clientRandom[RAN_LEN];
     byte            serverRandom[RAN_LEN];
     byte            sessionID[ID_LEN];
+    byte            sessionCacheOff;
     byte            cipherSuite;
     buffer          certificate;            /* SSL_CTX owns */
     buffer          key;                    /* SSL_CTX owns */
@@ -372,6 +379,7 @@ struct SSL {
     buffer          peerKey;
     buffer          bufferedData;           /* decrypted data */
     buffer          bufferedInput;          /* raw partial input */
+    buffer          domainName;             /* for client check */
     byte            serverState;
     byte            clientState;
     byte            handShakeState;

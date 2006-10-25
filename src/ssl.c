@@ -111,6 +111,34 @@ int SSL_get_error(SSL* ssl, int dummy)
 }
 
 
+char* ERR_error_string(unsigned long errNumber, char* buffer)
+{
+    static char* msg = "Please supply a buffer for error string";
+
+    if (buffer) {
+        SetErrorString(errNumber, buffer);
+        return buffer;
+    }
+
+    return msg;
+}
+
+
+void ERR_error_string_n(unsigned long e, char* buf, size_t len)
+{
+    if (len) ERR_error_string(e, buf);
+}
+
+
+void ERR_print_errors_fp(FILE* fp, int err)
+{
+    char buffer[MAX_ERROR_SZ + 1];
+
+    SetErrorString(err, buffer);
+    fprintf(fp, "%s", buffer);
+}
+
+
 int SSL_pending(SSL* ssl)
 {
     return ssl->bufferedData.buffer ? ssl->bufferedData.length : 0;
@@ -152,7 +180,7 @@ void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback vc)
 
 SSL_SESSION* SSL_get_session(SSL* ssl)
 {
-    return GetSession(ssl->sessionID);
+    return GetSession(ssl);
 }
 
 
@@ -161,6 +189,41 @@ int SSL_set_session(SSL* ssl, SSL_SESSION* session)
     return SetSession(ssl, session);
 }
 
+
+void SSL_load_error_strings()   /* compatibility only */
+{}
+
+
+int SSL_library_init()  /* compatiblity only */
+{
+    return SSL_SUCCESS;
+}
+
+
+int SSL_CTX_use_certificate_chain_file(SSL_CTX *ctx, const char *file)
+{
+    /* add first to ctx, all tested implementations support this */
+    return ProcessFile(ctx, file, SSL_FILETYPE_PEM, CA_TYPE);
+}
+
+
+/* on by default by allow user to turn off */
+long SSL_CTX_set_session_cache_mode(SSL_CTX* ctx, long mode)
+{
+    if (mode == SSL_SESS_CACHE_OFF)
+        ctx->sessionCacheOff = 1;
+
+    return SSL_SUCCESS;
+}
+
+
+int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
+{
+    if (SetCipherList(ctx, list))
+        return SSL_SUCCESS;
+    else
+        return SSL_FAILURE;
+}
 
 
 /* client only parts */
@@ -464,9 +527,13 @@ void FreeCyaSSL()
 }
 
 
-SSL_SESSION* GetSession(const byte* id)
+SSL_SESSION* GetSession(SSL* ssl)
 {
     SSL_SESSION* current, *ret = 0;
+    const byte* id = ssl->sessionID;
+
+    if (ssl->sessionCacheOff)
+        return 0;
 
     LockMutex(&mutex);
 
@@ -488,6 +555,9 @@ SSL_SESSION* GetSession(const byte* id)
 
 int SetSession(SSL* ssl, SSL_SESSION* session)
 {
+    if (ssl->sessionCacheOff)
+        return SSL_FAILURE;
+
     if (LowResTimer() < (session->bornOn + session->timeout)) {
         ssl->session  = *session;
         ssl->resuming = 1;
@@ -500,7 +570,12 @@ int SetSession(SSL* ssl, SSL_SESSION* session)
 
 void AddSession(SSL* ssl)
 {
-    SSL_SESSION* sess = (SSL_SESSION*) malloc(sizeof(SSL_SESSION));
+    SSL_SESSION* sess;
+
+    if (ssl->sessionCacheOff)
+        return;
+
+    sess = (SSL_SESSION*) malloc(sizeof(SSL_SESSION));
     if (sess) {
         memcpy(sess->masterSecret, ssl->masterSecret, SECRET_LEN);
         memcpy(sess->sessionID, ssl->sessionID, ID_LEN);
@@ -517,5 +592,23 @@ void AddSession(SSL* ssl)
     }
 }
 
+
+int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
+{
+    if (ssl->domainName.buffer)
+        free(ssl->domainName.buffer);
+
+    ssl->domainName.length = strlen(dn) + 1;
+    ssl->domainName.buffer = (byte*) malloc(ssl->domainName.length);
+
+    if (ssl->domainName.buffer) {
+        strncpy(ssl->domainName.buffer, dn, ssl->domainName.length);
+        return SSL_SUCCESS;
+    }
+    else {
+        ssl->error = MEMORY_ERROR;
+        return SSL_FAILURE;
+    }
+}
 
 

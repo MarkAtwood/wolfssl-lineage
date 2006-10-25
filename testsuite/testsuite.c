@@ -75,7 +75,7 @@ int main(int argc, char** argv)
 
         /* make sure OK */
         echoclient_test(&echo_args);
-        if (echo_args.return_code != 0) return echo_args.return_code;
+        if (echo_args.return_code != 0) return echo_args.return_code;  
 
         /* send quit to echoserver */
         echo_args.argc = 2;
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
     FreeCyaSSL();
     FreeTcpReady(&ready);
 
-    printf("\nAdd tests passed!\n");
+    printf("\nAll tests passed!\n");
     return 0;
 }
 

@@ -30,10 +30,10 @@
 
 #ifndef NO_TLS
     int MakeTlsMasterSecret(SSL*);
+    void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
+                  int content, int verify);
 #endif
 
-void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
-              int content, int verify);
 
 
 int SetCipherSpecs(SSL* ssl)
@@ -119,8 +119,10 @@ int SetCipherSpecs(SSL* ssl)
 
     /* set TLS if it hasn't been turned off */
     if (ssl->version.major == 3 && ssl->version.minor == 1) {
+#ifndef NO_TLS
         ssl->tls = 1;
         ssl->hmac = TLS_hmac;
+#endif
     }
 
     return 0;

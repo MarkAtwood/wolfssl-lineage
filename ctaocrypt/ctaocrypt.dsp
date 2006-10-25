@@ -105,14 +105,6 @@ SOURCE=.\src\des3.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\dh.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\dsa.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\src\hmac.c
 # End Source File
 # Begin Source File

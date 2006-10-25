@@ -10,10 +10,13 @@
 #include "md5.h"
 #include "sha.h"
 #include "rsa.h"
-#include "dh.h"
 #include "asn.h"
 
+/*
+#include "dh.h"
+*/
 
+#define NO_DH  /* remove for now */
 
 void bench_des();
 void bench_arc4();
@@ -31,9 +34,13 @@ double current_time();
 
 int main(int argc, char** argv)
 {
+#ifndef NO_AES
     bench_aes();
+#endif
     bench_arc4();
+#ifndef NO_DES3
     bench_des();
+#endif
     
     printf("\n");
 
@@ -43,7 +50,10 @@ int main(int argc, char** argv)
     printf("\n");
     
     bench_rsa();
+
+#ifndef NO_DH
     bench_dh();
+#endif
 
     return 0;
 }
@@ -71,6 +81,7 @@ byte plain [1024*1024];
 byte cipher[1024*1024];
 
 
+#ifndef NO_AES
 void bench_aes()
 {
     Aes    enc;
@@ -90,8 +101,10 @@ void bench_aes()
     printf("AES      %d megs took %5.3f seconds, %5.2f MB/s\n", megs, total,
                                                              persec);
 }
+#endif
 
 
+#ifndef NO_DES3
 void bench_des()
 {
     Des3   enc;
@@ -111,6 +124,7 @@ void bench_des()
     printf("3DES     %d megs took %5.3f seconds, %5.2f MB/s\n", megs, total,
                                                              persec);
 }
+#endif
 
 
 void bench_arc4()
@@ -236,6 +250,7 @@ void bench_rsa()
 }
 
 
+#ifndef NO_DH
 void bench_dh()
 {
     int    i;
@@ -290,6 +305,7 @@ void bench_dh()
     fclose(file);
     FreeDhKey(&key);
 }
+#endif
 
 
 #ifdef _WIN32

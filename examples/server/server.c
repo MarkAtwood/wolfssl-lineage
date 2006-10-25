@@ -18,7 +18,11 @@ THREAD_RETURN CYASSL_API server_test(void* args)
     char input[1024];
    
     ((func_args*)args)->return_code = -1; /* error state */
+#ifndef NO_TLS
     method = TLSv1_server_method();
+#else
+    method = SSLv3_server_method();
+#endif
     ctx    = SSL_CTX_new(method);
 
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
