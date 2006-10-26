@@ -93,8 +93,11 @@ void client_test(void* args)
     if (SSL_write(sslResume, msg, sizeof(msg)) != sizeof(msg))
         err_sys("SSL_write failed");
 
-    reply[SSL_read(sslResume, reply, sizeof(reply))] = 0;
-    printf("Server response: %s\n", reply);
+    input = SSL_read(sslResume, reply, sizeof(reply));
+    if (input > 0) {
+        reply[input] = 0;
+        printf("Server response: %s\n", reply);
+    }
 
     SSL_shutdown(sslResume);
     SSL_free(sslResume);

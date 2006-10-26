@@ -418,7 +418,8 @@ typedef struct Arrays {
 /* OpenSSL ssl type */
 struct SSL {
     int             error;
-    ProtocolVersion version;
+    ProtocolVersion version;            /* negotiated version */
+    ProtocolVersion chVersion;          /* client hello version */
     Suites          suites;
     Ciphers         encrypt;
     Ciphers         decrypt;

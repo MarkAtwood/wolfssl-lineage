@@ -73,7 +73,12 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
 
         ssl = SSL_new(ctx);
         SSL_set_fd(ssl, clientfd);
-        if (SSL_accept(ssl) != SSL_SUCCESS) err_sys("SSL_accept failed");
+        if (SSL_accept(ssl) != SSL_SUCCESS) {
+            printf("SSL_accept failed");
+            SSL_free(ssl);
+            CloseSocket(clientfd);
+            continue;
+        }
 
         while ( (echoSz = SSL_read(ssl, command, sizeof(command))) > 0) {
            
@@ -112,6 +117,7 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
             if (SSL_write(ssl, command, echoSz) != echoSz)
                 err_sys("SSL_write failed");
         }
+        SSL_shutdown(ssl);
         SSL_free(ssl);
         CloseSocket(clientfd);
     }

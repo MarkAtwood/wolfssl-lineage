@@ -941,6 +941,9 @@ int DoProcessReply(SSL* ssl)
             needHdr = 1;
         else if (GetRecordHeader(ssl, input, &idx, &rh) != 0)
             ERROR_OUT(PARSE_ERROR);
+        
+        if (!needHdr && (rh.version.major != 3 || rh.version.minor > 2))
+            ERROR_OUT(VERSION_ERROR);
 
         /* make sure enough data left */
         if ( needHdr || (inSz - idx) < rh.size) {
@@ -1302,7 +1305,8 @@ int SendData(SSL* ssl, const void* buffer, int sz)
 
 static int FillData(SSL* ssl, byte* output, int sz)
 {
-    int   dataSz = min(sz, (int)ssl->buffers.bufferedData.length);
+    int   dataSz = min(sz, ssl->buffers.bufferedData.buffer ?
+                      (int)ssl->buffers.bufferedData.length : 0);
     int   leftSz = 0;
     byte* left   = 0;
 
@@ -1489,6 +1493,14 @@ void SetErrorString(int error, char* buffer)
         strncpy(buffer, "handshake layer not ready yet, complete first", max);
         break;
 
+    case PMS_VERSION_ERROR :
+        strncpy(buffer, "premaster secret version mismatch error", max);
+        break;
+
+   case VERSION_ERROR :
+        strncpy(buffer, "record layer version error", max);
+        break;
+
     default :
         strncpy(buffer, "unknown error number", max);
     }
@@ -1642,6 +1654,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             /* client hello, first version */
         memcpy(output + idx, &ssl->version, sizeof(ProtocolVersion));
         idx += sizeof(ProtocolVersion);
+        ssl->chVersion = ssl->version;  /* store in case changed */
 
             /* then random */
         RNG_GenerateBlock(&ssl->rng, output + idx, RAN_LEN);
@@ -1778,8 +1791,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
         /* RSA for now */
         RNG_GenerateBlock(&ssl->rng, ssl->arrays.preMasterSecret, SECRET_LEN);
-        ssl->arrays.preMasterSecret[0] = ssl->version.major;
-        ssl->arrays.preMasterSecret[1] = ssl->version.minor;
+        ssl->arrays.preMasterSecret[0] = ssl->chVersion.major;
+        ssl->arrays.preMasterSecret[1] = ssl->chVersion.minor;
         InitRsaKey(&key);
 
         if (ssl->buffers.peerKey.buffer)
@@ -1971,6 +1984,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         /* version */
         pv.major = input[idx++];
         pv.minor = input[idx++];
+        ssl->chVersion = pv;  /* store */
 
         if (ssl->version.minor > 0 && pv.minor == 0) {
             /* turn off tls */
@@ -2065,6 +2079,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             return INCOMPLETE_DATA;
 
         memcpy(&pv, input + i, sizeof(pv));
+        ssl->chVersion = pv;   /* store */
         i += sizeof(pv);
         if (ssl->version.minor > 0 && pv.minor == 0) {
             /* turn off tls */
@@ -2198,8 +2213,14 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             *inOutIdx += length;
 
             if (RsaPrivateDecrypt(tmp, length, ssl->arrays.preMasterSecret,
-                                  SECRET_LEN, &key) == SECRET_LEN)
-                ret = MakeMasterSecret(ssl);
+                                  SECRET_LEN, &key) == SECRET_LEN) {
+                if (ssl->arrays.preMasterSecret[0] != ssl->chVersion.major ||
+                    ssl->arrays.preMasterSecret[1] != ssl->chVersion.minor)
+
+                    ret = PMS_VERSION_ERROR;
+                else
+                    ret = MakeMasterSecret(ssl);
+            }
             else
                 ret = RSA_PRIVATE_ERROR;
         }
