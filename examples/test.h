@@ -22,6 +22,9 @@
     #include <sys/types.h>
     #include <sys/socket.h>
     #include <pthread.h>
+    #ifdef NON_BLOCKING
+        #include <fcntl.h>
+    #endif
     #define SOCKET_T unsigned int
 #endif /* _WIN32 */
 
@@ -164,6 +167,21 @@ static INLINE void tcp_accept(SOCKET_T* sockfd, int* clientfd, func_args* args)
     if (*clientfd == -1)
         err_sys("tcp accept failed");
 }
+
+
+static INLINE void tcp_set_nonblocking(SOCKET_T* sockfd)
+{
+#ifdef NON_BLOCKING
+    #ifdef _WIN32
+        unsigned long blocking = 1;
+        int ret = ioctlsocket(*sockfd, FIONBIO, &blocking);
+    #else
+        int flags = fcntl(*sockfd, F_GETFL, 0);
+        int ret = fcntl(*sockfd, F_SETFL, flags | O_NONBLOCK);
+    #endif
+#endif
+}
+
 
 
 #endif /* CyaSSL_TEST_H */

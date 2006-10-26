@@ -53,7 +53,9 @@ enum CyaSSL_ErrorCodes {
     BUILD_MSG_ERROR        = -220,            /* build message failure    */
 
     BAD_HELLO              = -221,            /* client hello malformed   */
-    DOMAIN_NAME_MISMATCH   = -222             /* peer subject name mismatch */
+    DOMAIN_NAME_MISMATCH   = -222,            /* peer subject name mismatch */
+    WANT_READ              = -223,            /* want read = SSL_WANT_READ */
+    NOT_READY_ERROR        = -224             /* handshake layer not ready */
 
     /* add strings to SetErrorString !!!!! */
 };

@@ -172,7 +172,7 @@ enum { /* ssl Constants */
     SSL_OP_NON_EXPORT_FIRST                 = 70,
     SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG  = 71,
 
-    SSL_ERROR_WANT_READ        = 80,
+    SSL_ERROR_WANT_READ        = -223,   /* matches CyaSSL WANT_READ */ 
     SSL_ERROR_WANT_WRITE       = 81,
     SSL_ERROR_SYSCALL          = 82,
     SSL_ERROR_WANT_X509_LOOKUP = 83,

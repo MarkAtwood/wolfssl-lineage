@@ -8,6 +8,26 @@
 #define TEST_RESUME 
 */
 
+#ifdef NON_BLOCKING
+    void NonBlockingSSL_Connect(SSL* ssl)
+    {
+        int ret = SSL_connect(ssl);
+        while (ret != SSL_SUCCESS && SSL_get_error(ssl, 0) ==
+                                     SSL_ERROR_WANT_READ) {
+            printf("... client would block\n");
+            #ifdef _WIN32
+                Sleep(1000);
+            #else
+                sleep(1);
+            #endif
+            ret = SSL_connect(ssl);
+        }
+        if (ret != SSL_SUCCESS)
+            err_sys("SSL_connect failed");
+    }
+#endif
+
+
 void client_test(void* args)
 {
     SOCKET_T sockfd = 0;
@@ -19,6 +39,7 @@ void client_test(void* args)
 
     char msg[] = "hello cyassl!";
     char reply[1024];
+    int  input;
 
     ((func_args*)args)->return_code = -1; /* error state */
 #ifndef NO_TLS
@@ -36,14 +57,22 @@ void client_test(void* args)
     SSL_set_fd(ssl, sockfd);
     CyaSSL_check_domain_name(ssl, "www.taosoftdev.com");
 
+#ifdef NON_BLOCKING
+    tcp_set_nonblocking(&sockfd);
+    NonBlockingSSL_Connect(ssl);
+#else
     if (SSL_connect(ssl) != SSL_SUCCESS)
         err_sys("SSL_connect failed");
+#endif
 
     if (SSL_write(ssl, msg, sizeof(msg)) != sizeof(msg))
         err_sys("SSL_write failed");
 
-    reply[SSL_read(ssl, reply, sizeof(reply))] = 0;
-    printf("Server response: %s\n", reply);
+    input = SSL_read(ssl, reply, sizeof(reply));
+    if (input > 0) {
+        reply[input] = 0;
+        printf("Server response: %s\n", reply);
+    }
    
 #ifdef TEST_RESUME
     session   = SSL_get_session(ssl);

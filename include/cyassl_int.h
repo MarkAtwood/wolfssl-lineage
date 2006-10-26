@@ -354,6 +354,67 @@ int          SetSession(SSL*, SSL_SESSION*);
 
 typedef void (*hmacfp) (SSL*, byte*, const byte*, word32, int, int);
 
+
+/* client connect state for nonblocking restart */
+enum ConnectState {
+    CONNECT_BEGIN = 0,
+    CLIENT_HELLO_SENT,
+    FIRST_REPLY_DONE,
+    FINISHED_DONE,
+    SECOND_REPLY_DONE
+};
+
+
+/* server accpet state for nonblocking restart */
+enum AcceptState {
+    ACCEPT_BEGIN = 0,
+    ACCEPT_FIRST_REPLY_DONE,
+    SERVER_HELLO_DONE,
+    ACCEPT_SECOND_REPLY_DONE,
+    ACCEPT_FINISHED_DONE,
+    ACCEPT_THIRD_REPLY_DONE
+};
+
+
+typedef struct Buffers {
+    buffer          certificate;            /* SSL_CTX owns */
+    buffer          key;                    /* SSL_CTX owns */
+    buffer          peerCert;
+    buffer          peerKey;
+    buffer          bufferedData;           /* decrypted data */
+    buffer          bufferedInput;          /* raw partial input */
+    buffer          domainName;             /* for client check */
+} Buffers;
+
+
+
+typedef struct Options {
+    byte            sessionCacheOff;
+    byte            cipherSuite;
+    byte            serverState;
+    byte            clientState;
+    byte            handShakeState;
+    byte            side;               /* client or server end */
+    byte            verifyPeer;
+    byte            verifyNone;
+    byte            failNoCert;
+    byte            resuming;
+    byte            tls;                /* using TLS ? */
+    byte            isNonBlocking;      /* option set on this socket */
+    byte            connectState;       /* nonblocking resume */
+    byte            acceptState;        /* nonblocking resume */
+} Options;
+
+
+typedef struct Arrays {
+    byte            clientRandom[RAN_LEN];
+    byte            serverRandom[RAN_LEN];
+    byte            sessionID[ID_LEN];
+    byte            preMasterSecret[SECRET_LEN];
+    byte            masterSecret[SECRET_LEN];
+} Arrays;
+
+
 /* OpenSSL ssl type */
 struct SSL {
     int             error;
@@ -365,33 +426,13 @@ struct SSL {
     Keys            keys;
     SOCKET_T        socket;
     RNG             rng;
-    Md5             hashMd5;                /* md5 hash of handshake msgs */
-    Sha             hashSha;                /* sha hash of handshake msgs */
+    Md5             hashMd5;            /* md5 hash of handshake msgs */
+    Sha             hashSha;            /* sha hash of handshake msgs */
     Hashes          verifyHashes;
-    byte            clientRandom[RAN_LEN];
-    byte            serverRandom[RAN_LEN];
-    byte            sessionID[ID_LEN];
-    byte            sessionCacheOff;
-    byte            cipherSuite;
-    buffer          certificate;            /* SSL_CTX owns */
-    buffer          key;                    /* SSL_CTX owns */
-    buffer          peerCert;
-    buffer          peerKey;
-    buffer          bufferedData;           /* decrypted data */
-    buffer          bufferedInput;          /* raw partial input */
-    buffer          domainName;             /* for client check */
-    byte            serverState;
-    byte            clientState;
-    byte            handShakeState;
-    byte            side;                   /* client or server end */
-    byte            preMasterSecret[SECRET_LEN];
-    byte            masterSecret[SECRET_LEN];
-    byte            verifyPeer;
-    byte            verifyNone;
-    byte            failNoCert;
-    byte            resuming;
-    byte            tls;                /* using TLS ? */
     Signer*         caList;             /* SSL_CTX owns */
+    Buffers         buffers;
+    Options         options;
+    Arrays          arrays;
     SSL_SESSION     session;
     hmacfp          hmac;
 };

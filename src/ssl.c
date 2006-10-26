@@ -141,7 +141,8 @@ void ERR_print_errors_fp(FILE* fp, int err)
 
 int SSL_pending(SSL* ssl)
 {
-    return ssl->bufferedData.buffer ? ssl->bufferedData.length : 0;
+    return ssl->buffers.bufferedData.buffer ?
+           ssl->buffers.bufferedData.length : 0;
 }
 
 
@@ -242,37 +243,53 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
     {
         int neededState;
 
-        assert(ssl->side == CLIENT_END);
-        if (ssl->serverState == SERVER_FINISHED_COMPLETE)
-            return SSL_FATAL_ERROR;
+        assert(ssl->options.side == CLIENT_END);
 
-        /* always send client hello first */
-        if (SendClientHello(ssl) != 0)
-            return SSL_FATAL_ERROR;
+        switch (ssl->options.connectState) {
 
-        neededState = ssl->resuming ? SERVER_FINISHED_COMPLETE :
-                                      SERVER_HELLODONE_COMPLETE;
-        /* get response */
-        while (ssl->serverState < neededState)
-            if (ProcessReply(ssl) < 0)
+        case CONNECT_BEGIN :
+            /* always send client hello first */
+            if ( (ssl->error = SendClientHello(ssl)) != 0)
+                return SSL_FATAL_ERROR;
+            ssl->options.connectState = CLIENT_HELLO_SENT;
+
+        case CLIENT_HELLO_SENT :
+            neededState = ssl->options.resuming ? SERVER_FINISHED_COMPLETE :
+                                          SERVER_HELLODONE_COMPLETE;
+            /* get response */
+            while (ssl->options.serverState < neededState)
+                if ( (ssl->error = ProcessReply(ssl)) < 0)
+                    return SSL_FATAL_ERROR;
+            ssl->options.connectState = FIRST_REPLY_DONE;
+
+        case FIRST_REPLY_DONE :
+            if (!ssl->options.resuming)
+                if ( (ssl->error = SendClientKeyExchange(ssl)) != 0)
+                    return SSL_FATAL_ERROR;
+
+            if ( (ssl->error = SendChangeCipher(ssl)) != 0)
                 return SSL_FATAL_ERROR;
 
-        if (!ssl->resuming)
-            if (SendClientKeyExchange(ssl) != 0)
+            if ( (ssl->error = SendFinished(ssl)) != 0)
                 return SSL_FATAL_ERROR;
 
-        if (SendChangeCipher(ssl) != 0)
-            return SSL_FATAL_ERROR;
+            ssl->options.connectState = FINISHED_DONE;
 
-        if (SendFinished(ssl) != 0)
-            return SSL_FATAL_ERROR;
-
-        /* get response */
-        while (ssl->serverState < SERVER_FINISHED_COMPLETE)
-            if (ProcessReply(ssl) < 0)
-                return SSL_FATAL_ERROR;
+        case FINISHED_DONE :
+            /* get response */
+            while (ssl->options.serverState < SERVER_FINISHED_COMPLETE)
+                if ( (ssl->error = ProcessReply(ssl)) < 0)
+                    return SSL_FATAL_ERROR;
           
-        return SSL_SUCCESS;
+            ssl->options.connectState = SECOND_REPLY_DONE;
+
+        case SECOND_REPLY_DONE:
+
+            return SSL_SUCCESS;
+
+        default:
+            return SSL_FATAL_ERROR; /* unknown connect state */
+        }
     }
 
 #endif /* NO_CYASSL_CLIENT */
@@ -294,41 +311,61 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
     int SSL_accept(SSL* ssl)
     {
-        assert(ssl->side == SERVER_END);
-        if (ssl->clientState == CLIENT_FINISHED_COMPLETE)
-            return SSL_FATAL_ERROR;
+        assert(ssl->options.side == SERVER_END);
 
-        /* get response */
-        while (ssl->clientState < CLIENT_HELLO_COMPLETE)
-            if (ProcessReply(ssl) < 0)
-                return SSL_FATAL_ERROR;
-
-        if (SendServerHello(ssl) != 0)
-            return SSL_FATAL_ERROR;
-
-        if (!ssl->resuming) {
-            if (SendCertificate(ssl) != 0)
-                return SSL_FATAL_ERROR;
-
-            if (SendServerHelloDone(ssl) != 0)
-                return SSL_FATAL_ERROR;
-
-            while (ssl->clientState < CLIENT_FINISHED_COMPLETE)
-                if (ProcessReply(ssl) < 0)
+        switch (ssl->options.acceptState) {
+    
+        case ACCEPT_BEGIN :
+            /* get response */
+            while (ssl->options.clientState < CLIENT_HELLO_COMPLETE)
+                if ( (ssl->error = ProcessReply(ssl)) < 0)
                     return SSL_FATAL_ERROR;
+                ssl->options.acceptState = ACCEPT_FIRST_REPLY_DONE;
+
+        case ACCEPT_FIRST_REPLY_DONE :
+            if ( (ssl->error = SendServerHello(ssl)) != 0)
+                return SSL_FATAL_ERROR;
+
+            if (!ssl->options.resuming) {
+                if ( (ssl->error = SendCertificate(ssl)) != 0)
+                    return SSL_FATAL_ERROR;
+
+                if ( (ssl->error = SendServerHelloDone(ssl)) != 0)
+                    return SSL_FATAL_ERROR;
+            }
+            ssl->options.acceptState = SERVER_HELLO_DONE;
+
+        case SERVER_HELLO_DONE :
+            if (!ssl->options.resuming) {
+                while (ssl->options.clientState < CLIENT_FINISHED_COMPLETE)
+                    if ( (ssl->error = ProcessReply(ssl)) < 0)
+                        return SSL_FATAL_ERROR;
+            }
+            ssl->options.acceptState = ACCEPT_SECOND_REPLY_DONE;
+          
+        case ACCEPT_SECOND_REPLY_DONE : 
+            if ( (ssl->error = SendChangeCipher(ssl)) != 0)
+                return SSL_FATAL_ERROR;
+
+            if ( (ssl->error = SendFinished(ssl)) != 0)
+                return SSL_FATAL_ERROR;
+
+            ssl->options.acceptState = ACCEPT_FINISHED_DONE;
+
+        case ACCEPT_FINISHED_DONE :
+            if (ssl->options.resuming)
+                while (ssl->options.clientState < CLIENT_FINISHED_COMPLETE)
+                    if ( (ssl->error = ProcessReply(ssl)) < 0)
+                        return SSL_FATAL_ERROR;
+
+            ssl->options.acceptState = ACCEPT_THIRD_REPLY_DONE;
+
+        case ACCEPT_THIRD_REPLY_DONE :
+            return SSL_SUCCESS;
+
+        default :
+            return SSL_FATAL_ERROR;
         }
-        if (SendChangeCipher(ssl) != 0)
-            return SSL_FATAL_ERROR;
-
-        if (SendFinished(ssl) != 0)
-            return SSL_FATAL_ERROR;
-
-        if (ssl->resuming)
-            while (ssl->clientState < CLIENT_FINISHED_COMPLETE)
-                if (ProcessReply(ssl) < 0)
-                    return SSL_FATAL_ERROR;
-
-        return SSL_SUCCESS;
     }
 
 #endif /* NO_CYASSL_SERVER */
@@ -530,9 +567,9 @@ void FreeCyaSSL()
 SSL_SESSION* GetSession(SSL* ssl)
 {
     SSL_SESSION* current, *ret = 0;
-    const byte* id = ssl->sessionID;
+    const byte* id = ssl->arrays.sessionID;
 
-    if (ssl->sessionCacheOff)
+    if (ssl->options.sessionCacheOff)
         return 0;
 
     LockMutex(&mutex);
@@ -555,12 +592,12 @@ SSL_SESSION* GetSession(SSL* ssl)
 
 int SetSession(SSL* ssl, SSL_SESSION* session)
 {
-    if (ssl->sessionCacheOff)
+    if (ssl->options.sessionCacheOff)
         return SSL_FAILURE;
 
     if (LowResTimer() < (session->bornOn + session->timeout)) {
         ssl->session  = *session;
-        ssl->resuming = 1;
+        ssl->options.resuming = 1;
 
         return SSL_SUCCESS;
     }
@@ -572,13 +609,13 @@ void AddSession(SSL* ssl)
 {
     SSL_SESSION* sess;
 
-    if (ssl->sessionCacheOff)
+    if (ssl->options.sessionCacheOff)
         return;
 
     sess = (SSL_SESSION*) malloc(sizeof(SSL_SESSION));
     if (sess) {
-        memcpy(sess->masterSecret, ssl->masterSecret, SECRET_LEN);
-        memcpy(sess->sessionID, ssl->sessionID, ID_LEN);
+        memcpy(sess->masterSecret, ssl->arrays.masterSecret, SECRET_LEN);
+        memcpy(sess->sessionID, ssl->arrays.sessionID, ID_LEN);
 
         sess->timeout = DEFAULT_TIMEOUT;
         sess->bornOn  = LowResTimer();
@@ -595,14 +632,16 @@ void AddSession(SSL* ssl)
 
 int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
 {
-    if (ssl->domainName.buffer)
-        free(ssl->domainName.buffer);
+    if (ssl->buffers.domainName.buffer)
+        free(ssl->buffers.domainName.buffer);
 
-    ssl->domainName.length = strlen(dn) + 1;
-    ssl->domainName.buffer = (byte*) malloc(ssl->domainName.length);
+    ssl->buffers.domainName.length = strlen(dn) + 1;
+    ssl->buffers.domainName.buffer =
+                     (byte*) malloc(ssl->buffers.domainName.length);
 
-    if (ssl->domainName.buffer) {
-        strncpy(ssl->domainName.buffer, dn, ssl->domainName.length);
+    if (ssl->buffers.domainName.buffer) {
+        strncpy(ssl->buffers.domainName.buffer, dn,
+                ssl->buffers.domainName.length);
         return SSL_SUCCESS;
     }
     else {

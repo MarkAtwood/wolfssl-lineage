@@ -137,7 +137,7 @@ void BuildTlsFinished(SSL* ssl, Hashes* hashes, const byte* sender)
     else
         side = tls_server;
 
-    PRF(hashes->md5, TLS_FINISHED_SZ, ssl->masterSecret, SECRET_LEN,
+    PRF(hashes->md5, TLS_FINISHED_SZ, ssl->arrays.masterSecret, SECRET_LEN,
         side, FINISHED_LABEL_SZ, handshake_hash, FINISHED_SZ);
 }
 
@@ -165,10 +165,10 @@ int DeriveTlsKeys(SSL* ssl)
     byte         seed[SEED_LEN];
     byte         key_data[MAX_PRF_DIG];
 
-    memcpy(seed, ssl->serverRandom, RAN_LEN);
-    memcpy(&seed[RAN_LEN], ssl->clientRandom, RAN_LEN);
+    memcpy(seed, ssl->arrays.serverRandom, RAN_LEN);
+    memcpy(&seed[RAN_LEN], ssl->arrays.clientRandom, RAN_LEN);
 
-    PRF(key_data, length, ssl->masterSecret, SECRET_LEN,
+    PRF(key_data, length, ssl->arrays.masterSecret, SECRET_LEN,
         key_label, KEY_LABEL_SZ, seed, SEED_LEN);
 
     return StoreKeys(ssl, key_data);
@@ -179,11 +179,11 @@ int MakeTlsMasterSecret(SSL* ssl)
 {
     byte seed[SEED_LEN];
     
-    memcpy(seed, ssl->clientRandom, RAN_LEN);
-    memcpy(&seed[RAN_LEN], ssl->serverRandom, RAN_LEN);
+    memcpy(seed, ssl->arrays.clientRandom, RAN_LEN);
+    memcpy(&seed[RAN_LEN], ssl->arrays.serverRandom, RAN_LEN);
 
-    PRF(ssl->masterSecret, SECRET_LEN,
-        ssl->preMasterSecret, SECRET_LEN,
+    PRF(ssl->arrays.masterSecret, SECRET_LEN,
+        ssl->arrays.preMasterSecret, SECRET_LEN,
         master_label, MASTER_LABEL_SZ, 
         seed, SEED_LEN);
 
@@ -222,8 +222,8 @@ static INLINE word32 GetSEQIncrement(SSL* ssl, int verify)
 
 static INLINE const byte* GetMacSecret(SSL* ssl, int verify)
 {
-    if ( (ssl->side == CLIENT_END && !verify) ||
-         (ssl->side == SERVER_END &&  verify) )
+    if ( (ssl->options.side == CLIENT_END && !verify) ||
+         (ssl->options.side == SERVER_END &&  verify) )
         return ssl->keys.client_write_MAC_secret;
     else
         return ssl->keys.server_write_MAC_secret;

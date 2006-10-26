@@ -38,7 +38,7 @@
 
 int SetCipherSpecs(SSL* ssl)
 {
-    switch (ssl->cipherSuite) {
+    switch (ssl->options.cipherSuite) {
 
 #ifdef BUILD_SSL_RSA_WITH_RC4_128_SHA
     case SSL_RSA_WITH_RC4_128_SHA :
@@ -120,7 +120,7 @@ int SetCipherSpecs(SSL* ssl)
     /* set TLS if it hasn't been turned off */
     if (ssl->version.major == 3 && ssl->version.minor == 1) {
 #ifndef NO_TLS
-        ssl->tls = 1;
+        ssl->options.tls = 1;
         ssl->hmac = TLS_hmac;
 #endif
     }
@@ -176,7 +176,7 @@ static int SetKeys(SSL* ssl)
 
 #ifdef BUILD_ARC4
     if (ssl->specs.bulk_cipher_algorithm == rc4) {
-        if (ssl->side == CLIENT_END) {
+        if (ssl->options.side == CLIENT_END) {
             Arc4SetKey(&ssl->encrypt.arc4, ssl->keys.client_write_key, sz);
             Arc4SetKey(&ssl->decrypt.arc4, ssl->keys.server_write_key, sz);
         }
@@ -189,7 +189,7 @@ static int SetKeys(SSL* ssl)
     
 #ifdef BUILD_DES3
     if (ssl->specs.bulk_cipher_algorithm == triple_des) {
-        if (ssl->side == CLIENT_END) {
+        if (ssl->options.side == CLIENT_END) {
             Des3_SetKey(&ssl->encrypt.des3, ssl->keys.client_write_key,
                         ssl->keys.client_write_IV, DES_ENCRYPTION);
             Des3_SetKey(&ssl->decrypt.des3, ssl->keys.server_write_key,
@@ -206,7 +206,7 @@ static int SetKeys(SSL* ssl)
 
 #ifdef BUILD_AES
     if (ssl->specs.bulk_cipher_algorithm == aes) {
-        if (ssl->side == CLIENT_END) {
+        if (ssl->options.side == CLIENT_END) {
             AesSetKey(&ssl->encrypt.aes, ssl->keys.client_write_key,
                       ssl->specs.key_size, ssl->keys.client_write_IV,
                       AES_ENCRYPTION);
@@ -277,7 +277,7 @@ int DeriveKeys(SSL* ssl)
     InitMd5(&md5);
     InitSha(&sha);
 
-    memcpy(md5Input, ssl->masterSecret, SECRET_LEN);
+    memcpy(md5Input, ssl->arrays.masterSecret, SECRET_LEN);
 
     for (i = 0; i < rounds; ++i) {
         int j   = i + 1;
@@ -287,11 +287,11 @@ int DeriveKeys(SSL* ssl)
             return PREFIX_ERROR;
         }
 
-        memcpy(shaInput + idx, ssl->masterSecret, SECRET_LEN);
+        memcpy(shaInput + idx, ssl->arrays.masterSecret, SECRET_LEN);
         idx += SECRET_LEN;
-        memcpy(shaInput + idx, ssl->serverRandom, RAN_LEN);
+        memcpy(shaInput + idx, ssl->arrays.serverRandom, RAN_LEN);
         idx += RAN_LEN;
-        memcpy(shaInput + idx, ssl->clientRandom, RAN_LEN);
+        memcpy(shaInput + idx, ssl->arrays.clientRandom, RAN_LEN);
         idx += RAN_LEN;
 
         ShaUpdate(&sha, shaInput, sizeof(shaInput) - KEY_PREFIX + j);
@@ -311,12 +311,12 @@ void CleanPreMaster(SSL* ssl)
     int i;
 
     for (i = 0; i < SECRET_LEN; i++)
-        ssl->preMasterSecret[i] = 0;
+        ssl->arrays.preMasterSecret[i] = 0;
 
-    RNG_GenerateBlock(&ssl->rng, ssl->preMasterSecret, SECRET_LEN);
+    RNG_GenerateBlock(&ssl->rng, ssl->arrays.preMasterSecret, SECRET_LEN);
 
     for (i = 0; i < SECRET_LEN; i++)
-        ssl->preMasterSecret[i] = 0;
+        ssl->arrays.preMasterSecret[i] = 0;
 
 }
 
@@ -333,12 +333,14 @@ int MakeMasterSecret(SSL* ssl)
     Md5 md5;
     Sha sha;
 
-    if (ssl->tls) return MakeTlsMasterSecret(ssl);
+#ifndef NO_TLS
+    if (ssl->options.tls) return MakeTlsMasterSecret(ssl);
+#endif
 
     InitMd5(&md5);
     InitSha(&sha);
 
-    memcpy(md5Input, ssl->preMasterSecret, SECRET_LEN);
+    memcpy(md5Input, ssl->arrays.preMasterSecret, SECRET_LEN);
 
     for (i = 0; i < MASTER_ROUNDS; ++i) {
         byte prefix[PREFIX];
@@ -350,11 +352,11 @@ int MakeMasterSecret(SSL* ssl)
         memcpy(shaInput, prefix, i + 1);
         idx += i + 1;
 
-        memcpy(shaInput + idx, ssl->preMasterSecret, SECRET_LEN);
+        memcpy(shaInput + idx, ssl->arrays.preMasterSecret, SECRET_LEN);
         idx += SECRET_LEN;
-        memcpy(shaInput + idx, ssl->clientRandom, RAN_LEN);
+        memcpy(shaInput + idx, ssl->arrays.clientRandom, RAN_LEN);
         idx += RAN_LEN;
-        memcpy(shaInput + idx, ssl->serverRandom, RAN_LEN);
+        memcpy(shaInput + idx, ssl->arrays.serverRandom, RAN_LEN);
         idx += RAN_LEN;
         ShaUpdate(&sha, shaInput, idx);
         ShaFinal(&sha, shaOutput);
@@ -363,7 +365,7 @@ int MakeMasterSecret(SSL* ssl)
         memcpy(md5Input + idx, shaOutput, SHA_DIGEST_SIZE);
         idx += SHA_DIGEST_SIZE;
         Md5Update(&md5, md5Input, idx);
-        Md5Final(&md5, &ssl->masterSecret[i * MD5_DIGEST_SIZE]);
+        Md5Final(&md5, &ssl->arrays.masterSecret[i * MD5_DIGEST_SIZE]);
     }
     DeriveKeys(ssl);
 

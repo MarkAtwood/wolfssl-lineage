@@ -4,6 +4,25 @@
 #include "../test.h"
 
 
+#ifdef NON_BLOCKING
+    void NonBlockingSSL_Accept(SSL* ssl)
+    {
+        int ret = SSL_accept(ssl);
+        while (ret != SSL_SUCCESS && SSL_get_error(ssl, 0) ==
+                                     SSL_ERROR_WANT_READ) {
+            printf("... server would block\n");
+            #ifdef _WIN32
+                Sleep(1000);
+            #else
+                sleep(1);
+            #endif
+            ret = SSL_accept(ssl);
+        }
+        if (ret != SSL_SUCCESS)
+            err_sys("SSL_accept failed");
+    }
+#endif
+
 
 THREAD_RETURN CYASSL_API server_test(void* args)
 {
@@ -16,6 +35,7 @@ THREAD_RETURN CYASSL_API server_test(void* args)
 
     char msg[] = "I hear you fa shizzle!";
     char input[1024];
+    int  idx;
    
     ((func_args*)args)->return_code = -1; /* error state */
 #ifndef NO_TLS
@@ -42,11 +62,19 @@ THREAD_RETURN CYASSL_API server_test(void* args)
 
     SSL_set_fd(ssl, clientfd);
 
+#ifdef NON_BLOCKING
+    tcp_set_nonblocking(&clientfd);
+    NonBlockingSSL_Accept(ssl);
+#else
     if (SSL_accept(ssl) != SSL_SUCCESS)
         err_sys("SSL_accept failed");
+#endif
 
-    input[SSL_read(ssl, input, sizeof(input))] = 0;
-    printf("Client message: %s\n", input);
+    idx = SSL_read(ssl, input, sizeof(input));
+    if (idx > 0) {
+        input[idx] = 0;
+        printf("Client message: %s\n", input);
+    }
     
     if (SSL_write(ssl, msg, sizeof(msg)) != sizeof(msg))
         err_sys("SSL_write failed");
