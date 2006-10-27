@@ -118,10 +118,12 @@ int SetCipherSpecs(SSL* ssl)
     }
 
     /* set TLS if it hasn't been turned off */
-    if (ssl->version.major == 3 && ssl->version.minor == 1) {
+    if (ssl->version.major == 3 && ssl->version.minor >= 1) {
 #ifndef NO_TLS
         ssl->options.tls = 1;
         ssl->hmac = TLS_hmac;
+        if (ssl->version.minor == 2)
+            ssl->options.tls1_1 = 1;
 #endif
     }
 

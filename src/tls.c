@@ -152,6 +152,15 @@ static INLINE ProtocolVersion MakeTLSv1()
 }
 
 
+static INLINE ProtocolVersion MakeTLSv1_1()
+{
+    ProtocolVersion pv;
+    pv.major = 3;
+    pv.minor = 2;
+
+    return pv;
+}
+
 
 static const byte master_label[MASTER_LABEL_SZ + 1] = "master secret";
 static const byte key_label   [KEY_LABEL_SZ + 1]    = "key expansion";
@@ -272,6 +281,15 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
         return method;
     }
 
+
+    SSL_METHOD* TLSv1_1_client_method()
+    {
+        SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
+        if (method)
+            InitSSL_Method(method, MakeTLSv1_1());
+        return method;
+    }
+
 #endif /* NO_CYASSL_CLIENT */
 
 
@@ -289,6 +307,15 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
     }
 
 
+    SSL_METHOD* TLSv1_1_server_method()
+    {
+        SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
+        if (method) {
+            InitSSL_Method(method, MakeTLSv1_1());
+            method->side = SERVER_END;
+        }
+        return method;
+    }
 
 
 #endif /* NO_CYASSL_SERVER */

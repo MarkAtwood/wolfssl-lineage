@@ -55,7 +55,6 @@ void client_test(void* args)
     ssl = SSL_new(ctx);
     tcp_connect(&sockfd);
     SSL_set_fd(ssl, sockfd);
-    CyaSSL_check_domain_name(ssl, "www.taosoftdev.com");
 
 #ifdef NON_BLOCKING
     tcp_set_nonblocking(&sockfd);

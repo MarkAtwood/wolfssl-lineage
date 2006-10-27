@@ -400,6 +400,7 @@ typedef struct Options {
     byte            failNoCert;
     byte            resuming;
     byte            tls;                /* using TLS ? */
+    byte            tls1_1;             /* using TLSv1.1 ? */
     byte            isNonBlocking;      /* option set on this socket */
     byte            connectState;       /* nonblocking resume */
     byte            acceptState;        /* nonblocking resume */

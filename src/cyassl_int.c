@@ -133,7 +133,7 @@ void FreeSSL_Ctx(SSL_CTX* ctx)
 void InitSuites(Suites* suites, ProtocolVersion pv)
 {
     word32 idx = 0;
-    int    tls = pv.major == 3 && pv.minor == 1;
+    int    tls = pv.major == 3 && pv.minor >= 1;
     (void)tls;  /* shut up compiler */
 
     suites->setSuites = 0;  /* user hasn't set yet */
@@ -207,7 +207,8 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     
     ssl->options.resuming = 0;
     ssl->hmac = Hmac;    /* default to SSLv3 */
-    ssl->options.tls  = 0;
+    ssl->options.tls    = 0;
+    ssl->options.tls1_1 = 0;
 
     /* SSL_CTX still owns certificate, key, and caList buffers */
     ssl->buffers.certificate = ctx->certificate;
@@ -332,9 +333,9 @@ static INLINE void ato16(const byte* c, word16* u16)
 
 
 /* add output to md5 and sha handshake hashes, exclude record header */
-static void HashOutput(SSL*ssl, const byte* output, int sz)
+static void HashOutput(SSL*ssl, const byte* output, int sz, int ivSz)
 {
-    const byte* buffer = output + RECORD_HEADER_SZ;
+    const byte* buffer = output + RECORD_HEADER_SZ + ivSz;
     sz -= RECORD_HEADER_SZ;
 
     Md5Update(&ssl->hashMd5, buffer, sz);
@@ -635,6 +636,9 @@ static int DoFinished(SSL* ssl, const byte* input, word32* inOutIdx)
     memcpy(mac, input + idx, ssl->specs.hash_size);
     idx += ssl->specs.hash_size;
 
+    if (ssl->options.tls1_1 && ssl->specs.cipher_type == block)
+        padSz -= ssl->specs.block_size;
+
     for (i = 0; i < padSz; i++) 
         fill = input[idx++];
 
@@ -766,16 +770,13 @@ static INLINE void Decrypt(SSL* ssl, byte* plain, const byte* input, word32 sz)
 
 
 /* decrypt input message in place */
-static int DecryptMessage(SSL* ssl, byte* input, word32 sz)
+static int DecryptMessage(SSL* ssl, byte* input, word32 sz, word32* idx)
 {
-    byte* plain = (byte*)malloc(sz);
-    if (!plain) return MEMORY_ERROR;
-
-    Decrypt(ssl, plain, input, sz);
-    memcpy(input, plain, sz);
+    Decrypt(ssl, input, input, sz);
     ssl->keys.encryptSz = sz;
+    if (ssl->options.tls1_1 && ssl->specs.cipher_type == block)
+        *idx += ssl->specs.block_size;  /* go past TLSv1.1 IV */
 
-    free(plain);
     return 0;
 }
 
@@ -798,17 +799,20 @@ static int DoApplicationData(SSL* ssl, byte* input, word32* inOutIdx)
            digestSz = ssl->specs.hash_size,
            i;
     int    dataSz;
+    int    ivExtra = 0;
 
     byte verify[SHA_DIGEST_SIZE];
     byte mac[SHA_DIGEST_SIZE];
     byte fill;
 
     if (ssl->specs.cipher_type == block) {
-        pad = *(input + idx + msgSz - 1);
+        if (ssl->options.tls1_1)
+            ivExtra = ssl->specs.block_size;
+        pad = *(input + idx + msgSz - ivExtra - 1);
         padByte = 1;
     }
 
-    dataSz = msgSz - digestSz - pad - padByte;   
+    dataSz = msgSz - ivExtra - digestSz - pad - padByte;   
 
     /* read data */
     if (dataSz) {
@@ -893,7 +897,8 @@ int DoProcessReply(SSL* ssl)
     word32 inSz,
            idx = 0, 
            offset = 0,
-           bufferedSz;
+           bufferedSz,
+           ret;
 
     #define ERROR_OUT(x) { free(input); return x; }
 
@@ -966,12 +971,12 @@ int DoProcessReply(SSL* ssl)
         /* each message in record, can be more than 1 */
         while ( idx < rh.size + RECORD_HEADER_SZ + offset) {
             if (ssl->keys.encryptionOn)
-                if (DecryptMessage(ssl, input + idx, rh.size) < 0)
+                if (DecryptMessage(ssl, input + idx, rh.size, &idx) < 0)
                     ERROR_OUT(DECRYPT_ERROR);
             switch (rh.type) {
                 case handshake :
-                    if (DoHandShakeMsg(ssl, input, &idx, inSz) != 0)
-                        ERROR_OUT(PARSE_ERROR);
+                    if ( (ret = DoHandShakeMsg(ssl, input, &idx, inSz)) != 0)
+                        ERROR_OUT(ret);
                     break;
 
                 case change_cipher_spec:
@@ -986,8 +991,8 @@ int DoProcessReply(SSL* ssl)
                     break;
 
                 case application_data:
-                    if (DoApplicationData(ssl, input, &idx) != 0)
-                        ERROR_OUT(PARSE_ERROR);
+                    if ( (ret = DoApplicationData(ssl, input, &idx)) != 0)
+                        ERROR_OUT(ret);
                     break;
 
                 case alert:
@@ -1119,14 +1124,21 @@ static int BuildMessage(SSL* ssl, byte* output, const byte* input, int inSz,
 {
     word32 digestSz = ssl->specs.hash_size;
     word32 sz = RECORD_HEADER_SZ + inSz + digestSz;                
-    word32 pad = 0;
-    word32 idx = 0, i;
+    word32 pad  = 0;
+    word32 idx  = 0, i;
+    word32 ivSz = 0;      /* TLSv1.1  IV */
     byte              digest[SHA_DIGEST_SIZE];  /* max size */
     byte              alen[BYTE3_LEN];
+    byte              iv[AES_BLOCK_SIZE];                  /* max size */
     RecordLayerHeader rl;
 
     if (ssl->specs.cipher_type == block) {
         word32 blockSz = ssl->specs.block_size;
+        if (ssl->options.tls1_1) {
+            ivSz = blockSz;
+            sz  += ivSz;
+            RNG_GenerateBlock(&ssl->rng, iv, ivSz);
+        }
         sz += 1;       /* pad byte */
         pad = (sz - RECORD_HEADER_SZ) % blockSz;
         pad = blockSz - pad;
@@ -1143,12 +1155,16 @@ static int BuildMessage(SSL* ssl, byte* output, const byte* input, int inSz,
     /* write to output */
     memcpy(output, &rl, RECORD_HEADER_SZ);
     idx += RECORD_HEADER_SZ;
+    if (ivSz) {
+        memcpy(output + idx, iv, ivSz);
+        idx += ivSz;
+    }
     memcpy(output + idx, input, inSz);
     idx += inSz;
 
     if (type == handshake)
-        HashOutput(ssl, output, RECORD_HEADER_SZ + inSz);
-    ssl->hmac(ssl, digest, output + RECORD_HEADER_SZ, inSz, type, 0);
+        HashOutput(ssl, output, RECORD_HEADER_SZ + inSz, ivSz);
+    ssl->hmac(ssl, digest, output + RECORD_HEADER_SZ + ivSz, inSz, type, 0);
            
     memcpy(output + idx, digest, digestSz);
     idx += digestSz;
@@ -1156,7 +1172,6 @@ static int BuildMessage(SSL* ssl, byte* output, const byte* input, int inSz,
     if (ssl->specs.cipher_type == block)
         for (i = 0; i <= pad; i++) output[idx++] = pad; /* pad byte gets */
                                                         /* pad value too */
-
     Encrypt(ssl, output + RECORD_HEADER_SZ, output + RECORD_HEADER_SZ,
             rl.size);
 
@@ -1262,7 +1277,7 @@ int SendCertificate(SSL* ssl)
            ssl->buffers.certificate.length);
     i += ssl->buffers.certificate.length;
 
-    HashOutput(ssl, output, sendSz);
+    HashOutput(ssl, output, sendSz, 0);
     if (Send(ssl->socket, output, sendSz, 0) != sendSz)
         ret = SOCKET_ERROR_E;
 
@@ -1679,7 +1694,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         output[idx++] = NO_COMPRESSION;
             
         sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
-        HashOutput(ssl, output, sendSz);
+        HashOutput(ssl, output, sendSz, 0);
 
         if (Send(ssl->socket, output, sendSz, 0) != sendSz)
             return SOCKET_ERROR_E;
@@ -1842,7 +1857,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
                 idx += encSz;
 
                 sendSz = encSz + tlsSz + HANDSHAKE_HEADER_SZ +RECORD_HEADER_SZ;
-                HashOutput(ssl, output, sendSz);
+                HashOutput(ssl, output, sendSz, 0);
 
                 if (Send(ssl->socket, output, sendSz, 0) != sendSz)
                     ret = SOCKET_ERROR_E;
@@ -1921,7 +1936,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         output[idx++] = NO_COMPRESSION;
             
         sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
-        HashOutput(ssl, output, sendSz);
+        HashOutput(ssl, output, sendSz, 0);
 
         if (Send(ssl->socket, output, sendSz, 0) != sendSz)
             return SOCKET_ERROR_E;
@@ -1988,8 +2003,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
         if (ssl->version.minor > 0 && pv.minor == 0) {
             /* turn off tls */
-            ssl->options.tls = 0;
-            ssl->version.minor = 0;
+            ssl->options.tls    = 0;
+            ssl->options.tls1_1 = 0;
+            ssl->version.minor  = 0;
             InitSuites(&ssl->suites, ssl->version);
         }
 
@@ -2083,8 +2099,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         i += sizeof(pv);
         if (ssl->version.minor > 0 && pv.minor == 0) {
             /* turn off tls */
-            ssl->options.tls = 0;
-            ssl->version.minor = 0;
+            ssl->options.tls    = 0;
+            ssl->options.tls1_1 = 0;
+            ssl->version.minor  = 0;
             InitSuites(&ssl->suites, ssl->version);
         }
         memcpy(ssl->arrays.clientRandom, input + i, RAN_LEN);
@@ -2172,7 +2189,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         memcpy(output + idx, &hs, HANDSHAKE_HEADER_SZ);
         idx += HANDSHAKE_HEADER_SZ;
 
-        HashOutput(ssl, output, sendSz);
+        HashOutput(ssl, output, sendSz, 0);
         if (Send(ssl->socket, output, sendSz, 0) != sendSz)
             return SOCKET_ERROR_E;
 

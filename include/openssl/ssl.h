@@ -72,6 +72,8 @@ SSL_METHOD *SSLv3_server_method(void);
 SSL_METHOD *SSLv3_client_method(void);
 SSL_METHOD *TLSv1_server_method(void);  
 SSL_METHOD *TLSv1_client_method(void);
+SSL_METHOD *TLSv1_1_server_method(void);  
+SSL_METHOD *TLSv1_1_client_method(void);
 
 int SSL_CTX_use_certificate_file(SSL_CTX*, const char*, int);
 int SSL_CTX_use_PrivateKey_file(SSL_CTX*, const char*, int);
