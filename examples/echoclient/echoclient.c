@@ -40,7 +40,7 @@ void echoclient_test(void* args)
     if (!fin)  err_sys("can't open input file");
     if (!fout) err_sys("can't open output file");
 
-    tcp_connect(&sockfd);
+    tcp_connect(&sockfd, yasslIP, yasslPort);
 
 #ifndef NO_TLS
     method = TLSv1_1_client_method();

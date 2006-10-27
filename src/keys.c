@@ -50,6 +50,7 @@ int SetCipherSpecs(SSL* ssl)
         ssl->specs.pad_size              = PAD_SHA;
         ssl->specs.key_size              = RC4_KEY_SIZE;
         ssl->specs.iv_size               = 0;
+        ssl->specs.block_size            = 0;
 
         break;
 #endif
@@ -64,6 +65,7 @@ int SetCipherSpecs(SSL* ssl)
         ssl->specs.pad_size              = PAD_MD5;
         ssl->specs.key_size              = RC4_KEY_SIZE;
         ssl->specs.iv_size               = 0;
+        ssl->specs.block_size            = 0;
 
         break;
 #endif

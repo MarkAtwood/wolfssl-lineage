@@ -889,30 +889,23 @@ int ParseCert(DecodedCert* cert, word32 inSz, int type, int verify,
     if (confirmOID != cert->signatureOID)
         return ASN_SIG_OID_E;
 
-    if (verify) {
-        if (memcmp(cert->issuerHash, cert->subjectHash, SHA_DIGEST_SIZE) == 0){
-            /* self confirm */
-             if (!ConfirmSignature(cert, cert->publicKey, cert->pubKeySize))
-                return ASN_SIG_CONFIRM_E;
-        }
-        else {  /* try to find in signers */
-            while (signers) {
-                if (memcmp(cert->issuerHash, signers->hash, SHA_DIGEST_SIZE)
-                           == 0) {
-                    /* other confirm */
-                    if (!ConfirmSignature(cert, signers->publicKey,
-                                          signers->pubKeySize))
-                        return ASN_SIG_CONFIRM_E;
-                    else {
-                        confirm = 1;
-                        break;
-                    }
+    if (verify && type != CA_TYPE) {
+        while (signers) {
+            if (memcmp(cert->issuerHash, signers->hash, SHA_DIGEST_SIZE)
+                       == 0) {
+                /* other confirm */
+                if (!ConfirmSignature(cert, signers->publicKey,
+                                      signers->pubKeySize))
+                    return ASN_SIG_CONFIRM_E;
+                else {
+                    confirm = 1;
+                    break;
                 }
-                signers = signers->next;
             }
-            if (!confirm)
-                return ASN_SIG_CONFIRM_E;
+            signers = signers->next;
         }
+        if (!confirm)
+            return ASN_SIG_CONFIRM_E;
     }
 
     return 0;

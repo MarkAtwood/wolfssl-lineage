@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <ctype.h>
 #include "types.h"
 
 #ifdef _WIN32
@@ -15,6 +16,7 @@
 #else
     #include <string.h>
     #include <unistd.h>
+    #include <netdb.h>
     #include <netinet/in.h>
     #include <arpa/inet.h>
     #include <sys/ioctl.h>
@@ -111,21 +113,38 @@ static INLINE void err_sys(const char* msg)
 }
 
 
-static INLINE void tcp_socket(SOCKET_T* sockfd, struct sockaddr_in* addr)
+static INLINE void tcp_socket(SOCKET_T* sockfd, struct sockaddr_in* addr,
+                              const char* peer, word16 port)
 {
+    const char* host = peer;
+
+    /* peer could be in human readable form */
+    if (isalpha(peer[0])) {
+        struct hostent* entry = gethostbyname(peer);
+
+        if (entry) {
+            struct sockaddr_in tmp;
+            memset(&tmp, 0, sizeof(struct sockaddr_in));
+            memcpy(&tmp.sin_addr.s_addr, entry->h_addr_list[0],
+                   entry->h_length);
+            host = inet_ntoa(tmp.sin_addr);
+        }
+        else
+            err_sys("no entry for host");
+    }
     *sockfd = socket(AF_INET, SOCK_STREAM, 0);
     memset(addr, 0, sizeof(struct sockaddr_in));
     addr->sin_family = AF_INET;
 
-    addr->sin_port = htons(yasslPort);
-    addr->sin_addr.s_addr = inet_addr(yasslIP);
+    addr->sin_port = htons(port);
+    addr->sin_addr.s_addr = inet_addr(host);
 }
 
 
-static INLINE void tcp_connect(SOCKET_T* sockfd)
+static INLINE void tcp_connect(SOCKET_T* sockfd, const char* ip, word16 port)
 {
     struct sockaddr_in addr;
-    tcp_socket(sockfd, &addr);
+    tcp_socket(sockfd, &addr, ip, port);
 
     if (connect(*sockfd, (const struct sockaddr*)&addr, sizeof(addr)) != 0)
         err_sys("tcp connect failed");
@@ -135,7 +154,7 @@ static INLINE void tcp_connect(SOCKET_T* sockfd)
 static INLINE void tcp_listen(SOCKET_T* sockfd)
 {
     struct sockaddr_in addr;
-    tcp_socket(sockfd, &addr);
+    tcp_socket(sockfd, &addr, yasslIP, yasslPort);
 
     if (bind(*sockfd, (const struct sockaddr*)&addr, sizeof(addr)) != 0)
         err_sys("tcp bind failed");

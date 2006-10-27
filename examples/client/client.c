@@ -40,6 +40,10 @@ void client_test(void* args)
     char msg[] = "hello cyassl!";
     char reply[1024];
     int  input;
+    int  msgSz = sizeof(msg);
+
+    int     argc = ((func_args*)args)->argc;
+    char**  argv = ((func_args*)args)->argv;
 
     ((func_args*)args)->return_code = -1; /* error state */
 #ifndef NO_TLS
@@ -52,8 +56,16 @@ void client_test(void* args)
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
         err_sys("can't load ca file");
 
+    if (argc == 3) {
+        SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, 0);  /* TODO: add ca cert */
+        tcp_connect(&sockfd, argv[1], (short)atoi(argv[2]));
+    }
+    else if (argc == 1)
+        tcp_connect(&sockfd, yasslIP, yasslPort);
+    else
+        err_sys("usage: ./client hostname securePort\n");
+
     ssl = SSL_new(ctx);
-    tcp_connect(&sockfd);
     SSL_set_fd(ssl, sockfd);
 
 #ifdef NON_BLOCKING
@@ -63,8 +75,13 @@ void client_test(void* args)
     if (SSL_connect(ssl) != SSL_SUCCESS)
         err_sys("SSL_connect failed");
 #endif
+    printf("SSL connect ok\n");
 
-    if (SSL_write(ssl, msg, sizeof(msg)) != sizeof(msg))
+    if (argc == 3) {
+        strncpy(msg, "GET\r\n", 6);
+        msgSz = 6;
+    }
+    if (SSL_write(ssl, msg, msgSz) != msgSz)
         err_sys("SSL_write failed");
 
     input = SSL_read(ssl, reply, sizeof(reply));
@@ -89,7 +106,7 @@ void client_test(void* args)
     
     if (SSL_connect(sslResume) != SSL_SUCCESS) err_sys("SSL resume failed");
   
-    if (SSL_write(sslResume, msg, sizeof(msg)) != sizeof(msg))
+    if (SSL_write(sslResume, msg, msgSz) != msgSz)
         err_sys("SSL_write failed");
 
     input = SSL_read(sslResume, reply, sizeof(reply));

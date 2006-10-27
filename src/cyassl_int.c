@@ -546,6 +546,7 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
     word32 listSz, i = *inOutIdx;
     byte   tmp[3];
     int    ret = 0;
+    int    firstTime = 1;  /* peer's is at front */
 
     tmp[0] = input[i++];
     tmp[1] = input[i++];
@@ -579,7 +580,8 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
         ret = ParseCert(&dCert, ssl->buffers.peerCert.length, CERT_TYPE,
                         !ssl->options.verifyNone, ssl->caList);
 
-        if (ret == 0 && listSz == 0) {  /* last one has peer's key */
+        if (firstTime) {  /* first one has peer's key */
+            firstTime = 0;
             if ( (ssl->buffers.peerKey.buffer =
                                             (byte*)malloc(dCert.pubKeySize))) {
                 memcpy(ssl->buffers.peerKey.buffer, dCert.publicKey,
