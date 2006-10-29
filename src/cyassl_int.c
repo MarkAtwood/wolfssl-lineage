@@ -580,7 +580,7 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
         ret = ParseCert(&dCert, ssl->buffers.peerCert.length, CERT_TYPE,
                         !ssl->options.verifyNone, ssl->caList);
 
-        if (firstTime) {  /* first one has peer's key */
+        if (firstTime && ret == 0) {  /* first one has peer's key */
             firstTime = 0;
             if ( (ssl->buffers.peerKey.buffer =
                                             (byte*)malloc(dCert.pubKeySize))) {
@@ -896,11 +896,11 @@ static int DoAlert(SSL* ssl, byte* input, word32* inOutIdx)
 int DoProcessReply(SSL* ssl)
 {
     byte*  input = 0;
+    int    ret;
     word32 inSz,
            idx = 0, 
            offset = 0,
-           bufferedSz,
-           ret;
+           bufferedSz;
 
     #define ERROR_OUT(x) { free(input); return x; }
 

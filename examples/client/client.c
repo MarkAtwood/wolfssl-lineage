@@ -58,12 +58,13 @@ void client_test(void* args)
 
     if (argc == 3) {
         SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, 0);  /* TODO: add ca cert */
+                    /* this is just to allow easy testing of other servers */
         tcp_connect(&sockfd, argv[1], (short)atoi(argv[2]));
     }
     else if (argc == 1)
         tcp_connect(&sockfd, yasslIP, yasslPort);
     else
-        err_sys("usage: ./client hostname securePort\n");
+        err_sys("usage: ./client server securePort\n");
 
     ssl = SSL_new(ctx);
     SSL_set_fd(ssl, sockfd);
@@ -75,9 +76,9 @@ void client_test(void* args)
     if (SSL_connect(ssl) != SSL_SUCCESS)
         err_sys("SSL_connect failed");
 #endif
-    printf("SSL connect ok\n");
 
     if (argc == 3) {
+        printf("SSL connect ok, sending GET...\n");
         strncpy(msg, "GET\r\n", 6);
         msgSz = 6;
     }

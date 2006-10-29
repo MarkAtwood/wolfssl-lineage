@@ -621,44 +621,46 @@ static int GetDate(DecodedCert* cert, int dateType)
 }
 
 
-static int GetValidity(DecodedCert* cert)
+static int GetValidity(DecodedCert* cert, int verify)
 {
     int length;
 
     if (GetSequence(cert->source, &cert->srcIdx, &length) < 0)
         return ASN_PARSE_E;
 
-    if (GetDate(cert, BEFORE) < 0)
+    if (GetDate(cert, BEFORE) < 0 && verify)
         return ASN_BEFORE_DATE_E;
     
-    if (GetDate(cert, AFTER) < 0)
+    if (GetDate(cert, AFTER) < 0 && verify)
         return ASN_AFTER_DATE_E;
     
     return 0;
 }
 
 
-static int DecodeToKey(DecodedCert* cert, word32 inSz)
+static int DecodeToKey(DecodedCert* cert, word32 inSz, int verify)
 {
-    if (GetCertHeader(cert, inSz) < 0)
-        return ASN_PARSE_E;
+    int ret;
 
-    if (GetAlgoId(cert, &cert->signatureOID) < 0)
-        return ASN_PARSE_E;
+    if ( (ret = GetCertHeader(cert, inSz)) < 0)
+        return ret;
 
-    if (GetName(cert, ISSUER) < 0)
-        return ASN_PARSE_E;
+    if ( (ret = GetAlgoId(cert, &cert->signatureOID)) < 0)
+        return ret;
 
-    if (GetValidity(cert) < 0)
-        return ASN_PARSE_E;
+    if ( (ret = GetName(cert, ISSUER)) < 0)
+        return ret;
 
-    if (GetName(cert, SUBJECT) < 0)
-        return ASN_PARSE_E;
+    if ( (ret = GetValidity(cert, verify)) < 0)
+        return ret;
 
-    if (GetKey(cert) < 0)
-        return ASN_PARSE_E;
+    if ( (ret = GetName(cert, SUBJECT)) < 0)
+        return ret;
 
-    return 0;
+    if ( (ret = GetKey(cert)) < 0)
+        return ret;
+
+    return ret;
 }
 
 
@@ -874,17 +876,17 @@ int ParseCert(DecodedCert* cert, word32 inSz, int type, int verify,
     int    ret;
     int    confirm = 0;
 
-    if ((ret = DecodeToKey(cert, inSz)) < 0)
+    if ((ret = DecodeToKey(cert, inSz, verify)) < 0)
         return ret;
 
     if (cert->srcIdx != cert->sigIndex)
         cert->srcIdx =  cert->sigIndex;
 
-    if (GetAlgoId(cert, &confirmOID) < 0)
-        return ASN_PARSE_E;
+    if ((ret = GetAlgoId(cert, &confirmOID)) < 0)
+        return ret;
 
-    if (GetSignature(cert) < 0)
-        return ASN_PARSE_E;
+    if ((ret = GetSignature(cert)) < 0)
+        return ret;
 
     if (confirmOID != cert->signatureOID)
         return ASN_SIG_OID_E;

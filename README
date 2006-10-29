@@ -1,4 +1,16 @@
-CyaSSL version 0.6.0 (10/25/2006) 
+CyaSSL version 0.6.2 (10/29/2006) 
+
+This release of CyaSSL adds TLS 1.1.
+
+Note that CyaSSL has certificate verification on by default, unlike OpenSSL.
+To emulate OpenSSL behavior, you must call SSL_CTX_set_verify() with
+SSL_VERIFY_NONE.  In order to have full security you should never do this, 
+provide CyaSSL with the proper certificates to elimante imposters and call
+CyaSSL_check_domain_name() to prevent man in the middle attacks.
+
+See notes below (0.2.0) for build instructions.
+
+*****************CyaSSL version 0.6.0 (10/25/2006) 
 
 This release of CyaSSL adds more SSL functions, better autoconf, nonblocking
 I/O for accept, connect, and read.  There is now an --enable-small configure

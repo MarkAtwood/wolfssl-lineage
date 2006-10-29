@@ -630,6 +630,8 @@ void AddSession(SSL* ssl)
 }
 
 
+/* call before SSL_connect, if verifying will add name check to
+   date check and signature check */
 int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
 {
     if (ssl->buffers.domainName.buffer)
