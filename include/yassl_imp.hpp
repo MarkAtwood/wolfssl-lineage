@@ -631,7 +631,8 @@ struct Connection {
     bool            TLSv1_1_;                          // TLSv1.1 or greater
     bool            sessionID_Set_;                    // do we have a session
     bool            compression_;                      // zlib compression?
-    ProtocolVersion version_;
+    ProtocolVersion version_;                          // negotiated version
+    ProtocolVersion chVersion_;                        // client hello version
     RandomPool&     random_;
 
     Connection(ProtocolVersion v, RandomPool& ran);

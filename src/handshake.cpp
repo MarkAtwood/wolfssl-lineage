@@ -42,6 +42,9 @@ namespace yaSSL {
 // Build a client hello message from cipher suites and compression method
 void buildClientHello(SSL& ssl, ClientHello& hello)
 {
+    // store for pre master secret
+    ssl.useSecurity().use_connection().chVersion_ = hello.client_version_;
+
     ssl.getCrypto().get_random().Fill(hello.random_, RAN_LEN);
     if (ssl.getSecurity().get_resuming()) {
         hello.id_len_ = ID_LEN;
@@ -786,13 +789,13 @@ void processReply(SSL& ssl)
   
     if (DoProcessReply(ssl))
         // didn't complete process
-        if (!ssl.getSocket().IsBlocking()) {
-            // keep trying now
+        if (!ssl.getSocket().IsNonBlocking()) {
+            // keep trying now, blocking ok
             while (!ssl.GetError())
                 if (DoProcessReply(ssl) == 0) break;
         }
         else
-            // user will have try again later
+            // user will have try again later, non blocking
             ssl.SetError(YasslError(SSL_ERROR_WANT_READ));
 }
 

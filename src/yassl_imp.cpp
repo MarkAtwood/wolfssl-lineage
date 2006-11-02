@@ -87,7 +87,7 @@ void EncryptedPreMasterSecret::build(SSL& ssl)
     opaque tmp[SECRET_LEN];
     memset(tmp, 0, sizeof(tmp));
     ssl.getCrypto().get_random().Fill(tmp, SECRET_LEN);
-    ProtocolVersion pv = ssl.getSecurity().get_connection().version_;
+    ProtocolVersion pv = ssl.getSecurity().get_connection().chVersion_;
     tmp[0] = pv.major_;
     tmp[1] = pv.minor_;
     ssl.set_preMaster(tmp, SECRET_LEN);
@@ -233,7 +233,7 @@ void EncryptedPreMasterSecret::read(SSL& ssl, input_buffer& input)
     rsa.decrypt(preMasterSecret, secret_, length_, 
                 ssl.getCrypto().get_random());
 
-    ProtocolVersion pv = ssl.getSecurity().get_connection().version_;
+    ProtocolVersion pv = ssl.getSecurity().get_connection().chVersion_;
     if (pv.major_ != preMasterSecret[0] || pv.minor_ != preMasterSecret[1])
         ssl.SetError(pms_version_error); // continue deriving for timing attack
 
@@ -1455,6 +1455,9 @@ output_buffer& operator<<(output_buffer& output, const ClientHello& hello)
 // Client Hello processing handler
 void ClientHello::Process(input_buffer&, SSL& ssl)
 {
+    // store version for pre master secret
+    ssl.useSecurity().use_connection().chVersion_ = client_version_;
+
     if (client_version_.major_ != 3) {
         ssl.SetError(badVersion_error);
         return;
