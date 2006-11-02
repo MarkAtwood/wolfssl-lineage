@@ -176,9 +176,8 @@ static int SetPrefix(byte* sha_input, int index)
 
 static int SetKeys(SSL* ssl)
 {
-    word32 sz = ssl->specs.key_size;
-
 #ifdef BUILD_ARC4
+    word32 sz = ssl->specs.key_size;
     if (ssl->specs.bulk_cipher_algorithm == rc4) {
         if (ssl->options.side == CLIENT_END) {
             Arc4SetKey(&ssl->encrypt.arc4, ssl->keys.client_write_key, sz);

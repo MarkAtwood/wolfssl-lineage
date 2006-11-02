@@ -593,6 +593,25 @@ word32  LowResTimer();
 #endif /* SINGLE_THREADED */
 
 
+#ifdef DEBUG_CYASSL
+
+    void CYASSL_ENTER(const char* msg);
+    void CYASSL_LEAVE(const char* msg, int ret);
+
+    void CYASSL_ERROR(int);
+    void CYASSL_MSG(const char* msg);
+
+#else /* DEBUG_CYASSL   */
+
+    #define CYASSL_ENTER(m)
+    #define CYASSL_LEAVE(m, r)
+
+    #define CYASSL_ERROR(e) 
+    #define CYASSL_MSG(m)
+
+#endif /* DEBUG_CYASSL  */
+
+
 #ifdef __cplusplus
     }  /* extern "C" */
 #endif

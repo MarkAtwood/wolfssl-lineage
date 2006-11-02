@@ -1854,7 +1854,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=cyassl
- VERSION=0.6.0
+ VERSION=0.6.3
 
 
 cat >>confdefs.h <<_ACEOF
@@ -20920,7 +20920,7 @@ _ACEOF
 
 
 OPTIMIZE_CFLAGS=""
-DEBUG_CFLAGS="-g -DDEBUG"
+DEBUG_CFLAGS="-g -DDEBUG -DDEBUG_CYASSL"
 
 
 # Check whether --enable-debug or --disable-debug was given.

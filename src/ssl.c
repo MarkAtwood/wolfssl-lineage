@@ -46,9 +46,9 @@ static int ProcessFile(SSL_CTX*, const char*, int format, int type);
 SSL_CTX* SSL_CTX_new(SSL_METHOD* method)
 {
     SSL_CTX* ctx = (SSL_CTX*) malloc(sizeof(SSL_CTX));
-    assert(method);
     if (ctx)
         InitSSL_Ctx(ctx, method);
+
     return ctx;
 }
 
@@ -61,12 +61,14 @@ void SSL_CTX_free(SSL_CTX* ctx)
 
 SSL* SSL_new(SSL_CTX* ctx)
 {
+
     SSL* ssl = (SSL*) malloc(sizeof(SSL));
     if (ssl)
         if (InitSSL(ssl, ctx) < 0) {
             FreeSSL(ssl);
             ssl = 0;
         }
+
     return ssl;
 }
 
@@ -86,13 +88,27 @@ int SSL_set_fd(SSL* ssl, int fd)
 
 int SSL_write(SSL* ssl, const void* buffer, int sz)
 {
-    return SendData(ssl, buffer, sz);
+    int ret;
+
+    CYASSL_ENTER("SSL_write()");
+
+    ret = SendData(ssl, buffer, sz);
+
+    CYASSL_LEAVE("SSL_write()", ret);
+    return ret;
 }
 
 
 int SSL_read(SSL* ssl, void* buffer, int sz)
 {
-    return ReceiveData(ssl, (byte*)buffer, min(sz, MAX_RECORD_SIZE));
+    int ret;
+
+    CYASSL_ENTER("SSL_read()");
+
+    ret = ReceiveData(ssl, (byte*)buffer, min(sz, MAX_RECORD_SIZE));
+
+    CYASSL_LEAVE("SSL_read()", ret);
+    return ret;
 }
 
 
@@ -107,6 +123,8 @@ int SSL_shutdown(SSL* ssl)
 
 int SSL_get_error(SSL* ssl, int dummy)
 {
+    if (ssl->error == WANT_READ)
+        ssl->error = SSL_ERROR_WANT_READ;  /* convert to OpenSSL type */
     return ssl->error;
 }
 
@@ -243,51 +261,71 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
     {
         int neededState;
 
+        CYASSL_ENTER("SSL_connect()");
+
         assert(ssl->options.side == CLIENT_END);
 
         switch (ssl->options.connectState) {
 
         case CONNECT_BEGIN :
             /* always send client hello first */
-            if ( (ssl->error = SendClientHello(ssl)) != 0)
+            if ( (ssl->error = SendClientHello(ssl)) != 0) {
+                CYASSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
+            }
             ssl->options.connectState = CLIENT_HELLO_SENT;
+            CYASSL_MSG("connect state: CLIENT_HELLO_SENT");
 
         case CLIENT_HELLO_SENT :
             neededState = ssl->options.resuming ? SERVER_FINISHED_COMPLETE :
                                           SERVER_HELLODONE_COMPLETE;
             /* get response */
             while (ssl->options.serverState < neededState)
-                if ( (ssl->error = ProcessReply(ssl)) < 0)
+                if ( (ssl->error = ProcessReply(ssl)) < 0) {
+                    CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
+                }
             ssl->options.connectState = FIRST_REPLY_DONE;
+            CYASSL_MSG("connect state: FIRST_REPLY_DONE");
 
         case FIRST_REPLY_DONE :
             if (!ssl->options.resuming)
-                if ( (ssl->error = SendClientKeyExchange(ssl)) != 0)
+                if ( (ssl->error = SendClientKeyExchange(ssl)) != 0) {
+                    CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
+                }
 
-            if ( (ssl->error = SendChangeCipher(ssl)) != 0)
+            if ( (ssl->error = SendChangeCipher(ssl)) != 0) {
+                CYASSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
+            }
 
-            if ( (ssl->error = SendFinished(ssl)) != 0)
+            if ( (ssl->error = SendFinished(ssl)) != 0) {
+                CYASSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
+            }
 
             ssl->options.connectState = FINISHED_DONE;
+            CYASSL_MSG("connect state: FINISHED_DONE");
 
         case FINISHED_DONE :
             /* get response */
             while (ssl->options.serverState < SERVER_FINISHED_COMPLETE)
-                if ( (ssl->error = ProcessReply(ssl)) < 0)
+                if ( (ssl->error = ProcessReply(ssl)) < 0) {
+                    CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
+                }
           
             ssl->options.connectState = SECOND_REPLY_DONE;
+            CYASSL_MSG("connect state: SECOND_REPLY_DONE");
 
         case SECOND_REPLY_DONE:
 
+            CYASSL_LEAVE("SSL_connect()", SSL_SUCCESS);
             return SSL_SUCCESS;
 
         default:
+            CYASSL_MSG("Unknown connect state ERROR");
             return SSL_FATAL_ERROR; /* unknown connect state */
         }
     }
@@ -313,57 +351,82 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
     {
         assert(ssl->options.side == SERVER_END);
 
+        CYASSL_ENTER("SSL_accept()");
+
         switch (ssl->options.acceptState) {
     
         case ACCEPT_BEGIN :
             /* get response */
             while (ssl->options.clientState < CLIENT_HELLO_COMPLETE)
-                if ( (ssl->error = ProcessReply(ssl)) < 0)
+                if ( (ssl->error = ProcessReply(ssl)) < 0) {
+                    CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
-                ssl->options.acceptState = ACCEPT_FIRST_REPLY_DONE;
+                }
+            ssl->options.acceptState = ACCEPT_FIRST_REPLY_DONE;
+            CYASSL_MSG("accept state ACCEPT_FIRST_REPLY_DONE");
 
         case ACCEPT_FIRST_REPLY_DONE :
-            if ( (ssl->error = SendServerHello(ssl)) != 0)
+            if ( (ssl->error = SendServerHello(ssl)) != 0) {
+                CYASSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
+            }
 
             if (!ssl->options.resuming) {
-                if ( (ssl->error = SendCertificate(ssl)) != 0)
+                if ( (ssl->error = SendCertificate(ssl)) != 0) {
+                    CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
+                }
 
-                if ( (ssl->error = SendServerHelloDone(ssl)) != 0)
+                if ( (ssl->error = SendServerHelloDone(ssl)) != 0) {
+                    CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
+                }
             }
             ssl->options.acceptState = SERVER_HELLO_DONE;
+            CYASSL_MSG("accept state SERVER_HELLO_DONE");
 
         case SERVER_HELLO_DONE :
             if (!ssl->options.resuming) {
                 while (ssl->options.clientState < CLIENT_FINISHED_COMPLETE)
-                    if ( (ssl->error = ProcessReply(ssl)) < 0)
+                    if ( (ssl->error = ProcessReply(ssl)) < 0) {
+                        CYASSL_ERROR(ssl->error);
                         return SSL_FATAL_ERROR;
+                    }
             }
             ssl->options.acceptState = ACCEPT_SECOND_REPLY_DONE;
+            CYASSL_MSG("accept state  ACCEPT_SECOND_REPLY_DONE");
           
         case ACCEPT_SECOND_REPLY_DONE : 
-            if ( (ssl->error = SendChangeCipher(ssl)) != 0)
+            if ( (ssl->error = SendChangeCipher(ssl)) != 0) {
+                CYASSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
+            }
 
-            if ( (ssl->error = SendFinished(ssl)) != 0)
+            if ( (ssl->error = SendFinished(ssl)) != 0) {
+                CYASSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
+            }
 
             ssl->options.acceptState = ACCEPT_FINISHED_DONE;
+            CYASSL_MSG("accept state ACCEPT_FINISHED_DONE");
 
         case ACCEPT_FINISHED_DONE :
             if (ssl->options.resuming)
                 while (ssl->options.clientState < CLIENT_FINISHED_COMPLETE)
-                    if ( (ssl->error = ProcessReply(ssl)) < 0)
+                    if ( (ssl->error = ProcessReply(ssl)) < 0) {
+                        CYASSL_ERROR(ssl->error);
                         return SSL_FATAL_ERROR;
+                    }
 
             ssl->options.acceptState = ACCEPT_THIRD_REPLY_DONE;
+            CYASSL_MSG("accept state ACCEPT_THIRD_REPLY_DONE");
 
         case ACCEPT_THIRD_REPLY_DONE :
+            CYASSL_LEAVE("SSL_accept()", SSL_SUCCESS);
             return SSL_SUCCESS;
 
         default :
+            CYASSL_MSG("Unknown accept state ERROR");
             return SSL_FATAL_ERROR;
         }
     }
@@ -630,6 +693,8 @@ void AddSession(SSL* ssl)
 }
 
 
+/* call before SSL_connect, if verifying will add name check to
+   date check and signature check */
 int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
 {
     if (ssl->buffers.domainName.buffer)

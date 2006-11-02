@@ -580,7 +580,7 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
         ret = ParseCert(&dCert, ssl->buffers.peerCert.length, CERT_TYPE,
                         !ssl->options.verifyNone, ssl->caList);
 
-        if (firstTime) {  /* first one has peer's key */
+        if (firstTime && ret == 0) {  /* first one has peer's key */
             firstTime = 0;
             if ( (ssl->buffers.peerKey.buffer =
                                             (byte*)malloc(dCert.pubKeySize))) {
@@ -668,6 +668,9 @@ static int DoHandShakeMsg(SSL* ssl, const byte* input, word32* inOutIdx,
                           word32 totalSz)
 {
     HandShakeHeader hs;
+    int ret = 0;
+
+    CYASSL_ENTER("DoHandShakeMsg()");
 
     if (GetHandShakeHeader(ssl, input, inOutIdx, &hs) != 0)
         return PARSE_ERROR;
@@ -681,45 +684,54 @@ static int DoHandShakeMsg(SSL* ssl, const byte* input, word32* inOutIdx,
 
 #ifndef NO_CYASSL_CLIENT
     case server_hello:
-        return DoServerHello(ssl, input, inOutIdx);
+        CYASSL_MSG("processing server hello");
+        ret = DoServerHello(ssl, input, inOutIdx);
         break;
 
     case certificate_request:
-        return DoCertificateRequest(ssl, input, inOutIdx);
+        CYASSL_MSG("processing certificate request");
+        ret = DoCertificateRequest(ssl, input, inOutIdx);
         break;
 
     case server_key_exchange:
-        return DoServerKeyExchange(ssl, input, inOutIdx);
+        CYASSL_MSG("processing server key exchange");
+        ret = DoServerKeyExchange(ssl, input, inOutIdx);
         break;
 #endif
 
     case certificate:
-        return DoCertificate(ssl, input, inOutIdx);
+        CYASSL_MSG("processing certificate");
+        ret =  DoCertificate(ssl, input, inOutIdx);
         break;
 
     case server_hello_done:
+        CYASSL_MSG("processing server hello done");
         ssl->options.serverState = SERVER_HELLODONE_COMPLETE;
         break;
 
     case finished:
-        return DoFinished(ssl, input, inOutIdx);
+        CYASSL_MSG("processing finished");
+        ret = DoFinished(ssl, input, inOutIdx);
         break;
 
 #ifndef NO_CYASSL_SERVER
     case client_hello:
-        return DoClientHello(ssl, input, inOutIdx, totalSz, hs.size);
+        CYASSL_MSG("processing client hello");
+        ret = DoClientHello(ssl, input, inOutIdx, totalSz, hs.size);
         break;
 
     case client_key_exchange:
-        return DoClientKeyExchange(ssl, input, inOutIdx);
+        CYASSL_MSG("processing client key exchange");
+        ret = DoClientKeyExchange(ssl, input, inOutIdx);
         break;
 #endif
 
     default:
-        return UNKNOWN_HANDSHAKE_TYPE;
+        ret = UNKNOWN_HANDSHAKE_TYPE;
     }
 
-    return 0;
+    CYASSL_LEAVE("DoHandShakeMsg()", ret);
+    return ret;
 }
 
 
@@ -896,11 +908,11 @@ static int DoAlert(SSL* ssl, byte* input, word32* inOutIdx)
 int DoProcessReply(SSL* ssl)
 {
     byte*  input = 0;
+    int    ret;
     word32 inSz,
            idx = 0, 
            offset = 0,
-           bufferedSz,
-           ret;
+           bufferedSz;
 
     #define ERROR_OUT(x) { free(input); return x; }
 
@@ -975,13 +987,17 @@ int DoProcessReply(SSL* ssl)
             if (ssl->keys.encryptionOn)
                 if (DecryptMessage(ssl, input + idx, rh.size, &idx) < 0)
                     ERROR_OUT(DECRYPT_ERROR);
+
+            CYASSL_MSG("received record layer msg");
             switch (rh.type) {
                 case handshake :
+                    /* debugging in DoHandShakeMsg */
                     if ( (ret = DoHandShakeMsg(ssl, input, &idx, inSz)) != 0)
                         ERROR_OUT(ret);
                     break;
 
                 case change_cipher_spec:
+                    CYASSL_MSG("got CHANGE CIPHER SPEC");
                     idx++;
                     ssl->keys.encryptionOn = 1;
                     if (ssl->options.resuming && ssl->options.side ==
@@ -993,17 +1009,22 @@ int DoProcessReply(SSL* ssl)
                     break;
 
                 case application_data:
-                    if ( (ret = DoApplicationData(ssl, input, &idx)) != 0)
+                    CYASSL_MSG("got app DATA");
+                    if ( (ret = DoApplicationData(ssl, input, &idx)) != 0) {
+                        CYASSL_ERROR(ret);
                         ERROR_OUT(ret);
+                    }
                     break;
 
                 case alert:
+                    CYASSL_MSG("got ALERT!");
                     if (DoAlert(ssl, input, &idx) == alert_fatal)
                         ERROR_OUT(FATAL_ERROR);
                     break;
             
                 default:
-                    ERROR_OUT(UNKOWN_RECORD_TYPE);
+                    CYASSL_ERROR(UNKNOWN_RECORD_TYPE);
+                    ERROR_OUT(UNKNOWN_RECORD_TYPE);
             }
         }
         offset += rh.size + RECORD_HEADER_SZ;
@@ -1018,14 +1039,22 @@ int ProcessReply(SSL* ssl)
 {
     int ret;
 
+    CYASSL_ENTER("ProcessReply()");
+
     if ( (ret = DoProcessReply(ssl)) == 1) { /* need to call again */
-        if (!ssl->options.isNonBlocking)
+        if (!ssl->options.isNonBlocking) {
+            CYASSL_MSG("Received parital data while blocking, calling again");
             while ( (ret = DoProcessReply(ssl)) == 1)
                 ;  /* keep calling, ok to block */
-        else
+        }
+        else {
+            CYASSL_MSG("Received partial data in non-blocking mode, must call "
+                       "again to complete");
             return ssl->error = WANT_READ;  /* non blocking */
+        }
     }
 
+    CYASSL_LEAVE("ProcessReply()", ret);
     return ret;
 }
 
@@ -1352,17 +1381,28 @@ static int FillData(SSL* ssl, byte* output, int sz)
 /* process input data */
 int ReceiveData(SSL* ssl, byte* output, int sz)
 {
+    int ret;
+
+    CYASSL_ENTER("ReceiveData()");
+
     if (ssl->error == WANT_READ)
         ssl->error = 0;
 
-    if (ssl->options.handShakeState != HANDSHAKE_DONE)
+    if (ssl->options.handShakeState != HANDSHAKE_DONE) {
+        CYASSL_ERROR(NOT_READY_ERROR);
         return ssl->error = NOT_READY_ERROR;
+    }
 
     if (!ssl->buffers.bufferedData.buffer)
-        if ( (ssl->error = ProcessReply(ssl)) < 0)
+        if ( (ssl->error = ProcessReply(ssl)) < 0) {
+            CYASSL_ERROR(ssl->error);
             return ssl->error;  /* error */
+        }
 
-    return FillData(ssl, output, sz);
+    ret = FillData(ssl, output, sz);
+    
+    CYASSL_LEAVE("ReceiveData()", ret);
+    return ret;
 }
 
 
@@ -1454,7 +1494,7 @@ void SetErrorString(int error, char* buffer)
         strncpy(buffer, "don't have enough data to complete task", max);
         break;
 
-    case UNKOWN_RECORD_TYPE :
+    case UNKNOWN_RECORD_TYPE :
         strncpy(buffer, "unknown type in record hdr", max);
         break;
 
@@ -2254,3 +2294,75 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     }
 
 #endif /* NO_CYASSL_SERVER */
+
+
+
+#ifdef DEBUG_CYASSL
+
+    static int logging = 0;
+
+
+    int CyaSSL_Debugging_ON()
+    {
+        logging = 1;
+        return 0;
+    }
+
+
+    void CyaSSL_Debugging_OFF()
+    {
+        logging = 0;
+    }
+
+
+    void CYASSL_MSG(const char* msg)
+    {
+        if (logging)
+            fprintf(stderr, "%s\n", msg);
+    }
+
+
+    void CYASSL_ENTER(const char* msg)
+    {
+        if (logging) {
+            char buffer[80];
+            sprintf(buffer, "CyaSSL Entering %s", msg);
+            CYASSL_MSG(buffer);
+        }
+    }
+
+
+    void CYASSL_LEAVE(const char* msg, int ret)
+    {
+        if (logging) {
+            char buffer[80];
+            sprintf(buffer, "CyaSSL Leaving %s, return %d", msg, ret);
+            CYASSL_MSG(buffer);
+        }
+    }
+
+
+    void CYASSL_ERROR(int error)
+    {
+        if (logging) {
+            char buffer[80];
+            sprintf(buffer, "CyaSSL error occured, error = %d", error);
+            CYASSL_MSG(buffer);
+        }
+    }
+
+
+#else   /* DEBUG_CYASSL */
+
+    int CyaSSL_Debugging_ON()
+    {
+        return -1;    /* not compiled in */
+    }
+
+
+    void CyaSSL_Debugging_OFF()
+    {
+        /* already off */
+    }
+
+#endif  /* DEBUG_CYASSL */

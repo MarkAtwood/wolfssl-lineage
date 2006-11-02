@@ -41,7 +41,7 @@ enum CyaSSL_ErrorCodes {
     SOCKET_NODATA          = -209,            /* expected data, not there */
     INCOMPLETE_DATA        = -210,            /* don't have enough data to 
                                                  complete task            */
-    UNKOWN_RECORD_TYPE     = -211,            /* unknown type in record hdr */
+    UNKNOWN_RECORD_TYPE    = -211,            /* unknown type in record hdr */
     DECRYPT_ERROR          = -212,            /* error during decryption  */
     FATAL_ERROR            = -213,            /* revcd alert fatal error  */
     ENCRYPT_ERROR          = -214,            /* error during encryption  */
