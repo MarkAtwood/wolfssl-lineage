@@ -32,7 +32,8 @@
 #endif /* _WIN32 */
 
 
-#if !defined(_SOCKLEN_T) && (defined(_WIN32) || defined(__NETWARE__))
+#if !defined(_SOCKLEN_T) && \
+ (defined(_WIN32) || defined(__NETWARE__) || defined(__APPLE__))
     typedef int socklen_t;
 #endif
 
