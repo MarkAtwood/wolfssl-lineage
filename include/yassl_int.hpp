@@ -431,6 +431,7 @@ private:
     DH_Parms        dhParms_;
     pem_password_cb passwordCb_;
     void*           userData_;
+    bool            sessionCacheOff_;
     Stats           stats_;
     Mutex           mutex_;         // for Stats
 public:
@@ -445,6 +446,7 @@ public:
     const Stats&      GetStats()      const;
     pem_password_cb   GetPasswordCb() const;
           void*       GetUserData()   const;
+          bool        GetSessionCacheOff() const;
 
     void setVerifyPeer();
     void setVerifyNone();
@@ -453,6 +455,7 @@ public:
     bool SetDH(const DH&);
     void SetPasswordCb(pem_password_cb cb);
     void SetUserData(void*);
+    void SetSessionCacheOff();
    
     void            IncrementStats(StatsField);
     void            AddCA(x509* ca);

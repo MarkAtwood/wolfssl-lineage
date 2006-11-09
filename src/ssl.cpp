@@ -425,8 +425,21 @@ int SSL_shutdown(SSL* ssl)
 }
 
 
+/* on by default but allow user to turn off */
+long SSL_CTX_set_session_cache_mode(SSL_CTX* ctx, long mode)
+{
+    if (mode == SSL_SESS_CACHE_OFF)
+        ctx->SetSessionCacheOff();
+
+    return SSL_SUCCESS;
+}
+
+
 SSL_SESSION* SSL_get_session(SSL* ssl)
 {
+    if (ssl->getSecurity().GetContext()->GetSessionCacheOff())
+        return 0;
+
     return GetSessions().lookup(
         ssl->getSecurity().get_connection().sessionID_);
 }
@@ -434,6 +447,9 @@ SSL_SESSION* SSL_get_session(SSL* ssl)
 
 int SSL_set_session(SSL* ssl, SSL_SESSION* session)
 {
+    if (ssl->getSecurity().GetContext()->GetSessionCacheOff())
+        return SSL_FAILURE;
+
     ssl->set_session(session);
     return SSL_SUCCESS;
 }
@@ -1382,6 +1398,56 @@ int SSL_pending(SSL* ssl)
 }
 
 
+void SSL_CTX_set_default_passwd_cb(SSL_CTX* ctx, pem_password_cb cb)
+{
+    ctx->SetPasswordCb(cb);
+}
+
+
+int SSLeay_add_ssl_algorithms()  // compatibility only
+{
+    return 1;
+}
+
+
+void ERR_remove_state(unsigned long)
+{
+    GetErrors().Remove();
+}
+
+
+int ERR_GET_REASON(int l)
+{
+    return l & 0xfff;
+}
+
+
+unsigned long err_helper(bool peek = false)
+{
+    int ysError = GetErrors().Lookup(peek);
+
+    // translate cert error for libcurl, it uses OpenSSL hex code
+    switch (ysError) {
+    case TaoCrypt::SIG_OTHER_E:
+        return CERTFICATE_ERROR;
+        break;
+    default :
+        return 0;
+    }
+}
+
+
+unsigned long ERR_peek_error()
+{
+    return err_helper(true);
+}
+
+
+unsigned long ERR_get_error()
+{
+    return err_helper();
+}
+
 
     // functions for stunnel
 
@@ -1500,13 +1566,6 @@ int SSL_pending(SSL* ssl)
     }
 
 
-    long SSL_CTX_set_session_cache_mode(SSL_CTX*, long)
-    {
-        // TDOD:
-        return SSL_SUCCESS;
-    }
-
-
     long SSL_CTX_set_timeout(SSL_CTX*, long)
     {
         // TDOD:
@@ -1518,12 +1577,6 @@ int SSL_pending(SSL* ssl)
     {
         // TDOD:
         return SSL_SUCCESS;
-    }
-
-
-    void SSL_CTX_set_default_passwd_cb(SSL_CTX* ctx, pem_password_cb cb)
-    {
-        ctx->SetPasswordCb(cb);
     }
 
 
@@ -1577,49 +1630,6 @@ int SSL_pending(SSL* ssl)
         return 0;
     }
 
-
-    int SSLeay_add_ssl_algorithms()  // compatibility only
-    {
-        return 1;
-    }
-
-
-    void ERR_remove_state(unsigned long)
-    {
-        GetErrors().Remove();
-    }
-
-
-    int ERR_GET_REASON(int l)
-    {
-        return l & 0xfff;
-    }
-
-    unsigned long err_helper(bool peek = false)
-    {
-        int ysError = GetErrors().Lookup(peek);
-
-        // translate cert error for libcurl, it uses OpenSSL hex code
-        switch (ysError) {
-        case TaoCrypt::SIG_OTHER_E:
-            return CERTFICATE_ERROR;
-            break;
-        default :
-            return 0;
-        }
-    }
-
-
-    unsigned long ERR_peek_error()
-    {
-        return err_helper(true);
-    }
-
-
-    unsigned long ERR_get_error()
-    {
-        return err_helper();
-    }
 
 
     // end stunnel needs
