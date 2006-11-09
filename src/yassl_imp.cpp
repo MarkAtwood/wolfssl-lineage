@@ -1489,7 +1489,9 @@ void ClientHello::Process(input_buffer&, SSL& ssl)
     ssl.set_random(random_, client_end);
 
     while (id_len_) {  // trying to resume
-        SSL_SESSION* session = GetSessions().lookup(session_id_);
+        SSL_SESSION* session = 0;
+        if (!ssl.getSecurity().GetContext()->GetSessionCacheOff())
+            session = GetSessions().lookup(session_id_);
         if (!session)  {
             ssl.useLog().Trace("session lookup failed");
             break;

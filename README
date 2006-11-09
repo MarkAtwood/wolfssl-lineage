@@ -1,4 +1,21 @@
-yaSSL Release notes, version 1.4.5 (10/15/06)
+yaSSL Release notes, version 1.5.0 (11/09/06)
+
+    This release of yaSSL contains bug fixes, portability enhancements,
+    and full TLS 1.1 support.  Use the functions:
+
+        SSL_METHOD *TLSv1_1_server_method(void);
+        SSL_METHOD *TLSv1_1_client_method(void);
+    
+    or the SSLv23 versions (even though yaSSL doesn't support SSL 2.0 the v23
+    means to pick the highest of SSL 3.0, TLS 1.0, or TLS 1.1.
+
+
+See normal  build instructions below under 1.0.6.
+See libcurl build instructions below under 1.3.0.
+
+
+
+****************yaSSL Release notes, version 1.4.5 (10/15/06)
 
 
     This release of yaSSL contains bug fixes, portability enhancements,

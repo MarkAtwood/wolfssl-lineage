@@ -1282,7 +1282,10 @@ void SSL::matchSuite(const opaque* peer, uint length)
 
 
 void SSL::set_session(SSL_SESSION* s) 
-{ 
+{
+    if (getSecurity().GetContext()->GetSessionCacheOff())
+        return;
+
     if (s && GetSessions().lookup(s->GetID(), &secure_.use_resume())) {
         secure_.set_resuming(true);
         crypto_.use_certManager().setPeerX509(s->GetPeerX509());
@@ -1745,7 +1748,7 @@ bool SSL_METHOD::multipleProtocol() const
 
 SSL_CTX::SSL_CTX(SSL_METHOD* meth) 
     : method_(meth), certificate_(0), privateKey_(0), passwordCb_(0),
-      userData_(0)
+      userData_(0), sessionCacheOff_(false)
 {}
 
 
@@ -1826,9 +1829,21 @@ void* SSL_CTX::GetUserData() const
 }
 
 
+bool SSL_CTX::GetSessionCacheOff() const
+{
+    return sessionCacheOff_;
+}
+
+
 void SSL_CTX::SetUserData(void* data)
 {
     userData_ = data;
+}
+
+
+void SSL_CTX::SetSessionCacheOff()
+{
+    sessionCacheOff_ = true;
 }
 
 

@@ -905,7 +905,8 @@ void sendFinished(SSL& ssl, ConnectionEnd side, BufferOutput buffer)
             buildFinished(ssl, ssl.useHashes().use_verify(), client); // client
     }
     else {
-        GetSessions().add(ssl);  // store session
+        if (!ssl.getSecurity().GetContext()->GetSessionCacheOff())
+            GetSessions().add(ssl);  // store session
         if (side == client_end)
             buildFinished(ssl, ssl.useHashes().use_verify(), server); // server
     }   
