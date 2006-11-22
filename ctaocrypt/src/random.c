@@ -46,8 +46,12 @@
 int InitRng(RNG* rng)
 {
     byte key[32];
+    byte junk[256];
+
     int  ret = GenerateSeed(&rng->seed, key, sizeof(key));
     Arc4SetKey(&rng->cipher, key, sizeof(key));
+
+    RNG_GenerateBlock(rng, junk, sizeof(junk));  /* rid initial state */
 
     return ret;
 }

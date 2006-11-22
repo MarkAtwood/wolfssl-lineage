@@ -25,6 +25,11 @@
 #include "cyassl_error.h"
 #include "coding.h"
 
+#ifdef BUILD_OPENSSL_EXTRA
+    #include "openssl/md5.h"
+    #include "../ctaocrypt/include/md5.h"
+#endif
+
 #include <stdlib.h>
 #include <assert.h>
 
@@ -219,14 +224,14 @@ int SSL_library_init()  /* compatiblity only */
 }
 
 
-int SSL_CTX_use_certificate_chain_file(SSL_CTX *ctx, const char *file)
+int SSL_CTX_use_certificate_chain_file(SSL_CTX* ctx, const char* file)
 {
     /* add first to ctx, all tested implementations support this */
     return ProcessFile(ctx, file, SSL_FILETYPE_PEM, CA_TYPE);
 }
 
 
-/* on by default by allow user to turn off */
+/* on by default but allow user to turn off */
 long SSL_CTX_set_session_cache_mode(SSL_CTX* ctx, long mode)
 {
     if (mode == SSL_SESS_CACHE_OFF)
@@ -705,7 +710,7 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
                      (byte*) malloc(ssl->buffers.domainName.length);
 
     if (ssl->buffers.domainName.buffer) {
-        strncpy(ssl->buffers.domainName.buffer, dn,
+        strncpy((char*)ssl->buffers.domainName.buffer, dn,
                 ssl->buffers.domainName.length);
         return SSL_SUCCESS;
     }
@@ -715,4 +720,130 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
     }
 }
 
+
+
+#ifdef BUILD_OPENSSL_EXTRA
+
+    void MD5_Init(MD5_CTX* md5)
+    {
+        assert(sizeof(MD5_CTX) >= sizeof(Md5));
+        InitMd5((Md5*)md5);
+    }
+
+
+    void MD5_Update(MD5_CTX* md5, const void* input, unsigned long sz)
+    {
+        Md5Update((Md5*)md5, (const byte*)input, sz);
+    }
+
+
+    void MD5_Final(byte* input, MD5_CTX* md5)
+    {
+        Md5Final((Md5*)md5, input);
+    }
+
+
+    unsigned long ERR_get_error(void)
+    {
+        /* TODO: */
+        return 0;
+    }
+
+
+    int RAND_status(void)
+    {
+        return 1;  /* CTaoCrypt provides enough seed */
+    }
+
+
+
+    #ifndef NO_CYASSL_SERVER
+
+        void SSL_set_accept_state(SSL* ssl)
+        {
+            ssl->options.side = SERVER_END;
+        }
+
+        #ifdef NO_TLS
+
+            SSL_METHOD *SSLv23_server_method(void)
+            {
+                SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
+                if (method) {
+                    InitSSL_Method(method, MakeSSLv3());
+                    method->side = SERVER_END;
+                }
+                return method;
+            }
+
+        #endif /* NO_TLS */
+
+    #endif /* NO_CYASSL_SERVER */
+
+
+    long SSL_CTX_set_options(SSL_CTX* ctx, long opt)
+    {
+        /* TDOD: */
+        return SSL_SUCCESS;
+    }
+
+
+    int SSL_CTX_check_private_key(SSL_CTX* ctx)
+    {
+        /* TODO: check private against public for RSA match */
+        return SSL_NOT_IMPLEMENTED;
+    }
+
+
+    void SSL_set_shutdown(SSL* ssl, int opt)
+    {
+        /* TODO: */
+    }
+
+
+    void ERR_free_strings(void)
+    {
+        /* handled internally */
+    }
+
+
+    void ERR_remove_state(unsigned long state)
+    {
+        /* TODO: GetErrors().Remove(); */
+    }
+
+
+    void EVP_cleanup(void)
+    {
+        /* nothing to do here */
+    }
+
+
+    void CRYPTO_cleanup_all_ex_data(void)
+    {
+        /* nothing to do here */
+    }
+
+
+    long SSL_CTX_set_mode(SSL_CTX* ctx, long mode)
+    {
+        /* TODO: */
+        return mode;
+    }
+
+
+    long SSL_CTX_get_mode(SSL_CTX* ctx)
+    {
+        /* TODO: */
+        return 0;
+    }
+
+
+    void SSL_CTX_set_default_read_ahead(SSL_CTX* ctx, int m)
+    {
+        /* TODO: maybe? */
+    }
+
+
+#endif /* BUILD_OPENSSL_EXTRA */
 

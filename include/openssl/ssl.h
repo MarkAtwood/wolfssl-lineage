@@ -148,9 +148,33 @@ enum { /* ssl Constants */
 
     SSL_SENT_SHUTDOWN     = 90,
     SSL_RECEIVED_SHUTDOWN = 91,
+    SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER = 92,
+    SSL_OP_NO_SSLv2       = 93,
 };
 
 
+/* extra begins */
+
+unsigned long ERR_get_error(void);
+void SSL_set_accept_state(SSL*);
+
+int  RAND_status(void);
+SSL_METHOD *SSLv23_server_method(void);
+long SSL_CTX_set_options(SSL_CTX*, long);
+int  SSL_CTX_check_private_key(SSL_CTX*);
+
+void SSL_set_shutdown(SSL*, int);
+
+void ERR_free_strings(void);
+void ERR_remove_state(unsigned long);
+void EVP_cleanup(void);
+
+void CRYPTO_cleanup_all_ex_data(void);
+long SSL_CTX_set_mode(SSL_CTX* ctx, long mode);
+long SSL_CTX_get_mode(SSL_CTX* ctx);
+void SSL_CTX_set_default_read_ahead(SSL_CTX* ctx, int m);
+
+/* extra ends */
 
 
 /* CyaSSL extensions */

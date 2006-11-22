@@ -127,6 +127,10 @@ SOURCE=.\src\rsa.c
 
 SOURCE=.\src\sha.c
 # End Source File
+# Begin Source File
+
+SOURCE=.\src\sha256.c
+# End Source File
 # End Group
 # Begin Group "Header Files"
 
@@ -186,6 +190,10 @@ SOURCE=.\include\rsa.h
 # Begin Source File
 
 SOURCE=.\include\sha.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\sha256.h
 # End Source File
 # Begin Source File
 

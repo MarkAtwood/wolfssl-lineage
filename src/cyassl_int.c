@@ -589,7 +589,8 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
                 ssl->buffers.peerKey.length = dCert.pubKeySize;
 
                 if (!ssl->options.verifyNone && ssl->buffers.domainName.buffer)
-                    if (strncmp(ssl->buffers.domainName.buffer, dCert.subject,
+                    if (strncmp((char*)ssl->buffers.domainName.buffer,
+                                dCert.subject,
                                 ssl->buffers.domainName.length - 1))
                         ret = DOMAIN_NAME_MISMATCH;
             }

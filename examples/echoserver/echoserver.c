@@ -31,11 +31,12 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
     tcp_listen(&sockfd);
 
 #ifndef NO_TLS
-    method = TLSv1_1_server_method();
+    method = TLSv1_server_method();
 #else
     method = SSLv3_server_method();
 #endif
     ctx    = SSL_CTX_new(method);
+    /* SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_OFF); */
 
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
         err_sys("can't load ca file");

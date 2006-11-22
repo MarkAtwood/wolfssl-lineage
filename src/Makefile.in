@@ -152,7 +152,7 @@ libcyassl_la_SOURCES = cyassl_int.c keys.c ssl.c tls.c ../ctaocrypt/src/arc4.c \
     ../ctaocrypt/src/asn.c ../ctaocrypt/src/coding.c ../ctaocrypt/src/des3.c \
     ../ctaocrypt/src/hmac.c ../ctaocrypt/src/integer.c ../ctaocrypt/src/md5.c \
     ../ctaocrypt/src/random.c ../ctaocrypt/src/rsa.c ../ctaocrypt/src/sha.c \
-    ../ctaocrypt/src/aes.c
+    ../ctaocrypt/src/aes.c ../ctaocrypt/src/sha256.c
 
 libcyassl_la_LDFLAGS = -no-undefined -version-info 0:0:0
 AM_CFLAGS = -Wall
@@ -167,7 +167,7 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 libcyassl_la_LIBADD =
 am_libcyassl_la_OBJECTS = cyassl_int.lo keys.lo ssl.lo tls.lo arc4.lo \
 	asn.lo coding.lo des3.lo hmac.lo integer.lo md5.lo random.lo \
-	rsa.lo sha.lo aes.lo
+	rsa.lo sha.lo aes.lo sha256.lo
 libcyassl_la_OBJECTS = $(am_libcyassl_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/ctaocrypt/include
@@ -179,8 +179,8 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/hmac.Plo ./$(DEPDIR)/integer.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/keys.Plo ./$(DEPDIR)/md5.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/random.Plo ./$(DEPDIR)/rsa.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/sha.Plo ./$(DEPDIR)/ssl.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/tls.Plo
+@AMDEP_TRUE@	./$(DEPDIR)/sha.Plo ./$(DEPDIR)/sha256.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/ssl.Plo ./$(DEPDIR)/tls.Plo
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -251,6 +251,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/random.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rsa.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sha.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sha256.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ssl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tls.Plo@am__quote@
 
@@ -649,6 +650,39 @@ aes.lo: ../ctaocrypt/src/aes.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/aes.Plo' tmpdepfile='$(DEPDIR)/aes.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o aes.lo `test -f '../ctaocrypt/src/aes.c' || echo '$(srcdir)/'`../ctaocrypt/src/aes.c
+
+sha256.o: ../ctaocrypt/src/sha256.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sha256.o -MD -MP -MF "$(DEPDIR)/sha256.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o sha256.o `test -f '../ctaocrypt/src/sha256.c' || echo '$(srcdir)/'`../ctaocrypt/src/sha256.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/sha256.Tpo" "$(DEPDIR)/sha256.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/sha256.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../ctaocrypt/src/sha256.c' object='sha256.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/sha256.Po' tmpdepfile='$(DEPDIR)/sha256.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sha256.o `test -f '../ctaocrypt/src/sha256.c' || echo '$(srcdir)/'`../ctaocrypt/src/sha256.c
+
+sha256.obj: ../ctaocrypt/src/sha256.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sha256.obj -MD -MP -MF "$(DEPDIR)/sha256.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o sha256.obj `if test -f '../ctaocrypt/src/sha256.c'; then $(CYGPATH_W) '../ctaocrypt/src/sha256.c'; else $(CYGPATH_W) '$(srcdir)/../ctaocrypt/src/sha256.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/sha256.Tpo" "$(DEPDIR)/sha256.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/sha256.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../ctaocrypt/src/sha256.c' object='sha256.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/sha256.Po' tmpdepfile='$(DEPDIR)/sha256.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sha256.obj `if test -f '../ctaocrypt/src/sha256.c'; then $(CYGPATH_W) '../ctaocrypt/src/sha256.c'; else $(CYGPATH_W) '$(srcdir)/../ctaocrypt/src/sha256.c'; fi`
+
+sha256.lo: ../ctaocrypt/src/sha256.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sha256.lo -MD -MP -MF "$(DEPDIR)/sha256.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o sha256.lo `test -f '../ctaocrypt/src/sha256.c' || echo '$(srcdir)/'`../ctaocrypt/src/sha256.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/sha256.Tpo" "$(DEPDIR)/sha256.Plo"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/sha256.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../ctaocrypt/src/sha256.c' object='sha256.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/sha256.Plo' tmpdepfile='$(DEPDIR)/sha256.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sha256.lo `test -f '../ctaocrypt/src/sha256.c' || echo '$(srcdir)/'`../ctaocrypt/src/sha256.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

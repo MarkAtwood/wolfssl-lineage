@@ -318,6 +318,22 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
     }
 
 
+#ifdef BUILD_OPENSSL_EXTRA
+
+    SSL_METHOD *SSLv23_server_method(void)
+    {
+        SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
+        if (method) {
+            InitSSL_Method(method, MakeTLSv1_1());
+            method->side = SERVER_END;
+        }
+        return method;
+    }
+
+#endif /* BUILD_OPENSSL_EXTRA */
+
+
+
 #endif /* NO_CYASSL_SERVER */
 
 #else /* NO_TLS */

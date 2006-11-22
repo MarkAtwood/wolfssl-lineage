@@ -27,6 +27,10 @@
 #include "md5.h"
 #include "sha.h"
 
+#ifndef NO_SHA256
+    #include "sha256.h"
+#endif
+
 #ifdef __cplusplus
     extern "C" {
 #endif
@@ -34,10 +38,11 @@
 
 
 enum {
-    MD5  = 0,
-    SHA  = 1,
-    IPAD = 0x36,
-    OPAD = 0x5C,
+    MD5     = 0,
+    SHA     = 1,
+    SHA256  = 2,
+    IPAD    = 0x36,
+    OPAD    = 0x5C,
     HMAC_BLOCK_SIZE = MD5_BLOCK_SIZE
 };
 
@@ -46,15 +51,18 @@ enum {
 typedef union {
     Md5 md5;
     Sha sha;
+    #ifndef NO_SHA256
+        Sha256 sha256;
+    #endif
 } Hash;
 
 /* Hmac digest */
 typedef struct Hmac {
     Hash    hash;
     word32  ipad[HMAC_BLOCK_SIZE  / sizeof(word32)];  /* same block size all*/
-    word32  opad[HMAC_BLOCK_SIZE  / sizeof(word32)]; 
+    word32  opad[HMAC_BLOCK_SIZE  / sizeof(word32)];
     word32  innerHash[SHA_DIGEST_SIZE / sizeof(word32)]; /* max size */
-    byte    macType;                                     /* md5 or sha */
+    byte    macType;                                     /* md5 sha or sha256 */
     byte    innerHashKeyed;                              /* keyed flag */
 } Hmac;
 

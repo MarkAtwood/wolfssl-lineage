@@ -33,12 +33,16 @@ static void InitHmac(Hmac* hmac, int type)
     hmac->innerHashKeyed = 0;
     hmac->macType = type;
 
-    assert(type == MD5 || type == SHA);
+    assert(type == MD5 || type == SHA || type == SHA256);
 
     if (type == MD5)
         InitMd5(&hmac->hash.md5);
     else if (type == SHA)
         InitSha(&hmac->hash.sha);
+#ifndef NO_SHA256
+    else if (type == SHA256)
+        InitSha256(&hmac->hash.sha256);
+#endif
 }
 
 
@@ -58,13 +62,20 @@ void HmacSetKey(Hmac* hmac, int type, const byte* key, word32 length)
             Md5Final(&hmac->hash.md5, ip);
             length = MD5_DIGEST_SIZE;
         }
-        else /* SHA */ {
+        else if (hmac->macType == SHA) {
             ShaUpdate(&hmac->hash.sha, key, length);
             ShaFinal(&hmac->hash.sha, ip);
             length = SHA_DIGEST_SIZE;
         }
+#ifndef NO_SHA256
+        else if (hmac->macType == SHA256) {
+            Sha256Update(&hmac->hash.sha256, key, length);
+            Sha256Final(&hmac->hash.sha256, ip);
+            length = SHA256_DIGEST_SIZE;
+        }
+#endif
     }
-    memset(ip + length, 0, HMAC_BLOCK_SIZE - length); 
+    memset(ip + length, 0, HMAC_BLOCK_SIZE - length);
 
     for(i = 0; i < HMAC_BLOCK_SIZE; i++) {
         op[i] = ip[i] ^ OPAD;
@@ -77,8 +88,12 @@ static void HmacKeyInnerHash(Hmac* hmac)
 {
     if (hmac->macType == MD5)
         Md5Update(&hmac->hash.md5, (byte*) hmac->ipad, HMAC_BLOCK_SIZE);
-    else
+    else if (hmac->macType == SHA)
         ShaUpdate(&hmac->hash.sha, (byte*) hmac->ipad, HMAC_BLOCK_SIZE);
+#ifndef NO_SHA256
+    else if (hmac->macType == SHA256)
+        Sha256Update(&hmac->hash.sha256, (byte*) hmac->ipad, HMAC_BLOCK_SIZE);
+#endif
 
     hmac->innerHashKeyed = 1;
 }
@@ -91,8 +106,13 @@ void HmacUpdate(Hmac* hmac, const byte* msg, word32 length)
 
     if (hmac->macType == MD5)
         Md5Update(&hmac->hash.md5, msg, length);
-    else
+    else if (hmac->macType == SHA)
         ShaUpdate(&hmac->hash.sha, msg, length);
+#ifndef NO_SHA256
+    else if (hmac->macType == SHA256)
+        Sha256Update(&hmac->hash.sha256, msg, length);
+#endif
+
 }
 
 
@@ -109,7 +129,7 @@ void HmacFinal(Hmac* hmac, byte* hash)
 
         Md5Final(&hmac->hash.md5, hash);
     }
-    else {
+    else if (hmac->macType ==SHA) {
         ShaFinal(&hmac->hash.sha, (byte*) hmac->innerHash);
 
         ShaUpdate(&hmac->hash.sha, (byte*) hmac->opad, HMAC_BLOCK_SIZE);
@@ -117,6 +137,18 @@ void HmacFinal(Hmac* hmac, byte* hash)
 
         ShaFinal(&hmac->hash.sha, hash);
     }
+#ifndef NO_SHA256
+    else if (hmac->macType ==SHA256) {
+        Sha256Final(&hmac->hash.sha256, (byte*) hmac->innerHash);
+
+        Sha256Update(&hmac->hash.sha256, (byte*) hmac->opad, HMAC_BLOCK_SIZE);
+        Sha256Update(&hmac->hash.sha256, (byte*) hmac->innerHash,
+                     SHA256_DIGEST_SIZE);
+
+        Sha256Final(&hmac->hash.sha256, hash);
+    }
+#endif
+
     hmac->innerHashKeyed = 0;
 }
 

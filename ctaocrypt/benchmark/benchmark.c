@@ -9,6 +9,7 @@
 #include "aes.h"
 #include "md5.h"
 #include "sha.h"
+#include "sha256.h"
 #include "rsa.h"
 #include "asn.h"
 
@@ -24,6 +25,7 @@ void bench_aes();
 
 void bench_md5();
 void bench_sha();
+void bench_sha256();
 
 void bench_rsa();
 void bench_dh();
@@ -46,6 +48,9 @@ int main(int argc, char** argv)
 
     bench_md5();
     bench_sha();
+#ifndef NO_SHA256
+    bench_sha256();
+#endif
 
     printf("\n");
     
@@ -191,6 +196,31 @@ void bench_sha()
     printf("SHA      %d megs took %5.3f seconds, %5.2f MB/s\n", megs, total,
                                                              persec);
 }
+
+
+#ifndef NO_SHA256
+void bench_sha256()
+{
+    Sha256 hash;
+    byte   digest[SHA256_DIGEST_SIZE];
+    double start, total, persec;
+    int    i;
+        
+    InitSha256(&hash);
+    start = current_time();
+    
+    for(i = 0; i < megs; i++)
+        Sha256Update(&hash, plain, sizeof(plain));
+   
+    Sha256Final(&hash, digest);
+
+    total = current_time() - start;
+    persec = 1 / total * megs;
+
+    printf("SHA-256  %d megs took %5.3f seconds, %5.2f MB/s\n", megs, total,
+                                                             persec);
+}
+#endif
 
 
 RNG rng;

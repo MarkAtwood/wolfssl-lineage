@@ -7,6 +7,7 @@
 
 #include "md5.h"
 #include "sha.h"
+#include "sha256.h"
 #include "arc4.h"
 #include "random.h"
 #include "coding.h"
@@ -33,6 +34,7 @@ typedef struct testVector {
 
 int  md5_test();
 int  sha_test();
+int  sha256_test();
 int  hmac_test();
 int  arc4_test();
 int  des3_test();
@@ -74,6 +76,13 @@ void ctaocrypt_test(void* args)
         err_sys("SHA      test failed!\n", ret);
     else
         printf( "SHA      test passed!\n");
+
+#ifndef NO_SHA256
+    if ( (ret = sha256_test()) ) 
+        err_sys("SHA-256  test failed!\n", ret);
+    else
+        printf( "SHA-256  test passed!\n");
+#endif
 
 #ifndef NO_HMAC
     if ( (ret = hmac_test()) ) 
@@ -260,6 +269,48 @@ int sha_test()
 
     return 0;
 }
+
+
+#ifndef NO_SHA256
+int sha256_test()
+{
+    Sha256 sha;
+    byte   hash[SHA256_DIGEST_SIZE];
+
+    testVector a, b;
+    testVector test_sha[2];
+    int times = sizeof(test_sha) / sizeof(struct testVector), i;
+
+    a.input  = "abc";
+    a.output = "\xBA\x78\x16\xBF\x8F\x01\xCF\xEA\x41\x41\x40\xDE\x5D\xAE\x22"
+               "\x23\xB0\x03\x61\xA3\x96\x17\x7A\x9C\xB4\x10\xFF\x61\xF2\x00"
+               "\x15\xAD";
+    a.inLen  = strlen(a.input);
+    a.outLen = strlen(a.output);
+
+    b.input  = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
+    b.output = "\x24\x8D\x6A\x61\xD2\x06\x38\xB8\xE5\xC0\x26\x93\x0C\x3E\x60"
+               "\x39\xA3\x3C\xE4\x59\x64\xFF\x21\x67\xF6\xEC\xED\xD4\x19\xDB"
+               "\x06\xC1";
+    b.inLen  = strlen(b.input);
+    b.outLen = strlen(b.output);
+
+    test_sha[0] = a;
+    test_sha[1] = b;
+
+    InitSha256(&sha);
+
+    for (i = 0; i < times; ++i) {
+        Sha256Update(&sha, (byte*)test_sha[i].input, test_sha[i].inLen);
+        Sha256Final(&sha, hash);
+
+        if (memcmp(hash, test_sha[i].output, SHA256_DIGEST_SIZE) != 0)
+            return -10 - i;
+    }
+
+    return 0;
+}
+#endif
 
 
 #ifndef NO_HMAC
