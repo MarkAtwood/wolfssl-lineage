@@ -1,5 +1,4 @@
 /* client.c */
-
 #include "openssl/ssl.h"
 #include "../test.h"
 
@@ -12,15 +11,20 @@
     void NonBlockingSSL_Connect(SSL* ssl)
     {
         int ret = SSL_connect(ssl);
-        while (ret != SSL_SUCCESS && SSL_get_error(ssl, 0) ==
-                                     SSL_ERROR_WANT_READ) {
-            printf("... client would block\n");
+        int error = SSL_get_error(ssl, 0);
+        while (ret != SSL_SUCCESS && (error == SSL_ERROR_WANT_READ ||
+                                      error == SSL_ERROR_WANT_WRITE)) {
+            if (error == SSL_ERROR_WANT_READ)
+                printf("... client would read block\n");
+            else
+                printf("... client would write block\n");
             #ifdef _WIN32
-                Sleep(1000);
+                Sleep(100);
             #else
                 sleep(1);
             #endif
             ret = SSL_connect(ssl);
+            error = SSL_get_error(ssl, 0);
         }
         if (ret != SSL_SUCCESS)
             err_sys("SSL_connect failed");

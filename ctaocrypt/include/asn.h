@@ -138,7 +138,7 @@ void InitDecodedCert(DecodedCert*, byte*);
 void FreeDecodedCert(DecodedCert*);
 int  ParseCert(DecodedCert*, word32, int type, int verify, Signer* signer);
 
-Signer* MakeSigner();
+Signer* MakeSigner(void);
 void    FreeSigners(Signer*);
 
 

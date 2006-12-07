@@ -160,7 +160,10 @@ enum Misc {
     CLIENT_HELLO_FIRST =  35,  /* Protocol + RAN_LEN + sizeof(id_len) */
     MAX_ERROR_SZ       =  80,  /* user supplied buffer size is bigger 120 */
     MAX_SUITE_NAME     =  48,  /* maximum length of cipher suite string */
-    DEFAULT_TIMEOUT    = 500   /* default resumption timeout in seconds */
+    DEFAULT_TIMEOUT    = 500,  /* default resumption timeout in seconds */
+
+    NO_COPY            =   0,  /* should we copy static buffer for write */
+    COPY               =   1   /* should we copy static buffer for write */
 };
 
 
@@ -197,7 +200,7 @@ typedef struct ProtocolVersion {
 } ProtocolVersion;
 
 
-ProtocolVersion MakeSSLv3();
+ProtocolVersion MakeSSLv3(void);
 
 
 /* OpenSSL method type */
@@ -360,6 +363,8 @@ enum ConnectState {
     CONNECT_BEGIN = 0,
     CLIENT_HELLO_SENT,
     FIRST_REPLY_DONE,
+    FIRST_REPLY_SECOND,
+    FIRST_REPLY_THIRD,
     FINISHED_DONE,
     SECOND_REPLY_DONE
 };
@@ -385,6 +390,14 @@ typedef struct Buffers {
     buffer          bufferedInput;          /* raw partial input */
     buffer          domainName;             /* for client check */
 } Buffers;
+
+
+typedef struct WriteBuffer {
+    buffer          send;                   /* cached memory, we own */
+    const byte*     offset;                 /* current position for sending */
+    word32          plainSz;                /* plainText size of buffer     */
+    word32          sent;                   /* plainText size already sent  */
+} WriteBuffer;
 
 
 
@@ -433,6 +446,7 @@ struct SSL {
     Hashes          verifyHashes;
     Signer*         caList;             /* SSL_CTX owns */
     Buffers         buffers;
+    WriteBuffer     writeBuffer;
     Options         options;
     Arrays          arrays;
     SSL_SESSION     session;
@@ -523,6 +537,7 @@ static const byte tls_server[FINISHED_LABEL_SZ + 1] = "server finished";
 int SendChangeCipher(SSL*);
 int SendData(SSL*, const void*, int);
 int SendCertificate(SSL*);
+int SendBuffered(SSL*);
 int ReceiveData(SSL*, byte*, int);
 int SendFinished(SSL*);
 int SendAlert(SSL*, int, int);
@@ -556,8 +571,8 @@ int  StoreKeys(SSL* ssl, const byte* keyData);
 
 typedef double timer_d;
 
-timer_d Timer();
-word32  LowResTimer();
+timer_d Timer(void);
+word32  LowResTimer(void);
 
 
 #ifdef SINGLE_THREADED

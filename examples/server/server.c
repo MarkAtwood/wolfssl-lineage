@@ -1,5 +1,4 @@
 /* server.c */
-
 #include "openssl/ssl.h"
 #include "../test.h"
 
@@ -8,8 +7,9 @@
     void NonBlockingSSL_Accept(SSL* ssl)
     {
         int ret = SSL_accept(ssl);
-        while (ret != SSL_SUCCESS && SSL_get_error(ssl, 0) ==
-                                     SSL_ERROR_WANT_READ) {
+        int error = SSL_get_error(ssl, 0);
+        while (ret != SSL_SUCCESS && (error == SSL_ERROR_WANT_READ ||
+                                      error == SSL_ERROR_WANT_WRITE)) {
             printf("... server would block\n");
             #ifdef _WIN32
                 Sleep(1000);
@@ -17,6 +17,7 @@
                 sleep(1);
             #endif
             ret = SSL_accept(ssl);
+            error = SSL_get_error(ssl, 0);
         }
         if (ret != SSL_SUCCESS)
             err_sys("SSL_accept failed");

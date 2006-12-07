@@ -916,7 +916,7 @@ int ParseCert(DecodedCert* cert, word32 inSz, int type, int verify,
 }
 
 
-Signer* MakeSigner()
+Signer* MakeSigner(void)
 {
     Signer* signer = (Signer*) malloc(sizeof(Signer));
     if (signer) {

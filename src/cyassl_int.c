@@ -184,6 +184,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->buffers.bufferedData.buffer  = 0;
     ssl->buffers.bufferedInput.buffer = 0;
     ssl->buffers.domainName.buffer    = 0;
+    ssl->writeBuffer.send.buffer      = 0;
 
     InitRng(&ssl->rng);
     InitMd5(&ssl->hashMd5);
@@ -226,12 +227,13 @@ void FreeSSL(SSL* ssl)
     free(ssl->buffers.bufferedData.buffer);
     free(ssl->buffers.peerKey.buffer);
     free(ssl->buffers.peerCert.buffer);
+    free(ssl->writeBuffer.send.buffer);
 
     free(ssl);
 }
 
 
-ProtocolVersion MakeSSLv3()
+ProtocolVersion MakeSSLv3(void)
 {
     ProtocolVersion pv;
     pv.major = 3;
@@ -285,7 +287,7 @@ static INLINE void ato16(const byte* c, word16* u16)
 
 #ifdef _WIN32
 
-    timer_d Timer()
+    timer_d Timer(void)
     {
         static int           init = 0;
         static LARGE_INTEGER freq;
@@ -302,7 +304,7 @@ static INLINE void ato16(const byte* c, word16* u16)
     }
 
 
-    word32 LowResTimer()
+    word32 LowResTimer(void)
     {
         return (word32)Timer();
     }
@@ -311,7 +313,7 @@ static INLINE void ato16(const byte* c, word16* u16)
 
     #include <sys/time.h>
 
-    timer_d Timer()
+    timer_d Timer(void)
     {
         struct timeval tv;
         gettimeofday(&tv, 0);
@@ -320,7 +322,7 @@ static INLINE void ato16(const byte* c, word16* u16)
     }
 
 
-    word32 LowResTimer()
+    word32 LowResTimer(void)
     {
         struct timeval tv;
         gettimeofday(&tv, 0);
@@ -333,7 +335,7 @@ static INLINE void ato16(const byte* c, word16* u16)
 
 
 /* add output to md5 and sha handshake hashes, exclude record header */
-static void HashOutput(SSL*ssl, const byte* output, int sz, int ivSz)
+static void HashOutput(SSL* ssl, const byte* output, int sz, int ivSz)
 {
     const byte* buffer = output + RECORD_HEADER_SZ + ivSz;
     sz -= RECORD_HEADER_SZ;
@@ -344,7 +346,7 @@ static void HashOutput(SSL*ssl, const byte* output, int sz, int ivSz)
 
 
 /* add input to md5 and sha handshake hashes, include handshake header */
-static void HashInput(SSL*ssl, const byte* input, int sz)
+static void HashInput(SSL* ssl, const byte* input, int sz)
 {
     const byte* buffer = input - HANDSHAKE_HEADER_SZ;
     sz += HANDSHAKE_HEADER_SZ;
@@ -354,7 +356,7 @@ static void HashInput(SSL*ssl, const byte* input, int sz)
 }
 
 
-static INLINE int LastError()
+static INLINE int LastError(void)
 {
 #ifdef _WIN32
     return WSAGetLastError();
@@ -411,24 +413,81 @@ static word32 GetReady(SOCKET_T socket)
 }
 
 
-/* Send tcp data in a loop if needed */
-int Send(SOCKET_T socket, const byte* buf, int sz, int flags)
+/* send all data or return error, if WANT_WRITE call again w/ same args */
+int Send(SSL* ssl, const byte* buf, int sz, int flags)
 {
-    const byte* pos = buf;
-    const byte* end = pos + sz;
+    const byte* end = buf + sz;
+
+    if (ssl->writeBuffer.send.buffer)
+        buf = ssl->writeBuffer.offset;  /* adjust to last offset */
 
     assert(socket != INVALID_SOCKET);
 
-    while (pos != end) {
-        int sent = send(socket, (const char *)pos, (int)(end - pos), flags);
+    while (buf != end) {
+        int sent = send(ssl->socket, (const char*)buf, (int)(end - buf), flags);
 
-        if (sent == -1)
-            return 0;
-
-        pos += sent;
+        if (sent == -1) {
+            if (LastError() == SOCKET_EWOULDBLOCK || 
+                LastError() == SOCKET_EAGAIN) {
+        
+                ssl->writeBuffer.offset = buf;  /* save offset for next call */
+                return WANT_WRITE;
+            } 
+            return SOCKET_ERROR_E;
+        }
+        buf += sent;
     }
 
     return sz;
+}
+
+
+/* send all write buffer (0) or return error */
+int SendBuffered(SSL* ssl)
+{
+    int ret;
+
+    assert(ssl->writeBuffer.send.buffer);
+
+    if ( (ret = Send(ssl, ssl->writeBuffer.send.buffer,
+                     ssl->writeBuffer.send.length, 0)) > 0) {
+        free(ssl->writeBuffer.send.buffer);
+        ssl->writeBuffer.send.buffer = 0;
+        return 0;
+    }
+    return ret;
+}
+
+
+/* send all data (0) or error, if write buffer full buffer output
+   if copy we were passed a static buffer so copy it, we now own either way */
+int SendWrapper(SSL* ssl, const byte* output, int sz, int copy)
+{
+    int ret;
+    int offset;
+
+    assert(ssl->writeBuffer.send.buffer == 0);
+
+    if ( (ret = Send(ssl, output, sz, 0)) == WANT_WRITE) {
+        if (copy) {
+            ssl->writeBuffer.send.buffer = (byte*)malloc(sz);
+            if (!ssl->writeBuffer.send.buffer) return MEMORY_ERROR;
+            memcpy(ssl->writeBuffer.send.buffer, output, sz);
+
+            /* adjust for partial send, since made new buffer */
+            offset = ssl->writeBuffer.offset - output;   
+            ssl->writeBuffer.offset = ssl->writeBuffer.send.buffer + offset;
+        }
+        else 
+            ssl->writeBuffer.send.buffer = (byte*)output;  /* take ownership */
+
+        ssl->writeBuffer.send.length = sz;
+        return ret;
+    }
+    else if (ret < 0)
+        return ret;
+
+    return 0;
 }
 
 
@@ -1074,10 +1133,7 @@ int SendChangeCipher(SSL* ssl)
     memcpy(output, &rl, RECORD_HEADER_SZ);
     output[RECORD_HEADER_SZ] = 1;             /* turn it on */
 
-    if (Send(ssl->socket, output, sendSz, 0) != sendSz)
-        return SOCKET_ERROR_E;
-
-    return 0;
+    return SendWrapper(ssl, output, sendSz, COPY);
 }
 
 
@@ -1213,7 +1269,7 @@ static int BuildMessage(SSL* ssl, byte* output, const byte* input, int inSz,
 
 int SendFinished(SSL* ssl)
 {
-    int             sendSz, 
+    int             sendSz,
                     finishedSz = ssl->options.tls ? TLS_FINISHED_SZ :
                                                     FINISHED_SZ;
     byte            input[FINISHED_SZ + HANDSHAKE_HEADER_SZ];   /* max size */
@@ -1238,9 +1294,6 @@ int SendFinished(SSL* ssl)
                                 finishedSz, handshake)) == -1)
         return BUILD_MSG_ERROR;
 
-    if (Send(ssl->socket, output, sendSz, 0) != sendSz)
-        return SOCKET_ERROR_E;
-
     if (!ssl->options.resuming) {
         AddSession(ssl);    /* just try */
         if (ssl->options.side == CLIENT_END)
@@ -1255,7 +1308,7 @@ int SendFinished(SSL* ssl)
             BuildFinished(ssl, &ssl->verifyHashes, client);
     }
 
-    return 0;
+    return SendWrapper(ssl, output, sendSz, COPY);
 }
 
 
@@ -1310,7 +1363,7 @@ int SendCertificate(SSL* ssl)
     i += ssl->buffers.certificate.length;
 
     HashOutput(ssl, output, sendSz, 0);
-    if (Send(ssl->socket, output, sendSz, 0) != sendSz)
+    if (Send(ssl, output, sendSz, 0) != sendSz)
         ret = SOCKET_ERROR_E;
 
     if (ssl->options.side == SERVER_END)
@@ -1322,28 +1375,56 @@ int SendCertificate(SSL* ssl)
 
 int SendData(SSL* ssl, const void* buffer, int sz)
 {
-    int sent = 0,
-        sendSz;
+    int sent = 0,  /* plainText size */
+        sendSz,
+        ret;
 
-    if (ssl->options.handShakeState != HANDSHAKE_DONE)
-        return 0;  /* not ready */
+    if (ssl->error == WANT_WRITE)
+        ssl->error = 0;
+
+    if (ssl->options.handShakeState != HANDSHAKE_DONE) {
+        CYASSL_ERROR(NOT_READY_ERROR);
+        return ssl->error = NOT_READY_ERROR;
+    }
+
+    /* last time write buffer was full, try again */
+    if (ssl->writeBuffer.send.buffer) {
+        if ( (ret = SendBuffered(ssl)) < 0) {
+            CYASSL_ERROR(ret);
+            return ssl->error = ret;
+        }
+        else {
+            /* sent is now previous sent + just sent */
+            sent = ssl->writeBuffer.sent + ssl->writeBuffer.plainSz;
+            CYASSL_MSG("sent write buffered data");
+        }
+    }
 
     for (;;) {
-        int len = min(sz - sent, MAX_RECORD_SIZE);
-        byte* out = (byte*) malloc(len + MAX_MSG_EXTRA);
+        int   len = min(sz - sent, MAX_RECORD_SIZE);
+        byte* out;
+
+        if (sent == sz) break;
+        out = (byte*) malloc(len + MAX_MSG_EXTRA);
 
         if (!out) return MEMORY_ERROR;
 
         sendSz = BuildMessage(ssl, out, (byte*)buffer + sent, len,
                               application_data);
-        if (Send(ssl->socket, out, sendSz, 0) != sendSz) {
-            free(out);
-            return SOCKET_ERROR_E;
+        if ( (ret = SendWrapper(ssl, out, sendSz, NO_COPY)) < 0) {
+            CYASSL_ERROR(ret);
+            if (ret == WANT_WRITE) {
+                /* store for next call */
+                ssl->writeBuffer.plainSz     = len;
+                ssl->writeBuffer.sent        = sent;
+            }
+            else
+                free(out);
+            return ssl->error = ret;
         }
 
         free(out);
         sent += len;
-        if (sent == sz) break;
     }
  
     return sent;
@@ -1435,7 +1516,7 @@ int SendAlert(SSL* ssl, int severity, int type)
         sendSz = RECORD_HEADER_SZ + sizeof(input);
     }
 
-    if (Send(ssl->socket, output, sendSz, 0) != sendSz)
+    if (Send(ssl, output, sendSz, 0) != sendSz)
         return SOCKET_ERROR_E;
 
     return 0;
@@ -1557,6 +1638,10 @@ void SetErrorString(int error, char* buffer)
 
    case VERSION_ERROR :
         strncpy(buffer, "record layer version error", max);
+        break;
+
+    case WANT_WRITE :
+        strncpy(buffer, "non-blocking socket write buffer full", max);
         break;
 
     default :
@@ -1739,12 +1824,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
         HashOutput(ssl, output, sendSz, 0);
 
-        if (Send(ssl->socket, output, sendSz, 0) != sendSz)
-            return SOCKET_ERROR_E;
-
         ssl->options.clientState = CLIENT_HELLO_COMPLETE;
 
-        return 0;
+        return SendWrapper(ssl, output, sendSz, COPY);
     }
 
 
@@ -1902,14 +1984,15 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
                 sendSz = encSz + tlsSz + HANDSHAKE_HEADER_SZ +RECORD_HEADER_SZ;
                 HashOutput(ssl, output, sendSz, 0);
 
-                if (Send(ssl->socket, output, sendSz, 0) != sendSz)
-                    ret = SOCKET_ERROR_E;
+                ret = SendWrapper(ssl, output, sendSz, COPY);
             }
         }
 
-        if (ret == 0) {
+        if (ret == 0 || ret == WANT_WRITE) {
+            int tmpRet = MakeMasterSecret(ssl);
+            if (tmpRet != 0)
+                ret = tmpRet;   /* save WANT_WRITE unless more serious */
             ssl->options.clientState = CLIENT_KEYEXCHANGE_COMPLETE;
-            ret = MakeMasterSecret(ssl);
         }
         FreeRsaKey(&key);
 
@@ -1981,7 +2064,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
         HashOutput(ssl, output, sendSz, 0);
 
-        if (Send(ssl->socket, output, sendSz, 0) != sendSz)
+        if (Send(ssl, output, sendSz, 0) != sendSz)
             return SOCKET_ERROR_E;
 
         ssl->options.serverState = SERVER_HELLO_COMPLETE;
@@ -2233,7 +2316,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         idx += HANDSHAKE_HEADER_SZ;
 
         HashOutput(ssl, output, sendSz, 0);
-        if (Send(ssl->socket, output, sendSz, 0) != sendSz)
+        if (Send(ssl, output, sendSz, 0) != sendSz)
             return SOCKET_ERROR_E;
 
         ssl->options.serverState = SERVER_HELLODONE_COMPLETE;
@@ -2303,14 +2386,14 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     static int logging = 0;
 
 
-    int CyaSSL_Debugging_ON()
+    int CyaSSL_Debugging_ON(void)
     {
         logging = 1;
         return 0;
     }
 
 
-    void CyaSSL_Debugging_OFF()
+    void CyaSSL_Debugging_OFF(void)
     {
         logging = 0;
     }
@@ -2355,13 +2438,13 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
 #else   /* DEBUG_CYASSL */
 
-    int CyaSSL_Debugging_ON()
+    int CyaSSL_Debugging_ON(void)
     {
         return -1;    /* not compiled in */
     }
 
 
-    void CyaSSL_Debugging_OFF()
+    void CyaSSL_Debugging_OFF(void)
     {
         /* already off */
     }

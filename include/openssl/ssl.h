@@ -94,7 +94,7 @@ int  SSL_pending(SSL*);
 
 
 void SSL_load_error_strings(void);
-int  SSL_library_init();
+int  SSL_library_init(void);
 long SSL_CTX_set_session_cache_mode(SSL_CTX*, long);
 int  SSL_CTX_use_certificate_chain_file(SSL_CTX *ctx, const char *file);
 
@@ -183,11 +183,11 @@ void SSL_CTX_set_default_read_ahead(SSL_CTX* ctx, int m);
    date check and signature check */
 int CyaSSL_check_domain_name(SSL* ssl, const char* dn);
 
-void InitCyaSSL();   /* need to call once to load library (session cache) */
-void FreeCyaSSL();   /* call when done to free session cache */
+void InitCyaSSL(void);   /* need to call once to load library (session cache) */
+void FreeCyaSSL(void);   /* call when done to free session cache */
 
-int  CyaSSL_Debugging_ON();   /* turn logging on, only if compiled in */
-void CyaSSL_Debugging_OFF();  /* turn logging off */
+int  CyaSSL_Debugging_ON(void);   /* turn logging on, only if compiled in */
+void CyaSSL_Debugging_OFF(void);  /* turn logging off */
 
 
 #ifdef __cplusplus

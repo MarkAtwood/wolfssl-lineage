@@ -142,7 +142,7 @@ void BuildTlsFinished(SSL* ssl, Hashes* hashes, const byte* sender)
 }
 
 
-static INLINE ProtocolVersion MakeTLSv1()
+static INLINE ProtocolVersion MakeTLSv1(void)
 {
     ProtocolVersion pv;
     pv.major = 3;
@@ -152,7 +152,7 @@ static INLINE ProtocolVersion MakeTLSv1()
 }
 
 
-static INLINE ProtocolVersion MakeTLSv1_1()
+static INLINE ProtocolVersion MakeTLSv1_1(void)
 {
     ProtocolVersion pv;
     pv.major = 3;
@@ -273,7 +273,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
 
 #ifndef NO_CYASSL_CLIENT
 
-    SSL_METHOD* TLSv1_client_method()
+    SSL_METHOD* TLSv1_client_method(void)
     {
         SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
         if (method)
@@ -282,7 +282,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
     }
 
 
-    SSL_METHOD* TLSv1_1_client_method()
+    SSL_METHOD* TLSv1_1_client_method(void)
     {
         SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
         if (method)
@@ -296,7 +296,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
 
 #ifndef NO_CYASSL_SERVER
 
-    SSL_METHOD* TLSv1_server_method()
+    SSL_METHOD* TLSv1_server_method(void)
     {
         SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
         if (method) {
@@ -307,7 +307,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
     }
 
 
-    SSL_METHOD* TLSv1_1_server_method()
+    SSL_METHOD* TLSv1_1_server_method(void)
     {
         SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
         if (method) {

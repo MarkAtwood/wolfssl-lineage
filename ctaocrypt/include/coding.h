@@ -30,7 +30,14 @@
 #endif
 
 
+/* decode needed by CyaSSL */
 int Base64Decode(const byte* in, word32 inLen, byte* out, word32* outLen);
+
+#ifdef BUILD_CTAOCRYPT_EXTRA
+    /* encode isn't */
+    int Base64Encode(const byte* in, word32 inLen, byte* out, word32* outLen);
+#endif
+
 
 #ifdef __cplusplus
     } /* extern "C" */

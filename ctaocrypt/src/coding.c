@@ -105,3 +105,78 @@ int Base64Decode(const byte* in, word32 inLen, byte* out, word32* outLen)
     return 0;
 }
 
+
+#ifdef BUILD_CTAOCRYPT_EXTRA
+
+static
+const byte base64Encode[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+                              'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
+                              'U', 'V', 'W', 'X', 'Y', 'Z',
+                              'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+                              'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+                              'u', 'v', 'w', 'x', 'y', 'z',
+                              '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                              '+', '/'
+                            };
+
+
+/* porting assistance from yaSSL by Raphael HUCK */
+int Base64Encode(const byte* in, word32 inLen, byte* out, word32* outLen)
+{
+    word32 i = 0,
+           j = 0,
+           n = 0;   /* new line counter */
+
+    word32 outSz = (inLen + 3 - 1) / 3 * 4;
+    outSz += (outSz + PEM_LINE_SZ - 1) / PEM_LINE_SZ;  /* new lines */
+
+    if (outSz > *outLen) return -1;
+    
+    while (inLen > 2) {
+        byte b1 = in[j++];
+        byte b2 = in[j++];
+        byte b3 = in[j++];
+
+        // encoded idx
+        byte e1 = b1 >> 2;
+        byte e2 = ((b1 & 0x3) << 4) | (b2 >> 4);
+        byte e3 = ((b2 & 0xF) << 2) | (b3 >> 6);
+        byte e4 = b3 & 0x3F;
+
+        // store
+        out[i++] = base64Encode[e1];
+        out[i++] = base64Encode[e2];
+        out[i++] = base64Encode[e3];
+        out[i++] = base64Encode[e4];
+
+        inLen -= 3;
+
+        if ((++n % (PEM_LINE_SZ / 4)) == 0 && inLen)
+            out[i++] = '\n';
+    }
+
+    /* last integral */
+    if (inLen) {
+        int twoBytes = (inLen == 2);
+
+        byte b1 = in[j++];
+        byte b2 = (twoBytes) ? in[j++] : 0;
+
+        byte e1 = b1 >> 2;
+        byte e2 = ((b1 & 0x3) << 4) | (b2 >> 4);
+        byte e3 =  (b2 & 0xF) << 2;
+
+        out[i++] = base64Encode[e1];
+        out[i++] = base64Encode[e2];
+        out[i++] = (twoBytes) ? base64Encode[e3] : PAD;
+        out[i++] = PAD;
+    } 
+
+    out[i++] = '\n';
+    assert(i == outSz);
+
+    return 0; 
+}
+
+
+#endif /* BUILD_CTAOCRYPT_EXTRA */

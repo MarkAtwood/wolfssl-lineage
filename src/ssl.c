@@ -106,7 +106,7 @@ int SSL_write(SSL* ssl, const void* buffer, int sz)
 
 int SSL_read(SSL* ssl, void* buffer, int sz)
 {
-    int ret;
+    int ret; 
 
     CYASSL_ENTER("SSL_read()");
 
@@ -129,7 +129,9 @@ int SSL_shutdown(SSL* ssl)
 int SSL_get_error(SSL* ssl, int dummy)
 {
     if (ssl->error == WANT_READ)
-        ssl->error = SSL_ERROR_WANT_READ;  /* convert to OpenSSL type */
+        return SSL_ERROR_WANT_READ;         /* convert to OpenSSL type */
+    else if (ssl->error == WANT_WRITE)
+        return SSL_ERROR_WANT_WRITE;        /* convert to OpenSSL type */
     return ssl->error;
 }
 
@@ -214,11 +216,11 @@ int SSL_set_session(SSL* ssl, SSL_SESSION* session)
 }
 
 
-void SSL_load_error_strings()   /* compatibility only */
+void SSL_load_error_strings(void)   /* compatibility only */
 {}
 
 
-int SSL_library_init()  /* compatiblity only */
+int SSL_library_init(void)  /* compatiblity only */
 {
     return SSL_SUCCESS;
 }
@@ -253,7 +255,7 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 /* client only parts */
 #ifndef NO_CYASSL_CLIENT
 
-    SSL_METHOD* SSLv3_client_method()
+    SSL_METHOD* SSLv3_client_method(void)
     {
         SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
         if (method)
@@ -269,6 +271,17 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
         CYASSL_ENTER("SSL_connect()");
 
         assert(ssl->options.side == CLIENT_END);
+
+        if (ssl->writeBuffer.send.buffer) {
+            if ( (ssl->error = SendBuffered(ssl)) == 0) {
+                ssl->options.connectState++;
+                CYASSL_MSG("connect state: Advanced from buffered send");
+            }
+            else {
+                CYASSL_ERROR(ssl->error);
+                return SSL_FATAL_ERROR;
+            }
+        }
 
         switch (ssl->options.connectState) {
 
@@ -294,16 +307,27 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
             CYASSL_MSG("connect state: FIRST_REPLY_DONE");
 
         case FIRST_REPLY_DONE :
-            if (!ssl->options.resuming)
+            if (!ssl->options.resuming) {
                 if ( (ssl->error = SendClientKeyExchange(ssl)) != 0) {
                     CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
                 }
+            }
+            else {
+                ssl->options.connectState = FIRST_REPLY_SECOND;
+                CYASSL_MSG("connect state: FIRST_REPLY_SECOND");
+            }
+
+        case FIRST_REPLY_SECOND :
 
             if ( (ssl->error = SendChangeCipher(ssl)) != 0) {
                 CYASSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
             }
+            ssl->options.connectState = FIRST_REPLY_THIRD;
+            CYASSL_MSG("connect state: FIRST_REPLY_THIRD");
+
+        case FIRST_REPLY_THIRD :
 
             if ( (ssl->error = SendFinished(ssl)) != 0) {
                 CYASSL_ERROR(ssl->error);
@@ -341,7 +365,7 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 /* server only parts */
 #ifndef NO_CYASSL_SERVER
 
-    SSL_METHOD* SSLv3_server_method()
+    SSL_METHOD* SSLv3_server_method(void)
     {
         SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
         if (method) {
@@ -608,13 +632,13 @@ static SSL_SESSION* sessions = 0;
 #endif
 
 
-void InitCyaSSL()
+void InitCyaSSL(void)
 {
     InitMutex(&mutex);
 }
 
 
-void FreeCyaSSL()
+void FreeCyaSSL(void)
 {
     SSL_SESSION* next;
 

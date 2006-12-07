@@ -54,10 +54,11 @@ enum CyaSSL_ErrorCodes {
 
     BAD_HELLO              = -221,            /* client hello malformed   */
     DOMAIN_NAME_MISMATCH   = -222,            /* peer subject name mismatch */
-    WANT_READ              = -223,            /* want read = SSL_WANT_READ */
+    WANT_READ              = -223,            /* want read, call again    */
     NOT_READY_ERROR        = -224,            /* handshake layer not ready */
     PMS_VERSION_ERROR      = -225,            /* pre m secret version error */
-    VERSION_ERROR          = -226             /* record layer version error */
+    VERSION_ERROR          = -226,            /* record layer version error */
+    WANT_WRITE             = -227             /* want write, call again   */
 
     /* add strings to SetErrorString !!!!! */
 };
