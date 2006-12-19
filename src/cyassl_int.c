@@ -39,6 +39,7 @@
     #include <arpa/inet.h>
     #include <netinet/in.h>
     #include <sys/ioctl.h>
+    #include <fcntl.h>
 #endif // _WIN32
 
 #ifdef __sun
@@ -50,10 +51,12 @@
     const int SOCKET_EINVAL = WSAEINVAL;
     const int SOCKET_EWOULDBLOCK = WSAEWOULDBLOCK;
     const int SOCKET_EAGAIN = WSAEWOULDBLOCK;
+    const int SOCKET_ECONNRESET = WSAECONNRESET;
 #else
     const int SOCKET_EINVAL = EINVAL;
     const int SOCKET_EWOULDBLOCK = EWOULDBLOCK;
     const int SOCKET_EAGAIN = EAGAIN;
+    const int SOCKET_ECONNRESET = ECONNRESET;
 
     SOCKET_T INVALID_SOCKET = -1;
 #endif // _WIN32
@@ -192,7 +195,8 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
 
     ssl->options.side  = ctx->method->side;
     ssl->error = 0;
-    ssl->options.isNonBlocking = 0;
+    ssl->options.isNonBlocking = 0;  /* clear win32 non-blocking flag */
+    ssl->options.connReset = 0;
 
     ssl->options.serverState = NULL_STATE;
     ssl->options.clientState = NULL_STATE;
@@ -366,11 +370,35 @@ static INLINE int LastError(void)
 }
 
 
+static INLINE void SetError(int errorCode)
+{
+#ifdef _WIN32
+    WSASetLastError(errorCode);
+#else
+    errno = errorCode;
+#endif
+}
+
+
+static INLINE int IsNonBlocking(SSL* ssl)
+{
+#ifdef _WIN32
+    /* user may switch even though not supposed to, no get sock options for
+       win non-blocking so can only tell if this attempt returned EAGAIN, may
+       miss incomplete data case where don't call revc() again               */
+    return ssl->options.isNonBlocking;
+#else
+    return O_NONBLOCK & fcntl(ssl->socket, F_GETFL, 0);
+#endif
+}
+
+
 static word32 Receive(SSL* ssl, byte* buf, word32 sz, int flags)
 {
     int recvd;
 
     assert(ssl->socket != INVALID_SOCKET);
+    ssl->options.isNonBlocking = 0; /* clear win32 flag */ 
     recvd = recv(ssl->socket, (char *)buf, sz, flags);
 
     /* idea to seperate error from would block by arnetheduck@gmail.com */
@@ -382,6 +410,8 @@ static word32 Receive(SSL* ssl, byte* buf, word32 sz, int flags)
                                                win32 only way to tell */
             return 0;
         }
+        else if (LastError() == SOCKET_ECONNRESET)
+            ssl->options.connReset = 1;
     }
     else if (recvd == 0)
         return (word32) -1;
@@ -399,14 +429,14 @@ static int Wait(SSL* ssl)
 
 
 /* find out how much data is waiting */
-static word32 GetReady(SOCKET_T socket)
+static word32 GetReady(SSL* ssl)
 {
     unsigned long ready = 0;
 
 #ifdef _WIN32
-    ioctlsocket(socket, FIONREAD, &ready);
+    ioctlsocket(ssl->socket, FIONREAD, &ready);
 #else
-    ioctl(socket, FIONREAD, &ready);
+    ioctl(ssl->socket, FIONREAD, &ready);
 #endif
 
     return ready;
@@ -421,7 +451,7 @@ int Send(SSL* ssl, const byte* buf, int sz, int flags)
     if (ssl->writeBuffer.send.buffer)
         buf = ssl->writeBuffer.offset;  /* adjust to last offset */
 
-    assert(socket != INVALID_SOCKET);
+    assert(ssl->socket != INVALID_SOCKET);
 
     while (buf != end) {
         int sent = send(ssl->socket, (const char*)buf, (int)(end - buf), flags);
@@ -432,7 +462,9 @@ int Send(SSL* ssl, const byte* buf, int sz, int flags)
         
                 ssl->writeBuffer.offset = buf;  /* save offset for next call */
                 return WANT_WRITE;
-            } 
+            }
+            else if (LastError() == SOCKET_ECONNRESET)
+                ssl->options.connReset = 1;
             return SOCKET_ERROR_E;
         }
         buf += sent;
@@ -979,7 +1011,7 @@ int DoProcessReply(SSL* ssl)
     if (!Wait(ssl))
         return SOCKET_ERROR_E;
 
-    if (!(inSz = GetReady(ssl->socket)))
+    if (!(inSz = GetReady(ssl)))
         return 1;
 
     bufferedSz = ssl->buffers.bufferedInput.buffer ?
@@ -1101,17 +1133,16 @@ int ProcessReply(SSL* ssl)
 
     CYASSL_ENTER("ProcessReply()");
 
-    if ( (ret = DoProcessReply(ssl)) == 1) { /* need to call again */
-        if (!ssl->options.isNonBlocking) {
-            CYASSL_MSG("Received parital data while blocking, calling again");
-            while ( (ret = DoProcessReply(ssl)) == 1)
-                ;  /* keep calling, ok to block */
-        }
-        else {
+    while ( (ret = DoProcessReply(ssl)) == 1) { /* need to call again */
+        if (IsNonBlocking(ssl)) {
             CYASSL_MSG("Received partial data in non-blocking mode, must call "
                        "again to complete");
+            /* for incomplete data, if app checking directly */
+            SetError(SOCKET_EAGAIN);
             return ssl->error = WANT_READ;  /* non blocking */
         }
+        else
+            CYASSL_MSG("Received parital data while blocking, calling again");
     }
 
     CYASSL_LEAVE("ProcessReply()", ret);
@@ -1389,9 +1420,11 @@ int SendData(SSL* ssl, const void* buffer, int sz)
 
     /* last time write buffer was full, try again */
     if (ssl->writeBuffer.send.buffer) {
-        if ( (ret = SendBuffered(ssl)) < 0) {
-            CYASSL_ERROR(ret);
-            return ssl->error = ret;
+        if ( (ssl->error = SendBuffered(ssl)) < 0) {
+            CYASSL_ERROR(ssl->error);
+            if (ssl->error == SOCKET_ERROR_E && ssl->options.connReset)
+                return 0;  /* peer reset */
+            return ssl->error;
         }
         else {
             /* sent is now previous sent + just sent */
@@ -1420,6 +1453,8 @@ int SendData(SSL* ssl, const void* buffer, int sz)
             }
             else
                 free(out);
+            if (ret == SOCKET_ERROR_E && ssl->options.connReset)
+                return 0;  /* peer reset */
             return ssl->error = ret;
         }
 
@@ -1478,7 +1513,9 @@ int ReceiveData(SSL* ssl, byte* output, int sz)
     if (!ssl->buffers.bufferedData.buffer)
         if ( (ssl->error = ProcessReply(ssl)) < 0) {
             CYASSL_ERROR(ssl->error);
-            return ssl->error;  /* error */
+            if (ssl->error == SOCKET_ERROR_E && ssl->options.connReset)
+                return 0;     /* peer reset */
+            return ssl->error;
         }
 
     ret = FillData(ssl, output, sz);
@@ -1516,10 +1553,7 @@ int SendAlert(SSL* ssl, int severity, int type)
         sendSz = RECORD_HEADER_SZ + sizeof(input);
     }
 
-    if (Send(ssl, output, sendSz, 0) != sendSz)
-        return SOCKET_ERROR_E;
-
-    return 0;
+    return SendWrapper(ssl, output, sendSz, COPY);
 }
 
 

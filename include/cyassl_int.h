@@ -414,7 +414,8 @@ typedef struct Options {
     byte            resuming;
     byte            tls;                /* using TLS ? */
     byte            tls1_1;             /* using TLSv1.1 ? */
-    byte            isNonBlocking;      /* option set on this socket */
+    byte            isNonBlocking;      /* win32 option set on this socket */
+    byte            connReset;          /* has the peer reset */
     byte            connectState;       /* nonblocking resume */
     byte            acceptState;        /* nonblocking resume */
 } Options;
