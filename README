@@ -1,4 +1,12 @@
-CyaSSL version 0.6.3 (10/30/2006) 
+CyaSSL version 0.8.0 (1/10/2007) 
+
+This release of CyaSSL adds increased socket support, for non-blocking writes,
+connects, and interrupted system calls.
+
+See notes below (0.2.0) for complete build instructions.
+
+
+****************CyaSSL version 0.6.3 (10/30/2006) 
 
 This release of CyaSSL adds debug logging to stderr to aid in the debugging of
 CyaSSL on systems that may not provide the best support.
