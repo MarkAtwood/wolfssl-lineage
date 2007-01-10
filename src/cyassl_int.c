@@ -52,11 +52,13 @@
     const int SOCKET_EWOULDBLOCK = WSAEWOULDBLOCK;
     const int SOCKET_EAGAIN = WSAEWOULDBLOCK;
     const int SOCKET_ECONNRESET = WSAECONNRESET;
+    const int SOCKET_EINTR = WSAEINTR;
 #else
     const int SOCKET_EINVAL = EINVAL;
     const int SOCKET_EWOULDBLOCK = EWOULDBLOCK;
     const int SOCKET_EAGAIN = EAGAIN;
     const int SOCKET_ECONNRESET = ECONNRESET;
+    const int SOCKET_EINTR = EINTR;
 
     SOCKET_T INVALID_SOCKET = -1;
 #endif // _WIN32
@@ -385,7 +387,9 @@ static INLINE int IsNonBlocking(SSL* ssl)
 #ifdef _WIN32
     /* user may switch even though not supposed to, no get sock options for
        win non-blocking so can only tell if this attempt returned EAGAIN, may
-       miss incomplete data case where don't call revc() again               */
+       miss incomplete data case where don't call revc() again, so caller 
+       should loop                                      
+     */
     return ssl->options.isNonBlocking;
 #else
     return O_NONBLOCK & fcntl(ssl->socket, F_GETFL, 0);
@@ -398,7 +402,8 @@ static word32 Receive(SSL* ssl, byte* buf, word32 sz, int flags)
     int recvd;
 
     assert(ssl->socket != INVALID_SOCKET);
-    ssl->options.isNonBlocking = 0; /* clear win32 flag */ 
+    ssl->options.isNonBlocking = 0; /* clear win32 flag */
+retry:
     recvd = recv(ssl->socket, (char *)buf, sz, flags);
 
     /* idea to seperate error from would block by arnetheduck@gmail.com */
@@ -412,6 +417,8 @@ static word32 Receive(SSL* ssl, byte* buf, word32 sz, int flags)
         }
         else if (LastError() == SOCKET_ECONNRESET)
             ssl->options.connReset = 1;
+        else if (LastError() == SOCKET_EINTR)
+            goto retry;
     }
     else if (recvd == 0)
         return (word32) -1;
@@ -465,6 +472,9 @@ int Send(SSL* ssl, const byte* buf, int sz, int flags)
             }
             else if (LastError() == SOCKET_ECONNRESET)
                 ssl->options.connReset = 1;
+            else if (LastError() == SOCKET_EINTR)
+                continue;
+
             return SOCKET_ERROR_E;
         }
         buf += sent;
