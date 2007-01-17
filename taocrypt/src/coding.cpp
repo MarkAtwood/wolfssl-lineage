@@ -235,11 +235,18 @@ void Base64Decoder::Decode()
         if ((++j % 16) == 0) {
             byte endLine = coded_.next();
             bytes--;
+            while (endLine == ' ') {        // remove possible whitespace
+                endLine = coded_.next();
+                bytes--;
+            }
             if (endLine == '\r') {
                 endLine = coded_.next();
                 bytes--;
             }
-            assert(endLine == '\n');
+            if (endLine != '\n') {
+                coded_.SetError(PEM_E); 
+                return;
+            }
         }
     }
 

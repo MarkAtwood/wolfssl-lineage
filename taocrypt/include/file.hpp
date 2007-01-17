@@ -72,7 +72,9 @@ public:
 
     friend class FileSource;  // for get()
 
-    Source(const Source& that) : buffer_(that.buffer_), current_(that.current_) {}
+    Source(const Source& that)
+        : buffer_(that.buffer_), current_(that.current_) {}
+
     Source& operator=(const Source& that)
     {
         Source tmp(that);
