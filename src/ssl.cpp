@@ -406,7 +406,6 @@ int SSL_do_handshake(SSL* ssl)
 
 int SSL_clear(SSL* ssl)
 {
-    ssl->useSocket().closeSocket();
     GetErrors().Remove();
 
     return SSL_SUCCESS;

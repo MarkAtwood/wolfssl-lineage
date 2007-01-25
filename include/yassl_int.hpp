@@ -591,6 +591,9 @@ class SSL {
     Socket              socket_;                // socket wrapper
     Buffers             buffers_;               // buffered handshakes and data
     Log                 log_;                   // logger
+
+    // optimization variables
+    bool                has_data_;              // buffered data ready?
 public:
     SSL(SSL_CTX* ctx);
 
@@ -612,6 +615,8 @@ public:
     Socket&    useSocket();
     Log&       useLog();
     Buffers&   useBuffers();
+
+    bool       HasData() const;
 
     // sets
     void set_pending(Cipher suite);

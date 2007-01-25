@@ -72,7 +72,8 @@ typedef unsigned int   word32;
 
     
 #if defined(HAVE_64_MULTIPLY) && (defined(__alpha__) || defined(__ia64__) \
-    || defined(_ARCH_PPC64) || defined(__mips64)  || defined(__x86_64__)) 
+    || defined(_ARCH_PPC64) || defined(__mips64)  || defined(__x86_64__) \
+    || defined(_M_X64) || defined(_M_IA64)) 
 // These platforms have 64-bit CPU registers. Unfortunately most C++ compilers
 // don't allow any way to access the 64-bit by 64-bit multiply instruction
 // without using assembly, so in order to use word64 as word, the assembly

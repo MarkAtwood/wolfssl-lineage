@@ -38,22 +38,11 @@
     #include <c_asm.h>  // for asm overflow assembly
 #endif
 
-
-// 64bit multiply overflow intrinsic
-#if defined(_MSC_VER) && defined(_WIN64) && !defined(__INTEL_COMPILER) && \
-   !defined(TAOCRYPT_NATIVE_DWORD_AVAILABLE)
-    #ifdef __ia64__
-        #define myUMULH __UMULH
-    #elif  __x86_64__
-        #define myUMULH __umulh
-    #else
-        #error unknown 64bit windows
-    #endif
-
-extern "C" word myUMULH(word, word); 
-
-#pragma intrinsic (myUMULH)
+#if defined(_M_X64) || defined(_M_IA64)
+    #include <intrin.h> 
+#pragma intrinsic(_umul128)
 #endif
+
 
 #ifdef __GNUC__
     #include <signal.h>
@@ -184,9 +173,8 @@ DWord() {}
         #ifdef TAOCRYPT_NATIVE_DWORD_AVAILABLE
             r.whole_ = (dword)a * b;
 
-        #elif defined(_MSC_VER)
-            r.halfs_.low = a*b;
-            r.halfs_.high = myUMULH(a,b);
+        #elif defined(_M_X64) || defined(_M_IA64)
+            r.halfs_.low = _umul128(a, b, &r.halfs_.high);
 
         #elif defined(__alpha__)
             r.halfs_.low = a*b;

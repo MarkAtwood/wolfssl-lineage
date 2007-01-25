@@ -298,7 +298,7 @@ const ClientKeyFactory& sslFactory::getClientKey() const
 SSL::SSL(SSL_CTX* ctx) 
     : secure_(ctx->getMethod()->getVersion(), crypto_.use_random(),
               ctx->getMethod()->getSide(), ctx->GetCiphers(), ctx,
-              ctx->GetDH_Parms().set_)
+              ctx->GetDH_Parms().set_), has_data_(false)
 {
     if (int err = crypto_.get_random().GetError()) {
         SetError(YasslError(err));
@@ -1054,6 +1054,8 @@ void SSL::fillData(Data& data)
         if (data.get_length() == dataSz)
             break;
     }
+    
+    if (buffers_.getData().size() == 0) has_data_ = false;  // none left
 }
 
 
@@ -1389,9 +1391,17 @@ bool SSL::isTLSv1_1() const
 }
 
 
+// is there buffered data available, optimization to remove iteration on buffer
+bool SSL::HasData() const
+{ 
+    return has_data_;
+}
+
+
 void SSL::addData(input_buffer* data)
 {
     buffers_.useData().push_back(data);
+    if (!has_data_) has_data_ = true;
 }
 
 

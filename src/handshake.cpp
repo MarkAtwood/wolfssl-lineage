@@ -979,7 +979,7 @@ int receiveData(SSL& ssl, Data& data, bool peek)
     ssl.verfiyHandShakeComplete();
     if (ssl.GetError()) return -1;
 
-    if (!ssl.bufferedData())
+    if (!ssl.HasData())
         processReply(ssl);
 
     if (peek)
