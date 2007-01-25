@@ -81,7 +81,7 @@ socket_t Socket::get_fd() const
 
 Socket::~Socket()
 {
-    closeSocket();
+    // don't close automatically now
 }
 
 
