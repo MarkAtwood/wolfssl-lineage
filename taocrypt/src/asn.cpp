@@ -738,10 +738,22 @@ void CertDecoder::GetName(NameType nt)
             sha.Update(source_.get_current(), strLen);
             source_.advance(strLen);
         }
-        else {
-            // skip
+        else { 
+            bool email = false;
+            if (joint[0] == 0x2a && joint[1] == 0x86)  // email id hdr
+                email = true;
+
             source_.advance(oidSz + 1);
             word32 length = GetLength(source_);
+
+            if (email) {
+                memcpy(&ptr[idx], "/emailAddress=", 14);
+                idx += 14;
+
+                memcpy(&ptr[idx], source_.get_current(), length);
+                idx += length;
+            }
+
             source_.advance(length);
         }
     }
