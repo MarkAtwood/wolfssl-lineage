@@ -2,7 +2,8 @@
  *
  * Copyright (C) 2003 Sawtooth Consulting Ltd.
  *
- * This file is part of yaSSL.
+ * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
+ * (todd at yassl.com, see www.yassl.com).
  *
  * yaSSL is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,7 +42,7 @@
 #include "rsa.h"
 
 
-#define YASSL_VERSION "1.5.8"
+#define YASSL_VERSION "1.6.0"
 
 
 #if defined(__cplusplus)
