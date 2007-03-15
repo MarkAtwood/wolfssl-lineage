@@ -29,6 +29,8 @@
 using TaoCrypt::byte;
 using TaoCrypt::word32;
 using TaoCrypt::SHA;
+using TaoCrypt::SHA256;
+using TaoCrypt::SHA224;
 using TaoCrypt::MD5;
 using TaoCrypt::MD2;
 using TaoCrypt::MD4;
@@ -90,6 +92,8 @@ struct testVector {
 
 void file_test(int, char**);
 int  sha_test();
+int  sha256_test();
+int  sha224_test();
 int  md5_test();
 int  md2_test();
 int  md4_test();
@@ -159,6 +163,16 @@ void taocrypt_test(void* args)
         err_sys("SHA      test failed!\n", ret);
     else
         printf( "SHA      test passed!\n");
+
+    if ( (ret = sha256_test()) ) 
+        err_sys("SHA-256  test failed!\n", ret);
+    else
+        printf( "SHA-256  test passed!\n");
+
+    if ( (ret = sha224_test()) ) 
+        err_sys("SHA-224  test failed!\n", ret);
+    else
+        printf( "SHA-224  test passed!\n");
 
     if ( (ret = md5_test()) ) 
         err_sys("MD5      test failed!\n", ret);
@@ -321,6 +335,64 @@ int sha_test()
         sha.Final(hash);
 
         if (memcmp(hash, test_sha[i].output_, SHA::DIGEST_SIZE) != 0)
+            return -1 - i;
+    }
+
+    return 0;
+}
+
+
+int sha256_test()
+{
+    SHA256 sha;
+    byte   hash[SHA256::DIGEST_SIZE];
+
+    testVector test_sha[] =
+    {
+        testVector("abc",
+                 "\xBA\x78\x16\xBF\x8F\x01\xCF\xEA\x41\x41\x40\xDE\x5D\xAE\x22"
+                 "\x23\xB0\x03\x61\xA3\x96\x17\x7A\x9C\xB4\x10\xFF\x61\xF2\x00"
+                 "\x15\xAD"),
+        testVector("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
+                 "\x24\x8D\x6A\x61\xD2\x06\x38\xB8\xE5\xC0\x26\x93\x0C\x3E\x60"
+                 "\x39\xA3\x3C\xE4\x59\x64\xFF\x21\x67\xF6\xEC\xED\xD4\x19\xDB"
+                 "\x06\xC1")
+    };
+
+    int times( sizeof(test_sha) / sizeof(testVector) );
+    for (int i = 0; i < times; ++i) {
+        sha.Update(test_sha[i].input_, test_sha[i].inLen_);
+        sha.Final(hash);
+
+        if (memcmp(hash, test_sha[i].output_, SHA256::DIGEST_SIZE) != 0)
+            return -1 - i;
+    }
+
+    return 0;
+}
+
+
+int sha224_test()
+{
+    SHA224 sha;
+    byte   hash[SHA224::DIGEST_SIZE];
+
+    testVector test_sha[] =
+    {
+        testVector("abc",
+                 "\x23\x09\x7d\x22\x34\x05\xd8\x22\x86\x42\xa4\x77\xbd\xa2\x55"
+                 "\xb3\x2a\xad\xbc\xe4\xbd\xa0\xb3\xf7\xe3\x6c\x9d\xa7"),
+        testVector("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
+                 "\x75\x38\x8b\x16\x51\x27\x76\xcc\x5d\xba\x5d\xa1\xfd\x89\x01"
+                 "\x50\xb0\xc6\x45\x5c\xb4\xf5\x8b\x19\x52\x52\x25\x25")
+    };
+
+    int times( sizeof(test_sha) / sizeof(testVector) );
+    for (int i = 0; i < times; ++i) {
+        sha.Update(test_sha[i].input_, test_sha[i].inLen_);
+        sha.Final(hash);
+
+        if (memcmp(hash, test_sha[i].output_, SHA224::DIGEST_SIZE) != 0)
             return -1 - i;
     }
 

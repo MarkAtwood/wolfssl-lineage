@@ -2,7 +2,8 @@
  *
  * Copyright (C) 2003 Sawtooth Consulting Ltd.
  *
- * This file is part of yaSSL.
+ * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
+ * (todd at yassl.com, see www.yassl.com).
  *
  * yaSSL is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,7 +66,7 @@ public:
     word32  GetBitCountHi() const { return (loLen_ >> (8*sizeof(loLen_) - 3)) +
                                            (hiLen_ << 3); } 
 
-    enum { MaxDigestSz = 5, MaxBufferSz = 64 };
+    enum { MaxDigestSz = 8, MaxBufferSz = 64 };
 protected:
     typedef word32 HashLengthType;
     word32          buffLen_;   // in bytes
