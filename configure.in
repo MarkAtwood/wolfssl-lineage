@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(yassl,1.6.0) # !!! also change in ssl.h !!!
+AM_INIT_AUTOMAKE(yassl,1.6.5) # !!! also change in ssl.h !!!
 AM_CONFIG_HEADER(taocrypt/include/config.h)
 
 dnl Include m4
