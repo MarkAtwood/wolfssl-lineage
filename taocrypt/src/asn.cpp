@@ -1,28 +1,20 @@
-  /* asn.cpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (C) 2000-2007 MySQL AB
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 /* asn.cpp implements ASN1 BER, PublicKey, and x509v3 decoding 
 */
@@ -221,9 +213,9 @@ void PublicKey::AddToEnd(const byte* data, word32 len)
 Signer::Signer(const byte* k, word32 kSz, const char* n, const byte* h)
     : key_(k, kSz)
 {
-    int sz = strlen(n);
-    memcpy(name_, n, sz);
-    name_[sz] = 0;
+        int sz = strlen(n);
+        memcpy(name_, n, sz);
+        name_[sz] = 0;
 
     memcpy(hash_, h, SHA::DIGEST_SIZE);
 }
@@ -427,12 +419,12 @@ CertDecoder::CertDecoder(Source& s, bool decode, SignerList* signers,
                          bool noVerify, CertType ct)
     : BER_Decoder(s), certBegin_(0), sigIndex_(0), sigLength_(0),
       signature_(0), verify_(!noVerify)
-{
+{ 
     issuer_[0] = 0;
     subject_[0] = 0;
 
     if (decode)
-        Decode(signers, ct);
+        Decode(signers, ct); 
 
 }
 
@@ -477,9 +469,9 @@ void CertDecoder::Decode(SignerList* signers, CertType ct)
         source_.SetError(SIG_OID_E);
         return;
     }
-    
+
     if (ct != CA && verify_ && !ValidateSignature(signers))
-        source_.SetError(SIG_OTHER_E);
+            source_.SetError(SIG_OTHER_E);
 }
 
 
@@ -669,7 +661,7 @@ void CertDecoder::GetName(NameType nt)
     word32 length = GetSequence();  // length of all distinguished names
     assert (length < ASN_NAME_MAX);
     length += source_.get_index();
-    
+
     char*  ptr = (nt == ISSUER) ? issuer_ : subject_;
     word32 idx = 0;
 
@@ -739,7 +731,7 @@ void CertDecoder::GetName(NameType nt)
             sha.Update(source_.get_current(), strLen);
             source_.advance(strLen);
         }
-        else { 
+        else {
             bool email = false;
             if (joint[0] == 0x2a && joint[1] == 0x86)  // email id hdr
                 email = true;

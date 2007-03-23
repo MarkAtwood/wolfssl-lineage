@@ -1,28 +1,20 @@
-/* ssl.h                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (C) 2000-2007 MySQL AB
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 /*  ssl.h defines openssl compatibility layer 
  *
@@ -37,7 +29,7 @@
 #include "prefix_ssl.h"
 #endif
 
-#include <stdio.h>    /* ERR_print fp */
+#include <stdio.h>   /* ERR_print fp */
 #include "opensslv.h" /* for version number */
 #include "rsa.h"
 
@@ -50,9 +42,9 @@ extern "C" {
 #endif
 
  void yaSSL_CleanUp();   /* call once at end of application use to
-                            free static singleton memory holders,
-                            not a leak per se, but helpful when
-                            looking for them                      */
+                                      free static singleton memory holders,
+                                      not a leak per se, but helpful when 
+                                      looking for them                      */
 
 #if defined(__cplusplus)
 } // extern
@@ -77,11 +69,11 @@ extern "C" {
     class X509;
     class X509_NAME;
 #else
-    typedef struct SSL          SSL;          
+    typedef struct SSL         SSL;          
     typedef struct SSL_SESSION  SSL_SESSION;
-    typedef struct SSL_METHOD   SSL_METHOD;
-    typedef struct SSL_CTX      SSL_CTX;
-    typedef struct SSL_CIPHER   SSL_CIPHER;
+    typedef struct SSL_METHOD  SSL_METHOD;
+    typedef struct SSL_CTX     SSL_CTX;
+    typedef struct SSL_CIPHER  SSL_CIPHER;
 
     typedef struct RSA RSA;
 
@@ -361,7 +353,7 @@ enum { /* ssl Constants */
 SSL_METHOD *SSLv3_method(void);
 SSL_METHOD *SSLv3_server_method(void);
 SSL_METHOD *SSLv3_client_method(void);
-SSL_METHOD *TLSv1_server_method(void);
+SSL_METHOD *TLSv1_server_method(void);  
 SSL_METHOD *TLSv1_client_method(void);
 SSL_METHOD *TLSv1_1_server_method(void);
 SSL_METHOD *TLSv1_1_client_method(void);

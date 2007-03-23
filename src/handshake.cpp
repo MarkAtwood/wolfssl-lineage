@@ -1,28 +1,20 @@
-/* handshake.cpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (C) 2000-2007 MySQL AB
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 
 /* The handshake source implements functions for creating and reading
@@ -57,7 +49,7 @@ void buildClientHello(SSL& ssl, ClientHello& hello)
     hello.suite_len_ = ssl.getSecurity().get_parms().suites_size_;
     memcpy(hello.cipher_suites_, ssl.getSecurity().get_parms().suites_,
            hello.suite_len_);
-    hello.comp_len_ = 1;
+    hello.comp_len_ = 1;                   
 
     hello.set_length(sizeof(ProtocolVersion) +
                      RAN_LEN +
@@ -709,7 +701,7 @@ int DoProcessReply(SSL& ssl)
 {
     // wait for input if blocking
     if (!ssl.useSocket().wait()) {
-        ssl.SetError(receive_error);
+      ssl.SetError(receive_error);
         return 0;
     }
     uint ready = ssl.getSocket().get_ready();
@@ -748,8 +740,8 @@ int DoProcessReply(SSL& ssl)
         if (static_cast<uint>(RECORD_HEADER) > buffer.get_remaining())
             needHdr = true;
         else {
-            buffer >> hdr;
-            ssl.verifyState(hdr);
+        buffer >> hdr;
+        ssl.verifyState(hdr);
         }
 
         // make sure we have enough input in buffer to process this record
@@ -787,14 +779,14 @@ int DoProcessReply(SSL& ssl)
 void processReply(SSL& ssl)
 {
     if (ssl.GetError()) return;
-  
+
     if (DoProcessReply(ssl))
         // didn't complete process
         if (!ssl.getSocket().IsNonBlocking()) {
             // keep trying now, blocking ok
             while (!ssl.GetError())
                 if (DoProcessReply(ssl) == 0) break;
-        }
+    }
         else
             // user will have try again later, non blocking
             ssl.SetError(YasslError(SSL_ERROR_WANT_READ));
@@ -907,7 +899,7 @@ void sendFinished(SSL& ssl, ConnectionEnd side, BufferOutput buffer)
     }
     else {
         if (!ssl.getSecurity().GetContext()->GetSessionCacheOff())
-            GetSessions().add(ssl);  // store session
+        GetSessions().add(ssl);  // store session
         if (side == client_end)
             buildFinished(ssl, ssl.useHashes().use_verify(), server); // server
     }   
@@ -986,7 +978,7 @@ int receiveData(SSL& ssl, Data& data, bool peek)
     if (peek)
         ssl.PeekData(data);
     else
-        ssl.fillData(data);
+    ssl.fillData(data);
 
     ssl.useLog().ShowData(data.get_length());
     if (ssl.GetError()) return -1;

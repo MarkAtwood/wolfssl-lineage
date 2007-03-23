@@ -1,28 +1,20 @@
-/* yassl_types.hpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (C) 2000-2007 MySQL AB
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 /*  yaSSL types  header defines all constants, enums, and typedefs
  *  from the SSL.v3 specification "draft-freier-ssl-version3-02.txt"
@@ -63,20 +55,20 @@ namespace yaSSL {
     template<typename T>
     void ysDelete(T* ptr)
     {
-        if (ptr) ptr->~T();
-        ::operator delete(ptr, yaSSL::ys);
+    if (ptr) ptr->~T();
+    ::operator delete(ptr, yaSSL::ys);
     }
 
     template<typename T>
     void ysArrayDelete(T* ptr)
     {
-        // can't do array placement destruction since not tracking size in
-        // allocation, only allow builtins to use array placement since they
-        // don't need destructors called
-        typedef char builtin[TaoCrypt::IsFundamentalType<T>::Yes ? 1 : -1];
-        (void)sizeof(builtin);
+    // can't do array placement destruction since not tracking size in
+    // allocation, only allow builtins to use array placement since they
+    // don't need destructors called
+    typedef char builtin[TaoCrypt::IsFundamentalType<T>::Yes ? 1 : -1];
+    (void)sizeof(builtin);
 
-        ::operator delete[](ptr, yaSSL::ys);
+    ::operator delete[](ptr, yaSSL::ys);
     }
 
     #define NEW_YS new (yaSSL::ys)
@@ -85,11 +77,12 @@ namespace yaSSL {
     // virtual destructors (when on stack), make sure doesn't get called
     class virtual_base {
     public:
-        static void operator delete(void*) { assert(0); }
+    static void operator delete(void*) { assert(0); }
     };
 
 
 #else   // YASSL_PURE_C
+
 
     template<typename T>
     void ysDelete(T* ptr)
@@ -123,7 +116,7 @@ typedef opaque byte;
 
 typedef unsigned int uint;
 
-
+ 
 #ifdef USE_SYS_STL
     // use system STL
     #define STL_VECTOR_FILE    <vector>

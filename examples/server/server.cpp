@@ -60,14 +60,14 @@ THREAD_RETURN YASSL_API server_test(void* args)
 
     SSL* ssl = SSL_new(ctx);
     SSL_set_fd(ssl, clientfd);
-
+   
 #ifdef NON_BLOCKING
     NonBlockingSSL_Accept(ssl, ctx, clientfd);
 #else
     if (SSL_accept(ssl) != SSL_SUCCESS)
         ServerError(ctx, ssl, clientfd, "SSL_accept failed");
 #endif
-     
+
     showPeer(ssl);
     printf("Using Cipher Suite: %s\n", SSL_get_cipher(ssl));
 
@@ -75,7 +75,7 @@ THREAD_RETURN YASSL_API server_test(void* args)
     int input = SSL_read(ssl, command, sizeof(command));
     if (input > 0) {
         command[input] = 0;
-        printf("First client command: %s\n", command);
+    printf("First client command: %s\n", command);
     }
 
     char msg[] = "I hear you, fa shizzle!";

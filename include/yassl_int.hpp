@@ -1,28 +1,20 @@
-/* yassl_int.hpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (C) 2000-2007 MySQL AB
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 
 /* yaSSL internal header defines SSL supporting types not specified in the
@@ -177,7 +169,7 @@ private:
 
 // openSSL X509 names
 class X509_NAME {
-    char*       name_;
+    char* name_;
     size_t      sz_;
     ASN1_STRING entry_;
 public:
@@ -255,11 +247,11 @@ public:
     SSL_SESSION(const SSL&, RandomPool&);
     ~SSL_SESSION();
 
-    const opaque* GetID()       const;
-    const opaque* GetSecret()   const;
-    const Cipher* GetSuite()    const;
-          uint    GetBornOn()   const;
-          uint    GetTimeOut()  const;
+    const opaque* GetID()      const;
+    const opaque* GetSecret()  const;
+    const Cipher* GetSuite()   const;
+          uint    GetBornOn()  const;
+          uint    GetTimeOut() const;
           X509*   GetPeerX509() const;
           void    SetTimeOut(uint);
 
@@ -424,27 +416,27 @@ class SSL_CTX {
 public:
     typedef STL::list<x509*> CertList;
 private:
-    SSL_METHOD*     method_;
-    x509*           certificate_;
-    x509*           privateKey_;
-    CertList        caList_;
-    Ciphers         ciphers_;
-    DH_Parms        dhParms_;
+    SSL_METHOD* method_;
+    x509*       certificate_;
+    x509*       privateKey_;
+    CertList    caList_;
+    Ciphers     ciphers_;
+    DH_Parms    dhParms_;
     pem_password_cb passwordCb_;
     void*           userData_;
     bool            sessionCacheOff_;
-    Stats           stats_;
-    Mutex           mutex_;         // for Stats
+    Stats       stats_;
+    Mutex       mutex_;         // for Stats
 public:
     explicit SSL_CTX(SSL_METHOD* meth);
     ~SSL_CTX();
 
-    const x509*       getCert()       const;
-    const x509*       getKey()        const;
-    const SSL_METHOD* getMethod()     const;
-    const Ciphers&    GetCiphers()    const;
-    const DH_Parms&   GetDH_Parms()   const;
-    const Stats&      GetStats()      const;
+    const x509*       getCert()     const;
+    const x509*       getKey()      const;
+    const SSL_METHOD* getMethod()   const;
+    const Ciphers&    GetCiphers()  const;
+    const DH_Parms&   GetDH_Parms() const;
+    const Stats&      GetStats()    const;
     pem_password_cb   GetPasswordCb() const;
           void*       GetUserData()   const;
           bool        GetSessionCacheOff() const;
@@ -534,8 +526,8 @@ public:
     typedef STL::list<input_buffer*>  inputList;
     typedef STL::list<output_buffer*> outputList;
 private:
-    inputList     dataList_;             // list of users app data / handshake
-    outputList    handShakeList_;        // buffered handshake msgs
+    inputList  dataList_;                // list of users app data / handshake
+    outputList handShakeList_;           // buffered handshake msgs
     input_buffer* rawInput_;             // buffered raw input yet to process
 public:
     Buffers();
@@ -551,7 +543,7 @@ public:
     input_buffer* TakeRawInput();              // takes ownership 
 private:
     Buffers(const Buffers&);             // hide copy
-    Buffers& operator=(const Buffers&);  // and assign   
+    Buffers& operator=(const Buffers&); // and assign   
 };
 
 

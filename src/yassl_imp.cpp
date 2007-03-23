@@ -1,28 +1,20 @@
-/* yassl_imp.cpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (C) 2000-2007 MySQL AB
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 /*  yaSSL source implements all SSL.v3 secification structures.
  */
@@ -125,7 +117,7 @@ void ClientDiffieHellmanPublic::build(SSL& ssl)
     if (*dhClient.get_agreedKey() == 0) 
         ssl.set_preMaster(dhClient.get_agreedKey() + 1, keyLength - 1);
     else
-        ssl.set_preMaster(dhClient.get_agreedKey(), keyLength);
+    ssl.set_preMaster(dhClient.get_agreedKey(), keyLength);
 }
 
 
@@ -464,19 +456,19 @@ void Parameters::SetSuites(ProtocolVersion pv, bool removeDH)
 
     if (isTLS(pv)) {
         if (!removeDH) {
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_RSA_WITH_AES_256_CBC_SHA;
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_DSS_WITH_AES_256_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_RSA_WITH_AES_256_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_AES_256_CBC_SHA;
         }
         suites_[i++] = 0x00;
         suites_[i++] = TLS_RSA_WITH_AES_256_CBC_SHA;
 
         if (!removeDH) {
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_RSA_WITH_AES_128_CBC_SHA;
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_DSS_WITH_AES_128_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_RSA_WITH_AES_128_CBC_SHA;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_AES_128_CBC_SHA;
         }
         suites_[i++] = 0x00;
         suites_[i++] = TLS_RSA_WITH_AES_128_CBC_SHA;
@@ -489,20 +481,20 @@ void Parameters::SetSuites(ProtocolVersion pv, bool removeDH)
         suites_[i++] = TLS_RSA_WITH_3DES_EDE_CBC_RMD160;
 
         if (!removeDH) {
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_RSA_WITH_AES_256_CBC_RMD160;
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_RSA_WITH_AES_128_CBC_RMD160;
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_RSA_WITH_3DES_EDE_CBC_RMD160;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_RSA_WITH_AES_256_CBC_RMD160;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_RSA_WITH_AES_128_CBC_RMD160;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_RSA_WITH_3DES_EDE_CBC_RMD160;
 
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_DSS_WITH_AES_256_CBC_RMD160;
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_DSS_WITH_AES_128_CBC_RMD160;
-            suites_[i++] = 0x00;
-            suites_[i++] = TLS_DHE_DSS_WITH_3DES_EDE_CBC_RMD160;
-        }
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_AES_256_CBC_RMD160;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_AES_128_CBC_RMD160;
+        suites_[i++] = 0x00;
+        suites_[i++] = TLS_DHE_DSS_WITH_3DES_EDE_CBC_RMD160;
+    }
     }
 
     suites_[i++] = 0x00;
@@ -516,15 +508,15 @@ void Parameters::SetSuites(ProtocolVersion pv, bool removeDH)
     suites_[i++] = SSL_RSA_WITH_DES_CBC_SHA;
 
     if (!removeDH) {
-        suites_[i++] = 0x00;
-        suites_[i++] = SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA;  
-        suites_[i++] = 0x00;
-        suites_[i++] = SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA; 
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA;  
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA; 
 
-        suites_[i++] = 0x00;
-        suites_[i++] = SSL_DHE_RSA_WITH_DES_CBC_SHA;  
-        suites_[i++] = 0x00;
-        suites_[i++] = SSL_DHE_DSS_WITH_DES_CBC_SHA;
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_DHE_RSA_WITH_DES_CBC_SHA;  
+    suites_[i++] = 0x00;
+    suites_[i++] = SSL_DHE_DSS_WITH_DES_CBC_SHA;
     }
 
     suites_size_ = i;
@@ -862,14 +854,14 @@ void Alert::Process(input_buffer& input, SSL& ssl)
 
         if (ssl.getSecurity().get_parms().cipher_type_ == block) {
             int    ivExtra = 0;
-            opaque fill;
+        opaque fill;
 
             if (ssl.isTLSv1_1())
                 ivExtra = ssl.getCrypto().get_cipher().get_blockSize();
             int padSz = ssl.getSecurity().get_parms().encrypt_size_ - ivExtra -
                         aSz - digestSz;
-            for (int i = 0; i < padSz; i++) 
-                fill = input[AUTO];
+        for (int i = 0; i < padSz; i++) 
+            fill = input[AUTO];
         }
 
         // verify
@@ -979,10 +971,10 @@ void Data::Process(input_buffer& input, SSL& ssl)
                                             tmp.get_buffer(), tmp.get_size()));
         }
         else {
-            input_buffer* data;
-            ssl.addData(data = NEW_YS input_buffer(dataSz));
-            input.read(data->get_buffer(), dataSz);
-            data->add_size(dataSz);
+        input_buffer* data;
+        ssl.addData(data = NEW_YS input_buffer(dataSz));
+        input.read(data->get_buffer(), dataSz);
+        data->add_size(dataSz);
         }
 
         if (ssl.isTLS())
@@ -1271,7 +1263,7 @@ void ServerHello::Process(input_buffer&, SSL& ssl)
     ssl.set_pending(cipher_suite_[1]);
     ssl.set_random(random_, server_end);
     if (id_len_)
-        ssl.set_sessionID(session_id_);
+    ssl.set_sessionID(session_id_);
     else
         ssl.useSecurity().use_connection().sessionID_Set_ = false;
 
@@ -1466,10 +1458,10 @@ void ClientHello::Process(input_buffer&, SSL& ssl)
     if (ssl.GetMultiProtocol()) {   // SSLv23 support
         if (ssl.isTLS() && client_version_.minor_ < 1) {
             // downgrade to SSLv3
-            ssl.useSecurity().use_connection().TurnOffTLS();
-            ProtocolVersion pv = ssl.getSecurity().get_connection().version_;
-            ssl.useSecurity().use_parms().SetSuites(pv);  // reset w/ SSL suites
-        }
+        ssl.useSecurity().use_connection().TurnOffTLS();
+        ProtocolVersion pv = ssl.getSecurity().get_connection().version_;
+        ssl.useSecurity().use_parms().SetSuites(pv);  // reset w/ SSL suites
+    }
         else if (ssl.isTLSv1_1() && client_version_.minor_ == 1)
             // downgrade to TLSv1, but use same suites
             ssl.useSecurity().use_connection().TurnOffTLS1_1();
@@ -1995,7 +1987,7 @@ void Finished::Process(input_buffer& input, SSL& ssl)
     // verify hashes
     const  Finished& verify = ssl.getHashes().get_verify();
     uint finishedSz = ssl.isTLS() ? TLS_FINISHED_SZ : FINISHED_SZ;
-    
+
     input.read(hashes_.md5_, finishedSz);
 
     if (memcmp(&hashes_, &verify.hashes_, finishedSz)) {

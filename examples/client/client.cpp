@@ -87,7 +87,7 @@ void client_test(void* args)
     int input = SSL_read(ssl, reply, sizeof(reply));
     if (input > 0) {
         reply[input] = 0;
-        printf("Server response: %s\n", reply);
+    printf("Server response: %s\n", reply);
     }
 
 #ifdef TEST_RESUME
@@ -103,18 +103,18 @@ void client_test(void* args)
     tcp_connect(sockfd);
     SSL_set_fd(sslResume, sockfd);
     SSL_set_session(sslResume, session);
-
+    
     if (SSL_connect(sslResume) != SSL_SUCCESS)
         ClientError(ctx, sslResume, sockfd, "SSL_resume failed");
     showPeer(sslResume);
-
+  
     if (SSL_write(sslResume, msg, sizeof(msg)) != sizeof(msg))
         ClientError(ctx, sslResume, sockfd, "SSL_write failed");
 
     input = SSL_read(sslResume, reply, sizeof(reply));
     if (input > 0) {
         reply[input] = 0;
-        printf("Server response: %s\n", reply);
+    printf("Server response: %s\n", reply);
     }
 
     SSL_shutdown(sslResume);

@@ -1,28 +1,20 @@
-/* hash.cpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (C) 2000-2007 MySQL AB
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 /* hash.cpp implements a base for digest types
 */
@@ -81,15 +73,15 @@ void HASHwithTransform::Update(const byte* data, word32 len)
 // Final process, place digest in hash
 void HASHwithTransform::Final(byte* hash)
 {
-    word32    blockSz  = getBlockSize();
-    word32    digestSz = getDigestSize();
-    word32    padSz    = getPadSize();
-    ByteOrder order    = getByteOrder();
+    word32    blockSz   = getBlockSize();
+    word32    digestSz  = getDigestSize();
+    word32    padSz     = getPadSize();
+    ByteOrder order     = getByteOrder();
 
     AddLength(buffLen_);                        // before adding pads
     HashLengthType preLoLen = GetBitCountLo();
     HashLengthType preHiLen = GetBitCountHi();
-    byte*     local         = reinterpret_cast<byte*>(buffer_);
+    byte*     local     = reinterpret_cast<byte*>(buffer_);
 
     local[buffLen_++] = 0x80;  // add 1
 
@@ -103,7 +95,7 @@ void HASHwithTransform::Final(byte* hash)
         buffLen_ = 0;
     }
     memset(&local[buffLen_], 0, padSz - buffLen_);
-   
+
     ByteReverseIf(local, local, blockSz, order);
     
     memcpy(&local[padSz],   order ? &preHiLen : &preLoLen, sizeof(preLoLen));

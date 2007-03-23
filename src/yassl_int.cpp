@@ -1,28 +1,20 @@
-/* yassl_int.cpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (C) 2000-2007 MySQL AB
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 
 /* yaSSL internal source implements SSL supporting types not specified in the
@@ -48,28 +40,28 @@
 
     void* operator new(size_t sz, yaSSL::new_t)
     {
-        void* ptr = malloc(sz ? sz : 1);
-        if (!ptr) abort();
+    void* ptr = malloc(sz ? sz : 1);
+    if (!ptr) abort();
 
-        return ptr;
+    return ptr;
     }
 
 
     void operator delete(void* ptr, yaSSL::new_t)
     {
-        if (ptr) free(ptr);
+    if (ptr) free(ptr);
     }
 
 
     void* operator new[](size_t sz, yaSSL::new_t nt)
     {
-        return ::operator new(sz, nt);
+    return ::operator new(sz, nt);
     }
 
 
     void operator delete[](void* ptr, yaSSL::new_t nt)
     {
-        ::operator delete(ptr, nt);
+    ::operator delete(ptr, nt);
     }
 
     namespace yaSSL {
@@ -1285,7 +1277,7 @@ void SSL::matchSuite(const opaque* peer, uint length)
 
 
 void SSL::set_session(SSL_SESSION* s) 
-{
+{ 
     if (getSecurity().GetContext()->GetSessionCacheOff())
         return;
 
@@ -1564,8 +1556,8 @@ typedef Mutex::Lock Lock;
 void Sessions::add(const SSL& ssl) 
 {
     if (ssl.getSecurity().get_connection().sessionID_Set_) {
-        Lock guard(mutex_);
-        list_.push_back(NEW_YS SSL_SESSION(ssl, random_));
+    Lock guard(mutex_);
+    list_.push_back(NEW_YS SSL_SESSION(ssl, random_));
     }
 }
 
@@ -2311,7 +2303,7 @@ X509::X509(const char* i, size_t iSz, const char* s, size_t sSz,
     : issuer_(i, iSz), subject_(s, sSz),
       beforeDate_(b, bSz), afterDate_(a, aSz)
 {}
-
+   
 
 X509_NAME* X509::GetIssuer()
 {

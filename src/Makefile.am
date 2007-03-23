@@ -1,8 +1,12 @@
-INCLUDES = -I../include -I../taocrypt/include -I../taocrypt/mySTL
+INCLUDES = -I$(srcdir)/../include -I$(srcdir)/../taocrypt/include -I$(srcdir)/../taocrypt/mySTL
 
-lib_LIBRARIES = libyassl.a
-libyassl_a_SOURCES = buffer.cpp cert_wrapper.cpp crypto_wrapper.cpp \
+noinst_LTLIBRARIES = libyassl.la
+libyassl_la_SOURCES = buffer.cpp cert_wrapper.cpp crypto_wrapper.cpp \
 	handshake.cpp lock.cpp log.cpp socket_wrapper.cpp ssl.cpp \
 	template_instnt.cpp timer.cpp yassl_imp.cpp yassl_error.cpp yassl_int.cpp
-AM_CXXFLAGS = -Wall -Wno-unused
-EXTRA_DIST = ../include/*.hpp ../include/openssl/*.h make.bat yassl.cpp
+EXTRA_DIST = $(wildcard ../include/*.hpp) $(wildcard ../include/openssl/*.h)
+AM_CXXFLAGS = -DYASSL_PURE_C -DYASSL_PREFIX
+
+# Don't update the files from bitkeeper
+%::SCCS/s.%
+

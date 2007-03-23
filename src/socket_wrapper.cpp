@@ -1,28 +1,20 @@
-/* socket_wrapper.cpp                           
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (C) 2000-2007 MySQL AB
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 
 /* The socket wrapper source implements a Socket class that hides the 
@@ -128,8 +120,8 @@ uint Socket::send(const byte* buf, unsigned int sz, int flags) const
         int sent = ::send(socket_, reinterpret_cast<const char *>(pos),
                           static_cast<int>(end - pos), flags);
 
-        if (sent == -1)
-            return 0;
+    if (sent == -1)
+        return 0;
 
         pos += sent;
     }
@@ -151,8 +143,8 @@ uint Socket::receive(byte* buf, unsigned int sz, int flags)
             get_lastError() == SOCKET_EAGAIN) {
             wouldBlock_  = true; // would have blocked this time only
             nonBlocking_ = true; // socket nonblocking, win32 only way to tell
-            return 0;
-        }
+        return 0;
+    }
     }
     else if (recvd == 0)
         return static_cast<uint>(-1);

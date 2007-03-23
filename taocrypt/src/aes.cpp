@@ -1,28 +1,20 @@
-/* aes.cpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (C) 2000-2007 MySQL AB
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 /* C++ based on Wei Dai's aes.cpp from CryptoPP */
 /* x86 asm original */
@@ -252,34 +244,34 @@ void AES::encrypt(const byte* inBlock, const byte* xorBlock,
     for (;;) {
         t0 =
             Te0[GETBYTE(s0, 3)] ^
-            Te1[GETBYTE(s1, 2)]  ^
-            Te2[GETBYTE(s2, 1)]  ^
-            Te3[GETBYTE(s3, 0)]  ^
+            Te1[GETBYTE(s1, 2)] ^
+            Te2[GETBYTE(s2, 1)] ^
+            Te3[GETBYTE(s3, 0)] ^
             rk[4];
         t1 =
             Te0[GETBYTE(s1, 3)] ^
-            Te1[GETBYTE(s2, 2)]  ^
-            Te2[GETBYTE(s3, 1)]  ^
-            Te3[GETBYTE(s0, 0)]  ^
+            Te1[GETBYTE(s2, 2)] ^
+            Te2[GETBYTE(s3, 1)] ^
+            Te3[GETBYTE(s0, 0)] ^
             rk[5];
         t2 =
             Te0[GETBYTE(s2, 3)] ^
-            Te1[GETBYTE(s3, 2)]  ^
-            Te2[GETBYTE(s0, 1)]  ^
-            Te3[GETBYTE(s1, 0)]  ^
+            Te1[GETBYTE(s3, 2)] ^
+            Te2[GETBYTE(s0, 1)] ^
+            Te3[GETBYTE(s1, 0)] ^
             rk[6];
         t3 =
             Te0[GETBYTE(s3, 3)] ^
-            Te1[GETBYTE(s0, 2)]  ^
-            Te2[GETBYTE(s1, 1)]  ^
-            Te3[GETBYTE(s2, 0)]  ^
+            Te1[GETBYTE(s0, 2)] ^
+            Te2[GETBYTE(s1, 1)] ^
+            Te3[GETBYTE(s2, 0)] ^
             rk[7];
 
         rk += 8;
         if (--r == 0) {
             break;
         }
-        
+
         s0 =
             Te0[GETBYTE(t0, 3)] ^
             Te1[GETBYTE(t1, 2)] ^
@@ -428,7 +420,7 @@ void AES::decrypt(const byte* inBlock, const byte* xorBlock,
         (Td4[GETBYTE(t3, 2)] & 0x00ff0000) ^
         (Td4[GETBYTE(t2, 1)] & 0x0000ff00) ^
         (Td4[GETBYTE(t1, 0)] & 0x000000ff) ^
-        rk[0];
+    rk[0];
     s1 =
         (Td4[GETBYTE(t1, 3)] & 0xff000000) ^
         (Td4[GETBYTE(t0, 2)] & 0x00ff0000) ^

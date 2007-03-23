@@ -159,7 +159,7 @@ byte* cipher = 0;   // block output
 void taocrypt_test(void* args)
 {
     ((func_args*)args)->return_code = -1; // error state
-
+    
     msg    = NEW_TC byte[24];
     plain  = NEW_TC byte[24];
     cipher = NEW_TC byte[24];
