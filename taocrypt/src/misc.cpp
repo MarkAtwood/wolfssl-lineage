@@ -200,27 +200,32 @@ bool HaveCpuId()
     }
     return true;
 #else
-    typedef void (*SigHandler)(int);
+    word32 eax, ebx;
+    __asm__ __volatile
+    (
+        /* Put EFLAGS in eax and ebx */
+        "pushf;"
+        "pushf;"
+        "pop %0;"
+        "movl %0,%1;"
 
-    SigHandler oldHandler = signal(SIGILL, SigIllHandler);
-    if (oldHandler == SIG_ERR)
+        /* Flip the cpuid bit and store back in EFLAGS */
+        "xorl $0x200000,%0;"
+        "push %0;"
+        "popf;"
+
+        /* Read EFLAGS again */
+        "pushf;"
+        "pop %0;"
+        "popf"
+        : "=r" (eax), "=r" (ebx)
+        :
+        : "cc"
+    );
+
+    if (eax == ebx)
         return false;
-
-    bool result = true;
-    if (setjmp(s_env))
-        result = false;
-    else 
-        __asm__ __volatile
-        (
-            // save ebx in case -fPIC is being used
-            "push %%ebx; mov $0, %%eax; cpuid; pop %%ebx"
-            : 
-            :
-            : "%eax", "%ecx", "%edx" 
-        );
-
-    signal(SIGILL, oldHandler);
-    return result;
+    return true;
 #endif
 }
 
