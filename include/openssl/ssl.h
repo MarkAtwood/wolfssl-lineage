@@ -159,6 +159,7 @@ unsigned long ERR_get_error(void);
 void SSL_set_accept_state(SSL*);
 
 int  RAND_status(void);
+int  RAND_bytes(unsigned char* buf, int num);
 SSL_METHOD *SSLv23_server_method(void);
 long SSL_CTX_set_options(SSL_CTX*, long);
 int  SSL_CTX_check_private_key(SSL_CTX*);

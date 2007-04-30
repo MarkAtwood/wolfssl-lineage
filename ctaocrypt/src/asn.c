@@ -942,3 +942,168 @@ void FreeSigners(Signer* signer)
 }
 
 
+void CTaoCryptErrorString(int error, char* buffer)
+{
+    const int max = MAX_ERROR_SZ;   /* shorthand */
+
+#ifdef NO_ERROR_STRINGS
+
+    strncpy(buffer, "no support for error strings built in", max);
+
+#else
+
+    switch (error) {
+
+    case OPEN_RAN_E :        
+        strncpy(buffer, "opening random device error", max);
+        break;
+
+    case READ_RAN_E :
+        strncpy(buffer, "reading random device error", max);
+        break;
+
+    case WINCRYPT_E :
+        strncpy(buffer, "windows crypt init error", max);
+        break;
+
+    case CRYPTGEN_E : 
+        strncpy(buffer, "windows crypt generation error", max);
+        break;
+
+    case MP_INIT_E :
+        strncpy(buffer, "mp_init error state", max);
+        break;
+
+    case MP_READ_E :
+        strncpy(buffer, "mp_read error state", max);
+        break;
+
+    case MP_EXPTMOD_E :
+        strncpy(buffer, "mp_exptmod error state", max);
+        break;
+
+    case MP_TO_E :
+        strncpy(buffer, "mp_to_xxx error state, can't convert", max);
+        break;
+
+    case MP_SUB_E :
+        strncpy(buffer, "mp_sub error state, can't subtract", max);
+        break;
+
+    case MP_ADD_E :
+        strncpy(buffer, "mp_add error state, can't add", max);
+        break;
+
+    case MP_MUL_E :
+        strncpy(buffer, "mp_mul error state, can't multiply", max);
+        break;
+
+    case MP_MULMOD_E :
+        strncpy(buffer, "mp_mulmod error state, can't multiply mod", max);
+        break;
+
+    case MP_MOD_E :
+        strncpy(buffer, "mp_mod error state, can't mod", max);
+        break;
+
+    case MP_INVMOD_E :
+        strncpy(buffer, "mp_invmod error state, can't inv mod", max);
+        break; 
+        
+    case MEMORY_E :
+        strncpy(buffer, "out of memory error", max);
+        break;
+
+    case RSA_WRONG_TYPE_E :
+        strncpy(buffer, "RSA wrong block type for RSA function", max);
+        break; 
+
+    case RSA_BUFFER_E :
+        strncpy(buffer, "RSA buffer error, too small", max);
+        break; 
+
+    case ASN_PARSE_E :
+        strncpy(buffer, "ASN parsing error, invalid input", max);
+        break;
+
+    case ASN_VERSION_E :
+        strncpy(buffer, "ASN version error, invalid number", max);
+        break;
+
+    case ASN_GETINT_E :
+        strncpy(buffer, "ASN get big int error, invalid data", max);
+        break;
+
+    case ASN_RSA_KEY_E :
+        strncpy(buffer, "ASN key init error, invalid input", max);
+        break;
+
+    case ASN_OBJECT_ID_E :
+        strncpy(buffer, "ASN object id error, invalid id", max);
+        break;
+
+    case ASN_TAG_NULL_E :
+        strncpy(buffer, "ASN tag error, not null", max);
+        break;
+
+    case ASN_EXPECT_0_E :
+        strncpy(buffer, "ASN expect error, not zero", max);
+        break;
+
+    case ASN_BITSTR_E :
+        strncpy(buffer, "ASN bit string error, wrong id", max);
+        break;
+
+    case ASN_UNKNOWN_OID_E :
+        strncpy(buffer, "ASN oid error, unknown sum id", max);
+        break;
+
+    case ASN_DATE_SZ_E :
+        strncpy(buffer, "ASN date error, bad size", max);
+        break;
+
+    case ASN_BEFORE_DATE_E :
+        strncpy(buffer, "ASN date error, current date before", max);
+        break;
+
+    case ASN_AFTER_DATE_E :
+        strncpy(buffer, "ASN date error, current date after", max);
+        break;
+
+    case ASN_SIG_OID_E :
+        strncpy(buffer, "ASN signature error, mismatched oid", max);
+        break;
+
+    case ASN_TIME_E :
+        strncpy(buffer, "ASN time error, unkown time type", max);
+        break;
+
+    case ASN_INPUT_E :
+        strncpy(buffer, "ASN input error, not enough data", max);
+        break;
+
+    case ASN_SIG_CONFIRM_E :
+        strncpy(buffer, "ASN sig error, confirm failure", max);
+        break;
+
+    case ASN_SIG_HASH_E :
+        strncpy(buffer, "ASN sig error, unsupported hash type", max);
+        break;
+
+    case ASN_SIG_KEY_E :
+        strncpy(buffer, "ASN sig error, unsupported key type", max);
+        break;
+
+    case ASN_DH_KEY_E :
+        strncpy(buffer, "ASN key init error, invalid input", max);
+        break;
+
+    default:
+        strncpy(buffer, "unknown error number", max);
+
+    }
+
+#endif
+
+}
+

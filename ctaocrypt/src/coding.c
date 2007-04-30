@@ -93,11 +93,16 @@ int Base64Decode(const byte* in, word32 inLen, byte* out, word32* outLen)
         if ((++e % 16) == 0) {
             byte endLine = in[j++];
             inLen--;
+            while (endLine == ' ') {   /* allow trailing whitespace */
+                endLine = in[j++];
+                inLen--;
+            }
             if (endLine == '\r') {
                 endLine = in[j++];
                 inLen--;
             }
-            assert(endLine == '\n');
+            if (endLine != '\n')
+                return -1;
         }
     }
     *outLen = i;

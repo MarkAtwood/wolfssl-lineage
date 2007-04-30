@@ -199,6 +199,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->error = 0;
     ssl->options.isNonBlocking = 0;  /* clear win32 non-blocking flag */
     ssl->options.connReset = 0;
+    ssl->options.isClosed  = 0;
 
     ssl->options.serverState = NULL_STATE;
     ssl->options.clientState = NULL_STATE;
@@ -359,6 +360,18 @@ static void HashInput(SSL* ssl, const byte* input, int sz)
 
     Md5Update(&ssl->hashMd5, buffer, sz);
     ShaUpdate(&ssl->hashSha, buffer, sz);
+}
+
+
+static INLINE void Close(SSL* ssl)
+{
+    ssl->options.isClosed = 1;
+
+#ifdef _WIN32
+    closesocket(ssl->socket);
+#else
+    close(ssl->socket);
+#endif
 }
 
 
@@ -709,8 +722,16 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
     if (ret == 0 && ssl->options.side == CLIENT_END)
         ssl->options.serverState = SERVER_CERT_COMPLETE;
 
-    if (ret != 0)
+    if (ret != 0) {
+        if (!ssl->options.verifyNone) {
+            int why = bad_certificate;
+            if (ret == ASN_AFTER_DATE_E || ret == ASN_BEFORE_DATE_E)
+                why = certificate_expired;
+            SendAlert(ssl, alert_fatal, why);   /* try to send */
+            Close(ssl);
+        }
         ssl->error = ret;
+    }
 
     *inOutIdx = i;
     return ret;
@@ -1577,6 +1598,12 @@ void SetErrorString(int error, char* buffer)
     strncpy(buffer, "no support for error strings built in", max);
 
 #else
+
+    /* pass to CTaoCrypt */
+    if (error < MAX_CODE_E && error > MIN_CODE_E) {
+        CTaoCryptErrorString(error, buffer);
+        return;
+    }
 
     switch (error) {
 

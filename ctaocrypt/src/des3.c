@@ -320,6 +320,14 @@ static INLINE int Reverse(int dir)
 }
 
 
+void Des_SetKey(Des* des, const byte* key, const byte* iv, int dir)
+{
+    DesSetKey(key, dir, des->key);
+    
+    memcpy(des->reg, iv, DES_BLOCK_SIZE);
+}
+
+
 void Des3_SetKey(Des3* des, const byte* key, const byte* iv, int dir)
 {
     DesSetKey(key + (dir == DES_ENCRYPTION ? 0 : 16), dir, des->key[0]);
@@ -363,6 +371,30 @@ void DesRawProcessBlock(word32* lIn, word32* rIn, const word32* kptr)
 }
 
 
+static void DesProcessBlock(Des* des, const byte* in, byte* out)
+{
+    word32 l, r;
+
+    memcpy(&l, in, sizeof(l));
+    memcpy(&r, in + sizeof(l), sizeof(r));
+    #ifdef LITTLE_ENDIAN_ORDER
+        l = ByteReverseWord32(l);
+        r = ByteReverseWord32(r);
+    #endif
+    IPERM(&l,&r);
+    
+    DesRawProcessBlock(&l, &r, des->key);   
+
+    FPERM(&l,&r);
+    #ifdef LITTLE_ENDIAN_ORDER
+        l = ByteReverseWord32(l);
+        r = ByteReverseWord32(r);
+    #endif
+    memcpy(out, &r, sizeof(r));
+    memcpy(out + sizeof(r), &l, sizeof(l));
+}
+
+
 static void Des3ProcessBlock(Des3* des, const byte* in, byte* out)
 {
     word32 l, r;
@@ -386,6 +418,41 @@ static void Des3ProcessBlock(Des3* des, const byte* in, byte* out)
     #endif
     memcpy(out, &r, sizeof(r));
     memcpy(out + sizeof(r), &l, sizeof(l));
+}
+
+
+void Des_CbcEncrypt(Des* des, byte* out, const byte* in, word32 sz)
+{
+    word32 blocks = sz / DES_BLOCK_SIZE;
+
+    while (blocks--) {
+        xorbuf((byte*)des->reg, in, DES_BLOCK_SIZE);
+        DesProcessBlock(des, (byte*)des->reg, (byte*)des->reg);
+        memcpy(out, des->reg, DES_BLOCK_SIZE);
+
+        out += DES_BLOCK_SIZE;
+        in  += DES_BLOCK_SIZE; 
+    }
+}
+
+
+void Des_CbcDecrypt(Des* des, byte* out, const byte* in, word32 sz)
+{
+    word32 blocks = sz / DES_BLOCK_SIZE;
+    byte   hold[16];
+
+    while (blocks--) {
+        memcpy(des->tmp, in, DES_BLOCK_SIZE);
+        DesProcessBlock(des, (byte*)des->tmp, out);
+        xorbuf(out, (byte*)des->reg, DES_BLOCK_SIZE);
+
+        memcpy(hold, des->reg, DES_BLOCK_SIZE);
+        memcpy(des->reg, des->tmp, DES_BLOCK_SIZE);
+        memcpy(des->tmp, hold, DES_BLOCK_SIZE);
+
+        out += DES_BLOCK_SIZE;
+        in  += DES_BLOCK_SIZE; 
+    }
 }
 
 

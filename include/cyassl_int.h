@@ -158,7 +158,6 @@ enum Misc {
 
     MAX_HELLO_SZ       = 128,  /* max client or server hello */
     CLIENT_HELLO_FIRST =  35,  /* Protocol + RAN_LEN + sizeof(id_len) */
-    MAX_ERROR_SZ       =  80,  /* user supplied buffer size is bigger 120 */
     MAX_SUITE_NAME     =  48,  /* maximum length of cipher suite string */
     DEFAULT_TIMEOUT    = 500,  /* default resumption timeout in seconds */
 
@@ -416,6 +415,7 @@ typedef struct Options {
     byte            tls1_1;             /* using TLSv1.1 ? */
     byte            isNonBlocking;      /* win32 option set on this socket */
     byte            connReset;          /* has the peer reset */
+    byte            isClosed;           /* if we consider conn closed */
     byte            connectState;       /* nonblocking resume */
     byte            acceptState;        /* nonblocking resume */
 } Options;

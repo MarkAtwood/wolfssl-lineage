@@ -33,6 +33,8 @@
 
 /* error codes */
 enum {
+    MAX_ERROR_SZ       =  80,   /* max size of error string */
+    MAX_CODE_E         = -100,  /* errors -101 - -199 */
     OPEN_RAN_E         = -101,  /* opening random device error */
     READ_RAN_E         = -102,  /* reading random device error */
     WINCRYPT_E         = -103,  /* windows crypt init error */
@@ -72,9 +74,12 @@ enum {
     ASN_SIG_CONFIRM_E  = -155,  /* ASN sig error, confirm failure */
     ASN_SIG_HASH_E     = -156,  /* ASN sig error, unsupported hash type */
     ASN_SIG_KEY_E      = -157,  /* ASN sig error, unsupported key  type */
-    ASN_DH_KEY_E       = -158   /* ASN key init error, invalid input */
+    ASN_DH_KEY_E       = -158,  /* ASN key init error, invalid input */
+    MIN_CODE_E         = -200   /* errors -101 - -199 */
 };
 
+
+void CTaoCryptErrorString(int error, char* buffer);
 
 
 #ifdef __cplusplus

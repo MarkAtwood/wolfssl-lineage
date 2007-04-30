@@ -25,9 +25,14 @@
 #include "cyassl_error.h"
 #include "coding.h"
 
-#ifdef BUILD_OPENSSL_EXTRA
-    #include "openssl/md5.h"
-    #include "../ctaocrypt/include/md5.h"
+#ifdef OPENSSL_EXTRA
+    #include "openssl/evp.h"
+    #include "openssl/hmac.h"
+    #include "openssl/crypto.h"
+    #include "openssl/des.h"
+    #include "../ctaocrypt/include/hmac.h"
+    #include "../ctaocrypt/include/random.h"
+    #include "../ctaocrypt/include/des3.h"
 #endif
 
 #include <stdlib.h>
@@ -120,7 +125,10 @@ int SSL_read(SSL* ssl, void* buffer, int sz)
 int SSL_shutdown(SSL* ssl)
 {
     /* try to send alert, not an error if can't */
-    SendAlert(ssl, alert_warning, close_notify);
+    if (!ssl->options.isClosed) {
+        SendAlert(ssl, alert_warning, close_notify);
+        ssl->options.isClosed = 1;  /* don't send close_notify twice */
+    }
 
     return SSL_SUCCESS;
 }
@@ -746,7 +754,20 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
 
 
 
-#ifdef BUILD_OPENSSL_EXTRA
+#ifdef OPENSSL_EXTRA
+
+    unsigned long SSLeay(void)
+    {
+        return SSLEAY_VERSION_NUMBER;
+    }
+
+
+    const char* SSLeay_version(int type)
+    {
+        static const char* version = "SSLeay CyaSSL compatibility";
+        return version;
+    }
+
 
     void MD5_Init(MD5_CTX* md5)
     {
@@ -767,6 +788,128 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
     }
 
 
+    void SHA_Init(SHA_CTX* sha)
+    {
+        assert(sizeof(SHA_CTX) >= sizeof(Sha));
+        InitSha((Sha*)sha);
+    }
+
+
+    void SHA_Update(SHA_CTX* sha, const void* input, unsigned long sz)
+    {
+        ShaUpdate((Sha*)sha, (const byte*)input, sz);
+    }
+
+
+    void SHA_Final(byte* input, SHA_CTX* sha)
+    {
+        ShaFinal((Sha*)sha, input);
+    }
+
+
+    const EVP_MD* EVP_md5(void)
+    {
+        static const char* type = "MD5";
+        return type;
+    }
+
+
+    const EVP_MD* EVP_sha1(void)
+    {
+        static const char* type = "SHA";
+        return type;
+    }
+
+
+    void EVP_MD_CTX_init(EVP_MD_CTX* ctx)
+    {
+        /* do nothing */ 
+    }
+
+
+    int EVP_MD_CTX_cleanup(EVP_MD_CTX* ctx)
+    {
+        return 0;
+    }    
+
+
+    int EVP_DigestInit(EVP_MD_CTX* ctx, const EVP_MD* type)
+    {
+        if (strncmp(type, "MD5", 3) == 0) {
+             ctx->macType = MD5;
+             MD5_Init((MD5_CTX*)&ctx->hash);
+        }
+        else if (strncmp(type, "SHA", 3) == 0) {
+             ctx->macType = SHA;
+             SHA_Init((SHA_CTX*)&ctx->hash);
+        }
+        else
+             return -1;
+
+        return 0;
+    }
+
+
+    int EVP_DigestUpdate(EVP_MD_CTX* ctx, const void* data, size_t sz)
+    {
+        if (ctx->macType == MD5) 
+            MD5_Update((MD5_CTX*)&ctx->hash, data, sz);
+        else if (ctx->macType == SHA) 
+            SHA_Update((SHA_CTX*)&ctx->hash, data, sz);
+        else
+            return -1;
+
+        return 0;
+    }
+
+
+    int EVP_DigestFinal(EVP_MD_CTX* ctx, unsigned char* md, unsigned int* s)
+    {
+        if (ctx->macType == MD5) {
+            MD5_Final(md, (MD5_CTX*)&ctx->hash);
+            if (s) *s = MD5_DIGEST_SIZE;
+        }
+        else if (ctx->macType == SHA) {
+            SHA_Final(md, (SHA_CTX*)&ctx->hash);
+            if (s) *s = SHA_DIGEST_SIZE;
+        }
+        else
+            return -1;
+
+        return 0;
+    }
+
+
+    int EVP_DigestFinal_ex(EVP_MD_CTX* ctx, unsigned char* md, unsigned int* s)
+    {
+        return EVP_DigestFinal(ctx, md, s);
+    }
+
+
+    unsigned char* HMAC(const EVP_MD* evp_md, const void* key, int key_len,
+        const unsigned char* d, int n, unsigned char* md, unsigned int* md_len)
+    {
+        Hmac hmac;
+
+        if (!md) return 0;  /* no static buffer support */
+
+        if (strncmp(evp_md, "MD5", 3) == 0) {
+            HmacSetKey(&hmac, MD5, key, key_len);
+            if (md_len) *md_len = MD5_DIGEST_SIZE;
+        }
+        else if (strncmp(evp_md, "SHA", 3) == 0) {
+            HmacSetKey(&hmac, SHA, key, key_len);    
+            if (md_len) *md_len = SHA_DIGEST_SIZE;
+        }
+        else
+            return 0;
+
+        HmacUpdate(&hmac, d, n);
+        HmacFinal(&hmac, md);
+    
+        return md;
+    }
+
     unsigned long ERR_get_error(void)
     {
         /* TODO: */
@@ -779,6 +922,56 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
         return 1;  /* CTaoCrypt provides enough seed */
     }
 
+
+    int RAND_bytes(unsigned char* buf, int num)
+    {
+        RNG rng;
+
+        if (InitRng(&rng))
+           return 0;
+
+        RNG_GenerateBlock(&rng, buf, num);
+
+        return 1;
+    }
+
+
+    int DES_key_sched(const_DES_cblock* key, DES_key_schedule* schedule)
+    {
+        memcpy(schedule, key, sizeof(const_DES_cblock));
+        return 0;
+    }
+
+
+    void DES_cbc_encrypt(const unsigned char* input, unsigned char* output,
+                     long length, DES_key_schedule* schedule, DES_cblock* ivec,
+                     int enc)
+    {
+        Des des;
+        Des_SetKey(&des, (const byte*)schedule, (const byte*)ivec, !enc);
+
+        if (enc)
+            Des_CbcEncrypt(&des, output, input, length);
+        else
+            Des_CbcDecrypt(&des, output, input, length);
+    }
+
+
+    /* correctly sets ivec for next call */
+    void DES_ncbc_encrypt(const unsigned char* input, unsigned char* output,
+                     long length, DES_key_schedule* schedule, DES_cblock* ivec,
+                     int enc)
+    {
+        Des des;
+        Des_SetKey(&des, (const byte*)schedule, (const byte*)ivec, !enc);
+
+        if (enc)
+            Des_CbcEncrypt(&des, output, input, length);
+        else
+            Des_CbcDecrypt(&des, output, input, length);
+
+        memcpy(ivec, output + length - sizeof(DES_cblock), sizeof(DES_cblock));
+    }
 
 
     #ifndef NO_CYASSL_SERVER
@@ -869,5 +1062,5 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
     }
 
 
-#endif /* BUILD_OPENSSL_EXTRA */
+#endif /* OPENSSL_EXTRA */
 

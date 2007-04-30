@@ -3,9 +3,11 @@
 #ifndef CYASSL_CRYPTO_H_
 #define CYASSL_CRYPTO_H_
 
-const char* SSLeay_version(int type);
+const char*   SSLeay_version(int type);
+unsigned long SSLeay(void);
 
-#define SSLEAY_VERSION 0x0900L
+
+#define SSLEAY_VERSION 0x0090800fL
 #define SSLEAY_VERSION_NUMBER SSLEAY_VERSION
 
 

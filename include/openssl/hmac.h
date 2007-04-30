@@ -1,4 +1,4 @@
-/* des.h
+/* hmac.h
  *
  * Copyright (C) 2006 Sawtooth Consulting Ltd.
  *
@@ -20,39 +20,24 @@
  */
 
 
-/*  des.h defines mini des openssl compatibility layer 
+/*  hmac.h defines mini hamc openssl compatibility layer 
  *
  */
 
 
 
-#ifndef CYASSL_DES_H_
-#define CYASSL_DES_H_
+#ifndef CYASSL_HMAC_H_
+#define CYASSL_HMAC_H_
 
+
+unsigned char* HMAC(const EVP_MD* evp_md, const void* key, int key_len,
+    const unsigned char* d, int n, unsigned char* md, unsigned int* md_len);
 
 
 #ifdef __cplusplus
     extern "C" {
 #endif
 
-typedef unsigned char DES_cblock[8];
-typedef const DES_cblock const_DES_cblock;
-typedef DES_cblock DES_key_schedule;
-
-
-enum {
-    DES_ENCRYPT = 1,
-    DES_DECRYPT = 0
-};
-
-
-int DES_key_sched(const_DES_cblock* key, DES_key_schedule* schedule);
-void DES_cbc_encrypt(const unsigned char* input, unsigned char* output,
-                     long length, DES_key_schedule* schedule, DES_cblock* ivec,
-                     int enc);
-void DES_ncbc_encrypt(const unsigned char* input, unsigned char* output,
-                      long length, DES_key_schedule* schedule, DES_cblock* ivec,
-                      int enc);
 
 
 #ifdef __cplusplus
@@ -60,4 +45,4 @@ void DES_ncbc_encrypt(const unsigned char* input, unsigned char* output,
 #endif
 
 
-#endif /* CYASSL_DES_H_ */
+#endif /* CYASSL_HMAC_H_ */

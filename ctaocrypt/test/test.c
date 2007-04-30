@@ -16,6 +16,13 @@
 #include "aes.h"
 #include "hmac.h"
 
+#ifdef OPENSSL_EXTRA
+    #include "../../include/openssl/evp.h"
+    #include "../../include/openssl/rand.h"
+    #include "../../include/openssl/hmac.h"
+    #include "../../include/openssl/des.h"
+#endif
+
 /*
 #include "dh.h"
 #include "dsa.h"
@@ -37,12 +44,14 @@ int  sha_test();
 int  sha256_test();
 int  hmac_test();
 int  arc4_test();
+int  des_test();
 int  des3_test();
 int  aes_test();
 int  rsa_test();
 int  dh_test();
 int  dsa_test();
 int  random_test();
+int  openssl_test();   /* test mini api */
 
 int PemToDer(const char* inName, const char* outName);
 
@@ -96,6 +105,13 @@ void ctaocrypt_test(void* args)
     else
         printf( "ARC4     test passed!\n");
 
+#ifndef NO_DES
+    if ( (ret = des_test()) )
+        err_sys("DES      test failed!\n", ret);
+    else
+        printf( "DES      test passed!\n");
+#endif
+
 #ifndef NO_DES3
     if ( (ret = des3_test()) )
         err_sys("DES3     test failed!\n", ret);
@@ -132,6 +148,13 @@ void ctaocrypt_test(void* args)
         err_sys("DSA      test failed!\n", ret);
     else
         printf( "DSA      test passed!\n");
+#endif
+
+#ifdef OPENSSL_EXTRA
+    if ( (ret = openssl_test()) ) 
+        err_sys("OPENSSL  test failed!\n", ret);
+    else
+        printf( "OPENSSL  test passed!\n");
 #endif
 
     ((func_args*)args)->return_code = ret;
@@ -435,6 +458,55 @@ int arc4_test()
 }
 
 
+#ifndef NO_DES
+int des_test()
+{
+    const byte vector[] = { /* "now is the time for all " w/o trailing 0 */
+        0x6e,0x6f,0x77,0x20,0x69,0x73,0x20,0x74,
+        0x68,0x65,0x20,0x74,0x69,0x6d,0x65,0x20,
+        0x66,0x6f,0x72,0x20,0x61,0x6c,0x6c,0x20
+    };
+
+    byte plain[24];
+    byte cipher[24];
+
+    Des enc;
+    Des dec;
+
+    const byte key[] = 
+    {
+        0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef
+    };
+
+    const byte iv[] = 
+    {
+        0x12,0x34,0x56,0x78,0x90,0xab,0xcd,0xef
+    };
+
+    const byte verify[] = 
+    {
+        0x8b,0x7c,0x52,0xb0,0x01,0x2b,0x6c,0xb8,
+        0x4f,0x0f,0xeb,0xf3,0xfb,0x5f,0x86,0x73,
+        0x15,0x85,0xb3,0x22,0x4b,0x86,0x2b,0x4b
+    };
+
+
+    Des_SetKey(&enc, key, iv, DES_ENCRYPTION);
+    Des_CbcEncrypt(&enc, cipher, vector, sizeof(vector));
+    Des_SetKey(&dec, key, iv, DES_DECRYPTION);
+    Des_CbcDecrypt(&dec, plain, cipher, sizeof(cipher));
+
+    if (memcmp(plain, vector, sizeof(plain)))
+        return -31;
+
+    if (memcmp(cipher, verify, sizeof(cipher)))
+        return -32;
+
+    return 0;
+}
+#endif /* NO_DES */
+
+
 #ifndef NO_DES3
 int des3_test()
 {
@@ -478,10 +550,10 @@ int des3_test()
     Des3_CbcDecrypt(&dec, plain, cipher, sizeof(cipher));
 
     if (memcmp(plain, vector, sizeof(plain)))
-        return -31;
+        return -33;
 
     if (memcmp(cipher, verify3, sizeof(cipher)))
-        return -32;
+        return -34;
 
     return 0;
 }
@@ -722,5 +794,114 @@ int dsa_test()
     return 0;
 }
 
-
 #endif /* NO_DSA */
+
+
+#ifdef OPENSSL_EXTRA
+
+int openssl_test()
+{
+    EVP_MD_CTX md_ctx;
+    testVector a, b, c;
+    byte       hash[SHA_DIGEST_SIZE];
+
+    a.input  = "1234567890123456789012345678901234567890123456789012345678"
+               "9012345678901234567890";
+    a.output = "\x57\xed\xf4\xa2\x2b\xe3\xc9\x55\xac\x49\xda\x2e\x21\x07\xb6"
+               "\x7a";
+    a.inLen  = strlen(a.input);
+    a.outLen = strlen(a.output);
+
+    EVP_MD_CTX_init(&md_ctx);
+    EVP_DigestInit(&md_ctx, EVP_md5());
+
+    EVP_DigestUpdate(&md_ctx, a.input, a.inLen);
+    EVP_DigestFinal(&md_ctx, hash, 0);
+
+    if (memcmp(hash, a.output, MD5_DIGEST_SIZE) != 0)
+        return -71;
+
+    b.input  = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+               "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+               "aaaaaaaaaa";
+    b.output = "\xAD\x5B\x3F\xDB\xCB\x52\x67\x78\xC2\x83\x9D\x2F\x15\x1E\xA7"
+               "\x53\x99\x5E\x26\xA0";
+    b.inLen  = strlen(b.input);
+    b.outLen = strlen(b.output);
+
+    EVP_MD_CTX_init(&md_ctx);
+    EVP_DigestInit(&md_ctx, EVP_sha1());
+
+    EVP_DigestUpdate(&md_ctx, b.input, b.inLen);
+    EVP_DigestFinal(&md_ctx, hash, 0);
+
+    if (memcmp(hash, b.output, SHA_DIGEST_SIZE) != 0)
+        return -72;
+
+    if (RAND_bytes(hash, sizeof(hash)) != 1)
+        return -73;
+            
+    c.input  = "what do ya want for nothing?";
+    c.output = "\x75\x0c\x78\x3e\x6a\xb0\xb5\x03\xea\xa8\x6e\x31\x0a\x5d\xb7"
+               "\x38";
+    c.inLen  = strlen(c.input);
+    c.outLen = strlen(c.output);
+
+    HMAC(EVP_md5(), "Jefe", 4, c.input, c.inLen, hash, 0);
+
+    if (memcmp(hash, c.output, MD5_DIGEST_SIZE) != 0)
+        return -74;
+
+    { /* des test */
+    const byte vector[] = { /* "now is the time for all " w/o trailing 0 */
+        0x6e,0x6f,0x77,0x20,0x69,0x73,0x20,0x74,
+        0x68,0x65,0x20,0x74,0x69,0x6d,0x65,0x20,
+        0x66,0x6f,0x72,0x20,0x61,0x6c,0x6c,0x20
+    };
+
+    byte plain[24];
+    byte cipher[24];
+
+    const_DES_cblock key = 
+    {
+        0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef
+    };
+
+    DES_cblock iv = 
+    {
+        0x12,0x34,0x56,0x78,0x90,0xab,0xcd,0xef
+    };
+
+    DES_key_schedule sched;
+
+    const byte verify[] = 
+    {
+        0x8b,0x7c,0x52,0xb0,0x01,0x2b,0x6c,0xb8,
+        0x4f,0x0f,0xeb,0xf3,0xfb,0x5f,0x86,0x73,
+        0x15,0x85,0xb3,0x22,0x4b,0x86,0x2b,0x4b
+    };
+
+    DES_key_sched(&key, &sched);
+
+    DES_cbc_encrypt(vector, cipher, sizeof(vector), &sched, &iv, DES_ENCRYPT);
+    DES_cbc_encrypt(cipher, plain, sizeof(vector), &sched, &iv, DES_DECRYPT);
+
+    if (memcmp(plain, vector, sizeof(vector)) != 0)
+        return -75;
+
+    if (memcmp(cipher, verify, sizeof(verify)) != 0)
+        return -76;
+
+        /* test changing iv */
+    DES_ncbc_encrypt(vector, cipher, 8, &sched, &iv, DES_ENCRYPT);
+    DES_ncbc_encrypt(vector + 8, cipher + 8, 16, &sched, &iv, DES_ENCRYPT);
+
+    if (memcmp(cipher, verify, sizeof(verify)) != 0)
+        return -77;
+
+    }  /* end des test */
+
+    return 0;
+}
+
+#endif /* OPENSSL_EXTRA */

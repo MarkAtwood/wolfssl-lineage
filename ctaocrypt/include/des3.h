@@ -41,6 +41,14 @@ enum {
 };
 
 
+/* DES encryption and decryption */
+typedef struct Des {
+    word32 key[DES_KEY_SIZE];
+    word32 reg[DES_BLOCK_SIZE / sizeof(word32)];      /* for CBC mode */
+    word32 tmp[DES_BLOCK_SIZE / sizeof(word32)];      /* same         */
+} Des;
+
+
 /* DES3 encryption and decryption */
 typedef struct Des3 {
     word32 key[3][DES_KEY_SIZE];
@@ -49,9 +57,14 @@ typedef struct Des3 {
 } Des3;
 
 
+void Des_SetKey(Des* des, const byte* key, const byte* iv, int dir);
+void Des_CbcEncrypt(Des* des, byte* out, const byte* in, word32 sz);
+void Des_CbcDecrypt(Des* des, byte* out, const byte* in, word32 sz);
+
 void Des3_SetKey(Des3* des, const byte* key, const byte* iv, int dir);
 void Des3_CbcEncrypt(Des3* des, byte* out, const byte* in, word32 sz);
 void Des3_CbcDecrypt(Des3* des, byte* out, const byte* in, word32 sz);
+
 
 #ifdef __cplusplus
     } /* extern "C" */
