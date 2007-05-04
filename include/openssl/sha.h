@@ -4,6 +4,9 @@
 #ifndef CYASSL_SHA_H_
 #define CYASSL_SHA_H_
 
+#ifdef YASSL_PREFIX
+#include "prefix_sha.h"
+#endif
 
 #ifdef __cplusplus
     extern "C" {

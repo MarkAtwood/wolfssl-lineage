@@ -29,6 +29,9 @@
 #ifndef CYASSL_EVP_H_
 #define CYASSL_EVP_H_
 
+#ifdef YASSL_PREFIX
+#include "prefix_evp.h"
+#endif
 
 #include "md5.h"
 #include "sha.h"

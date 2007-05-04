@@ -29,6 +29,9 @@
 #ifndef CYASSL_HMAC_H_
 #define CYASSL_HMAC_H_
 
+#ifdef YASSL_PREFIX
+#include "prefix_hmac.h"
+#endif
 
 unsigned char* HMAC(const EVP_MD* evp_md, const void* key, int key_len,
     const unsigned char* d, int n, unsigned char* md, unsigned int* md_len);

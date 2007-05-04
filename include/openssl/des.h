@@ -29,6 +29,9 @@
 #ifndef CYASSL_DES_H_
 #define CYASSL_DES_H_
 
+#ifdef YASSL_PREFIX
+#include "prefix_des.h"
+#endif
 
 
 #ifdef __cplusplus
