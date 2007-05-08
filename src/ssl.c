@@ -1068,9 +1068,9 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
         return SSL_NOT_IMPLEMENTED;
     }
 
-
-    int SSL_CTX_set_session_id_context(SSL_CTX*, const unsigned char*,
-                                       unsigned int)
+    int SSL_CTX_set_session_id_context(SSL_CTX* ctx,
+                                       const unsigned char* sid_ctx,
+                                       unsigned int sid_ctx_len)
     {
         /* No application specific context needed for cyaSSL */
         return SSL_SUCCESS;
