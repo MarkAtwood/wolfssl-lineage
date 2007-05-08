@@ -158,6 +158,12 @@ enum { /* ssl Constants */
 
 /* extra begins */
 
+enum {  /* ERR Constants */
+    ERR_TXT_STRING = 1,
+};
+
+unsigned long ERR_get_error_line_data(const char**, int*, const char**, int *);
+
 unsigned long ERR_get_error(void);
 void SSL_set_accept_state(SSL*);
 
