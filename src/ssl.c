@@ -172,13 +172,6 @@ void ERR_print_errors_fp(FILE* fp, int err)
 }
 
 
-unsigned long ERR_get_error_line_data(const char**, int*, const char**, int *)
-{
-    /* Not implemented */
-    return 0;
-}
-
-
 int SSL_pending(SSL* ssl)
 {
     return ssl->buffers.bufferedData.buffer ?
@@ -1067,6 +1060,15 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
     {
         /* TODO: maybe? */
     }
+
+
+    unsigned long ERR_get_error_line_data(const char** file, int* line,
+                                          const char** data, int *flags)
+    {
+        /* Not implemented */
+        return 0;
+    }
+
 
 
 #endif /* OPENSSL_EXTRA */
