@@ -184,6 +184,12 @@ long SSL_CTX_set_mode(SSL_CTX* ctx, long mode);
 long SSL_CTX_get_mode(SSL_CTX* ctx);
 void SSL_CTX_set_default_read_ahead(SSL_CTX* ctx, int m);
 
+long SSL_CTX_sess_set_cache_size(SSL_CTX*, long);
+long SSL_CTX_sess_get_cache_size(SSL_CTX*);
+
+int  SSL_CTX_set_default_verify_paths(SSL_CTX*);
+int  SSL_CTX_set_session_id_context(SSL_CTX*, const unsigned char*,
+                                    unsigned int);
 /* extra ends */
 
 

@@ -1062,13 +1062,40 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
     }
 
 
+    int SSL_CTX_set_default_verify_paths(SSL_CTX* ctx)
+    {
+        /* TODO: */
+        return SSL_NOT_IMPLEMENTED;
+    }
+
+
+    int SSL_CTX_set_session_id_context(SSL_CTX*, const unsigned char*,
+                                       unsigned int)
+    {
+        /* No application specific context needed for cyaSSL */
+        return SSL_SUCCESS;
+    }
+
+
+    long SSL_CTX_sess_set_cache_size(SSL_CTX* ctx, long sz)
+    {
+        /* TODO: maybe? */
+        return 0;
+    }
+
+
+    long SSL_CTX_sess_get_cache_size(SSL_CTX* ctx)
+    {
+        /* TODO: maybe? */
+        return (~0);
+    }
+
     unsigned long ERR_get_error_line_data(const char** file, int* line,
                                           const char** data, int *flags)
     {
         /* Not implemented */
         return 0;
     }
-
 
 
 #endif /* OPENSSL_EXTRA */
