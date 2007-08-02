@@ -21,6 +21,8 @@ dnl
 dnl @category InstalledPackages
 dnl @author Loic Dachary <loic@senga.org>
 dnl @version 2004-09-20
+dnl @modified by Todd Ouska <todd@yassl.com> 2007-08-02, was picking up zlib
+dnl    if in default path even if --without-zlib was specified
 dnl @license GPLWithACException
 
 AC_DEFUN([CHECK_ZLIB],
@@ -39,16 +41,22 @@ AC_ARG_WITH(zlib,
     ZLIB_HOME="$withval"
   else
     AC_MSG_WARN([Sorry, $withval does not exist, checking usual places])
+    ZLIB_HOME=/usr/local
+    if test ! -f "${ZLIB_HOME}/include/zlib.h"
+    then
+      ZLIB_HOME=/usr
+    fi
   fi
 else
   AC_MSG_RESULT(no)
-fi])
-
+fi], [
+AC_MSG_RESULT(yes)
 ZLIB_HOME=/usr/local
 if test ! -f "${ZLIB_HOME}/include/zlib.h"
 then
         ZLIB_HOME=/usr
 fi
+])
 
 #
 # Locate zlib, if wanted
