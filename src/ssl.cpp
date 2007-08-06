@@ -430,6 +430,18 @@ int SSL_shutdown(SSL* ssl)
 }
 
 
+void SSL_set_quiet_shutdown(SSL *ssl,int mode)
+{
+    ssl->SetQuietShutdown(mode != 0);
+}
+
+
+int SSL_get_quiet_shutdown(SSL *ssl)
+{
+    return ssl->GetQuietShutdown();
+}
+
+
 /* on by default but allow user to turn off */
 long SSL_CTX_set_session_cache_mode(SSL_CTX* ctx, long mode)
 {
