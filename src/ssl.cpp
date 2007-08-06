@@ -418,8 +418,10 @@ int SSL_clear(SSL* ssl)
 
 int SSL_shutdown(SSL* ssl)
 {
-    Alert alert(warning, close_notify);
-    sendAlert(*ssl, alert);
+    if (!ssl->GetQuietShutdown()) {
+      Alert alert(warning, close_notify);
+      sendAlert(*ssl, alert);
+    }
     ssl->useLog().ShowTCP(ssl->getSocket().get_fd(), true);
 
     GetErrors().Remove();
