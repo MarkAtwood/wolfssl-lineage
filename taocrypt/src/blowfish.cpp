@@ -172,16 +172,21 @@ void Blowfish::crypt_block(const word32 in[2], word32 out[2]) const
 	word32 left  = in[0];
 	word32 right = in[1];
 
+	const word32  *const s = sbox_;
 	const word32* p = pbox_;
-    word32 tmp;
 
 	left ^= p[0];
 
-    BF_ROUNDS
+    // roll back up and use s and p index instead of just p
+    for (unsigned i = 0; i < ROUNDS / 2; i++) {
+        right ^= (((s[GETBYTE(left,3)] + s[256+GETBYTE(left,2)])
+            ^ s[2*256+GETBYTE(left,1)]) + s[3*256+GETBYTE(left,0)])
+            ^ p[2*i+1];
 
-#if ROUNDS == 20
-    BF_EXTRA_ROUNDS
-#endif
+        left ^= (((s[GETBYTE(right,3)] + s[256+GETBYTE(right,2)])
+            ^ s[2*256+GETBYTE(right,1)]) + s[3*256+GETBYTE(right,0)])
+            ^ p[2*i+2];
+    }
 
 	right ^= p[ROUNDS + 1];
 
@@ -195,17 +200,23 @@ typedef BlockGetAndPut<word32, BigEndian> gpBlock;
 void Blowfish::ProcessAndXorBlock(const byte* in, const byte* xOr, byte* out)
     const
 {
-    word32 tmp, left, right;
+    word32 left, right;
+	const word32  *const s = sbox_;
     const word32* p = pbox_;
     
     gpBlock::Get(in)(left)(right);
 	left ^= p[0];
 
-    BF_ROUNDS
+    // roll back up and use s and p index instead of just p
+    for (unsigned i = 0; i < ROUNDS / 2; i++) {
+        right ^= (((s[GETBYTE(left,3)] + s[256+GETBYTE(left,2)])
+            ^ s[2*256+GETBYTE(left,1)]) + s[3*256+GETBYTE(left,0)])
+            ^ p[2*i+1];
 
-#if ROUNDS == 20
-    BF_EXTRA_ROUNDS
-#endif
+        left ^= (((s[GETBYTE(right,3)] + s[256+GETBYTE(right,2)])
+            ^ s[2*256+GETBYTE(right,1)]) + s[3*256+GETBYTE(right,0)])
+            ^ p[2*i+2];
+    }
 
 	right ^= p[ROUNDS + 1];
 
