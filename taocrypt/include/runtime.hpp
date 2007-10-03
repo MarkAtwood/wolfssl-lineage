@@ -45,7 +45,7 @@
 namespace __Crun {
     static void pure_error(void)
     {
-       assert("Pure virtual method called." == "Aborted");
+       assert(0); // "Pure virtual method called, Aborted", GCC 4.2 str cmp fix
     }
 } // namespace __Crun
 

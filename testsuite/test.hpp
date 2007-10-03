@@ -14,6 +14,10 @@
 #ifdef _WIN32
     #include <winsock2.h>
     #include <process.h>
+    #ifdef TEST_IPV6            // don't require newer SDK for IPV4
+	    #include "ws2tcpip.h"
+	    #include "wspiapi.h"
+    #endif
     #define SOCKET_T unsigned int
 #else
     #include <string.h>
@@ -24,6 +28,9 @@
     #include <sys/time.h>
     #include <sys/types.h>
     #include <sys/socket.h>
+    #ifdef TEST_IPV6
+        #include <netdb.h>
+    #endif
     #include <pthread.h>
 #ifdef NON_BLOCKING
     #include <fcntl.h>
@@ -49,6 +56,17 @@
     typedef socklen_t* ACCEPT_THIRD_T;
 #endif
 
+
+#ifdef TEST_IPV6
+    typedef sockaddr_in6 SOCKADDR_IN_T;
+    typedef addrinfo     ADDRINFO_T;
+    #define AF_INET_V    AF_INET6
+#else
+    typedef sockaddr_in  SOCKADDR_IN_T;
+	typedef void         ADDRINFO_T;
+    #define AF_INET_V    AF_INET
+#endif
+   
 
 // Check if _POSIX_THREADS should be forced
 #if !defined(_POSIX_THREADS) && (defined(__NETWARE__) || defined(__hpux))
@@ -107,8 +125,10 @@ void start_thread(THREAD_FUNC, func_args*, THREAD_TYPE*);
 void join_thread(THREAD_TYPE);
 
 // yaSSL
-const char* const    yasslIP   = "127.0.0.1";
-const unsigned short yasslPort = 11111;
+const char* const    yasslIP      = "127.0.0.1";
+const char* const    yasslIP6     = "::1";
+const unsigned short yasslPort    =  11111;
+const char* const    yasslPortStr = "11111";
 
 
 // client
@@ -282,14 +302,29 @@ inline void tcp_set_nonblocking(SOCKET_T& sockfd)
 }
 
 
-inline void tcp_socket(SOCKET_T& sockfd, sockaddr_in& addr)
+inline void tcp_socket(SOCKET_T& sockfd, SOCKADDR_IN_T& addr, ADDRINFO_T** info)
 {
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    sockfd = socket(AF_INET_V, SOCK_STREAM, 0);
+
+#ifdef TEST_IPV6
+    addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family   = AF_INET_V;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags    = AI_PASSIVE;
+
+    getaddrinfo(yasslIP6, yasslPortStr, &hints, info);
+
+    if (*info == 0)
+        err_sys("getaddrinfo failed");
+#else
     memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
+    addr.sin_family = AF_INET_V;
 
     addr.sin_port = htons(yasslPort);
     addr.sin_addr.s_addr = inet_addr(yasslIP);
+#endif
+
 }
 
 
@@ -306,22 +341,36 @@ inline void tcp_close(SOCKET_T& sockfd)
 
 inline void tcp_connect(SOCKET_T& sockfd)
 {
-    sockaddr_in addr;
-    tcp_socket(sockfd, addr);
+    SOCKADDR_IN_T addr;
+    ADDRINFO_T* info;
+    tcp_socket(sockfd, addr, &info);
 
+#ifdef TEST_IPV6
+    if (connect(sockfd, info->ai_addr, info->ai_addrlen) != 0) {
+#else
     if (connect(sockfd, (const sockaddr*)&addr, sizeof(addr)) != 0) {
+#endif
         tcp_close(sockfd);
         err_sys("tcp connect failed");
     }
+
+#ifdef TEST_IPV6
+    freeaddrinfo(info);
+#endif
 }
 
 
 inline void tcp_listen(SOCKET_T& sockfd)
 {
-    sockaddr_in addr;
-    tcp_socket(sockfd, addr);
+    SOCKADDR_IN_T addr;
+    ADDRINFO_T* info;
+    tcp_socket(sockfd, addr, &info);
 
+#ifdef TEST_IPV6
+    if (bind(sockfd, info->ai_addr, info->ai_addrlen) != 0) {
+#else
     if (bind(sockfd, (const sockaddr*)&addr, sizeof(addr)) != 0) {
+#endif
         tcp_close(sockfd);
         err_sys("tcp bind failed");
     }
@@ -329,6 +378,10 @@ inline void tcp_listen(SOCKET_T& sockfd)
         tcp_close(sockfd);
         err_sys("tcp listen failed");
     }
+
+#ifdef TEST_IPV6
+    freeaddrinfo(info);
+#endif
 }
 
 
@@ -337,7 +390,7 @@ inline void tcp_accept(SOCKET_T& sockfd, SOCKET_T& clientfd, func_args& args)
 {
     tcp_listen(sockfd);
 
-    sockaddr_in client;
+    SOCKADDR_IN_T client;
     socklen_t client_len = sizeof(client);
 
 #if defined(_POSIX_THREADS) && defined(NO_MAIN_DRIVER)

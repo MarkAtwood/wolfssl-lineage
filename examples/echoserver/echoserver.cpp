@@ -75,7 +75,7 @@ THREAD_RETURN YASSL_API echoserver_test(void* args)
 #endif
 
     while (!shutdown) {
-        sockaddr_in client;
+        SOCKADDR_IN_T client;
         socklen_t   client_len = sizeof(client);
         SOCKET_T    clientfd   = accept(sockfd, (sockaddr*)&client,
                                       (ACCEPT_THIRD_T)&client_len);
