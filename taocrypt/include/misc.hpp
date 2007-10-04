@@ -449,7 +449,9 @@ template<> inline word32 rotrFixed(word32 x, word32 y)
 #undef min
 #endif 
 
-inline word32 min(word32 a, word32 b)
+
+template <class T>
+inline const T& min(const T& a, const T& b)
 {
     return a < b ? a : b;
 }
@@ -591,7 +593,8 @@ inline void GetUserKey(ByteOrder order, T* out, word32 outlen, const byte* in,
 
 #ifdef _MSC_VER
     // disable conversion warning
-    #pragma warning(disable:4244)
+    // 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy
+    #pragma warning(disable:4244 4996)
 #endif
 
 

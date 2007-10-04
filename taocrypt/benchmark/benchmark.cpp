@@ -272,7 +272,7 @@ void bench_rsa()
     byte      message[] = "Everyone gets Friday off.";
     byte      cipher[128];  // for 1024 bit
     byte      plain[128];   // for 1024 bit
-    const int len = strlen((char*)message);
+    const int len = (word32)strlen((char*)message);
     
     int i;    
     double start = current_time();

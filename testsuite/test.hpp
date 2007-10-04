@@ -39,6 +39,13 @@
 #endif /* _WIN32 */
 
 
+#ifdef _MSC_VER
+    // disable conversion warning
+    // 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy
+    #pragma warning(disable:4244 4996)
+#endif
+
+
 #if !defined(_SOCKLEN_T) && \
  (defined(_WIN32) || defined(__NETWARE__) || defined(__APPLE__))
     typedef int socklen_t;
@@ -78,7 +85,7 @@
 
 #ifndef _POSIX_THREADS
     typedef unsigned int  THREAD_RETURN;
-    typedef unsigned long THREAD_TYPE;
+    typedef HANDLE        THREAD_TYPE;
     #define YASSL_API __stdcall
 #else
     typedef void*         THREAD_RETURN;

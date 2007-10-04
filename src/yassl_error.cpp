@@ -34,6 +34,11 @@
 #include "openssl/ssl.h"    // SSL_ERROR_WANT_READ
 #include <string.h>         // strncpy
 
+#ifdef _MSC_VER
+    // 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy
+    #pragma warning(disable: 4996)
+#endif
+
 namespace yaSSL {
 
 

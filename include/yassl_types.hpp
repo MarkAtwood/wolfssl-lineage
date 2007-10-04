@@ -37,6 +37,13 @@
 #include "type_traits.hpp"
 
 
+#ifdef _MSC_VER
+    // disable conversion warning
+    // 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy
+    #pragma warning(disable:4244 4996)
+#endif
+
+
 namespace yaSSL {
 
 #define YASSL_LIB

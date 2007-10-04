@@ -87,11 +87,12 @@ using TaoCrypt::GetPKCS_Cert;
 struct testVector {
     byte*  input_;
     byte*  output_; 
-    size_t inLen_;
-    size_t outLen_;
+    word32 inLen_;
+    word32 outLen_;
 
     testVector(const char* in, const char* out) : input_((byte*)in),
-               output_((byte*)out), inLen_(strlen(in)), outLen_(strlen(out)) {}
+               output_((byte*)out), inLen_((word32)strlen(in)),
+               outLen_((word32)strlen(out)) {}
 };
 
 int  sha_test();
@@ -302,16 +303,16 @@ void taocrypt_test(void* args)
 void file_test(const char* file, byte* check)
 {
     FILE* f;
-    int   i(0);
-    MD5   md5;
-    byte  buf[1024];
-    byte  md5sum[MD5::DIGEST_SIZE];
+    int i = 0;
+    MD5    md5;
+    byte   buf[1024];
+    byte   md5sum[MD5::DIGEST_SIZE];
     
     if( !( f = fopen( file, "rb" ) )) {
         printf("Can't open %s\n", file);
         return;
     }
-    while( ( i = fread(buf, 1, sizeof(buf), f )) > 0 )
+    while( ( i = (int)fread(buf, 1, sizeof(buf), f )) > 0 )
         md5.Update(buf, i);
     
     md5.Final(md5sum);
@@ -700,7 +701,7 @@ int hmac_test()
 
     int times( sizeof(test_hmacMD5) / sizeof(testVector) );
     for (int i = 0; i < times; ++i) {
-        hmacMD5.SetKey((byte*)keys[i], strlen(keys[i]));
+        hmacMD5.SetKey((byte*)keys[i], (word32)strlen(keys[i]));
         hmacMD5.Update(test_hmacMD5[i].input_, test_hmacMD5[i].inLen_);
         hmacMD5.Final(hash);
 
@@ -743,8 +744,8 @@ int arc4_test()
         ARC4::Encryption enc;
         ARC4::Decryption dec;
 
-        enc.SetKey((byte*)keys[i], strlen(keys[i]));
-        dec.SetKey((byte*)keys[i], strlen(keys[i]));
+        enc.SetKey((byte*)keys[i], (word32)strlen(keys[i]));
+        dec.SetKey((byte*)keys[i], (word32)strlen(keys[i]));
 
         enc.Process(cipher, test_arc4[i].input_, test_arc4[i].outLen_);
         dec.Process(plain,  cipher, test_arc4[i].outLen_);
@@ -1022,7 +1023,7 @@ int rsa_test()
 
     RSAES_Encryptor enc(priv);
     byte message[] = "Everyone gets Friday off.";
-    const int len(strlen((char*)message));
+    const word32 len = (word32)strlen((char*)message);
     byte cipher[64];
     enc.Encrypt(message, len, cipher, rng);
 

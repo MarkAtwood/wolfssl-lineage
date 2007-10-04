@@ -611,7 +611,7 @@ char* X509_NAME_oneline(X509_NAME* name, char* buffer, int sz)
 {
     if (!name->GetName()) return buffer;
 
-    int len    = strlen(name->GetName()) + 1;
+    int len    = (int)strlen(name->GetName()) + 1;
     int copySz = min(len, sz);
 
     if (!buffer) {

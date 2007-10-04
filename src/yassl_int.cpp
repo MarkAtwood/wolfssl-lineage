@@ -1042,12 +1042,12 @@ void SSL::fillData(Data& data)
 {
     if (GetError()) return;
     uint dataSz   = data.get_length();        // input, data size to fill
-    uint elements = buffers_.getData().size();
+    size_t elements = buffers_.getData().size();
 
     data.set_length(0);                         // output, actual data filled
     dataSz = min(dataSz, bufferedData());
 
-    for (uint i = 0; i < elements; i++) {
+    for (size_t i = 0; i < elements; i++) {
         input_buffer* front = buffers_.getData().front();
         uint frontSz = front->get_remaining();
         uint readSz  = min(dataSz - data.get_length(), frontSz);
@@ -1071,8 +1071,8 @@ void SSL::fillData(Data& data)
 void SSL::PeekData(Data& data)
 {
     if (GetError()) return;
-    uint dataSz   = data.get_length();        // input, data size to fill
-    uint elements = buffers_.getData().size();
+    uint   dataSz   = data.get_length();        // input, data size to fill
+    size_t elements = buffers_.getData().size();
 
     data.set_length(0);                         // output, actual data filled
     dataSz = min(dataSz, bufferedData());
@@ -1106,9 +1106,9 @@ void SSL::flushBuffer()
                             buffers_.getHandShake().end(),
                             SumBuffer()).total_;
     output_buffer out(sz);
-    uint elements = buffers_.getHandShake().size();
+    size_t elements = buffers_.getHandShake().size();
 
-    for (uint i = 0; i < elements; i++) {
+    for (size_t i = 0; i < elements; i++) {
         output_buffer* front = buffers_.getHandShake().front();
         out.write(front->get_buffer(), front->get_size());
 
@@ -1914,7 +1914,7 @@ bool SSL_CTX::SetCipherList(const char* list)
     int idx = 0;
 
     for(;;) {
-        int len;
+        size_t len;
         prev = haystack;
         haystack = strstr(haystack, needle);
 
@@ -2362,10 +2362,10 @@ ASN1_STRING* X509_NAME::GetEntry(int i)
     memcpy(entry_.data, &name_[i], sz_ - i);
     if (entry_.data[sz_ -i - 1]) {
         entry_.data[sz_ - i] = 0;
-        entry_.length = sz_ - i;
+        entry_.length = int(sz_) - i;
     }
     else
-        entry_.length = sz_ - i - 1;
+        entry_.length = int(sz_) - i - 1;
     entry_.type = 0;
 
     return &entry_;
