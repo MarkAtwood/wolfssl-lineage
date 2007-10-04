@@ -15,8 +15,8 @@
     #include <winsock2.h>
     #include <process.h>
     #ifdef TEST_IPV6            // don't require newer SDK for IPV4
-	    #include "ws2tcpip.h"
-	    #include "wspiapi.h"
+	    #include <ws2tcpip.h>
+        #include <wspiapi.h>
     #endif
     #define SOCKET_T unsigned int
 #else
@@ -66,11 +66,9 @@
 
 #ifdef TEST_IPV6
     typedef sockaddr_in6 SOCKADDR_IN_T;
-    typedef addrinfo     ADDRINFO_T;
     #define AF_INET_V    AF_INET6
 #else
     typedef sockaddr_in  SOCKADDR_IN_T;
-	typedef void         ADDRINFO_T;
     #define AF_INET_V    AF_INET
 #endif
    
@@ -133,9 +131,7 @@ void join_thread(THREAD_TYPE);
 
 // yaSSL
 const char* const    yasslIP      = "127.0.0.1";
-const char* const    yasslIP6     = "::1";
 const unsigned short yasslPort    =  11111;
-const char* const    yasslPortStr = "11111";
 
 
 // client
@@ -309,11 +305,17 @@ inline void tcp_set_nonblocking(SOCKET_T& sockfd)
 }
 
 
-inline void tcp_socket(SOCKET_T& sockfd, SOCKADDR_IN_T& addr, ADDRINFO_T** info)
+inline void tcp_socket(SOCKET_T& sockfd, SOCKADDR_IN_T& addr)
 {
     sockfd = socket(AF_INET_V, SOCK_STREAM, 0);
+    memset(&addr, 0, sizeof(addr));
 
 #ifdef TEST_IPV6
+    addr.sin6_family = AF_INET_V;
+    addr.sin6_port = htons(yasslPort);
+    addr.sin6_addr = in6addr_loopback;
+
+    /* // for external testing later 
     addrinfo hints;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = AF_INET_V;
@@ -321,13 +323,13 @@ inline void tcp_socket(SOCKET_T& sockfd, SOCKADDR_IN_T& addr, ADDRINFO_T** info)
     hints.ai_flags    = AI_PASSIVE;
 
     getaddrinfo(yasslIP6, yasslPortStr, &hints, info);
+    // then use info connect(sockfd, info->ai_addr, info->ai_addrlen)
 
     if (*info == 0)
         err_sys("getaddrinfo failed");
+        */   // end external testing later
 #else
-    memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET_V;
-
     addr.sin_port = htons(yasslPort);
     addr.sin_addr.s_addr = inet_addr(yasslIP);
 #endif
@@ -349,35 +351,21 @@ inline void tcp_close(SOCKET_T& sockfd)
 inline void tcp_connect(SOCKET_T& sockfd)
 {
     SOCKADDR_IN_T addr;
-    ADDRINFO_T* info;
-    tcp_socket(sockfd, addr, &info);
+    tcp_socket(sockfd, addr);
 
-#ifdef TEST_IPV6
-    if (connect(sockfd, info->ai_addr, info->ai_addrlen) != 0) {
-#else
     if (connect(sockfd, (const sockaddr*)&addr, sizeof(addr)) != 0) {
-#endif
         tcp_close(sockfd);
         err_sys("tcp connect failed");
     }
-
-#ifdef TEST_IPV6
-    freeaddrinfo(info);
-#endif
 }
 
 
 inline void tcp_listen(SOCKET_T& sockfd)
 {
     SOCKADDR_IN_T addr;
-    ADDRINFO_T* info;
-    tcp_socket(sockfd, addr, &info);
+    tcp_socket(sockfd, addr);
 
-#ifdef TEST_IPV6
-    if (bind(sockfd, info->ai_addr, info->ai_addrlen) != 0) {
-#else
     if (bind(sockfd, (const sockaddr*)&addr, sizeof(addr)) != 0) {
-#endif
         tcp_close(sockfd);
         err_sys("tcp bind failed");
     }
@@ -385,10 +373,6 @@ inline void tcp_listen(SOCKET_T& sockfd)
         tcp_close(sockfd);
         err_sys("tcp listen failed");
     }
-
-#ifdef TEST_IPV6
-    freeaddrinfo(info);
-#endif
 }
 
 
