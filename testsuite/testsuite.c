@@ -124,7 +124,7 @@ void wait_tcp_ready(func_args* args)
 void start_thread(THREAD_FUNC fun, func_args* args, THREAD_TYPE* thread)
 {
 #ifndef _POSIX_THREADS
-    *thread = _beginthreadex(0, 0, fun, args, 0, 0);
+    *thread = (HANDLE)_beginthreadex(0, 0, fun, args, 0, 0);
 #else
     pthread_create(thread, 0, fun, args);
 #endif
@@ -134,9 +134,9 @@ void start_thread(THREAD_FUNC fun, func_args* args, THREAD_TYPE* thread)
 void join_thread(THREAD_TYPE thread)
 {
 #ifndef _POSIX_THREADS
-    int res = WaitForSingleObject((HANDLE)thread, INFINITE);
+    int res = WaitForSingleObject(thread, INFINITE);
     assert(res == WAIT_OBJECT_0);
-    res = CloseHandle((HANDLE)thread);
+    res = CloseHandle(thread);
     assert(res);
 #else
     pthread_join(thread, 0);
@@ -176,7 +176,7 @@ void file_test(char* file, byte* check)
         printf("Can't open %s\n", file);
         return;
     }
-    while( ( i = fread(buf, 1, sizeof(buf), f )) > 0 )
+    while( ( i = (int)fread(buf, 1, sizeof(buf), f )) > 0 )
         Md5Update(&md5, buf, i);
     
     Md5Final(&md5, md5sum);

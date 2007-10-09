@@ -19,6 +19,11 @@
 
 #define NO_DH  /* remove for now */
 
+#ifdef _MSC_VER
+    // 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy
+    #pragma warning(disable: 4996)
+#endif
+
 void bench_des();
 void bench_arc4();
 void bench_aes();
@@ -235,7 +240,7 @@ void bench_rsa()
     byte      message[] = "Everyone gets Friday off.";
     byte      cipher[128];  /* for 1024 bit */
     byte      plain[128];   /* for 1024 bit */
-    const int len = strlen((char*)message);
+    const int len = (int)strlen((char*)message);
     double    start, total, each, milliEach;
     
     RsaKey key;
@@ -248,7 +253,7 @@ void bench_rsa()
 
     bytes = fread(tmp, 1, 1024, file);
     InitRsaKey(&key);
-    bytes = RsaPrivateKeyDecode(tmp, &idx, &key, bytes);
+    bytes = RsaPrivateKeyDecode(tmp, &idx, &key, (word32)bytes);
 
     
     start = current_time();

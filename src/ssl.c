@@ -608,7 +608,7 @@ static int ProcessFile(SSL_CTX* ctx, const char* file, int format, int type)
         der.buffer = (byte*) malloc(sz);
         if (!der.buffer) return MEMORY_ERROR;
         der.length = sz;
-        sz = fread(der.buffer, sz, 1, input);
+        sz = (word32)fread(der.buffer, sz, 1, input);
         if (sz != 1) {
             fclose(input);
             free(der.buffer);
@@ -737,7 +737,7 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
     if (ssl->buffers.domainName.buffer)
         free(ssl->buffers.domainName.buffer);
 
-    ssl->buffers.domainName.length = strlen(dn) + 1;
+    ssl->buffers.domainName.length = (word32)strlen(dn) + 1;
     ssl->buffers.domainName.buffer =
                      (byte*) malloc(ssl->buffers.domainName.length);
 

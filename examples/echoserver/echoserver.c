@@ -66,7 +66,7 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
         char command[1024];
         int  echoSz = 0;
 
-        struct sockaddr_in client;
+        SOCKADDR_IN_T client;
         socklen_t   client_len = sizeof(client);
         int         clientfd   = accept(sockfd, (struct sockaddr*)&client,
                                         (ACCEPT_THIRD_T)&client_len);

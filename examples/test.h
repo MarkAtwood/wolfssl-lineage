@@ -12,6 +12,10 @@
 #ifdef _WIN32
     #include <winsock2.h>
     #include <process.h>
+    #ifdef TEST_IPV6            // don't require newer SDK for IPV4
+	    #include <ws2tcpip.h>
+        #include <wspiapi.h>
+    #endif
     #define SOCKET_T int
 #else
     #include <string.h>
@@ -27,9 +31,17 @@
     #ifdef NON_BLOCKING
         #include <fcntl.h>
     #endif
+    #ifdef TEST_IPV6
+        #include <netdb.h>
+    #endif
     #define SOCKET_T unsigned int
 #endif /* _WIN32 */
 
+#ifdef _MSC_VER
+    // disable conversion warning
+    // 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy
+    #pragma warning(disable:4244 4996)
+#endif
 
 #if defined(__MACH__) || defined(_WIN32)
     typedef int socklen_t;
@@ -55,7 +67,7 @@
 
 #ifndef _POSIX_THREADS
     typedef unsigned int  THREAD_RETURN;
-    typedef unsigned long THREAD_TYPE;
+    typedef HANDLE        THREAD_TYPE;
     #define CYASSL_API __stdcall
 #else
     typedef void*         THREAD_RETURN;
@@ -63,6 +75,15 @@
     #define CYASSL_API 
 #endif
 
+
+#ifdef TEST_IPV6
+    typedef struct sockaddr_in6 SOCKADDR_IN_T;
+    #define AF_INET_V    AF_INET6
+#else
+    typedef struct sockaddr_in  SOCKADDR_IN_T;
+    #define AF_INET_V    AF_INET
+#endif
+   
 
 #ifndef NO_MAIN_DRIVER
     static const char* caCert = "../../certs/ca-cert.pem";
@@ -113,9 +134,10 @@ static INLINE void err_sys(const char* msg)
 }
 
 
-static INLINE void tcp_socket(SOCKET_T* sockfd, struct sockaddr_in* addr,
+static INLINE void tcp_socket(SOCKET_T* sockfd, SOCKADDR_IN_T* addr,
                               const char* peer, word16 port)
 {
+#ifndef TEST_IPV6
     const char* host = peer;
 
     /* peer could be in human readable form */
@@ -132,18 +154,28 @@ static INLINE void tcp_socket(SOCKET_T* sockfd, struct sockaddr_in* addr,
         else
             err_sys("no entry for host");
     }
-    *sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    memset(addr, 0, sizeof(struct sockaddr_in));
-    addr->sin_family = AF_INET;
+#endif
 
+    *sockfd = socket(AF_INET_V, SOCK_STREAM, 0);
+    memset(addr, 0, sizeof(SOCKADDR_IN_T));
+
+#ifndef TEST_IPV6
+    addr->sin_family = AF_INET_V;
     addr->sin_port = htons(port);
     addr->sin_addr.s_addr = inet_addr(host);
+#else
+    addr->sin6_family = AF_INET_V;
+    addr->sin6_port = htons(port);
+    addr->sin6_addr = in6addr_loopback;
+#endif
+
+
 }
 
 
 static INLINE void tcp_connect(SOCKET_T* sockfd, const char* ip, word16 port)
 {
-    struct sockaddr_in addr;
+    SOCKADDR_IN_T addr;
     tcp_socket(sockfd, &addr, ip, port);
 
     if (connect(*sockfd, (const struct sockaddr*)&addr, sizeof(addr)) != 0)
@@ -153,7 +185,7 @@ static INLINE void tcp_connect(SOCKET_T* sockfd, const char* ip, word16 port)
 
 static INLINE void tcp_listen(SOCKET_T* sockfd)
 {
-    struct sockaddr_in addr;
+    SOCKADDR_IN_T addr;
     tcp_socket(sockfd, &addr, yasslIP, yasslPort);
 
     if (bind(*sockfd, (const struct sockaddr*)&addr, sizeof(addr)) != 0)
@@ -165,7 +197,7 @@ static INLINE void tcp_listen(SOCKET_T* sockfd)
 
 static INLINE void tcp_accept(SOCKET_T* sockfd, int* clientfd, func_args* args)
 {
-    struct sockaddr_in client;
+    SOCKADDR_IN_T client;
     socklen_t client_len = sizeof(client);
 
     tcp_listen(sockfd);

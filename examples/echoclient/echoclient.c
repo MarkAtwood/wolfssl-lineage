@@ -59,7 +59,7 @@ void echoclient_test(void* args)
 
     while (fgets(send, sizeof(send), fin)) {
 
-        int  sendSz = strlen(send) + 1;
+        int  sendSz = (int)strlen(send) + 1;
 
         if (SSL_write(ssl, send, sendSz) != sendSz)
             err_sys("SSL_write failed");

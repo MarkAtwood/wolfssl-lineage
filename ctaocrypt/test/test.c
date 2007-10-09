@@ -16,6 +16,11 @@
 #include "aes.h"
 #include "hmac.h"
 
+#ifdef _MSC_VER
+    // 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy
+    #pragma warning(disable: 4996)
+#endif
+
 #ifdef OPENSSL_EXTRA
     #include "../../include/openssl/evp.h"
     #include "../../include/openssl/rand.h"
@@ -228,7 +233,7 @@ int md5_test()
     InitMd5(&md5);
 
     for (i = 0; i < times; ++i) {
-        Md5Update(&md5, (byte*)test_md5[i].input, test_md5[i].inLen);
+        Md5Update(&md5, (byte*)test_md5[i].input, (word32)test_md5[i].inLen);
         Md5Final(&md5, hash);
 
         if (memcmp(hash, test_md5[i].output, MD5_DIGEST_SIZE) != 0)
@@ -283,7 +288,7 @@ int sha_test()
     InitSha(&sha);
 
     for (i = 0; i < times; ++i) {
-        ShaUpdate(&sha, (byte*)test_sha[i].input, test_sha[i].inLen);
+        ShaUpdate(&sha, (byte*)test_sha[i].input, (word32)test_sha[i].inLen);
         ShaFinal(&sha, hash);
 
         if (memcmp(hash, test_sha[i].output, SHA_DIGEST_SIZE) != 0)
@@ -324,7 +329,7 @@ int sha256_test()
     InitSha256(&sha);
 
     for (i = 0; i < times; ++i) {
-        Sha256Update(&sha, (byte*)test_sha[i].input, test_sha[i].inLen);
+        Sha256Update(&sha, (byte*)test_sha[i].input,(word32)test_sha[i].inLen);
         Sha256Final(&sha, hash);
 
         if (memcmp(hash, test_sha[i].output, SHA256_DIGEST_SIZE) != 0)
@@ -380,8 +385,9 @@ int hmac_test()
     test_hmac[2] = c;
 
     for (i = 0; i < times; ++i) {
-        HmacSetKey(&hmac, MD5, (byte*)keys[i], strlen(keys[i]));
-        HmacUpdate(&hmac, (byte*)test_hmac[i].input, test_hmac[i].inLen);
+        HmacSetKey(&hmac, MD5, (byte*)keys[i], (word32)strlen(keys[i]));
+        HmacUpdate(&hmac, (byte*)test_hmac[i].input,
+                   (word32)test_hmac[i].inLen);
         HmacFinal(&hmac, hash);
 
         if (memcmp(hash, test_hmac[i].output, MD5_DIGEST_SIZE) != 0)
@@ -440,12 +446,12 @@ int arc4_test()
         Arc4 enc;
         Arc4 dec;
 
-        Arc4SetKey(&enc, (byte*)keys[i], strlen(keys[i]));
-        Arc4SetKey(&dec, (byte*)keys[i], strlen(keys[i]));
+        Arc4SetKey(&enc, (byte*)keys[i], (word32)strlen(keys[i]));
+        Arc4SetKey(&dec, (byte*)keys[i], (word32)strlen(keys[i]));
 
         Arc4Process(&enc, cipher, (byte*)test_arc4[i].input,
-                    test_arc4[i].outLen);
-        Arc4Process(&dec, plain,  cipher, test_arc4[i].outLen);
+                    (word32)test_arc4[i].outLen);
+        Arc4Process(&dec, plain,  cipher, (word32)test_arc4[i].outLen);
 
         if (memcmp(plain, test_arc4[i].input, test_arc4[i].outLen))
             return -20 - i;
@@ -632,7 +638,7 @@ int rsa_test()
     word32 idx = 0;
     int    ret;
     byte   in[] = "Everyone gets Friday off.";
-    word32 inLen = strlen((char*)in);
+    word32 inLen = (word32)strlen((char*)in);
     byte   out[64];
     byte   plain[64];
     DecodedCert cert;
@@ -645,7 +651,7 @@ int rsa_test()
     bytes = fread(tmp, 1, 1024, file);
   
     InitRsaKey(&key);  
-    ret = RsaPrivateKeyDecode(tmp, &idx, &key, bytes);
+    ret = RsaPrivateKeyDecode(tmp, &idx, &key, (word32)bytes);
     if (ret != 0) return -41;
 
     ret = InitRng(&rng);
@@ -671,7 +677,7 @@ int rsa_test()
 
     InitDecodedCert(&cert, (byte*)&tmp2);
 
-    ret = ParseCert(&cert, bytes2, CERT_TYPE, NO_VERIFY, 0);
+    ret = ParseCert(&cert, (word32)bytes2, CERT_TYPE, NO_VERIFY, 0);
     if (ret != 0) return -48;
 
     FreeDecodedCert(&cert);

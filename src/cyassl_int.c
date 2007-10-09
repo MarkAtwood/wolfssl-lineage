@@ -530,7 +530,7 @@ int SendWrapper(SSL* ssl, const byte* output, int sz, int copy)
             memcpy(ssl->writeBuffer.send.buffer, output, sz);
 
             /* adjust for partial send, since made new buffer */
-            offset = ssl->writeBuffer.offset - output;   
+            offset = (int)(ssl->writeBuffer.offset - output);   
             ssl->writeBuffer.offset = ssl->writeBuffer.send.buffer + offset;
         }
         else 
@@ -1796,7 +1796,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         return 0;
 
     for(;;) {
-        int len;
+        size_t len;
         prev = haystack;
         haystack = strstr(haystack, needle);
 
