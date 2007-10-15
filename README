@@ -1,3 +1,12 @@
+*****************yaSSL Release notes, version 1.7.5 (10/15/07)
+
+    This release of yaSSL contains bug fixes, adds MSVC 2005 project support,
+    GCC 4.2 support, and new test certificates. 
+
+See normal  build instructions below under 1.0.6.
+See libcurl build instructions below under 1.3.0 and note in 1.5.8.
+
+
 *****************yaSSL Release notes, version 1.7.2 (8/20/07)
 
     This release of yaSSL contains bug fixes and adds initial OpenVPN support.

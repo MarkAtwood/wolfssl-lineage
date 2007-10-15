@@ -123,7 +123,7 @@ TaoCrypt::RandomNumberGenerator rng;
 
 void err_sys(const char* msg, int es)
 {
-    printf("%s", msg);
+    printf("%s\n", msg);
     exit(es);    
 }
 
@@ -1051,6 +1051,8 @@ int rsa_test()
         }
     }
     CertDecoder cd(source2, true, 0, false, CertDecoder::CA);
+    if (cd.GetError().What())
+        err_sys("cert error", -80);
     Source source3(cd.GetPublicKey().GetKey(), cd.GetPublicKey().size());
     RSA_PublicKey pub(source3);
  
