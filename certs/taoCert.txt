@@ -51,7 +51,7 @@ b) openssl rsa -in key.pem -outform DER -out key.der
 
 a) openssl rsa <server-key.pem.bak -des >server-keyEnc.pem
 
-note location of des
+note location of des, pass = yassl123
 
 
 
