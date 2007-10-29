@@ -65,8 +65,18 @@ void client_test(void* args)
                     /* this is just to allow easy testing of other servers */
         tcp_connect(&sockfd, argv[1], (short)atoi(argv[2]));
     }
-    else if (argc == 1)
+    else if (argc == 1) {
+        /* for client cert authentication if server requests */
+        if (SSL_CTX_use_certificate_file(ctx, cliCert, SSL_FILETYPE_PEM)
+                != SSL_SUCCESS)
+            err_sys("can't load client cert file");
+
+        if (SSL_CTX_use_PrivateKey_file(ctx, cliKey, SSL_FILETYPE_PEM)
+                != SSL_SUCCESS)
+            err_sys("can't load client key file");
+
         tcp_connect(&sockfd, yasslIP, yasslPort);
+    }
     else
         err_sys("usage: ./client server securePort");
 

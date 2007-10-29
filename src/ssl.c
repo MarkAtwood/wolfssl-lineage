@@ -315,28 +315,43 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
             CYASSL_MSG("connect state: FIRST_REPLY_DONE");
 
         case FIRST_REPLY_DONE :
-            if (!ssl->options.resuming) {
+            if (ssl->options.sendVerify)
+                if ( (ssl->error = SendCertificate(ssl)) != 0) {
+                    CYASSL_ERROR(ssl->error);
+                    return SSL_FATAL_ERROR;
+                }
+
+            ssl->options.connectState = FIRST_REPLY_FIRST;
+            CYASSL_MSG("connect state: FIRST_REPLY_FIRST");
+
+        case FIRST_REPLY_FIRST :
+            if (!ssl->options.resuming)
                 if ( (ssl->error = SendClientKeyExchange(ssl)) != 0) {
                     CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
                 }
-            }
-            else {
-                ssl->options.connectState = FIRST_REPLY_SECOND;
-                CYASSL_MSG("connect state: FIRST_REPLY_SECOND");
-            }
+
+            ssl->options.connectState = FIRST_REPLY_SECOND;
+            CYASSL_MSG("connect state: FIRST_REPLY_SECOND");
 
         case FIRST_REPLY_SECOND :
-
-            if ( (ssl->error = SendChangeCipher(ssl)) != 0) {
-                CYASSL_ERROR(ssl->error);
-                return SSL_FATAL_ERROR;
+            if (ssl->options.sendVerify)
+                if ( (ssl->error = SendCertificateVerify(ssl)) != 0) {
+                    CYASSL_ERROR(ssl->error);
+                    return SSL_FATAL_ERROR;
             }
             ssl->options.connectState = FIRST_REPLY_THIRD;
             CYASSL_MSG("connect state: FIRST_REPLY_THIRD");
 
         case FIRST_REPLY_THIRD :
+            if ( (ssl->error = SendChangeCipher(ssl)) != 0) {
+                CYASSL_ERROR(ssl->error);
+                return SSL_FATAL_ERROR;
+            }
+            ssl->options.connectState = FIRST_REPLY_FOURTH;
+            CYASSL_MSG("connect state: FIRST_REPLY_FOURTH");
 
+        case FIRST_REPLY_FOURTH :
             if ( (ssl->error = SendFinished(ssl)) != 0) {
                 CYASSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
@@ -357,7 +372,6 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
             CYASSL_MSG("connect state: SECOND_REPLY_DONE");
 
         case SECOND_REPLY_DONE:
-
             CYASSL_LEAVE("SSL_connect()", SSL_SUCCESS);
             return SSL_SUCCESS;
 
@@ -413,6 +427,12 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
                     CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
                 }
+
+                if (ssl->options.verifyPeer)
+                    if ( (ssl->error = SendCertificateRequest(ssl)) != 0) {
+                        CYASSL_ERROR(ssl->error);
+                        return SSL_FATAL_ERROR;
+                    }
 
                 if ( (ssl->error = SendServerHelloDone(ssl)) != 0) {
                     CYASSL_ERROR(ssl->error);

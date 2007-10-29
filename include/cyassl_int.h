@@ -135,6 +135,7 @@ enum Misc {
     BYTE3_LEN      =  3,       /* up to 24 bit byte lengths */
     ALERT_SIZE     =  2,       /* level + description     */
     REQUEST_HEADER =  2,       /* always use 2 bytes      */
+    VERIFY_HEADER  =  2,       /* always use 2 bytes      */
 
     MAX_SUITE_SZ = 64,         /* only 32 suites for now! */
     RAN_LEN      = 32,         /* random length           */
@@ -147,6 +148,7 @@ enum Misc {
     HANDSHAKE_HEADER_SZ = 4,   /* type + length(3)        */
     RECORD_HEADER_SZ    = 5,   /* type + version + len(2) */
     CERT_HEADER_SZ      = 3,   /* always 3 bytes          */
+    REQ_HEADER_SZ       = 2,   /* cert request header sz  */
 
     FINISHED_LABEL_SZ   = 15,  /* TLS finished label size */
     TLS_FINISHED_SZ     = 12,  /* TLS has a shorter size  */
@@ -155,6 +157,7 @@ enum Misc {
     MAX_PRF_HALF        = 48,  /* Maximum half secret len */
     MAX_PRF_LABSEED     = 80,  /* Maximum label + seed len */
     MAX_PRF_DIG         = 148, /* Maximum digest len      */
+    MAX_REQUEST_SZ      = 256, /* Maximum cert req len (no auth yet */
 
     RC4_KEY_SIZE        = 16,  /* always 128bit           */
     DES3_KEY_SIZE       = 24,  /* 3 des ede               */
@@ -164,6 +167,7 @@ enum Misc {
     AES_128_KEY_SIZE    = 16,  /* for 128 bit             */
 
     MAX_HELLO_SZ       = 128,  /* max client or server hello */
+    MAX_CERT_VERIFY_SZ = 1024, /* max   */
     CLIENT_HELLO_FIRST =  35,  /* Protocol + RAN_LEN + sizeof(id_len) */
     MAX_SUITE_NAME     =  48,  /* maximum length of cipher suite string */
     DEFAULT_TIMEOUT    = 500,  /* default resumption timeout in seconds */
@@ -215,7 +219,7 @@ struct SSL_METHOD {
     int             side;           /* connection side, server or client */
     int             verifyPeer;     /* request or send certificate       */
     int             verifyNone;     /* whether to verify certificate     */
-    int             failNoCert;    
+    int             failNoCert;
 };
 
 
@@ -247,12 +251,13 @@ struct SSL_CTX {
     SSL_METHOD* method;
     buffer      certificate;
     buffer      privateKey;
-    Signer*     caList;         /* SSL_CTX owns this, SSL will reference */
+    Signer*     caList;           /* SSL_CTX owns this, SSL will reference */
     Suites      suites;
     byte        verifyPeer;
     byte        verifyNone;
     byte        failNoCert;
     byte        sessionCacheOff;
+    byte        sendVerify;       /* for client side */
 };
 
 
@@ -303,6 +308,18 @@ enum KeyExchangeAlgorithm {
     rsa_kea, 
     diffie_hellman_kea, 
     fortezza_kea 
+};
+
+
+/* Valid client certificate request types from page 27 */
+enum ClientCertificateType {    
+    rsa_sign            = 1, 
+    dss_sign            = 2,
+    rsa_fixed_dh        = 3,
+    dss_fixed_dh        = 4,
+    rsa_ephemeral_dh    = 5,
+    dss_ephemeral_dh    = 6,
+    fortezza_kea_cert   = 20
 };
 
 
@@ -369,8 +386,10 @@ enum ConnectState {
     CONNECT_BEGIN = 0,
     CLIENT_HELLO_SENT,
     FIRST_REPLY_DONE,
+    FIRST_REPLY_FIRST,
     FIRST_REPLY_SECOND,
     FIRST_REPLY_THIRD,
+    FIRST_REPLY_FOURTH,
     FINISHED_DONE,
     SECOND_REPLY_DONE
 };
@@ -417,6 +436,7 @@ typedef struct Options {
     byte            verifyPeer;
     byte            verifyNone;
     byte            failNoCert;
+    byte            sendVerify;
     byte            resuming;
     byte            tls;                /* using TLS ? */
     byte            tls1_1;             /* using TLSv1.1 ? */
@@ -452,6 +472,7 @@ struct SSL {
     Md5             hashMd5;            /* md5 hash of handshake msgs */
     Sha             hashSha;            /* sha hash of handshake msgs */
     Hashes          verifyHashes;
+    Hashes          certHashes;         /* for cert verify */
     Signer*         caList;             /* SSL_CTX owns */
     Buffers         buffers;
     WriteBuffer     writeBuffer;
@@ -545,6 +566,7 @@ static const byte tls_server[FINISHED_LABEL_SZ + 1] = "server finished";
 int SendChangeCipher(SSL*);
 int SendData(SSL*, const void*, int);
 int SendCertificate(SSL*);
+int SendCertificateRequest(SSL*);
 int SendBuffered(SSL*);
 int ReceiveData(SSL*, byte*, int);
 int SendFinished(SSL*);
@@ -562,6 +584,7 @@ int  StoreKeys(SSL* ssl, const byte* keyData);
 #ifndef NO_CYASSL_CLIENT
     int SendClientHello(SSL*);
     int SendClientKeyExchange(SSL*);
+    int SendCertificateVerify(SSL*);
 #endif /* NO_CYASSL_CLIENT */
 
 #ifndef NO_CYASSL_SERVER

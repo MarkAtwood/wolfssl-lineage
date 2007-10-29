@@ -59,7 +59,9 @@ enum CyaSSL_ErrorCodes {
     NOT_READY_ERROR        = -224,            /* handshake layer not ready */
     PMS_VERSION_ERROR      = -225,            /* pre m secret version error */
     VERSION_ERROR          = -226,            /* record layer version error */
-    WANT_WRITE             = -227             /* want write, call again   */
+    WANT_WRITE             = -227,            /* want write, call again   */
+    BUFFER_ERROR           = -228,            /* malformed buffer input   */
+    VERIFY_CERT_ERROR      = -229             /* verify cert error        */
 
     /* add strings to SetErrorString !!!!! */
 };

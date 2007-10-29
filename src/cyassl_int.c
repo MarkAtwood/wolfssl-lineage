@@ -74,6 +74,7 @@
 #ifndef NO_CYASSL_SERVER
     static int DoClientHello(SSL* ssl, const byte* input, word32*, word32,
                              word32);
+    static int DoCertificateVerify(SSL* ssl, const byte*, word32*, word32);
     static int ProcessOldClientHello(SSL*, const byte*, word32*, word32);
     static int DoClientKeyExchange(SSL* ssl, const byte* input, word32*);
 #endif
@@ -81,6 +82,8 @@
 
 static void Hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
                  int content, int verify);
+
+static void BuildCertHashes(SSL* ssl, Hashes* hashes);
 
 
 void BuildTlsFinished(SSL* ssl, Hashes* hashes, const byte* sender);
@@ -120,6 +123,7 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->verifyNone = 0;
     ctx->failNoCert = 0;
     ctx->sessionCacheOff = 0;  /* initially on */
+    ctx->sendVerify = 0;
 }
 
 
@@ -212,6 +216,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->options.verifyPeer = ctx->verifyPeer;
     ssl->options.verifyNone = ctx->verifyNone;
     ssl->options.failNoCert = ctx->failNoCert;
+    ssl->options.sendVerify = ctx->sendVerify;
     
     ssl->options.resuming = 0;
     ssl->hmac = Hmac;    /* default to SSLv3 */
@@ -847,6 +852,12 @@ static int DoHandShakeMsg(SSL* ssl, const byte* input, word32* inOutIdx,
         CYASSL_MSG("processing client key exchange");
         ret = DoClientKeyExchange(ssl, input, inOutIdx);
         break;
+
+    case certificate_verify:
+        CYASSL_MSG("processing certificate verify");
+        ret = DoCertificateVerify(ssl, input, inOutIdx, totalSz);
+        break;
+
 #endif
 
     default:
@@ -1268,6 +1279,73 @@ static void Hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
 }
 
 
+static void BuildMD5_CertVerify(SSL* ssl, byte* digest)
+{
+    byte md5_result[MD5_DIGEST_SIZE];
+    byte md5_inner[SECRET_LEN + PAD_MD5];
+    byte md5_outer[SECRET_LEN + PAD_MD5 + MD5_DIGEST_SIZE];
+
+    /* make md5 inner */
+    memcpy(md5_inner, ssl->arrays.masterSecret, SECRET_LEN);
+    memcpy(&md5_inner[SECRET_LEN], PAD1, PAD_MD5);
+
+    Md5Update(&ssl->hashMd5, md5_inner, sizeof(md5_inner));
+    Md5Final(&ssl->hashMd5, md5_result);
+
+    /* make md5 outer */
+    memcpy(md5_outer, ssl->arrays.masterSecret, SECRET_LEN);
+    memcpy(&md5_outer[SECRET_LEN], PAD2, PAD_MD5);
+    memcpy(&md5_outer[SECRET_LEN + PAD_MD5], md5_result, MD5_DIGEST_SIZE);
+
+    Md5Update(&ssl->hashMd5, md5_outer, sizeof(md5_outer));
+    Md5Final(&ssl->hashMd5, digest);
+}
+
+
+static void BuildSHA_CertVerify(SSL* ssl, byte* digest)
+{
+    byte sha_result[SHA_DIGEST_SIZE];
+    byte sha_inner[SECRET_LEN + PAD_SHA];
+    byte sha_outer[SECRET_LEN + PAD_SHA + SHA_DIGEST_SIZE];
+
+    /* make sha inner */
+    memcpy(sha_inner, ssl->arrays.masterSecret, SECRET_LEN);
+    memcpy(&sha_inner[SECRET_LEN], PAD1, PAD_SHA);
+
+    ShaUpdate(&ssl->hashSha, sha_inner, sizeof(sha_inner));
+    ShaFinal(&ssl->hashSha, sha_result);
+
+    /* make sha outer */
+    memcpy(sha_outer, ssl->arrays.masterSecret, SECRET_LEN);
+    memcpy(&sha_outer[SECRET_LEN], PAD2, PAD_SHA);
+    memcpy(&sha_outer[SECRET_LEN + PAD_SHA], sha_result, SHA_DIGEST_SIZE);
+
+    ShaUpdate(&ssl->hashSha, sha_outer, sizeof(sha_outer));
+    ShaFinal(&ssl->hashSha, digest);
+}
+
+
+static void BuildCertHashes(SSL* ssl, Hashes* hashes)
+{
+    /* store current states, building requires get_digest which resets state */
+    Md5 md5 = ssl->hashMd5;
+    Sha sha = ssl->hashSha;
+
+    if (ssl->options.tls) {
+        Md5Final(&ssl->hashMd5, hashes->md5);
+        ShaFinal(&ssl->hashSha, hashes->sha);
+    }
+    else {
+        BuildMD5_CertVerify(ssl, hashes->md5);
+        BuildSHA_CertVerify(ssl, hashes->sha);
+    }
+    
+    /* restore */
+    ssl->hashMd5 = md5;
+    ssl->hashSha = sha;
+}
+
+
 /* Build SSL Message, encrypted */
 static int BuildMessage(SSL* ssl, byte* output, const byte* input, int inSz,
                         int type)
@@ -1432,6 +1510,49 @@ int SendCertificate(SSL* ssl)
         ssl->options.serverState = SERVER_CERT_COMPLETE;
     free(output);
     return 0;
+}
+
+
+int SendCertificateRequest(SSL* ssl)
+{
+    byte   output[MAX_REQUEST_SZ];
+    int    sendSz;
+    word32 i = 0;
+    
+    RecordLayerHeader rl;
+    HandShakeHeader   hs;
+
+    int  typeTotal = 1;  /* only rsa for now */
+    int  reqSz = ENUM_LEN + typeTotal + REQ_HEADER_SZ;  /* add auth later */
+
+    sendSz = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ + reqSz;
+
+    /* record layer header */
+    rl.type    = handshake;
+    rl.version = ssl->version;
+    rl.size    = sendSz - RECORD_HEADER_SZ;  
+    c16toa((word16)rl.size, rl.length);      
+
+    /* make handshake header */
+    hs.type = certificate_request;
+    c32to24(reqSz, hs.length);
+
+    /* write to output */
+    memcpy(output, &rl, RECORD_HEADER_SZ);
+    i += RECORD_HEADER_SZ;
+
+    memcpy(output + i, &hs, HANDSHAKE_HEADER_SZ);
+    i += HANDSHAKE_HEADER_SZ;
+
+    output[i++] = typeTotal;  /* # of types */
+    output[i++] = rsa_sign;
+
+    c16toa(0, &output[i]);  /* auth's */
+    i += REQ_HEADER_SZ;
+
+    HashOutput(ssl, output, sendSz, 0);
+
+    return SendWrapper(ssl, output, sendSz, COPY);
 }
 
 
@@ -1707,12 +1828,16 @@ void SetErrorString(int error, char* buffer)
         strncpy(buffer, "premaster secret version mismatch error", max);
         break;
 
-   case VERSION_ERROR :
+    case VERSION_ERROR :
         strncpy(buffer, "record layer version error", max);
         break;
 
     case WANT_WRITE :
         strncpy(buffer, "non-blocking socket write buffer full", max);
+        break;
+
+    case BUFFER_ERROR :
+        strncpy(buffer, "malformed buffer input error", max);
         break;
 
     default :
@@ -1979,6 +2104,11 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             len -= dnSz + REQUEST_HEADER;
         }
 
+        /* don't send client cert or cert verify if user hasn't provided
+           cert of private key */
+        if (ssl->buffers.certificate.buffer && ssl->buffers.key.buffer)
+            ssl->options.sendVerify = 1;
+
         return 0;
     }
 
@@ -2068,6 +2198,60 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         FreeRsaKey(&key);
 
         return ret;
+    }
+
+    int SendCertificateVerify(SSL* ssl)
+    {
+        RecordLayerHeader rl;
+        HandShakeHeader   hs;
+        int               sendSz = 0, length, ret;
+        word32            idx = 0;
+        byte              output[MAX_CERT_VERIFY_SZ];
+        RsaKey            key;
+
+        BuildCertHashes(ssl, &ssl->certHashes);
+
+        /* TODO: when add DSS support check here  */
+        InitRsaKey(&key);
+        ret = RsaPrivateKeyDecode(ssl->buffers.key.buffer, &idx, &key,
+                                  ssl->buffers.key.length); 
+        if (ret == 0) {
+            byte verify[ENCRYPT_LEN + VERIFY_HEADER];
+
+            length = RsaEncryptSize(&key);
+            c16toa((word16)length, verify);   /* prepend verify header */
+
+            ret = RsaSSL_Sign(ssl->certHashes.md5, sizeof(Hashes), verify +
+                  VERIFY_HEADER, ENCRYPT_LEN, &key, &ssl->rng);
+
+            if (ret > 0) {
+                ret = 0;  /* reset */
+                hs.type = certificate_verify;
+                c32to24(length + VERIFY_HEADER, hs.length);
+
+                rl.type = handshake;
+                rl.version = ssl->version;
+                c16toa((word16)length + VERIFY_HEADER + HANDSHAKE_HEADER_SZ,
+                       rl.length);
+                idx = 0;
+                memcpy(output, &rl, RECORD_HEADER_SZ);
+                idx += RECORD_HEADER_SZ;
+                memcpy(output + idx, &hs, HANDSHAKE_HEADER_SZ);
+                idx += HANDSHAKE_HEADER_SZ;
+                memcpy(output + idx, verify, length + VERIFY_HEADER);
+                idx += length + VERIFY_HEADER;
+
+                sendSz = idx;
+                HashOutput(ssl, output, sendSz, 0);
+            }
+        }
+
+        FreeRsaKey(&key);
+
+        if (ret == 0)
+            return SendWrapper(ssl, output, sendSz, COPY);
+        else
+            return ret;
     }
 
 
@@ -2360,6 +2544,49 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     }
 
 
+    static int DoCertificateVerify(SSL* ssl, const byte* input, word32* inOutsz,
+                                   word32 totalSz)
+    {
+        word16 sz = 0;
+        word32 i = *inOutsz, idx = 0;
+        int    ret;
+        RsaKey key;
+        byte   tmp[VERIFY_HEADER];
+        byte   sig[ENCRYPT_LEN];
+
+        if ( (i + VERIFY_HEADER) > totalSz)
+            return INCOMPLETE_DATA;
+
+        tmp[0] = input[i++];
+        tmp[1] = input[i++];
+
+        ato16(tmp, &sz);
+
+        if ( (i + sz) > totalSz)
+            return INCOMPLETE_DATA;
+
+        if (sz > sizeof(sig))
+            return BUFFER_ERROR;
+
+        memcpy(sig, &input[i], sz);
+        *inOutsz = i + sz;
+
+        /* TODO: when add DSS support check here  */
+        InitRsaKey(&key);
+        ret = RsaPublicKeyDecode(ssl->buffers.peerKey.buffer, &idx, &key,
+                                 ssl->buffers.peerKey.length); 
+        if (ret == 0) {
+            byte plain[ENCRYPT_LEN];
+
+            ret = VERIFY_CERT_ERROR;  /* start in error state */
+            RsaSSL_Verify(sig, sz, plain, sizeof(plain), &key);
+            if (memcmp(plain,ssl->certHashes.md5,sizeof(ssl->certHashes)) == 0)
+                ret = 0;
+        }
+        return ret;
+    }
+
+
     int SendServerHelloDone(SSL* ssl)
     {
         RecordLayerHeader rl;
@@ -2442,8 +2669,11 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         FreeRsaKey(&key);
         free(tmp);
 
-        if (ret == 0)
+        if (ret == 0) {
             ssl->options.clientState = CLIENT_KEYEXCHANGE_COMPLETE;
+            if (ssl->options.verifyPeer)
+                BuildCertHashes(ssl, &ssl->certHashes);
+        }
 
         return ret;
     }

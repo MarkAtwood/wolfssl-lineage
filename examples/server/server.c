@@ -46,7 +46,13 @@ THREAD_RETURN CYASSL_API server_test(void* args)
 #endif
     ctx    = SSL_CTX_new(method);
 
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
+
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
+        err_sys("can't load ca file");
+
+    /* for client auth */
+    if (SSL_CTX_load_verify_locations(ctx, cliCert, 0) != SSL_SUCCESS)
         err_sys("can't load ca file");
 
     if (SSL_CTX_use_certificate_file(ctx, svrCert, SSL_FILETYPE_PEM)
