@@ -122,7 +122,8 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->verifyPeer = 0;
     ctx->verifyNone = 0;
     ctx->failNoCert = 0;
-    ctx->sessionCacheOff = 0;  /* initially on */
+    ctx->sessionCacheOff      = 0;  /* initially on */
+    ctx->sessionCacheFlushOff = 0;  /* initially on */
     ctx->sendVerify = 0;
 }
 
@@ -182,6 +183,7 @@ void InitSuites(Suites* suites, ProtocolVersion pv)
 
 int InitSSL(SSL* ssl, SSL_CTX* ctx)
 {
+    ssl->ctx     = ctx; /* only for passing to calls, options could change */
     ssl->version = ctx->method->version;
     ssl->suites  = ctx->suites;
     ssl->socket  = INVALID_SOCKET;
@@ -211,7 +213,8 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->options.acceptState  = ACCEPT_BEGIN; 
 
     ssl->keys.encryptionOn = 0;     /* initially off */
-    ssl->options.sessionCacheOff = ctx->sessionCacheOff;
+    ssl->options.sessionCacheOff      = ctx->sessionCacheOff;
+    ssl->options.sessionCacheFlushOff = ctx->sessionCacheFlushOff;
 
     ssl->options.verifyPeer = ctx->verifyPeer;
     ssl->options.verifyNone = ctx->verifyNone;

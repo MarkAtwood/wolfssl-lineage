@@ -247,6 +247,9 @@ long SSL_CTX_set_session_cache_mode(SSL_CTX* ctx, long mode)
     if (mode == SSL_SESS_CACHE_OFF)
         ctx->sessionCacheOff = 1;
 
+    if (mode == SSL_SESS_CACHE_NO_AUTO_CLEAR)
+        ctx->sessionCacheFlushOff = 1;
+
     return SSL_SUCCESS;
 }
 
@@ -684,6 +687,31 @@ void FreeCyaSSL(void)
 }
 
 
+void SSL_flush_sessions(SSL_CTX *ctx, long tm)
+{
+    SSL_SESSION* next;
+    SSL_SESSION* tmpSessions = 0;  /* new flushed list */
+    word32       current = LowResTimer();
+
+    LockMutex(&mutex);
+
+    next = sessions;
+    while( (sessions = next) ) {
+        next = sessions->next;
+
+        if (current < (sessions->bornOn + sessions->timeout)) {
+            sessions->next = tmpSessions;
+            tmpSessions = sessions;
+        }
+        else
+            free(sessions);
+    }
+    sessions = tmpSessions;
+
+    UnLockMutex(&mutex);
+}
+
+
 SSL_SESSION* GetSession(SSL* ssl)
 {
     SSL_SESSION* current, *ret = 0;
@@ -727,6 +755,7 @@ int SetSession(SSL* ssl, SSL_SESSION* session)
 
 void AddSession(SSL* ssl)
 {
+    static int sessCount = 0;
     SSL_SESSION* sess;
 
     if (ssl->options.sessionCacheOff)
@@ -746,6 +775,13 @@ void AddSession(SSL* ssl)
         sessions   = sess;
 
         UnLockMutex(&mutex);
+
+        sessCount++;  /* don't worry about sync, rough estimate */
+        if (sessCount > SESSION_FLUSH_COUNT) {
+            if (!ssl->options.sessionCacheFlushOff)
+                SSL_flush_sessions(ssl->ctx, 0);
+            sessCount = 0;
+        }
     }
 }
 

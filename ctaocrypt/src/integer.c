@@ -21,7 +21,7 @@
 
 /*
  * Based on public domain LibTomMath 0.38 by Tom St Denis, tomstdenis@iahu.ca,
- * http://math.libtomcrypt.org
+ * http://math.libtomcrypt.com
  */
 
 

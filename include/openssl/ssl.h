@@ -84,6 +84,7 @@ int  SSL_get_error(SSL*, int);
 
 int          SSL_set_session(SSL *ssl, SSL_SESSION *session);
 SSL_SESSION* SSL_get_session(SSL* ssl);
+void         SSL_flush_sessions(SSL_CTX *ctx, long tm);
 
 
 typedef int (*VerifyCallback)(int, X509_STORE_CTX*);

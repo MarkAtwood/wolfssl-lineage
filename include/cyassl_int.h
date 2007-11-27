@@ -158,6 +158,7 @@ enum Misc {
     MAX_PRF_LABSEED     = 80,  /* Maximum label + seed len */
     MAX_PRF_DIG         = 148, /* Maximum digest len      */
     MAX_REQUEST_SZ      = 256, /* Maximum cert req len (no auth yet */
+    SESSION_FLUSH_COUNT = 256, /* Flush session cache unless user turns off */ 
 
     RC4_KEY_SIZE        = 16,  /* always 128bit           */
     DES3_KEY_SIZE       = 24,  /* 3 des ede               */
@@ -257,6 +258,7 @@ struct SSL_CTX {
     byte        verifyNone;
     byte        failNoCert;
     byte        sessionCacheOff;
+    byte        sessionCacheFlushOff;
     byte        sendVerify;       /* for client side */
 };
 
@@ -428,6 +430,7 @@ typedef struct WriteBuffer {
 
 typedef struct Options {
     byte            sessionCacheOff;
+    byte            sessionCacheFlushOff;
     byte            cipherSuite;
     byte            serverState;
     byte            clientState;
@@ -459,6 +462,7 @@ typedef struct Arrays {
 
 /* OpenSSL ssl type */
 struct SSL {
+    SSL_CTX*        ctx;
     int             error;
     ProtocolVersion version;            /* negotiated version */
     ProtocolVersion chVersion;          /* client hello version */
