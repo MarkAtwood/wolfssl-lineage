@@ -592,21 +592,19 @@ word32 CertDecoder::GetAlgoId()
     while(length--)
         oid += source_.next();        // just sum it up for now
 
-    if (oid != SHAwDSA && oid != DSAk) {
-        b = source_.next();               // should have NULL tag and 0
-
-        if (b != TAG_NULL) {
-            source_.SetError(TAG_NULL_E);
-            return 0;
-        }
-
+    // could have NULL tag and 0 terminator, but may not
+    b = source_.next();
+    if (b == TAG_NULL) {
         b = source_.next();
         if (b != 0) {
             source_.SetError(EXPECT_0_E);
             return 0;
         }
     }
- 
+    else
+        // go back, didn't have it
+        b = source_.prev();
+
     return oid;
 }
 

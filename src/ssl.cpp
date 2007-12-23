@@ -454,6 +454,9 @@ long SSL_CTX_set_session_cache_mode(SSL_CTX* ctx, long mode)
     if (mode == SSL_SESS_CACHE_OFF)
         ctx->SetSessionCacheOff();
 
+    if (mode == SSL_SESS_CACHE_NO_AUTO_CLEAR)
+        ctx->SetSessionCacheFlushOff();
+
     return SSL_SUCCESS;
 }
 
@@ -497,6 +500,15 @@ long SSL_SESSION_set_timeout(SSL_SESSION* sess, long t)
 long SSL_get_default_timeout(SSL* /*ssl*/)
 {
     return DEFAULT_TIMEOUT;
+}
+
+
+void SSL_flush_sessions(SSL_CTX *ctx, long /* tm */)
+{
+    if (ctx->GetSessionCacheOff())
+        return;
+
+    GetSessions().Flush();
 }
 
 
