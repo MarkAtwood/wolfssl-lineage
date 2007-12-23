@@ -276,12 +276,14 @@ class Sessions {
     STL::list<SSL_SESSION*> list_;
     RandomPool random_;                 // for session cleaning
     Mutex      mutex_;                  // no-op for single threaded
+    int        count_;                  // flush counter
 
-    Sessions() {}                       // only GetSessions can create
+    Sessions() : count_(0) {}           // only GetSessions can create
 public: 
     SSL_SESSION* lookup(const opaque*, SSL_SESSION* copy = 0);
     void         add(const SSL&);
     void         remove(const opaque*);
+    void         Flush();
 
     ~Sessions();
 
@@ -433,6 +435,7 @@ private:
     pem_password_cb passwordCb_;
     void*           userData_;
     bool            sessionCacheOff_;
+    bool            sessionCacheFlushOff_;
     Stats           stats_;
     Mutex           mutex_;         // for Stats
 public:
@@ -447,7 +450,8 @@ public:
     const Stats&      GetStats()      const;
     pem_password_cb   GetPasswordCb() const;
           void*       GetUserData()   const;
-          bool        GetSessionCacheOff() const;
+          bool        GetSessionCacheOff()      const;
+          bool        GetSessionCacheFlushOff() const;
 
     void setVerifyPeer();
     void setVerifyNone();
@@ -457,6 +461,7 @@ public:
     void SetPasswordCb(pem_password_cb cb);
     void SetUserData(void*);
     void SetSessionCacheOff();
+    void SetSessionCacheFlushOff();
    
     void            IncrementStats(StatsField);
     void            AddCA(x509* ca);

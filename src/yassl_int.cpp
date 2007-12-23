@@ -1573,13 +1573,19 @@ Errors& GetErrors()
 
 typedef Mutex::Lock Lock;
 
+
  
 void Sessions::add(const SSL& ssl) 
 {
     if (ssl.getSecurity().get_connection().sessionID_Set_) {
         Lock guard(mutex_);
         list_.push_back(NEW_YS SSL_SESSION(ssl, random_));
+        count_++;
     }
+
+    if (count_ > SESSION_FLUSH_COUNT)
+        if (!ssl.getSecurity().GetContext()->GetSessionCacheFlushOff())
+            Flush();
 }
 
 
@@ -1665,6 +1671,25 @@ void Sessions::remove(const opaque* id)
         del_ptr_zero()(*find);
         list_.erase(find);
     }
+}
+
+
+// flush expired sessions from cache 
+void Sessions::Flush()
+{
+    Lock guard(mutex_);
+    sess_iterator next = list_.begin();
+    uint current = lowResTimer();
+
+    while (next != list_.end()) {
+        sess_iterator si = next;
+        ++next;
+        if ( ((*si)->GetBornOn() + (*si)->GetTimeOut()) < current) {
+            del_ptr_zero()(*si);
+            list_.erase(si);
+        }
+    }
+    count_ = 0;  // reset flush counter
 }
 
 
@@ -1772,7 +1797,7 @@ bool SSL_METHOD::multipleProtocol() const
 
 SSL_CTX::SSL_CTX(SSL_METHOD* meth) 
     : method_(meth), certificate_(0), privateKey_(0), passwordCb_(0),
-      userData_(0), sessionCacheOff_(false)
+      userData_(0), sessionCacheOff_(false), sessionCacheFlushOff_(false)
 {}
 
 
@@ -1859,6 +1884,12 @@ bool SSL_CTX::GetSessionCacheOff() const
 }
 
 
+bool SSL_CTX::GetSessionCacheFlushOff() const
+{
+    return sessionCacheFlushOff_;
+}
+
+
 void SSL_CTX::SetUserData(void* data)
 {
     userData_ = data;
@@ -1868,6 +1899,12 @@ void SSL_CTX::SetUserData(void* data)
 void SSL_CTX::SetSessionCacheOff()
 {
     sessionCacheOff_ = true;
+}
+
+
+void SSL_CTX::SetSessionCacheFlushOff()
+{
+    sessionCacheFlushOff_ = true;
 }
 
 
