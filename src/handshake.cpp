@@ -536,6 +536,12 @@ void ProcessOldClientHello(input_buffer& input, SSL& ssl)
     uint16 randomLen;
     ato16(len, randomLen);
 
+    if (ch.suite_len_ > MAX_SUITE_SZ || sessionLen > ID_LEN ||
+                                        randomLen > RAN_LEN) {
+        ssl.SetError(bad_input);
+        return;
+    }
+
     int j = 0;
     for (uint16 i = 0; i < ch.suite_len_; i += 3) {    
         byte first = input[AUTO];
