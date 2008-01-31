@@ -354,17 +354,18 @@ static int GetAlgoId(DecodedCert* cert, word32* oid)
         *oid += cert->source[cert->srcIdx++];
         /* just sum it up for now */
 
-    if (*oid != SHAwDSA && *oid != DSAk) {
-        b = cert->source[cert->srcIdx++];     /* should have NULL tag and 0 */
+    /* could have NULL tag and 0 terminator, but may not */
+    b = cert->source[cert->srcIdx++];
 
-        if (b != ASN_TAG_NULL) 
-            return ASN_TAG_NULL_E;
-
-        b = cert->source[cert->srcIdx++];   
+    if (b == ASN_TAG_NULL) {
+        b = cert->source[cert->srcIdx++];
         if (b != 0) 
             return ASN_EXPECT_0_E;
     }
- 
+    else
+        /* go back, didn't have it */
+        cert->srcIdx--;
+
     return 0;
 }
 
