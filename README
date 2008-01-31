@@ -1,3 +1,13 @@
+*****************yaSSL Release notes, version 1.8.6 (1/31/08)
+
+    This release of yaSSL contains bug fixes, and fixes security problems
+    associated with using SSL 2.0 client hellos and improper input handling.
+    Please upgrade to this version if you are using a previous one. 
+
+See normal  build instructions below under 1.0.6.
+See libcurl build instructions below under 1.3.0 and note in 1.5.8.
+
+
 *****************yaSSL Release notes, version 1.7.5 (10/15/07)
 
     This release of yaSSL contains bug fixes, adds MSVC 2005 project support,
@@ -545,7 +555,7 @@ in the source and include files.
 *********************
 
 Contact: please send comments or questions to Todd A Ouska at todd@yassl.com
-and/or Larry Stefonic at larry@yassl.com or 425-741-6858.
+and/or Larry Stefonic at larry@yassl.com.
 
 
 
