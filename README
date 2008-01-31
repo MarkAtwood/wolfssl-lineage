@@ -1,4 +1,12 @@
-CyaSSL version 0.9.0 (10/15/2007) 
+CyaSSL version 0.9.6 (1/31/2008) 
+
+This release of CyaSSL adds bug fixes, increased session management, and a fix
+for gnutls.
+
+See notes below (0.2.0) for complete build instructions.
+
+
+****************CyaSSL version 0.9.0 (10/15/2007) 
 
 This release of CyaSSL adds bug fixes, MSVC 2005 support, GCC 4.2 support, 
 IPV6 support and test, and new test certificates.
