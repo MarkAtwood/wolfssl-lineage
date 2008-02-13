@@ -33,8 +33,6 @@
 #endif
 
 
-#define NO_DH   /* remove for now */
-#define NO_DSA  /* remove for now */
 
 
 enum {
@@ -233,6 +231,33 @@ int DhKeyDecode(const byte* input, word32* inOutIdx, DhKey* key, word32 inSz)
 
     return 0;
 }
+
+int DhSetKey(DhKey* key, const byte* p, word32 pSz, const byte* g, word32 gSz)
+{
+    /* may have leading 0 */
+    if (p[0] == 0) {
+        pSz--; p++;
+    }
+
+    if (g[0] == 0) {
+        gSz--; g++;
+    }
+
+    mp_init(&key->p);
+    if (mp_read_unsigned_bin(&key->p, p, pSz) != 0) {
+        mp_clear(&key->p);
+        return ASN_DH_KEY_E;
+    }
+
+    mp_init(&key->g);
+    if (mp_read_unsigned_bin(&key->g, g, gSz) != 0) {
+        mp_clear(&key->p);
+        return ASN_DH_KEY_E;
+    }
+
+    return 0;
+}
+
 
 #endif /* NO_DH */
 

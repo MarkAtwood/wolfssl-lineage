@@ -50,6 +50,7 @@ void client_test(void* args)
     char**  argv = ((func_args*)args)->argv;
 
     ((func_args*)args)->return_code = -1; /* error state */
+
 #ifndef NO_TLS
     method  = TLSv1_client_method();
 #else

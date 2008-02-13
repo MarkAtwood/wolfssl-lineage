@@ -909,9 +909,9 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
     int EVP_DigestUpdate(EVP_MD_CTX* ctx, const void* data, size_t sz)
     {
         if (ctx->macType == MD5) 
-            MD5_Update((MD5_CTX*)&ctx->hash, data, sz);
+            MD5_Update((MD5_CTX*)&ctx->hash, data, (unsigned long)sz);
         else if (ctx->macType == SHA) 
-            SHA_Update((SHA_CTX*)&ctx->hash, data, sz);
+            SHA_Update((SHA_CTX*)&ctx->hash, data, (unsigned long)sz);
         else
             return -1;
 

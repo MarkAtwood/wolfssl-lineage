@@ -147,6 +147,7 @@ int RsaPublicKeyDecode(const byte* input, word32* inOutIdx, RsaKey*, word32);
 
 #ifndef NO_DH
 int DhKeyDecode(const byte* input, word32* inOutIdx, DhKey* key, word32);
+int DhSetKey(DhKey* key, const byte* p, word32 pSz, const byte* g, word32 gSz);
 #endif
 
 #ifndef NO_DSA

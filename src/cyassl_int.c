@@ -46,6 +46,9 @@
     #include <sys/filio.h>
 #endif
 
+#define TRUE  1
+#define FALSE 0
+
 
 #ifdef _WIN32
     const int SOCKET_EINVAL = WSAEINVAL;
@@ -115,10 +118,11 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->method = method;
     ctx->certificate.buffer = 0;
     ctx->privateKey.buffer  = 0;
+    ctx->haveDH             = 0;
 
     ctx->caList = 0;
-    InitSuites(&ctx->suites, method->version);
-
+    InitSuites(&ctx->suites, method->version, TRUE);  /* remove DH later if
+                                                         server didn't set */
     ctx->verifyPeer = 0;
     ctx->verifyNone = 0;
     ctx->failNoCert = 0;
@@ -140,13 +144,28 @@ void FreeSSL_Ctx(SSL_CTX* ctx)
 }
 
 
-void InitSuites(Suites* suites, ProtocolVersion pv)
+void InitSuites(Suites* suites, ProtocolVersion pv, byte haveDH)
 {
     word32 idx = 0;
     int    tls = pv.major == 3 && pv.minor >= 1;
+
     (void)tls;  /* shut up compiler */
 
     suites->setSuites = 0;  /* user hasn't set yet */
+
+#ifdef BUILD_TLS_DHE_RSA_WITH_AES_256_CBC_SHA
+    if (tls && haveDH) {
+        suites->suites[idx++] = 0; 
+        suites->suites[idx++] = TLS_DHE_RSA_WITH_AES_256_CBC_SHA;
+    }
+#endif
+
+#ifdef BUILD_TLS_DHE_RSA_WITH_AES_128_CBC_SHA
+    if (tls && haveDH) {
+        suites->suites[idx++] = 0; 
+        suites->suites[idx++] = TLS_DHE_RSA_WITH_AES_128_CBC_SHA;
+    }
+#endif
 
 #ifdef BUILD_TLS_RSA_WITH_AES_256_CBC_SHA
     if (tls) {
@@ -195,6 +214,10 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->buffers.bufferedData.buffer  = 0;
     ssl->buffers.bufferedInput.buffer = 0;
     ssl->buffers.domainName.buffer    = 0;
+    ssl->buffers.serverDH_P.buffer    = 0;
+    ssl->buffers.serverDH_G.buffer    = 0;
+    ssl->buffers.serverDH_Pub.buffer  = 0;
+    ssl->buffers.serverDH_Priv.buffer = 0;
     ssl->writeBuffer.send.buffer      = 0;
 
     InitRng(&ssl->rng);
@@ -206,6 +229,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->options.isNonBlocking = 0;  /* clear win32 non-blocking flag */
     ssl->options.connReset = 0;
     ssl->options.isClosed  = 0;
+    ssl->options.haveDH    = ctx->haveDH;
 
     ssl->options.serverState = NULL_STATE;
     ssl->options.clientState = NULL_STATE;
@@ -231,12 +255,20 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->buffers.key = ctx->privateKey;
     ssl->caList = ctx->caList;
 
+    /* make sure server has DH parms */
+    if (ssl->options.side == SERVER_END && !ssl->options.haveDH) 
+        InitSuites(&ssl->suites, ssl->version, FALSE);
+
     return 0;
 }
 
 
 void FreeSSL(SSL* ssl)
 {
+    free(ssl->buffers.serverDH_Priv.buffer);
+    free(ssl->buffers.serverDH_Pub.buffer);
+    free(ssl->buffers.serverDH_G.buffer);
+    free(ssl->buffers.serverDH_P.buffer);
     free(ssl->buffers.domainName.buffer);
     free(ssl->buffers.bufferedInput.buffer);
     free(ssl->buffers.bufferedData.buffer);
@@ -1843,6 +1875,14 @@ void SetErrorString(int error, char* buffer)
         strncpy(buffer, "malformed buffer input error", max);
         break;
 
+    case VERIFY_CERT_ERROR :
+        strncpy(buffer, "verify problem on certificate", max);
+        break;
+
+    case VERIFY_SIGN_ERROR :
+        strncpy(buffer, "verify problem based on signature", max);
+        break;
+
     default :
         strncpy(buffer, "unknown error number", max);
     }
@@ -1875,6 +1915,14 @@ const char* const cipher_names[] =
     "AES256-SHA",
 #endif
 
+#ifdef BUILD_TLS_DHE_RSA_WITH_AES_128_CBC_SHA
+    "DHE-RSA-AES128-SHA",
+#endif
+
+#ifdef BUILD_TLS_DHE_RSA_WITH_AES_256_CBC_SHA
+    "DHE-RSA-AES256-SHA",
+#endif
+
 };
 
 
@@ -1901,6 +1949,14 @@ int cipher_name_idx[] =
 
 #ifdef BUILD_TLS_RSA_WITH_AES_256_CBC_SHA
     TLS_RSA_WITH_AES_256_CBC_SHA,
+#endif
+
+#ifdef BUILD_TLS_DHE_RSA_WITH_AES_128_CBC_SHA
+    TLS_DHE_RSA_WITH_AES_128_CBC_SHA,    
+#endif
+
+#ifdef BUILD_TLS_DHE_RSA_WITH_AES_256_CBC_SHA
+    TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
 #endif
 
 };
@@ -2119,9 +2175,117 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     static int DoServerKeyExchange(SSL* ssl, const byte* input, word32*
                                    inOutIdx)
     {
+    #ifdef OPENSSL_EXTRA
+        word16 length, verifySz, messageTotal = 6;  /* pSz + gSz + pubSz */
+        byte   tmp[2];
+        byte   messageVerify[MAX_DH_SZ];
+        byte   signature[ENCRYPT_LEN];
+        byte   hash[FINISHED_SZ];
+        Md5    md5;
+        Sha    sha;
 
+        /* p */
+        tmp[0] = input[(*inOutIdx)++];
+        tmp[1] = input[(*inOutIdx)++];
+        ato16(tmp, &length);
+        messageTotal += length;
 
-        return -1;  /* not supported yet TODO: */
+        ssl->buffers.serverDH_P.buffer = (byte*) malloc(length);
+        if (ssl->buffers.serverDH_P.buffer)
+            ssl->buffers.serverDH_P.length = length;
+        else
+            return MEMORY_ERROR;
+        memcpy(ssl->buffers.serverDH_P.buffer, &input[*inOutIdx], length);
+        *inOutIdx += length;
+
+        /* g */
+        tmp[0] = input[(*inOutIdx)++];
+        tmp[1] = input[(*inOutIdx)++];
+        ato16(tmp, &length);
+        messageTotal += length;
+
+        ssl->buffers.serverDH_G.buffer = (byte*) malloc(length);
+        if (ssl->buffers.serverDH_G.buffer)
+            ssl->buffers.serverDH_G.length = length;
+        else
+            return MEMORY_ERROR;
+        memcpy(ssl->buffers.serverDH_G.buffer, &input[*inOutIdx], length);
+        *inOutIdx += length;
+
+        /* pub */
+        tmp[0] = input[(*inOutIdx)++];
+        tmp[1] = input[(*inOutIdx)++];
+        ato16(tmp, &length);
+        messageTotal += length;
+
+        ssl->buffers.serverDH_Pub.buffer = (byte*) malloc(length);
+        if (ssl->buffers.serverDH_Pub.buffer)
+            ssl->buffers.serverDH_Pub.length = length;
+        else
+            return MEMORY_ERROR;
+        memcpy(ssl->buffers.serverDH_Pub.buffer, &input[*inOutIdx], length);
+        *inOutIdx += length;
+
+        /* save message for hash verify */
+        if (messageTotal > sizeof(messageVerify))
+            return BUFFER_ERROR;
+        memcpy(messageVerify, &input[*inOutIdx - messageTotal], messageTotal);
+        verifySz = messageTotal;
+
+        /* signature */
+        tmp[0] = input[(*inOutIdx)++];
+        tmp[1] = input[(*inOutIdx)++];
+        ato16(tmp, &length);
+
+        memcpy(signature, &input[*inOutIdx], length);
+        *inOutIdx += length;
+
+        /* verify signature */
+
+        /* md5 */
+        InitMd5(&md5);
+        Md5Update(&md5, ssl->arrays.clientRandom, RAN_LEN);
+        Md5Update(&md5, ssl->arrays.serverRandom, RAN_LEN);
+        Md5Update(&md5, messageVerify, verifySz);
+        Md5Final(&md5, hash);
+
+        /* sha */
+        InitSha(&sha);
+        ShaUpdate(&sha, ssl->arrays.clientRandom, RAN_LEN);
+        ShaUpdate(&sha, ssl->arrays.serverRandom, RAN_LEN);
+        ShaUpdate(&sha, messageVerify, verifySz);
+        ShaFinal(&sha, &hash[MD5_DIGEST_SIZE]);
+
+        /* rsa for now */
+        {
+            RsaKey key;
+            int    ret;
+            word32 idx = 0;
+            byte   tmp[ENCRYPT_LEN];
+
+            InitRsaKey(&key);
+            if (ssl->buffers.peerKey.buffer)
+                ret = RsaPublicKeyDecode(ssl->buffers.peerKey.buffer, &idx,
+                                         &key, ssl->buffers.peerKey.length);
+            else
+                return NO_PEER_KEY;
+
+            if (ret == 0) {
+                ret = RsaSSL_Verify(signature, length, tmp, sizeof(tmp), &key);
+
+                if (ret != sizeof(hash) || memcmp(tmp, hash, sizeof(hash)))
+                    return VERIFY_SIGN_ERROR;
+            }
+            else
+                return ret;
+        }
+
+        ssl->options.serverState = SERVER_KEYEXCHANGE_COMPLETE;
+
+        return 0;
+    #else
+        return -1;  /* not supported by build */
+    #endif       
     }
 
 
@@ -2129,76 +2293,104 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     {
         byte   encSecret[ENCRYPT_LEN];
         word32 encSz;
-        RsaKey key;
         word32 idx = 0;
         int    ret = 0;
 
-        /* RSA for now */
-        RNG_GenerateBlock(&ssl->rng, ssl->arrays.preMasterSecret, SECRET_LEN);
-        ssl->arrays.preMasterSecret[0] = ssl->chVersion.major;
-        ssl->arrays.preMasterSecret[1] = ssl->chVersion.minor;
-        InitRsaKey(&key);
+        if (ssl->specs.kea == rsa_kea) {
+            RsaKey key;
+            RNG_GenerateBlock(&ssl->rng, ssl->arrays.preMasterSecret,
+                              SECRET_LEN);
+            ssl->arrays.preMasterSecret[0] = ssl->chVersion.major;
+            ssl->arrays.preMasterSecret[1] = ssl->chVersion.minor;
+            ssl->arrays.preMasterSz = SECRET_LEN;
+            InitRsaKey(&key);
 
-        if (ssl->buffers.peerKey.buffer)
-            ret = RsaPublicKeyDecode(ssl->buffers.peerKey.buffer, &idx, &key,
-                                     ssl->buffers.peerKey.length);
-        else
-            return NO_PEER_KEY;
+            if (ssl->buffers.peerKey.buffer)
+                ret = RsaPublicKeyDecode(ssl->buffers.peerKey.buffer, &idx,&key,
+                                         ssl->buffers.peerKey.length);
+            else
+                return NO_PEER_KEY;
 
-        if (ret == 0) {
-            ret = RsaPublicEncrypt(ssl->arrays.preMasterSecret, SECRET_LEN,
-                                encSecret, sizeof(encSecret), &key, &ssl->rng);
-            /* success */
-            if (ret > 0) {
-                byte              output[sizeof(encSecret) + MAX_MSG_EXTRA];
-                byte              alen[BYTE3_LEN];
-                int               sendSz;
-                RecordLayerHeader rl;
-                HandShakeHeader   hs;
-                word32            tlsSz = ssl->options.tls ? 2 : 0;
-
-                encSz = ret;
-                ret   = 0;
-                idx   = 0;
-
-                /* handshake header */
-                hs.type = client_key_exchange;
-                c32to24(encSz + tlsSz, alen);
-                memcpy(&hs.length, alen, sizeof(hs.length));
-
-                /* record layer header */
-                rl.type    = handshake;
-                rl.version = ssl->version;
-                c16toa((word16)(encSz + tlsSz + HANDSHAKE_HEADER_SZ), alen);
-                memcpy(&rl.length, alen, sizeof(rl.length));
-
-                /* now write to output */
-                memcpy(output, &rl, RECORD_HEADER_SZ);
-                idx += RECORD_HEADER_SZ;
-                memcpy(output + idx, &hs, HANDSHAKE_HEADER_SZ);
-                idx += HANDSHAKE_HEADER_SZ;
-                if (tlsSz) {
-                    c16toa((word16)encSz, alen);
-                    output[idx++] = alen[0];
-                    output[idx++] = alen[1];
+            if (ret == 0)  {
+                ret = RsaPublicEncrypt(ssl->arrays.preMasterSecret, SECRET_LEN,
+                                 encSecret, sizeof(encSecret), &key, &ssl->rng);
+                if (ret > 0) {
+                    encSz = ret;
+                    ret = 0;   /* set success to 0 */
                 }
-                memcpy(output + idx, encSecret, encSz);
-                idx += encSz;
-
-                sendSz = encSz + tlsSz + HANDSHAKE_HEADER_SZ +RECORD_HEADER_SZ;
-                HashOutput(ssl, output, sendSz, 0);
-
-                ret = SendWrapper(ssl, output, sendSz, COPY);
             }
-        }
+            FreeRsaKey(&key);
+        } else {                /* diffie-hellman */
+            buffer  serverP   = ssl->buffers.serverDH_P;
+            buffer  serverG   = ssl->buffers.serverDH_G;
+            buffer  serverPub = ssl->buffers.serverDH_Pub;
+            byte    priv[ENCRYPT_LEN];
+            word32  privSz;
+            DhKey   key;
 
+            InitDhKey(&key);
+            ret = DhSetKey(&key, serverP.buffer, serverP.length,
+                           serverG.buffer, serverG.length);
+            if (ret == 0)
+                /* for DH, encSecret is Yc, agree is pre-master */
+                ret = DhGenerateKeyPair(&key, &ssl->rng, priv, &privSz,
+                                        encSecret, &encSz);
+            if (ret == 0)
+                ret = DhAgree(&key, ssl->arrays.preMasterSecret,
+                              &ssl->arrays.preMasterSz, priv, privSz,
+                              serverPub.buffer, serverPub.length);
+            FreeDhKey(&key);
+        }
+           
+        if (ret == 0) {
+            byte              output[ENCRYPT_LEN + MAX_MSG_EXTRA];
+            byte              alen[BYTE3_LEN];
+            int               sendSz;
+            RecordLayerHeader rl;
+            HandShakeHeader   hs;
+            word32            tlsSz = 0;
+            
+            if (ssl->options.tls || ssl->specs.kea == diffie_hellman_kea)
+                tlsSz = 2;
+
+            idx = 0;
+
+            /* handshake header */
+            hs.type = client_key_exchange;
+            c32to24(encSz + tlsSz, alen);
+            memcpy(&hs.length, alen, sizeof(hs.length));
+
+            /* record layer header */
+            rl.type    = handshake;
+            rl.version = ssl->version;
+            c16toa((word16)(encSz + tlsSz + HANDSHAKE_HEADER_SZ), alen);
+            memcpy(&rl.length, alen, sizeof(rl.length));
+
+            /* now write to output */
+            memcpy(output, &rl, RECORD_HEADER_SZ);
+            idx += RECORD_HEADER_SZ;
+            memcpy(output + idx, &hs, HANDSHAKE_HEADER_SZ);
+            idx += HANDSHAKE_HEADER_SZ;
+            if (tlsSz) {
+                c16toa((word16)encSz, alen);
+                output[idx++] = alen[0];
+                output[idx++] = alen[1];
+            }
+            memcpy(output + idx, encSecret, encSz);
+            idx += encSz;
+
+            sendSz = encSz + tlsSz + HANDSHAKE_HEADER_SZ +RECORD_HEADER_SZ;
+            HashOutput(ssl, output, sendSz, 0);
+
+            ret = SendWrapper(ssl, output, sendSz, COPY);
+        }
+    
         if (ret == 0 || ret == WANT_WRITE) {
             int tmpRet = MakeMasterSecret(ssl);
             if (tmpRet != 0)
                 ret = tmpRet;   /* save WANT_WRITE unless more serious */
             ssl->options.clientState = CLIENT_KEYEXCHANGE_COMPLETE;
         }
-        FreeRsaKey(&key);
 
         return ret;
     }
@@ -2390,7 +2582,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             ssl->options.tls    = 0;
             ssl->options.tls1_1 = 0;
             ssl->version.minor  = 0;
-            InitSuites(&ssl->suites, ssl->version);
+            InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH);
         }
 
         /* suite size */
@@ -2486,7 +2678,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             ssl->options.tls    = 0;
             ssl->options.tls1_1 = 0;
             ssl->version.minor  = 0;
-            InitSuites(&ssl->suites, ssl->version);
+            InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH);
         }
         memcpy(ssl->arrays.clientRandom, input + i, RAN_LEN);
         i += RAN_LEN;
@@ -2646,6 +2838,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
         if (ret == 0) {
             length = RsaEncryptSize(&key);
+            ssl->arrays.preMasterSz = SECRET_LEN;
             tmp = (byte*) malloc(length);
             if (!tmp) return MEMORY_ERROR;
 

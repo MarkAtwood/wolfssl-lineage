@@ -15,6 +15,8 @@
 #include "des3.h"
 #include "aes.h"
 #include "hmac.h"
+#include "dh.h"
+#include "dsa.h"
 
 #ifdef _MSC_VER
     // 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy
@@ -28,13 +30,7 @@
     #include "../../include/openssl/des.h"
 #endif
 
-/*
-#include "dh.h"
-#include "dsa.h"
-*/
 
-#define NO_DH  /* remove for now */
-#define NO_DSA /* remove for now */
 
 
 typedef struct testVector {
@@ -63,7 +59,7 @@ int PemToDer(const char* inName, const char* outName);
 
 void err_sys(const char* msg, int es)
 {
-    printf("%s", msg);
+    printf("%s error = %d\n", msg, es);
     exit(es);    
 }
 
@@ -701,7 +697,7 @@ int rsa_test()
 int dh_test()
 {
     int    ret;
-    size_t bytes;
+    word32 bytes;
     word32 idx = 0, privSz, pubSz, privSz2, pubSz2, agreeSz, agreeSz2;
     byte   tmp[1024];
     byte   priv[128];
@@ -718,30 +714,35 @@ int dh_test()
     if (!file)
         return -50;
 
-    bytes = fread(tmp, 1, 1024, file);
+    bytes = (word32) fread(tmp, 1, 1024, file);
 
     InitDhKey(&key);  
     InitDhKey(&key2);  
     ret = DhKeyDecode(tmp, &idx, &key, bytes);
-    if (ret != 0) return -51;
+    if (ret != 0)
+        return -51;
 
     idx = 0;
     ret = DhKeyDecode(tmp, &idx, &key2, bytes);
-    if (ret != 0) return -52;
+    if (ret != 0)
+        return -52;
 
     ret = InitRng(&rng);
-    if (ret != 0) return -53;
+    if (ret != 0)
+        return -53;
     
     ret = DhGenerateKeyPair(&key, &rng, priv, &privSz, pub, &pubSz);
     ret = DhGenerateKeyPair(&key2, &rng, priv2, &privSz2, pub2, &pubSz2);
-    if (ret != 0) return -54;
+    if (ret != 0)
+        return -54;
 
     ret = DhAgree(&key, agree, &agreeSz, priv, privSz, pub2, pubSz2);
     ret = DhAgree(&key, agree2, &agreeSz2, priv2, privSz2, pub, pubSz);
-    if (ret != 0) return -55;
+    if (ret != 0)
+        return -55;
 
-    if (memcmp(agree, agree2, sizeof(agree)))
-        return - 56;
+    if (memcmp(agree, agree2, agreeSz))
+        return -56;
 
     FreeDhKey(&key);
     FreeDhKey(&key2);
@@ -764,7 +765,7 @@ int dh_test()
 int dsa_test()
 {
     int    ret, answer;
-    size_t bytes;
+    word32 bytes;
     word32 idx = 0;
     byte   tmp[1024];
     DsaKey key;
@@ -777,7 +778,7 @@ int dsa_test()
     if (!file)
         return -60;
 
-    bytes = fread(tmp, 1, sizeof(tmp), file);
+    bytes = (word32) fread(tmp, 1, sizeof(tmp), file);
   
     InitSha(&sha);
     ShaUpdate(&sha, tmp, bytes);

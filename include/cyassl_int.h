@@ -76,7 +76,12 @@ typedef byte word24[3];
 
 #if !defined(NO_AES) && !defined(NO_TLS)
     #define BUILD_TLS_RSA_WITH_AES_128_CBC_SHA
-    #define BUILD_TLS_RSA_WITH_AES_256_CBC_SHA
+    #define BUILD_TLS_RSA_WITH_AES_128_CBC_SHA
+#endif
+
+#if !defined(NO_DH) && !defined(NO_AES) && !defined(NO_TLS) && defined(OPENSSL_EXTRA)
+    #define BUILD_TLS_DHE_RSA_WITH_AES_128_CBC_SHA
+    #define BUILD_TLS_DHE_RSA_WITH_AES_256_CBC_SHA
 #endif
 
 
@@ -107,11 +112,13 @@ typedef byte word24[3];
 
 /* actual cipher values, 2nd byte */
 enum {
-    TLS_RSA_WITH_AES_256_CBC_SHA  = 0x35,
-    TLS_RSA_WITH_AES_128_CBC_SHA  = 0x2F,
-    SSL_RSA_WITH_RC4_128_SHA      = 0x05,
-    SSL_RSA_WITH_RC4_128_MD5      = 0x04,
-    SSL_RSA_WITH_3DES_EDE_CBC_SHA = 0x0A
+    TLS_DHE_RSA_WITH_AES_256_CBC_SHA  = 0x39,
+    TLS_DHE_RSA_WITH_AES_128_CBC_SHA  = 0x33,
+    TLS_RSA_WITH_AES_256_CBC_SHA      = 0x35,
+    TLS_RSA_WITH_AES_128_CBC_SHA      = 0x2F,
+    SSL_RSA_WITH_RC4_128_SHA          = 0x05,
+    SSL_RSA_WITH_RC4_128_MD5          = 0x04,
+    SSL_RSA_WITH_3DES_EDE_CBC_SHA     = 0x0A
 };
 
 
@@ -126,6 +133,7 @@ enum Misc {
     FINISHED_SZ     = MD5_DIGEST_SIZE + SHA_DIGEST_SIZE,
     MAX_RECORD_SIZE = 16384,    /* 2^14, max size by standard */
     MAX_MSG_EXTRA   = 68,       /* max added to msg, mac + pad */
+    MAX_DH_SZ       = 266,      /* 1024 p, pub, g + 2 byte size for each */
 
     PAD_MD5        = 48,       /* pad length for finished */
     PAD_SHA        = 40,       /* pad length for finished */
@@ -154,7 +162,7 @@ enum Misc {
     TLS_FINISHED_SZ     = 12,  /* TLS has a shorter size  */
     MASTER_LABEL_SZ     = 13,  /* TLS master secret label sz */
     KEY_LABEL_SZ        = 13,  /* TLS key block expansion sz */
-    MAX_PRF_HALF        = 48,  /* Maximum half secret len */
+    MAX_PRF_HALF        = 128, /* Maximum half secret len */
     MAX_PRF_LABSEED     = 80,  /* Maximum label + seed len */
     MAX_PRF_DIG         = 148, /* Maximum digest len      */
     MAX_REQUEST_SZ      = 256, /* Maximum cert req len (no auth yet */
@@ -243,7 +251,7 @@ typedef struct Suites {
 } Suites;
 
 
-void InitSuites(Suites*, ProtocolVersion);
+void InitSuites(Suites*, ProtocolVersion, byte);
 int  SetCipherList(SSL_CTX* ctx, const char* list);
 
 
@@ -260,6 +268,7 @@ struct SSL_CTX {
     byte        sessionCacheOff;
     byte        sessionCacheFlushOff;
     byte        sendVerify;       /* for client side */
+    byte        haveDH;           /* server DH parms set by user */
 };
 
 
@@ -273,6 +282,7 @@ typedef struct CipherSpecs {
     byte cipher_type;               /* block or stream */
     byte mac_algorithm;
     byte kea;                       /* key exchange algo */
+    byte sig_algo;
     byte hash_size;
     byte pad_size;
     word16 key_size;
@@ -310,6 +320,14 @@ enum KeyExchangeAlgorithm {
     rsa_kea, 
     diffie_hellman_kea, 
     fortezza_kea 
+};
+
+
+/* Supported Authentication Schemes */
+enum SignatureAlgorithm {
+    anonymous_sa_algo = 0,
+    rsa_sa_algo,
+    dsa_sa_algo
 };
 
 
@@ -416,6 +434,10 @@ typedef struct Buffers {
     buffer          bufferedData;           /* decrypted data */
     buffer          bufferedInput;          /* raw partial input */
     buffer          domainName;             /* for client check */
+    buffer          serverDH_P;
+    buffer          serverDH_G;
+    buffer          serverDH_Pub;
+    buffer          serverDH_Priv;
 } Buffers;
 
 
@@ -448,6 +470,7 @@ typedef struct Options {
     byte            isClosed;           /* if we consider conn closed */
     byte            connectState;       /* nonblocking resume */
     byte            acceptState;        /* nonblocking resume */
+    byte            haveDH;             /* server DH parms set by user */
 } Options;
 
 
@@ -455,8 +478,9 @@ typedef struct Arrays {
     byte            clientRandom[RAN_LEN];
     byte            serverRandom[RAN_LEN];
     byte            sessionID[ID_LEN];
-    byte            preMasterSecret[SECRET_LEN];
+    byte            preMasterSecret[ENCRYPT_LEN];
     byte            masterSecret[SECRET_LEN];
+    word32          preMasterSz;        /* differs for DH, actual size */
 } Arrays;
 
 

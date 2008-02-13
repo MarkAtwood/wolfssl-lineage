@@ -192,7 +192,7 @@ int MakeTlsMasterSecret(SSL* ssl)
     memcpy(&seed[RAN_LEN], ssl->arrays.serverRandom, RAN_LEN);
 
     PRF(ssl->arrays.masterSecret, SECRET_LEN,
-        ssl->arrays.preMasterSecret, SECRET_LEN,
+        ssl->arrays.preMasterSecret, ssl->arrays.preMasterSz,
         master_label, MASTER_LABEL_SZ, 
         seed, SEED_LEN);
 

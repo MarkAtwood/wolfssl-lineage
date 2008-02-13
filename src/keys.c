@@ -115,6 +115,38 @@ int SetCipherSpecs(SSL* ssl)
         break;
 #endif
 
+#ifdef BUILD_TLS_DHE_RSA_WITH_AES_128_CBC_SHA
+    case TLS_DHE_RSA_WITH_AES_128_CBC_SHA :
+        ssl->specs.bulk_cipher_algorithm = aes;
+        ssl->specs.cipher_type           = block;
+        ssl->specs.mac_algorithm         = sha_mac;
+        ssl->specs.kea                   = diffie_hellman_kea;
+        ssl->specs.sig_algo              = rsa_sa_algo;
+        ssl->specs.hash_size             = SHA_DIGEST_SIZE;
+        ssl->specs.pad_size              = PAD_SHA;
+        ssl->specs.key_size              = AES_128_KEY_SIZE;
+        ssl->specs.block_size            = AES_BLOCK_SIZE;
+        ssl->specs.iv_size               = AES_IV_SIZE;
+
+        break;
+#endif
+
+#ifdef BUILD_TLS_DHE_RSA_WITH_AES_256_CBC_SHA
+    case TLS_DHE_RSA_WITH_AES_256_CBC_SHA :
+        ssl->specs.bulk_cipher_algorithm = aes;
+        ssl->specs.cipher_type           = block;
+        ssl->specs.mac_algorithm         = sha_mac;
+        ssl->specs.kea                   = diffie_hellman_kea;
+        ssl->specs.sig_algo              = rsa_sa_algo;
+        ssl->specs.hash_size             = SHA_DIGEST_SIZE;
+        ssl->specs.pad_size              = PAD_SHA;
+        ssl->specs.key_size              = AES_256_KEY_SIZE;
+        ssl->specs.block_size            = AES_BLOCK_SIZE;
+        ssl->specs.iv_size               = AES_IV_SIZE;
+
+        break;
+#endif
+
     default:
         return UNSUPPORTED_SUITE;
     }
@@ -311,14 +343,14 @@ int DeriveKeys(SSL* ssl)
 
 void CleanPreMaster(SSL* ssl)
 {
-    int i;
+    int i, sz = ssl->arrays.preMasterSz;
 
-    for (i = 0; i < SECRET_LEN; i++)
+    for (i = 0; i < sz; i++)
         ssl->arrays.preMasterSecret[i] = 0;
 
-    RNG_GenerateBlock(&ssl->rng, ssl->arrays.preMasterSecret, SECRET_LEN);
+    RNG_GenerateBlock(&ssl->rng, ssl->arrays.preMasterSecret, sz);
 
-    for (i = 0; i < SECRET_LEN; i++)
+    for (i = 0; i < sz; i++)
         ssl->arrays.preMasterSecret[i] = 0;
 
 }
@@ -328,10 +360,11 @@ void CleanPreMaster(SSL* ssl)
 int MakeMasterSecret(SSL* ssl)
 {
     byte   shaOutput[SHA_DIGEST_SIZE];
-    byte   md5Input[SECRET_LEN + SHA_DIGEST_SIZE];
-    byte   shaInput[PREFIX + SECRET_LEN + 2 * RAN_LEN];
+    byte   md5Input[ENCRYPT_LEN + SHA_DIGEST_SIZE];
+    byte   shaInput[PREFIX + ENCRYPT_LEN + 2 * RAN_LEN];
     int    i;
     word32 idx;
+    word32 pmsSz = ssl->arrays.preMasterSz;
 
     Md5 md5;
     Sha sha;
@@ -343,7 +376,7 @@ int MakeMasterSecret(SSL* ssl)
     InitMd5(&md5);
     InitSha(&sha);
 
-    memcpy(md5Input, ssl->arrays.preMasterSecret, SECRET_LEN);
+    memcpy(md5Input, ssl->arrays.preMasterSecret, pmsSz);
 
     for (i = 0; i < MASTER_ROUNDS; ++i) {
         byte prefix[PREFIX];
@@ -355,8 +388,8 @@ int MakeMasterSecret(SSL* ssl)
         memcpy(shaInput, prefix, i + 1);
         idx += i + 1;
 
-        memcpy(shaInput + idx, ssl->arrays.preMasterSecret, SECRET_LEN);
-        idx += SECRET_LEN;
+        memcpy(shaInput + idx, ssl->arrays.preMasterSecret, pmsSz);
+        idx += pmsSz;
         memcpy(shaInput + idx, ssl->arrays.clientRandom, RAN_LEN);
         idx += RAN_LEN;
         memcpy(shaInput + idx, ssl->arrays.serverRandom, RAN_LEN);
@@ -364,7 +397,7 @@ int MakeMasterSecret(SSL* ssl)
         ShaUpdate(&sha, shaInput, idx);
         ShaFinal(&sha, shaOutput);
 
-        idx = SECRET_LEN;  /* preSz */
+        idx = pmsSz;  /* preSz */
         memcpy(md5Input + idx, shaOutput, SHA_DIGEST_SIZE);
         idx += SHA_DIGEST_SIZE;
         Md5Update(&md5, md5Input, idx);

@@ -61,7 +61,8 @@ enum CyaSSL_ErrorCodes {
     VERSION_ERROR          = -226,            /* record layer version error */
     WANT_WRITE             = -227,            /* want write, call again   */
     BUFFER_ERROR           = -228,            /* malformed buffer input   */
-    VERIFY_CERT_ERROR      = -229             /* verify cert error        */
+    VERIFY_CERT_ERROR      = -229,            /* verify cert error        */
+    VERIFY_SIGN_ERROR      = -230             /* verify sign error        */
 
     /* add strings to SetErrorString !!!!! */
 };
