@@ -255,6 +255,9 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->buffers.key = ctx->privateKey;
     ssl->caList = ctx->caList;
 
+    ssl->peerCert.issuer.sz    = 0;
+    ssl->peerCert.subject.sz   = 0;
+
     /* make sure server has DH parms */
     if (ssl->options.side == SERVER_END && !ssl->options.haveDH) 
         InitSuites(&ssl->suites, ssl->version, FALSE);
@@ -736,6 +739,13 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
 
         if (firstTime && ret == 0) {  /* first one has peer's key */
             firstTime = 0;
+
+            /* set X509 format */
+            ssl->peerCert.issuer.sz    = (int)strlen(dCert.issuer) + 1;
+            strncpy(ssl->peerCert.issuer.name, dCert.issuer, ASN_NAME_MAX);
+            ssl->peerCert.subject.sz   = (int)strlen(dCert.subject) + 1;
+            strncpy(ssl->peerCert.subject.name, dCert.subject, ASN_NAME_MAX);
+
             if ( (ssl->buffers.peerKey.buffer =
                                             (byte*)malloc(dCert.pubKeySize))) {
                 memcpy(ssl->buffers.peerKey.buffer, dCert.publicKey,
@@ -744,7 +754,7 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
 
                 if (!ssl->options.verifyNone && ssl->buffers.domainName.buffer)
                     if (strncmp((char*)ssl->buffers.domainName.buffer,
-                                dCert.subject,
+                                dCert.subjectCN,
                                 ssl->buffers.domainName.length - 1))
                         ret = DOMAIN_NAME_MISMATCH;
             }
@@ -2321,6 +2331,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             }
             FreeRsaKey(&key);
         } else {                /* diffie-hellman */
+        #ifdef OPENSSL_EXTRA
             buffer  serverP   = ssl->buffers.serverDH_P;
             buffer  serverG   = ssl->buffers.serverDH_G;
             buffer  serverPub = ssl->buffers.serverDH_Pub;
@@ -2340,6 +2351,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
                               &ssl->arrays.preMasterSz, priv, privSz,
                               serverPub.buffer, serverPub.length);
             FreeDhKey(&key);
+        #else
+            return -1;   /* not supported by build */
+        #endif
         }
            
         if (ret == 0) {

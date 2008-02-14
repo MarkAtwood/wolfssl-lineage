@@ -209,6 +209,9 @@ enum states {
     typedef struct SSL_CTX     SSL_CTX;
     typedef struct SSL_SESSION SSL_SESSION;
     typedef struct SSL         SSL;
+    typedef struct X509        X509;
+    #undef X509_NAME
+    typedef struct X509_NAME   X509_NAME;
 #endif /* SSL_TYPES_DEFINED */
 
 
@@ -484,6 +487,20 @@ typedef struct Arrays {
 } Arrays;
 
 
+#undef X509_NAME
+
+struct X509_NAME {
+    char  name[ASN_NAME_MAX];
+    int   sz;
+};
+
+
+struct X509 {
+    X509_NAME issuer;
+    X509_NAME subject;
+};
+
+
 /* OpenSSL ssl type */
 struct SSL {
     SSL_CTX*        ctx;
@@ -507,13 +524,13 @@ struct SSL {
     Options         options;
     Arrays          arrays;
     SSL_SESSION     session;
+    X509            peerCert;           /* X509 peer cert */
     hmacfp          hmac;
 };
 
 
 int  InitSSL(SSL*, SSL_CTX*);
 void FreeSSL(SSL*);
-
 
 
 /* record layer header for PlainText, Compressed, and CipherText */

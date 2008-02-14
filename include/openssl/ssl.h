@@ -48,6 +48,7 @@ typedef struct SSL_METHOD   SSL_METHOD;
 typedef struct SSL_CTX      SSL_CTX;
 
 typedef struct X509       X509;
+typedef struct X509_NAME  X509_NAME;
 
 
 /* redeclare guard */
@@ -191,6 +192,11 @@ long SSL_CTX_sess_get_cache_size(SSL_CTX*);
 int  SSL_CTX_set_default_verify_paths(SSL_CTX*);
 int  SSL_CTX_set_session_id_context(SSL_CTX*, const unsigned char*,
                                     unsigned int);
+
+X509*      SSL_get_peer_certificate(SSL* ssl);
+X509_NAME* X509_get_issuer_name(X509* cert);
+X509_NAME* X509_get_subject_name(X509* cert);
+char*      X509_NAME_oneline(X509_NAME*, char*, int);
 /* extra ends */
 
 

@@ -55,10 +55,17 @@ enum  ASN_Flags{
 };
 
 enum DN_Tags {
-    ASN_COMMON_NAME  = 0x03
+    ASN_COMMON_NAME   = 0x03,   /* CN */
+    ASN_SUR_NAME      = 0x04,   /* SN */
+    ASN_COUNTRY_NAME  = 0x06,   /* C  */
+    ASN_LOCALITY_NAME = 0x07,   /* L  */
+    ASN_STATE_NAME    = 0x08,   /* ST */
+    ASN_ORG_NAME      = 0x0a,   /* O  */
+    ASN_ORGUNIT_NAME  = 0x0b    /* OU */
 };
 
-enum Misc_ASN {     
+enum Misc_ASN { 
+    ASN_NAME_MAX        = 256,    
     SHA_SIZE            =  20,
     MIN_DATE_SIZE       =  13,
     MAX_DATE_SIZE       =  15,
@@ -114,8 +121,10 @@ typedef struct DecodedCert {
     byte    subjectHash[SHA_SIZE];   /* hash of all Names                */
     byte    issuerHash[SHA_SIZE];    /* hash of all Names                */
     byte*   signature;
-    char*   issuer;                  /* CommonName                       */
-    char*   subject;                 /* CommonName                       */
+    char*   issuerCN;                /* CommonName                       */
+    char*   subjectCN;               /* CommonName                       */
+    char    issuer[ASN_NAME_MAX];    /* full name including common name  */
+    char    subject[ASN_NAME_MAX];   /* full name including common name  */
     int     verify;                  /* Default to yes, but could be off */
     byte*   source;                  /* byte buffer holder cert, NOT owner */
     word32  srcIdx;                  /* current offset into buffer       */

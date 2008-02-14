@@ -513,11 +513,11 @@ static int AddCA(SSL_CTX* ctx, buffer der)
         else {
             signer->publicKey  = cert.publicKey;
             signer->pubKeySize = cert.pubKeySize;
-            signer->name = cert.subject;
+            signer->name = cert.subjectCN;
             memcpy(signer->hash, cert.subjectHash, SHA_DIGEST_SIZE);
 
             cert.publicKey = 0;  /* don't free here */
-            cert.subject   = 0;
+            cert.subjectCN = 0;
 
             signer->next = ctx->caList;
             ctx->caList  = signer;   /* takes ownership */
@@ -1151,6 +1151,46 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
     {
         /* Not implemented */
         return 0;
+    }
+
+
+    X509* SSL_get_peer_certificate(SSL* ssl)
+    {
+        return &ssl->peerCert;
+    }
+
+
+    X509_NAME* X509_get_issuer_name(X509* cert)
+    {
+        return &cert->issuer;
+    }
+
+
+    X509_NAME* X509_get_subject_name(X509* cert)
+    {
+        return &cert->subject;
+    }
+
+    /* copy name into buffer, at most sz bytes, if buffer is null will
+       malloc buffer, call responsible for freeing                     */
+    char* X509_NAME_oneline(X509_NAME* name, char* buffer, int sz)
+    {
+        int copySz = min(sz, name->sz);
+        if (!name->sz) return buffer;
+
+        if (!buffer) {
+            buffer = (char*)malloc(name->sz);
+            if (!buffer) return buffer;
+            copySz = name->sz;
+        }
+
+        if (copySz == 0)
+            return buffer;
+
+        memcpy(buffer, name->name, copySz - 1);
+        buffer[copySz - 1] = 0;
+
+        return buffer;
     }
 
 

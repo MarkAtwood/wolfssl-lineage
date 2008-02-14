@@ -76,6 +76,7 @@ THREAD_RETURN CYASSL_API server_test(void* args)
     if (SSL_accept(ssl) != SSL_SUCCESS)
         err_sys("SSL_accept failed");
 #endif
+    showPeer(ssl);
 
     idx = SSL_read(ssl, input, sizeof(input));
     if (idx > 0) {

@@ -91,6 +91,7 @@ void client_test(void* args)
     if (SSL_connect(ssl) != SSL_SUCCESS)
         err_sys("SSL_connect failed");
 #endif
+    showPeer(ssl);
 
     if (argc == 3) {
         printf("SSL connect ok, sending GET...\n");

@@ -138,6 +138,23 @@ static INLINE void err_sys(const char* msg)
 }
 
 
+static INLINE void showPeer(SSL* ssl)
+{
+    X509* peer = SSL_get_peer_certificate(ssl);
+    if (peer) {
+        char* issuer  = X509_NAME_oneline(X509_get_issuer_name(peer), 0, 0);
+        char* subject = X509_NAME_oneline(X509_get_subject_name(peer), 0, 0);
+
+        printf("peer's cert info:\n issuer : %s\n subject: %s\n", issuer,
+                                                                  subject);
+        free(subject);
+        free(issuer);
+    }
+    else
+        printf("peer has no cert!\n");
+}
+
+
 static INLINE void tcp_socket(SOCKET_T* sockfd, SOCKADDR_IN_T* addr,
                               const char* peer, word16 port)
 {

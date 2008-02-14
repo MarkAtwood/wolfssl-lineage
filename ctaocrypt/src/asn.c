@@ -33,6 +33,10 @@
 #endif
 
 
+enum {
+    FALSE = 0,
+    TRUE  = 1
+};
 
 
 enum {
@@ -316,8 +320,8 @@ void InitDecodedCert(DecodedCert* cert, byte* source)
 {
     cert->publicKey = 0;
     cert->signature = 0;
-    cert->issuer    = 0;
-    cert->subject   = 0;
+    cert->issuerCN  = 0;
+    cert->subjectCN = 0;
     cert->source    = source;  /* don't own */
     cert->srcIdx    = 0;
 }
@@ -325,8 +329,8 @@ void InitDecodedCert(DecodedCert* cert, byte* source)
 
 void FreeDecodedCert(DecodedCert* cert)
 {
-    free(cert->subject);
-    free(cert->issuer);
+    free(cert->subjectCN);
+    free(cert->issuerCN);
     free(cert->signature);
     free(cert->publicKey);
 }
@@ -456,6 +460,8 @@ static int GetName(DecodedCert* cert, int nameType)
     Sha    sha;
     int    length;  /* length of all distinguished names */
     int    dummy;
+    char* full = (nameType == ISSUER) ? cert->issuer : cert->subject;
+    word32 idx = 0;
 
     InitSha(&sha);
 
@@ -487,6 +493,7 @@ static int GetName(DecodedCert* cert, int nameType)
         /* v1 name types */
         if (joint[0] == 0x55 && joint[1] == 0x04) {
             byte   id;
+            byte   copy = FALSE;
             int    strLen;
 
             cert->srcIdx += 2;
@@ -497,28 +504,83 @@ static int GetName(DecodedCert* cert, int nameType)
                 return ASN_PARSE_E;
 
             if (id == ASN_COMMON_NAME) {
-                char** pp = (nameType == ISSUER) ? 
-                    &cert->issuer : &cert->subject;
-                *pp = (char*) malloc(strLen + 1);
-                if (!*pp)
+                char** cn = (nameType == ISSUER) ? 
+                    &cert->issuerCN : &cert->subjectCN;
+                *cn = (char*) malloc(strLen + 1);
+                if (!*cn)
                     return MEMORY_E;
-                memcpy(*pp, &cert->source[cert->srcIdx], strLen);
-                (*pp)[strLen] = 0;
+                memcpy(*cn, &cert->source[cert->srcIdx], strLen);
+                (*cn)[strLen] = 0;
+
+                memcpy(&full[idx], "/CN=", 4);
+                idx += 4;
+                copy = TRUE;
             }
+            else if (id == ASN_SUR_NAME) {
+                memcpy(&full[idx], "/SN=", 4);
+                idx += 4;
+                copy = TRUE;
+            }
+            else if (id == ASN_COUNTRY_NAME) {
+                memcpy(&full[idx], "/C=", 3);
+                idx += 3;
+                copy = TRUE;
+            }
+            else if (id == ASN_LOCALITY_NAME) {
+                memcpy(&full[idx], "/L=", 3);
+                idx += 3;
+                copy = TRUE;
+            }
+            else if (id == ASN_STATE_NAME) {
+                memcpy(&full[idx], "/ST=", 4);
+                idx += 4;
+                copy = TRUE;
+            }
+            else if (id == ASN_ORG_NAME) {
+                memcpy(&full[idx], "/O=", 3);
+                idx += 3;
+                copy = TRUE;
+            }
+            else if (id == ASN_ORGUNIT_NAME) {
+                memcpy(&full[idx], "/OU=", 4);
+                idx += 4;
+                copy = TRUE;
+            }
+
+            if (copy) {
+                memcpy(&full[idx], &cert->source[cert->srcIdx], strLen);
+                idx += strLen;
+            }
+
             ShaUpdate(&sha, &cert->source[cert->srcIdx], strLen);
             cert->srcIdx += strLen;
         }
         else {
             /* skip */
-            int adv;
+            byte email = FALSE;
+            int  adv;
+
+            if (joint[0] == 0x2a && joint[1] == 0x86)  /* email id hdr */
+                email = TRUE;
+
             cert->srcIdx += oidSz + 1;
 
             if (GetLength(cert->source, &cert->srcIdx, &adv) < 0)
                 return ASN_PARSE_E;
 
+            if (email) {
+                memcpy(&full[idx], "/emailAddress=", 14);
+                idx += 14;
+
+                memcpy(&full[idx], &cert->source[cert->srcIdx], adv);
+                idx += adv;
+            }
+
             cert->srcIdx += adv;
         }
     }
+    full[idx++] = 0;
+
     if (nameType == ISSUER)
         ShaFinal(&sha, cert->issuerHash);
     else
