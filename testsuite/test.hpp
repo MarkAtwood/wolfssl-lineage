@@ -344,7 +344,7 @@ inline void tcp_close(SOCKET_T& sockfd)
 #else
     close(sockfd);
 #endif
-    sockfd = -1;
+    sockfd = (SOCKET_T) -1;
 }
 
 
@@ -395,7 +395,7 @@ inline void tcp_accept(SOCKET_T& sockfd, SOCKET_T& clientfd, func_args& args)
 
     clientfd = accept(sockfd, (sockaddr*)&client, (ACCEPT_THIRD_T)&client_len);
 
-    if (clientfd == -1) {
+    if (clientfd == (SOCKET_T) -1) {
         tcp_close(sockfd);
         err_sys("tcp accept failed");
     }

@@ -79,7 +79,7 @@ THREAD_RETURN YASSL_API echoserver_test(void* args)
         socklen_t   client_len = sizeof(client);
         SOCKET_T    clientfd   = accept(sockfd, (sockaddr*)&client,
                                       (ACCEPT_THIRD_T)&client_len);
-        if (clientfd == -1) {
+        if (clientfd == (SOCKET_T) -1) {
             SSL_CTX_free(ctx);
             tcp_close(sockfd);
             err_sys("tcp accept failed");
