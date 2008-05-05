@@ -476,8 +476,10 @@ retry:
         else if (LastError() == SOCKET_EINTR)
             goto retry;
     }
-    else if (recvd == 0)
+    else if (recvd == 0) {
+        ssl->options.isClosed = 1;
         return (word32) -1;
+    }
 
     return recvd;
 }
@@ -1710,8 +1712,9 @@ int ReceiveData(SSL* ssl, byte* output, int sz)
     if (!ssl->buffers.bufferedData.buffer)
         if ( (ssl->error = ProcessReply(ssl)) < 0) {
             CYASSL_ERROR(ssl->error);
-            if (ssl->error == SOCKET_ERROR_E && ssl->options.connReset)
-                return 0;     /* peer reset */
+            if (ssl->error == SOCKET_ERROR_E)
+                if (ssl->options.connReset || ssl->options.isClosed)
+                    return 0;     /* peer reset or closed */
             return ssl->error;
         }
 
