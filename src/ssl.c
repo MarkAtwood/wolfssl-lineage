@@ -275,6 +275,7 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
     }
 
 
+    /* please see note at top of README if you get an error from connect */
     int SSL_connect(SSL* ssl)
     {
         int neededState;

@@ -73,7 +73,8 @@ int SSL_CTX_use_PrivateKey_file(SSL_CTX*, const char*, int);
 SSL_CTX* SSL_CTX_new(SSL_METHOD*);
 SSL* SSL_new(SSL_CTX*);
 int  SSL_set_fd (SSL*, int);
-int  SSL_connect(SSL*);
+int  SSL_connect(SSL*);                   /* please see note at top of README
+                                             if you get an error from connect */
 int  SSL_write(SSL*, const void*, int);
 int  SSL_read(SSL*, void*, int);
 int  SSL_accept(SSL*);

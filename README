@@ -1,4 +1,26 @@
-CyaSSL version 0.9.6 (1/31/2008) 
+*** Note, Please read ***
+
+CyaSSL takes a different approach to certificate verification than OpenSSL does.The default policy for the client is to verify the server, this means that if
+you don't load CAs to verify the server you'll get a connect error, unable to 
+verify.  It you want to mimic OpenSSL behavior of not verifying the server and
+reducing security you can do this by calling:
+
+SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, 0);
+
+before calling SSL_new();
+
+*** end Note ***
+
+
+CyaSSL version 0.9.8 (5/7/2008) 
+
+This release of CyaSSL adds bug fixes, client side Diffie-Hellman, and better
+socket handling.
+
+See notes below (0.2.0) for complete build instructions.
+
+
+****************CyaSSL version 0.9.6 (1/31/2008) 
 
 This release of CyaSSL adds bug fixes, increased session management, and a fix
 for gnutls.
