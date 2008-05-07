@@ -1,3 +1,25 @@
+*** Note, Please read ***
+
+yaSSL takes a different approach to certificate verification than OpenSSL does.
+The default policy for the client is to verify the server, this means that if
+you don't load CAs to verify the server you'll get a connect error, unable to 
+verify.  It you want to mimic OpenSSL behavior of not verifying the server and
+reducing security you can do this by calling:
+
+SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, 0);
+
+before calling SSL_new();
+
+*** end Note ***
+
+*****************yaSSL Release notes, version 1.8.8 (5/7/08)
+
+    This release of yaSSL contains bug fixes, and better socket handling. 
+
+See normal  build instructions below under 1.0.6.
+See libcurl build instructions below under 1.3.0 and note in 1.5.8.
+
+
 *****************yaSSL Release notes, version 1.8.6 (1/31/08)
 
     This release of yaSSL contains bug fixes, and fixes security problems
