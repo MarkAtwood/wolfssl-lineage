@@ -2443,7 +2443,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
                 rl.type = handshake;
                 rl.version = ssl->version;
-                c16toa((word16)length + VERIFY_HEADER + HANDSHAKE_HEADER_SZ,
+                c16toa((word16)(length + VERIFY_HEADER + HANDSHAKE_HEADER_SZ),
                        rl.length);
                 idx = 0;
                 memcpy(output, &rl, RECORD_HEADER_SZ);

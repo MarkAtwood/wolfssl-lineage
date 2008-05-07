@@ -854,7 +854,7 @@ int openssl_test()
     c.inLen  = strlen(c.input);
     c.outLen = strlen(c.output);
 
-    HMAC(EVP_md5(), "Jefe", 4, c.input, c.inLen, hash, 0);
+    HMAC(EVP_md5(), "Jefe", 4, (byte*)c.input, (int)c.inLen, hash, 0);
 
     if (memcmp(hash, c.output, MD5_DIGEST_SIZE) != 0)
         return -74;
