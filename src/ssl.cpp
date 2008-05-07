@@ -252,6 +252,7 @@ YASSL_SOCKET_T SSL_get_fd(const SSL* ssl)
 }
 
 
+// if you get an error from connect see note at top of README
 int SSL_connect(SSL* ssl)
 {
     if (ssl->GetError() == YasslError(SSL_ERROR_WANT_READ))
