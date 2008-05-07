@@ -88,8 +88,8 @@ void client_test(void* args)
     tcp_set_nonblocking(&sockfd);
     NonBlockingSSL_Connect(ssl);
 #else
-    if (SSL_connect(ssl) != SSL_SUCCESS)
-        err_sys("SSL_connect failed");
+    if (SSL_connect(ssl) != SSL_SUCCESS)  /* please see note at top of README */
+        err_sys("SSL_connect failed");    /* if you're getting an error here  */
 #endif
     showPeer(ssl);
 

@@ -2339,7 +2339,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=cyassl
- VERSION=0.9.7
+ VERSION=0.9.8
 
 
 cat >>confdefs.h <<_ACEOF

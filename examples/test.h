@@ -140,6 +140,8 @@ static INLINE void err_sys(const char* msg)
 
 static INLINE void showPeer(SSL* ssl)
 {
+#ifdef OPENSSL_EXTRA
+
     X509* peer = SSL_get_peer_certificate(ssl);
     if (peer) {
         char* issuer  = X509_NAME_oneline(X509_get_issuer_name(peer), 0, 0);
@@ -152,6 +154,8 @@ static INLINE void showPeer(SSL* ssl)
     }
     else
         printf("peer has no cert!\n");
+
+#endif
 }
 
 

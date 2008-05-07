@@ -48,7 +48,6 @@ typedef struct SSL_METHOD   SSL_METHOD;
 typedef struct SSL_CTX      SSL_CTX;
 
 typedef struct X509       X509;
-typedef struct X509_NAME  X509_NAME;
 
 
 /* redeclare guard */
@@ -73,8 +72,7 @@ int SSL_CTX_use_PrivateKey_file(SSL_CTX*, const char*, int);
 SSL_CTX* SSL_CTX_new(SSL_METHOD*);
 SSL* SSL_new(SSL_CTX*);
 int  SSL_set_fd (SSL*, int);
-int  SSL_connect(SSL*);                   /* please see note at top of README
-                                             if you get an error from connect */
+int  SSL_connect(SSL*);
 int  SSL_write(SSL*, const void*, int);
 int  SSL_read(SSL*, void*, int);
 int  SSL_accept(SSL*);
@@ -156,6 +154,12 @@ enum { /* ssl Constants */
     SSL_RECEIVED_SHUTDOWN = 91,
     SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER = 92,
     SSL_OP_NO_SSLv2       = 93,
+
+    SSL_MODE_ENABLE_PARTIAL_WRITE = 1,
+
+    /* extra adds */
+    PEM_BUFSIZE = 1024,
+    RSA_F4 = 1,
 };
 
 
@@ -194,10 +198,53 @@ int  SSL_CTX_set_default_verify_paths(SSL_CTX*);
 int  SSL_CTX_set_session_id_context(SSL_CTX*, const unsigned char*,
                                     unsigned int);
 
-X509*      SSL_get_peer_certificate(SSL* ssl);
-X509_NAME* X509_get_issuer_name(X509* cert);
-X509_NAME* X509_get_subject_name(X509* cert);
-char*      X509_NAME_oneline(X509_NAME*, char*, int);
+/* stunnel extras */
+typedef struct ENGINE ENGINE;
+typedef struct X509_STORE X509_STORE;
+typedef struct UI UI;
+typedef struct UI_STRING UI_STRING;
+typedef struct SSL_CIPHER SSL_CIPHER;
+typedef struct RSA RSA;
+typedef struct EVP_PKEY EVP_PKEY;
+typedef struct UI_METHOD UI_METHOD;
+
+
+void SSL_set_connect_state(SSL*);
+int  SSL_set_rfd(SSL*, int);
+int  SSL_set_wfd(SSL*, int);
+int  SSL_session_reused(SSL*);
+SSL_SESSION* SSL_get1_session(SSL* ssl);  /* what's ref count */
+void SSL_SESSION_free(SSL_SESSION* session);
+const char* SSL_get_version(SSL*);
+SSL_CIPHER* SSL_get_current_cipher(SSL*);
+char*       SSL_CIPHER_description(SSL_CIPHER*, char*, int);
+int  SSL_get_shutdown(const SSL* ssl);
+int  SSL_set_ex_data(SSL* ssl, int idx, void* arg);
+int  SSL_set_session_id_context(SSL* ssl, const unsigned char* sid_ctx,
+                                unsigned int sid_ctx_len);
+void SSL_CTX_set_tmp_rsa_callback(SSL_CTX*, RSA*(*)(SSL*, int, int));
+long SSL_CTX_set_timeout(SSL_CTX*, long);
+void SSL_CTX_set_info_callback(SSL_CTX*, void (*)());
+void SSL_CTX_set_default_passwd_cb(SSL_CTX*, pem_password_cb);
+
+void RSA_free(RSA*);
+RSA* RSA_generate_key(int, unsigned long, void(*)(int, int, void*), void*);
+
+UI_METHOD *UI_create_method(char *name);
+
+long SSL_CTX_sess_accept(SSL_CTX*);
+long SSL_CTX_sess_connect(SSL_CTX*);
+long SSL_CTX_sess_accept_good(SSL_CTX*);
+long SSL_CTX_sess_connect_good(SSL_CTX*);
+long SSL_CTX_sess_accept_renegotiate(SSL_CTX*);
+long SSL_CTX_sess_connect_renegotiate(SSL_CTX*);
+long SSL_CTX_sess_hits(SSL_CTX*);
+long SSL_CTX_sess_cb_hits(SSL_CTX*);
+long SSL_CTX_sess_cache_full(SSL_CTX*);
+long SSL_CTX_sess_misses(SSL_CTX*);
+long SSL_CTX_sess_timeouts(SSL_CTX*);
+long SSL_CTX_sess_number(SSL_CTX*);
+
 /* extra ends */
 
 
