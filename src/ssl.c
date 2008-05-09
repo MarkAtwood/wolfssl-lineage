@@ -809,6 +809,16 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
     }
 }
 
+#ifndef NO_PSK
+
+    void SSL_CTX_set_psk_client_callback(SSL_CTX* ctx, psk_client_callback cb)
+    {
+        ctx->havePSK = 1;
+        ctx->client_psk_cb = cb;
+    }
+
+#endif /* NO_PSK */
+
 
 
 #ifdef OPENSSL_EXTRA

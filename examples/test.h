@@ -259,6 +259,28 @@ static INLINE void tcp_set_nonblocking(SOCKET_T* sockfd)
 }
 
 
+#ifndef NO_PSK
+
+static INLINE unsigned int my_psk_client_cb(SSL* ssl, const char* hint,
+        char* identity, unsigned int id_max_len, unsigned char* key,
+        unsigned int key_max_len)
+{
+    /* identity is OpenSSL testing default for openssl s_client, keep same */
+    strncpy(identity, "Client_identity", id_max_len);
+
+
+    /* test key in hex is 0x1a2b3c4d , in decimal 439,041,101 , we're using
+       unsigned binary */
+    key[0] = 26;
+    key[1] = 43;
+    key[2] = 60;
+    key[3] = 77;
+
+    return 4;   /* length of key in octets or 0 for error */
+}
+
+#endif /* NO_PSK */
+
 
 #endif /* CyaSSL_TEST_H */
 

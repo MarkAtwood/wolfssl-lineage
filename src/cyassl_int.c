@@ -119,10 +119,12 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->certificate.buffer = 0;
     ctx->privateKey.buffer  = 0;
     ctx->haveDH             = 0;
+    ctx->havePSK            = 0;
+    ctx->client_psk_cb      = 0;
 
     ctx->caList = 0;
-    InitSuites(&ctx->suites, method->version, TRUE);  /* remove DH later if
-                                                         server didn't set */
+    /* remove DH later if server didn't set, add psk later  */
+    InitSuites(&ctx->suites, method->version, TRUE, FALSE);  
     ctx->verifyPeer = 0;
     ctx->verifyNone = 0;
     ctx->failNoCert = 0;
@@ -144,7 +146,7 @@ void FreeSSL_Ctx(SSL_CTX* ctx)
 }
 
 
-void InitSuites(Suites* suites, ProtocolVersion pv, byte haveDH)
+void InitSuites(Suites* suites, ProtocolVersion pv, byte haveDH, byte havePSK)
 {
     word32 idx = 0;
     int    tls = pv.major == 3 && pv.minor >= 1;
@@ -178,6 +180,20 @@ void InitSuites(Suites* suites, ProtocolVersion pv, byte haveDH)
     if (tls) {
         suites->suites[idx++] = 0; 
         suites->suites[idx++] = TLS_RSA_WITH_AES_128_CBC_SHA;
+    }
+#endif
+
+#ifdef BUILD_TLS_PSK_WITH_AES_256_CBC_SHA
+    if (tls && havePSK) {
+        suites->suites[idx++] = 0; 
+        suites->suites[idx++] = TLS_PSK_WITH_AES_256_CBC_SHA;
+    }
+#endif
+
+#ifdef BUILD_TLS_PSK_WITH_AES_128_CBC_SHA
+    if (tls && havePSK) {
+        suites->suites[idx++] = 0; 
+        suites->suites[idx++] = TLS_PSK_WITH_AES_128_CBC_SHA;
     }
 #endif
 
@@ -230,6 +246,8 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->options.connReset = 0;
     ssl->options.isClosed  = 0;
     ssl->options.haveDH    = ctx->haveDH;
+    ssl->options.havePSK   = ctx->havePSK;
+    ssl->options.client_psk_cb = ctx->client_psk_cb;
 
     ssl->options.serverState = NULL_STATE;
     ssl->options.clientState = NULL_STATE;
@@ -258,9 +276,15 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->peerCert.issuer.sz    = 0;
     ssl->peerCert.subject.sz   = 0;
 
-    /* make sure server has DH parms */
-    if (ssl->options.side == SERVER_END && !ssl->options.haveDH) 
-        InitSuites(&ssl->suites, ssl->version, FALSE);
+    ssl->arrays.client_identity[0] = 0;
+    ssl->arrays.server_hint[0]     = 0;
+
+    /* make sure server has DH parms, and add PSK if there */
+    if (ssl->options.side == SERVER_END) 
+        InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH,
+                   ssl->options.havePSK);
+    else 
+        InitSuites(&ssl->suites, ssl->version, TRUE, ssl->options.havePSK);
 
     return 0;
 }
@@ -1936,6 +1960,14 @@ const char* const cipher_names[] =
     "DHE-RSA-AES256-SHA",
 #endif
 
+#ifdef BUILD_TLS_PSK_WITH_AES_128_CBC_SHA
+    "PSK-AES128-CBC-SHA",
+#endif
+
+#ifdef BUILD_TLS_PSK_WITH_AES_256_CBC_SHA
+    "PSK-AES256-CBC-SHA",
+#endif
+
 };
 
 
@@ -1970,6 +2002,14 @@ int cipher_name_idx[] =
 
 #ifdef BUILD_TLS_DHE_RSA_WITH_AES_256_CBC_SHA
     TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
+#endif
+
+#ifdef BUILD_TLS_PSK_WITH_AES_128_CBC_SHA
+    TLS_PSK_WITH_AES_128_CBC_SHA,    
+#endif
+
+#ifdef BUILD_TLS_PSK_WITH_AES_256_CBC_SHA
+    TLS_PSK_WITH_AES_256_CBC_SHA,
 #endif
 
 };
@@ -2333,7 +2373,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
                 }
             }
             FreeRsaKey(&key);
-        } else {                /* diffie-hellman */
+        } else if (ssl->specs.kea == diffie_hellman_kea) {
         #ifdef OPENSSL_EXTRA
             buffer  serverP   = ssl->buffers.serverDH_P;
             buffer  serverG   = ssl->buffers.serverDH_G;
@@ -2357,8 +2397,28 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         #else
             return -1;   /* not supported by build */
         #endif
-        }
-           
+        } else if (ssl->specs.kea == psk_kea) {
+            char *pms = ssl->arrays.preMasterSecret;
+
+            ssl->arrays.psk_keySz = ssl->options.client_psk_cb(ssl,
+                ssl->arrays.server_hint, ssl->arrays.client_identity,
+                MAX_PSK_ID_LEN, ssl->arrays.psk_key, MAX_PSK_KEY_LEN);
+            if (ssl->arrays.psk_keySz == 0) return -1;  /* client cb failure */
+            encSz = (word32)strlen(ssl->arrays.client_identity);
+            memcpy(encSecret, ssl->arrays.client_identity, encSz);
+
+            /* make psk pre master secret */
+            c16toa((word16)ssl->arrays.psk_keySz, pms);
+            pms += 2;
+            memset(pms, 0, ssl->arrays.psk_keySz);
+            pms += ssl->arrays.psk_keySz;
+            c16toa((word16)ssl->arrays.psk_keySz, pms);
+            pms += 2;
+            memcpy(pms, ssl->arrays.psk_key, ssl->arrays.psk_keySz);
+            ssl->arrays.preMasterSz = ssl->arrays.psk_keySz * 2 + 4;
+        } else
+            return -1; /* unsupported kea */
+
         if (ret == 0) {
             byte              output[ENCRYPT_LEN + MAX_MSG_EXTRA];
             byte              alen[BYTE3_LEN];
@@ -2599,7 +2659,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             ssl->options.tls    = 0;
             ssl->options.tls1_1 = 0;
             ssl->version.minor  = 0;
-            InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH);
+            InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, FALSE);
         }
 
         /* suite size */
@@ -2695,7 +2755,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             ssl->options.tls    = 0;
             ssl->options.tls1_1 = 0;
             ssl->version.minor  = 0;
-            InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH);
+            InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, FALSE);
         }
         memcpy(ssl->arrays.clientRandom, input + i, RAN_LEN);
         i += RAN_LEN;

@@ -57,6 +57,10 @@ void client_test(void* args)
     method  = SSLv3_client_method();
 #endif
     ctx     = SSL_CTX_new(method);
+
+#ifndef NO_PSK
+    SSL_CTX_set_psk_client_callback(ctx, my_psk_client_cb);
+#endif
     
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
         err_sys("can't load ca file");

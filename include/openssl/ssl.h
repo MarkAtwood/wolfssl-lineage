@@ -159,6 +159,15 @@ enum { /* ssl Constants */
 };
 
 
+#ifndef NO_PSK
+    typedef unsigned int (*psk_client_callback)(SSL*, const char*, char*,
+                          unsigned int, unsigned char*, unsigned int);
+    void SSL_CTX_set_psk_client_callback(SSL_CTX*, psk_client_callback);
+
+    #define PSK_TYPES_DEFINED
+#endif /* NO_PSK */
+
+
 /* extra begins */
 
 enum {  /* ERR Constants */

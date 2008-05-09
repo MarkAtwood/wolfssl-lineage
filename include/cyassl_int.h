@@ -76,7 +76,11 @@ typedef byte word24[3];
 
 #if !defined(NO_AES) && !defined(NO_TLS)
     #define BUILD_TLS_RSA_WITH_AES_128_CBC_SHA
-    #define BUILD_TLS_RSA_WITH_AES_128_CBC_SHA
+    #define BUILD_TLS_RSA_WITH_AES_256_CBC_SHA
+    #if !defined (NO_PSK)
+        #define BUILD_TLS_PSK_WITH_AES_128_CBC_SHA
+        #define BUILD_TLS_PSK_WITH_AES_256_CBC_SHA
+    #endif
 #endif
 
 #if !defined(NO_DH) && !defined(NO_AES) && !defined(NO_TLS) && defined(OPENSSL_EXTRA)
@@ -116,6 +120,8 @@ enum {
     TLS_DHE_RSA_WITH_AES_128_CBC_SHA  = 0x33,
     TLS_RSA_WITH_AES_256_CBC_SHA      = 0x35,
     TLS_RSA_WITH_AES_128_CBC_SHA      = 0x2F,
+    TLS_PSK_WITH_AES_256_CBC_SHA      = 0x8d,
+    TLS_PSK_WITH_AES_128_CBC_SHA      = 0x8c,
     SSL_RSA_WITH_RC4_128_SHA          = 0x05,
     SSL_RSA_WITH_RC4_128_MD5          = 0x04,
     SSL_RSA_WITH_3DES_EDE_CBC_SHA     = 0x0A
@@ -180,6 +186,9 @@ enum Misc {
     CLIENT_HELLO_FIRST =  35,  /* Protocol + RAN_LEN + sizeof(id_len) */
     MAX_SUITE_NAME     =  48,  /* maximum length of cipher suite string */
     DEFAULT_TIMEOUT    = 500,  /* default resumption timeout in seconds */
+
+    MAX_PSK_ID_LEN     = 128,  /* max psk identity supported */
+    MAX_PSK_KEY_LEN    =  64,  /* max psk key supported */
 
     NO_COPY            =   0,  /* should we copy static buffer for write */
     COPY               =   1   /* should we copy static buffer for write */
@@ -254,9 +263,13 @@ typedef struct Suites {
 } Suites;
 
 
-void InitSuites(Suites*, ProtocolVersion, byte);
+void InitSuites(Suites*, ProtocolVersion, byte, byte);
 int  SetCipherList(SSL_CTX* ctx, const char* list);
 
+#ifndef PSK_TYPES_DEFINED
+    typedef unsigned int (*psk_client_callback)(SSL*, const char*, char*,
+                          unsigned int, unsigned char*, unsigned int);
+#endif /* PSK_TYPES_DEFINED */
 
 /* OpenSSL context type */
 struct SSL_CTX {
@@ -272,6 +285,8 @@ struct SSL_CTX {
     byte        sessionCacheFlushOff;
     byte        sendVerify;       /* for client side */
     byte        haveDH;           /* server DH parms set by user */
+    byte        havePSK;          /* psk key set by user */
+    psk_client_callback client_psk_cb;  /* client callback */
 };
 
 
@@ -322,7 +337,8 @@ enum KeyExchangeAlgorithm {
     no_kea = 0,
     rsa_kea, 
     diffie_hellman_kea, 
-    fortezza_kea 
+    fortezza_kea,
+    psk_kea 
 };
 
 
@@ -474,6 +490,8 @@ typedef struct Options {
     byte            connectState;       /* nonblocking resume */
     byte            acceptState;        /* nonblocking resume */
     byte            haveDH;             /* server DH parms set by user */
+    byte            havePSK;            /* psk key set by user */
+    psk_client_callback client_psk_cb;
 } Options;
 
 
@@ -483,7 +501,11 @@ typedef struct Arrays {
     byte            sessionID[ID_LEN];
     byte            preMasterSecret[ENCRYPT_LEN];
     byte            masterSecret[SECRET_LEN];
+    char            client_identity[MAX_PSK_ID_LEN];
+    byte            server_hint[MAX_PSK_ID_LEN];
+    byte            psk_key[MAX_PSK_KEY_LEN];
     word32          preMasterSz;        /* differs for DH, actual size */
+    word32          psk_keySz;          /* acutal size */
 } Arrays;
 
 
