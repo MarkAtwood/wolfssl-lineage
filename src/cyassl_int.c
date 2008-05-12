@@ -119,8 +119,12 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->certificate.buffer = 0;
     ctx->privateKey.buffer  = 0;
     ctx->haveDH             = 0;
+#ifndef NO_PSK
     ctx->havePSK            = 0;
+    ctx->server_hint[0]     = 0;
     ctx->client_psk_cb      = 0;
+    ctx->server_psk_cb      = 0;
+#endif /* NO_PSK */
 
     ctx->caList = 0;
     /* remove DH later if server didn't set, add psk later  */
@@ -218,6 +222,8 @@ void InitSuites(Suites* suites, ProtocolVersion pv, byte haveDH, byte havePSK)
 
 int InitSSL(SSL* ssl, SSL_CTX* ctx)
 {
+    byte havePSK = 0;
+
     ssl->ctx     = ctx; /* only for passing to calls, options could change */
     ssl->version = ctx->method->version;
     ssl->suites  = ctx->suites;
@@ -246,8 +252,13 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->options.connReset = 0;
     ssl->options.isClosed  = 0;
     ssl->options.haveDH    = ctx->haveDH;
+    ssl->options.usingPSK_cipher = 0;
+#ifndef NO_PSK
+    havePSK = ctx->havePSK;
     ssl->options.havePSK   = ctx->havePSK;
     ssl->options.client_psk_cb = ctx->client_psk_cb;
+    ssl->options.server_psk_cb = ctx->server_psk_cb;
+#endif /* NO_PSK */
 
     ssl->options.serverState = NULL_STATE;
     ssl->options.clientState = NULL_STATE;
@@ -276,15 +287,19 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->peerCert.issuer.sz    = 0;
     ssl->peerCert.subject.sz   = 0;
 
+#ifndef NO_PSK
     ssl->arrays.client_identity[0] = 0;
-    ssl->arrays.server_hint[0]     = 0;
+    if (ctx->server_hint[0])   /* set in CTX */
+        strncpy(ssl->arrays.server_hint, ctx->server_hint, MAX_PSK_ID_LEN);
+    else
+        ssl->arrays.server_hint[0] = 0;
+#endif /* NO_PSK */
 
     /* make sure server has DH parms, and add PSK if there */
     if (ssl->options.side == SERVER_END) 
-        InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH,
-                   ssl->options.havePSK);
+        InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, havePSK);
     else 
-        InitSuites(&ssl->suites, ssl->version, TRUE, ssl->options.havePSK);
+        InitSuites(&ssl->suites, ssl->version, TRUE, havePSK);
 
     return 0;
 }
@@ -1534,6 +1549,8 @@ int SendCertificate(SSL* ssl)
     RecordLayerHeader rl;
     HandShakeHeader   hs;
 
+    if (ssl->options.usingPSK_cipher) return 0;  /* not needed */
+
     /* list + cert size */
     sendSz = ssl->buffers.certificate.length + 2 * CERT_HEADER_SZ +
         RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
@@ -1595,6 +1612,8 @@ int SendCertificateRequest(SSL* ssl)
 
     int  typeTotal = 1;  /* only rsa for now */
     int  reqSz = ENUM_LEN + typeTotal + REQ_HEADER_SZ;  /* add auth later */
+
+    if (ssl->options.usingPSK_cipher) return 0;  /* not needed */
 
     sendSz = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ + reqSz;
 
@@ -2228,7 +2247,28 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     static int DoServerKeyExchange(SSL* ssl, const byte* input, word32*
                                    inOutIdx)
     {
+    #ifndef NO_PSK
+        if (ssl->specs.kea == psk_kea) {
+            word16 length;
+            byte   tmp[2];
+
+            tmp[0] = input[(*inOutIdx)++];
+            tmp[1] = input[(*inOutIdx)++];
+            ato16(tmp, &length);
+            memcpy(ssl->arrays.server_hint, &input[*inOutIdx],
+                   min(length, MAX_PSK_ID_LEN));
+            if (length < MAX_PSK_ID_LEN)
+                ssl->arrays.server_hint[length] = 0;
+            else
+                ssl->arrays.server_hint[MAX_PSK_ID_LEN - 1] = 0;
+            *inOutIdx += length;
+
+            return 0;
+        }
+    #endif
     #ifdef OPENSSL_EXTRA
+        if (ssl->specs.kea == diffie_hellman_kea)
+        {
         word16 length, verifySz, messageTotal = 6;  /* pSz + gSz + pubSz */
         byte   tmp[2];
         byte   messageVerify[MAX_DH_SZ];
@@ -2336,9 +2376,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         ssl->options.serverState = SERVER_KEYEXCHANGE_COMPLETE;
 
         return 0;
-    #else
+        }  /* dh_kea */
+    #endif /* OPENSSL_EXTRA */
         return -1;  /* not supported by build */
-    #endif       
     }
 
 
@@ -2373,8 +2413,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
                 }
             }
             FreeRsaKey(&key);
-        } else if (ssl->specs.kea == diffie_hellman_kea) {
         #ifdef OPENSSL_EXTRA
+        } else if (ssl->specs.kea == diffie_hellman_kea) {
             buffer  serverP   = ssl->buffers.serverDH_P;
             buffer  serverG   = ssl->buffers.serverDH_G;
             buffer  serverPub = ssl->buffers.serverDH_Pub;
@@ -2394,20 +2434,22 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
                               &ssl->arrays.preMasterSz, priv, privSz,
                               serverPub.buffer, serverPub.length);
             FreeDhKey(&key);
-        #else
-            return -1;   /* not supported by build */
-        #endif
+        #endif /* OPENSSL_EXTRA */
+        #ifndef NO_PSK
         } else if (ssl->specs.kea == psk_kea) {
             char *pms = ssl->arrays.preMasterSecret;
 
             ssl->arrays.psk_keySz = ssl->options.client_psk_cb(ssl,
                 ssl->arrays.server_hint, ssl->arrays.client_identity,
                 MAX_PSK_ID_LEN, ssl->arrays.psk_key, MAX_PSK_KEY_LEN);
-            if (ssl->arrays.psk_keySz == 0) return -1;  /* client cb failure */
+            if (ssl->arrays.psk_keySz == 0 || 
+                ssl->arrays.psk_keySz > MAX_PSK_KEY_LEN) return -1;
             encSz = (word32)strlen(ssl->arrays.client_identity);
+            if (encSz > MAX_PSK_ID_LEN) return -1;
             memcpy(encSecret, ssl->arrays.client_identity, encSz);
 
             /* make psk pre master secret */
+            /* length of key + length 0s + length of key + key */
             c16toa((word16)ssl->arrays.psk_keySz, pms);
             pms += 2;
             memset(pms, 0, ssl->arrays.psk_keySz);
@@ -2416,6 +2458,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             pms += 2;
             memcpy(pms, ssl->arrays.psk_key, ssl->arrays.psk_keySz);
             ssl->arrays.preMasterSz = ssl->arrays.psk_keySz * 2 + 4;
+        #endif /* NO_PSK */
         } else
             return -1; /* unsupported kea */
 
@@ -2595,6 +2638,56 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             return SOCKET_ERROR_E;
 
         ssl->options.serverState = SERVER_HELLO_COMPLETE;
+
+        return 0;
+    }
+
+    int SendServerKeyExchange(SSL* ssl)
+    {
+        RecordLayerHeader rl;
+        HandShakeHeader   hs;
+        word32            length, idx = 0;
+        int               sendSz;
+        byte              alen[BYTE3_LEN];        /* for byte output lengths */
+        byte              output[MAX_HELLO_SZ + MAX_PSK_ID_LEN];
+
+        if (ssl->specs.kea != psk_kea) return 0;
+
+        #ifndef NO_PSK
+            if (ssl->arrays.server_hint[0] == 0) return 0; /* don't send */
+
+            /* include trailing 0 and size part */
+            length = (word32)strlen(ssl->arrays.server_hint) + 1 + HINT_LEN_SZ;
+
+            /* handshake header */
+            hs.type = server_key_exchange;
+            c32to24(length, alen);
+            memcpy(&hs.length, alen, sizeof(hs.length));
+
+            /* record layer header */
+            rl.type    = handshake;
+            rl.version = ssl->version;
+            c16toa((word16)(length + HANDSHAKE_HEADER_SZ), alen);
+            memcpy(&rl.length, alen, sizeof(rl.length));
+
+            /* now write to output */
+            memcpy(output, &rl, RECORD_HEADER_SZ);
+            idx += RECORD_HEADER_SZ;
+            memcpy(output + idx, &hs, HANDSHAKE_HEADER_SZ);
+            idx += HANDSHAKE_HEADER_SZ;
+
+            c16toa((word16)(length - HINT_LEN_SZ), output + idx);
+            idx += HINT_LEN_SZ;
+            memcpy(output + idx, ssl->arrays.server_hint, length);
+
+            sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
+            HashOutput(ssl, output, sendSz, 0);
+
+            if (Send(ssl, output, sendSz, 0) != sendSz)
+                return SOCKET_ERROR_E;
+
+            ssl->options.serverState = SERVER_KEYEXCHANGE_COMPLETE;
+        #endif /*NO_PSK */
 
         return 0;
     }

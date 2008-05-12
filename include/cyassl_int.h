@@ -163,6 +163,7 @@ enum Misc {
     RECORD_HEADER_SZ    = 5,   /* type + version + len(2) */
     CERT_HEADER_SZ      = 3,   /* always 3 bytes          */
     REQ_HEADER_SZ       = 2,   /* cert request header sz  */
+    HINT_LEN_SZ         = 2,   /* length of hint size field */
 
     FINISHED_LABEL_SZ   = 15,  /* TLS finished label size */
     TLS_FINISHED_SZ     = 12,  /* TLS has a shorter size  */
@@ -187,7 +188,7 @@ enum Misc {
     MAX_SUITE_NAME     =  48,  /* maximum length of cipher suite string */
     DEFAULT_TIMEOUT    = 500,  /* default resumption timeout in seconds */
 
-    MAX_PSK_ID_LEN     = 128,  /* max psk identity supported */
+    MAX_PSK_ID_LEN     = 128,  /* max psk identity/hint supported */
     MAX_PSK_KEY_LEN    =  64,  /* max psk key supported */
 
     NO_COPY            =   0,  /* should we copy static buffer for write */
@@ -269,6 +270,8 @@ int  SetCipherList(SSL_CTX* ctx, const char* list);
 #ifndef PSK_TYPES_DEFINED
     typedef unsigned int (*psk_client_callback)(SSL*, const char*, char*,
                           unsigned int, unsigned char*, unsigned int);
+    typedef unsigned int (*psk_server_callback)(SSL*, const char*,
+                          unsigned char*, unsigned int);
 #endif /* PSK_TYPES_DEFINED */
 
 /* OpenSSL context type */
@@ -285,8 +288,12 @@ struct SSL_CTX {
     byte        sessionCacheFlushOff;
     byte        sendVerify;       /* for client side */
     byte        haveDH;           /* server DH parms set by user */
+#ifndef NO_PSK
     byte        havePSK;          /* psk key set by user */
     psk_client_callback client_psk_cb;  /* client callback */
+    psk_server_callback server_psk_cb;  /* server callback */
+    char        server_hint[MAX_PSK_ID_LEN];
+#endif /* NO_PSK */
 };
 
 
@@ -490,8 +497,12 @@ typedef struct Options {
     byte            connectState;       /* nonblocking resume */
     byte            acceptState;        /* nonblocking resume */
     byte            haveDH;             /* server DH parms set by user */
+    byte            usingPSK_cipher;    /* whether we're using psk as cipher */
+#ifndef NO_PSK
     byte            havePSK;            /* psk key set by user */
     psk_client_callback client_psk_cb;
+    psk_server_callback server_psk_cb;
+#endif /* NO_PSK */
 } Options;
 
 
@@ -501,11 +512,13 @@ typedef struct Arrays {
     byte            sessionID[ID_LEN];
     byte            preMasterSecret[ENCRYPT_LEN];
     byte            masterSecret[SECRET_LEN];
+#ifndef NO_PSK
     char            client_identity[MAX_PSK_ID_LEN];
-    byte            server_hint[MAX_PSK_ID_LEN];
+    char            server_hint[MAX_PSK_ID_LEN];
     byte            psk_key[MAX_PSK_KEY_LEN];
-    word32          preMasterSz;        /* differs for DH, actual size */
     word32          psk_keySz;          /* acutal size */
+#endif
+    word32          preMasterSz;        /* differs for DH, actual size */
 } Arrays;
 
 
@@ -634,6 +647,7 @@ int SendChangeCipher(SSL*);
 int SendData(SSL*, const void*, int);
 int SendCertificate(SSL*);
 int SendCertificateRequest(SSL*);
+int SendServerKeyExchange(SSL*);
 int SendBuffered(SSL*);
 int ReceiveData(SSL*, byte*, int);
 int SendFinished(SSL*);

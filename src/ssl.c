@@ -42,6 +42,10 @@
 static int ProcessFile(SSL_CTX*, const char*, int format, int type);
 
 
+#define TRUE  1
+#define FALSE 0
+
+
 #ifndef min
 
     static INLINE word32 min(word32 a, word32 b)
@@ -432,6 +436,11 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
                     return SSL_FATAL_ERROR;
                 }
 
+                if ( (ssl->error = SendServerKeyExchange(ssl)) != 0) {
+                    CYASSL_ERROR(ssl->error);
+                    return SSL_FATAL_ERROR;
+                }
+
                 if (ssl->options.verifyPeer)
                     if ( (ssl->error = SendCertificateRequest(ssl)) != 0) {
                         CYASSL_ERROR(ssl->error);
@@ -815,6 +824,63 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
     {
         ctx->havePSK = 1;
         ctx->client_psk_cb = cb;
+    }
+
+
+    void SSL_set_psk_client_callback(SSL* ssl, psk_client_callback cb)
+    {
+        ssl->options.havePSK = 1;
+        ssl->options.client_psk_cb = cb;
+
+        InitSuites(&ssl->suites, ssl->version, TRUE, TRUE);
+    }
+
+
+    void SSL_CTX_set_psk_server_callback(SSL_CTX* ctx, psk_server_callback cb)
+    {
+        ctx->havePSK = 1;
+        ctx->server_psk_cb = cb;
+    }
+
+
+    void SSL_set_psk_server_callback(SSL* ssl, psk_server_callback cb)
+    {
+        ssl->options.havePSK = 1;
+        ssl->options.server_psk_cb = cb;
+
+        InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, TRUE);
+    }
+
+
+    const char* SSL_get_psk_identity_hint(const SSL* ssl)
+    {
+        return ssl->arrays.server_hint;
+    }
+
+
+    const char* SSL_get_psk_identity(const SSL* ssl)
+    {
+        return ssl->arrays.client_identity;
+    }
+
+
+    int SSL_CTX_use_psk_identity_hint(SSL_CTX* ctx, const char* hint)
+    {
+        if (hint == 0)
+            ctx->server_hint[0] = 0;
+        else
+            strncpy(ctx->server_hint, hint, MAX_PSK_ID_LEN);
+        return SSL_SUCCESS;
+    }
+
+
+    int SSL_use_psk_identity_hint(SSL* ssl, const char* hint)
+    {
+        if (hint == 0)
+            ssl->arrays.server_hint[0] = 0;
+        else
+            strncpy(ssl->arrays.server_hint, hint, MAX_PSK_ID_LEN);
+        return SSL_SUCCESS;
     }
 
 #endif /* NO_PSK */

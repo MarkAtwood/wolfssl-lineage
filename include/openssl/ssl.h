@@ -163,6 +163,18 @@ enum { /* ssl Constants */
     typedef unsigned int (*psk_client_callback)(SSL*, const char*, char*,
                           unsigned int, unsigned char*, unsigned int);
     void SSL_CTX_set_psk_client_callback(SSL_CTX*, psk_client_callback);
+    void SSL_set_psk_client_callback(SSL*, psk_client_callback);
+
+    const char* SSL_get_psk_identity_hint(const SSL*);
+    const char* SSL_get_psk_identity(const SSL*);
+
+    int SSL_CTX_use_psk_identity_hint(SSL_CTX*, const char*);
+    int SSL_use_psk_identity_hint(SSL*, const char*);
+
+    typedef unsigned int (*psk_server_callback)(SSL*, const char*,
+                          unsigned char*, unsigned int);
+    void SSL_CTX_set_psk_server_callback(SSL_CTX*, psk_server_callback);
+    void SSL_set_psk_server_callback(SSL*, psk_server_callback);
 
     #define PSK_TYPES_DEFINED
 #endif /* NO_PSK */

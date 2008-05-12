@@ -127,6 +127,7 @@ int SetCipherSpecs(SSL* ssl)
         ssl->specs.block_size            = AES_BLOCK_SIZE;
         ssl->specs.iv_size               = AES_IV_SIZE;
 
+        ssl->options.usingPSK_cipher     = 1;
         break;
 #endif
 
@@ -142,6 +143,7 @@ int SetCipherSpecs(SSL* ssl)
         ssl->specs.block_size            = AES_BLOCK_SIZE;
         ssl->specs.iv_size               = AES_IV_SIZE;
 
+        ssl->options.usingPSK_cipher     = 1;
         break;
 #endif
 
