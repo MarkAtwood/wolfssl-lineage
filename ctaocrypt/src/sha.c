@@ -21,10 +21,19 @@
 
 
 #include "sha.h"
-#include "misc.c"
+#include "misc.h"
 #include <string.h>
 #include <assert.h>
 
+
+#ifndef min
+
+    static INLINE word32 min(word32 a, word32 b)
+    {
+        return a > b ? b : a;
+    }
+
+#endif /* min */
 
 
 void InitSha(Sha* sha)
@@ -157,7 +166,7 @@ void ShaFinal(Sha* sha, byte* hash)
 
     AddLength(sha, sha->buffLen);               /* before adding pads */
 
-    local[sha->buffLen++] = 0x80;  // add 1
+    local[sha->buffLen++] = 0x80;  /* add 1 */
 
     /* pad with zeros */
     if (sha->buffLen > SHA_PAD_SIZE) {

@@ -62,7 +62,10 @@ enum CyaSSL_ErrorCodes {
     WANT_WRITE             = -227,            /* want write, call again   */
     BUFFER_ERROR           = -228,            /* malformed buffer input   */
     VERIFY_CERT_ERROR      = -229,            /* verify cert error        */
-    VERIFY_SIGN_ERROR      = -230             /* verify sign error        */
+    VERIFY_SIGN_ERROR      = -230,            /* verify sign error        */
+    CLIENT_ID_ERROR        = -231,            /* psk client identity error  */
+    SERVER_HINT_ERROR      = -232,            /* psk server hint error  */
+    PSK_KEY_ERROR          = -233             /* psk key error  */
 
     /* add strings to SetErrorString !!!!! */
 };

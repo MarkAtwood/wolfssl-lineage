@@ -20,21 +20,7 @@
  */
 
 
-#include "types.h"
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
-
-
-
-#ifndef min
-
-    static INLINE word32 min(word32 a, word32 b)
-    {
-        return a > b ? b : a;
-    }
-
-#endif /* min */
+#include "misc.h"
 
 
 
@@ -42,13 +28,13 @@
 
     #pragma intrinsic(_lrotl, _lrotr)
 
-    static INLINE word32 rotlFixed(word32 x, word32 y)
+    word32 rotlFixed(word32 x, word32 y)
     {
         assert(y < 32);
         return y ? _lrotl(x, y) : x;
     }
 
-    static INLINE word32 rotrFixed(word32 x, word32 y)
+    word32 rotrFixed(word32 x, word32 y)
     {
         assert(y < 32);
         return y ? _lrotr(x, y) : x;
@@ -56,14 +42,14 @@
 
 #else /* generic */
 
-    static INLINE word32 rotlFixed(word32 x, word32 y)
+    word32 rotlFixed(word32 x, word32 y)
     {
         assert(y < 32);
         return (x << y) | (x >> (sizeof(y) * 8 - y));
     }   
 
 
-    static INLINE word32 rotrFixed(word32 x, word32 y)
+    word32 rotrFixed(word32 x, word32 y)
     {
         assert(y < 32);
         return (x >> y) | (x << (sizeof(y) * 8 - y));
@@ -72,7 +58,7 @@
 #endif
 
 
-static INLINE word32 ByteReverseWord32(word32 value)
+word32 ByteReverseWord32(word32 value)
 {
 #ifdef PPC_INTRINSICS
     /* PPC: load reverse indexed instruction */
@@ -89,7 +75,7 @@ static INLINE word32 ByteReverseWord32(word32 value)
 }
 
 
-static INLINE void ByteReverseWords(word32* out, const word32* in,
+void ByteReverseWords(word32* out, const word32* in,
                                     word32 byteCount)
 {
     word32 count = byteCount/sizeof(word32), i;
@@ -102,7 +88,7 @@ static INLINE void ByteReverseWords(word32* out, const word32* in,
 }
 
 
-static INLINE void ByteReverseBytes(byte* out, const byte* in, word32 byteCount)
+void ByteReverseBytes(byte* out, const byte* in, word32 byteCount)
 {
     word32* op       = (word32*)out;
     const word32* ip = (const word32*)in;
@@ -111,7 +97,7 @@ static INLINE void ByteReverseBytes(byte* out, const byte* in, word32 byteCount)
 }
 
 
-static INLINE void XorWords(word* r, const word* a, word32 n)
+void XorWords(word* r, const word* a, word32 n)
 {
     word32 i;
 
@@ -119,7 +105,7 @@ static INLINE void XorWords(word* r, const word* a, word32 n)
 }
 
 
-static INLINE void xorbuf(byte* buf, const byte* mask, word32 count)
+void xorbuf(byte* buf, const byte* mask, word32 count)
 {
     if (((size_t)buf | (size_t)mask | count) % WORD_SIZE == 0)
         XorWords( (word*)buf, (const word*)mask, count / WORD_SIZE);

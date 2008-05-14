@@ -193,6 +193,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\misc.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpi_class.h"
 				>
 			</File>

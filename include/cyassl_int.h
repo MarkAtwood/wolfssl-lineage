@@ -42,7 +42,7 @@
 #endif
 
 #ifdef _MSC_VER
-    // 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy
+    /* 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy */
     #pragma warning(disable: 4996)
 #endif
 
@@ -151,7 +151,7 @@ enum Misc {
     REQUEST_HEADER =  2,       /* always use 2 bytes      */
     VERIFY_HEADER  =  2,       /* always use 2 bytes      */
 
-    MAX_SUITE_SZ = 64,         /* only 32 suites for now! */
+    MAX_SUITE_SZ = 128,         /* only 64 suites for now! */
     RAN_LEN      = 32,         /* random length           */
     SEED_LEN     = RAN_LEN * 2, /* tls prf seed length    */
     ID_LEN       = 32,         /* session id length       */

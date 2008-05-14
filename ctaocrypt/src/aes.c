@@ -22,7 +22,7 @@
 #ifndef NO_AES
 
 #include "aes.h"
-#include "misc.c"
+#include "misc.h"
 #include <assert.h>
 
 

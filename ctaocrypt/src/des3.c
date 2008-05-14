@@ -23,7 +23,7 @@
 #ifndef NO_DES3
 
 #include "des3.h"
-#include "misc.c"
+#include "misc.h"
 #include <string.h>
 
 
@@ -299,7 +299,7 @@ static void DesSetKey(const byte* key, int dir, word32* out)
             | ((word32)ks[7]);
     }
     
-    // reverse key schedule order
+    /* reverse key schedule order */
     if (dir == DES_DECRYPTION)
         for (i = 0; i < 16; i += 2) {
             word32 swap = out[i];

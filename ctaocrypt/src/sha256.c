@@ -26,10 +26,19 @@
 #ifndef NO_SHA256
 
 #include "sha256.h"
-#include "misc.c"
+#include "misc.h"
 #include <string.h>
 #include <assert.h>
 
+
+#ifndef min
+
+    static INLINE word32 min(word32 a, word32 b)
+    {
+        return a > b ? b : a;
+    }
+
+#endif /* min */
 
 
 void InitSha256(Sha256* sha256)

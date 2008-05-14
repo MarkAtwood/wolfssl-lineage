@@ -125,6 +125,10 @@ SOURCE=.\src\md5.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\misc.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\random.c
 # End Source File
 # Begin Source File
@@ -186,6 +190,10 @@ SOURCE=.\include\integer.h
 # Begin Source File
 
 SOURCE=.\include\md5.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\misc.h
 # End Source File
 # Begin Source File
 

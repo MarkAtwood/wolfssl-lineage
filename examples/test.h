@@ -12,7 +12,7 @@
 #ifdef _WIN32
     #include <winsock2.h>
     #include <process.h>
-    #ifdef TEST_IPV6            // don't require newer SDK for IPV4
+    #ifdef TEST_IPV6            /* don't require newer SDK for IPV4 */
 	    #include <ws2tcpip.h>
         #include <wspiapi.h>
     #endif
@@ -38,8 +38,8 @@
 #endif /* _WIN32 */
 
 #ifdef _MSC_VER
-    // disable conversion warning
-    // 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy
+    /* disable conversion warning */
+    /* 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy */
     #pragma warning(disable:4244 4996)
 #endif
 
@@ -268,6 +268,24 @@ static INLINE unsigned int my_psk_client_cb(SSL* ssl, const char* hint,
     /* identity is OpenSSL testing default for openssl s_client, keep same */
     strncpy(identity, "Client_identity", id_max_len);
 
+
+    /* test key in hex is 0x1a2b3c4d , in decimal 439,041,101 , we're using
+       unsigned binary */
+    key[0] = 26;
+    key[1] = 43;
+    key[2] = 60;
+    key[3] = 77;
+
+    return 4;   /* length of key in octets or 0 for error */
+}
+
+
+static INLINE unsigned int my_psk_server_cb(SSL* ssl, const char* identity,
+        unsigned char* key, unsigned int key_max_len)
+{
+    /* identity is OpenSSL testing default for openssl s_client, keep same */
+    if (strncmp(identity, "Client_identity", 15) != 0)
+        return 0;
 
     /* test key in hex is 0x1a2b3c4d , in decimal 439,041,101 , we're using
        unsigned binary */

@@ -142,13 +142,13 @@ int Base64Encode(const byte* in, word32 inLen, byte* out, word32* outLen)
         byte b2 = in[j++];
         byte b3 = in[j++];
 
-        // encoded idx
+        /* encoded idx */
         byte e1 = b1 >> 2;
         byte e2 = ((b1 & 0x3) << 4) | (b2 >> 4);
         byte e3 = ((b2 & 0xF) << 2) | (b3 >> 6);
         byte e4 = b3 & 0x3F;
 
-        // store
+        /* store */
         out[i++] = base64Encode[e1];
         out[i++] = base64Encode[e2];
         out[i++] = base64Encode[e3];

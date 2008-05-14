@@ -40,7 +40,7 @@
     #include <netinet/in.h>
     #include <sys/ioctl.h>
     #include <fcntl.h>
-#endif // _WIN32
+#endif /* _WIN32 */
 
 #ifdef __sun
     #include <sys/filio.h>
@@ -64,7 +64,7 @@
     const int SOCKET_EINTR = EINTR;
 
     SOCKET_T INVALID_SOCKET = -1;
-#endif // _WIN32
+#endif /* _WIN32 */
 
 
 #ifndef NO_CYASSL_CLIENT
@@ -1939,6 +1939,18 @@ void SetErrorString(int error, char* buffer)
         strncpy(buffer, "verify problem based on signature", max);
         break;
 
+    case CLIENT_ID_ERROR :
+        strncpy(buffer, "psk client identity error", max);
+        break;
+
+    case SERVER_HINT_ERROR:
+        strncpy(buffer, "psk server hint error", max);
+        break;
+
+    case PSK_KEY_ERROR:
+        strncpy(buffer, "psk key callback error", max);
+        break;
+
     default :
         strncpy(buffer, "unknown error number", max);
     }
@@ -2437,15 +2449,16 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         #endif /* OPENSSL_EXTRA */
         #ifndef NO_PSK
         } else if (ssl->specs.kea == psk_kea) {
-            char *pms = ssl->arrays.preMasterSecret;
+            byte* pms = ssl->arrays.preMasterSecret;
 
             ssl->arrays.psk_keySz = ssl->options.client_psk_cb(ssl,
                 ssl->arrays.server_hint, ssl->arrays.client_identity,
                 MAX_PSK_ID_LEN, ssl->arrays.psk_key, MAX_PSK_KEY_LEN);
             if (ssl->arrays.psk_keySz == 0 || 
-                ssl->arrays.psk_keySz > MAX_PSK_KEY_LEN) return -1;
+                ssl->arrays.psk_keySz > MAX_PSK_KEY_LEN)
+                return PSK_KEY_ERROR;
             encSz = (word32)strlen(ssl->arrays.client_identity);
-            if (encSz > MAX_PSK_ID_LEN) return -1;
+            if (encSz > MAX_PSK_ID_LEN) return CLIENT_ID_ERROR;
             memcpy(encSecret, ssl->arrays.client_identity, encSz);
 
             /* make psk pre master secret */
@@ -2656,8 +2669,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         #ifndef NO_PSK
             if (ssl->arrays.server_hint[0] == 0) return 0; /* don't send */
 
-            /* include trailing 0 and size part */
-            length = (word32)strlen(ssl->arrays.server_hint) + 1 + HINT_LEN_SZ;
+            /* include size part */
+            length = (word32)strlen(ssl->arrays.server_hint);
+            if (length > MAX_PSK_ID_LEN) return SERVER_HINT_ERROR;
+            length += + HINT_LEN_SZ;
 
             /* handshake header */
             hs.type = server_key_exchange;
@@ -2678,7 +2693,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
             c16toa((word16)(length - HINT_LEN_SZ), output + idx);
             idx += HINT_LEN_SZ;
-            memcpy(output + idx, ssl->arrays.server_hint, length);
+            memcpy(output + idx, ssl->arrays.server_hint, length -HINT_LEN_SZ);
 
             sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
             HashOutput(ssl, output, sendSz, 0);
@@ -2991,49 +3006,84 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
                                    word32* inOutIdx)
     {
         int    ret = 0;
-        word32 idx = 0;
-        RsaKey key;
-        byte*  tmp = 0;
         byte   sz[2];    /* for tls length */
-        word32 length;
+        word32 length = 0;
 
+        if (ssl->specs.kea == rsa_kea) {
+            word32 idx = 0;
+            RsaKey key;
+            byte*  tmp = 0;
 
-        InitRsaKey(&key);
+            InitRsaKey(&key);
 
-        if (ssl->buffers.key.buffer)
-            ret = RsaPrivateKeyDecode(ssl->buffers.key.buffer, &idx, &key,
-                                      ssl->buffers.key.length);
-        else
-            return NO_PRIVATE_KEY;
-
-        if (ret == 0) {
-            length = RsaEncryptSize(&key);
-            ssl->arrays.preMasterSz = SECRET_LEN;
-            tmp = (byte*) malloc(length);
-            if (!tmp) return MEMORY_ERROR;
-
-            if (ssl->options.tls) {
-                sz[0] = input[(*inOutIdx)++];
-                sz[1] = input[(*inOutIdx)++];
-            }   
-            memcpy(tmp, input + *inOutIdx, length);
-            *inOutIdx += length;
-
-            if (RsaPrivateDecrypt(tmp, length, ssl->arrays.preMasterSecret,
-                                  SECRET_LEN, &key) == SECRET_LEN) {
-                if (ssl->arrays.preMasterSecret[0] != ssl->chVersion.major ||
-                    ssl->arrays.preMasterSecret[1] != ssl->chVersion.minor)
-
-                    ret = PMS_VERSION_ERROR;
-                else
-                    ret = MakeMasterSecret(ssl);
-            }
+            if (ssl->buffers.key.buffer)
+                ret = RsaPrivateKeyDecode(ssl->buffers.key.buffer, &idx, &key,
+                                          ssl->buffers.key.length);
             else
-                ret = RSA_PRIVATE_ERROR;
-        }
+                return NO_PRIVATE_KEY;
 
-        FreeRsaKey(&key);
-        free(tmp);
+            if (ret == 0) {
+                length = RsaEncryptSize(&key);
+                ssl->arrays.preMasterSz = SECRET_LEN;
+                tmp = (byte*) malloc(length);
+                if (!tmp) return MEMORY_ERROR;
+
+                if (ssl->options.tls) {
+                    sz[0] = input[(*inOutIdx)++];
+                    sz[1] = input[(*inOutIdx)++];
+                }   
+                memcpy(tmp, input + *inOutIdx, length);
+                *inOutIdx += length;
+
+                if (RsaPrivateDecrypt(tmp, length, ssl->arrays.preMasterSecret,
+                                      SECRET_LEN, &key) == SECRET_LEN) {
+                    if (ssl->arrays.preMasterSecret[0] != ssl->chVersion.major ||
+                        ssl->arrays.preMasterSecret[1] != ssl->chVersion.minor)
+
+                        ret = PMS_VERSION_ERROR;
+                    else
+                        ret = MakeMasterSecret(ssl);
+                }
+                else
+                    ret = RSA_PRIVATE_ERROR;
+            }
+
+            FreeRsaKey(&key);
+            free(tmp);
+#ifndef NO_PSK
+        } else if (ssl->specs.kea == psk_kea) {
+            byte* pms = ssl->arrays.preMasterSecret;
+            word16 ci_sz;
+
+            sz[0] = input[(*inOutIdx)++];
+            sz[1] = input[(*inOutIdx)++];
+            ato16(sz, &ci_sz);
+            if (ci_sz > MAX_PSK_ID_LEN) return CLIENT_ID_ERROR;
+
+            memcpy(ssl->arrays.client_identity, &input[*inOutIdx], ci_sz);
+            *inOutIdx += ci_sz;
+            ssl->arrays.client_identity[ci_sz] = 0;
+
+            ssl->arrays.psk_keySz = ssl->options.server_psk_cb(ssl,
+                ssl->arrays.client_identity, ssl->arrays.psk_key,
+                MAX_PSK_KEY_LEN);
+            if (ssl->arrays.psk_keySz == 0 || 
+                ssl->arrays.psk_keySz > MAX_PSK_KEY_LEN) return PSK_KEY_ERROR;
+            
+            /* make psk pre master secret */
+            /* length of key + length 0s + length of key + key */
+            c16toa((word16)ssl->arrays.psk_keySz, pms);
+            pms += 2;
+            memset(pms, 0, ssl->arrays.psk_keySz);
+            pms += ssl->arrays.psk_keySz;
+            c16toa((word16)ssl->arrays.psk_keySz, pms);
+            pms += 2;
+            memcpy(pms, ssl->arrays.psk_key, ssl->arrays.psk_keySz);
+            ssl->arrays.preMasterSz = ssl->arrays.psk_keySz * 2 + 4;
+
+            ret = MakeMasterSecret(ssl);
+#endif /* NO_PSK */
+        }
 
         if (ret == 0) {
             ssl->options.clientState = CLIENT_KEYEXCHANGE_COMPLETE;

@@ -42,7 +42,7 @@
 
 
 
-// Get seed and key cipher
+/* Get seed and key cipher */
 int InitRng(RNG* rng)
 {
     byte key[32];
@@ -57,7 +57,7 @@ int InitRng(RNG* rng)
 }
 
 
-// place a generated block in output
+/* place a generated block in output */
 void RNG_GenerateBlock(RNG* rng, byte* output, word32 sz)
 {
     memset(output, 0, sz);

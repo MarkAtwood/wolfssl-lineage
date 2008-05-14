@@ -19,7 +19,7 @@
 #include "dsa.h"
 
 #ifdef _MSC_VER
-    // 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy
+    /* 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy */
     #pragma warning(disable: 4996)
 #endif
 
@@ -568,7 +568,7 @@ int aes_test()
     Aes enc;
     Aes dec;
 
-    const byte msg[] = { // "Now is the time for all " w/o trailing 0
+    const byte msg[] = { /* "Now is the time for all " w/o trailing 0 */
         0x6e,0x6f,0x77,0x20,0x69,0x73,0x20,0x74,
         0x68,0x65,0x20,0x74,0x69,0x6d,0x65,0x20,
         0x66,0x6f,0x72,0x20,0x61,0x6c,0x6c,0x20
@@ -580,8 +580,8 @@ int aes_test()
         0x2c,0xcc,0x9d,0x46,0x77,0xa2,0x33,0xcb
     };
 
-    byte key[] = "0123456789abcdef   ";  // align
-    byte iv[]  = "1234567890abcdef   ";  // align
+    byte key[] = "0123456789abcdef   ";  /* align */
+    byte iv[]  = "1234567890abcdef   ";  /* align */
 
     byte cipher[AES_BLOCK_SIZE];
     byte plain [AES_BLOCK_SIZE];

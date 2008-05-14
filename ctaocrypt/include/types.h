@@ -88,7 +88,11 @@ enum {
 #ifdef _MSC_VER
     #define INLINE __inline
 #elif __GNUC__
-    #define INLINE inline
+    #ifndef NO_INLINE
+        #define INLINE inline
+    #else
+        #define INLINE
+    #endif
 #else
     #define INLINE 
 #endif

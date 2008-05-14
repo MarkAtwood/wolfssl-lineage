@@ -21,11 +21,20 @@
 
 
 #include "md5.h"
-#include "misc.c"
+#include "misc.h"
 #include <assert.h>
 #include <string.h>
 
 
+
+#ifndef min
+
+    static INLINE word32 min(word32 a, word32 b)
+    {
+        return a > b ? b : a;
+    }
+
+#endif /* min */
 
 
 void InitMd5(Md5* md5)
@@ -172,7 +181,7 @@ void Md5Final(Md5* md5, byte* hash)
 
     AddLength(md5, md5->buffLen);               /* before adding pads */
 
-    local[md5->buffLen++] = 0x80;  // add 1
+    local[md5->buffLen++] = 0x80;  /* add 1 */
 
     /* pad with zeros */
     if (md5->buffLen > MD5_PAD_SIZE) {
