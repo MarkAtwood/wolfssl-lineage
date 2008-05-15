@@ -41,6 +41,10 @@
     #endif
 #endif
 
+#ifdef HAVE_LIBZ
+    #include "zlib.h"
+#endif
+
 #ifdef _MSC_VER
     /* 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy */
     #pragma warning(disable: 4996)
@@ -133,6 +137,7 @@ enum Misc {
     CLIENT_END,
 
     NO_COMPRESSION  =  0,
+    ZLIB_COMPRESSION = 221,     /* CyaSSL zlib compression */
     SECRET_LEN      = 48,       /* pre RSA and all master */
     ENCRYPT_LEN     = 256,      /* allow 2048 bit static buffer */
     SIZEOF_SENDER   =  4,       /* clnt or srvr           */
@@ -496,6 +501,7 @@ typedef struct Options {
     byte            isClosed;           /* if we consider conn closed */
     byte            connectState;       /* nonblocking resume */
     byte            acceptState;        /* nonblocking resume */
+    byte            usingCompression;   /* are we using compression */
     byte            haveDH;             /* server DH parms set by user */
     byte            usingPSK_cipher;    /* whether we're using psk as cipher */
 #ifndef NO_PSK
@@ -561,6 +567,11 @@ struct SSL {
     SSL_SESSION     session;
     X509            peerCert;           /* X509 peer cert */
     hmacfp          hmac;
+#ifdef HAVE_LIBZ
+    z_stream        c_stream;           /* compression   stream */
+    z_stream        d_stream;           /* decompression stream */
+    byte            didStreamInit;      /* for stream init and end */
+#endif
 };
 
 

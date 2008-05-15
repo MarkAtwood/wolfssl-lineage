@@ -818,6 +818,21 @@ int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
     }
 }
 
+
+/* turn on CyaSSL zlib compression
+   returns 0 for success, else error (not built in)
+*/
+int CyaSSL_set_compression(SSL* ssl)
+{
+#ifdef HAVE_LIBZ
+    ssl->options.usingCompression = 1;
+    return 0;
+#else
+    return -1;
+#endif
+}
+
+
 #ifndef NO_PSK
 
     void SSL_CTX_set_psk_client_callback(SSL_CTX* ctx, psk_client_callback cb)

@@ -234,6 +234,7 @@ void FreeCyaSSL(void);   /* call when done to free session cache */
 int  CyaSSL_Debugging_ON(void);   /* turn logging on, only if compiled in */
 void CyaSSL_Debugging_OFF(void);  /* turn logging off */
 
+int CyaSSL_set_compression(SSL* ssl);  /* turn on CyaSSL data compression */
 
 #ifdef __cplusplus
     } /* extern "C" */

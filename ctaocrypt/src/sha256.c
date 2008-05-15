@@ -26,7 +26,11 @@
 #ifndef NO_SHA256
 
 #include "sha256.h"
-#include "misc.h"
+#ifdef NO_INLINE
+    #include "misc.h"
+#else
+    #include "misc.c"
+#endif
 #include <string.h>
 #include <assert.h>
 

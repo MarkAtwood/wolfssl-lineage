@@ -5,6 +5,7 @@ AM_CONFIG_HEADER(ctaocrypt/include/config.h)
 
 
 dnl Include m4
+sinclude(check_zlib.m4)
 sinclude(lib_socket_nsl.m4)
 sinclude(acx_pthread.m4)
 
@@ -101,6 +102,8 @@ then
 fi
 
 
+
+CHECK_ZLIB
 
 ACX_PTHREAD
 

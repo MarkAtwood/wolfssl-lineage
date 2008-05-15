@@ -36,6 +36,7 @@
 #endif
 
 
+#ifdef NO_INLINE
 word32 rotlFixed(word32, word32);
 word32 rotrFixed(word32, word32);
 
@@ -45,6 +46,7 @@ void   ByteReverseBytes(byte*, const byte*, word32);
 
 void XorWords(word*, const word*, word32);
 void xorbuf(byte*, const byte*, word32);
+#endif /* NO_INLINE */
 
 
 #ifdef __cplusplus

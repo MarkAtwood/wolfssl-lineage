@@ -13,11 +13,8 @@
 #include "rsa.h"
 #include "asn.h"
 
-/*
 #include "dh.h"
-*/
 
-#define NO_DH  /* remove for now */
 
 #ifdef _MSC_VER
     /* 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy */
@@ -310,7 +307,7 @@ void bench_dh()
 
     bytes = fread(tmp, 1, 1024, file);
     InitDhKey(&key);
-    bytes = DhKeyDecode(tmp, &idx, &key, bytes);
+    bytes = DhKeyDecode(tmp, &idx, &key, (word32)bytes);
 
     start = current_time();
 

@@ -228,6 +228,10 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->version = ctx->method->version;
     ssl->suites  = ctx->suites;
     ssl->socket  = INVALID_SOCKET;
+
+#ifdef HAVE_LIBZ
+    ssl->didStreamInit = 0;
+#endif
    
     ssl->buffers.certificate.buffer   = 0;
     ssl->buffers.key.buffer           = 0;
@@ -251,6 +255,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->options.isNonBlocking = 0;  /* clear win32 non-blocking flag */
     ssl->options.connReset = 0;
     ssl->options.isClosed  = 0;
+    ssl->options.usingCompression = 0;
     ssl->options.haveDH    = ctx->haveDH;
     ssl->options.usingPSK_cipher = 0;
 #ifndef NO_PSK

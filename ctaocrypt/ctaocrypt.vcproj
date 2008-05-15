@@ -277,10 +277,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\misc.c"
-				>
-			</File>
-			<File
 				RelativePath=".\src\random.c"
 				>
 			</File>

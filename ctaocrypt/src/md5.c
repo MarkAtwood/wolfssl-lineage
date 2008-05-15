@@ -21,7 +21,11 @@
 
 
 #include "md5.h"
-#include "misc.h"
+#ifdef NO_INLINE
+    #include "misc.h"
+#else
+    #include "misc.c"
+#endif
 #include <assert.h>
 #include <string.h>
 

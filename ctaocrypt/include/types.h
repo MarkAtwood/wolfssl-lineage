@@ -86,7 +86,11 @@ enum {
 
 /* use inlining if compiler allows */
 #ifdef _MSC_VER
-    #define INLINE __inline
+    #ifndef NO_INLINE
+        #define INLINE __inline
+    #else
+        #define INLINE
+    #endif
 #elif __GNUC__
     #ifndef NO_INLINE
         #define INLINE inline
