@@ -144,6 +144,7 @@ enum Misc {
     FINISHED_SZ     = MD5_DIGEST_SIZE + SHA_DIGEST_SIZE,
     MAX_RECORD_SIZE = 16384,    /* 2^14, max size by standard */
     MAX_MSG_EXTRA   = 68,       /* max added to msg, mac + pad */
+    MAX_COMP_EXTRA  = 1024,     /* max compression extra */
     MAX_DH_SZ       = 612,      /* 2240 p, pub, g + 2 byte size for each */
 
     PAD_MD5        = 48,       /* pad length for finished */

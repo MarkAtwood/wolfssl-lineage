@@ -121,7 +121,10 @@ void client_test(void* args)
     CloseSocket(sockfd);
 
 #ifdef TEST_RESUME
-    tcp_connect(&sockfd);
+    if (argc == 3)
+        tcp_connect(&sockfd, argv[1], (short)atoi(argv[2]));
+    else
+        tcp_connect(&sockfd, yasslIP, yasslPort);
     SSL_set_fd(sslResume, sockfd);
     SSL_set_session(sslResume, session);
     

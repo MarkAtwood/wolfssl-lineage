@@ -38,7 +38,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="include;ctaocrypt\include"
+				AdditionalIncludeDirectories="include;ctaocrypt\include;\zlib"
 				PreprocessorDefinitions="OPENSSL_EXTRA"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"

@@ -25,6 +25,10 @@
 #include "cyassl_error.h"
 #include "asn.h"
 
+#ifdef HAVE_LIBZ
+    #include "zlib.h"
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -101,6 +105,131 @@ int  DeriveTlsKeys(SSL* ssl);
     }
 
 #endif /* min */
+
+
+static INLINE void c32to24(word32 in, word24 out)
+{
+    out[0] = (in >> 16) & 0xff;
+    out[1] = (in >>  8) & 0xff;
+    out[2] =  in & 0xff;
+}
+
+
+/* convert 16 bit integer to opaque */
+static void INLINE c16toa(word16 u16, byte* c)
+{
+    c[0] = (u16 >> 8) & 0xff;
+    c[1] =  u16 & 0xff;
+}
+
+
+/* convert 32 bit integer to opaque */
+static INLINE void c32toa(word32 u32, byte* c)
+{
+    c[0] = (u32 >> 24) & 0xff;
+    c[1] = (u32 >> 16) & 0xff;
+    c[2] = (u32 >>  8) & 0xff;
+    c[3] =  u32 & 0xff;
+}
+
+
+/* convert a 24 bit integer into a 32 bit one */
+static INLINE void c24to32(const word24 u24, word32* u32)
+{
+    *u32 = 0;
+    *u32 = (u24[0] << 16) | (u24[1] << 8) | u24[2];
+}
+
+
+/* convert opaque to 16 bit integer */
+static INLINE void ato16(const byte* c, word16* u16)
+{
+    *u16 = 0;
+    *u16 = (c[0] << 8) | (c[1]);
+}
+
+
+#ifdef HAVE_LIBZ
+
+    /* init zlib comp/decomp streams, 0 on success */
+    static int InitStreams(SSL* ssl)
+    {
+        ssl->c_stream.zalloc = (alloc_func)0;
+        ssl->c_stream.zfree  = (free_func)0;
+        ssl->c_stream.opaque = (voidpf)0;
+
+        if (deflateInit(&ssl->c_stream, 8) != Z_OK) return ZLIB_INIT_ERROR;
+
+        ssl->didStreamInit = 1;
+
+        ssl->d_stream.zalloc = (alloc_func)0;
+        ssl->d_stream.zfree  = (free_func)0;
+        ssl->d_stream.opaque = (voidpf)0;
+
+        if (inflateInit(&ssl->d_stream) != Z_OK) return ZLIB_INIT_ERROR;
+
+        return 0;
+    }
+
+
+    static void FreeStreams(SSL* ssl)
+    {
+        if (ssl->didStreamInit) {
+            deflateEnd(&ssl->c_stream);
+            inflateEnd(&ssl->d_stream);
+        }
+    }
+
+
+    /* compress in to out, return out size or error */
+    static int Compress(SSL* ssl, byte* in, int inSz, byte* out, int outSz)
+    {
+        int    err;
+        int    currTotal = ssl->c_stream.total_out;
+
+        /* put size in front of compression */
+        c16toa((word16)inSz, out);
+        out   += 2;
+        outSz -= 2;
+
+        ssl->c_stream.next_in   = in;
+        ssl->c_stream.avail_in  = inSz;
+        ssl->c_stream.next_out  = out;
+        ssl->c_stream.avail_out = outSz;
+
+        err = deflate(&ssl->c_stream, Z_SYNC_FLUSH);
+        if (err != Z_OK && err != Z_STREAM_END) return ZLIB_COMPRESS_ERROR;
+
+        return ssl->c_stream.total_out - currTotal + sizeof(word16);
+    }
+        
+
+    /* decompress in to out, returnn out size or error */
+    static int DeCompress(SSL* ssl, byte* in, int inSz, byte* out, int outSz)
+    {
+        int    err;
+        int    currTotal = ssl->d_stream.total_out;
+        word16 len;
+        byte   tmp[LENGTH_SZ];
+
+        /* find size in front of compression */
+        tmp[0] = *in++;
+        tmp[1] = *in++;
+        ato16(tmp, &len);
+        inSz -= 2;
+
+        ssl->d_stream.next_in   = in;
+        ssl->d_stream.avail_in  = inSz;
+        ssl->d_stream.next_out  = out;
+        ssl->d_stream.avail_out = outSz;
+
+        err = inflate(&ssl->d_stream, Z_SYNC_FLUSH);
+        if (err != Z_OK && err != Z_STREAM_END) return ZLIB_DECOMPRESS_ERROR;
+
+        return ssl->d_stream.total_out - currTotal;
+    }
+        
+#endif /* HAVE_LIBZ */
 
 
 void InitSSL_Method(SSL_METHOD* method, ProtocolVersion pv)
@@ -323,6 +452,10 @@ void FreeSSL(SSL* ssl)
     free(ssl->buffers.peerCert.buffer);
     free(ssl->writeBuffer.send.buffer);
 
+#ifdef HAVE_LIBZ
+    FreeStreams(ssl);
+#endif
+
     free(ssl);
 }
 
@@ -337,46 +470,6 @@ ProtocolVersion MakeSSLv3(void)
 }
 
 
-static INLINE void c32to24(word32 in, word24 out)
-{
-    out[0] = (in >> 16) & 0xff;
-    out[1] = (in >>  8) & 0xff;
-    out[2] =  in & 0xff;
-}
-
-
-/* convert 16 bit integer to opaque */
-static void INLINE c16toa(word16 u16, byte* c)
-{
-    c[0] = (u16 >> 8) & 0xff;
-    c[1] =  u16 & 0xff;
-}
-
-
-/* convert 32 bit integer to opaque */
-static INLINE void c32toa(word32 u32, byte* c)
-{
-    c[0] = (u32 >> 24) & 0xff;
-    c[1] = (u32 >> 16) & 0xff;
-    c[2] = (u32 >>  8) & 0xff;
-    c[3] =  u32 & 0xff;
-}
-
-
-/* convert a 24 bit integer into a 32 bit one */
-static INLINE void c24to32(const word24 u24, word32* u32)
-{
-    *u32 = 0;
-    *u32 = (u24[0] << 16) | (u24[1] << 8) | u24[2];
-}
-
-
-/* convert opaque to 16 bit integer */
-static INLINE void ato16(const byte* c, word16* u16)
-{
-    *u16 = 0;
-    *u16 = (c[0] << 8) | (c[1]);
-}
 
 
 #ifdef _WIN32
@@ -1055,23 +1148,42 @@ static int DoApplicationData(SSL* ssl, byte* input, word32* inOutIdx)
 
     /* read data */
     if (dataSz) {
+        byte*  rawData = input + idx;  /* keep current  for hmac */
+        int    rawSz   = dataSz;       /* keep raw size for hmac */
         word32 oldSz = ssl->buffers.bufferedData.buffer ?
                        ssl->buffers.bufferedData.length : 0;
-        byte* data = (byte*) malloc(dataSz + oldSz);
+        byte* newData = rawData;       /* could switch on decompression */
+        byte* data;                    /* old data plus new data */
+        byte  decomp[MAX_RECORD_SIZE + MAX_COMP_EXTRA];
+
+#ifdef HAVE_LIBZ
+        if (ssl->options.usingCompression) {
+            dataSz = DeCompress(ssl, rawData, dataSz, decomp, sizeof(decomp));
+            if (dataSz < 0) return dataSz;
+            newData = decomp;
+        }
+#else
+        (void)decomp;
+#endif
+
+        data = (byte*) malloc(dataSz + oldSz);
         if (!data) return MEMORY_ERROR;
 
         if (oldSz)
             memcpy(data, ssl->buffers.bufferedData.buffer, oldSz);
 
-        memcpy(data + oldSz, input + idx, dataSz);
-        idx += dataSz;
+        memcpy(data + oldSz, newData, dataSz);
+        if (ssl->options.usingCompression)
+            idx += rawSz;
+        else
+            idx += dataSz;
 
         if (oldSz)
             free(ssl->buffers.bufferedData.buffer);
         ssl->buffers.bufferedData.buffer = data;
         ssl->buffers.bufferedData.length = dataSz + oldSz;
 
-        ssl->hmac(ssl, verify, data + oldSz, dataSz, application_data, 1);
+        ssl->hmac(ssl, verify, rawData, rawSz, application_data, 1);
     }
 
     /* read mac and fill */
@@ -1225,6 +1337,12 @@ int DoProcessReply(SSL* ssl)
                     CYASSL_MSG("got CHANGE CIPHER SPEC");
                     idx++;
                     ssl->keys.encryptionOn = 1;
+
+                    #ifdef HAVE_LIBZ
+                        if (ssl->options.usingCompression)
+                            if ( (ret = InitStreams(ssl)) != 0)
+                                ERROR_OUT(ret);
+                    #endif
                     if (ssl->options.resuming && ssl->options.side ==
                                                                     CLIENT_END)
                         BuildFinished(ssl, &ssl->verifyHashes, server);
@@ -1683,13 +1801,28 @@ int SendData(SSL* ssl, const void* buffer, int sz)
     for (;;) {
         int   len = min(sz - sent, MAX_RECORD_SIZE);
         byte* out;
+        byte* sendBuffer = (byte*)buffer + sent;  /* may switch on comp */
+        int   buffSz = len;                       /* may switch on comp */
+        byte  comp[MAX_RECORD_SIZE + MAX_COMP_EXTRA];
 
         if (sent == sz) break;
-        out = (byte*) malloc(len + MAX_MSG_EXTRA);
+        out = (byte*) malloc(len + MAX_COMP_EXTRA + MAX_MSG_EXTRA);
 
         if (!out) return MEMORY_ERROR;
 
-        sendSz = BuildMessage(ssl, out, (byte*)buffer + sent, len,
+#ifdef HAVE_LIBZ
+        if (ssl->options.usingCompression) {
+            buffSz = Compress(ssl, sendBuffer, buffSz, comp, sizeof(comp));
+            if (buffSz < 0) {
+                free(out);
+                return buffSz;
+            }
+            sendBuffer = comp;
+        }
+#else
+        (void)comp;
+#endif
+        sendSz = BuildMessage(ssl, out, sendBuffer, buffSz,
                               application_data);
         if ( (ret = SendWrapper(ssl, out, sendSz, NO_COPY)) < 0) {
             CYASSL_ERROR(ret);
@@ -1956,6 +2089,18 @@ void SetErrorString(int error, char* buffer)
         strncpy(buffer, "psk key callback error", max);
         break;
 
+    case ZLIB_INIT_ERROR:
+        strncpy(buffer, "zlib init error", max);
+        break;
+
+    case ZLIB_COMPRESS_ERROR:
+        strncpy(buffer, "zlib compress error", max);
+        break;
+
+    case ZLIB_DECOMPRESS_ERROR:
+        strncpy(buffer, "zlib decompress error", max);
+        break;
+
     default :
         strncpy(buffer, "unknown error number", max);
     }
@@ -2163,7 +2308,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
             /* last, compression */
         output[idx++] = COMP_LEN;
-        output[idx++] = NO_COMPRESSION;
+        if (ssl->options.usingCompression)
+            output[idx++] = ZLIB_COMPRESSION;
+        else
+            output[idx++] = NO_COMPRESSION;
             
         sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
         HashOutput(ssl, output, sendSz, 0);
@@ -2177,6 +2325,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     static int DoServerHello(SSL* ssl, const byte* input, word32* inOutIdx)
     {
         byte b;
+        byte compression;
         ProtocolVersion pv;
         word32 i = *inOutIdx;
 
@@ -2190,9 +2339,12 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             i += b;
         }
         ssl->options.cipherSuite = input[++i];  
-        i++;  /* 2nd byte */
-        i++;  /* ignore compression for now */
+        compression = input[++i];
+        ++i;   /* 2nd byte */
 
+        if (compression != ZLIB_COMPRESSION && ssl->options.usingCompression)
+            ssl->options.usingCompression = 0;  /* turn off if server refused */
+        
         ssl->options.serverState = SERVER_HELLO_COMPLETE;
 
         *inOutIdx = i;
@@ -2647,7 +2799,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         output[idx++] = ssl->options.cipherSuite;
 
             /* last, compression */
-        output[idx++] = NO_COMPRESSION;
+        if (ssl->options.usingCompression)
+            output[idx++] = ZLIB_COMPRESSION;
+        else
+            output[idx++] = NO_COMPRESSION;
             
         sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
         HashOutput(ssl, output, sendSz, 0);
@@ -2818,6 +2973,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
                randomSz);
         idx += randomSz;
 
+        if (ssl->options.usingCompression)
+            ssl->options.usingCompression = 0;  /* turn off */
+
         ssl->options.clientState = CLIENT_HELLO_COMPLETE;
         *inOutIdx = idx;
 
@@ -2897,7 +3055,19 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         b = input[i++];  /* comp len */
         if (i + b > totalSz)
             return INCOMPLETE_DATA;
-        i += b;  /* ignore compression for now */
+
+        if (ssl->options.usingCompression) {
+            int match = 0;
+            while (b--) {
+                byte comp = input[i++];
+                if (comp == ZLIB_COMPRESSION)
+                    match = 1;
+            }
+            if (!match)
+                ssl->options.usingCompression = 0;  /* turn off */
+        }
+        else
+            i += b;  /* ignore, since we're not on */
 
         ssl->options.clientState = CLIENT_HELLO_COMPLETE;
 

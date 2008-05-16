@@ -65,7 +65,10 @@ enum CyaSSL_ErrorCodes {
     VERIFY_SIGN_ERROR      = -230,            /* verify sign error        */
     CLIENT_ID_ERROR        = -231,            /* psk client identity error  */
     SERVER_HINT_ERROR      = -232,            /* psk server hint error  */
-    PSK_KEY_ERROR          = -233             /* psk key error  */
+    PSK_KEY_ERROR          = -233,            /* psk key error  */
+    ZLIB_INIT_ERROR        = -234,            /* zlib init error  */
+    ZLIB_COMPRESS_ERROR    = -235,            /* zlib compression error  */
+    ZLIB_DECOMPRESS_ERROR  = -236             /* zlib decompression error  */
 
     /* add strings to SetErrorString !!!!! */
 };
