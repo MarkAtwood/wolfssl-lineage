@@ -44,7 +44,9 @@
 #endif
 
 #if defined(__MACH__) || defined(_WIN32)
-    typedef int socklen_t;
+    #ifndef _SOCKLEN_T
+        typedef int socklen_t;
+    #endif
 #endif
 
 
