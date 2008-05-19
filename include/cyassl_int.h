@@ -32,6 +32,10 @@
 #include "aes.h"
 #include "asn.h"
 
+#ifdef CYASSL_CALLBACKS
+    #include "openssl/cyassl_callbacks.h"
+#endif
+
 #ifdef _WIN32
     #include <windows.h>
 #else
@@ -226,6 +230,7 @@ enum states {
     typedef struct SSL_SESSION SSL_SESSION;
     typedef struct SSL         SSL;
     typedef struct X509        X509;
+
     #undef X509_NAME
     typedef struct X509_NAME   X509_NAME;
 #endif /* SSL_TYPES_DEFINED */
@@ -573,11 +578,21 @@ struct SSL {
     z_stream        d_stream;           /* decompression stream */
     byte            didStreamInit;      /* for stream init and end */
 #endif
+#ifdef CYASSL_CALLBACKS
+    HandShakeInfo   handShakeInfo;      /* info saved during handshake */
+#endif
 };
 
 
 int  InitSSL(SSL*, SSL_CTX*);
 void FreeSSL(SSL*);
+
+
+#ifdef CYASSL_CALLBACKS
+    void InitHandShakeInfo(HandShakeInfo*);
+    void FinishHandShakeInfo(HandShakeInfo*, const SSL*);
+    void AddPacketName(const char*, HandShakeInfo*);
+#endif
 
 
 /* record layer header for PlainText, Compressed, and CipherText */

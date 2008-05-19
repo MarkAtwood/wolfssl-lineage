@@ -31,7 +31,6 @@
 #endif
 
 enum CyaSSL_ErrorCodes {
-    UNSUPPORTED_SUITE      = -201,            /* unsupported cipher suite */
     PREFIX_ERROR           = -202,            /* bad index to key rounds  */
     MEMORY_ERROR           = -203,            /* out of memory            */
     VERIFY_FINISHED_ERROR  = -204,            /* verify problem on finished */
@@ -50,7 +49,6 @@ enum CyaSSL_ErrorCodes {
     NO_PEER_KEY            = -216,            /* need peer's key          */
     NO_PRIVATE_KEY         = -217,            /* need the private key     */
     RSA_PRIVATE_ERROR      = -218,            /* error during rsa priv op */
-    MATCH_SUITE_ERROR      = -219,            /* can't match cipher suite */
     BUILD_MSG_ERROR        = -220,            /* build message failure    */
 
     BAD_HELLO              = -221,            /* client hello malformed   */
@@ -68,11 +66,24 @@ enum CyaSSL_ErrorCodes {
     PSK_KEY_ERROR          = -233,            /* psk key error  */
     ZLIB_INIT_ERROR        = -234,            /* zlib init error  */
     ZLIB_COMPRESS_ERROR    = -235,            /* zlib compression error  */
-    ZLIB_DECOMPRESS_ERROR  = -236             /* zlib decompression error  */
+    ZLIB_DECOMPRESS_ERROR  = -236,            /* zlib decompression error  */
 
+    /* add strings to SetErrorString !!!!! */
+
+    /* begin negotiation parameter errors */
+    UNSUPPORTED_SUITE      = -260,            /* unsupported cipher suite */
+    MATCH_SUITE_ERROR      = -261             /* can't match cipher suite */
+    /* end   negotiation parameter errors through - 260 */
     /* add strings to SetErrorString !!!!! */
 };
 
+
+#ifdef CYASSL_CALLBACKS
+    enum {
+        MIN_PARAM_ERR = UNSUPPORTED_SUITE,
+        MAX_PARAM_ERR = MIN_PARAM_ERR + 10
+    };
+#endif
 
 
 void SetErrorString(int error, char* buffer);

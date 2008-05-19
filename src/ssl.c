@@ -833,6 +833,42 @@ int CyaSSL_set_compression(SSL* ssl)
 }
 
 
+#ifdef CYASSL_CALLBACKS
+
+    int CyaSSL_connect_ex(SSL* ssl, HandShakeCallBack cb)
+    {
+        int ret;
+
+        if (cb)
+            InitHandShakeInfo(&ssl->handShakeInfo); 
+        ret = SSL_connect(ssl);
+
+        if (cb) {
+            FinishHandShakeInfo(&ssl->handShakeInfo, ssl);
+            (cb)(&ssl->handShakeInfo);
+        }
+        return ret;
+    }
+
+
+    int CyaSSL_accept_ex(SSL* ssl, HandShakeCallBack cb)
+    {
+        int ret;
+
+        if (cb)
+            InitHandShakeInfo(&ssl->handShakeInfo); 
+        ret = SSL_accept(ssl);
+
+        if (cb) {
+            FinishHandShakeInfo(&ssl->handShakeInfo, ssl);
+            (cb)(&ssl->handShakeInfo);
+        }
+        return ret;
+    }
+
+#endif /* CYASSL_CALLBACKS */
+
+
 #ifndef NO_PSK
 
     void SSL_CTX_set_psk_client_callback(SSL_CTX* ctx, psk_client_callback cb)

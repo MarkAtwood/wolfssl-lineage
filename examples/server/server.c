@@ -3,10 +3,18 @@
 #include "../test.h"
 
 
+#ifdef CYASSL_CALLBACKS
+    int srvHandShakeCB(HandShakeInfo*);
+#endif
+
 #ifdef NON_BLOCKING
     void NonBlockingSSL_Accept(SSL* ssl)
     {
+    #ifndef CYASSL_CALLBACKS
         int ret = SSL_accept(ssl);
+    #else
+        int ret = CyaSSL_accept_ex(ssl, srvHandShakeCB);
+    #endif
         int error = SSL_get_error(ssl, 0);
         while (ret != SSL_SUCCESS && (error == SSL_ERROR_WANT_READ ||
                                       error == SSL_ERROR_WANT_WRITE)) {
@@ -78,8 +86,12 @@ THREAD_RETURN CYASSL_API server_test(void* args)
     tcp_set_nonblocking(&clientfd);
     NonBlockingSSL_Accept(ssl);
 #else
-    if (SSL_accept(ssl) != SSL_SUCCESS)
-        err_sys("SSL_accept failed");
+    #ifndef CYASSL_CALLBACKS
+        if (SSL_accept(ssl) != SSL_SUCCESS)
+    #else
+        if (CyaSSL_accept_ex(ssl, srvHandShakeCB) != SSL_SUCCESS)
+    #endif
+            err_sys("SSL_accept failed");
 #endif
     showPeer(ssl);
 
@@ -123,5 +135,15 @@ THREAD_RETURN CYASSL_API server_test(void* args)
 
 #endif /* NO_MAIN_DRIVER */
 
+
+#ifdef CYASSL_CALLBACKS
+
+    int srvHandShakeCB(HandShakeInfo* info)
+    {
+
+        return 0;
+    }
+
+#endif
 
 

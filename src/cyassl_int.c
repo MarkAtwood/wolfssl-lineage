@@ -844,6 +844,9 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
     int    ret = 0;
     int    firstTime = 1;  /* peer's is at front */
 
+    #ifdef CYASSL_CALLBACKS
+        AddPacketName("Certificate", &ssl->handShakeInfo);
+    #endif
     tmp[0] = input[i++];
     tmp[1] = input[i++];
     tmp[2] = input[i++];
@@ -939,6 +942,9 @@ static int DoFinished(SSL* ssl, const byte* input, word32* inOutIdx)
                    ssl->specs.hash_size,
            i;
 
+    #ifdef CYASSL_CALLBACKS
+        AddPacketName("Finished", &ssl->handShakeInfo);
+    #endif
     if (memcmp(input + idx, &ssl->verifyHashes, finishedSz))
         return VERIFY_FINISHED_ERROR;
 
@@ -1018,6 +1024,9 @@ static int DoHandShakeMsg(SSL* ssl, const byte* input, word32* inOutIdx,
 
     case server_hello_done:
         CYASSL_MSG("processing server hello done");
+        #ifdef CYASSL_CALLBACKS
+            AddPacketName("ServerHelloDone", &ssl->handShakeInfo);
+        #endif
         ssl->options.serverState = SERVER_HELLODONE_COMPLETE;
         break;
 
@@ -1657,6 +1666,9 @@ int SendFinished(SSL* ssl)
             BuildFinished(ssl, &ssl->verifyHashes, client);
     }
 
+    #ifdef CYASSL_CALLBACKS
+        AddPacketName("Finished", &ssl->handShakeInfo);
+    #endif
     return SendWrapper(ssl, output, sendSz, COPY);
 }
 
@@ -1714,6 +1726,9 @@ int SendCertificate(SSL* ssl)
     i += ssl->buffers.certificate.length;
 
     HashOutput(ssl, output, sendSz, 0);
+    #ifdef CYASSL_CALLBACKS
+        AddPacketName("Certificate", &ssl->handShakeInfo);
+    #endif
     if (Send(ssl, output, sendSz, 0) != sendSz)
         ret = SOCKET_ERROR_E;
 
@@ -1765,6 +1780,9 @@ int SendCertificateRequest(SSL* ssl)
 
     HashOutput(ssl, output, sendSz, 0);
 
+    #ifdef CYASSL_CALLBACKS
+        AddPacketName("CertificateRequest", &ssl->handShakeInfo);
+    #endif
     return SendWrapper(ssl, output, sendSz, COPY);
 }
 
@@ -2248,6 +2266,49 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 }
 
 
+#ifdef CYASSL_CALLBACKS
+
+    /* Initialisze HandShakeInfo */
+    void InitHandShakeInfo(HandShakeInfo* info)
+    {
+        int i;
+
+        info->cipherName[0] = 0;
+        for (i = 0; i < MAX_PACKETS_HANDSHAKE; i++)
+            info->packetNames[i][0] = 0;
+        info->numberPackets = 0;
+        info->negotiationError = 0;
+    }
+
+    /* Set Final HandShakeInfo parameters */
+    void FinishHandShakeInfo(HandShakeInfo* info, const SSL* ssl)
+    {
+        int i;
+        int sz = sizeof(cipher_name_idx)/sizeof(int); 
+
+        for (i = 0; i < sz; i++)
+            if (ssl->options.cipherSuite == (byte)cipher_name_idx[i]) {
+                strncpy(info->cipherName, cipher_names[i], MAX_CIPHERNAME_SZ);
+                break;
+            }
+
+        if (ssl->error >= MIN_PARAM_ERR && ssl->error <= MAX_PARAM_ERR)
+            info->negotiationError = ssl->error;
+    }
+
+   
+    /* Add name to info packet names, increase packet name count */
+    void AddPacketName(const char* name, HandShakeInfo* info)
+    {
+        if (info->numberPackets < MAX_PACKETS_HANDSHAKE) {
+            strncpy(info->packetNames[info->numberPackets++], name,
+                    MAX_PACKETNAME_SZ);
+        }
+    } 
+
+#endif /* CYASSL_CALLBACKS */
+
+
 /* client only parts */
 #ifndef NO_CYASSL_CLIENT
 
@@ -2318,6 +2379,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
         ssl->options.clientState = CLIENT_HELLO_COMPLETE;
 
+#ifdef CYASSL_CALLBACKS
+        AddPacketName("ClientHello", &ssl->handShakeInfo);
+#endif
         return SendWrapper(ssl, output, sendSz, COPY);
     }
 
@@ -2329,6 +2393,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         ProtocolVersion pv;
         word32 i = *inOutIdx;
 
+#ifdef CYASSL_CALLBACKS
+        AddPacketName("ServerHello", &ssl->handShakeInfo);
+#endif
         memcpy(&pv, input + i, sizeof(pv));
         i += sizeof(pv);
         memcpy(ssl->arrays.serverRandom, input + i, RAN_LEN);
@@ -2381,6 +2448,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         byte   tmp[REQUEST_HEADER];
         byte   b;
 
+        #ifdef CYASSL_CALLBACKS
+            AddPacketName("CertificateRequest", &ssl->handShakeInfo);
+        #endif
         len = input[(*inOutIdx)++];
 
         /* types */
@@ -2421,6 +2491,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             word16 length;
             byte   tmp[2];
 
+            #ifdef CYASSL_CALLBACKS
+                AddPacketName("ServerKeyExchange", &ssl->handShakeInfo);
+            #endif
             tmp[0] = input[(*inOutIdx)++];
             tmp[1] = input[(*inOutIdx)++];
             ato16(tmp, &length);
@@ -2672,6 +2745,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             sendSz = encSz + tlsSz + HANDSHAKE_HEADER_SZ +RECORD_HEADER_SZ;
             HashOutput(ssl, output, sendSz, 0);
 
+            #ifdef CYASSL_CALLBACKS
+                AddPacketName("ClientKeyExchange", &ssl->handShakeInfo);
+            #endif
             ret = SendWrapper(ssl, output, sendSz, COPY);
         }
     
@@ -2733,8 +2809,12 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
         FreeRsaKey(&key);
 
-        if (ret == 0)
+        if (ret == 0) {
+            #ifdef CYASSL_CALLBACKS
+                AddPacketName("CertificateVerify", &ssl->handShakeInfo);
+            #endif
             return SendWrapper(ssl, output, sendSz, COPY);
+        }
         else
             return ret;
     }
@@ -2807,6 +2887,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
         HashOutput(ssl, output, sendSz, 0);
 
+        #ifdef CYASSL_CALLBACKS
+            AddPacketName("ServerHello", &ssl->handShakeInfo);
+        #endif
         if (Send(ssl, output, sendSz, 0) != sendSz)
             return SOCKET_ERROR_E;
 
@@ -2858,6 +2941,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
             HashOutput(ssl, output, sendSz, 0);
 
+            #ifdef CYASSL_CALLBACKS
+                AddPacketName("ServerKeyExchange", &ssl->handShakeInfo);
+            #endif
             if (Send(ssl, output, sendSz, 0) != sendSz)
                 return SOCKET_ERROR_E;
 
@@ -2908,6 +2994,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         byte len[2];
 
         word16 sz = ((b0 & 0x7f) << 8) | b1;
+#ifdef CYASSL_CALLBACKS
+        AddPacketName("ClientHello", &ssl->handShakeInfo);
+#endif
         if (sz > inSz - 2)
             return INCOMPLETE_DATA;
 
@@ -3014,6 +3103,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         word32 i = *inOutIdx;
         word32 begin = i;
 
+#ifdef CYASSL_CALLBACKS
+        AddPacketName("ClientHello", &ssl->handShakeInfo);
+#endif
         /* make sure can read up to session */
         if (i + sizeof(pv) + RAN_LEN + ENUM_LEN > totalSz)
             return INCOMPLETE_DATA;
@@ -3109,6 +3201,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         byte   tmp[VERIFY_HEADER];
         byte   sig[ENCRYPT_LEN];
 
+        #ifdef CYASSL_CALLBACKS
+            AddPacketName("CertificateVerify", &ssl->handShakeInfo);
+        #endif
         if ( (i + VERIFY_HEADER) > totalSz)
             return INCOMPLETE_DATA;
 
@@ -3169,6 +3264,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         idx += HANDSHAKE_HEADER_SZ;
 
         HashOutput(ssl, output, sendSz, 0);
+#ifdef CYASSL_CALLBACKS
+        AddPacketName("ServerHelloDone", &ssl->handShakeInfo);
+#endif
         if (Send(ssl, output, sendSz, 0) != sendSz)
             return SOCKET_ERROR_E;
 
@@ -3184,6 +3282,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         byte   sz[2];    /* for tls length */
         word32 length = 0;
 
+        #ifdef CYASSL_CALLBACKS
+            AddPacketName("ClientKeyExchange", &ssl->handShakeInfo);
+        #endif
         if (ssl->specs.kea == rsa_kea) {
             word32 idx = 0;
             RsaKey key;

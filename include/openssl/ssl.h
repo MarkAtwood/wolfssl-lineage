@@ -236,6 +236,21 @@ void CyaSSL_Debugging_OFF(void);  /* turn logging off */
 
 int CyaSSL_set_compression(SSL* ssl);  /* turn on CyaSSL data compression */
 
+
+#ifdef CYASSL_CALLBACKS
+
+/* used internally by CyaSSL while OpenSSL types aren't */
+#include "cyassl_callbacks.h"
+
+typedef int (*HandShakeCallBack)(HandShakeInfo*);
+
+/* CyaSSL connect extension allowing HandShakeCallBack for diagnostics */
+int CyaSSL_connect_ex(SSL*, HandShakeCallBack);
+int CyaSSL_accept_ex(SSL*, HandShakeCallBack);
+
+#endif /* CYASSL_CALLBACKS */
+
+
 #ifdef __cplusplus
     } /* extern "C" */
 #endif

@@ -7,10 +7,18 @@
 #define TEST_RESUME 
 */
 
+#ifdef CYASSL_CALLBACKS
+    int handShakeCB(HandShakeInfo*);
+#endif
+
 #ifdef NON_BLOCKING
     void NonBlockingSSL_Connect(SSL* ssl)
     {
+#ifndef CYASSL_CALLBACKS
         int ret = SSL_connect(ssl);
+#else
+        int ret = CyaSSL_connect_ex(ssl, handShakeCB);
+#endif
         int error = SSL_get_error(ssl, 0);
         while (ret != SSL_SUCCESS && (error == SSL_ERROR_WANT_READ ||
                                       error == SSL_ERROR_WANT_WRITE)) {
@@ -92,7 +100,11 @@ void client_test(void* args)
     tcp_set_nonblocking(&sockfd);
     NonBlockingSSL_Connect(ssl);
 #else
-    if (SSL_connect(ssl) != SSL_SUCCESS)  /* please see note at top of README */
+    #ifndef CYASSL_CALLBACKS
+        if (SSL_connect(ssl) != SSL_SUCCESS) /* see note at top of README */
+    #else
+        if (CyaSSL_connect_ex(ssl, handShakeCB) != SSL_SUCCESS)
+    #endif
         err_sys("SSL_connect failed");    /* if you're getting an error here  */
 #endif
     showPeer(ssl);
@@ -170,4 +182,15 @@ void client_test(void* args)
     }
 
 #endif /* NO_MAIN_DRIVER */
+
+
+#ifdef CYASSL_CALLBACKS
+
+    int handShakeCB(HandShakeInfo* info)
+    {
+
+        return 0;
+    }
+
+#endif
 
