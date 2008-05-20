@@ -412,6 +412,17 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
         CYASSL_ENTER("SSL_accept()");
 
+        if (ssl->writeBuffer.send.buffer) {
+            if ( (ssl->error = SendBuffered(ssl)) == 0) {
+                ssl->options.connectState++;
+                CYASSL_MSG("accept state: Advanced from buffered send");
+            }
+            else {
+                CYASSL_ERROR(ssl->error);
+                return SSL_FATAL_ERROR;
+            }
+        }
+
         switch (ssl->options.acceptState) {
     
         case ACCEPT_BEGIN :
@@ -429,29 +440,43 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
                 CYASSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
             }
+            ssl->options.acceptState = SERVER_HELLO_SENT;
+            CYASSL_MSG("accept state SERVER_HELLO_SENT");
 
-            if (!ssl->options.resuming) {
+        case SERVER_HELLO_SENT :
+            if (!ssl->options.resuming) 
                 if ( (ssl->error = SendCertificate(ssl)) != 0) {
                     CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
                 }
+            ssl->options.acceptState = CERT_SENT;
+            CYASSL_MSG("accept state CERT_SENT");
 
+        case CERT_SENT :
+            if (!ssl->options.resuming) 
                 if ( (ssl->error = SendServerKeyExchange(ssl)) != 0) {
                     CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
                 }
+            ssl->options.acceptState = KEY_EXCHANGE_SENT;
+            CYASSL_MSG("accept state KEY_EXCHANGE_SENT");
 
+        case KEY_EXCHANGE_SENT :
+            if (!ssl->options.resuming) 
                 if (ssl->options.verifyPeer)
                     if ( (ssl->error = SendCertificateRequest(ssl)) != 0) {
                         CYASSL_ERROR(ssl->error);
                         return SSL_FATAL_ERROR;
                     }
+            ssl->options.acceptState = CERT_REQ_SENT;
+            CYASSL_MSG("accept state CERT_REQ_SENT");
 
+        case CERT_REQ_SENT :
+            if (!ssl->options.resuming) 
                 if ( (ssl->error = SendServerHelloDone(ssl)) != 0) {
                     CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
                 }
-            }
             ssl->options.acceptState = SERVER_HELLO_DONE;
             CYASSL_MSG("accept state SERVER_HELLO_DONE");
 
@@ -471,7 +496,10 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
                 CYASSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
             }
+            ssl->options.acceptState = CHANGE_CIPHER_SENT;
+            CYASSL_MSG("accept state  CHANGE_CIPHER_SENT");
 
+        case CHANGE_CIPHER_SENT : 
             if ( (ssl->error = SendFinished(ssl)) != 0) {
                 CYASSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;

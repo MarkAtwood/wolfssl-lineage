@@ -1729,13 +1729,14 @@ int SendCertificate(SSL* ssl)
     #ifdef CYASSL_CALLBACKS
         AddPacketName("Certificate", &ssl->handShakeInfo);
     #endif
-    if (Send(ssl, output, sendSz, 0) != sendSz)
-        ret = SOCKET_ERROR_E;
 
     if (ssl->options.side == SERVER_END)
         ssl->options.serverState = SERVER_CERT_COMPLETE;
-    free(output);
-    return 0;
+
+    if ( (ret = SendWrapper(ssl, output, sendSz, NO_COPY)) == 0)
+        free(output);  /* otherwise write_buffer owns */
+
+    return ret;
 }
 
 
@@ -2890,12 +2891,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         #ifdef CYASSL_CALLBACKS
             AddPacketName("ServerHello", &ssl->handShakeInfo);
         #endif
-        if (Send(ssl, output, sendSz, 0) != sendSz)
-            return SOCKET_ERROR_E;
 
         ssl->options.serverState = SERVER_HELLO_COMPLETE;
 
-        return 0;
+        return SendWrapper(ssl, output, sendSz, COPY);
     }
 
     int SendServerKeyExchange(SSL* ssl)
@@ -2904,6 +2903,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         HandShakeHeader   hs;
         word32            length, idx = 0;
         int               sendSz;
+        int               ret = 0;
         byte              alen[BYTE3_LEN];        /* for byte output lengths */
         byte              output[MAX_HELLO_SZ + MAX_PSK_ID_LEN];
 
@@ -2944,13 +2944,12 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             #ifdef CYASSL_CALLBACKS
                 AddPacketName("ServerKeyExchange", &ssl->handShakeInfo);
             #endif
-            if (Send(ssl, output, sendSz, 0) != sendSz)
-                return SOCKET_ERROR_E;
 
+            ret = SendWrapper(ssl, output, sendSz, COPY);
             ssl->options.serverState = SERVER_KEYEXCHANGE_COMPLETE;
         #endif /*NO_PSK */
 
-        return 0;
+        return ret;
     }
 
 
@@ -3267,11 +3266,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 #ifdef CYASSL_CALLBACKS
         AddPacketName("ServerHelloDone", &ssl->handShakeInfo);
 #endif
-        if (Send(ssl, output, sendSz, 0) != sendSz)
-            return SOCKET_ERROR_E;
-
         ssl->options.serverState = SERVER_HELLODONE_COMPLETE;
-        return 0;
+        return SendWrapper(ssl, output, sendSz, COPY);
     }
 
 
