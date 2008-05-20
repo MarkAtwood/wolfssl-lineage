@@ -357,11 +357,11 @@ enum { /* ssl Constants */
     SSL_ERROR_ZERO_RETURN      = 84,
     SSL_ERROR_SSL              = 85,
 
-    SSL_SENT_SHUTDOWN     = 90,
-    SSL_RECEIVED_SHUTDOWN = 91,
+    SSL_ST_CONNECT        = 90,
+    SSL_ST_ACCEPT         = 91,
     SSL_CB_LOOP           = 92,
-    SSL_ST_CONNECT        = 93,
-    SSL_ST_ACCEPT         = 94,
+    SSL_SENT_SHUTDOWN     = 93,
+    SSL_RECEIVED_SHUTDOWN = 94,
     SSL_CB_ALERT          = 95,
     SSL_CB_READ           = 96,
     SSL_CB_HANDSHAKE_DONE = 97
