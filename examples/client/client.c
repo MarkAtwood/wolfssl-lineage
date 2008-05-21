@@ -9,15 +9,17 @@
 
 #ifdef CYASSL_CALLBACKS
     int handShakeCB(HandShakeInfo*);
+    int timeoutCB(TimeoutInfo*);
+    Timeval timeout;
 #endif
 
-#ifdef NON_BLOCKING
+#if defined(NON_BLOCKING) || defined(CYASSL_CALLBACKS)
     void NonBlockingSSL_Connect(SSL* ssl)
     {
 #ifndef CYASSL_CALLBACKS
         int ret = SSL_connect(ssl);
 #else
-        int ret = CyaSSL_connect_ex(ssl, handShakeCB);
+        int ret = CyaSSL_connect_ex(ssl, handShakeCB, timeoutCB, timeout);
 #endif
         int error = SSL_get_error(ssl, 0);
         while (ret != SSL_SUCCESS && (error == SSL_ERROR_WANT_READ ||
@@ -31,7 +33,11 @@
             #else
                 sleep(1);
             #endif
-            ret = SSL_connect(ssl);
+            #ifndef CYASSL_CALLBACKS
+                ret = SSL_connect(ssl);
+            #else
+                ret = CyaSSL_connect_ex(ssl, handShakeCB, timeoutCB, timeout);
+            #endif
             error = SSL_get_error(ssl, 0);
         }
         if (ret != SSL_SUCCESS)
@@ -102,13 +108,15 @@ void client_test(void* args)
 #else
     #ifndef CYASSL_CALLBACKS
         if (SSL_connect(ssl) != SSL_SUCCESS) /* see note at top of README */
+            err_sys("SSL_connect failed");/* if you're getting an error here  */
     #else
-        if (CyaSSL_connect_ex(ssl, handShakeCB) != SSL_SUCCESS)
+        timeout.tv_sec  = 2;
+        timeout.tv_usec = 0;
+        NonBlockingSSL_Connect(ssl);  /* will keep retrying on timeout */
     #endif
-        err_sys("SSL_connect failed");    /* if you're getting an error here  */
 #endif
     showPeer(ssl);
-
+    
     if (argc == 3) {
         printf("SSL connect ok, sending GET...\n");
         strncpy(msg, "GET\r\n", 6);
@@ -187,6 +195,13 @@ void client_test(void* args)
 #ifdef CYASSL_CALLBACKS
 
     int handShakeCB(HandShakeInfo* info)
+    {
+
+        return 0;
+    }
+
+
+    int timeoutCB(TimeoutInfo* info)
     {
 
         return 0;

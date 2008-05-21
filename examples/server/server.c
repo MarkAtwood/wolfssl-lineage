@@ -5,15 +5,17 @@
 
 #ifdef CYASSL_CALLBACKS
     int srvHandShakeCB(HandShakeInfo*);
+    int srvTimeoutCB(TimeoutInfo*);
+    Timeval srvTo;
 #endif
 
-#ifdef NON_BLOCKING
+#if defined(NON_BLOCKING) || defined(CYASSL_CALLBACKS)
     void NonBlockingSSL_Accept(SSL* ssl)
     {
     #ifndef CYASSL_CALLBACKS
         int ret = SSL_accept(ssl);
     #else
-        int ret = CyaSSL_accept_ex(ssl, srvHandShakeCB);
+        int ret = CyaSSL_accept_ex(ssl, srvHandShakeCB, srvTimeoutCB, srvTo);
     #endif
         int error = SSL_get_error(ssl, 0);
         while (ret != SSL_SUCCESS && (error == SSL_ERROR_WANT_READ ||
@@ -24,7 +26,11 @@
             #else
                 sleep(1);
             #endif
-            ret = SSL_accept(ssl);
+            #ifndef CYASSL_CALLBACKS
+                ret = SSL_accept(ssl);
+            #else
+                ret = CyaSSL_accept_ex(ssl, srvHandShakeCB, srvTimeoutCB,srvTo);
+            #endif
             error = SSL_get_error(ssl, 0);
         }
         if (ret != SSL_SUCCESS)
@@ -88,10 +94,10 @@ THREAD_RETURN CYASSL_API server_test(void* args)
 #else
     #ifndef CYASSL_CALLBACKS
         if (SSL_accept(ssl) != SSL_SUCCESS)
-    #else
-        if (CyaSSL_accept_ex(ssl, srvHandShakeCB) != SSL_SUCCESS)
-    #endif
             err_sys("SSL_accept failed");
+    #else
+        NonBlockingSSL_Accept(ssl);
+    #endif
 #endif
     showPeer(ssl);
 
@@ -139,6 +145,13 @@ THREAD_RETURN CYASSL_API server_test(void* args)
 #ifdef CYASSL_CALLBACKS
 
     int srvHandShakeCB(HandShakeInfo* info)
+    {
+
+        return 0;
+    }
+
+
+    int srvTimeoutCB(TimeoutInfo* info)
     {
 
         return 0;

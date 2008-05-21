@@ -34,6 +34,7 @@
 
 #ifdef CYASSL_CALLBACKS
     #include "openssl/cyassl_callbacks.h"
+    #include <signal.h>
 #endif
 
 #ifdef _WIN32
@@ -585,6 +586,9 @@ struct SSL {
 #endif
 #ifdef CYASSL_CALLBACKS
     HandShakeInfo   handShakeInfo;      /* info saved during handshake */
+    TimeoutInfo     timeoutInfo;        /* info saved during handshake */
+    byte            hsInfoOn;           /* track handshake info        */
+    byte            toInfoOn;           /* track timeout   info        */
 #endif
 };
 
@@ -597,6 +601,11 @@ void FreeSSL(SSL*);
     void InitHandShakeInfo(HandShakeInfo*);
     void FinishHandShakeInfo(HandShakeInfo*, const SSL*);
     void AddPacketName(const char*, HandShakeInfo*);
+
+    void InitTimeoutInfo(TimeoutInfo*);
+    void FreeTimeoutInfo(TimeoutInfo*);
+    void AddPacketInfo(const char*, TimeoutInfo*, const byte*, int);
+    void AddLateName(const char*, TimeoutInfo*);
 #endif
 
 

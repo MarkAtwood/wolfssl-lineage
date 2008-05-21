@@ -68,6 +68,10 @@ enum CyaSSL_ErrorCodes {
     ZLIB_COMPRESS_ERROR    = -235,            /* zlib compression error  */
     ZLIB_DECOMPRESS_ERROR  = -236,            /* zlib decompression error  */
 
+    GETTIME_ERROR          = -237,            /* gettimeofday failed ??? */
+    GETITIMER_ERROR        = -238,            /* getitimer failed ??? */
+    SIGACT_ERROR           = -239,            /* sigaction failed ??? */
+    SETITIMER_ERROR        = -240,            /* setitimer failed ??? */
     /* add strings to SetErrorString !!!!! */
 
     /* begin negotiation parameter errors */

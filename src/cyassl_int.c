@@ -429,6 +429,11 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
         ssl->arrays.server_hint[0] = 0;
 #endif /* NO_PSK */
 
+#ifdef CYASSL_CALLBACKS
+    ssl->hsInfoOn = 0;
+    ssl->toInfoOn = 0;
+#endif
+
     /* make sure server has DH parms, and add PSK if there */
     if (ssl->options.side == SERVER_END) 
         InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, havePSK);
@@ -585,7 +590,10 @@ static INLINE int IsNonBlocking(SSL* ssl)
      */
     return ssl->options.isNonBlocking;
 #else
-    return O_NONBLOCK & fcntl(ssl->socket, F_GETFL, 0);
+    if (ssl->options.isNonBlocking)
+        return 1;
+    else
+        return O_NONBLOCK & fcntl(ssl->socket, F_GETFL, 0);
 #endif
 }
 
@@ -610,8 +618,24 @@ retry:
         }
         else if (LastError() == SOCKET_ECONNRESET)
             ssl->options.connReset = 1;
-        else if (LastError() == SOCKET_EINTR)
+        else if (LastError() == SOCKET_EINTR) {
+            /* see if we got our timeout */
+            #ifdef CYASSL_CALLBACKS
+                if (ssl->toInfoOn) {
+                    struct itimerval timeout;
+                    getitimer(ITIMER_REAL, &timeout);
+                    if (timeout.it_value.tv_sec == 0 && 
+                                            timeout.it_value.tv_usec == 0) {
+                        strncpy(ssl->timeoutInfo.timeoutName,
+                                "recv() timeout", MAX_TIMEOUT_NAME_SZ);
+                        /* same processing as non blocking (WANT_READ) */
+                        ssl->options.isNonBlocking = 1;
+                        return 0;
+                    }
+                }
+            #endif
             goto retry;
+        }
     }
     else if (recvd == 0) {
         ssl->options.isClosed = 1;
@@ -667,8 +691,23 @@ int Send(SSL* ssl, const byte* buf, int sz, int flags)
             }
             else if (LastError() == SOCKET_ECONNRESET)
                 ssl->options.connReset = 1;
-            else if (LastError() == SOCKET_EINTR)
+            else if (LastError() == SOCKET_EINTR) {
+                /* see if we got our timeout */
+                #ifdef CYASSL_CALLBACKS
+                    if (ssl->toInfoOn) {
+                        struct itimerval timeout;
+                        getitimer(ITIMER_REAL, &timeout);
+                        if (timeout.it_value.tv_sec == 0 && 
+                                               timeout.it_value.tv_usec == 0) {
+                            strncpy(ssl->timeoutInfo.timeoutName,
+                                    "send() timeout", MAX_TIMEOUT_NAME_SZ); 
+                            ssl->writeBuffer.offset = buf;
+                            return WANT_WRITE;
+                        }
+                    }
+                #endif
                 continue;
+            }
 
             return SOCKET_ERROR_E;
         }
@@ -845,7 +884,8 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
     int    firstTime = 1;  /* peer's is at front */
 
     #ifdef CYASSL_CALLBACKS
-        AddPacketName("Certificate", &ssl->handShakeInfo);
+        if (ssl->hsInfoOn) AddPacketName("Certificate", &ssl->handShakeInfo);
+        if (ssl->toInfoOn) AddLateName("Certificate", &ssl->timeoutInfo);
     #endif
     tmp[0] = input[i++];
     tmp[1] = input[i++];
@@ -943,7 +983,8 @@ static int DoFinished(SSL* ssl, const byte* input, word32* inOutIdx)
            i;
 
     #ifdef CYASSL_CALLBACKS
-        AddPacketName("Finished", &ssl->handShakeInfo);
+        if (ssl->hsInfoOn) AddPacketName("Finished", &ssl->handShakeInfo);
+        if (ssl->toInfoOn) AddLateName("Finished", &ssl->timeoutInfo);
     #endif
     if (memcmp(input + idx, &ssl->verifyHashes, finishedSz))
         return VERIFY_FINISHED_ERROR;
@@ -997,6 +1038,14 @@ static int DoHandShakeMsg(SSL* ssl, const byte* input, word32* inOutIdx,
         return INCOMPLETE_DATA;
     
     HashInput(ssl, input + *inOutIdx, hs.size);
+#ifdef CYASSL_CALLBACKS
+    /* add name later, add on record and handshake header  part back on */
+    if (ssl->toInfoOn) {
+        int add = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
+        AddPacketInfo(0, &ssl->timeoutInfo, input + *inOutIdx - add,
+                      hs.size + add);
+    }
+#endif
 
     switch (hs.type) {
 
@@ -1025,7 +1074,10 @@ static int DoHandShakeMsg(SSL* ssl, const byte* input, word32* inOutIdx,
     case server_hello_done:
         CYASSL_MSG("processing server hello done");
         #ifdef CYASSL_CALLBACKS
-            AddPacketName("ServerHelloDone", &ssl->handShakeInfo);
+            if (ssl->hsInfoOn) 
+                AddPacketName("ServerHelloDone", &ssl->handShakeInfo);
+            if (ssl->toInfoOn)
+                AddLateName("ServerHelloDone", &ssl->timeoutInfo);
         #endif
         ssl->options.serverState = SERVER_HELLODONE_COMPLETE;
         break;
@@ -1222,6 +1274,14 @@ static int DoAlert(SSL* ssl, byte* input, word32* inOutIdx)
 {
     byte level, type;
 
+    #ifdef CYASSL_CALLBACKS
+        if (ssl->hsInfoOn)
+            AddPacketName("Alert", &ssl->handShakeInfo);
+        if (ssl->toInfoOn)
+            /* add record header back on to info + 2 byte level, data */
+            AddPacketInfo("Alert", &ssl->timeoutInfo,
+                  input + *inOutIdx - RECORD_HEADER_SZ, 2 + RECORD_HEADER_SZ);
+    #endif
     level = input[(*inOutIdx)++];
     type  = input[(*inOutIdx)++];
 
@@ -1344,6 +1404,15 @@ int DoProcessReply(SSL* ssl)
 
                 case change_cipher_spec:
                     CYASSL_MSG("got CHANGE CIPHER SPEC");
+                    #ifdef CYASSL_CALLBACKS
+                        if (ssl->hsInfoOn)
+                            AddPacketName("ChangeCipher", &ssl->handShakeInfo);
+                        /* add record header back on info */
+                        if (ssl->toInfoOn)
+                            AddPacketInfo("ChangeCipher", &ssl->timeoutInfo,
+                                    input + idx - RECORD_HEADER_SZ,
+                                    1 + RECORD_HEADER_SZ);
+                    #endif
                     idx++;
                     ssl->keys.encryptionOn = 1;
 
@@ -1424,6 +1493,11 @@ int SendChangeCipher(SSL* ssl)
     memcpy(output, &rl, RECORD_HEADER_SZ);
     output[RECORD_HEADER_SZ] = 1;             /* turn it on */
 
+    #ifdef CYASSL_CALLBACKS
+        if (ssl->hsInfoOn) AddPacketName("ChangeCipher", &ssl->handShakeInfo);
+        if (ssl->toInfoOn)
+            AddPacketInfo("ChangeCipher", &ssl->timeoutInfo, output, sendSz);
+    #endif
     return SendWrapper(ssl, output, sendSz, COPY);
 }
 
@@ -1667,7 +1741,9 @@ int SendFinished(SSL* ssl)
     }
 
     #ifdef CYASSL_CALLBACKS
-        AddPacketName("Finished", &ssl->handShakeInfo);
+        if (ssl->hsInfoOn) AddPacketName("Finished", &ssl->handShakeInfo);
+        if (ssl->toInfoOn)
+            AddPacketInfo("Finished", &ssl->timeoutInfo, output, sendSz);
     #endif
     return SendWrapper(ssl, output, sendSz, COPY);
 }
@@ -1727,7 +1803,9 @@ int SendCertificate(SSL* ssl)
 
     HashOutput(ssl, output, sendSz, 0);
     #ifdef CYASSL_CALLBACKS
-        AddPacketName("Certificate", &ssl->handShakeInfo);
+        if (ssl->hsInfoOn) AddPacketName("Certificate", &ssl->handShakeInfo);
+        if (ssl->toInfoOn)
+            AddPacketInfo("Certificate", &ssl->timeoutInfo, output, sendSz);
     #endif
 
     if (ssl->options.side == SERVER_END)
@@ -1782,7 +1860,11 @@ int SendCertificateRequest(SSL* ssl)
     HashOutput(ssl, output, sendSz, 0);
 
     #ifdef CYASSL_CALLBACKS
-        AddPacketName("CertificateRequest", &ssl->handShakeInfo);
+        if (ssl->hsInfoOn)
+            AddPacketName("CertificateRequest", &ssl->handShakeInfo);
+        if (ssl->toInfoOn)
+            AddPacketInfo("CertificateRequest", &ssl->timeoutInfo, output,
+                          sendSz);
     #endif
     return SendWrapper(ssl, output, sendSz, COPY);
 }
@@ -1953,6 +2035,12 @@ int SendAlert(SSL* ssl, int severity, int type)
         sendSz = RECORD_HEADER_SZ + sizeof(input);
     }
 
+    #ifdef CYASSL_CALLBACKS
+        if (ssl->hsInfoOn)
+            AddPacketName("Alert", &ssl->handShakeInfo);
+        if (ssl->toInfoOn)
+            AddPacketInfo("Alert", &ssl->timeoutInfo, output, sendSz);
+    #endif
     return SendWrapper(ssl, output, sendSz, COPY);
 }
 
@@ -2118,6 +2206,22 @@ void SetErrorString(int error, char* buffer)
 
     case ZLIB_DECOMPRESS_ERROR:
         strncpy(buffer, "zlib decompress error", max);
+        break;
+
+    case GETTIME_ERROR:
+        strncpy(buffer, "gettimeofday() error", max);
+        break;
+
+    case GETITIMER_ERROR:
+        strncpy(buffer, "getitimer() error", max);
+        break;
+
+    case SIGACT_ERROR:
+        strncpy(buffer, "sigaction() error", max);
+        break;
+
+    case SETITIMER_ERROR:
+        strncpy(buffer, "setitimer() error", max);
         break;
 
     default :
@@ -2307,6 +2411,87 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         }
     } 
 
+
+    /* Initialisze TimeoutInfo */
+    void InitTimeoutInfo(TimeoutInfo* info)
+    {
+        int i;
+
+        info->timeoutName[0] = 0;
+        info->flags          = 0;
+
+        for (i = 0; i < MAX_PACKETS_HANDSHAKE; i++) {
+            info->packets[i].packetName[0]     = 0;
+            info->packets[i].timestamp.tv_sec  = 0;
+            info->packets[i].timestamp.tv_usec = 0;
+            info->packets[i].bufferValue       = 0;
+            info->packets[i].valueSz           = 0;
+        }
+        info->numberPackets        = 0;
+        info->timeoutValue.tv_sec  = 0;
+        info->timeoutValue.tv_usec = 0;
+    }
+
+
+    /* Free TimeoutInfo */
+    void FreeTimeoutInfo(TimeoutInfo* info)
+    {
+        int i;
+        for (i = 0; i < MAX_PACKETS_HANDSHAKE; i++)
+            if (info->packets[i].bufferValue) {
+                free(info->packets[i].bufferValue);
+                info->packets[i].bufferValue = 0;
+            }
+
+    }
+
+
+    /* Add PacketInfo to TimeoutInfo */
+    void AddPacketInfo(const char* name, TimeoutInfo* info, const byte* data,
+                       int sz)
+    {
+        if (info->numberPackets < (MAX_PACKETS_HANDSHAKE - 1)) {
+            Timeval currTime;
+
+            /* may add name after */
+            if (name)
+                strncpy(info->packets[info->numberPackets].packetName, name,
+                        MAX_PACKETNAME_SZ);
+
+            /* add data, put in buffer if bigger than static buffer */
+            info->packets[info->numberPackets].valueSz = sz;
+            if (sz < MAX_VALUE_SZ)
+                memcpy(info->packets[info->numberPackets].value, data, sz);
+            else {
+                info->packets[info->numberPackets].bufferValue = malloc(sz);
+                if (!info->packets[info->numberPackets].bufferValue)
+                    /* let next alloc catch, just don't fill, not fatal here  */
+                    info->packets[info->numberPackets].valueSz = 0;
+                else
+                    memcpy(info->packets[info->numberPackets].bufferValue,
+                           data, sz);
+            }
+            gettimeofday(&currTime, 0);
+            info->packets[info->numberPackets].timestamp.tv_sec  =
+                                                             currTime.tv_sec;
+            info->packets[info->numberPackets].timestamp.tv_usec =
+                                                             currTime.tv_usec;
+            info->numberPackets++;
+        }
+    }
+
+
+    /* Add packet name to previsouly added packet info */
+    void AddLateName(const char* name, TimeoutInfo* info)
+    {
+        /* make sure we have a valid previous one */
+        if (info->numberPackets > 0 && info->numberPackets <
+                                                        MAX_PACKETS_HANDSHAKE) {
+            strncpy(info->packets[info->numberPackets - 1].packetName, name,
+                    MAX_PACKETNAME_SZ);
+        }
+    }
+
 #endif /* CYASSL_CALLBACKS */
 
 
@@ -2381,7 +2566,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         ssl->options.clientState = CLIENT_HELLO_COMPLETE;
 
 #ifdef CYASSL_CALLBACKS
-        AddPacketName("ClientHello", &ssl->handShakeInfo);
+        if (ssl->hsInfoOn) AddPacketName("ClientHello", &ssl->handShakeInfo);
+        if (ssl->toInfoOn)
+            AddPacketInfo("ClientHello", &ssl->timeoutInfo, output, sendSz);
 #endif
         return SendWrapper(ssl, output, sendSz, COPY);
     }
@@ -2395,7 +2582,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         word32 i = *inOutIdx;
 
 #ifdef CYASSL_CALLBACKS
-        AddPacketName("ServerHello", &ssl->handShakeInfo);
+        if (ssl->hsInfoOn) AddPacketName("ServerHello", &ssl->handShakeInfo);
+        if (ssl->toInfoOn) AddLateName("ServerHello", &ssl->timeoutInfo);
 #endif
         memcpy(&pv, input + i, sizeof(pv));
         i += sizeof(pv);
@@ -2450,7 +2638,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         byte   b;
 
         #ifdef CYASSL_CALLBACKS
-            AddPacketName("CertificateRequest", &ssl->handShakeInfo);
+            if (ssl->hsInfoOn)
+                AddPacketName("CertificateRequest", &ssl->handShakeInfo);
+            if (ssl->toInfoOn)
+                AddLateName("CertificateRequest", &ssl->timeoutInfo);
         #endif
         len = input[(*inOutIdx)++];
 
@@ -2493,7 +2684,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             byte   tmp[2];
 
             #ifdef CYASSL_CALLBACKS
-                AddPacketName("ServerKeyExchange", &ssl->handShakeInfo);
+                if (ssl->hsInfoOn)
+                    AddPacketName("ServerKeyExchange", &ssl->handShakeInfo);
+                if (ssl->toInfoOn)
+                    AddLateName("ServerKeyExchange", &ssl->timeoutInfo);
             #endif
             tmp[0] = input[(*inOutIdx)++];
             tmp[1] = input[(*inOutIdx)++];
@@ -2747,7 +2941,11 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             HashOutput(ssl, output, sendSz, 0);
 
             #ifdef CYASSL_CALLBACKS
-                AddPacketName("ClientKeyExchange", &ssl->handShakeInfo);
+                if (ssl->hsInfoOn)
+                    AddPacketName("ClientKeyExchange", &ssl->handShakeInfo);
+                if (ssl->toInfoOn)
+                    AddPacketInfo("ClientKeyExchange", &ssl->timeoutInfo,
+                                  output, sendSz);
             #endif
             ret = SendWrapper(ssl, output, sendSz, COPY);
         }
@@ -2812,7 +3010,11 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
         if (ret == 0) {
             #ifdef CYASSL_CALLBACKS
-                AddPacketName("CertificateVerify", &ssl->handShakeInfo);
+                if (ssl->hsInfoOn)
+                    AddPacketName("CertificateVerify", &ssl->handShakeInfo);
+                if (ssl->toInfoOn)
+                    AddPacketInfo("CertificateVerify", &ssl->timeoutInfo,
+                                  output, sendSz);
             #endif
             return SendWrapper(ssl, output, sendSz, COPY);
         }
@@ -2889,7 +3091,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         HashOutput(ssl, output, sendSz, 0);
 
         #ifdef CYASSL_CALLBACKS
-            AddPacketName("ServerHello", &ssl->handShakeInfo);
+            if (ssl->hsInfoOn)
+                AddPacketName("ServerHello", &ssl->handShakeInfo);
+            if (ssl->toInfoOn)
+                AddPacketInfo("ServerHello", &ssl->timeoutInfo, output, sendSz);
         #endif
 
         ssl->options.serverState = SERVER_HELLO_COMPLETE;
@@ -2942,7 +3147,11 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             HashOutput(ssl, output, sendSz, 0);
 
             #ifdef CYASSL_CALLBACKS
-                AddPacketName("ServerKeyExchange", &ssl->handShakeInfo);
+                if (ssl->hsInfoOn)
+                    AddPacketName("ServerKeyExchange", &ssl->handShakeInfo);
+                if (ssl->toInfoOn)
+                    AddPacketInfo("ServerKeyExchange", &ssl->timeoutInfo,
+                                  output, sendSz);
             #endif
 
             ret = SendWrapper(ssl, output, sendSz, COPY);
@@ -2994,7 +3203,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
         word16 sz = ((b0 & 0x7f) << 8) | b1;
 #ifdef CYASSL_CALLBACKS
-        AddPacketName("ClientHello", &ssl->handShakeInfo);
+        if (ssl->hsInfoOn)
+            AddPacketName("ClientHello", &ssl->handShakeInfo);
+        if (ssl->toInfoOn)
+            AddLateName("ClientHello", &ssl->timeoutInfo);
 #endif
         if (sz > inSz - 2)
             return INCOMPLETE_DATA;
@@ -3103,7 +3315,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         word32 begin = i;
 
 #ifdef CYASSL_CALLBACKS
-        AddPacketName("ClientHello", &ssl->handShakeInfo);
+        if (ssl->hsInfoOn) AddPacketName("ClientHello", &ssl->handShakeInfo);
+        if (ssl->toInfoOn) AddLateName("ClientHello", &ssl->timeoutInfo);
 #endif
         /* make sure can read up to session */
         if (i + sizeof(pv) + RAN_LEN + ENUM_LEN > totalSz)
@@ -3201,7 +3414,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         byte   sig[ENCRYPT_LEN];
 
         #ifdef CYASSL_CALLBACKS
-            AddPacketName("CertificateVerify", &ssl->handShakeInfo);
+            if (ssl->hsInfoOn)
+                AddPacketName("CertificateVerify", &ssl->handShakeInfo);
+            if (ssl->toInfoOn)
+                AddLateName("CertificateVerify", &ssl->timeoutInfo);
         #endif
         if ( (i + VERIFY_HEADER) > totalSz)
             return INCOMPLETE_DATA;
@@ -3264,7 +3480,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
         HashOutput(ssl, output, sendSz, 0);
 #ifdef CYASSL_CALLBACKS
-        AddPacketName("ServerHelloDone", &ssl->handShakeInfo);
+        if (ssl->hsInfoOn)
+            AddPacketName("ServerHelloDone", &ssl->handShakeInfo);
+        if (ssl->toInfoOn)
+            AddPacketInfo("ServerHelloDone", &ssl->timeoutInfo, output, sendSz);
 #endif
         ssl->options.serverState = SERVER_HELLODONE_COMPLETE;
         return SendWrapper(ssl, output, sendSz, COPY);
@@ -3279,7 +3498,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         word32 length = 0;
 
         #ifdef CYASSL_CALLBACKS
-            AddPacketName("ClientKeyExchange", &ssl->handShakeInfo);
+            if (ssl->hsInfoOn)
+                AddPacketName("ClientKeyExchange", &ssl->handShakeInfo);
+            if (ssl->toInfoOn)
+                AddLateName("ClientKeyExchange", &ssl->timeoutInfo);
         #endif
         if (ssl->specs.kea == rsa_kea) {
             word32 idx = 0;

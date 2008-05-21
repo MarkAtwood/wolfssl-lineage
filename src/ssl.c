@@ -863,35 +863,159 @@ int CyaSSL_set_compression(SSL* ssl)
 
 #ifdef CYASSL_CALLBACKS
 
-    int CyaSSL_connect_ex(SSL* ssl, HandShakeCallBack cb)
+    typedef struct itimerval Itimerval;
+
+    /* don't keep calling simple functions while setting up timer and singals
+       if no inlining these are the next best */
+
+    #define AddTimes(a, b, c)                       \
+        do {                                        \
+            c.tv_sec  = a.tv_sec  + b.tv_sec;       \
+            c.tv_usec = a.tv_usec + b.tv_usec;      \
+            if (c.tv_sec >=  1000000) {             \
+                c.tv_sec++;                         \
+                c.tv_usec -= 1000000;               \
+            }                                       \
+        } while (0)
+
+
+    #define SubtractTimes(a, b, c)                  \
+        do {                                        \
+            c.tv_sec  = a.tv_sec  - b.tv_sec;       \
+            c.tv_usec = a.tv_usec - b.tv_usec;      \
+            if (c.tv_sec < 0) {                     \
+                c.tv_sec--;                         \
+                c.tv_usec += 1000000;               \
+            }                                       \
+        } while (0)
+
+    #define CmpTimes(a, b, cmp)                     \
+        ((a.tv_sec  ==  b.tv_sec) ?                 \
+            (a.tv_usec cmp b.tv_usec) :             \
+            (a.tv_sec  cmp b.tv_sec))               \
+
+
+    /* do nothing handler */
+    static void myHandler(int signo)
     {
-        int ret;
+        return;
+    }
 
-        if (cb)
-            InitHandShakeInfo(&ssl->handShakeInfo); 
-        ret = SSL_connect(ssl);
 
-        if (cb) {
+    static int CyaSSL_ex_wrapper(SSL* ssl, HandShakeCallBack hsCb,
+                      TimeoutCallBack toCb, Timeval timeout)
+    {
+        int       ret;
+        int       oldTimerOn    = 0;   /* was timer already on */
+        Timeval   startTime;
+        Timeval   endTime;
+        Timeval   totalTime;
+        Itimerval myTimeout;
+        Itimerval oldTimeout; /* if old timer adjust from total time to reset */
+        struct sigaction act, oact;
+       
+        #define ERR_OUT(x) { ssl->hsInfoOn = 0; ssl->toInfoOn = 0; return x; }
+
+        if (hsCb) {
+            ssl->hsInfoOn = 1;
+            InitHandShakeInfo(&ssl->handShakeInfo);
+        }
+        if (toCb) {
+            ssl->toInfoOn = 1;
+            InitTimeoutInfo(&ssl->timeoutInfo);
+            
+            if (gettimeofday(&startTime, 0) < 0)
+                ERR_OUT(GETTIME_ERROR);
+            if (getitimer(ITIMER_REAL, &oldTimeout) < 0)
+                ERR_OUT(GETITIMER_ERROR);
+            if (oldTimeout.it_value.tv_sec || oldTimeout.it_value.tv_usec) {
+                oldTimerOn = 1;
+                
+                /* is old timer going to expire before ours */
+                if (CmpTimes(oldTimeout.it_value, timeout, <)) { 
+                    timeout.tv_sec  = oldTimeout.it_value.tv_sec;
+                    timeout.tv_usec = oldTimeout.it_value.tv_usec;
+                }       
+            }
+            /* set my timeout, w/o intervals  */
+            myTimeout.it_interval.tv_sec  = 0;
+            myTimeout.it_interval.tv_usec = 0;
+            myTimeout.it_value.tv_sec  = timeout.tv_sec;
+            myTimeout.it_value.tv_usec = timeout.tv_usec;
+            
+            /* set up signal handler, don't restart socket send/recv */
+            act.sa_handler = myHandler;
+            sigemptyset(&act.sa_mask);
+            act.sa_flags = 0;
+#ifdef SA_INTERRUPT
+            act.sa_flags |= SA_INTERRUPT;
+#endif
+            if (sigaction(SIGALRM, &act, &oact) < 0)
+                ERR_OUT(SIGACT_ERROR);
+
+            if (setitimer(ITIMER_REAL, &myTimeout, 0) < 0)
+                ERR_OUT(SETITIMER_ERROR);
+        }
+
+        /* do main work */
+        if (ssl->options.side == CLIENT_END)
+            ret = SSL_connect(ssl);
+        else
+            ret = SSL_accept(ssl);
+       
+        /* do callbacks */ 
+        if (toCb) {
+            if (oldTimerOn) {
+                gettimeofday(&endTime, 0);
+                AddTimes(startTime, endTime, totalTime);
+                /* adjust old timer for elapsed time */
+                if (CmpTimes(totalTime, oldTimeout.it_value, <))
+                    SubtractTimes(oldTimeout.it_value, totalTime,
+                                  oldTimeout.it_value);
+                else {
+                    /* reset value to interval, may be off */
+                    oldTimeout.it_value.tv_sec = oldTimeout.it_interval.tv_sec;
+                    oldTimeout.it_value.tv_usec =oldTimeout.it_interval.tv_usec;
+                }
+                /* keep iter the same whether there or not */
+            }
+            /* restore old handler */
+            if (sigaction(SIGALRM, &oact, 0) < 0)
+                ret = SIGACT_ERROR;    /* more pressing error, stomp */
+            else
+                /* use old settings which may turn off (expired or not there) */
+                if (setitimer(ITIMER_REAL, &oldTimeout, 0) < 0)
+                    ret = SETITIMER_ERROR;
+            
+            /* if we had a timeout call callback */
+            if (ssl->timeoutInfo.timeoutName[0]) {
+                ssl->timeoutInfo.timeoutValue.tv_sec  = timeout.tv_sec;
+                ssl->timeoutInfo.timeoutValue.tv_usec = timeout.tv_usec;
+                (toCb)(&ssl->timeoutInfo);
+            }
+            /* clean up */
+            FreeTimeoutInfo(&ssl->timeoutInfo);
+            ssl->toInfoOn = 0;
+        }
+        if (hsCb) {
             FinishHandShakeInfo(&ssl->handShakeInfo, ssl);
-            (cb)(&ssl->handShakeInfo);
+            (hsCb)(&ssl->handShakeInfo);
+            ssl->hsInfoOn = 0;
         }
         return ret;
     }
 
 
-    int CyaSSL_accept_ex(SSL* ssl, HandShakeCallBack cb)
+    int CyaSSL_connect_ex(SSL* ssl, HandShakeCallBack hsCb,
+                          TimeoutCallBack toCb, Timeval timeout)
     {
-        int ret;
+        return CyaSSL_ex_wrapper(ssl, hsCb, toCb, timeout);
+    }
 
-        if (cb)
-            InitHandShakeInfo(&ssl->handShakeInfo); 
-        ret = SSL_accept(ssl);
 
-        if (cb) {
-            FinishHandShakeInfo(&ssl->handShakeInfo, ssl);
-            (cb)(&ssl->handShakeInfo);
-        }
-        return ret;
+    int CyaSSL_accept_ex(SSL* ssl, HandShakeCallBack hsCb, TimeoutCallBack toCb,                         Timeval timeout)
+    {
+        return CyaSSL_ex_wrapper(ssl, hsCb, toCb, timeout);
     }
 
 #endif /* CYASSL_CALLBACKS */

@@ -243,10 +243,12 @@ int CyaSSL_set_compression(SSL* ssl);  /* turn on CyaSSL data compression */
 #include "cyassl_callbacks.h"
 
 typedef int (*HandShakeCallBack)(HandShakeInfo*);
+typedef int (*TimeoutCallBack)(TimeoutInfo*);
 
-/* CyaSSL connect extension allowing HandShakeCallBack for diagnostics */
-int CyaSSL_connect_ex(SSL*, HandShakeCallBack);
-int CyaSSL_accept_ex(SSL*, HandShakeCallBack);
+/* CyaSSL connect extension allowing HandShakeCallBack and/or TimeoutCallBack
+   for diagnostics */
+int CyaSSL_connect_ex(SSL*, HandShakeCallBack, TimeoutCallBack, Timeval);
+int CyaSSL_accept_ex(SSL*, HandShakeCallBack, TimeoutCallBack, Timeval);
 
 #endif /* CYASSL_CALLBACKS */
 
