@@ -903,7 +903,7 @@ int CyaSSL_set_compression(SSL* ssl)
 
 
     static int CyaSSL_ex_wrapper(SSL* ssl, HandShakeCallBack hsCb,
-                      TimeoutCallBack toCb, Timeval timeout)
+                                 TimeoutCallBack toCb, Timeval timeout)
     {
         int       ret;
         int       oldTimerOn    = 0;   /* was timer already on */
@@ -1013,7 +1013,8 @@ int CyaSSL_set_compression(SSL* ssl)
     }
 
 
-    int CyaSSL_accept_ex(SSL* ssl, HandShakeCallBack hsCb, TimeoutCallBack toCb,                         Timeval timeout)
+    int CyaSSL_accept_ex(SSL* ssl, HandShakeCallBack hsCb,
+                         TimeoutCallBack toCb,Timeval timeout)
     {
         return CyaSSL_ex_wrapper(ssl, hsCb, toCb, timeout);
     }
