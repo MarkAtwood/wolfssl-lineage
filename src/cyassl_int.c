@@ -2678,17 +2678,18 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     static int DoServerKeyExchange(SSL* ssl, const byte* input, word32*
                                    inOutIdx)
     {
+    #ifdef CYASSL_CALLBACKS
+        if (ssl->hsInfoOn)
+            AddPacketName("ServerKeyExchange", &ssl->handShakeInfo);
+        if (ssl->toInfoOn)
+            AddLateName("ServerKeyExchange", &ssl->timeoutInfo);
+    #endif
+
     #ifndef NO_PSK
         if (ssl->specs.kea == psk_kea) {
             word16 length;
             byte   tmp[2];
 
-            #ifdef CYASSL_CALLBACKS
-                if (ssl->hsInfoOn)
-                    AddPacketName("ServerKeyExchange", &ssl->handShakeInfo);
-                if (ssl->toInfoOn)
-                    AddLateName("ServerKeyExchange", &ssl->timeoutInfo);
-            #endif
             tmp[0] = input[(*inOutIdx)++];
             tmp[1] = input[(*inOutIdx)++];
             ato16(tmp, &length);

@@ -958,10 +958,14 @@ int CyaSSL_set_compression(SSL* ssl)
         }
 
         /* do main work */
+#ifndef NO_CYASSL_CLIENT
         if (ssl->options.side == CLIENT_END)
             ret = SSL_connect(ssl);
-        else
+#endif
+#ifndef NO_CYASSL_SERVER
+        if (ssl->options.side == SERVER_END)
             ret = SSL_accept(ssl);
+#endif
        
         /* do callbacks */ 
         if (toCb) {
@@ -1006,18 +1010,23 @@ int CyaSSL_set_compression(SSL* ssl)
     }
 
 
+#ifndef NO_CYASSL_CLIENT
+
     int CyaSSL_connect_ex(SSL* ssl, HandShakeCallBack hsCb,
                           TimeoutCallBack toCb, Timeval timeout)
     {
         return CyaSSL_ex_wrapper(ssl, hsCb, toCb, timeout);
     }
+#endif
 
 
+#ifndef NO_CYASSL_SERVER
     int CyaSSL_accept_ex(SSL* ssl, HandShakeCallBack hsCb,
                          TimeoutCallBack toCb,Timeval timeout)
     {
         return CyaSSL_ex_wrapper(ssl, hsCb, toCb, timeout);
     }
+#endif
 
 #endif /* CYASSL_CALLBACKS */
 
