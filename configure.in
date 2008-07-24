@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(cyassl,0.9.8d)
+AM_INIT_AUTOMAKE(cyassl,0.9.9)
 AM_CONFIG_HEADER(ctaocrypt/include/config.h)
 
 
@@ -98,7 +98,19 @@ AC_ARG_ENABLE(ipv6,
 
 if test "$ENABLED_IPV6" = "yes"
 then
-    CFLAGS="$CXXFLAGS -DTEST_IPV6"
+    CFLAGS="$CFLAGS -DTEST_IPV6"
+fi
+
+
+AC_ARG_ENABLE(fastmath,
+    [  --enable-fastmath       Enable fast math for BigInts(default: disabled)],
+    [ ENABLED_FASTMATH=$enableval ],
+    [ ENABLED_FASTMATH=no ]
+    )
+
+if test "$ENABLED_FASTMATH" = "yes"
+then
+    CFLAGS="$CFLAGS -DUSE_FAST_MATH"
 fi
 
 

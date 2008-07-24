@@ -105,7 +105,7 @@ void bench_aes()
 
     persec = 1 / total * megs;
 
-    printf("AES      %d megs took %5.3f seconds, %5.2f MB/s\n", megs, total,
+    printf("AES      %d megs took %5.3f seconds, %6.2f MB/s\n", megs, total,
                                                              persec);
 }
 #endif
@@ -128,7 +128,7 @@ void bench_des()
 
     persec = 1 / total * megs;
 
-    printf("3DES     %d megs took %5.3f seconds, %5.2f MB/s\n", megs, total,
+    printf("3DES     %d megs took %5.3f seconds, %6.2f MB/s\n", megs, total,
                                                              persec);
 }
 #endif
@@ -149,7 +149,7 @@ void bench_arc4()
     total = current_time() - start;
     persec = 1 / total * megs;
 
-    printf("ARC4     %d megs took %5.3f seconds, %5.2f MB/s\n", megs, total,
+    printf("ARC4     %d megs took %5.3f seconds, %6.2f MB/s\n", megs, total,
                                                              persec);
 }
 
@@ -172,7 +172,7 @@ void bench_md5()
     total = current_time() - start;
     persec = 1 / total * megs;
 
-    printf("MD5      %d megs took %5.3f seconds, %5.2f MB/s\n", megs, total,
+    printf("MD5      %d megs took %5.3f seconds, %6.2f MB/s\n", megs, total,
                                                              persec);
 }
 
@@ -195,7 +195,7 @@ void bench_sha()
     total = current_time() - start;
     persec = 1 / total * megs;
 
-    printf("SHA      %d megs took %5.3f seconds, %5.2f MB/s\n", megs, total,
+    printf("SHA      %d megs took %5.3f seconds, %6.2f MB/s\n", megs, total,
                                                              persec);
 }
 
@@ -219,7 +219,7 @@ void bench_sha256()
     total = current_time() - start;
     persec = 1 / total * megs;
 
-    printf("SHA-256  %d megs took %5.3f seconds, %5.2f MB/s\n", megs, total,
+    printf("SHA-256  %d megs took %5.3f seconds, %6.2f MB/s\n", megs, total,
                                                              persec);
 }
 #endif

@@ -329,10 +329,10 @@ void InitDecodedCert(DecodedCert* cert, byte* source)
 
 void FreeDecodedCert(DecodedCert* cert)
 {
-    free(cert->subjectCN);
-    free(cert->issuerCN);
-    free(cert->signature);
-    free(cert->publicKey);
+    XFREE(cert->subjectCN);
+    XFREE(cert->issuerCN);
+    XFREE(cert->signature);
+    XFREE(cert->publicKey);
 }
 
 
@@ -414,7 +414,7 @@ static int StoreKey(DecodedCert* cert)
        cert->srcIdx--;
 
     cert->pubKeySize = length;
-    if ( !(cert->publicKey = (byte*) malloc(length)) )
+    if ( !(cert->publicKey = (byte*) XMALLOC(length)) )
         return MEMORY_E;
 
     memcpy(cert->publicKey, cert->source + cert->srcIdx, length);
@@ -506,7 +506,7 @@ static int GetName(DecodedCert* cert, int nameType)
             if (id == ASN_COMMON_NAME) {
                 char** cn = (nameType == ISSUER) ? 
                     &cert->issuerCN : &cert->subjectCN;
-                *cn = (char*) malloc(strLen + 1);
+                *cn = (char*) XMALLOC(strLen + 1);
                 if (!*cn)
                     return MEMORY_E;
                 memcpy(*cn, &cert->source[cert->srcIdx], strLen);
@@ -776,7 +776,7 @@ static int GetSignature(DecodedCert* cert)
 
     cert->sigLength--;
 
-    cert->signature = (byte*) malloc(cert->sigLength);
+    cert->signature = (byte*) XMALLOC(cert->sigLength);
     if (!cert->signature)
         return MEMORY_E;
     
@@ -1011,7 +1011,7 @@ int ParseCert(DecodedCert* cert, word32 inSz, int type, int verify,
 
 Signer* MakeSigner(void)
 {
-    Signer* signer = (Signer*) malloc(sizeof(Signer));
+    Signer* signer = (Signer*) XMALLOC(sizeof(Signer));
     if (signer) {
         signer->name      = 0;
         signer->publicKey = 0;
@@ -1028,9 +1028,9 @@ void FreeSigners(Signer* signer)
 
     while( (signer = next) ) {
         next = signer->next;
-        free(signer->name);
-        free(signer->publicKey);
-        free(signer);
+        XFREE(signer->name);
+        XFREE(signer->publicKey);
+        XFREE(signer);
     }
 }
 

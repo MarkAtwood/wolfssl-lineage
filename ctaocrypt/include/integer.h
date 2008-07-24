@@ -30,6 +30,13 @@
 #ifndef CTAO_CRYPT_INTEGER_H
 #define CTAO_CRYPT_INTEGER_H
 
+/* may optionally use fast math instead, not yet supported on all platforms and
+   may not be faster on all
+*/
+#ifdef USE_FAST_MATH
+    #include "tfm.h"
+#else
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -118,23 +125,6 @@ extern "C" {
    #define DIGIT_BIT          28
    #define MP_28BIT
 #endif   
-#endif
-
-/* define heap macros */
-#ifndef CRYPT
-   /* default to libc stuff */
-   #ifndef XMALLOC 
-       #define XMALLOC  malloc
-       #define XFREE    free
-       #define XREALLOC realloc
-       #define XCALLOC  calloc
-   #else
-      /* prototypes for our heap functions */
-      extern void *XMALLOC(size_t n);
-      extern void *XREALLOC(void *p, size_t n);
-      extern void *XCALLOC(size_t n, size_t s);
-      extern void XFREE(void *p);
-   #endif
 #endif
 
 
@@ -320,6 +310,9 @@ int mp_init_multi(mp_int* a, mp_int* b, mp_int* c, mp_int* d, mp_int* e,
 #ifdef __cplusplus
    }
 #endif
+
+
+#endif /* USE_FAST_MATH */
 
 #endif  /* CTAO_CRYPT_INTEGER_H */
 

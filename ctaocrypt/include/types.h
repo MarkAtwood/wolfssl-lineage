@@ -85,17 +85,13 @@ enum {
 
 
 /* use inlining if compiler allows */
-#ifdef _MSC_VER
-    #ifndef NO_INLINE
+#ifndef NO_INLINE
+    #ifdef _MSC_VER
         #define INLINE __inline
-    #else
-        #define INLINE
-    #endif
-#elif __GNUC__
-    #ifndef NO_INLINE
+    #elif __GNUC__
         #define INLINE inline
     #else
-        #define INLINE
+        #define INLINE 
     #endif
 #else
     #define INLINE 
@@ -113,6 +109,22 @@ enum {
         /* GCC does peephole optimizations which should result in using rotate
            instructions  */
 	#define FAST_ROTATE
+#endif
+
+
+/* idea to add global alloc override by Moisés Guimarães  */
+/* default to libc stuff */
+#ifndef XMALLOC 
+    #define XMALLOC  malloc
+    #define XFREE    free
+    #define XREALLOC realloc
+    #define XCALLOC  calloc
+#else
+    /* prototypes for our heap functions */
+    extern void *XMALLOC(size_t n);
+    extern void *XREALLOC(void *p, size_t n);
+    extern void *XCALLOC(size_t n, size_t s);
+    extern void XFREE(void *p);
 #endif
 
 

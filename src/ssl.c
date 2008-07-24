@@ -59,7 +59,7 @@ static int ProcessFile(SSL_CTX*, const char*, int format, int type);
 
 SSL_CTX* SSL_CTX_new(SSL_METHOD* method)
 {
-    SSL_CTX* ctx = (SSL_CTX*) malloc(sizeof(SSL_CTX));
+    SSL_CTX* ctx = (SSL_CTX*) XMALLOC(sizeof(SSL_CTX));
     if (ctx)
         InitSSL_Ctx(ctx, method);
 
@@ -76,7 +76,7 @@ void SSL_CTX_free(SSL_CTX* ctx)
 SSL* SSL_new(SSL_CTX* ctx)
 {
 
-    SSL* ssl = (SSL*) malloc(sizeof(SSL));
+    SSL* ssl = (SSL*) XMALLOC(sizeof(SSL));
     if (ssl)
         if (InitSSL(ssl, ctx) < 0) {
             FreeSSL(ssl);
@@ -272,7 +272,7 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
     SSL_METHOD* SSLv3_client_method(void)
     {
-        SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
+        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD));
         if (method)
             InitSSL_Method(method, MakeSSLv3());
         return method;
@@ -397,7 +397,7 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
     SSL_METHOD* SSLv3_server_method(void)
     {
-        SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
+        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD));
         if (method) {
             InitSSL_Method(method, MakeSSLv3());
             method->side = SERVER_END;
@@ -563,7 +563,7 @@ static int AddCA(SSL_CTX* ctx, buffer der)
     }
 
     FreeDecodedCert(&cert);
-    free(der.buffer);
+    XFREE(der.buffer);
 
     if (ret == 0) return SSL_SUCCESS;
     return ret;
@@ -616,7 +616,7 @@ static int PemToDer(const char* fileName, int type, buffer* der)
     }
 
     sz = end - begin;
-    tmp = (byte*) malloc(sz);
+    tmp = (byte*) XMALLOC(sz);
     if (!tmp) {
         fclose(file);
         return MEMORY_ERROR;
@@ -624,8 +624,8 @@ static int PemToDer(const char* fileName, int type, buffer* der)
 
     fseek(file, begin, SEEK_SET);
     if (fread(tmp, sz, 1, file) != 1 || 
-            (der->buffer = (byte*) malloc(sz)) == 0) {
-        free(tmp);
+            (der->buffer = (byte*) XMALLOC(sz)) == 0) {
+        XFREE(tmp);
         fclose(file);
         return FREAD_ERROR;
     }
@@ -633,7 +633,7 @@ static int PemToDer(const char* fileName, int type, buffer* der)
     der->length = sz; 
     Base64Decode(tmp, sz, der->buffer, &der->length);
 
-    free(tmp);
+    XFREE(tmp);
     fclose(file);
 
     return 0;
@@ -651,7 +651,7 @@ static int ProcessFile(SSL_CTX* ctx, const char* file, int format, int type)
     if (format == SSL_FILETYPE_PEM) {
         if (PemToDer(file, type == PRIVATEKEY_TYPE ? type : CERT_TYPE, &der)
                 < 0) {
-            free(der.buffer);
+            XFREE(der.buffer);
             return SSL_BAD_FILE;
         }
     }
@@ -666,13 +666,13 @@ static int ProcessFile(SSL_CTX* ctx, const char* file, int format, int type)
         sz = ftell(input);
         rewind(input);
 
-        der.buffer = (byte*) malloc(sz);
+        der.buffer = (byte*) XMALLOC(sz);
         if (!der.buffer) return MEMORY_ERROR;
         der.length = sz;
         sz = (word32)fread(der.buffer, sz, 1, input);
         if (sz != 1) {
             fclose(input);
-            free(der.buffer);
+            XFREE(der.buffer);
             return SSL_BAD_FILE;
         }
         fclose(input);
@@ -685,7 +685,7 @@ static int ProcessFile(SSL_CTX* ctx, const char* file, int format, int type)
     else if (type == PRIVATEKEY_TYPE)
         ctx->privateKey = der;      /* takes der over */
     else {
-        free(der.buffer);
+        XFREE(der.buffer);
         return SSL_BAD_CERTTYPE;
     }
 
@@ -716,7 +716,7 @@ void FreeCyaSSL(void)
     next = sessions;
     while( (sessions = next) ) {
         next = sessions->next;
-        free(sessions);
+        XFREE(sessions);
     }
 
     UnLockMutex(&mutex);
@@ -742,7 +742,7 @@ void SSL_flush_sessions(SSL_CTX *ctx, long tm)
             tmpSessions = sessions;
         }
         else
-            free(sessions);
+            XFREE(sessions);
     }
     sessions = tmpSessions;
 
@@ -799,7 +799,7 @@ void AddSession(SSL* ssl)
     if (ssl->options.sessionCacheOff)
         return;
 
-    sess = (SSL_SESSION*) malloc(sizeof(SSL_SESSION));
+    sess = (SSL_SESSION*) XMALLOC(sizeof(SSL_SESSION));
     if (sess) {
         memcpy(sess->masterSecret, ssl->arrays.masterSecret, SECRET_LEN);
         memcpy(sess->sessionID, ssl->arrays.sessionID, ID_LEN);
@@ -829,11 +829,11 @@ void AddSession(SSL* ssl)
 int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
 {
     if (ssl->buffers.domainName.buffer)
-        free(ssl->buffers.domainName.buffer);
+        XFREE(ssl->buffers.domainName.buffer);
 
     ssl->buffers.domainName.length = (word32)strlen(dn) + 1;
     ssl->buffers.domainName.buffer =
-                     (byte*) malloc(ssl->buffers.domainName.length);
+                     (byte*) XMALLOC(ssl->buffers.domainName.length);
 
     if (ssl->buffers.domainName.buffer) {
         strncpy((char*)ssl->buffers.domainName.buffer, dn,
@@ -971,7 +971,7 @@ int CyaSSL_set_compression(SSL* ssl)
         if (toCb) {
             if (oldTimerOn) {
                 gettimeofday(&endTime, 0);
-                AddTimes(startTime, endTime, totalTime);
+                SubtractTimes(endTime, startTime, totalTime);
                 /* adjust old timer for elapsed time */
                 if (CmpTimes(totalTime, oldTimeout.it_value, <))
                     SubtractTimes(oldTimeout.it_value, totalTime,
@@ -1017,15 +1017,18 @@ int CyaSSL_set_compression(SSL* ssl)
     {
         return CyaSSL_ex_wrapper(ssl, hsCb, toCb, timeout);
     }
+
 #endif
 
 
 #ifndef NO_CYASSL_SERVER
+
     int CyaSSL_accept_ex(SSL* ssl, HandShakeCallBack hsCb,
                          TimeoutCallBack toCb,Timeval timeout)
     {
         return CyaSSL_ex_wrapper(ssl, hsCb, toCb, timeout);
     }
+
 #endif
 
 #endif /* CYASSL_CALLBACKS */
@@ -1331,7 +1334,7 @@ int CyaSSL_set_compression(SSL* ssl)
 
             SSL_METHOD *SSLv23_server_method(void)
             {
-                SSL_METHOD* method = (SSL_METHOD*) malloc(sizeof(SSL_METHOD));
+                SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD));
                 if (method) {
                     InitSSL_Method(method, MakeSSLv3());
                     method->side = SERVER_END;
@@ -1469,7 +1472,7 @@ int CyaSSL_set_compression(SSL* ssl)
         if (!name->sz) return buffer;
 
         if (!buffer) {
-            buffer = (char*)malloc(name->sz);
+            buffer = (char*)XMALLOC(name->sz);
             if (!buffer) return buffer;
             copySz = name->sz;
         }

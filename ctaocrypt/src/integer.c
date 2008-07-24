@@ -25,6 +25,11 @@
  */
 
 
+/* optionally use fast math instead */
+#ifdef USE_FAST_MATH
+    #include "tfm.c"
+#else
+
 #include "integer.h"
 #include <stdlib.h>
 
@@ -3588,4 +3593,5 @@ int fast_s_mp_mul_high_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
 
 
 
+#endif /* USE_FAST_MATH */
 

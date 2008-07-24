@@ -151,19 +151,32 @@ static INLINE void ato16(const byte* c, word16* u16)
 
 #ifdef HAVE_LIBZ
 
+    /* alloc user allocs to work with zlib */
+    void* myAlloc(void* opaque, unsigned int item, unsigned int size)
+    {
+        return XMALLOC(item * size);
+    }
+
+
+    void myFree(void* opaque, void* memory)
+    {
+        XFREE(memory);
+    }
+
+
     /* init zlib comp/decomp streams, 0 on success */
     static int InitStreams(SSL* ssl)
     {
-        ssl->c_stream.zalloc = (alloc_func)0;
-        ssl->c_stream.zfree  = (free_func)0;
+        ssl->c_stream.zalloc = (alloc_func)myAlloc;
+        ssl->c_stream.zfree  = (free_func)myFree;
         ssl->c_stream.opaque = (voidpf)0;
 
         if (deflateInit(&ssl->c_stream, 8) != Z_OK) return ZLIB_INIT_ERROR;
 
         ssl->didStreamInit = 1;
 
-        ssl->d_stream.zalloc = (alloc_func)0;
-        ssl->d_stream.zfree  = (free_func)0;
+        ssl->d_stream.zalloc = (alloc_func)myAlloc;
+        ssl->d_stream.zfree  = (free_func)myFree;
         ssl->d_stream.opaque = (voidpf)0;
 
         if (inflateInit(&ssl->d_stream) != Z_OK) return ZLIB_INIT_ERROR;
@@ -269,13 +282,13 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
 
 void FreeSSL_Ctx(SSL_CTX* ctx)
 {
-    free(ctx->privateKey.buffer);
-    free(ctx->certificate.buffer);
-    free(ctx->method);
+    XFREE(ctx->privateKey.buffer);
+    XFREE(ctx->certificate.buffer);
+    XFREE(ctx->method);
 
     FreeSigners(ctx->caList);
     
-    free(ctx);
+    XFREE(ctx);
 }
 
 
@@ -446,22 +459,22 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
 
 void FreeSSL(SSL* ssl)
 {
-    free(ssl->buffers.serverDH_Priv.buffer);
-    free(ssl->buffers.serverDH_Pub.buffer);
-    free(ssl->buffers.serverDH_G.buffer);
-    free(ssl->buffers.serverDH_P.buffer);
-    free(ssl->buffers.domainName.buffer);
-    free(ssl->buffers.bufferedInput.buffer);
-    free(ssl->buffers.bufferedData.buffer);
-    free(ssl->buffers.peerKey.buffer);
-    free(ssl->buffers.peerCert.buffer);
-    free(ssl->writeBuffer.send.buffer);
+    XFREE(ssl->buffers.serverDH_Priv.buffer);
+    XFREE(ssl->buffers.serverDH_Pub.buffer);
+    XFREE(ssl->buffers.serverDH_G.buffer);
+    XFREE(ssl->buffers.serverDH_P.buffer);
+    XFREE(ssl->buffers.domainName.buffer);
+    XFREE(ssl->buffers.bufferedInput.buffer);
+    XFREE(ssl->buffers.bufferedData.buffer);
+    XFREE(ssl->buffers.peerKey.buffer);
+    XFREE(ssl->buffers.peerCert.buffer);
+    XFREE(ssl->writeBuffer.send.buffer);
 
 #ifdef HAVE_LIBZ
     FreeStreams(ssl);
 #endif
 
-    free(ssl);
+    XFREE(ssl);
 }
 
 
@@ -727,7 +740,7 @@ int SendBuffered(SSL* ssl)
 
     if ( (ret = Send(ssl, ssl->writeBuffer.send.buffer,
                      ssl->writeBuffer.send.length, 0)) > 0) {
-        free(ssl->writeBuffer.send.buffer);
+        XFREE(ssl->writeBuffer.send.buffer);
         ssl->writeBuffer.send.buffer = 0;
         return 0;
     }
@@ -746,7 +759,7 @@ int SendWrapper(SSL* ssl, const byte* output, int sz, int copy)
 
     if ( (ret = Send(ssl, output, sz, 0)) == WANT_WRITE) {
         if (copy) {
-            ssl->writeBuffer.send.buffer = (byte*)malloc(sz);
+            ssl->writeBuffer.send.buffer = (byte*)XMALLOC(sz);
             if (!ssl->writeBuffer.send.buffer) return MEMORY_ERROR;
             memcpy(ssl->writeBuffer.send.buffer, output, sz);
 
@@ -904,7 +917,7 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
         c24to32(tmp, &certSz);
         
         myCert.length = certSz;
-        myCert.buffer = (byte*) malloc(certSz);
+        myCert.buffer = (byte*) XMALLOC(certSz);
         if (!myCert.buffer) {
             ret = MEMORY_ERROR;
             break;
@@ -929,7 +942,7 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
             strncpy(ssl->peerCert.subject.name, dCert.subject, ASN_NAME_MAX);
 
             if ( (ssl->buffers.peerKey.buffer =
-                                            (byte*)malloc(dCert.pubKeySize))) {
+                                           (byte*)XMALLOC(dCert.pubKeySize))) {
                 memcpy(ssl->buffers.peerKey.buffer, dCert.publicKey,
                        dCert.pubKeySize);
                 ssl->buffers.peerKey.length = dCert.pubKeySize;
@@ -946,7 +959,7 @@ static int DoCertificate(SSL* ssl, const byte* input, word32* inOutIdx)
 
         FreeDecodedCert(&dCert);
         if (listSz) {   /* more to come, release */
-            free(myCert.buffer);
+            XFREE(myCert.buffer);
             ssl->buffers.peerCert.buffer = 0;
         }
     }
@@ -1227,7 +1240,7 @@ static int DoApplicationData(SSL* ssl, byte* input, word32* inOutIdx)
         (void)decomp;
 #endif
 
-        data = (byte*) malloc(dataSz + oldSz);
+        data = (byte*) XMALLOC(dataSz + oldSz);
         if (!data) return MEMORY_ERROR;
 
         if (oldSz)
@@ -1240,7 +1253,7 @@ static int DoApplicationData(SSL* ssl, byte* input, word32* inOutIdx)
             idx += dataSz;
 
         if (oldSz)
-            free(ssl->buffers.bufferedData.buffer);
+            XFREE(ssl->buffers.bufferedData.buffer);
         ssl->buffers.bufferedData.buffer = data;
         ssl->buffers.bufferedData.length = dataSz + oldSz;
 
@@ -1320,7 +1333,7 @@ int DoProcessReply(SSL* ssl)
            offset = 0,
            bufferedSz;
 
-    #define ERROR_OUT(x) { free(input); return x; }
+    #define ERROR_OUT(x) { XFREE(input); return x; }
 
     if (!Wait(ssl))
         return SOCKET_ERROR_E;
@@ -1330,7 +1343,7 @@ int DoProcessReply(SSL* ssl)
 
     bufferedSz = ssl->buffers.bufferedInput.buffer ?
                  ssl->buffers.bufferedInput.length : 0;
-    input = (byte*) malloc(inSz + bufferedSz);
+    input = (byte*) XMALLOC(inSz + bufferedSz);
     if (!input) return MEMORY_ERROR;
     if ( (inSz = Receive(ssl, input + bufferedSz, inSz, 0)) == -1)
         ERROR_OUT(SOCKET_ERROR_E);
@@ -1340,7 +1353,7 @@ int DoProcessReply(SSL* ssl)
         memcpy(input, ssl->buffers.bufferedInput.buffer,
                ssl->buffers.bufferedInput.length);
 
-        free(ssl->buffers.bufferedInput.buffer);
+        XFREE(ssl->buffers.bufferedInput.buffer);
         ssl->buffers.bufferedInput.buffer = 0;
         ssl->buffers.bufferedInput.length = 0;
 
@@ -1376,7 +1389,7 @@ int DoProcessReply(SSL* ssl)
             word32 extra = needHdr ? 0 : RECORD_HEADER_SZ;
             word32 sz = inSz - idx + extra;
 
-            byte*  data = (byte*)malloc(sz);
+            byte*  data = (byte*)XMALLOC(sz);
             if (!data) ERROR_OUT(MEMORY_ERROR);
             memcpy(data, input + idx - extra, sz);
 
@@ -1451,7 +1464,7 @@ int DoProcessReply(SSL* ssl)
         offset += rh.size + RECORD_HEADER_SZ;
     }
 
-    free(input);
+    XFREE(input);
     return 0;
 }
 
@@ -1766,7 +1779,7 @@ int SendCertificate(SSL* ssl)
     sendSz = ssl->buffers.certificate.length + 2 * CERT_HEADER_SZ +
         RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
 
-    output = (byte*) malloc(sendSz);
+    output = (byte*) XMALLOC(sendSz);
     if (!output) return MEMORY_ERROR;
 
     /* record layer header */
@@ -1812,7 +1825,7 @@ int SendCertificate(SSL* ssl)
         ssl->options.serverState = SERVER_CERT_COMPLETE;
 
     if ( (ret = SendWrapper(ssl, output, sendSz, NO_COPY)) == 0)
-        free(output);  /* otherwise write_buffer owns */
+        XFREE(output);  /* otherwise write_buffer owns */
 
     return ret;
 }
@@ -1907,7 +1920,7 @@ int SendData(SSL* ssl, const void* buffer, int sz)
         byte  comp[MAX_RECORD_SIZE + MAX_COMP_EXTRA];
 
         if (sent == sz) break;
-        out = (byte*) malloc(len + MAX_COMP_EXTRA + MAX_MSG_EXTRA);
+        out = (byte*) XMALLOC(len + MAX_COMP_EXTRA + MAX_MSG_EXTRA);
 
         if (!out) return MEMORY_ERROR;
 
@@ -1915,7 +1928,7 @@ int SendData(SSL* ssl, const void* buffer, int sz)
         if (ssl->options.usingCompression) {
             buffSz = Compress(ssl, sendBuffer, buffSz, comp, sizeof(comp));
             if (buffSz < 0) {
-                free(out);
+                XFREE(out);
                 return buffSz;
             }
             sendBuffer = comp;
@@ -1933,13 +1946,13 @@ int SendData(SSL* ssl, const void* buffer, int sz)
                 ssl->writeBuffer.sent        = sent;
             }
             else
-                free(out);
+                XFREE(out);
             if (ret == SOCKET_ERROR_E && ssl->options.connReset)
                 return 0;  /* peer reset */
             return ssl->error = ret;
         }
 
-        free(out);
+        XFREE(out);
         sent += len;
     }
  
@@ -1961,14 +1974,14 @@ static int FillData(SSL* ssl, byte* output, int sz)
     /* did we leave any */
     if (dataSz < (int)ssl->buffers.bufferedData.length) {
         leftSz = ssl->buffers.bufferedData.length - dataSz;
-        left   = (byte*) malloc(leftSz);
+        left   = (byte*) XMALLOC(leftSz);
 
         if (!left) return MEMORY_ERROR;
 
         memcpy(left, ssl->buffers.bufferedData.buffer + dataSz, leftSz);
     }
 
-    free(ssl->buffers.bufferedData.buffer);
+    XFREE(ssl->buffers.bufferedData.buffer);
     ssl->buffers.bufferedData.buffer = left;
     ssl->buffers.bufferedData.length = leftSz;
 
@@ -2439,7 +2452,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         int i;
         for (i = 0; i < MAX_PACKETS_HANDSHAKE; i++)
             if (info->packets[i].bufferValue) {
-                free(info->packets[i].bufferValue);
+                XFREE(info->packets[i].bufferValue);
                 info->packets[i].bufferValue = 0;
             }
 
@@ -2463,7 +2476,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             if (sz < MAX_VALUE_SZ)
                 memcpy(info->packets[info->numberPackets].value, data, sz);
             else {
-                info->packets[info->numberPackets].bufferValue = malloc(sz);
+                info->packets[info->numberPackets].bufferValue = XMALLOC(sz);
                 if (!info->packets[info->numberPackets].bufferValue)
                     /* let next alloc catch, just don't fill, not fatal here  */
                     info->packets[info->numberPackets].valueSz = 0;
@@ -2721,7 +2734,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         ato16(tmp, &length);
         messageTotal += length;
 
-        ssl->buffers.serverDH_P.buffer = (byte*) malloc(length);
+        ssl->buffers.serverDH_P.buffer = (byte*) XMALLOC(length);
         if (ssl->buffers.serverDH_P.buffer)
             ssl->buffers.serverDH_P.length = length;
         else
@@ -2735,7 +2748,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         ato16(tmp, &length);
         messageTotal += length;
 
-        ssl->buffers.serverDH_G.buffer = (byte*) malloc(length);
+        ssl->buffers.serverDH_G.buffer = (byte*) XMALLOC(length);
         if (ssl->buffers.serverDH_G.buffer)
             ssl->buffers.serverDH_G.length = length;
         else
@@ -2749,7 +2762,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         ato16(tmp, &length);
         messageTotal += length;
 
-        ssl->buffers.serverDH_Pub.buffer = (byte*) malloc(length);
+        ssl->buffers.serverDH_Pub.buffer = (byte*) XMALLOC(length);
         if (ssl->buffers.serverDH_Pub.buffer)
             ssl->buffers.serverDH_Pub.length = length;
         else
@@ -3520,7 +3533,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             if (ret == 0) {
                 length = RsaEncryptSize(&key);
                 ssl->arrays.preMasterSz = SECRET_LEN;
-                tmp = (byte*) malloc(length);
+                tmp = (byte*) XMALLOC(length);
                 if (!tmp) return MEMORY_ERROR;
 
                 if (ssl->options.tls) {
@@ -3544,7 +3557,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             }
 
             FreeRsaKey(&key);
-            free(tmp);
+            XFREE(tmp);
 #ifndef NO_PSK
         } else if (ssl->specs.kea == psk_kea) {
             byte* pms = ssl->arrays.preMasterSecret;

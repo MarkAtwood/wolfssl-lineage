@@ -48,23 +48,29 @@ void InitDsaKey(DsaKey* key)
 {
     key->type = -1;  /* haven't decdied yet */
 
+/* TomsFastMath doesn't use memory allocation */
+#ifndef USE_FAST_MATH
     key->p.dp = 0;   /* public  alloc parts */
     key->q.dp = 0;    
     key->g.dp = 0;    
     key->y.dp = 0;    
 
     key->x.dp = 0;   /* private alloc parts */
+#endif
 }
 
 
 void FreeDsaKey(DsaKey* key)
 {
+/* TomsFastMath doesn't use memory allocation */
+#ifndef USE_FAST_MATH
     if (key->type == DSA_PRIVATE)
         mp_clear(&key->x);
     mp_clear(&key->y);
     mp_clear(&key->g);
     mp_clear(&key->q);
     mp_clear(&key->p);
+#endif
 }
 
 
