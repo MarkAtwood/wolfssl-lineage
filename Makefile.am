@@ -1,5 +1,6 @@
 SUBDIRS = src ctaocrypt examples testsuite
-EXTRA_DIST = cyassl.dsp cyassl.dsw certs/*.pem certs/*.der certs/*.txt lib/dummy
+EXTRA_DIST = cyassl.dsp cyassl.dsw certs/*.pem certs/*.der certs/*.txt \
+    lib/dummy cyassl.sln cyassl.vcproj
 
 basic:
 	cd src; make; cd ../testsuite; make; cd ../

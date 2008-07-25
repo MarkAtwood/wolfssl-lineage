@@ -5,4 +5,4 @@ client_CFLAGS = -Wall -Wno-unused
 client_LDFLAGS      = -L../../src -lm
 client_LDADD        = ../../src/libcyassl.la
 client_DEPENDENCIES = ../../src/libcyassl.la
-EXTRA_DIST = client.dsp
+EXTRA_DIST = client.dsp client.sln client.vcproj
