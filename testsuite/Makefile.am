@@ -7,4 +7,4 @@ testsuite_CFLAGS  = -Wall -Wno-unused -DNO_MAIN_DRIVER
 testsuite_LDFLAGS      = -L../src -lm
 testsuite_LDADD        = ../src/libcyassl.la
 testsuite_DEPENDENCIES = ../src/libcyassl.la 
-EXTRA_DIST = testsuite.dsp input quit
+EXTRA_DIST = testsuite.dsp input quit testsuite.sln testsuite.vcproj

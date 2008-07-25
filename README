@@ -12,7 +12,25 @@ before calling SSL_new();
 *** end Note ***
 
 
-CyaSSL version 0.9.8 (5/7/2008) 
+CyaSSL version 0.9.9 (7/25/2008) 
+
+This release of CyaSSL adds bug fixes, Pre-Shared Keys, over-rideable memory
+handling, and optionally TomsFastMath.  Thanks to Moisés Guimarães for the
+work on TomsFastMath.
+
+To optionally use TomsFastMath pass --enable-fastmath to ./configure
+Or define USE_FAST_MATH in each project from CyaSSL for MSVC.
+
+Please use the benchmark routine before and after to see the performance
+difference, on some platforms the gains will be little but RSA encryption
+always seems to be faster.  On x86-64 machines with GCC the normal math library
+may outpreform the fast one when using CFLAGS=-m64 becuase TomsFastMath can't
+yet use -m64 because of GCCs inability to do 128bit division.
+
+See notes below (0.2.0) for complete build instructions.
+
+
+****************CyaSSL version 0.9.8 (5/7/2008) 
 
 This release of CyaSSL adds bug fixes, client side Diffie-Hellman, and better
 socket handling.

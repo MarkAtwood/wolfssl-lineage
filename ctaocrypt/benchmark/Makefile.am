@@ -4,4 +4,4 @@ benchmark_SOURCES = benchmark.c
 benchmark_LDFLAGS      = -L../src -lm
 benchmark_LDADD        = ../../src/libcyassl.la
 benchmark_DEPENDENCIES = ../../src/libcyassl.la
-EXTRA_DIST =  benchmark.dsp *.der
+EXTRA_DIST =  benchmark.dsp *.der benchmark.sln benchmark.vcproj
