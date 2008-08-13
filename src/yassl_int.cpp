@@ -1798,7 +1798,8 @@ bool SSL_METHOD::multipleProtocol() const
 
 SSL_CTX::SSL_CTX(SSL_METHOD* meth) 
     : method_(meth), certificate_(0), privateKey_(0), passwordCb_(0),
-      userData_(0), sessionCacheOff_(false), sessionCacheFlushOff_(false)
+      userData_(0), sessionCacheOff_(false), sessionCacheFlushOff_(false),
+      verifyCallback_(0)
 {}
 
 

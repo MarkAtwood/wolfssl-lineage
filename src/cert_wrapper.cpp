@@ -32,6 +32,7 @@
 #include "runtime.hpp"
 #include "cert_wrapper.hpp"
 #include "yassl_int.hpp"
+#include "error.hpp"
 
 #if defined(USE_CML_LIB)
     #include "cmapi_cpp.h"
@@ -251,7 +252,7 @@ int CertManager::Validate()
 {
     CertList::reverse_iterator last = peerList_.rbegin();
     size_t count = peerList_.size();
-    int    depth = count;
+    int    depth = static_cast<int>(count);
 
     while ( count > 1 ) {
         TaoCrypt::Source source((*last)->get_buffer(), (*last)->get_length());
@@ -273,7 +274,7 @@ int CertManager::Validate()
         TaoCrypt::CertDecoder cert(source, true, &signers_, verifyNone_);
 
         int err = cert.GetError().What();
-        if ( err && err != verify_error)
+        if ( err && err != TaoCrypt::SIG_OTHER_E)
             return err;
 
         uint sz = cert.GetPublicKey().size();
@@ -293,7 +294,7 @@ int CertManager::Validate()
                                 sSz, cert.GetBeforeDate(), bSz,
                                 cert.GetAfterDate(), aSz);
 
-        if (err == verify_error && verifyCallback_) {
+        if (err == TaoCrypt::SIG_OTHER_E && verifyCallback_) {
             X509_STORE_CTX store;
             store.error = err;
             store.error_depth = depth;
@@ -303,7 +304,7 @@ int CertManager::Validate()
             if (ok) return 0;
         }
 
-        if (err == verify_error) return err;
+        if (err == TaoCrypt::SIG_OTHER_E) return err;
     }
     return 0;
 }
