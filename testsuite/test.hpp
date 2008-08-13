@@ -5,6 +5,7 @@
 
 #include "runtime.hpp"
 #include "openssl/ssl.h"   /* openssl compatibility test */
+#include "yassl_error.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -457,6 +458,20 @@ inline DH* set_tmpDH(SSL_CTX* ctx)
     }
     SSL_CTX_set_tmp_dh(ctx, dh);
     return dh;
+}
+
+
+inline int verify_callback(int preverify_ok, X509_STORE_CTX* ctx)
+{
+    X509* err_cert = X509_STORE_CTX_get_current_cert(ctx);
+    int   err      = X509_STORE_CTX_get_error(ctx);
+    int   depth    = X509_STORE_CTX_get_error_depth(ctx);
+
+    // test allow self signed
+    if (depth == 1 && err == verify_error)
+        return 1;
+
+    return 0;
 }
 
 

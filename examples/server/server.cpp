@@ -54,7 +54,7 @@ THREAD_RETURN YASSL_API server_test(void* args)
     SSL_CTX*    ctx = SSL_CTX_new(method);
 
     //SSL_CTX_set_cipher_list(ctx, "RC4-SHA:RC4-MD5");
-    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, verify_callback);
     set_serverCerts(ctx);
     DH* dh = set_tmpDH(ctx);
 

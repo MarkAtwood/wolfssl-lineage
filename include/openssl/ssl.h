@@ -114,6 +114,15 @@ RSA* RSA_generate_key(int, unsigned long, void(*)(int, int, void*), void*);
 
 /* X509 stuff, different file? */
 
+/* because mySQL dereferences to use error and current_cert, even after calling
+ * get functions for local references */
+typedef struct X509_STORE_CTX {
+    int   error;
+    int   error_depth;
+    X509* current_cert;
+} X509_STORE_CTX;
+
+
 typedef struct X509_STORE         X509_STORE;
 typedef struct X509_LOOKUP        X509_LOOKUP;
 typedef struct X509_OBJECT { char c; } X509_OBJECT;
@@ -129,16 +138,6 @@ void X509_free(X509*);
 typedef struct BIO BIO;
 
 /* ASN stuff */
-
-
-
-/* because mySQL dereferences to use error and current_cert, even after calling
- * get functions for local references */
-typedef struct X509_STORE_CTX {
-    int   error;
-    int   error_depth;
-    X509* current_cert;
-} X509_STORE_CTX;
 
 
 

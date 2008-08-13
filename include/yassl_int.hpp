@@ -438,6 +438,7 @@ private:
     bool            sessionCacheFlushOff_;
     Stats           stats_;
     Mutex           mutex_;         // for Stats
+    VerifyCallback  verifyCallback_;
 public:
     explicit SSL_CTX(SSL_METHOD* meth);
     ~SSL_CTX();
@@ -448,6 +449,7 @@ public:
     const Ciphers&    GetCiphers()    const;
     const DH_Parms&   GetDH_Parms()   const;
     const Stats&      GetStats()      const;
+    const VerifyCallback getVerifyCallback() const;
     pem_password_cb   GetPasswordCb() const;
           void*       GetUserData()   const;
           bool        GetSessionCacheOff()      const;
@@ -456,6 +458,7 @@ public:
     void setVerifyPeer();
     void setVerifyNone();
     void setFailNoCert();
+    void setVerifyCallback(VerifyCallback);
     bool SetCipherList(const char*);
     bool SetDH(const DH&);
     void SetPasswordCb(pem_password_cb cb);

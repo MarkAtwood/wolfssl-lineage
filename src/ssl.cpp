@@ -713,7 +713,7 @@ int SSL_CTX_use_PrivateKey_file(SSL_CTX* ctx, const char* file, int format)
 }
 
 
-void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback /*vc*/)
+void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback vc)
 {
     if (mode & SSL_VERIFY_PEER)
         ctx->setVerifyPeer();
@@ -723,6 +723,8 @@ void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback /*vc*/)
 
     if (mode & SSL_VERIFY_FAIL_IF_NO_PEER_CERT)
         ctx->setFailNoCert();
+
+    ctx->setVerifyCallback(vc);
 }
 
 
@@ -1470,6 +1472,8 @@ unsigned long err_helper(bool peek = false)
     default :
         return 0;
     }
+
+    return 0;  // shut up compiler
 }
 
 

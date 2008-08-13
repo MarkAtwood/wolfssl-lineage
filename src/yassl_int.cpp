@@ -328,6 +328,7 @@ SSL::SSL(SSL_CTX* ctx)
         cm.setVerifyNone();
     if (ctx->getMethod()->failNoCert())
         cm.setFailNoCert();
+    cm.setVerifyCallback(ctx->getVerifyCallback());
 
     if (serverSide)
         crypto_.SetDH(ctx->GetDH_Parms());
@@ -1824,6 +1825,12 @@ SSL_CTX::GetCA_List() const
 }
 
 
+const VerifyCallback SSL_CTX::getVerifyCallback() const
+{
+    return verifyCallback_;
+}
+
+
 const x509* SSL_CTX::getCert() const
 {
     return certificate_;
@@ -1923,6 +1930,12 @@ void SSL_CTX::setVerifyNone()
 void SSL_CTX::setFailNoCert()
 {
     method_->setFailNoCert();
+}
+
+
+void SSL_CTX::setVerifyCallback(VerifyCallback vc)
+{
+    verifyCallback_ = vc;
 }
 
 

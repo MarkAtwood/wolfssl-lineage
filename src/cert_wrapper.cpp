@@ -98,7 +98,7 @@ opaque* x509::use_buffer()
 //CertManager
 CertManager::CertManager()
     : peerX509_(0), verifyPeer_(false), verifyNone_(false), failNoCert_(false),
-      sendVerify_(false)
+      sendVerify_(false), verifyCallback_(0)
 {}
 
 
@@ -159,6 +159,12 @@ void CertManager::setFailNoCert()
 void CertManager::setSendVerify()
 {
     sendVerify_ = true;
+}
+
+
+void CertManager::setVerifyCallback(VerifyCallback vc)
+{
+    verifyCallback_ = vc;
 }
 
 
@@ -245,6 +251,7 @@ int CertManager::Validate()
 {
     CertList::reverse_iterator last = peerList_.rbegin();
     size_t count = peerList_.size();
+    int    depth = count;
 
     while ( count > 1 ) {
         TaoCrypt::Source source((*last)->get_buffer(), (*last)->get_length());
@@ -265,7 +272,8 @@ int CertManager::Validate()
         TaoCrypt::Source source((*last)->get_buffer(), (*last)->get_length());
         TaoCrypt::CertDecoder cert(source, true, &signers_, verifyNone_);
 
-        if (int err = cert.GetError().What())
+        int err = cert.GetError().What();
+        if ( err && err != verify_error)
             return err;
 
         uint sz = cert.GetPublicKey().size();
@@ -284,6 +292,18 @@ int CertManager::Validate()
         peerX509_ = NEW_YS X509(cert.GetIssuer(), iSz, cert.GetCommonName(),
                                 sSz, cert.GetBeforeDate(), bSz,
                                 cert.GetAfterDate(), aSz);
+
+        if (err == verify_error && verifyCallback_) {
+            X509_STORE_CTX store;
+            store.error = err;
+            store.error_depth = depth;
+            store.current_cert = peerX509_;
+
+            int ok = verifyCallback_(0, &store);
+            if (ok) return 0;
+        }
+
+        if (err == verify_error) return err;
     }
     return 0;
 }
