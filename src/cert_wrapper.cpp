@@ -252,7 +252,7 @@ int CertManager::Validate()
 {
     CertList::reverse_iterator last = peerList_.rbegin();
     size_t count = peerList_.size();
-    int    depth = static_cast<int>(count);
+    int    depth = static_cast<int>(count) - 1;  // openssl peer starts at 0
 
     while ( count > 1 ) {
         TaoCrypt::Source source((*last)->get_buffer(), (*last)->get_length());
