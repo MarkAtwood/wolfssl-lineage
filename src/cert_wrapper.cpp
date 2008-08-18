@@ -252,7 +252,6 @@ int CertManager::Validate()
 {
     CertList::reverse_iterator last = peerList_.rbegin();
     size_t count = peerList_.size();
-    int    depth = static_cast<int>(count) - 1;  // openssl peer starts at 0
 
     while ( count > 1 ) {
         TaoCrypt::Source source((*last)->get_buffer(), (*last)->get_length());
@@ -297,7 +296,7 @@ int CertManager::Validate()
         if (err == TaoCrypt::SIG_OTHER_E && verifyCallback_) {
             X509_STORE_CTX store;
             store.error = err;
-            store.error_depth = depth;
+            store.error_depth = static_cast<int>(count) - 1;
             store.current_cert = peerX509_;
 
             int ok = verifyCallback_(0, &store);
