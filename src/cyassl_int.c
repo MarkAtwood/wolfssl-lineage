@@ -448,10 +448,12 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
 #endif
 
     /* make sure server has DH parms, and add PSK if there */
-    if (ssl->options.side == SERVER_END) 
-        InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, havePSK);
-    else 
-        InitSuites(&ssl->suites, ssl->version, TRUE, havePSK);
+    if (!ssl->ctx->suites.setSuites) {    /* trust user override */
+        if (ssl->options.side == SERVER_END) 
+            InitSuites(&ssl->suites, ssl->version,ssl->options.haveDH, havePSK);
+        else 
+            InitSuites(&ssl->suites, ssl->version, TRUE, havePSK);
+    }
 
     return 0;
 }
@@ -1380,8 +1382,9 @@ int DoProcessReply(SSL* ssl)
         else if (GetRecordHeader(ssl, input, &idx, &rh) != 0)
             ERROR_OUT(PARSE_ERROR);
         
-        if (!needHdr && (rh.version.major != 3 || rh.version.minor > 2))
-            ERROR_OUT(VERSION_ERROR);
+        if (!needHdr && (rh.version.major != ssl->version.major || 
+                         rh.version.minor != ssl->version.minor))
+            ERROR_OUT(VERSION_ERROR);  /* only use requested version */
 
         /* make sure enough data left */
         if ( needHdr || (inSz - idx) < rh.size) {
@@ -2410,7 +2413,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
                 break;
             }
 
-        if (ssl->error >= MIN_PARAM_ERR && ssl->error <= MAX_PARAM_ERR)
+        /* error max and min are negative numbers */
+        if (ssl->error <= MIN_PARAM_ERR && ssl->error >= MAX_PARAM_ERR)
             info->negotiationError = ssl->error;
     }
 

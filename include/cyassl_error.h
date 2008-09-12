@@ -77,7 +77,7 @@ enum CyaSSL_ErrorCodes {
     /* begin negotiation parameter errors */
     UNSUPPORTED_SUITE      = -260,            /* unsupported cipher suite */
     MATCH_SUITE_ERROR      = -261             /* can't match cipher suite */
-    /* end   negotiation parameter errors through - 260 */
+    /* end   negotiation parameter errors only 10 for now */
     /* add strings to SetErrorString !!!!! */
 };
 
@@ -85,7 +85,7 @@ enum CyaSSL_ErrorCodes {
 #ifdef CYASSL_CALLBACKS
     enum {
         MIN_PARAM_ERR = UNSUPPORTED_SUITE,
-        MAX_PARAM_ERR = MIN_PARAM_ERR + 10
+        MAX_PARAM_ERR = MIN_PARAM_ERR - 10
     };
 #endif
 

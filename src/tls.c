@@ -324,7 +324,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
     {
         SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD));
         if (method) {
-            InitSSL_Method(method, MakeTLSv1_1());
+            InitSSL_Method(method, MakeTLSv1());
             method->side = SERVER_END;
         }
         return method;
