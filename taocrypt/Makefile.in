@@ -35,7 +35,7 @@ target_triplet = @target@
 subdir = taocrypt
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	AUTHORS COPYING ChangeLog INSTALL NEWS config.guess config.sub \
-	depcomp
+	depcomp install-sh missing mkinstalldirs
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/check_zlib.m4 \
 	$(top_srcdir)/lib_socket_nsl.m4 $(top_srcdir)/acx_pthread.m4 \

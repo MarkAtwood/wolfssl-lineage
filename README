@@ -12,6 +12,15 @@ before calling SSL_new();
 
 *** end Note ***
 
+*****************yaSSL Release notes, version 1.9.2 (9/24/08)
+
+    This release of yaSSL contains bug fixes and improved certificate verify
+    callback support. 
+
+See normal  build instructions below under 1.0.6.
+See libcurl build instructions below under 1.3.0 and note in 1.5.8.
+
+
 *****************yaSSL Release notes, version 1.8.8 (5/7/08)
 
     This release of yaSSL contains bug fixes, and better socket handling. 
