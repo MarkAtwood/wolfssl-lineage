@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(taocrypt,0.9.2) 
+AM_INIT_AUTOMAKE(taocrypt,0.9.6) 
 AM_CONFIG_HEADER(include/config.h)
 
 # make sure configure doesn't add to CXXFLAGS

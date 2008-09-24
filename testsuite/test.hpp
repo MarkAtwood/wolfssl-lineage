@@ -468,7 +468,7 @@ inline int verify_callback(int preverify_ok, X509_STORE_CTX* ctx)
     int   depth    = X509_STORE_CTX_get_error_depth(ctx);
 
     // test allow self signed
-    if (depth == 1 && err == TaoCrypt::SIG_OTHER_E)
+    if (depth == 0 && err == TaoCrypt::SIG_OTHER_E)
         return 1;
 
     return 0;
