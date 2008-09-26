@@ -63,6 +63,7 @@ void client_test(void* args)
     int     argc = ((func_args*)args)->argc;
     char**  argv = ((func_args*)args)->argv;
 
+
     ((func_args*)args)->return_code = -1; /* error state */
 
 #ifndef NO_TLS
@@ -190,6 +191,27 @@ void client_test(void* args)
     }
 
 #endif /* NO_MAIN_DRIVER */
+
+
+#ifdef NO_FILESYSTEM
+
+    void test_buffer(SSL_CTX* ctx)
+    {
+        // test buffer load
+        long  sz = 0;
+        byte  buff[4096];
+        FILE* file = fopen(caCert, "rb");
+        fseek(file, 0, SEEK_END);
+        sz = ftell(file);
+        rewind(file);
+        fread(buff, sizeof(buff), 1, file);
+   
+        if (CyaSSL_CTX_load_verify_buffer(ctx, buff, sz) != SSL_SUCCESS)
+            err_sys("can't load buffer ca file");
+    }
+
+#endif /* NO_FILESYSTEM */
+
 
 
 #ifdef CYASSL_CALLBACKS

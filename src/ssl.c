@@ -39,9 +39,6 @@
 #include <assert.h>
 
 
-static int ProcessFile(SSL_CTX*, const char*, int format, int type);
-
-
 #define TRUE  1
 #define FALSE 0
 
@@ -183,6 +180,172 @@ int SSL_pending(SSL* ssl)
 }
 
 
+/* owns der */
+static int AddCA(SSL_CTX* ctx, buffer der)
+{
+    word32      ret;
+    DecodedCert cert;
+    Signer*     signer = 0;
+
+    InitDecodedCert(&cert, der.buffer);
+    ret = ParseCert(&cert, der.length, CA_TYPE, NO_VERIFY, 0);
+
+    if (ret == 0) {
+        /* take over signer parts */
+        signer = MakeSigner();
+        if (!signer)
+            ret = MEMORY_ERROR;
+        else {
+            signer->publicKey  = cert.publicKey;
+            signer->pubKeySize = cert.pubKeySize;
+            signer->name = cert.subjectCN;
+            memcpy(signer->hash, cert.subjectHash, SHA_DIGEST_SIZE);
+
+            cert.publicKey = 0;  /* don't free here */
+            cert.subjectCN = 0;
+
+            signer->next = ctx->caList;
+            ctx->caList  = signer;   /* takes ownership */
+        }
+    }
+
+    FreeDecodedCert(&cert);
+    XFREE(der.buffer);
+
+    if (ret == 0) return SSL_SUCCESS;
+    return ret;
+}
+
+
+static SSL_SESSION* sessions = 0;
+
+
+#ifndef NO_FILESYSTEM
+
+static int PemToDer(const char* fileName, int type, buffer* der)
+{
+    long   begin    = -1;
+    long   end      =  0;
+    int    foundEnd =  0;
+    int    ret      =  0;
+    word32 sz       =  0;
+
+    char  line[80];
+    char  header[80];
+    char  footer[80];
+
+    FILE* file;
+    byte* tmp = 0;
+
+    if (type == CERT_TYPE) {
+        strncpy(header, "-----BEGIN CERTIFICATE-----", sizeof(header));
+        strncpy(footer, "-----END CERTIFICATE-----", sizeof(footer));
+    } else {
+        strncpy(header, "-----BEGIN RSA PRIVATE KEY-----", sizeof(header));
+        strncpy(footer, "-----END RSA PRIVATE KEY-----", sizeof(header));
+    }
+
+    file = fopen(fileName, "rb");
+    if (!file)
+        return SSL_BAD_FILE;
+
+    while(fgets(line, sizeof(line), file))
+        if (strncmp(header, line, strlen(header)) == 0) {
+            begin = ftell(file);
+            break;
+        }
+
+    while(fgets(line, sizeof(line), file))
+        if (strncmp(footer, line, strlen(footer)) == 0) {
+            foundEnd = 1;
+            break;
+        }
+        else
+            end = ftell(file);
+
+    if (begin == -1 || !foundEnd) {
+        fclose(file);
+        return SSL_BAD_FILE;
+    }
+
+    sz = end - begin;
+    tmp = (byte*) XMALLOC(sz);
+    if (!tmp) {
+        fclose(file);
+        return MEMORY_ERROR;
+    }
+
+    fseek(file, begin, SEEK_SET);
+    if (fread(tmp, sz, 1, file) != 1 || 
+            (der->buffer = (byte*) XMALLOC(sz)) == 0) {
+        XFREE(tmp);
+        fclose(file);
+        return FREAD_ERROR;
+    }
+   
+    der->length = sz; 
+    if (Base64Decode(tmp, sz, der->buffer, &der->length) < 0)
+        ret = SSL_BAD_FILE;
+
+    XFREE(tmp);
+    fclose(file);
+
+    return ret;
+}
+
+
+static int ProcessFile(SSL_CTX* ctx, const char* file, int format, int type)
+{
+    buffer der; 
+    der.buffer = 0;
+
+    if (format != SSL_FILETYPE_ASN1 && format != SSL_FILETYPE_PEM)
+        return SSL_BAD_FILETYPE;
+
+    if (format == SSL_FILETYPE_PEM) {
+        if (PemToDer(file, type == PRIVATEKEY_TYPE ? type : CERT_TYPE, &der)
+                < 0) {
+            XFREE(der.buffer);
+            return SSL_BAD_FILE;
+        }
+    }
+    else {  /* ASN1 (DER) */
+        long   sz;
+        FILE*  input = fopen(file, "rb");
+
+        if (!input)
+            return SSL_BAD_FILE;
+        
+        fseek(input, 0, SEEK_END);
+        sz = ftell(input);
+        rewind(input);
+
+        der.buffer = (byte*) XMALLOC(sz);
+        if (!der.buffer) return MEMORY_ERROR;
+        der.length = sz;
+        sz = (word32)fread(der.buffer, sz, 1, input);
+        if (sz != 1) {
+            fclose(input);
+            XFREE(der.buffer);
+            return SSL_BAD_FILE;
+        }
+        fclose(input);
+    }
+
+    if (type == CA_TYPE)
+        return AddCA(ctx, der);     /* takes der over */
+    else if (type == CERT_TYPE)
+        ctx->certificate = der;     /* takes der over */
+    else if (type == PRIVATEKEY_TYPE)
+        ctx->privateKey = der;      /* takes der over */
+    else {
+        XFREE(der.buffer);
+        return SSL_BAD_CERTTYPE;
+    }
+
+    return SSL_SUCCESS;
+}
+
 /* just one for now TODO: add dir support from path */
 int SSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file,
                                   const char* path)
@@ -201,6 +364,15 @@ int SSL_CTX_use_PrivateKey_file(SSL_CTX* ctx, const char* file, int type)
 {
     return ProcessFile(ctx, file, type, PRIVATEKEY_TYPE);
 }
+
+
+int SSL_CTX_use_certificate_chain_file(SSL_CTX* ctx, const char* file)
+{
+    /* add first to ctx, all tested implementations support this */
+    return ProcessFile(ctx, file, SSL_FILETYPE_PEM, CA_TYPE);
+}
+
+#endif /* NO_FILESYSTEM */
 
 
 void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback vc)
@@ -235,13 +407,6 @@ void SSL_load_error_strings(void)   /* compatibility only */
 int SSL_library_init(void)  /* compatiblity only */
 {
     return SSL_SUCCESS;
-}
-
-
-int SSL_CTX_use_certificate_chain_file(SSL_CTX* ctx, const char* file)
-{
-    /* add first to ctx, all tested implementations support this */
-    return ProcessFile(ctx, file, SSL_FILETYPE_PEM, CA_TYPE);
 }
 
 
@@ -533,167 +698,6 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
 
 
-/* owns der */
-static int AddCA(SSL_CTX* ctx, buffer der)
-{
-    word32      ret;
-    DecodedCert cert;
-    Signer*     signer = 0;
-
-    InitDecodedCert(&cert, der.buffer);
-    ret = ParseCert(&cert, der.length, CA_TYPE, NO_VERIFY, 0);
-
-    if (ret == 0) {
-        /* take over signer parts */
-        signer = MakeSigner();
-        if (!signer)
-            ret = MEMORY_ERROR;
-        else {
-            signer->publicKey  = cert.publicKey;
-            signer->pubKeySize = cert.pubKeySize;
-            signer->name = cert.subjectCN;
-            memcpy(signer->hash, cert.subjectHash, SHA_DIGEST_SIZE);
-
-            cert.publicKey = 0;  /* don't free here */
-            cert.subjectCN = 0;
-
-            signer->next = ctx->caList;
-            ctx->caList  = signer;   /* takes ownership */
-        }
-    }
-
-    FreeDecodedCert(&cert);
-    XFREE(der.buffer);
-
-    if (ret == 0) return SSL_SUCCESS;
-    return ret;
-}
-
-
-static int PemToDer(const char* fileName, int type, buffer* der)
-{
-    long   begin    = -1;
-    long   end      =  0;
-    int    foundEnd =  0;
-    word32 sz       =  0;
-
-    char  line[80];
-    char  header[80];
-    char  footer[80];
-
-    FILE* file;
-    byte* tmp = 0;
-
-    if (type == CERT_TYPE) {
-        strncpy(header, "-----BEGIN CERTIFICATE-----", sizeof(header));
-        strncpy(footer, "-----END CERTIFICATE-----", sizeof(footer));
-    } else {
-        strncpy(header, "-----BEGIN RSA PRIVATE KEY-----", sizeof(header));
-        strncpy(footer, "-----END RSA PRIVATE KEY-----", sizeof(header));
-    }
-
-    file = fopen(fileName, "rb");
-    if (!file)
-        return SSL_BAD_FILE;
-
-    while(fgets(line, sizeof(line), file))
-        if (strncmp(header, line, strlen(header)) == 0) {
-            begin = ftell(file);
-            break;
-        }
-
-    while(fgets(line, sizeof(line), file))
-        if (strncmp(footer, line, strlen(footer)) == 0) {
-            foundEnd = 1;
-            break;
-        }
-        else
-            end = ftell(file);
-
-    if (begin == -1 || !foundEnd) {
-        fclose(file);
-        return SSL_BAD_FILE;
-    }
-
-    sz = end - begin;
-    tmp = (byte*) XMALLOC(sz);
-    if (!tmp) {
-        fclose(file);
-        return MEMORY_ERROR;
-    }
-
-    fseek(file, begin, SEEK_SET);
-    if (fread(tmp, sz, 1, file) != 1 || 
-            (der->buffer = (byte*) XMALLOC(sz)) == 0) {
-        XFREE(tmp);
-        fclose(file);
-        return FREAD_ERROR;
-    }
-   
-    der->length = sz; 
-    Base64Decode(tmp, sz, der->buffer, &der->length);
-
-    XFREE(tmp);
-    fclose(file);
-
-    return 0;
-}
-
-
-static int ProcessFile(SSL_CTX* ctx, const char* file, int format, int type)
-{
-    buffer der; 
-    der.buffer = 0;
-
-    if (format != SSL_FILETYPE_ASN1 && format != SSL_FILETYPE_PEM)
-        return SSL_BAD_FILETYPE;
-
-    if (format == SSL_FILETYPE_PEM) {
-        if (PemToDer(file, type == PRIVATEKEY_TYPE ? type : CERT_TYPE, &der)
-                < 0) {
-            XFREE(der.buffer);
-            return SSL_BAD_FILE;
-        }
-    }
-    else {  /* ASN1 (DER) */
-        long   sz;
-        FILE*  input = fopen(file, "rb");
-
-        if (!input)
-            return SSL_BAD_FILE;
-        
-        fseek(input, 0, SEEK_END);
-        sz = ftell(input);
-        rewind(input);
-
-        der.buffer = (byte*) XMALLOC(sz);
-        if (!der.buffer) return MEMORY_ERROR;
-        der.length = sz;
-        sz = (word32)fread(der.buffer, sz, 1, input);
-        if (sz != 1) {
-            fclose(input);
-            XFREE(der.buffer);
-            return SSL_BAD_FILE;
-        }
-        fclose(input);
-    }
-
-    if (type == CA_TYPE)
-        return AddCA(ctx, der);     /* takes der over */
-    else if (type == CERT_TYPE)
-        ctx->certificate = der;     /* takes der over */
-    else if (type == PRIVATEKEY_TYPE)
-        ctx->privateKey = der;      /* takes der over */
-    else {
-        XFREE(der.buffer);
-        return SSL_BAD_CERTTYPE;
-    }
-
-    return SSL_SUCCESS;
-}
-
-
-static SSL_SESSION* sessions = 0;
 
 /* quiet compiler */
 #ifndef SINGLE_THREADED
@@ -1101,6 +1105,127 @@ int CyaSSL_set_compression(SSL* ssl)
 
 #endif /* NO_PSK */
 
+
+#ifdef NO_FILESYSTEM
+
+
+    static int PemToDerBuffer(const unsigned char* buff, long sz, int type,
+                              buffer* der)
+    {
+
+        char  header[80];
+        char  footer[80];
+        char* headerEnd;
+        char* footerEnd;
+        long  neededSz;
+
+        if (type == CERT_TYPE) {
+            strncpy(header, "-----BEGIN CERTIFICATE-----", sizeof(header));
+            strncpy(footer, "-----END CERTIFICATE-----", sizeof(footer));
+        } else {
+            strncpy(header, "-----BEGIN RSA PRIVATE KEY-----", sizeof(header));
+            strncpy(footer, "-----END RSA PRIVATE KEY-----", sizeof(footer));
+        }
+
+        /* find header */
+        headerEnd = strstr((char*)buff, header);
+        if (!headerEnd) return SSL_BAD_FILE;
+        headerEnd += strlen(header);
+
+        /* get next line */
+        if (headerEnd[0] == '\n')
+            headerEnd++;
+        else if (headerEnd[1] == '\n')
+            headerEnd += 2;
+        else
+            return SSL_BAD_FILE;
+
+        /* find footer */
+        footerEnd = strstr((char*)buff, footer);
+        if (!footerEnd) return SSL_BAD_FILE;
+
+        /* set up der buffer */
+        neededSz = footerEnd - headerEnd;
+        if (neededSz > sz || neededSz < 0) return SSL_BAD_FILE;
+        der->buffer = XMALLOC(neededSz);
+        if (!der->buffer) return MEMORY_ERROR;
+        der->length = neededSz;
+
+        if (Base64Decode((byte*)headerEnd, neededSz, der->buffer,
+                         &der->length) < 0)
+            return SSL_BAD_FILE;
+
+        return 0;
+    } 
+
+
+    static int ProcessBuffer(SSL_CTX* ctx, const unsigned char* buff,
+                             long sz, int format, int type)
+    {
+        buffer der;
+        der.buffer = 0;
+
+        if (format != SSL_FILETYPE_ASN1 && format != SSL_FILETYPE_PEM)
+            return SSL_BAD_FILETYPE;
+
+        if (format == SSL_FILETYPE_PEM) {
+            if (PemToDerBuffer(buff, sz,
+                        type == PRIVATEKEY_TYPE ? type : CERT_TYPE, &der) < 0) {
+                XFREE(der.buffer);
+                return SSL_BAD_FILE;
+            }
+        }
+        else {  /* ASN1 (DER) */
+            der.buffer = XMALLOC(sz);
+            if (!der.buffer) return MEMORY_ERROR;
+            memcpy(der.buffer, buff, sz);
+            der.length = sz;
+        }
+
+        if (type == CA_TYPE)
+            return AddCA(ctx, der);     /* takes der over */
+        else if (type == CERT_TYPE)
+            ctx->certificate = der;     /* takes der over */
+        else if (type == PRIVATEKEY_TYPE)
+            ctx->privateKey = der;      /* takes der over */
+        else {
+            XFREE(der.buffer);
+            return SSL_BAD_CERTTYPE;
+        }
+
+        return SSL_SUCCESS;
+    }
+
+
+    int CyaSSL_CTX_load_verify_buffer(SSL_CTX* ctx, const unsigned char* buffer,
+                                      long sz)
+    {
+        return ProcessBuffer(ctx, buffer, sz, SSL_FILETYPE_PEM, CA_TYPE);
+    }
+
+
+    int CyaSSL_CTX_use_certificate_buffer(SSL_CTX* ctx,
+                                 const unsigned char* buffer, long sz, int type)
+    {
+        return ProcessBuffer(ctx, buffer, sz, type, CERT_TYPE);
+    }
+
+
+    int CyaSSL_CTX_use_PrivateKey_buffer(SSL_CTX* ctx,
+                                 const unsigned char* buffer, long sz, int type)
+    {
+        return ProcessBuffer(ctx, buffer, sz, type, PRIVATEKEY_TYPE);
+    }
+
+
+    int CyaSSL_CTX_use_certificate_chain_buffer(SSL_CTX* ctx,
+                                 const unsigned char* buffer, long sz)
+    {
+        /* add first to ctx, all tested implementations support this */
+        return ProcessBuffer(ctx, buffer, sz, SSL_FILETYPE_PEM, CA_TYPE);
+    }
+
+#endif /* NO_FILESYSTEM */
 
 
 #ifdef OPENSSL_EXTRA

@@ -67,8 +67,14 @@ SSL_METHOD *TLSv1_client_method(void);
 SSL_METHOD *TLSv1_1_server_method(void);  
 SSL_METHOD *TLSv1_1_client_method(void);
 
+#ifndef NO_FILESYSTEM
+
 int SSL_CTX_use_certificate_file(SSL_CTX*, const char*, int);
 int SSL_CTX_use_PrivateKey_file(SSL_CTX*, const char*, int);
+int SSL_CTX_load_verify_locations(SSL_CTX*, const char*, const char*);
+int SSL_CTX_use_certificate_chain_file(SSL_CTX *ctx, const char *file);
+
+#endif /* NO_FILESYSTEM */
 
 SSL_CTX* SSL_CTX_new(SSL_METHOD*);
 SSL* SSL_new(SSL_CTX*);
@@ -94,7 +100,6 @@ typedef int (*pem_password_cb)(char*, int, int, void*);
 
 void SSL_CTX_set_verify(SSL_CTX*, int, VerifyCallback verify_callback);
 
-int  SSL_CTX_load_verify_locations(SSL_CTX*, const char*, const char*);
 
 int  SSL_pending(SSL*);
 
@@ -102,7 +107,6 @@ int  SSL_pending(SSL*);
 void SSL_load_error_strings(void);
 int  SSL_library_init(void);
 long SSL_CTX_set_session_cache_mode(SSL_CTX*, long);
-int  SSL_CTX_use_certificate_chain_file(SSL_CTX *ctx, const char *file);
 
 /* only supports full name from cipher_name[] delimited by : */
 int  SSL_CTX_set_cipher_list(SSL_CTX*, const char*);
@@ -235,6 +239,16 @@ int  CyaSSL_Debugging_ON(void);   /* turn logging on, only if compiled in */
 void CyaSSL_Debugging_OFF(void);  /* turn logging off */
 
 int CyaSSL_set_compression(SSL* ssl);  /* turn on CyaSSL data compression */
+
+
+#ifdef NO_FILESYSTEM
+
+int CyaSSL_CTX_load_verify_buffer(SSL_CTX*, const unsigned char*, long);
+int CyaSSL_CTX_use_certificate_buffer(SSL_CTX*, const unsigned char*, long,int);
+int CyaSSL_CTX_use_PrivateKey_buffer(SSL_CTX*, const unsigned char*, long, int);
+int CyaSSL_CTX_use_certificate_chain_buffer(SSL_CTX*,const unsigned char*,long);
+
+#endif /* NO_FILESYSTEM */
 
 
 #ifdef CYASSL_CALLBACKS
