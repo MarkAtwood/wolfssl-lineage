@@ -134,7 +134,7 @@ THREAD_RETURN CYASSL_API server_test(void* args)
 
         InitCyaSSL();
         server_test(&args);
-        FreeCyaSSL();
+        FreeCyaSSL(0);
 
         return args.return_code;
     }

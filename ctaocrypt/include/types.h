@@ -27,6 +27,9 @@
     #include "config.h"
 #endif
 
+#ifdef XMALLOC_USER
+    #include <stdlib.h>   /* for size_t */
+#endif
 
 #ifdef __cplusplus
     extern "C" {
@@ -114,17 +117,19 @@ enum {
 
 /* idea to add global alloc override by Moisés Guimarães  */
 /* default to libc stuff */
-#ifndef XMALLOC 
-    #define XMALLOC  malloc
-    #define XFREE    free
-    #define XREALLOC realloc
-    #define XCALLOC  calloc
+/* XCALLOC not used by CyaSSL or either math lib */
+/* XREALLOC is used once in mormal math lib, not in fast math lib */
+#ifndef XMALLOC_USER
+    #define XMALLOC(s, h)     malloc(s)
+    #define XFREE(p, h)       free(p)
+    #define XREALLOC(p, n, h) realloc(p, n)
+    #define XCALLOC(n, s, h)  calloc(n, s)
 #else
     /* prototypes for our heap functions */
-    extern void *XMALLOC(size_t n);
-    extern void *XREALLOC(void *p, size_t n);
-    extern void *XCALLOC(size_t n, size_t s);
-    extern void XFREE(void *p);
+    extern void *XMALLOC(size_t n, void* heap);
+    extern void *XREALLOC(void *p, size_t n, void* heap);
+    extern void *XCALLOC(size_t n, size_t s, void* heap);
+    extern void XFREE(void *p, void* heap);
 #endif
 
 

@@ -151,8 +151,8 @@ static INLINE void showPeer(SSL* ssl)
 
         printf("peer's cert info:\n issuer : %s\n subject: %s\n", issuer,
                                                                   subject);
-        XFREE(subject);
-        XFREE(issuer);
+        XFREE(subject, 0);
+        XFREE(issuer, 0);
     }
     else
         printf("peer has no cert!\n");

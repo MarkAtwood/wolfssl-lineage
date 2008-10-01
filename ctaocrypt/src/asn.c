@@ -316,7 +316,7 @@ int DsaPrivateKeyDecode(const byte* input, word32* inOutIdx, DsaKey* key,
 #endif /* NO_DSA */
 
 
-void InitDecodedCert(DecodedCert* cert, byte* source)
+void InitDecodedCert(DecodedCert* cert, byte* source, void* heap)
 {
     cert->publicKey = 0;
     cert->signature = 0;
@@ -324,15 +324,16 @@ void InitDecodedCert(DecodedCert* cert, byte* source)
     cert->subjectCN = 0;
     cert->source    = source;  /* don't own */
     cert->srcIdx    = 0;
+    cert->heap      = heap;
 }
 
 
 void FreeDecodedCert(DecodedCert* cert)
 {
-    XFREE(cert->subjectCN);
-    XFREE(cert->issuerCN);
-    XFREE(cert->signature);
-    XFREE(cert->publicKey);
+    XFREE(cert->subjectCN, cert->heap);
+    XFREE(cert->issuerCN, cert->heap);
+    XFREE(cert->signature, cert->heap);
+    XFREE(cert->publicKey, cert->heap);
 }
 
 
@@ -414,7 +415,7 @@ static int StoreKey(DecodedCert* cert)
        cert->srcIdx--;
 
     cert->pubKeySize = length;
-    if ( !(cert->publicKey = (byte*) XMALLOC(length)) )
+    if ( !(cert->publicKey = (byte*) XMALLOC(length, cert->heap)) )
         return MEMORY_E;
 
     memcpy(cert->publicKey, cert->source + cert->srcIdx, length);
@@ -506,7 +507,7 @@ static int GetName(DecodedCert* cert, int nameType)
             if (id == ASN_COMMON_NAME) {
                 char** cn = (nameType == ISSUER) ? 
                     &cert->issuerCN : &cert->subjectCN;
-                *cn = (char*) XMALLOC(strLen + 1);
+                *cn = (char*) XMALLOC(strLen + 1, cert->heap);
                 if (!*cn)
                     return MEMORY_E;
                 memcpy(*cn, &cert->source[cert->srcIdx], strLen);
@@ -776,7 +777,7 @@ static int GetSignature(DecodedCert* cert)
 
     cert->sigLength--;
 
-    cert->signature = (byte*) XMALLOC(cert->sigLength);
+    cert->signature = (byte*) XMALLOC(cert->sigLength, cert->heap);
     if (!cert->signature)
         return MEMORY_E;
     
@@ -938,7 +939,7 @@ static int ConfirmSignature(DecodedCert* cert, const byte* key, word32 keySz)
         word32 idx = 0;
         int    sigSz, verifySz;
 
-        InitRsaKey(&pubKey);
+        InitRsaKey(&pubKey, cert->heap);
         if (RsaPublicKeyDecode(key, &idx, &pubKey, keySz) < 0)
             return 0; /* ASN_KEY_DECODE_E; */
 
@@ -1009,9 +1010,9 @@ int ParseCert(DecodedCert* cert, word32 inSz, int type, int verify,
 }
 
 
-Signer* MakeSigner(void)
+Signer* MakeSigner(void* heap)
 {
-    Signer* signer = (Signer*) XMALLOC(sizeof(Signer));
+    Signer* signer = (Signer*) XMALLOC(sizeof(Signer), heap);
     if (signer) {
         signer->name      = 0;
         signer->publicKey = 0;
@@ -1022,15 +1023,15 @@ Signer* MakeSigner(void)
 }
 
 
-void FreeSigners(Signer* signer)
+void FreeSigners(Signer* signer, void* heap)
 {
     Signer* next = signer;
 
     while( (signer = next) ) {
         next = signer->next;
-        XFREE(signer->name);
-        XFREE(signer->publicKey);
-        XFREE(signer);
+        XFREE(signer->name, heap);
+        XFREE(signer->publicKey, heap);
+        XFREE(signer, heap);
     }
 }
 

@@ -38,9 +38,10 @@ enum {
 };
 
 
-void InitRsaKey(RsaKey* key)
+void InitRsaKey(RsaKey* key, void* heap)
 {
     key->type = -1;  /* haven't decdied yet */
+    key->heap = heap;
 
 /* TomsFastMath doesn't use memory allocation */
 #ifndef USE_FAST_MATH
@@ -231,7 +232,7 @@ int RsaPublicEncrypt(const byte* in, word32 inLen, byte* out, word32 outLen,
     if (sz > (int)outLen)
         return RSA_BUFFER_E;
 
-    if ( !(tmp = (byte*)XMALLOC(sz)) )
+    if ( !(tmp = (byte*)XMALLOC(sz, key->heap)) )
         return MEMORY_E;
 
     RsaPad(in, inLen, tmp, sz, RSA_BLOCK_TYPE_2, rng);
@@ -239,7 +240,7 @@ int RsaPublicEncrypt(const byte* in, word32 inLen, byte* out, word32 outLen,
     if ((ret = RsaFunction(tmp, sz, out, &outLen, RSA_PUBLIC_ENCRYPT, key)) < 0)
         sz = ret;
     
-    XFREE(tmp);
+    XFREE(tmp, key->heap);
     return sz;
 }
 
@@ -250,19 +251,19 @@ int RsaPrivateDecrypt(const byte* in, word32 inLen, byte* out, word32 outLen,
     int plainLen, ret;
     byte*  tmp;
 
-    if ( !(tmp = (byte*)XMALLOC(inLen)) )
+    if ( !(tmp = (byte*)XMALLOC(inLen, key->heap)) )
         return MEMORY_E;
 
     if ((ret = RsaFunction(in, inLen, tmp, &inLen, RSA_PRIVATE_DECRYPT, key))
             < 0) {
-        XFREE(tmp);
+        XFREE(tmp, key->heap);
         return ret;
     }
   
     plainLen = RsaUnPad(tmp, inLen, out, RSA_BLOCK_TYPE_2);
     memset(tmp, 0x00, inLen); 
 
-    XFREE(tmp);
+    XFREE(tmp, key->heap);
     return plainLen;
 }
 
@@ -274,19 +275,19 @@ int RsaSSL_Verify(const byte* in, word32 inLen, byte* out, word32 outLen,
     int plainLen, ret;
     byte*  tmp;
 
-    if ( !(tmp = (byte*)XMALLOC(inLen)) )
+    if ( !(tmp = (byte*)XMALLOC(inLen, key->heap)) )
         return MEMORY_E;
 
     if ((ret = RsaFunction(in, inLen, tmp, &inLen, RSA_PUBLIC_DECRYPT, key))
             < 0) {
-        XFREE(tmp);
+        XFREE(tmp, key->heap);
         return ret;
     }
   
     plainLen = RsaUnPad(tmp, inLen, out, RSA_BLOCK_TYPE_1);
     memset(tmp, 0x00, inLen); 
 
-    XFREE(tmp);
+    XFREE(tmp, key->heap);
     return plainLen;
 }
 
@@ -301,7 +302,7 @@ int RsaSSL_Sign(const byte* in, word32 inLen, byte* out, word32 outLen,
     if (sz > (int)outLen)
         return RSA_BUFFER_E;
 
-    if ( !(tmp = (byte*)XMALLOC(sz)) )
+    if ( !(tmp = (byte*)XMALLOC(sz, key->heap)) )
         return MEMORY_E;
 
     RsaPad(in, inLen, tmp, sz, RSA_BLOCK_TYPE_1, rng);
@@ -309,7 +310,7 @@ int RsaSSL_Sign(const byte* in, word32 inLen, byte* out, word32 outLen,
     if ((ret = RsaFunction(tmp, sz, out, &outLen, RSA_PRIVATE_ENCRYPT,key)) < 0)
         sz = ret;
     
-    XFREE(tmp);
+    XFREE(tmp, key->heap);
     return sz;
 }
 

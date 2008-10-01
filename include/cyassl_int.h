@@ -293,6 +293,7 @@ struct SSL_CTX {
     buffer      privateKey;
     Signer*     caList;           /* SSL_CTX owns this, SSL will reference */
     Suites      suites;
+    void*       heap;             /* for user memory overrides */
     byte        verifyPeer;
     byte        verifyNone;
     byte        failNoCert;
@@ -579,6 +580,7 @@ struct SSL {
     SSL_SESSION     session;
     X509            peerCert;           /* X509 peer cert */
     hmacfp          hmac;
+    void*           heap;               /* for user overrides */
 #ifdef HAVE_LIBZ
     z_stream        c_stream;           /* compression   stream */
     z_stream        d_stream;           /* decompression stream */
@@ -603,8 +605,8 @@ void FreeSSL(SSL*);
     void AddPacketName(const char*, HandShakeInfo*);
 
     void InitTimeoutInfo(TimeoutInfo*);
-    void FreeTimeoutInfo(TimeoutInfo*);
-    void AddPacketInfo(const char*, TimeoutInfo*, const byte*, int);
+    void FreeTimeoutInfo(TimeoutInfo*, void*);
+    void AddPacketInfo(const char*, TimeoutInfo*, const byte*, int, void*);
     void AddLateName(const char*, TimeoutInfo*);
 #endif
 

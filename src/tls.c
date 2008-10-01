@@ -275,7 +275,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
 
     SSL_METHOD* TLSv1_client_method(void)
     {
-        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD));
+        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
         if (method)
             InitSSL_Method(method, MakeTLSv1());
         return method;
@@ -284,7 +284,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
 
     SSL_METHOD* TLSv1_1_client_method(void)
     {
-        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD));
+        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
         if (method)
             InitSSL_Method(method, MakeTLSv1_1());
         return method;
@@ -298,7 +298,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
 
     SSL_METHOD* TLSv1_server_method(void)
     {
-        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD));
+        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
         if (method) {
             InitSSL_Method(method, MakeTLSv1());
             method->side = SERVER_END;
@@ -309,7 +309,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
 
     SSL_METHOD* TLSv1_1_server_method(void)
     {
-        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD));
+        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
         if (method) {
             InitSSL_Method(method, MakeTLSv1_1());
             method->side = SERVER_END;
@@ -322,7 +322,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
 
     SSL_METHOD *SSLv23_server_method(void)
     {
-        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD));
+        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
         if (method) {
             InitSSL_Method(method, MakeTLSv1());
             method->side = SERVER_END;

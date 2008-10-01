@@ -128,6 +128,7 @@ typedef struct DecodedCert {
     int     verify;                  /* Default to yes, but could be off */
     byte*   source;                  /* byte buffer holder cert, NOT owner */
     word32  srcIdx;                  /* current offset into buffer       */
+    void*   heap;                    /* for user memory overrides        */
 } DecodedCert;
 
 
@@ -143,12 +144,12 @@ struct Signer {
 };
 
 
-void InitDecodedCert(DecodedCert*, byte*);
+void InitDecodedCert(DecodedCert*, byte*, void*);
 void FreeDecodedCert(DecodedCert*);
 int  ParseCert(DecodedCert*, word32, int type, int verify, Signer* signer);
 
-Signer* MakeSigner(void);
-void    FreeSigners(Signer*);
+Signer* MakeSigner(void*);
+void    FreeSigners(Signer*, void*);
 
 
 int RsaPrivateKeyDecode(const byte* input, word32* inOutIdx, RsaKey*, word32);

@@ -98,7 +98,7 @@ int main(int argc, char** argv)
             return -1;
     }
 
-    FreeCyaSSL();
+    FreeCyaSSL(0);
     FreeTcpReady(&ready);
 
     printf("\nAll tests passed!\n");

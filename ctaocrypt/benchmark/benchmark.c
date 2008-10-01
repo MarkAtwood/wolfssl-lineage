@@ -249,7 +249,7 @@ void bench_rsa()
     }
 
     bytes = fread(tmp, 1, 1024, file);
-    InitRsaKey(&key);
+    InitRsaKey(&key, 0);
     bytes = RsaPrivateKeyDecode(tmp, &idx, &key, (word32)bytes);
 
     

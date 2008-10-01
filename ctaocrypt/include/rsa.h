@@ -40,11 +40,12 @@ enum {
 /* RSA */
 typedef struct RsaKey {
     mp_int n, e, d, p, q, dP, dQ, u;
-    int type;                               /* public or private */
+    int   type;                               /* public or private */
+    void* heap;                               /* for user memory overrides */
 } RsaKey;
 
 
-void InitRsaKey(RsaKey* key);
+void InitRsaKey(RsaKey* key, void*);
 void FreeRsaKey(RsaKey* key);
 
 int  RsaPublicEncrypt(const byte* in, word32 inLen, byte* out, word32 outLen,

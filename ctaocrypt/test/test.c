@@ -646,7 +646,7 @@ int rsa_test()
 
     bytes = fread(tmp, 1, 1024, file);
   
-    InitRsaKey(&key);  
+    InitRsaKey(&key, 0);  
     ret = RsaPrivateKeyDecode(tmp, &idx, &key, (word32)bytes);
     if (ret != 0) return -41;
 
@@ -671,7 +671,7 @@ int rsa_test()
 
     bytes2 = fread(tmp2, 1, 2048, file2);
 
-    InitDecodedCert(&cert, (byte*)&tmp2);
+    InitDecodedCert(&cert, (byte*)&tmp2, 0);
 
     ret = ParseCert(&cert, (word32)bytes2, CERT_TYPE, NO_VERIFY, 0);
     if (ret != 0) return -48;
