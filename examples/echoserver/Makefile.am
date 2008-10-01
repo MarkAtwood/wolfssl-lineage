@@ -3,6 +3,7 @@ bin_PROGRAMS        = echoserver
 echoserver_SOURCES  = echoserver.cpp
 echoserver_CXXFLAGS = -Wall -Wno-unused
 echoserver_LDFLAGS  = -L../../src/ -L../../taocrypt/src
-echoserver_LDADD    = -lyassl -ltaocrypt
-echoserver_DEPENDENCIES = ../../src/libyassl.a ../../taocrypt/src/libtaocrypt.a
+echoserver_LDADD    = ../../src/libyassl.la ../../taocrypt/src/libtaocrypt.la
+echoserver_DEPENDENCIES = ../../src/libyassl.la \
+                          ../../taocrypt/src/libtaocrypt.la
 EXTRA_DIST = echoserver.dsp echoserver.vcproj

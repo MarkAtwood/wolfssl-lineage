@@ -6,6 +6,6 @@ testsuite_SOURCES  = testsuite.cpp ../taocrypt/test/test.cpp \
 	../examples/echoserver/echoserver.cpp
 testsuite_LDFLAGS  = -L../src/ -L../taocrypt/src
 testsuite_CXXFLAGS = -DNO_MAIN_DRIVER -Wall -Wno-unused
-testsuite_LDADD    = -lyassl -ltaocrypt
-testsuite_DEPENDENCIES = ../src/libyassl.a ../taocrypt/src/libtaocrypt.a
+testsuite_LDADD        = ../src/libyassl.la ../taocrypt/src/libtaocrypt.la
+testsuite_DEPENDENCIES = ../src/libyassl.la ../taocrypt/src/libtaocrypt.la
 EXTRA_DIST = testsuite.dsp test.hpp input quit make.bat testsuite.vcproj
