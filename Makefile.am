@@ -6,6 +6,6 @@ basic:
 	cd src; make; cd ../testsuite; make; cd ../
 
 openssl-links:
-	cd lib; ln -s ../src/libcyassl.a libcrypto.a; \
-    ln -s ../src/libcyassl.a libssl.a; cd ../
+	cd lib; ln -s ../src/.libs/libcyassl.a libcrypto.a; \
+    ln -s ../src/.libs/libcyassl.a libssl.a; cd ../
     

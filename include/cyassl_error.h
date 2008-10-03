@@ -72,6 +72,7 @@ enum CyaSSL_ErrorCodes {
     GETITIMER_ERROR        = -238,            /* getitimer failed ??? */
     SIGACT_ERROR           = -239,            /* sigaction failed ??? */
     SETITIMER_ERROR        = -240,            /* setitimer failed ??? */
+    LENGTH_ERROR           = -241,            /* record layer length error */
     /* add strings to SetErrorString !!!!! */
 
     /* begin negotiation parameter errors */

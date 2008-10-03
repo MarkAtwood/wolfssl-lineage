@@ -784,12 +784,33 @@ int SendWrapper(SSL* ssl, const byte* output, int sz, int copy)
 }
 
 
+/* do all verify and sanity checks on record header */
 static int GetRecordHeader(SSL* ssl, const byte* input, word32* inOutIdx,
                            RecordLayerHeader* rh)
 {
     memcpy(rh, input + *inOutIdx, RECORD_HEADER_SZ);
     *inOutIdx += RECORD_HEADER_SZ;
     ato16(rh->length, &rh->size);
+
+    /* catch version mismatch */
+    if (rh->version.major != ssl->version.major || 
+        rh->version.minor != ssl->version.minor)
+        return VERSION_ERROR;              /* only use requested version */
+
+    /* record layer length check */
+    if (rh->size > MAX_RECORD_SIZE)
+        return LENGTH_ERROR;
+
+    /* verify record type here as well */
+    switch ((enum ContentType)rh->type) {
+        case handshake:
+        case change_cipher_spec:
+        case application_data:
+        case alert:
+            break;
+        default:
+            return UNKNOWN_RECORD_TYPE;
+    }
 
     return 0;
 }
@@ -1381,13 +1402,9 @@ int DoProcessReply(SSL* ssl)
         /* make sure enough data left */
         if ( (inSz - idx) < RECORD_HEADER_SZ)
             needHdr = 1;
-        else if (GetRecordHeader(ssl, input, &idx, &rh) != 0)
-            ERROR_OUT(PARSE_ERROR);
+        else if ( (ret = GetRecordHeader(ssl, input, &idx, &rh)) != 0)
+            ERROR_OUT(ret);
         
-        if (!needHdr && (rh.version.major != ssl->version.major || 
-                         rh.version.minor != ssl->version.minor))
-            ERROR_OUT(VERSION_ERROR);  /* only use requested version */
-
         /* make sure enough data left */
         if ( needHdr || (inSz - idx) < rh.size) {
             /* buffer for next call */
@@ -1414,7 +1431,7 @@ int DoProcessReply(SSL* ssl)
 
             CYASSL_MSG("received record layer msg");
             switch (rh.type) {
-                case handshake :
+                case handshake:
                     /* debugging in DoHandShakeMsg */
                     if ( (ret = DoHandShakeMsg(ssl, input, &idx, inSz)) != 0)
                         ERROR_OUT(ret);
@@ -2243,6 +2260,10 @@ void SetErrorString(int error, char* buffer)
 
     case SETITIMER_ERROR:
         strncpy(buffer, "setitimer() error", max);
+        break;
+
+    case LENGTH_ERROR:
+        strncpy(buffer, "record layer length error", max);
         break;
 
     default :
