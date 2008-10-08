@@ -1516,16 +1516,16 @@ int ProcessReply(SSL* ssl)
 
 int SendChangeCipher(SSL* ssl)
 {
-    byte              output[RECORD_HEADER_SZ + ENUM_LEN];
-    RecordLayerHeader rl;
-    int               sendSz = sizeof(output);
+    byte               output[RECORD_HEADER_SZ + ENUM_LEN];
+    RecordLayerHeader* rl;
+    int                sendSz = sizeof(output);
 
-    rl.type      = change_cipher_spec;
-    rl.version   = ssl->version;
-    rl.length[0] = 0;
-    rl.length[1] = 1;
+    rl = (RecordLayerHeader*)output;
+    rl->type      = change_cipher_spec;
+    rl->version   = ssl->version;
+    rl->length[0] = 0;
+    rl->length[1] = 1;
 
-    memcpy(output, &rl, RECORD_HEADER_SZ);
     output[RECORD_HEADER_SZ] = 1;             /* turn it on */
 
     #ifdef CYASSL_CALLBACKS
@@ -1681,12 +1681,12 @@ static int BuildMessage(SSL* ssl, byte* output, const byte* input, int inSz,
     word32 digestSz = ssl->specs.hash_size;
     word32 sz = RECORD_HEADER_SZ + inSz + digestSz;                
     word32 pad  = 0;
-    word32 idx  = 0, i;
+    word32 idx  = RECORD_HEADER_SZ, i;
     word32 ivSz = 0;      /* TLSv1.1  IV */
-    byte              digest[SHA_DIGEST_SIZE];  /* max size */
-    byte              alen[BYTE3_LEN];
-    byte              iv[AES_BLOCK_SIZE];                  /* max size */
-    RecordLayerHeader rl;
+    word16 size;
+    byte               digest[SHA_DIGEST_SIZE];  /* max size */
+    byte               iv[AES_BLOCK_SIZE];                  /* max size */
+    RecordLayerHeader* rl;
 
     if (ssl->specs.cipher_type == block) {
         word32 blockSz = ssl->specs.block_size;
@@ -1702,15 +1702,13 @@ static int BuildMessage(SSL* ssl, byte* output, const byte* input, int inSz,
     }
     
     /* record layer header */
-    rl.type    = type;
-    rl.version = ssl->version;
-    rl.size    = sz - RECORD_HEADER_SZ;          /* includes mac and digest */
-    c16toa((word16)rl.size, alen);      
-    memcpy(&rl.length, alen, sizeof(rl.length));
+    rl = (RecordLayerHeader*)output;
+    rl->type    = type;
+    rl->version = ssl->version;
+    size        = sz - RECORD_HEADER_SZ;    /* include mac and digest */
+    c16toa(size, rl->length);
 
     /* write to output */
-    memcpy(output, &rl, RECORD_HEADER_SZ);
-    idx += RECORD_HEADER_SZ;
     if (ivSz) {
         memcpy(output + idx, iv, ivSz);
         idx += ivSz;
@@ -1729,7 +1727,7 @@ static int BuildMessage(SSL* ssl, byte* output, const byte* input, int inSz,
         for (i = 0; i <= pad; i++) output[idx++] = pad; /* pad byte gets */
                                                         /* pad value too */
     Encrypt(ssl, output + RECORD_HEADER_SZ, output + RECORD_HEADER_SZ,
-            rl.size);
+            size);
 
     return sz;
 }
@@ -1737,25 +1735,23 @@ static int BuildMessage(SSL* ssl, byte* output, const byte* input, int inSz,
 
 int SendFinished(SSL* ssl)
 {
-    int             sendSz,
-                    finishedSz = ssl->options.tls ? TLS_FINISHED_SZ :
-                                                    FINISHED_SZ;
-    byte            input[FINISHED_SZ + HANDSHAKE_HEADER_SZ];   /* max size */
-    byte            output[sizeof(input) + MAX_MSG_EXTRA];
-    byte            alen[BYTE3_LEN];
-    Hashes          hashes;
-    HandShakeHeader hs;
+    int              sendSz,
+                     finishedSz = ssl->options.tls ? TLS_FINISHED_SZ :
+                                                     FINISHED_SZ;
+    byte             input[FINISHED_SZ + HANDSHAKE_HEADER_SZ];   /* max size */
+    byte             output[sizeof(input) + MAX_MSG_EXTRA];
+    Hashes           hashes;
+    HandShakeHeader* hs;
 
     BuildFinished(ssl, &hashes, ssl->options.side == CLIENT_END ? client :
                                                                   server);
 
     /* make handshake header */
-    hs.type = finished;
-    c32to24(finishedSz, alen);
-    memcpy(&hs.length, alen, sizeof(hs.length));
+    hs = (HandShakeHeader*)input;
+    hs->type = finished;
+    c32to24(finishedSz, hs->length);
 
     /* write to input for message */
-    memcpy(input, &hs, HANDSHAKE_HEADER_SZ);
     memcpy(input + HANDSHAKE_HEADER_SZ, &hashes, finishedSz);
 
     if ( (sendSz = BuildMessage(ssl, output, input, HANDSHAKE_HEADER_SZ +
@@ -1789,13 +1785,11 @@ int SendFinished(SSL* ssl)
 int SendCertificate(SSL* ssl)
 {
     int    sendSz, ret = 0;
-    word32 i = 0;
-    byte   tmp[CERT_HEADER_SZ];
+    word32 i = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
     byte*  output = 0;
-    byte   alen[BYTE3_LEN];
 
-    RecordLayerHeader rl;
-    HandShakeHeader   hs;
+    RecordLayerHeader* rl;
+    HandShakeHeader*   hs;
 
     if (ssl->options.usingPSK_cipher) return 0;  /* not needed */
 
@@ -1807,32 +1801,22 @@ int SendCertificate(SSL* ssl)
     if (!output) return MEMORY_ERROR;
 
     /* record layer header */
-    rl.type    = handshake;
-    rl.version = ssl->version;
-    rl.size    = sendSz - RECORD_HEADER_SZ;  
-    c16toa((word16)rl.size, alen);      
-    memcpy(&rl.length, alen, sizeof(rl.length));
+    rl = (RecordLayerHeader*)output;
+    rl->type    = handshake;
+    rl->version = ssl->version;
+    c16toa((word16)(sendSz - RECORD_HEADER_SZ), rl->length);      
 
     /* make handshake header */
-    hs.type = certificate;
-    c32to24(ssl->buffers.certificate.length + 2 * CERT_HEADER_SZ, alen);
-    memcpy(&hs.length, alen, sizeof(hs.length));
-
-    /* write to output */
-    memcpy(output, &rl, RECORD_HEADER_SZ);
-    i += RECORD_HEADER_SZ;
-
-    memcpy(output + i, &hs, HANDSHAKE_HEADER_SZ);
-    i += HANDSHAKE_HEADER_SZ;
+    hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
+    hs->type = certificate;
+    c32to24(ssl->buffers.certificate.length + 2 * CERT_HEADER_SZ, hs->length);
 
     /* list total */
-    c32to24(ssl->buffers.certificate.length + CERT_HEADER_SZ, tmp);
-    memcpy(output + i, tmp, CERT_HEADER_SZ);
+    c32to24(ssl->buffers.certificate.length + CERT_HEADER_SZ, output + i);
     i += CERT_HEADER_SZ;
 
     /* member */
-    c32to24(ssl->buffers.certificate.length, tmp);
-    memcpy(output + i, tmp, CERT_HEADER_SZ);
+    c32to24(ssl->buffers.certificate.length, output + i);
     i += CERT_HEADER_SZ;
     memcpy(output + i, ssl->buffers.certificate.buffer,
            ssl->buffers.certificate.length);
@@ -1860,10 +1844,10 @@ int SendCertificateRequest(SSL* ssl)
 {
     byte   output[MAX_REQUEST_SZ];
     int    sendSz;
-    word32 i = 0;
+    word32 i = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
     
-    RecordLayerHeader rl;
-    HandShakeHeader   hs;
+    RecordLayerHeader* rl;
+    HandShakeHeader*   hs;
 
     int  typeTotal = 1;  /* only rsa for now */
     int  reqSz = ENUM_LEN + typeTotal + REQ_HEADER_SZ;  /* add auth later */
@@ -1873,22 +1857,17 @@ int SendCertificateRequest(SSL* ssl)
     sendSz = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ + reqSz;
 
     /* record layer header */
-    rl.type    = handshake;
-    rl.version = ssl->version;
-    rl.size    = sendSz - RECORD_HEADER_SZ;  
-    c16toa((word16)rl.size, rl.length);      
+    rl = (RecordLayerHeader*)output;
+    rl->type    = handshake;
+    rl->version = ssl->version;
+    c16toa((word16)(sendSz - RECORD_HEADER_SZ), rl->length);      
 
     /* make handshake header */
-    hs.type = certificate_request;
-    c32to24(reqSz, hs.length);
+    hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
+    hs->type = certificate_request;
+    c32to24(reqSz, hs->length);
 
     /* write to output */
-    memcpy(output, &rl, RECORD_HEADER_SZ);
-    i += RECORD_HEADER_SZ;
-
-    memcpy(output + i, &hs, HANDSHAKE_HEADER_SZ);
-    i += HANDSHAKE_HEADER_SZ;
-
     output[i++] = typeTotal;  /* # of types */
     output[i++] = rsa_sign;
 
@@ -2058,18 +2037,12 @@ int SendAlert(SSL* ssl, int severity, int type)
     if (ssl->keys.encryptionOn)
         sendSz = BuildMessage(ssl, output, input, sizeof(input), alert);
     else {
-        byte              alen[BYTE3_LEN];
-        RecordLayerHeader rl;
+        RecordLayerHeader* rl = (RecordLayerHeader*)output;
+        rl->type    = alert;
+        rl->version = ssl->version;
+        c16toa(ALERT_SIZE, rl->length);      
 
-        /* record layer header */
-        rl.type    = alert;
-        rl.version = ssl->version;
-        c16toa(ALERT_SIZE, alen);      
-        memcpy(&rl.length, alen, sizeof(rl.length));
-
-        memcpy(output, &rl, RECORD_HEADER_SZ);
         memcpy(output + RECORD_HEADER_SZ, input, sizeof(input));
-
         sendSz = RECORD_HEADER_SZ + sizeof(input);
     }
 
@@ -2544,13 +2517,12 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
     int SendClientHello(SSL* ssl)
     {
-        RecordLayerHeader rl;
-        HandShakeHeader   hs;
-        word32            length, idx = 0;
-        byte              alen[BYTE3_LEN];        /* for byte output lengths */
-        byte              output[MAX_HELLO_SZ];
-        int               sendSz;
-        int               idSz = ssl->options.resuming ? ID_LEN : 0;
+        RecordLayerHeader* rl;
+        HandShakeHeader*   hs;
+        word32             length, idx = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
+        byte               output[MAX_HELLO_SZ];
+        int                sendSz;
+        int                idSz = ssl->options.resuming ? ID_LEN : 0;
 
         length = sizeof(ProtocolVersion) + RAN_LEN
                + idSz + ENUM_LEN                      
@@ -2558,21 +2530,15 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
                + COMP_LEN  + ENUM_LEN;
 
         /* handshake header */
-        hs.type = client_hello;
-        c32to24(length, alen);
-        memcpy(&hs.length, alen, sizeof(hs.length));
+        hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
+        hs->type = client_hello;
+        c32to24(length, hs->length);
 
         /* record layer header */
-        rl.type    = handshake;
-        rl.version = ssl->version;
-        c16toa((word16)(length + HANDSHAKE_HEADER_SZ), alen);
-        memcpy(&rl.length, alen, sizeof(rl.length));
-
-        /* now write to output */
-        memcpy(output, &rl, RECORD_HEADER_SZ);
-        idx += RECORD_HEADER_SZ;
-        memcpy(output + idx, &hs, HANDSHAKE_HEADER_SZ);
-        idx += HANDSHAKE_HEADER_SZ;
+        rl = (RecordLayerHeader*)output;
+        rl->type    = handshake;
+        rl->version = ssl->version;
+        c16toa((word16)(length + HANDSHAKE_HEADER_SZ), rl->length);
 
             /* client hello, first version */
         memcpy(output + idx, &ssl->version, sizeof(ProtocolVersion));
@@ -2947,38 +2913,31 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             return -1; /* unsupported kea */
 
         if (ret == 0) {
-            byte              output[ENCRYPT_LEN + MAX_MSG_EXTRA];
-            byte              alen[BYTE3_LEN];
-            int               sendSz;
-            RecordLayerHeader rl;
-            HandShakeHeader   hs;
-            word32            tlsSz = 0;
+            byte               output[ENCRYPT_LEN + MAX_MSG_EXTRA];
+            int                sendSz;
+            RecordLayerHeader* rl;
+            HandShakeHeader*   hs;
+            word32             tlsSz = 0;
             
             if (ssl->options.tls || ssl->specs.kea == diffie_hellman_kea)
                 tlsSz = 2;
 
-            idx = 0;
+            idx = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
 
             /* handshake header */
-            hs.type = client_key_exchange;
-            c32to24(encSz + tlsSz, alen);
-            memcpy(&hs.length, alen, sizeof(hs.length));
+            hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
+            hs->type = client_key_exchange;
+            c32to24(encSz + tlsSz, hs->length);
 
             /* record layer header */
-            rl.type    = handshake;
-            rl.version = ssl->version;
-            c16toa((word16)(encSz + tlsSz + HANDSHAKE_HEADER_SZ), alen);
-            memcpy(&rl.length, alen, sizeof(rl.length));
+            rl = (RecordLayerHeader*)output;
+            rl->type    = handshake;
+            rl->version = ssl->version;
+            c16toa((word16)(encSz + tlsSz + HANDSHAKE_HEADER_SZ), rl->length);
 
-            /* now write to output */
-            memcpy(output, &rl, RECORD_HEADER_SZ);
-            idx += RECORD_HEADER_SZ;
-            memcpy(output + idx, &hs, HANDSHAKE_HEADER_SZ);
-            idx += HANDSHAKE_HEADER_SZ;
             if (tlsSz) {
-                c16toa((word16)encSz, alen);
-                output[idx++] = alen[0];
-                output[idx++] = alen[1];
+                c16toa((word16)encSz, &output[idx]);
+                idx += 2;
             }
             memcpy(output + idx, encSecret, encSz);
             idx += encSz;
@@ -3008,12 +2967,12 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
     int SendCertificateVerify(SSL* ssl)
     {
-        RecordLayerHeader rl;
-        HandShakeHeader   hs;
-        int               sendSz = 0, length, ret;
-        word32            idx = 0;
-        byte              output[MAX_CERT_VERIFY_SZ];
-        RsaKey            key;
+        RecordLayerHeader* rl;
+        HandShakeHeader*   hs;
+        int                sendSz = 0, length, ret;
+        word32             idx = 0;
+        byte               output[MAX_CERT_VERIFY_SZ];
+        RsaKey             key;
 
         BuildCertHashes(ssl, &ssl->certHashes);
 
@@ -3022,8 +2981,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         ret = RsaPrivateKeyDecode(ssl->buffers.key.buffer, &idx, &key,
                                   ssl->buffers.key.length); 
         if (ret == 0) {
-            byte verify[ENCRYPT_LEN + VERIFY_HEADER];
-
+            byte* verify = (byte*)&output[RECORD_HEADER_SZ +
+                                          HANDSHAKE_HEADER_SZ];
             length = RsaEncryptSize(&key);
             c16toa((word16)length, verify);   /* prepend verify header */
 
@@ -3032,22 +2991,18 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
             if (ret > 0) {
                 ret = 0;  /* reset */
-                hs.type = certificate_verify;
-                c32to24(length + VERIFY_HEADER, hs.length);
+                hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
+                hs->type = certificate_verify;
+                c32to24(length + VERIFY_HEADER, hs->length);
 
-                rl.type = handshake;
-                rl.version = ssl->version;
+                rl = (RecordLayerHeader*)output;
+                rl->type = handshake;
+                rl->version = ssl->version;
                 c16toa((word16)(length + VERIFY_HEADER + HANDSHAKE_HEADER_SZ),
-                       rl.length);
-                idx = 0;
-                memcpy(output, &rl, RECORD_HEADER_SZ);
-                idx += RECORD_HEADER_SZ;
-                memcpy(output + idx, &hs, HANDSHAKE_HEADER_SZ);
-                idx += HANDSHAKE_HEADER_SZ;
-                memcpy(output + idx, verify, length + VERIFY_HEADER);
-                idx += length + VERIFY_HEADER;
+                       rl->length);
 
-                sendSz = idx;
+                sendSz = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ + length +
+                            VERIFY_HEADER;
                 HashOutput(ssl, output, sendSz, 0);
             }
         }
@@ -3077,12 +3032,11 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
     int SendServerHello(SSL* ssl)
     {
-        RecordLayerHeader rl;
-        HandShakeHeader   hs;
-        word32            length, idx = 0;
-        int               sendSz;
-        byte              alen[BYTE3_LEN];        /* for byte output lengths */
-        byte              output[MAX_HELLO_SZ];
+        RecordLayerHeader* rl;
+        HandShakeHeader*   hs;
+        word32             length, idx = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
+        int                sendSz;
+        byte               output[MAX_HELLO_SZ];
 
         length = sizeof(ProtocolVersion) + RAN_LEN
                + ID_LEN + ENUM_LEN                 
@@ -3090,22 +3044,17 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
                + ENUM_LEN;
 
         /* handshake header */
-        hs.type = server_hello;
-        c32to24(length, alen);
-        memcpy(&hs.length, alen, sizeof(hs.length));
+        hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
+        hs->type = server_hello;
+        c32to24(length, hs->length);
 
         /* record layer header */
-        rl.type    = handshake;
-        rl.version = ssl->version;
-        c16toa((word16)(length + HANDSHAKE_HEADER_SZ), alen);
-        memcpy(&rl.length, alen, sizeof(rl.length));
+        rl = (RecordLayerHeader*)output;
+        rl->type    = handshake;
+        rl->version = ssl->version;
+        c16toa((word16)(length + HANDSHAKE_HEADER_SZ), rl->length);
 
         /* now write to output */
-        memcpy(output, &rl, RECORD_HEADER_SZ);
-        idx += RECORD_HEADER_SZ;
-        memcpy(output + idx, &hs, HANDSHAKE_HEADER_SZ);
-        idx += HANDSHAKE_HEADER_SZ;
-
             /* first version */
         memcpy(output + idx, &ssl->version, sizeof(ProtocolVersion));
         idx += sizeof(ProtocolVersion);
@@ -3151,13 +3100,12 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
     int SendServerKeyExchange(SSL* ssl)
     {
-        RecordLayerHeader rl;
-        HandShakeHeader   hs;
-        word32            length, idx = 0;
-        int               sendSz;
-        int               ret = 0;
-        byte              alen[BYTE3_LEN];        /* for byte output lengths */
-        byte              output[MAX_HELLO_SZ + MAX_PSK_ID_LEN];
+        RecordLayerHeader* rl;
+        HandShakeHeader*   hs;
+        word32             length, idx = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
+        int                sendSz;
+        int                ret = 0;
+        byte               output[MAX_HELLO_SZ + MAX_PSK_ID_LEN];
 
         if (ssl->specs.kea != psk_kea) return 0;
 
@@ -3170,22 +3118,17 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             length += + HINT_LEN_SZ;
 
             /* handshake header */
-            hs.type = server_key_exchange;
-            c32to24(length, alen);
-            memcpy(&hs.length, alen, sizeof(hs.length));
+            hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
+            hs->type = server_key_exchange;
+            c32to24(length, hs->length);
 
             /* record layer header */
-            rl.type    = handshake;
-            rl.version = ssl->version;
-            c16toa((word16)(length + HANDSHAKE_HEADER_SZ), alen);
-            memcpy(&rl.length, alen, sizeof(rl.length));
+            rl = (RecordLayerHeader*)output;
+            rl->type    = handshake;
+            rl->version = ssl->version;
+            c16toa((word16)(length + HANDSHAKE_HEADER_SZ), rl->length);
 
-            /* now write to output */
-            memcpy(output, &rl, RECORD_HEADER_SZ);
-            idx += RECORD_HEADER_SZ;
-            memcpy(output + idx, &hs, HANDSHAKE_HEADER_SZ);
-            idx += HANDSHAKE_HEADER_SZ;
-
+            /* key data */
             c16toa((word16)(length - HINT_LEN_SZ), output + idx);
             idx += HINT_LEN_SZ;
             memcpy(output + idx, ssl->arrays.server_hint, length -HINT_LEN_SZ);
@@ -3501,29 +3444,21 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
     int SendServerHelloDone(SSL* ssl)
     {
-        RecordLayerHeader rl;
-        HandShakeHeader   hs;
-        byte              alen[BYTE3_LEN];
-        byte              output[RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ];
-        word32            idx = 0;
-        int               sendSz = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
+        RecordLayerHeader* rl;
+        HandShakeHeader*   hs;
+        byte               output[RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ];
+        int                sendSz = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
 
         /* handshake header */
-        hs.type = server_hello_done;
-        c32to24(0, alen);
-        memcpy(&hs.length, alen, sizeof(hs.length));
+        hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
+        hs->type = server_hello_done;
+        c32to24(0, hs->length);
 
         /* record layer header */
-        rl.type    = handshake;
-        rl.version = ssl->version;
-        c16toa(HANDSHAKE_HEADER_SZ, alen);
-        memcpy(&rl.length, alen, sizeof(rl.length));
-
-        /* now write to output */
-        memcpy(output, &rl, RECORD_HEADER_SZ);
-        idx += RECORD_HEADER_SZ;
-        memcpy(output + idx, &hs, HANDSHAKE_HEADER_SZ);
-        idx += HANDSHAKE_HEADER_SZ;
+        rl = (RecordLayerHeader*)output;
+        rl->type    = handshake;
+        rl->version = ssl->version;
+        c16toa(HANDSHAKE_HEADER_SZ, rl->length);
 
         HashOutput(ssl, output, sendSz, 0);
 #ifdef CYASSL_CALLBACKS

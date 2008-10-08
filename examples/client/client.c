@@ -7,6 +7,7 @@
 #define TEST_RESUME 
 */
 
+
 #ifdef CYASSL_CALLBACKS
     int handShakeCB(HandShakeInfo*);
     int timeoutCB(TimeoutInfo*);
@@ -52,8 +53,12 @@ void client_test(void* args)
 
     SSL_METHOD*  method  = 0;
     SSL_CTX*     ctx     = 0;
-    SSL*         ssl     = 0, *sslResume = 0;
+    SSL*         ssl     = 0;
+    
+#ifdef TEST_RESUME
+    SSL*         sslResume = 0;
     SSL_SESSION* session = 0;
+#endif
 
     char msg[] = "hello cyassl!";
     char reply[1024];
@@ -81,11 +86,13 @@ void client_test(void* args)
         err_sys("can't load ca file");
 
     if (argc == 3) {
+        /*  ./client server securePort  */
         SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, 0);  /* TODO: add ca cert */
                     /* this is just to allow easy testing of other servers */
         tcp_connect(&sockfd, argv[1], (short)atoi(argv[2]));
     }
     else if (argc == 1) {
+        /* ./client          // plain mode */
         /* for client cert authentication if server requests */
         if (SSL_CTX_use_certificate_file(ctx, cliCert, SSL_FILETYPE_PEM)
                 != SSL_SUCCESS)
@@ -96,6 +103,32 @@ void client_test(void* args)
             err_sys("can't load client key file");
 
         tcp_connect(&sockfd, yasslIP, yasslPort);
+    }
+    else if (argc == 2) {
+        /* time passed in number of connects give average */
+        int times = atoi(argv[1]);
+        int i = 0;
+
+        double start = current_time(), avg;
+
+        for (i = 0; i < times; i++) {
+            tcp_connect(&sockfd, yasslIP, yasslPort);
+            ssl = SSL_new(ctx);
+            SSL_set_fd(ssl, sockfd);
+            if (SSL_connect(ssl) != SSL_SUCCESS) 
+                err_sys("SSL_connect failed");
+
+            SSL_shutdown(ssl);
+            SSL_free(ssl);
+        }
+        avg = current_time() - start;
+        avg /= times;
+        avg *= 1000;    /* milliseconds */  
+        printf("SSL_connect avg took:%6.3f milliseconds\n", avg);
+
+        SSL_CTX_free(ctx);
+        ((func_args*)args)->return_code = 0;
+        return;
     }
     else
         err_sys("usage: ./client server securePort");
@@ -230,4 +263,5 @@ void client_test(void* args)
     }
 
 #endif
+
 

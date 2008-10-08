@@ -302,5 +302,42 @@ static INLINE unsigned int my_psk_server_cb(SSL* ssl, const char* identity,
 #endif /* NO_PSK */
 
 
+#ifdef _WIN32
+
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+
+    static INLINE double current_time()
+    {
+        static int init = 0;
+        static LARGE_INTEGER freq;
+    
+        LARGE_INTEGER count;
+
+        if (!init) {
+            QueryPerformanceFrequency(&freq);
+            init = 1;
+        }
+
+        QueryPerformanceCounter(&count);
+
+        return (double)count.QuadPart / freq.QuadPart;
+    }
+
+#else
+
+    #include <sys/time.h>
+
+    static INLINE double current_time()
+    {
+        struct timeval tv;
+        gettimeofday(&tv, 0);
+
+        return (double)tv.tv_sec + (double)tv.tv_usec / 1000000;
+    }
+
+#endif /* _WIN32 */
+
+
 #endif /* CyaSSL_TEST_H */
 
