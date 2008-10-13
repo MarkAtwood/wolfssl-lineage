@@ -988,8 +988,8 @@
 #ifdef LTM3
 #define LTM_LAST
 #endif
-#include <mpi_superclass.h>
-#include <mpi_class.h>
+#include "mpi_superclass.h"
+#include "mpi_class.h"
 #else
 #define LTM_LAST
 #endif
