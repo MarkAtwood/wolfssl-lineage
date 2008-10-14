@@ -1,0 +1,1456 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 45;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		430058B20E9EAD7D00B8BAB2 /* server.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43F81F390E804D25005533AC /* server.cpp */; };
+		430058B30E9EAD8800B8BAB2 /* test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43F81F140E803A69005533AC /* test.cpp */; };
+		430058B80E9EADB600B8BAB2 /* libtaocrypt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4384B38E0E7F5052009740F0 /* libtaocrypt.a */; };
+		430058B90E9EADBA00B8BAB2 /* libyassl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D2AAC046055464E500DB518D /* libyassl.a */; };
+		430058BE0E9EAF4500B8BAB2 /* testsuite.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 430058BD0E9EAF4500B8BAB2 /* testsuite.cpp */; };
+		430058C00E9EAF5A00B8BAB2 /* client.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 430058BF0E9EAF5A00B8BAB2 /* client.cpp */; };
+		430058C20E9EAF6F00B8BAB2 /* echoclient.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 430058C10E9EAF6F00B8BAB2 /* echoclient.cpp */; };
+		430058C40E9EAF8900B8BAB2 /* echoserver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 430058C30E9EAF8900B8BAB2 /* echoserver.cpp */; };
+		430058CF0E9EAFE400B8BAB2 /* client.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 430058BF0E9EAF5A00B8BAB2 /* client.cpp */; };
+		430058D40E9EB00E00B8BAB2 /* libtaocrypt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4384B38E0E7F5052009740F0 /* libtaocrypt.a */; };
+		430058D50E9EB01200B8BAB2 /* libyassl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D2AAC046055464E500DB518D /* libyassl.a */; };
+		430058FF0E9EB16F00B8BAB2 /* echoserver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 430058C30E9EAF8900B8BAB2 /* echoserver.cpp */; };
+		430059040E9EB19200B8BAB2 /* libtaocrypt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4384B38E0E7F5052009740F0 /* libtaocrypt.a */; };
+		430059050E9EB19500B8BAB2 /* libyassl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D2AAC046055464E500DB518D /* libyassl.a */; };
+		430059110E9EB1F700B8BAB2 /* echoclient.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 430058C10E9EAF6F00B8BAB2 /* echoclient.cpp */; };
+		430059160E9EB21A00B8BAB2 /* libtaocrypt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4384B38E0E7F5052009740F0 /* libtaocrypt.a */; };
+		430059170E9EB21E00B8BAB2 /* libyassl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D2AAC046055464E500DB518D /* libyassl.a */; };
+		4384B3DF0E7F53A5009740F0 /* libtaocrypt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4384B38E0E7F5052009740F0 /* libtaocrypt.a */; };
+		4384B4A90E7F65A1009740F0 /* benchmark.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4A80E7F65A1009740F0 /* benchmark.cpp */; };
+		4384B4C50E7F65EE009740F0 /* aes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4AB0E7F65EE009740F0 /* aes.cpp */; };
+		4384B4C60E7F65EE009740F0 /* aestables.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4AC0E7F65EE009740F0 /* aestables.cpp */; };
+		4384B4C70E7F65EE009740F0 /* algebra.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4AD0E7F65EE009740F0 /* algebra.cpp */; };
+		4384B4C80E7F65EE009740F0 /* arc4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4AE0E7F65EE009740F0 /* arc4.cpp */; };
+		4384B4C90E7F65EE009740F0 /* asn.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4AF0E7F65EE009740F0 /* asn.cpp */; };
+		4384B4CA0E7F65EE009740F0 /* bftables.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4B00E7F65EE009740F0 /* bftables.cpp */; };
+		4384B4CB0E7F65EE009740F0 /* blowfish.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4B10E7F65EE009740F0 /* blowfish.cpp */; };
+		4384B4CC0E7F65EE009740F0 /* coding.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4B20E7F65EE009740F0 /* coding.cpp */; };
+		4384B4CD0E7F65EE009740F0 /* crypto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4B30E7F65EE009740F0 /* crypto.cpp */; };
+		4384B4CE0E7F65EE009740F0 /* des.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4B40E7F65EE009740F0 /* des.cpp */; };
+		4384B4CF0E7F65EE009740F0 /* dh.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4B50E7F65EE009740F0 /* dh.cpp */; };
+		4384B4D00E7F65EE009740F0 /* dsa.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4B60E7F65EE009740F0 /* dsa.cpp */; };
+		4384B4D10E7F65EE009740F0 /* file.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4B70E7F65EE009740F0 /* file.cpp */; };
+		4384B4D20E7F65EE009740F0 /* hash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4B80E7F65EE009740F0 /* hash.cpp */; };
+		4384B4D30E7F65EE009740F0 /* integer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4B90E7F65EE009740F0 /* integer.cpp */; };
+		4384B4D40E7F65EE009740F0 /* md2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4BA0E7F65EE009740F0 /* md2.cpp */; };
+		4384B4D50E7F65EE009740F0 /* md4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4BB0E7F65EE009740F0 /* md4.cpp */; };
+		4384B4D60E7F65EE009740F0 /* md5.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4BC0E7F65EE009740F0 /* md5.cpp */; };
+		4384B4D70E7F65EE009740F0 /* misc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4BD0E7F65EE009740F0 /* misc.cpp */; };
+		4384B4D80E7F65EE009740F0 /* random.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4BE0E7F65EE009740F0 /* random.cpp */; };
+		4384B4D90E7F65EE009740F0 /* ripemd.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4BF0E7F65EE009740F0 /* ripemd.cpp */; };
+		4384B4DA0E7F65EE009740F0 /* rsa.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4C00E7F65EE009740F0 /* rsa.cpp */; };
+		4384B4DB0E7F65EE009740F0 /* sha.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4C10E7F65EE009740F0 /* sha.cpp */; };
+		4384B4DC0E7F65EE009740F0 /* template_instnt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4C20E7F65EE009740F0 /* template_instnt.cpp */; };
+		4384B4DD0E7F65EE009740F0 /* tftables.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4C30E7F65EE009740F0 /* tftables.cpp */; };
+		4384B4DE0E7F65EE009740F0 /* twofish.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4C40E7F65EE009740F0 /* twofish.cpp */; };
+		4384B4ED0E7F661E009740F0 /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4E00E7F661E009740F0 /* buffer.cpp */; };
+		4384B4EE0E7F661E009740F0 /* cert_wrapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4E10E7F661E009740F0 /* cert_wrapper.cpp */; };
+		4384B4EF0E7F661E009740F0 /* crypto_wrapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4E20E7F661E009740F0 /* crypto_wrapper.cpp */; };
+		4384B4F00E7F661E009740F0 /* handshake.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4E30E7F661E009740F0 /* handshake.cpp */; };
+		4384B4F10E7F661E009740F0 /* lock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4E40E7F661E009740F0 /* lock.cpp */; };
+		4384B4F20E7F661E009740F0 /* log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4E50E7F661E009740F0 /* log.cpp */; };
+		4384B4F30E7F661E009740F0 /* socket_wrapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4E60E7F661E009740F0 /* socket_wrapper.cpp */; };
+		4384B4F40E7F661E009740F0 /* ssl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4E70E7F661E009740F0 /* ssl.cpp */; };
+		4384B4F50E7F661E009740F0 /* timer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4E80E7F661E009740F0 /* timer.cpp */; };
+		4384B4F60E7F661E009740F0 /* yassl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4E90E7F661E009740F0 /* yassl.cpp */; };
+		4384B4F70E7F661E009740F0 /* yassl_error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4EA0E7F661E009740F0 /* yassl_error.cpp */; };
+		4384B4F80E7F661E009740F0 /* yassl_imp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4EB0E7F661E009740F0 /* yassl_imp.cpp */; };
+		4384B4F90E7F661E009740F0 /* yassl_int.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4EC0E7F661E009740F0 /* yassl_int.cpp */; };
+		43F81F150E803A69005533AC /* test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43F81F140E803A69005533AC /* test.cpp */; };
+		43F81F1A0E803B12005533AC /* libtaocrypt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4384B38E0E7F5052009740F0 /* libtaocrypt.a */; };
+		43F81F3A0E804D25005533AC /* server.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43F81F390E804D25005533AC /* server.cpp */; };
+		43F81F400E804D8F005533AC /* libtaocrypt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4384B38E0E7F5052009740F0 /* libtaocrypt.a */; };
+		43F81F410E804D9A005533AC /* libyassl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D2AAC046055464E500DB518D /* libyassl.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		430058B40E9EADAC00B8BAB2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4384B38D0E7F5052009740F0;
+			remoteInfo = taocrypt;
+		};
+		430058B60E9EADB000B8BAB2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D2AAC045055464E500DB518D;
+			remoteInfo = yassl;
+		};
+		430058D00E9EB00600B8BAB2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4384B38D0E7F5052009740F0;
+			remoteInfo = taocrypt;
+		};
+		430058D20E9EB00900B8BAB2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D2AAC045055464E500DB518D;
+			remoteInfo = yassl;
+		};
+		430059000E9EB18B00B8BAB2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4384B38D0E7F5052009740F0;
+			remoteInfo = taocrypt;
+		};
+		430059020E9EB18D00B8BAB2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D2AAC045055464E500DB518D;
+			remoteInfo = yassl;
+		};
+		430059120E9EB21300B8BAB2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4384B38D0E7F5052009740F0;
+			remoteInfo = taocrypt;
+		};
+		430059140E9EB21600B8BAB2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D2AAC045055464E500DB518D;
+			remoteInfo = yassl;
+		};
+		4384B3DC0E7F5397009740F0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4384B38D0E7F5052009740F0;
+			remoteInfo = taocrypt;
+		};
+		43F81F180E803B03005533AC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4384B38D0E7F5052009740F0;
+			remoteInfo = taocrypt;
+		};
+		43F81F3B0E804D7F005533AC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4384B38D0E7F5052009740F0;
+			remoteInfo = taocrypt;
+		};
+		43F81F3D0E804D83005533AC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D2AAC045055464E500DB518D;
+			remoteInfo = yassl;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		430058AE0E9EAD6D00B8BAB2 /* testsuite */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = testsuite; sourceTree = BUILT_PRODUCTS_DIR; };
+		430058BD0E9EAF4500B8BAB2 /* testsuite.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = testsuite.cpp; path = testsuite/testsuite.cpp; sourceTree = "<group>"; };
+		430058BF0E9EAF5A00B8BAB2 /* client.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = client.cpp; path = examples/client/client.cpp; sourceTree = "<group>"; };
+		430058C10E9EAF6F00B8BAB2 /* echoclient.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = echoclient.cpp; path = examples/echoclient/echoclient.cpp; sourceTree = "<group>"; };
+		430058C30E9EAF8900B8BAB2 /* echoserver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = echoserver.cpp; path = examples/echoserver/echoserver.cpp; sourceTree = "<group>"; };
+		430058CB0E9EAFD800B8BAB2 /* client */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = client; sourceTree = BUILT_PRODUCTS_DIR; };
+		430058FA0E9EB15F00B8BAB2 /* echoserver */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = echoserver; sourceTree = BUILT_PRODUCTS_DIR; };
+		4300590D0E9EB1E500B8BAB2 /* echoclient */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = echoclient; sourceTree = BUILT_PRODUCTS_DIR; };
+		4378CEF20EA41F970026B37F /* algorithm.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = algorithm.hpp; path = taocrypt/mySTL/algorithm.hpp; sourceTree = "<group>"; };
+		4378CEF30EA41F970026B37F /* helpers.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = helpers.hpp; path = taocrypt/mySTL/helpers.hpp; sourceTree = "<group>"; };
+		4378CEF40EA41F970026B37F /* list.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = list.hpp; path = taocrypt/mySTL/list.hpp; sourceTree = "<group>"; };
+		4378CEF50EA41F970026B37F /* memory.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = memory.hpp; path = taocrypt/mySTL/memory.hpp; sourceTree = "<group>"; };
+		4378CEF60EA41F970026B37F /* memory_array.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = memory_array.hpp; path = taocrypt/mySTL/memory_array.hpp; sourceTree = "<group>"; };
+		4378CEF70EA41F970026B37F /* pair.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = pair.hpp; path = taocrypt/mySTL/pair.hpp; sourceTree = "<group>"; };
+		4378CEF80EA41F970026B37F /* stdexcept.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = stdexcept.hpp; path = taocrypt/mySTL/stdexcept.hpp; sourceTree = "<group>"; };
+		4378CEF90EA41F970026B37F /* vector.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = vector.hpp; path = taocrypt/mySTL/vector.hpp; sourceTree = "<group>"; };
+		4378CEFA0EA41FC20026B37F /* aes.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = aes.hpp; path = taocrypt/include/aes.hpp; sourceTree = "<group>"; };
+		4378CEFB0EA41FC20026B37F /* algebra.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = algebra.hpp; path = taocrypt/include/algebra.hpp; sourceTree = "<group>"; };
+		4378CEFC0EA41FC20026B37F /* arc4.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = arc4.hpp; path = taocrypt/include/arc4.hpp; sourceTree = "<group>"; };
+		4378CEFD0EA41FC20026B37F /* asn.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = asn.hpp; path = taocrypt/include/asn.hpp; sourceTree = "<group>"; };
+		4378CEFE0EA41FC20026B37F /* block.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = block.hpp; path = taocrypt/include/block.hpp; sourceTree = "<group>"; };
+		4378CEFF0EA41FC20026B37F /* blowfish.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = blowfish.hpp; path = taocrypt/include/blowfish.hpp; sourceTree = "<group>"; };
+		4378CF000EA41FC20026B37F /* coding.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = coding.hpp; path = taocrypt/include/coding.hpp; sourceTree = "<group>"; };
+		4378CF010EA41FC20026B37F /* des.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = des.hpp; path = taocrypt/include/des.hpp; sourceTree = "<group>"; };
+		4378CF020EA41FC20026B37F /* dh.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = dh.hpp; path = taocrypt/include/dh.hpp; sourceTree = "<group>"; };
+		4378CF030EA41FC20026B37F /* dsa.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = dsa.hpp; path = taocrypt/include/dsa.hpp; sourceTree = "<group>"; };
+		4378CF040EA41FC20026B37F /* error.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = error.hpp; path = taocrypt/include/error.hpp; sourceTree = "<group>"; };
+		4378CF050EA41FC20026B37F /* file.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = file.hpp; path = taocrypt/include/file.hpp; sourceTree = "<group>"; };
+		4378CF060EA41FC20026B37F /* hash.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = hash.hpp; path = taocrypt/include/hash.hpp; sourceTree = "<group>"; };
+		4378CF070EA41FC20026B37F /* hmac.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = hmac.hpp; path = taocrypt/include/hmac.hpp; sourceTree = "<group>"; };
+		4378CF080EA41FC20026B37F /* integer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = integer.hpp; path = taocrypt/include/integer.hpp; sourceTree = "<group>"; };
+		4378CF090EA41FC20026B37F /* kernelc.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = kernelc.hpp; path = taocrypt/include/kernelc.hpp; sourceTree = "<group>"; };
+		4378CF0A0EA41FC20026B37F /* md2.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = md2.hpp; path = taocrypt/include/md2.hpp; sourceTree = "<group>"; };
+		4378CF0B0EA41FC20026B37F /* md4.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = md4.hpp; path = taocrypt/include/md4.hpp; sourceTree = "<group>"; };
+		4378CF0C0EA41FC20026B37F /* md5.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = md5.hpp; path = taocrypt/include/md5.hpp; sourceTree = "<group>"; };
+		4378CF0D0EA41FC20026B37F /* misc.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = misc.hpp; path = taocrypt/include/misc.hpp; sourceTree = "<group>"; };
+		4378CF0E0EA41FC20026B37F /* modarith.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = modarith.hpp; path = taocrypt/include/modarith.hpp; sourceTree = "<group>"; };
+		4378CF0F0EA41FC20026B37F /* modes.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = modes.hpp; path = taocrypt/include/modes.hpp; sourceTree = "<group>"; };
+		4378CF100EA41FC20026B37F /* pwdbased.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = pwdbased.hpp; path = taocrypt/include/pwdbased.hpp; sourceTree = "<group>"; };
+		4378CF110EA41FC20026B37F /* random.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = random.hpp; path = taocrypt/include/random.hpp; sourceTree = "<group>"; };
+		4378CF120EA41FC20026B37F /* ripemd.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = ripemd.hpp; path = taocrypt/include/ripemd.hpp; sourceTree = "<group>"; };
+		4378CF130EA41FC20026B37F /* rsa.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = rsa.hpp; path = taocrypt/include/rsa.hpp; sourceTree = "<group>"; };
+		4378CF140EA41FC20026B37F /* runtime.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = runtime.hpp; path = taocrypt/include/runtime.hpp; sourceTree = "<group>"; };
+		4378CF150EA41FC20026B37F /* sha.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = sha.hpp; path = taocrypt/include/sha.hpp; sourceTree = "<group>"; };
+		4378CF160EA41FC20026B37F /* twofish.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = twofish.hpp; path = taocrypt/include/twofish.hpp; sourceTree = "<group>"; };
+		4378CF170EA41FC20026B37F /* type_traits.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = type_traits.hpp; path = taocrypt/include/type_traits.hpp; sourceTree = "<group>"; };
+		4378CF180EA41FC20026B37F /* types.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = types.hpp; path = taocrypt/include/types.hpp; sourceTree = "<group>"; };
+		4378CF190EA41FDD0026B37F /* buffer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = buffer.hpp; path = include/buffer.hpp; sourceTree = "<group>"; };
+		4378CF1A0EA41FDD0026B37F /* cert_wrapper.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = cert_wrapper.hpp; path = include/cert_wrapper.hpp; sourceTree = "<group>"; };
+		4378CF1B0EA41FDD0026B37F /* crypto_wrapper.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = crypto_wrapper.hpp; path = include/crypto_wrapper.hpp; sourceTree = "<group>"; };
+		4378CF1C0EA41FDD0026B37F /* factory.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = factory.hpp; path = include/factory.hpp; sourceTree = "<group>"; };
+		4378CF1D0EA41FDD0026B37F /* handshake.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = handshake.hpp; path = include/handshake.hpp; sourceTree = "<group>"; };
+		4378CF1E0EA41FDD0026B37F /* lock.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = lock.hpp; path = include/lock.hpp; sourceTree = "<group>"; };
+		4378CF1F0EA41FDD0026B37F /* log.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = log.hpp; path = include/log.hpp; sourceTree = "<group>"; };
+		4378CF200EA41FDD0026B37F /* socket_wrapper.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = socket_wrapper.hpp; path = include/socket_wrapper.hpp; sourceTree = "<group>"; };
+		4378CF210EA41FDD0026B37F /* timer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = timer.hpp; path = include/timer.hpp; sourceTree = "<group>"; };
+		4378CF220EA41FDD0026B37F /* yassl.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = yassl.hpp; path = include/yassl.hpp; sourceTree = "<group>"; };
+		4378CF230EA41FDD0026B37F /* yassl_error.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = yassl_error.hpp; path = include/yassl_error.hpp; sourceTree = "<group>"; };
+		4378CF240EA41FDD0026B37F /* yassl_imp.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = yassl_imp.hpp; path = include/yassl_imp.hpp; sourceTree = "<group>"; };
+		4378CF250EA41FDD0026B37F /* yassl_int.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = yassl_int.hpp; path = include/yassl_int.hpp; sourceTree = "<group>"; };
+		4378CF260EA41FDD0026B37F /* yassl_types.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = yassl_types.hpp; path = include/yassl_types.hpp; sourceTree = "<group>"; };
+		4378CF270EA420040026B37F /* crypto.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = crypto.h; path = include/openssl/crypto.h; sourceTree = "<group>"; };
+		4378CF280EA420040026B37F /* des.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = des.h; path = include/openssl/des.h; sourceTree = "<group>"; };
+		4378CF290EA420040026B37F /* des_old.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = des_old.h; path = include/openssl/des_old.h; sourceTree = "<group>"; };
+		4378CF2A0EA420040026B37F /* engine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = engine.h; path = include/openssl/engine.h; sourceTree = "<group>"; };
+		4378CF2B0EA420040026B37F /* err.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = err.h; path = include/openssl/err.h; sourceTree = "<group>"; };
+		4378CF2C0EA420040026B37F /* evp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = evp.h; path = include/openssl/evp.h; sourceTree = "<group>"; };
+		4378CF2D0EA420040026B37F /* hmac.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = hmac.h; path = include/openssl/hmac.h; sourceTree = "<group>"; };
+		4378CF2E0EA420040026B37F /* lhash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = lhash.h; path = include/openssl/lhash.h; sourceTree = "<group>"; };
+		4378CF2F0EA420040026B37F /* md4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = md4.h; path = include/openssl/md4.h; sourceTree = "<group>"; };
+		4378CF300EA420040026B37F /* md5.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = md5.h; path = include/openssl/md5.h; sourceTree = "<group>"; };
+		4378CF310EA420040026B37F /* objects.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = objects.h; path = include/openssl/objects.h; sourceTree = "<group>"; };
+		4378CF320EA420040026B37F /* opensslv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = opensslv.h; path = include/openssl/opensslv.h; sourceTree = "<group>"; };
+		4378CF330EA420040026B37F /* pem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = pem.h; path = include/openssl/pem.h; sourceTree = "<group>"; };
+		4378CF340EA420040026B37F /* pkcs12.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = pkcs12.h; path = include/openssl/pkcs12.h; sourceTree = "<group>"; };
+		4378CF350EA420040026B37F /* rand.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = rand.h; path = include/openssl/rand.h; sourceTree = "<group>"; };
+		4378CF360EA420040026B37F /* rsa.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = rsa.h; path = include/openssl/rsa.h; sourceTree = "<group>"; };
+		4378CF370EA420040026B37F /* sha.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = sha.h; path = include/openssl/sha.h; sourceTree = "<group>"; };
+		4378CF380EA420040026B37F /* ssl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = ssl.h; path = include/openssl/ssl.h; sourceTree = "<group>"; };
+		4378CF390EA420040026B37F /* x509.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = x509.h; path = include/openssl/x509.h; sourceTree = "<group>"; };
+		4378CF3A0EA420040026B37F /* x509v3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = x509v3.h; path = include/openssl/x509v3.h; sourceTree = "<group>"; };
+		4378CF3B0EA420160026B37F /* test.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = test.hpp; path = testsuite/test.hpp; sourceTree = "<group>"; };
+		4384B38E0E7F5052009740F0 /* libtaocrypt.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libtaocrypt.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		4384B3D00E7F5293009740F0 /* benchmark */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = benchmark; sourceTree = BUILT_PRODUCTS_DIR; };
+		4384B4A80E7F65A1009740F0 /* benchmark.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = benchmark.cpp; path = taocrypt/benchmark/benchmark.cpp; sourceTree = "<group>"; };
+		4384B4AB0E7F65EE009740F0 /* aes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = aes.cpp; path = taocrypt/src/aes.cpp; sourceTree = "<group>"; };
+		4384B4AC0E7F65EE009740F0 /* aestables.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = aestables.cpp; path = taocrypt/src/aestables.cpp; sourceTree = "<group>"; };
+		4384B4AD0E7F65EE009740F0 /* algebra.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = algebra.cpp; path = taocrypt/src/algebra.cpp; sourceTree = "<group>"; };
+		4384B4AE0E7F65EE009740F0 /* arc4.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = arc4.cpp; path = taocrypt/src/arc4.cpp; sourceTree = "<group>"; };
+		4384B4AF0E7F65EE009740F0 /* asn.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = asn.cpp; path = taocrypt/src/asn.cpp; sourceTree = "<group>"; };
+		4384B4B00E7F65EE009740F0 /* bftables.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = bftables.cpp; path = taocrypt/src/bftables.cpp; sourceTree = "<group>"; };
+		4384B4B10E7F65EE009740F0 /* blowfish.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = blowfish.cpp; path = taocrypt/src/blowfish.cpp; sourceTree = "<group>"; };
+		4384B4B20E7F65EE009740F0 /* coding.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = coding.cpp; path = taocrypt/src/coding.cpp; sourceTree = "<group>"; };
+		4384B4B30E7F65EE009740F0 /* crypto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = crypto.cpp; path = taocrypt/src/crypto.cpp; sourceTree = "<group>"; };
+		4384B4B40E7F65EE009740F0 /* des.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = des.cpp; path = taocrypt/src/des.cpp; sourceTree = "<group>"; };
+		4384B4B50E7F65EE009740F0 /* dh.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = dh.cpp; path = taocrypt/src/dh.cpp; sourceTree = "<group>"; };
+		4384B4B60E7F65EE009740F0 /* dsa.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = dsa.cpp; path = taocrypt/src/dsa.cpp; sourceTree = "<group>"; };
+		4384B4B70E7F65EE009740F0 /* file.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = file.cpp; path = taocrypt/src/file.cpp; sourceTree = "<group>"; };
+		4384B4B80E7F65EE009740F0 /* hash.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = hash.cpp; path = taocrypt/src/hash.cpp; sourceTree = "<group>"; };
+		4384B4B90E7F65EE009740F0 /* integer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = integer.cpp; path = taocrypt/src/integer.cpp; sourceTree = "<group>"; };
+		4384B4BA0E7F65EE009740F0 /* md2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = md2.cpp; path = taocrypt/src/md2.cpp; sourceTree = "<group>"; };
+		4384B4BB0E7F65EE009740F0 /* md4.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = md4.cpp; path = taocrypt/src/md4.cpp; sourceTree = "<group>"; };
+		4384B4BC0E7F65EE009740F0 /* md5.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = md5.cpp; path = taocrypt/src/md5.cpp; sourceTree = "<group>"; };
+		4384B4BD0E7F65EE009740F0 /* misc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = misc.cpp; path = taocrypt/src/misc.cpp; sourceTree = "<group>"; };
+		4384B4BE0E7F65EE009740F0 /* random.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = random.cpp; path = taocrypt/src/random.cpp; sourceTree = "<group>"; };
+		4384B4BF0E7F65EE009740F0 /* ripemd.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = ripemd.cpp; path = taocrypt/src/ripemd.cpp; sourceTree = "<group>"; };
+		4384B4C00E7F65EE009740F0 /* rsa.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = rsa.cpp; path = taocrypt/src/rsa.cpp; sourceTree = "<group>"; };
+		4384B4C10E7F65EE009740F0 /* sha.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = sha.cpp; path = taocrypt/src/sha.cpp; sourceTree = "<group>"; };
+		4384B4C20E7F65EE009740F0 /* template_instnt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = template_instnt.cpp; path = taocrypt/src/template_instnt.cpp; sourceTree = "<group>"; };
+		4384B4C30E7F65EE009740F0 /* tftables.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = tftables.cpp; path = taocrypt/src/tftables.cpp; sourceTree = "<group>"; };
+		4384B4C40E7F65EE009740F0 /* twofish.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = twofish.cpp; path = taocrypt/src/twofish.cpp; sourceTree = "<group>"; };
+		4384B4E00E7F661E009740F0 /* buffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = buffer.cpp; path = src/buffer.cpp; sourceTree = "<group>"; };
+		4384B4E10E7F661E009740F0 /* cert_wrapper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = cert_wrapper.cpp; path = src/cert_wrapper.cpp; sourceTree = "<group>"; };
+		4384B4E20E7F661E009740F0 /* crypto_wrapper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = crypto_wrapper.cpp; path = src/crypto_wrapper.cpp; sourceTree = "<group>"; };
+		4384B4E30E7F661E009740F0 /* handshake.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = handshake.cpp; path = src/handshake.cpp; sourceTree = "<group>"; };
+		4384B4E40E7F661E009740F0 /* lock.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = lock.cpp; path = src/lock.cpp; sourceTree = "<group>"; };
+		4384B4E50E7F661E009740F0 /* log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = log.cpp; path = src/log.cpp; sourceTree = "<group>"; };
+		4384B4E60E7F661E009740F0 /* socket_wrapper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = socket_wrapper.cpp; path = src/socket_wrapper.cpp; sourceTree = "<group>"; };
+		4384B4E70E7F661E009740F0 /* ssl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = ssl.cpp; path = src/ssl.cpp; sourceTree = "<group>"; };
+		4384B4E80E7F661E009740F0 /* timer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = timer.cpp; path = src/timer.cpp; sourceTree = "<group>"; };
+		4384B4E90E7F661E009740F0 /* yassl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = yassl.cpp; path = src/yassl.cpp; sourceTree = "<group>"; };
+		4384B4EA0E7F661E009740F0 /* yassl_error.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = yassl_error.cpp; path = src/yassl_error.cpp; sourceTree = "<group>"; };
+		4384B4EB0E7F661E009740F0 /* yassl_imp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = yassl_imp.cpp; path = src/yassl_imp.cpp; sourceTree = "<group>"; };
+		4384B4EC0E7F661E009740F0 /* yassl_int.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = yassl_int.cpp; path = src/yassl_int.cpp; sourceTree = "<group>"; };
+		43F81F0B0E803965005533AC /* test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test; sourceTree = BUILT_PRODUCTS_DIR; };
+		43F81F140E803A69005533AC /* test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = test.cpp; path = taocrypt/test/test.cpp; sourceTree = "<group>"; };
+		43F81F340E804D03005533AC /* server */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = server; sourceTree = BUILT_PRODUCTS_DIR; };
+		43F81F390E804D25005533AC /* server.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = server.cpp; path = examples/server/server.cpp; sourceTree = "<group>"; };
+		D2AAC046055464E500DB518D /* libyassl.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libyassl.a; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		430058AC0E9EAD6D00B8BAB2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				430058B80E9EADB600B8BAB2 /* libtaocrypt.a in Frameworks */,
+				430058B90E9EADBA00B8BAB2 /* libyassl.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		430058C90E9EAFD800B8BAB2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				430058D40E9EB00E00B8BAB2 /* libtaocrypt.a in Frameworks */,
+				430058D50E9EB01200B8BAB2 /* libyassl.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		430058F80E9EB15F00B8BAB2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				430059040E9EB19200B8BAB2 /* libtaocrypt.a in Frameworks */,
+				430059050E9EB19500B8BAB2 /* libyassl.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4300590B0E9EB1E500B8BAB2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				430059160E9EB21A00B8BAB2 /* libtaocrypt.a in Frameworks */,
+				430059170E9EB21E00B8BAB2 /* libyassl.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4384B38C0E7F5052009740F0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4384B3CE0E7F5293009740F0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4384B3DF0E7F53A5009740F0 /* libtaocrypt.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		43F81F090E803965005533AC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				43F81F1A0E803B12005533AC /* libtaocrypt.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		43F81F320E804D03005533AC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				43F81F400E804D8F005533AC /* libtaocrypt.a in Frameworks */,
+				43F81F410E804D9A005533AC /* libyassl.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D289987405E68DCB004EDB86 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		08FB7794FE84155DC02AAC07 /* yassl */ = {
+			isa = PBXGroup;
+			children = (
+				08FB7795FE84155DC02AAC07 /* Source */,
+				C6A0FF2B0290797F04C91782 /* Documentation */,
+				1AB674ADFE9D54B511CA2CBB /* Products */,
+			);
+			name = yassl;
+			sourceTree = "<group>";
+		};
+		08FB7795FE84155DC02AAC07 /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				4378CEF10EA41F500026B37F /* headers */,
+				4378CEEF0EA41F320026B37F /* src */,
+			);
+			name = Source;
+			sourceTree = "<group>";
+		};
+		1AB674ADFE9D54B511CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D2AAC046055464E500DB518D /* libyassl.a */,
+				4384B38E0E7F5052009740F0 /* libtaocrypt.a */,
+				4384B3D00E7F5293009740F0 /* benchmark */,
+				43F81F0B0E803965005533AC /* test */,
+				43F81F340E804D03005533AC /* server */,
+				430058AE0E9EAD6D00B8BAB2 /* testsuite */,
+				430058CB0E9EAFD800B8BAB2 /* client */,
+				430058FA0E9EB15F00B8BAB2 /* echoserver */,
+				4300590D0E9EB1E500B8BAB2 /* echoclient */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4378CEEF0EA41F320026B37F /* src */ = {
+			isa = PBXGroup;
+			children = (
+				430058C30E9EAF8900B8BAB2 /* echoserver.cpp */,
+				430058C10E9EAF6F00B8BAB2 /* echoclient.cpp */,
+				430058BF0E9EAF5A00B8BAB2 /* client.cpp */,
+				430058BD0E9EAF4500B8BAB2 /* testsuite.cpp */,
+				43F81F390E804D25005533AC /* server.cpp */,
+				43F81F140E803A69005533AC /* test.cpp */,
+				4384B4E00E7F661E009740F0 /* buffer.cpp */,
+				4384B4E10E7F661E009740F0 /* cert_wrapper.cpp */,
+				4384B4E20E7F661E009740F0 /* crypto_wrapper.cpp */,
+				4384B4E30E7F661E009740F0 /* handshake.cpp */,
+				4384B4E40E7F661E009740F0 /* lock.cpp */,
+				4384B4E50E7F661E009740F0 /* log.cpp */,
+				4384B4E60E7F661E009740F0 /* socket_wrapper.cpp */,
+				4384B4E70E7F661E009740F0 /* ssl.cpp */,
+				4384B4E80E7F661E009740F0 /* timer.cpp */,
+				4384B4E90E7F661E009740F0 /* yassl.cpp */,
+				4384B4EA0E7F661E009740F0 /* yassl_error.cpp */,
+				4384B4EB0E7F661E009740F0 /* yassl_imp.cpp */,
+				4384B4EC0E7F661E009740F0 /* yassl_int.cpp */,
+				4384B4AB0E7F65EE009740F0 /* aes.cpp */,
+				4384B4AC0E7F65EE009740F0 /* aestables.cpp */,
+				4384B4AD0E7F65EE009740F0 /* algebra.cpp */,
+				4384B4AE0E7F65EE009740F0 /* arc4.cpp */,
+				4384B4AF0E7F65EE009740F0 /* asn.cpp */,
+				4384B4B00E7F65EE009740F0 /* bftables.cpp */,
+				4384B4B10E7F65EE009740F0 /* blowfish.cpp */,
+				4384B4B20E7F65EE009740F0 /* coding.cpp */,
+				4384B4B30E7F65EE009740F0 /* crypto.cpp */,
+				4384B4B40E7F65EE009740F0 /* des.cpp */,
+				4384B4B50E7F65EE009740F0 /* dh.cpp */,
+				4384B4B60E7F65EE009740F0 /* dsa.cpp */,
+				4384B4B70E7F65EE009740F0 /* file.cpp */,
+				4384B4B80E7F65EE009740F0 /* hash.cpp */,
+				4384B4B90E7F65EE009740F0 /* integer.cpp */,
+				4384B4BA0E7F65EE009740F0 /* md2.cpp */,
+				4384B4BB0E7F65EE009740F0 /* md4.cpp */,
+				4384B4BC0E7F65EE009740F0 /* md5.cpp */,
+				4384B4BD0E7F65EE009740F0 /* misc.cpp */,
+				4384B4BE0E7F65EE009740F0 /* random.cpp */,
+				4384B4BF0E7F65EE009740F0 /* ripemd.cpp */,
+				4384B4C00E7F65EE009740F0 /* rsa.cpp */,
+				4384B4C10E7F65EE009740F0 /* sha.cpp */,
+				4384B4C20E7F65EE009740F0 /* template_instnt.cpp */,
+				4384B4C30E7F65EE009740F0 /* tftables.cpp */,
+				4384B4C40E7F65EE009740F0 /* twofish.cpp */,
+				4384B4A80E7F65A1009740F0 /* benchmark.cpp */,
+			);
+			name = src;
+			sourceTree = "<group>";
+		};
+		4378CEF10EA41F500026B37F /* headers */ = {
+			isa = PBXGroup;
+			children = (
+				4378CF3B0EA420160026B37F /* test.hpp */,
+				4378CF270EA420040026B37F /* crypto.h */,
+				4378CF280EA420040026B37F /* des.h */,
+				4378CF290EA420040026B37F /* des_old.h */,
+				4378CF2A0EA420040026B37F /* engine.h */,
+				4378CF2B0EA420040026B37F /* err.h */,
+				4378CF2C0EA420040026B37F /* evp.h */,
+				4378CF2D0EA420040026B37F /* hmac.h */,
+				4378CF2E0EA420040026B37F /* lhash.h */,
+				4378CF2F0EA420040026B37F /* md4.h */,
+				4378CF300EA420040026B37F /* md5.h */,
+				4378CF310EA420040026B37F /* objects.h */,
+				4378CF320EA420040026B37F /* opensslv.h */,
+				4378CF330EA420040026B37F /* pem.h */,
+				4378CF340EA420040026B37F /* pkcs12.h */,
+				4378CF350EA420040026B37F /* rand.h */,
+				4378CF360EA420040026B37F /* rsa.h */,
+				4378CF370EA420040026B37F /* sha.h */,
+				4378CF380EA420040026B37F /* ssl.h */,
+				4378CF390EA420040026B37F /* x509.h */,
+				4378CF3A0EA420040026B37F /* x509v3.h */,
+				4378CF190EA41FDD0026B37F /* buffer.hpp */,
+				4378CF1A0EA41FDD0026B37F /* cert_wrapper.hpp */,
+				4378CF1B0EA41FDD0026B37F /* crypto_wrapper.hpp */,
+				4378CF1C0EA41FDD0026B37F /* factory.hpp */,
+				4378CF1D0EA41FDD0026B37F /* handshake.hpp */,
+				4378CF1E0EA41FDD0026B37F /* lock.hpp */,
+				4378CF1F0EA41FDD0026B37F /* log.hpp */,
+				4378CF200EA41FDD0026B37F /* socket_wrapper.hpp */,
+				4378CF210EA41FDD0026B37F /* timer.hpp */,
+				4378CF220EA41FDD0026B37F /* yassl.hpp */,
+				4378CF230EA41FDD0026B37F /* yassl_error.hpp */,
+				4378CF240EA41FDD0026B37F /* yassl_imp.hpp */,
+				4378CF250EA41FDD0026B37F /* yassl_int.hpp */,
+				4378CF260EA41FDD0026B37F /* yassl_types.hpp */,
+				4378CEFA0EA41FC20026B37F /* aes.hpp */,
+				4378CEFB0EA41FC20026B37F /* algebra.hpp */,
+				4378CEFC0EA41FC20026B37F /* arc4.hpp */,
+				4378CEFD0EA41FC20026B37F /* asn.hpp */,
+				4378CEFE0EA41FC20026B37F /* block.hpp */,
+				4378CEFF0EA41FC20026B37F /* blowfish.hpp */,
+				4378CF000EA41FC20026B37F /* coding.hpp */,
+				4378CF010EA41FC20026B37F /* des.hpp */,
+				4378CF020EA41FC20026B37F /* dh.hpp */,
+				4378CF030EA41FC20026B37F /* dsa.hpp */,
+				4378CF040EA41FC20026B37F /* error.hpp */,
+				4378CF050EA41FC20026B37F /* file.hpp */,
+				4378CF060EA41FC20026B37F /* hash.hpp */,
+				4378CF070EA41FC20026B37F /* hmac.hpp */,
+				4378CF080EA41FC20026B37F /* integer.hpp */,
+				4378CF090EA41FC20026B37F /* kernelc.hpp */,
+				4378CF0A0EA41FC20026B37F /* md2.hpp */,
+				4378CF0B0EA41FC20026B37F /* md4.hpp */,
+				4378CF0C0EA41FC20026B37F /* md5.hpp */,
+				4378CF0D0EA41FC20026B37F /* misc.hpp */,
+				4378CF0E0EA41FC20026B37F /* modarith.hpp */,
+				4378CF0F0EA41FC20026B37F /* modes.hpp */,
+				4378CF100EA41FC20026B37F /* pwdbased.hpp */,
+				4378CF110EA41FC20026B37F /* random.hpp */,
+				4378CF120EA41FC20026B37F /* ripemd.hpp */,
+				4378CF130EA41FC20026B37F /* rsa.hpp */,
+				4378CF140EA41FC20026B37F /* runtime.hpp */,
+				4378CF150EA41FC20026B37F /* sha.hpp */,
+				4378CF160EA41FC20026B37F /* twofish.hpp */,
+				4378CF170EA41FC20026B37F /* type_traits.hpp */,
+				4378CF180EA41FC20026B37F /* types.hpp */,
+				4378CEF20EA41F970026B37F /* algorithm.hpp */,
+				4378CEF30EA41F970026B37F /* helpers.hpp */,
+				4378CEF40EA41F970026B37F /* list.hpp */,
+				4378CEF50EA41F970026B37F /* memory.hpp */,
+				4378CEF60EA41F970026B37F /* memory_array.hpp */,
+				4378CEF70EA41F970026B37F /* pair.hpp */,
+				4378CEF80EA41F970026B37F /* stdexcept.hpp */,
+				4378CEF90EA41F970026B37F /* vector.hpp */,
+			);
+			name = headers;
+			sourceTree = "<group>";
+		};
+		C6A0FF2B0290797F04C91782 /* Documentation */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Documentation;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		4384B38A0E7F5052009740F0 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D2AAC043055464E500DB518D /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		430058AD0E9EAD6D00B8BAB2 /* testsuite */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 430058BA0E9EADE900B8BAB2 /* Build configuration list for PBXNativeTarget "testsuite" */;
+			buildPhases = (
+				430058AB0E9EAD6D00B8BAB2 /* Sources */,
+				430058AC0E9EAD6D00B8BAB2 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				430058B50E9EADAC00B8BAB2 /* PBXTargetDependency */,
+				430058B70E9EADB000B8BAB2 /* PBXTargetDependency */,
+			);
+			name = testsuite;
+			productName = testsuite;
+			productReference = 430058AE0E9EAD6D00B8BAB2 /* testsuite */;
+			productType = "com.apple.product-type.tool";
+		};
+		430058CA0E9EAFD800B8BAB2 /* client */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 430058D60E9EB03F00B8BAB2 /* Build configuration list for PBXNativeTarget "client" */;
+			buildPhases = (
+				430058C80E9EAFD800B8BAB2 /* Sources */,
+				430058C90E9EAFD800B8BAB2 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				430058D10E9EB00600B8BAB2 /* PBXTargetDependency */,
+				430058D30E9EB00900B8BAB2 /* PBXTargetDependency */,
+			);
+			name = client;
+			productName = client;
+			productReference = 430058CB0E9EAFD800B8BAB2 /* client */;
+			productType = "com.apple.product-type.tool";
+		};
+		430058F90E9EB15F00B8BAB2 /* echoserver */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 430059090E9EB1CF00B8BAB2 /* Build configuration list for PBXNativeTarget "echoserver" */;
+			buildPhases = (
+				430058F70E9EB15F00B8BAB2 /* Sources */,
+				430058F80E9EB15F00B8BAB2 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				430059010E9EB18B00B8BAB2 /* PBXTargetDependency */,
+				430059030E9EB18D00B8BAB2 /* PBXTargetDependency */,
+			);
+			name = echoserver;
+			productName = echoserver;
+			productReference = 430058FA0E9EB15F00B8BAB2 /* echoserver */;
+			productType = "com.apple.product-type.tool";
+		};
+		4300590C0E9EB1E500B8BAB2 /* echoclient */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 430059180E9EB25300B8BAB2 /* Build configuration list for PBXNativeTarget "echoclient" */;
+			buildPhases = (
+				4300590A0E9EB1E500B8BAB2 /* Sources */,
+				4300590B0E9EB1E500B8BAB2 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				430059130E9EB21300B8BAB2 /* PBXTargetDependency */,
+				430059150E9EB21600B8BAB2 /* PBXTargetDependency */,
+			);
+			name = echoclient;
+			productName = echoclient;
+			productReference = 4300590D0E9EB1E500B8BAB2 /* echoclient */;
+			productType = "com.apple.product-type.tool";
+		};
+		4384B38D0E7F5052009740F0 /* taocrypt */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4384B3910E7F5071009740F0 /* Build configuration list for PBXNativeTarget "taocrypt" */;
+			buildPhases = (
+				4384B38A0E7F5052009740F0 /* Headers */,
+				4384B38B0E7F5052009740F0 /* Sources */,
+				4384B38C0E7F5052009740F0 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = taocrypt;
+			productName = taocrypt;
+			productReference = 4384B38E0E7F5052009740F0 /* libtaocrypt.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		4384B3CF0E7F5293009740F0 /* benchmark */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4384B3D40E7F52B1009740F0 /* Build configuration list for PBXNativeTarget "benchmark" */;
+			buildPhases = (
+				4384B3CD0E7F5293009740F0 /* Sources */,
+				4384B3CE0E7F5293009740F0 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4384B3DD0E7F5397009740F0 /* PBXTargetDependency */,
+			);
+			name = benchmark;
+			productName = benchmark;
+			productReference = 4384B3D00E7F5293009740F0 /* benchmark */;
+			productType = "com.apple.product-type.tool";
+		};
+		43F81F0A0E803965005533AC /* test */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 43F81F120E80396F005533AC /* Build configuration list for PBXNativeTarget "test" */;
+			buildPhases = (
+				43F81F080E803965005533AC /* Sources */,
+				43F81F090E803965005533AC /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				43F81F190E803B03005533AC /* PBXTargetDependency */,
+			);
+			name = test;
+			productName = test;
+			productReference = 43F81F0B0E803965005533AC /* test */;
+			productType = "com.apple.product-type.tool";
+		};
+		43F81F330E804D03005533AC /* server */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 43F81F380E804D21005533AC /* Build configuration list for PBXNativeTarget "server" */;
+			buildPhases = (
+				43F81F310E804D03005533AC /* Sources */,
+				43F81F320E804D03005533AC /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				43F81F3C0E804D7F005533AC /* PBXTargetDependency */,
+				43F81F3E0E804D83005533AC /* PBXTargetDependency */,
+			);
+			name = server;
+			productName = server;
+			productReference = 43F81F340E804D03005533AC /* server */;
+			productType = "com.apple.product-type.tool";
+		};
+		D2AAC045055464E500DB518D /* yassl */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB91EB08733DB70010E9CD /* Build configuration list for PBXNativeTarget "yassl" */;
+			buildPhases = (
+				D2AAC043055464E500DB518D /* Headers */,
+				D2AAC044055464E500DB518D /* Sources */,
+				D289987405E68DCB004EDB86 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = yassl;
+			productName = yassl;
+			productReference = D2AAC046055464E500DB518D /* libyassl.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		08FB7793FE84155DC02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+			};
+			buildConfigurationList = 1DEB91EF08733DB70010E9CD /* Build configuration list for PBXProject "yassl" */;
+			compatibilityVersion = "Xcode 3.1";
+			hasScannedForEncodings = 1;
+			mainGroup = 08FB7794FE84155DC02AAC07 /* yassl */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D2AAC045055464E500DB518D /* yassl */,
+				4384B38D0E7F5052009740F0 /* taocrypt */,
+				4384B3CF0E7F5293009740F0 /* benchmark */,
+				43F81F0A0E803965005533AC /* test */,
+				43F81F330E804D03005533AC /* server */,
+				430058AD0E9EAD6D00B8BAB2 /* testsuite */,
+				430058CA0E9EAFD800B8BAB2 /* client */,
+				430058F90E9EB15F00B8BAB2 /* echoserver */,
+				4300590C0E9EB1E500B8BAB2 /* echoclient */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		430058AB0E9EAD6D00B8BAB2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				430058B20E9EAD7D00B8BAB2 /* server.cpp in Sources */,
+				430058B30E9EAD8800B8BAB2 /* test.cpp in Sources */,
+				430058BE0E9EAF4500B8BAB2 /* testsuite.cpp in Sources */,
+				430058C00E9EAF5A00B8BAB2 /* client.cpp in Sources */,
+				430058C20E9EAF6F00B8BAB2 /* echoclient.cpp in Sources */,
+				430058C40E9EAF8900B8BAB2 /* echoserver.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		430058C80E9EAFD800B8BAB2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				430058CF0E9EAFE400B8BAB2 /* client.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		430058F70E9EB15F00B8BAB2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				430058FF0E9EB16F00B8BAB2 /* echoserver.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4300590A0E9EB1E500B8BAB2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				430059110E9EB1F700B8BAB2 /* echoclient.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4384B38B0E7F5052009740F0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4384B4C50E7F65EE009740F0 /* aes.cpp in Sources */,
+				4384B4C60E7F65EE009740F0 /* aestables.cpp in Sources */,
+				4384B4C70E7F65EE009740F0 /* algebra.cpp in Sources */,
+				4384B4C80E7F65EE009740F0 /* arc4.cpp in Sources */,
+				4384B4C90E7F65EE009740F0 /* asn.cpp in Sources */,
+				4384B4CA0E7F65EE009740F0 /* bftables.cpp in Sources */,
+				4384B4CB0E7F65EE009740F0 /* blowfish.cpp in Sources */,
+				4384B4CC0E7F65EE009740F0 /* coding.cpp in Sources */,
+				4384B4CD0E7F65EE009740F0 /* crypto.cpp in Sources */,
+				4384B4CE0E7F65EE009740F0 /* des.cpp in Sources */,
+				4384B4CF0E7F65EE009740F0 /* dh.cpp in Sources */,
+				4384B4D00E7F65EE009740F0 /* dsa.cpp in Sources */,
+				4384B4D10E7F65EE009740F0 /* file.cpp in Sources */,
+				4384B4D20E7F65EE009740F0 /* hash.cpp in Sources */,
+				4384B4D30E7F65EE009740F0 /* integer.cpp in Sources */,
+				4384B4D40E7F65EE009740F0 /* md2.cpp in Sources */,
+				4384B4D50E7F65EE009740F0 /* md4.cpp in Sources */,
+				4384B4D60E7F65EE009740F0 /* md5.cpp in Sources */,
+				4384B4D70E7F65EE009740F0 /* misc.cpp in Sources */,
+				4384B4D80E7F65EE009740F0 /* random.cpp in Sources */,
+				4384B4D90E7F65EE009740F0 /* ripemd.cpp in Sources */,
+				4384B4DA0E7F65EE009740F0 /* rsa.cpp in Sources */,
+				4384B4DB0E7F65EE009740F0 /* sha.cpp in Sources */,
+				4384B4DC0E7F65EE009740F0 /* template_instnt.cpp in Sources */,
+				4384B4DD0E7F65EE009740F0 /* tftables.cpp in Sources */,
+				4384B4DE0E7F65EE009740F0 /* twofish.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4384B3CD0E7F5293009740F0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4384B4A90E7F65A1009740F0 /* benchmark.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		43F81F080E803965005533AC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				43F81F150E803A69005533AC /* test.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		43F81F310E804D03005533AC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				43F81F3A0E804D25005533AC /* server.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D2AAC044055464E500DB518D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4384B4ED0E7F661E009740F0 /* buffer.cpp in Sources */,
+				4384B4EE0E7F661E009740F0 /* cert_wrapper.cpp in Sources */,
+				4384B4EF0E7F661E009740F0 /* crypto_wrapper.cpp in Sources */,
+				4384B4F00E7F661E009740F0 /* handshake.cpp in Sources */,
+				4384B4F10E7F661E009740F0 /* lock.cpp in Sources */,
+				4384B4F20E7F661E009740F0 /* log.cpp in Sources */,
+				4384B4F30E7F661E009740F0 /* socket_wrapper.cpp in Sources */,
+				4384B4F40E7F661E009740F0 /* ssl.cpp in Sources */,
+				4384B4F50E7F661E009740F0 /* timer.cpp in Sources */,
+				4384B4F60E7F661E009740F0 /* yassl.cpp in Sources */,
+				4384B4F70E7F661E009740F0 /* yassl_error.cpp in Sources */,
+				4384B4F80E7F661E009740F0 /* yassl_imp.cpp in Sources */,
+				4384B4F90E7F661E009740F0 /* yassl_int.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		430058B50E9EADAC00B8BAB2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4384B38D0E7F5052009740F0 /* taocrypt */;
+			targetProxy = 430058B40E9EADAC00B8BAB2 /* PBXContainerItemProxy */;
+		};
+		430058B70E9EADB000B8BAB2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D2AAC045055464E500DB518D /* yassl */;
+			targetProxy = 430058B60E9EADB000B8BAB2 /* PBXContainerItemProxy */;
+		};
+		430058D10E9EB00600B8BAB2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4384B38D0E7F5052009740F0 /* taocrypt */;
+			targetProxy = 430058D00E9EB00600B8BAB2 /* PBXContainerItemProxy */;
+		};
+		430058D30E9EB00900B8BAB2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D2AAC045055464E500DB518D /* yassl */;
+			targetProxy = 430058D20E9EB00900B8BAB2 /* PBXContainerItemProxy */;
+		};
+		430059010E9EB18B00B8BAB2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4384B38D0E7F5052009740F0 /* taocrypt */;
+			targetProxy = 430059000E9EB18B00B8BAB2 /* PBXContainerItemProxy */;
+		};
+		430059030E9EB18D00B8BAB2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D2AAC045055464E500DB518D /* yassl */;
+			targetProxy = 430059020E9EB18D00B8BAB2 /* PBXContainerItemProxy */;
+		};
+		430059130E9EB21300B8BAB2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4384B38D0E7F5052009740F0 /* taocrypt */;
+			targetProxy = 430059120E9EB21300B8BAB2 /* PBXContainerItemProxy */;
+		};
+		430059150E9EB21600B8BAB2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D2AAC045055464E500DB518D /* yassl */;
+			targetProxy = 430059140E9EB21600B8BAB2 /* PBXContainerItemProxy */;
+		};
+		4384B3DD0E7F5397009740F0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4384B38D0E7F5052009740F0 /* taocrypt */;
+			targetProxy = 4384B3DC0E7F5397009740F0 /* PBXContainerItemProxy */;
+		};
+		43F81F190E803B03005533AC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4384B38D0E7F5052009740F0 /* taocrypt */;
+			targetProxy = 43F81F180E803B03005533AC /* PBXContainerItemProxy */;
+		};
+		43F81F3C0E804D7F005533AC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4384B38D0E7F5052009740F0 /* taocrypt */;
+			targetProxy = 43F81F3B0E804D7F005533AC /* PBXContainerItemProxy */;
+		};
+		43F81F3E0E804D83005533AC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D2AAC045055464E500DB518D /* yassl */;
+			targetProxy = 43F81F3D0E804D83005533AC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB91EC08733DB70010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_ENABLE_OBJC_EXCEPTIONS = NO;
+				GCC_MODEL_TUNING = "";
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = HAVE_CONFIG_H;
+				HEADER_SEARCH_PATHS = (
+					taocrypt/mystl,
+					taocrypt/include,
+					include,
+				);
+				INSTALL_PATH = /usr/local/lib;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_NAME = yassl;
+			};
+			name = Debug;
+		};
+		1DEB91ED08733DB70010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = NO;
+				GCC_MODEL_TUNING = "";
+				GCC_PREPROCESSOR_DEFINITIONS = HAVE_CONFIG_H;
+				HEADER_SEARCH_PATHS = (
+					taocrypt/mystl,
+					taocrypt/include,
+					include,
+				);
+				INSTALL_PATH = /usr/local/lib;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_NAME = yassl;
+			};
+			name = Release;
+		};
+		1DEB91F008733DB70010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = x86_64;
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_VERSION = 4.2;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PREBINDING = NO;
+				SDKROOT = macosx10.5;
+			};
+			name = Debug;
+		};
+		1DEB91F108733DB70010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = x86_64;
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_VERSION = 4.2;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PREBINDING = NO;
+				SDKROOT = macosx10.5;
+			};
+			name = Release;
+		};
+		430058B00E9EAD6D00B8BAB2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NO_MAIN_DRIVER,
+					HAVE_CONFIG_H,
+				);
+				INSTALL_PATH = /usr/local/bin;
+				OTHER_LDFLAGS = "-lz";
+				PREBINDING = NO;
+				PRODUCT_NAME = testsuite;
+				USER_HEADER_SEARCH_PATHS = "taocrypt/mySTL taocrypt/include include";
+			};
+			name = Debug;
+		};
+		430058B10E9EAD6D00B8BAB2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NO_MAIN_DRIVER,
+					HAVE_CONFIG_H,
+				);
+				INSTALL_PATH = /usr/local/bin;
+				OTHER_LDFLAGS = "-lz";
+				PREBINDING = NO;
+				PRODUCT_NAME = testsuite;
+				USER_HEADER_SEARCH_PATHS = "taocrypt/mySTL taocrypt/include include";
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		430058CD0E9EAFD800B8BAB2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = /usr/local/bin;
+				OTHER_LDFLAGS = "-lz";
+				PREBINDING = NO;
+				PRODUCT_NAME = client;
+				USER_HEADER_SEARCH_PATHS = "taocrypt/include include";
+			};
+			name = Debug;
+		};
+		430058CE0E9EAFD800B8BAB2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = /usr/local/bin;
+				OTHER_LDFLAGS = "-lz";
+				PREBINDING = NO;
+				PRODUCT_NAME = client;
+				USER_HEADER_SEARCH_PATHS = "taocrypt/include include";
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		430058FC0E9EB15F00B8BAB2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = /usr/local/bin;
+				OTHER_LDFLAGS = "-lz";
+				PREBINDING = NO;
+				PRODUCT_NAME = echoserver;
+				USER_HEADER_SEARCH_PATHS = "taocrypt/include include";
+			};
+			name = Debug;
+		};
+		430058FD0E9EB15F00B8BAB2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = /usr/local/bin;
+				OTHER_LDFLAGS = "-lz";
+				PREBINDING = NO;
+				PRODUCT_NAME = echoserver;
+				USER_HEADER_SEARCH_PATHS = "taocrypt/include include";
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		4300590F0E9EB1E500B8BAB2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = /usr/local/bin;
+				OTHER_LDFLAGS = "-lz";
+				PREBINDING = NO;
+				PRODUCT_NAME = echoclient;
+				USER_HEADER_SEARCH_PATHS = "taocrypt/include include";
+			};
+			name = Debug;
+		};
+		430059100E9EB1E500B8BAB2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = /usr/local/bin;
+				OTHER_LDFLAGS = "-lz";
+				PREBINDING = NO;
+				PRODUCT_NAME = echoclient;
+				USER_HEADER_SEARCH_PATHS = "taocrypt/include include";
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		4384B38F0E7F5053009740F0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_ENABLE_OBJC_EXCEPTIONS = NO;
+				GCC_MODEL_PPC64 = NO;
+				GCC_MODEL_TUNING = "";
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = HAVE_CONFIG_H;
+				HEADER_SEARCH_PATHS = (
+					taocrypt/mystl,
+					taocrypt/include,
+				);
+				INSTALL_PATH = /usr/local/lib;
+				ONLY_ACTIVE_ARCH = NO;
+				PREBINDING = NO;
+				PRODUCT_NAME = taocrypt;
+			};
+			name = Debug;
+		};
+		4384B3900E7F5053009740F0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = NO;
+				GCC_ENABLE_SSE3_EXTENSIONS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INPUT_FILETYPE = automatic;
+				GCC_MODEL_PPC64 = NO;
+				GCC_MODEL_TUNING = "";
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NDEBUG,
+					HAVE_CONFIG_H,
+				);
+				HEADER_SEARCH_PATHS = (
+					taocrypt/mystl,
+					taocrypt/include,
+				);
+				INSTALL_PATH = /usr/local/lib;
+				ONLY_ACTIVE_ARCH = NO;
+				PREBINDING = NO;
+				PRODUCT_NAME = taocrypt;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		4384B3D20E7F5293009740F0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_ENABLE_OBJC_EXCEPTIONS = NO;
+				GCC_MODEL_TUNING = "";
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = HAVE_CONFIG_H;
+				HEADER_SEARCH_PATHS = (
+					taocrypt/mystl,
+					taocrypt/include,
+				);
+				INSTALL_PATH = /usr/local/bin;
+				PREBINDING = NO;
+				PRODUCT_NAME = benchmark;
+			};
+			name = Debug;
+		};
+		4384B3D30E7F5293009740F0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = NO;
+				GCC_MODEL_TUNING = "";
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = HAVE_CONFIG_H;
+				HEADER_SEARCH_PATHS = (
+					taocrypt/mystl,
+					taocrypt/include,
+				);
+				INSTALL_PATH = /usr/local/bin;
+				PREBINDING = NO;
+				PRODUCT_NAME = benchmark;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		43F81F0D0E803965005533AC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = HAVE_CONFIG_H;
+				HEADER_SEARCH_PATHS = (
+					taocrypt/mystl,
+					taocrypt/include,
+				);
+				INSTALL_PATH = /usr/local/bin;
+				ONLY_ACTIVE_ARCH = NO;
+				PREBINDING = NO;
+				PRODUCT_NAME = test;
+			};
+			name = Debug;
+		};
+		43F81F0E0E803965005533AC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_PREPROCESSOR_DEFINITIONS = HAVE_CONFIG_H;
+				HEADER_SEARCH_PATHS = (
+					taocrypt/mystl,
+					taocrypt/include,
+				);
+				INSTALL_PATH = /usr/local/bin;
+				ONLY_ACTIVE_ARCH = NO;
+				PREBINDING = NO;
+				PRODUCT_NAME = test;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		43F81F360E804D03005533AC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = HAVE_CONFIG_H;
+				HEADER_SEARCH_PATHS = (
+					taocrypt/include,
+					include,
+				);
+				INSTALL_PATH = /usr/local/bin;
+				OTHER_LDFLAGS = "-lz";
+				PREBINDING = NO;
+				PRODUCT_NAME = server;
+			};
+			name = Debug;
+		};
+		43F81F370E804D03005533AC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_PREPROCESSOR_DEFINITIONS = HAVE_CONFIG_H;
+				HEADER_SEARCH_PATHS = (
+					taocrypt/include,
+					include,
+				);
+				INSTALL_PATH = /usr/local/bin;
+				OTHER_LDFLAGS = "-lz";
+				PREBINDING = NO;
+				PRODUCT_NAME = server;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB91EB08733DB70010E9CD /* Build configuration list for PBXNativeTarget "yassl" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB91EC08733DB70010E9CD /* Debug */,
+				1DEB91ED08733DB70010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB91EF08733DB70010E9CD /* Build configuration list for PBXProject "yassl" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB91F008733DB70010E9CD /* Debug */,
+				1DEB91F108733DB70010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		430058BA0E9EADE900B8BAB2 /* Build configuration list for PBXNativeTarget "testsuite" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				430058B00E9EAD6D00B8BAB2 /* Debug */,
+				430058B10E9EAD6D00B8BAB2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		430058D60E9EB03F00B8BAB2 /* Build configuration list for PBXNativeTarget "client" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				430058CD0E9EAFD800B8BAB2 /* Debug */,
+				430058CE0E9EAFD800B8BAB2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		430059090E9EB1CF00B8BAB2 /* Build configuration list for PBXNativeTarget "echoserver" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				430058FC0E9EB15F00B8BAB2 /* Debug */,
+				430058FD0E9EB15F00B8BAB2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		430059180E9EB25300B8BAB2 /* Build configuration list for PBXNativeTarget "echoclient" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4300590F0E9EB1E500B8BAB2 /* Debug */,
+				430059100E9EB1E500B8BAB2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4384B3910E7F5071009740F0 /* Build configuration list for PBXNativeTarget "taocrypt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4384B38F0E7F5053009740F0 /* Debug */,
+				4384B3900E7F5053009740F0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4384B3D40E7F52B1009740F0 /* Build configuration list for PBXNativeTarget "benchmark" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4384B3D20E7F5293009740F0 /* Debug */,
+				4384B3D30E7F5293009740F0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		43F81F120E80396F005533AC /* Build configuration list for PBXNativeTarget "test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				43F81F0D0E803965005533AC /* Debug */,
+				43F81F0E0E803965005533AC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		43F81F380E804D21005533AC /* Build configuration list for PBXNativeTarget "server" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				43F81F360E804D03005533AC /* Debug */,
+				43F81F370E804D03005533AC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 08FB7793FE84155DC02AAC07 /* Project object */;
+}
