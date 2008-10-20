@@ -1797,7 +1797,7 @@ int SendCertificateRequest(SSL* ssl)
     int    sendSz;
     word32 i = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
     
-    RecordLayerHeader *const rl = (RecordLayerHeader*) output;
+    RecordLayerHeader *const rl = (RecordLayerHeader*)output;
     HandShakeHeader   *const hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
 
     int  typeTotal = 1;  /* only rsa for now */
