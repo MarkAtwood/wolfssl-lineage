@@ -1647,9 +1647,6 @@ int SendFinished(SSL* ssl)
     HandShakeHeader* hs;
     int              ret;
 
-    BuildFinished(ssl, hashes, ssl->options.side == CLIENT_END ? client :
-                                                                 server);
-
     /* check for avalaible size */
     if ((ret = CheckAvalaibleSize(ssl, sizeof(input) + MAX_MSG_EXTRA)) != 0)
         return ret;
@@ -3329,7 +3326,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     {
         word16      sz = 0;
         word32      i = *inOutsz;
-        int         ret;
+        int         ret = VERIFY_CERT_ERROR;   /* start in error state */
         byte*       sig;
         byte*       out;
         int         outLen;
@@ -3356,7 +3353,6 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         *inOutsz = i + sz;
         /* TODO: when add DSS support check here  */
         if (ssl->peerRsaKeyPresent != 0) {
-            ret = VERIFY_CERT_ERROR;  /* start in error state */
             outLen = RsaSSL_VerifyInline(sig, sz, &out, &ssl->peerRsaKey);
             if (memcmp(out, ssl->certHashes.md5, sizeof(ssl->certHashes)) == 0)
                 ret = 0;
