@@ -660,8 +660,7 @@ int SendBuffered(SSL* ssl)
                         if (timeout.it_value.tv_sec == 0 && 
                                                timeout.it_value.tv_usec == 0) {
                             strncpy(ssl->timeoutInfo.timeoutName,
-                                    "send() timeout", MAX_TIMEOUT_NAME_SZ); 
-                            ssl->writeBuffer.offset = buf;
+                                    "send() timeout", MAX_TIMEOUT_NAME_SZ);
                             return WANT_WRITE;
                         }
                     }
@@ -1376,7 +1375,7 @@ lbl_getRecordLayerHeader:
                             AddPacketInfo("ChangeCipher", &ssl->timeoutInfo,
                                     ssl->buffers.inputBuffer.buffer +
                                     ssl->buffers.inputBuffer.idx - RECORD_HEADER_SZ,
-                                    1 + RECORD_HEADER_SZ);
+                                    1 + RECORD_HEADER_SZ, ssl->heap);
                     #endif
                     ssl->buffers.inputBuffer.idx++;
                     ssl->keys.encryptionOn = 1;
@@ -2689,7 +2688,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         ato16(&input[*inOutIdx], &length);
         *inOutIdx += LENGTH_SZ;
 
-        signature = &input[*inOutIdx];
+        signature = (byte*)&input[*inOutIdx];
         *inOutIdx += length;
 
         /* verify signature */
@@ -2710,28 +2709,16 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
         /* rsa for now */
         {
-            RsaKey key;
-            int    ret;
-            word32 idx = 0;
-            byte   tmp[ENCRYPT_LEN];
-            byte*  out;
+            int   ret;
+            byte* out;
 
-            InitRsaKey(&key, ssl->heap);
-            if (ssl->buffers.peerKey.buffer)
-                ret = RsaPublicKeyDecode(ssl->buffers.peerKey.buffer, &idx,
-                                         &key, ssl->buffers.peerKey.length);
-            else
+            if (!ssl->peerRsaKeyPresent)
                 return NO_PEER_KEY;
 
-            if (ret == 0) {
-                ret = RsaSSL_VerifyInline(signature, length, &out, &key);
-                memcpy(tmp, out, ret);
+            ret = RsaSSL_VerifyInline(signature, length,&out, &ssl->peerRsaKey);
 
-                if (ret != sizeof(hash) || memcmp(tmp, hash, sizeof(hash)))
-                    return VERIFY_SIGN_ERROR;
-            }
-            else
-                return ret;
+            if (ret != sizeof(hash) || memcmp(out, hash, sizeof(hash)))
+                return VERIFY_SIGN_ERROR;
         }
 
         ssl->options.serverState = SERVER_KEYEXCHANGE_COMPLETE;
