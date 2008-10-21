@@ -177,8 +177,9 @@ enum { /* X509 Constants */
     X509_V_ERR_CRL_SIGNATURE_FAILURE          = 10,
     X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD = 11,
     X509_V_ERR_CRL_HAS_EXPIRED                = 12,
-    X509_V_ERR_CERT_REVOKED                   = 13
-
+    X509_V_ERR_CERT_REVOKED                   = 13,
+    X509_V_FLAG_CRL_CHECK                     = 14,
+    X509_V_FLAG_CRL_CHECK_ALL                 = 15
 };
 
 

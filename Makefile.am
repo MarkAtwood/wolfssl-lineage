@@ -8,6 +8,6 @@ lib-only:
 	cd taocrypt/src; make; cd ../../src; make; cd ../
 
 openssl-links:
-	cd lib; ln -s ../taocrypt/src/libtaocrypt.a libcrypto.a; \
-    ln -s ../src/libyassl.a libssl.a; cd ../
+	cd lib; ln -s ../taocrypt/src/.libs/libtaocrypt.a libcrypto.a; \
+    ln -s ../src/.libs/libyassl.a libssl.a; cd ../
     
