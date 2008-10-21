@@ -245,6 +245,8 @@ typedef struct ProtocolVersion {
 
 
 ProtocolVersion MakeSSLv3(void);
+ProtocolVersion MakeTLSv1(void);
+ProtocolVersion MakeTLSv1_1(void);
 
 
 /* OpenSSL method type */
@@ -267,6 +269,21 @@ typedef struct buffer {
     byte*  buffer;
 } buffer;
 
+/* CyaSSL input buffer
+
+   RFC 2246:
+
+   length
+       The length (in bytes) of the following TLSPlaintext.fragment.
+       The length should not exceed 2^14.
+*/
+#define BUFFER16K_LEN RECORD_HEADER_SZ + MAX_RECORD_SIZE + \
+                      MAX_COMP_EXTRA + MAX_MSG_EXTRA
+typedef struct {
+    word32 length;
+    word32 idx;
+    byte   buffer[BUFFER16K_LEN];
+} buffer16K;
 
 /* Cipher Suites holder */
 typedef struct Suites {
@@ -473,25 +490,15 @@ enum AcceptState {
 typedef struct Buffers {
     buffer          certificate;            /* SSL_CTX owns */
     buffer          key;                    /* SSL_CTX owns */
-    buffer          peerCert;
-    buffer          peerKey;
-    buffer          bufferedData;           /* decrypted data */
-    buffer          bufferedInput;          /* raw partial input */
     buffer          domainName;             /* for client check */
     buffer          serverDH_P;
     buffer          serverDH_G;
     buffer          serverDH_Pub;
     buffer          serverDH_Priv;
+    buffer16K       inputBuffer;
+    buffer16K       outputBuffer;
+    buffer          clearOutputBuffer;
 } Buffers;
-
-
-typedef struct WriteBuffer {
-    buffer          send;                   /* cached memory, we own */
-    const byte*     offset;                 /* current position for sending */
-    word32          plainSz;                /* plainText size of buffer     */
-    word32          sent;                   /* plainText size already sent  */
-} WriteBuffer;
-
 
 
 typedef struct Options {
@@ -509,7 +516,6 @@ typedef struct Options {
     byte            resuming;
     byte            tls;                /* using TLS ? */
     byte            tls1_1;             /* using TLSv1.1 ? */
-    byte            isNonBlocking;      /* win32 option set on this socket */
     byte            connReset;          /* has the peer reset */
     byte            isClosed;           /* if we consider conn closed */
     byte            connectState;       /* nonblocking resume */
@@ -517,6 +523,8 @@ typedef struct Options {
     byte            usingCompression;   /* are we using compression */
     byte            haveDH;             /* server DH parms set by user */
     byte            usingPSK_cipher;    /* whether we're using psk as cipher */
+    byte            sendAlertState;     /* nonblocking resume */ 
+    byte            processReply;       /* nonblocking resume */
 #ifndef NO_PSK
     byte            havePSK;            /* psk key set by user */
     psk_client_callback client_psk_cb;
@@ -555,6 +563,13 @@ struct X509 {
 };
 
 
+/* record layer header for PlainText, Compressed, and CipherText */
+typedef struct RecordLayerHeader {
+    byte            type;
+    ProtocolVersion version;
+    byte            length[2];
+} RecordLayerHeader;
+
 /* OpenSSL ssl type */
 struct SSL {
     SSL_CTX*        ctx;
@@ -574,13 +589,16 @@ struct SSL {
     Hashes          certHashes;         /* for cert verify */
     Signer*         caList;             /* SSL_CTX owns */
     Buffers         buffers;
-    WriteBuffer     writeBuffer;
     Options         options;
     Arrays          arrays;
     SSL_SESSION     session;
     X509            peerCert;           /* X509 peer cert */
+    RsaKey          peerRsaKey;
+    byte            peerRsaKeyPresent;
     hmacfp          hmac;
     void*           heap;               /* for user overrides */
+    RecordLayerHeader curRL;
+    word16            curSize;
 #ifdef HAVE_LIBZ
     z_stream        c_stream;           /* compression   stream */
     z_stream        d_stream;           /* decompression stream */
@@ -611,16 +629,6 @@ void FreeSSL(SSL*);
 #endif
 
 
-/* record layer header for PlainText, Compressed, and CipherText */
-typedef struct RecordLayerHeader {
-    byte            type;
-    ProtocolVersion version;
-    byte            length[2];
-    /* internal add-ons after here */
-    word16          size;            /* host order length, not sent or recvd */
-} RecordLayerHeader;
-
-
 /* Record Layer Header identifier from page 12 */
 enum ContentType {
     no_type            = 0,
@@ -635,8 +643,6 @@ enum ContentType {
 typedef struct HandShakeHeader {
     byte            type;
     word24          length;
-    /* internal add-ons after here */
-    word32          size;         /* host order length, not sent or recvd */
 } HandShakeHeader;
 
 

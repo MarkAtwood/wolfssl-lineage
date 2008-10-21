@@ -106,7 +106,11 @@ int SSL_write(SSL* ssl, const void* buffer, int sz)
     ret = SendData(ssl, buffer, sz);
 
     CYASSL_LEAVE("SSL_write()", ret);
-    return ret;
+
+    if (ret < 0)
+        return SSL_FATAL_ERROR;
+    else
+        return ret;
 }
 
 
@@ -119,7 +123,11 @@ int SSL_read(SSL* ssl, void* buffer, int sz)
     ret = ReceiveData(ssl, (byte*)buffer, min(sz, MAX_RECORD_SIZE));
 
     CYASSL_LEAVE("SSL_read()", ret);
-    return ret;
+
+    if (ret < 0)
+        return SSL_FATAL_ERROR;
+    else
+        return ret;
 }
 
 
@@ -127,7 +135,9 @@ int SSL_shutdown(SSL* ssl)
 {
     /* try to send alert, not an error if can't */
     if (!ssl->options.isClosed) {
-        SendAlert(ssl, alert_warning, close_notify);
+        ssl->error = SendAlert(ssl, alert_warning, close_notify);
+        if (ssl->error < 0)
+            return SSL_FATAL_ERROR;
         ssl->options.isClosed = 1;  /* don't send close_notify twice */
     }
 
@@ -175,8 +185,7 @@ void ERR_print_errors_fp(FILE* fp, int err)
 
 int SSL_pending(SSL* ssl)
 {
-    return ssl->buffers.bufferedData.buffer ?
-           ssl->buffers.bufferedData.length : 0;
+    return ssl->buffers.clearOutputBuffer.length;
 }
 
 
@@ -453,7 +462,7 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
         assert(ssl->options.side == CLIENT_END);
 
-        if (ssl->writeBuffer.send.buffer) {
+        if (ssl->buffers.outputBuffer.length > 0) {
             if ( (ssl->error = SendBuffered(ssl)) == 0) {
                 ssl->options.connectState++;
                 CYASSL_MSG("connect state: Advanced from buffered send");
@@ -577,7 +586,7 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
         CYASSL_ENTER("SSL_accept()");
 
-        if (ssl->writeBuffer.send.buffer) {
+        if (ssl->buffers.outputBuffer.length > 0) {
             if ( (ssl->error = SendBuffered(ssl)) == 0) {
                 ssl->options.connectState++;
                 CYASSL_MSG("accept state: Advanced from buffered send");

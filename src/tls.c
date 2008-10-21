@@ -142,7 +142,7 @@ void BuildTlsFinished(SSL* ssl, Hashes* hashes, const byte* sender)
 }
 
 
-static INLINE ProtocolVersion MakeTLSv1(void)
+ProtocolVersion MakeTLSv1(void)
 {
     ProtocolVersion pv;
     pv.major = 3;
@@ -152,7 +152,7 @@ static INLINE ProtocolVersion MakeTLSv1(void)
 }
 
 
-static INLINE ProtocolVersion MakeTLSv1_1(void)
+ProtocolVersion MakeTLSv1_1(void)
 {
     ProtocolVersion pv;
     pv.major = 3;

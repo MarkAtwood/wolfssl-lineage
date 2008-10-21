@@ -50,10 +50,12 @@ void FreeRsaKey(RsaKey* key);
 
 int  RsaPublicEncrypt(const byte* in, word32 inLen, byte* out, word32 outLen,
                       RsaKey* key, RNG* rng);
+int  RsaPrivateDecryptInline(byte* in, word32 inLen, byte** out, RsaKey* key);
 int  RsaPrivateDecrypt(const byte* in, word32 inLen, byte* out, word32 outLen,
                        RsaKey* key);
 int  RsaSSL_Sign(const byte* in, word32 inLen, byte* out, word32 outLen,
                  RsaKey* key, RNG* rng);
+int  RsaSSL_VerifyInline(byte* in, word32 inLen, byte** out, RsaKey* key);
 int  RsaSSL_Verify(const byte* in, word32 inLen, byte* out, word32 outLen,
                    RsaKey* key);
 

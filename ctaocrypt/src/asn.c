@@ -318,22 +318,30 @@ int DsaPrivateKeyDecode(const byte* input, word32* inOutIdx, DsaKey* key,
 
 void InitDecodedCert(DecodedCert* cert, byte* source, void* heap)
 {
-    cert->publicKey = 0;
-    cert->signature = 0;
-    cert->issuerCN  = 0;
-    cert->subjectCN = 0;
-    cert->source    = source;  /* don't own */
-    cert->srcIdx    = 0;
-    cert->heap      = heap;
+    cert->publicKey       = 0;
+    cert->pubKeyStored    = 0;
+    cert->signature       = 0;
+    cert->signatureStored = 0;
+    cert->issuerCN        = 0;
+    cert->issuerCNLen     = 0;
+    cert->subjectCN       = 0;
+    cert->subjectCNLen    = 0;
+    cert->source          = source;  /* don't own */
+    cert->srcIdx          = 0;
+    cert->heap            = heap;
 }
 
 
 void FreeDecodedCert(DecodedCert* cert)
 {
-    XFREE(cert->subjectCN, cert->heap);
-    XFREE(cert->issuerCN, cert->heap);
-    XFREE(cert->signature, cert->heap);
-    XFREE(cert->publicKey, cert->heap);
+    if (cert->subjectCNLen == 0)
+        XFREE(cert->subjectCN, cert->heap);
+    if (cert->issuerCNLen == 0)
+        XFREE(cert->issuerCN, cert->heap);
+    if (cert->signatureStored)
+        XFREE(cert->signature, cert->heap);
+    if (cert->pubKeyStored == 1)
+        XFREE(cert->publicKey, cert->heap);
 }
 
 
@@ -415,10 +423,7 @@ static int StoreKey(DecodedCert* cert)
        cert->srcIdx--;
 
     cert->pubKeySize = length;
-    if ( !(cert->publicKey = (byte*) XMALLOC(length, cert->heap)) )
-        return MEMORY_E;
-
-    memcpy(cert->publicKey, cert->source + cert->srcIdx, length);
+    cert->publicKey = cert->source + cert->srcIdx;
     cert->srcIdx += length;
 
     return 0;
@@ -505,13 +510,13 @@ static int GetName(DecodedCert* cert, int nameType)
                 return ASN_PARSE_E;
 
             if (id == ASN_COMMON_NAME) {
-                char** cn = (nameType == ISSUER) ? 
-                    &cert->issuerCN : &cert->subjectCN;
-                *cn = (char*) XMALLOC(strLen + 1, cert->heap);
-                if (!*cn)
-                    return MEMORY_E;
-                memcpy(*cn, &cert->source[cert->srcIdx], strLen);
-                (*cn)[strLen] = 0;
+                if (nameType == ISSUER) {
+                    cert->issuerCN = (char *)&cert->source[cert->srcIdx];
+                    cert->issuerCNLen = strLen;
+                } else {
+                    cert->subjectCN = (char *)&cert->source[cert->srcIdx];
+                    cert->subjectCNLen = strLen;
+                }
 
                 memcpy(&full[idx], "/CN=", 4);
                 idx += 4;
@@ -776,12 +781,7 @@ static int GetSignature(DecodedCert* cert)
         return ASN_EXPECT_0_E;
 
     cert->sigLength--;
-
-    cert->signature = (byte*) XMALLOC(cert->sigLength, cert->heap);
-    if (!cert->signature)
-        return MEMORY_E;
-    
-    memcpy(cert->signature, &cert->source[cert->srcIdx], cert->sigLength);
+    cert->signature = &cert->source[cert->srcIdx];
     cert->srcIdx += cert->sigLength;
 
     return 0;
@@ -935,25 +935,31 @@ static int ConfirmSignature(DecodedCert* cert, const byte* key, word32 keySz)
     if (cert->keyOID == RSAk) {
         RsaKey pubKey;
         byte   encodedSig[MAX_ENCODED_SIG_SZ];
-        byte   plain[MAX_SIG_SZ];
+        byte   plain[MAX_ENCODED_SIG_SZ];
         word32 idx = 0;
         int    sigSz, verifySz;
+        byte*  out;
 
+        if (cert->sigLength > MAX_ENCODED_SIG_SZ)
+            return 0; /* the key is too big */
+            
         InitRsaKey(&pubKey, cert->heap);
         if (RsaPublicKeyDecode(key, &idx, &pubKey, keySz) < 0)
-            return 0; /* ASN_KEY_DECODE_E; */
+            ret = 0; /* ASN_KEY_DECODE_E; */
 
-        sigSz = EncodeSignature(encodedSig, digest, digestSz, hashType);
-        
-        if ( (verifySz = RsaSSL_Verify(cert->signature, cert->sigLength, plain,
-                                       sizeof(plain), &pubKey)) < 0)
-            ret = 0; /* ASN_VERIFY_E; */
         else {
-            /* make sure we're right justified */
-            if (sigSz != verifySz || memcmp(plain, encodedSig, sigSz) != 0)
-                ret = 0; /* ASN_VERIFY_MATCH_E; */
-            else
-                ret = 1; /* match */
+            memcpy(plain, cert->signature, cert->sigLength);
+            if ( (verifySz = RsaSSL_VerifyInline(plain, cert->sigLength, &out,
+                                           &pubKey)) < 0)
+                ret = 0; /* ASN_VERIFY_E; */
+            else {
+                /* make sure we're right justified */
+                sigSz = EncodeSignature(encodedSig, digest, digestSz, hashType);
+                if (sigSz != verifySz || memcmp(out, encodedSig, sigSz) != 0)
+                    ret = 0; /* ASN_VERIFY_MATCH_E; */
+                else
+                    ret = 1; /* match */
+            }
         }
         FreeRsaKey(&pubKey);
         return ret;
@@ -966,6 +972,58 @@ static int ConfirmSignature(DecodedCert* cert, const byte* key, word32 keySz)
 
 
 int ParseCert(DecodedCert* cert, word32 inSz, int type, int verify,
+              Signer* signers)
+{
+    int   ret;
+    char* ptr;
+
+    ret = ParseCertRelative(cert, inSz, type, verify, signers);
+    if (ret < 0)
+        return ret;
+
+    if (cert->issuerCNLen > 0) {
+        ptr = (char*) XMALLOC(cert->issuerCNLen + 1, cert->heap);
+        if (ptr == NULL)
+            return MEMORY_E;
+        memcpy(ptr, cert->issuerCN, cert->issuerCNLen);
+        ptr[cert->issuerCNLen] = '\0';
+        cert->issuerCN = ptr;
+        cert->issuerCNLen = 0;
+    }
+
+    if (cert->subjectCNLen > 0) {
+        ptr = (char*) XMALLOC(cert->subjectCNLen + 1, cert->heap);
+        if (ptr == NULL)
+            return MEMORY_E;
+        memcpy(ptr, cert->subjectCN, cert->subjectCNLen);
+        ptr[cert->subjectCNLen] = '\0';
+        cert->subjectCN = ptr;
+        cert->subjectCNLen = 0;
+    }
+
+    if (cert->pubKeySize > 0) {
+        ptr = (char*) XMALLOC(cert->pubKeySize, cert->heap);
+        if (ptr == NULL)
+            return MEMORY_E;
+        memcpy(ptr, cert->publicKey, cert->pubKeySize);
+        cert->publicKey = (byte *)ptr;
+        cert->pubKeyStored = 1;
+    }
+
+    if (cert->sigLength > 0) {
+        ptr = (char*) XMALLOC(cert->sigLength, cert->heap);
+        if (ptr == NULL)
+            return MEMORY_E;
+        memcpy(ptr, cert->signature, cert->sigLength);
+        cert->signature = (byte *)ptr;
+        cert->signatureStored = 1;
+    }
+
+    return ret;
+}
+
+
+int ParseCertRelative(DecodedCert* cert, word32 inSz, int type, int verify,
               Signer* signers)
 {
     word32 confirmOID;
