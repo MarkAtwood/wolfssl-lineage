@@ -626,6 +626,7 @@ void FreeSSL(SSL*);
     void FreeTimeoutInfo(TimeoutInfo*, void*);
     void AddPacketInfo(const char*, TimeoutInfo*, const byte*, int, void*);
     void AddLateName(const char*, TimeoutInfo*);
+    void AddLateRecordHeader(const RecordLayerHeader* rl, TimeoutInfo* info);
 #endif
 
 

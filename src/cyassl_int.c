@@ -969,6 +969,7 @@ static int DoHandShakeMsg(SSL* ssl, byte* input, word32* inOutIdx,
         int add = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
         AddPacketInfo(0, &ssl->timeoutInfo, input + *inOutIdx - add,
                       size + add, ssl->heap);
+        AddLateRecordHeader(&ssl->curRL, &ssl->timeoutInfo);
     }
 #endif
 
@@ -1371,11 +1372,13 @@ lbl_getRecordLayerHeader:
                         if (ssl->hsInfoOn)
                             AddPacketName("ChangeCipher", &ssl->handShakeInfo);
                         /* add record header back on info */
-                        if (ssl->toInfoOn)
+                        if (ssl->toInfoOn) {
                             AddPacketInfo("ChangeCipher", &ssl->timeoutInfo,
-                                    ssl->buffers.inputBuffer.buffer +
-                                    ssl->buffers.inputBuffer.idx - RECORD_HEADER_SZ,
-                                    1 + RECORD_HEADER_SZ, ssl->heap);
+                                ssl->buffers.inputBuffer.buffer +
+                                ssl->buffers.inputBuffer.idx - RECORD_HEADER_SZ,
+                                1 + RECORD_HEADER_SZ, ssl->heap);
+                            AddLateRecordHeader(&ssl->curRL, &ssl->timeoutInfo);
+                        }
                     #endif
                     ssl->buffers.inputBuffer.idx++;
                     ssl->keys.encryptionOn = 1;
@@ -2418,6 +2421,21 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
                                                         MAX_PACKETS_HANDSHAKE) {
             strncpy(info->packets[info->numberPackets - 1].packetName, name,
                     MAX_PACKETNAME_SZ);
+        }
+    }
+
+    /* Add record header to previsouly added packet info */
+    void AddLateRecordHeader(const RecordLayerHeader* rl, TimeoutInfo* info)
+    {
+        /* make sure we have a valid previous one */
+        if (info->numberPackets > 0 && info->numberPackets <
+                                                        MAX_PACKETS_HANDSHAKE) {
+            if (info->packets[info->numberPackets - 1].bufferValue)
+                memcpy(info->packets[info->numberPackets - 1].bufferValue, rl,
+                       RECORD_HEADER_SZ);
+            else
+                memcpy(info->packets[info->numberPackets - 1].value, rl,
+                       RECORD_HEADER_SZ);
         }
     }
 
