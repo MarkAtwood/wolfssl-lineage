@@ -92,7 +92,7 @@ void SSL_free(SSL* ssl)
 
 int SSL_set_fd(SSL* ssl, int fd)
 {
-    ssl->socket = fd;
+    ssl->IOCBCtx = (void *)fd;
     return SSL_SUCCESS;
 }
 

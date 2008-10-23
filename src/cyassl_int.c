@@ -53,7 +53,6 @@
 #define TRUE  1
 #define FALSE 0
 
-
 #ifdef _WIN32
     const int SOCKET_EINVAL = WSAEINVAL;
     const int SOCKET_EWOULDBLOCK = WSAEWOULDBLOCK;
@@ -276,6 +275,9 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->server_psk_cb      = 0;
 #endif /* NO_PSK */
 
+    ctx->CBIORecv = EnbedReceive;
+    ctx->CBIOSend = EmbedSend;
+
     ctx->caList = 0;
     /* remove DH later if server didn't set, add psk later  */
     InitSuites(&ctx->suites, method->version, TRUE, FALSE);  
@@ -377,7 +379,6 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->ctx     = ctx; /* only for passing to calls, options could change */
     ssl->version = ctx->method->version;
     ssl->suites  = ctx->suites;
-    ssl->socket  = INVALID_SOCKET;
 
 #ifdef HAVE_LIBZ
     ssl->didStreamInit = 0;
@@ -572,100 +573,82 @@ static void HashInput(SSL* ssl, const byte* input, int sz)
 }
 
 
-static INLINE void Close(SSL* ssl)
-{
-    ssl->options.isClosed = 1;
-
-#ifdef _WIN32
-    closesocket(ssl->socket);
-#else
-    close(ssl->socket);
-#endif
-}
-
-
-static INLINE int LastError(void)
-{
-#ifdef _WIN32
-    return WSAGetLastError();
-#else
-    return errno;
-#endif
-}
-
 static word32 Receive(SSL* ssl, byte* buf, word32 sz, int flags)
 {
     int recvd;
 
-    assert(ssl->socket != INVALID_SOCKET);
 retry:
-    recvd = recv(ssl->socket, (char *)buf, sz, flags);
+    recvd = ssl->ctx->CBIORecv((char *)buf, (int)sz, ssl->IOCBCtx);
+    if (recvd < 0)
+        switch (recvd) {
+            case -1:
+                return -1;
 
-    /* idea to seperate error from would block by arnetheduck@gmail.com */
-    if (recvd == -1) {
-        if (LastError() == SOCKET_EWOULDBLOCK || 
-            LastError() == SOCKET_EAGAIN) {
-            return 0;
-        }
-        else if (LastError() == SOCKET_ECONNRESET)
-            ssl->options.connReset = 1;
-        else if (LastError() == SOCKET_EINTR) {
-            /* see if we got our timeout */
-            #ifdef CYASSL_CALLBACKS
-                if (ssl->toInfoOn) {
-                    struct itimerval timeout;
-                    getitimer(ITIMER_REAL, &timeout);
-                    if (timeout.it_value.tv_sec == 0 && 
-                                            timeout.it_value.tv_usec == 0) {
-                        strncpy(ssl->timeoutInfo.timeoutName,
-                                "recv() timeout", MAX_TIMEOUT_NAME_SZ);
-                        return 0;
-                    }
-                }
-            #endif
-            goto retry;
-        }
-    }
-    else if (recvd == 0) {
-        ssl->options.isClosed = 1;
-        return (word32) -1;
-    }
+            case -2:
+                return 0;
 
-    return recvd;
-}
-
-int SendBuffered(SSL* ssl)
-{
-    assert(ssl->socket != INVALID_SOCKET);
-
-    while (ssl->buffers.outputBuffer.length > 0) {
-        int sent = send(ssl->socket, 
-                        ssl->buffers.outputBuffer.buffer +
-                        ssl->buffers.outputBuffer.idx,
-                        ssl->buffers.outputBuffer.length, 0);
-
-        if (sent == -1) {
-            if (LastError() == SOCKET_EWOULDBLOCK || 
-                LastError() == SOCKET_EAGAIN) {
-                return WANT_WRITE;
-            }
-            else if (LastError() == SOCKET_ECONNRESET)
+            case -3:
                 ssl->options.connReset = 1;
-            else if (LastError() == SOCKET_EINTR) {
+                break;
+
+            case -4: 
                 /* see if we got our timeout */
                 #ifdef CYASSL_CALLBACKS
                     if (ssl->toInfoOn) {
                         struct itimerval timeout;
                         getitimer(ITIMER_REAL, &timeout);
                         if (timeout.it_value.tv_sec == 0 && 
-                                               timeout.it_value.tv_usec == 0) {
+                                                timeout.it_value.tv_usec == 0) {
                             strncpy(ssl->timeoutInfo.timeoutName,
-                                    "send() timeout", MAX_TIMEOUT_NAME_SZ);
-                            return WANT_WRITE;
+                                    "recv() timeout", MAX_TIMEOUT_NAME_SZ);
+                            return 0;
                         }
                     }
                 #endif
-                continue;
+                goto retry;
+
+            case -5:
+                ssl->options.isClosed = 1;
+                return -1;
+        }
+
+    return recvd;
+}
+
+int SendBuffered(SSL* ssl)
+{
+    while (ssl->buffers.outputBuffer.length > 0) {
+        int sent = ssl->ctx->CBIOSend((char *) ssl->buffers.outputBuffer.buffer +
+                                      ssl->buffers.outputBuffer.idx,
+                                      (int)ssl->buffers.outputBuffer.length,
+                                      ssl->IOCBCtx);
+
+        if (sent < 0) {
+            switch (sent) {
+
+                case -2:
+                    return WANT_WRITE;
+
+                case -3:
+                    ssl->options.connReset = 1;
+                    break;
+
+                case -4:
+                    /* see if we got our timeout */
+                    #ifdef CYASSL_CALLBACKS
+                        if (ssl->toInfoOn) {
+                            struct itimerval timeout;
+                            getitimer(ITIMER_REAL, &timeout);
+                            if (timeout.it_value.tv_sec == 0 && 
+                                                   timeout.it_value.tv_usec == 0) {
+                                strncpy(ssl->timeoutInfo.timeoutName,
+                                        "send() timeout", MAX_TIMEOUT_NAME_SZ); 
+                                ssl->writeBuffer.offset = buf;
+                                return WANT_WRITE;
+                            }
+                        }
+                    #endif
+                    continue;
             }
 
             return SOCKET_ERROR_E;
@@ -887,7 +870,7 @@ DoCertificate_free_cert:
             if (ret == ASN_AFTER_DATE_E || ret == ASN_BEFORE_DATE_E)
                 why = certificate_expired;
             SendAlert(ssl, alert_fatal, why);   /* try to send */
-            Close(ssl);
+            ssl->options.isClosed = 1;
         }
         ssl->error = ret;
     }
