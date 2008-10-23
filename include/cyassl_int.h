@@ -303,6 +303,14 @@ int  SetCipherList(SSL_CTX* ctx, const char* list);
                           unsigned char*, unsigned int);
 #endif /* PSK_TYPES_DEFINED */
 
+/* I/O callbacks */
+typedef int (*CallbackIORecv)(char *buf, int sz, void *ctx);
+typedef int (*CallbackIOSend)(char *buf, int sz, void *ctx);
+
+/* default IO callbacks */
+int EnbedReceive(char *buf, int sz, void *ctx);
+int EmbedSend(char *buf, int sz, void *ctx);
+
 /* OpenSSL context type */
 struct SSL_CTX {
     SSL_METHOD* method;
@@ -322,6 +330,8 @@ struct SSL_CTX {
     byte        havePSK;          /* psk key set by user */
     psk_client_callback client_psk_cb;  /* client callback */
     psk_server_callback server_psk_cb;  /* server callback */
+    CallbackIORecv CBIORecv;
+    CallbackIOSend CBIOSend;
     char        server_hint[MAX_PSK_ID_LEN];
 #endif /* NO_PSK */
 };
@@ -329,6 +339,9 @@ struct SSL_CTX {
 
 void InitSSL_Ctx(SSL_CTX*, SSL_METHOD*);
 void FreeSSL_Ctx(SSL_CTX*);
+void SetCallbackIORecv_Ctx(SSL_CTX*, CallbackIORecv);
+void SetCallbackIOSend_Ctx(SSL_CTX*, CallbackIOSend);
+void SetCallbackIOCtx(SSL* ssl, void *ctx);
 
 
 /* All cipher suite related info */
@@ -581,7 +594,7 @@ struct SSL {
     Ciphers         decrypt;
     CipherSpecs     specs;
     Keys            keys;
-    SOCKET_T        socket;
+    void           *IOCBCtx;
     RNG             rng;
     Md5             hashMd5;            /* md5 hash of handshake msgs */
     Sha             hashSha;            /* sha hash of handshake msgs */
