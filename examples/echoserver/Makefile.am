@@ -1,0 +1,8 @@
+INCLUDES = -I../../include
+bin_PROGRAMS    = echoserver
+echoserver_SOURCES  = echoserver.c
+echoserver_CFLAGS = -Wall
+echoserver_LDFLAGS  = -L../../src -lm
+echoserver_LDADD       = ../../src/libcyassl.la
+echoserver_DEPENDENCIES= ../../src/libcyassl.la
+EXTRA_DIST = echoserver.dsp echoserver.sln echoserver.vcproj
