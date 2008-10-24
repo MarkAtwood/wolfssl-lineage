@@ -285,6 +285,7 @@ int DsaPublicKeyDecode(const byte* input, word32* inOutIdx, DsaKey* key,
         GetInt(&key->g,  input, inOutIdx) < 0 ||
         GetInt(&key->y,  input, inOutIdx) < 0 )  return ASN_DH_KEY_E;
 
+    key->type = DSA_PUBLIC;
     return 0;
 }
 
@@ -310,6 +311,7 @@ int DsaPrivateKeyDecode(const byte* input, word32* inOutIdx, DsaKey* key,
         GetInt(&key->y,  input, inOutIdx) < 0 ||
         GetInt(&key->x,  input, inOutIdx) < 0 )  return ASN_DH_KEY_E;
 
+    key->type = DSA_PRIVATE;
     return 0;
 }
 

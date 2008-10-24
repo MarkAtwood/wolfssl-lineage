@@ -460,7 +460,6 @@ struct SSL_SESSION {
     byte         masterSecret[SECRET_LEN];
     word32       bornOn;                        /* create time in seconds   */
     word32       timeout;                       /* timeout in seconds       */
-    SSL_SESSION* next;
 };
 
 
