@@ -642,8 +642,7 @@ int SendBuffered(SSL* ssl)
                             if (timeout.it_value.tv_sec == 0 && 
                                                    timeout.it_value.tv_usec == 0) {
                                 strncpy(ssl->timeoutInfo.timeoutName,
-                                        "send() timeout", MAX_TIMEOUT_NAME_SZ); 
-                                ssl->writeBuffer.offset = buf;
+                                        "send() timeout", MAX_TIMEOUT_NAME_SZ);
                                 return WANT_WRITE;
                             }
                         }
@@ -3189,7 +3188,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
         /* DoClientHello uses same resume code */
         while (ssl->options.resuming) {  /* let's try */
-            SSL_SESSION* session = GetSession(ssl);
+            SSL_SESSION* session = GetSession(ssl, ssl->arrays.masterSecret);
             if (!session) {
                 ssl->options.resuming = 0;
                 break;   /* session lookup failed */
@@ -3197,7 +3196,6 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             if (MatchSuite(ssl, &clSuites) < 0)
                 return UNSUPPORTED_SUITE;
 
-            memcpy(ssl->arrays.masterSecret, session->masterSecret,SECRET_LEN);
             RNG_GenerateBlock(&ssl->rng, ssl->arrays.serverRandom, RAN_LEN);
             if (ssl->options.tls)
                 DeriveTlsKeys(ssl);
@@ -3287,7 +3285,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         
         /* ProcessOld uses same resume code */
         while (ssl->options.resuming) {  /* let's try */
-            SSL_SESSION* session = GetSession(ssl);
+            SSL_SESSION* session = GetSession(ssl, ssl->arrays.masterSecret);
             if (!session) {
                 ssl->options.resuming = 0;
                 break;   /* session lookup failed */
@@ -3295,7 +3293,6 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             if (MatchSuite(ssl, &clSuites) < 0)
                 return UNSUPPORTED_SUITE;
 
-            memcpy(ssl->arrays.masterSecret, session->masterSecret,SECRET_LEN);
             RNG_GenerateBlock(&ssl->rng, ssl->arrays.serverRandom, RAN_LEN);
             if (ssl->options.tls)
                 DeriveTlsKeys(ssl);

@@ -226,7 +226,22 @@ static int AddCA(SSL_CTX* ctx, buffer der)
 }
 
 
-static SSL_SESSION* sessions = 0;
+#ifndef NO_SESSION_CACHE
+
+    #ifndef CACHE_BUFFER_SIZE
+        #define CACHE_BUFFER_SIZE 128
+    #endif
+
+    static SSL_SESSION sessions[CACHE_BUFFER_SIZE];
+    static int sessIdx  = 0;         /* current open slot */
+    static int sessFull = 0;         /* once full, most recent search changes */
+
+    /* quiet compiler */
+    #ifndef SINGLE_THREADED
+        static CyaSSL_Mutex mutex;   /* sessions mutex */
+    #endif
+
+#endif /* NO_SESSION_CACHE */
 
 
 #ifndef NO_FILESYSTEM
@@ -397,9 +412,11 @@ void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback vc)
 }
 
 
+#ifndef NO_SESSION_CACHE
+
 SSL_SESSION* SSL_get_session(SSL* ssl)
 {
-    return GetSession(ssl);
+    return GetSession(ssl, 0);
 }
 
 
@@ -407,6 +424,8 @@ int SSL_set_session(SSL* ssl, SSL_SESSION* session)
 {
     return SetSession(ssl, session);
 }
+
+#endif /* NO_SESSION_CACHE */
 
 
 void SSL_load_error_strings(void)   /* compatibility only */
@@ -419,7 +438,9 @@ int SSL_library_init(void)  /* compatiblity only */
 }
 
 
-/* on by default but allow user to turn off */
+#ifndef NO_SESSION_CACHE
+
+/* on by default if built in but allow user to turn off */
 long SSL_CTX_set_session_cache_mode(SSL_CTX* ctx, long mode)
 {
     if (mode == SSL_SESS_CACHE_OFF)
@@ -430,6 +451,8 @@ long SSL_CTX_set_session_cache_mode(SSL_CTX* ctx, long mode)
 
     return SSL_SUCCESS;
 }
+
+#endif /* NO_SESSION_CACHE */
 
 
 int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
@@ -706,83 +729,52 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 #endif /* NO_CYASSL_SERVER */
 
 
-
-
-/* quiet compiler */
-#ifndef SINGLE_THREADED
-    static CyaSSL_Mutex mutex; /* sessions mutex */
-#endif
-
-
 void InitCyaSSL(void)
 {
     InitMutex(&mutex);
 }
 
 
-/* if user overrides XMALLOC sessions are allocated with SSL_ctx pointer as
-   heap hint, pass in here to get right XFREE */
-void FreeCyaSSL(void* heap)
+void FreeCyaSSL()
 {
-    SSL_SESSION* next;
-
-    LockMutex(&mutex);
-
-    next = sessions;
-    while( (sessions = next) ) {
-        next = sessions->next;
-        XFREE(sessions, heap);
-    }
-
-    UnLockMutex(&mutex);
-
     FreeMutex(&mutex);
 }
 
 
+#ifndef NO_SESSION_CACHE
+
 void SSL_flush_sessions(SSL_CTX* ctx, long tm)
 {
-    SSL_SESSION* next;
-    SSL_SESSION* tmpSessions = 0;  /* new flushed list */
-    word32       current = LowResTimer();
-
-    LockMutex(&mutex);
-
-    next = sessions;
-    while( (sessions = next) ) {
-        next = sessions->next;
-
-        if (current < (sessions->bornOn + sessions->timeout)) {
-            sessions->next = tmpSessions;
-            tmpSessions = sessions;
-        }
-        else
-            XFREE(sessions, ctx->heap);
-    }
-    sessions = tmpSessions;
-
-    UnLockMutex(&mutex);
+    /* static table now, no flusing needed */
 }
 
 
-SSL_SESSION* GetSession(SSL* ssl)
+SSL_SESSION* GetSession(SSL* ssl, byte* masterSecret)
 {
-    SSL_SESSION* current, *ret = 0;
-    const byte* id = ssl->arrays.sessionID;
+    SSL_SESSION* ret = 0;
+    const byte*  id = ssl->arrays.sessionID;
+    int          idx;
 
     if (ssl->options.sessionCacheOff)
         return 0;
 
     LockMutex(&mutex);
-
-    current = sessions;
-    while (current) {
+    
+    if (sessFull)
+        idx = CACHE_BUFFER_SIZE - 1;
+    else
+        idx = sessIdx - 1;
+    
+    for (; idx >= 0; idx--) {
+        SSL_SESSION* current = &sessions[idx];
         if (memcmp(current->sessionID, id, ID_LEN) == 0) {
-            if (LowResTimer() < (current->bornOn + current->timeout))
+            if (LowResTimer() < (current->bornOn + current->timeout)) {
                 ret = current;
+                if (masterSecret)
+                    memcpy(masterSecret, current->masterSecret, SECRET_LEN);
+            }
             break;
-        }
-        current = current->next;
+        }   
     }
 
     UnLockMutex(&mutex);
@@ -808,35 +800,27 @@ int SetSession(SSL* ssl, SSL_SESSION* session)
 
 void AddSession(SSL* ssl)
 {
-    static int sessCount = 0;
-    SSL_SESSION* sess;
-
     if (ssl->options.sessionCacheOff)
         return;
 
-    sess = (SSL_SESSION*) XMALLOC(sizeof(SSL_SESSION), ssl->heap);
-    if (sess) {
-        memcpy(sess->masterSecret, ssl->arrays.masterSecret, SECRET_LEN);
-        memcpy(sess->sessionID, ssl->arrays.sessionID, ID_LEN);
+    LockMutex(&mutex);
 
-        sess->timeout = DEFAULT_TIMEOUT;
-        sess->bornOn  = LowResTimer();
-
-        LockMutex(&mutex);
-
-        sess->next = sessions;
-        sessions   = sess;
-
-        UnLockMutex(&mutex);
-
-        sessCount++;  /* don't worry about sync, rough estimate */
-        if (sessCount > SESSION_FLUSH_COUNT) {
-            if (!ssl->options.sessionCacheFlushOff)
-                SSL_flush_sessions(ssl->ctx, 0);
-            sessCount = 0;
-        }
+    if (sessIdx == CACHE_BUFFER_SIZE) {
+        sessIdx  = 0;                    /* restart */
+        sessFull = 1;
     }
+    memcpy(sessions[sessIdx].masterSecret, ssl->arrays.masterSecret,SECRET_LEN);
+    memcpy(sessions[sessIdx].sessionID, ssl->arrays.sessionID, ID_LEN);
+    
+    sessions[sessIdx].timeout = DEFAULT_TIMEOUT;
+    sessions[sessIdx].bornOn  = LowResTimer();    
+    
+    sessIdx++;
+ 
+    UnLockMutex(&mutex);        
 }
+
+#endif /* NO_SESSION_CACHE */
 
 
 /* call before SSL_connect, if verifying will add name check to

@@ -464,7 +464,7 @@ struct SSL_SESSION {
 };
 
 
-SSL_SESSION* GetSession(SSL*);
+SSL_SESSION* GetSession(SSL*, byte*);
 int          SetSession(SSL*, SSL_SESSION*);
 
 typedef void (*hmacfp) (SSL*, byte*, const byte*, word32, int, int);

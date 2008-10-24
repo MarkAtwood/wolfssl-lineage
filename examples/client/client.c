@@ -218,7 +218,7 @@ void client_test(void* args)
 
         InitCyaSSL();
         client_test(&args);
-        FreeCyaSSL(0);
+        FreeCyaSSL();
 
         return args.return_code;
     }
