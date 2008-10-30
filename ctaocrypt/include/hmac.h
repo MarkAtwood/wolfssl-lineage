@@ -43,6 +43,11 @@ enum {
     SHA256  = 2,
     IPAD    = 0x36,
     OPAD    = 0x5C,
+#ifndef NO_SHA256
+    INNER_HASH_SIZE = SHA256_DIGEST_SIZE,
+#else
+    INNER_HASH_SIZE = SHA_DIGEST_SIZE,
+#endif
     HMAC_BLOCK_SIZE = MD5_BLOCK_SIZE
 };
 
@@ -61,7 +66,7 @@ typedef struct Hmac {
     Hash    hash;
     word32  ipad[HMAC_BLOCK_SIZE  / sizeof(word32)];  /* same block size all*/
     word32  opad[HMAC_BLOCK_SIZE  / sizeof(word32)];
-    word32  innerHash[SHA_DIGEST_SIZE / sizeof(word32)]; /* max size */
+    word32  innerHash[INNER_HASH_SIZE / sizeof(word32)]; /* max size */
     byte    macType;                                     /* md5 sha or sha256 */
     byte    innerHashKeyed;                              /* keyed flag */
 } Hmac;
