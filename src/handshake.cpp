@@ -863,6 +863,7 @@ void sendServerKeyExchange(SSL& ssl, BufferOutput buffer)
     if (ssl.GetError()) return;
     ServerKeyExchange sk(ssl);
     sk.build(ssl);
+    if (ssl.GetError()) return;
 
     RecordLayerHeader rlHeader;
     HandShakeHeader   hsHeader;

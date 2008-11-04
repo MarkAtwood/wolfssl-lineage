@@ -316,6 +316,20 @@ SSL::SSL(SSL_CTX* ctx)
             SetError(YasslError(err));
             return;
         }
+        else if (serverSide) {
+            // remove RSA or DSA suites depending on cert key type
+            ProtocolVersion pv = secure_.get_connection().version_;
+            
+            bool removeDH  = secure_.use_parms().removeDH_;
+            bool removeRSA = false;
+            bool removeDSA = false;
+            
+            if (cm.get_keyType() == rsa_sa_algo)
+                removeDSA = true;
+            else
+                removeRSA = true;
+            secure_.use_parms().SetSuites(pv, removeDH, removeRSA, removeDSA);
+        }
     }
     else if (serverSide) {
         SetError(no_key_file);
