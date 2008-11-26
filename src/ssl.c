@@ -318,7 +318,7 @@ static int ProcessFile(SSL_CTX* ctx, const char* file, int format, int type)
         
         fseek(input, 0, SEEK_END);
         sz = ftell(input);
-        rewind(input);
+        fseek(input, 0, SEEK_SET);
 
         der.buffer = (byte*) XMALLOC(sz, ctx->heap);
         if (!der.buffer) return MEMORY_ERROR;

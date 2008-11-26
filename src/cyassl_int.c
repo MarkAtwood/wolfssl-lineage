@@ -20,6 +20,10 @@
  */
 
 
+#ifdef _WIN32_WCE
+    /* On WinCE winsock2.h must be included before windows.h for socket stuff */
+    #include <winsock2.h>
+#endif
 
 #include "cyassl_int.h"
 #include "cyassl_error.h"
