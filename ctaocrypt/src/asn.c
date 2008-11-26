@@ -67,7 +67,7 @@ const int _ytab[2][12] =
 };
 
 
-time_t mytime(time_t* timer)
+time_t time(time_t* timer)
 {
     SYSTEMTIME     sysTime;
     FILETIME       fTime;
@@ -91,7 +91,7 @@ time_t mytime(time_t* timer)
 }
 
 
-struct tm* mygmtime(const time_t* timer)
+struct tm* gmtime(const time_t* timer)
 {
     static struct tm st_time;
     struct tm* ret = &st_time;
@@ -107,8 +107,8 @@ struct tm* mygmtime(const time_t* timer)
     ret->tm_hour =  dayclock / 3600;
     ret->tm_wday = (dayno + 4) % 7;        /* day 0 a Thursday */
 
-    while(dayno >= YEARSIZE(year)) {
-        dayno -=   YEARSIZE(year);
+    while(dayno >= (unsigned long)YEARSIZE(year)) {
+        dayno -= YEARSIZE(year);
         year++;
     }
 
@@ -116,7 +116,7 @@ struct tm* mygmtime(const time_t* timer)
     ret->tm_yday = dayno;
     ret->tm_mon  = 0;
 
-    while(dayno >= _ytab[LEAPYEAR(year)][ret->tm_mon]) {
+    while(dayno >= (unsigned long)_ytab[LEAPYEAR(year)][ret->tm_mon]) {
         dayno -=   _ytab[LEAPYEAR(year)][ret->tm_mon];
         ret->tm_mon++;
     }
@@ -186,7 +186,8 @@ int GetSet(const byte* input, word32* inOutIdx, int* len)
 }
 
 
-int GetVersion(const byte* input, word32* inOutIdx, int* version)
+/* winodws header clash for WinCE using GetVersion */
+int GetMyVersion(const byte* input, word32* inOutIdx, int* version)
 {
     word32 idx = *inOutIdx;
 
@@ -210,7 +211,7 @@ int GetExplicitVersion(const byte* input, word32* inOutIdx, int* version)
 
     if (input[idx++] == (ASN_CONTEXT_SPECIFIC | ASN_CONSTRUCTED)) {
         *inOutIdx = ++idx;  /* eat header */
-        return GetVersion(input, inOutIdx, version);
+        return GetMyVersion(input, inOutIdx, version);
     }
 
     /* go back as is */
@@ -260,7 +261,7 @@ int RsaPrivateKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
     if ((word32)length > (inSz - (*inOutIdx - begin)))
         return ASN_INPUT_E;
 
-    if (GetVersion(input, inOutIdx, &version) < 0)
+    if (GetMyVersion(input, inOutIdx, &version) < 0)
         return ASN_PARSE_E;
 
     key->type = RSA_PRIVATE;
@@ -383,7 +384,7 @@ int DsaPrivateKeyDecode(const byte* input, word32* inOutIdx, DsaKey* key,
     if ((word32)length > (inSz - (*inOutIdx - begin)))
         return ASN_INPUT_E;
 
-    if (GetVersion(input, inOutIdx, &version) < 0)
+    if (GetMyVersion(input, inOutIdx, &version) < 0)
         return ASN_PARSE_E;
 
     if (GetInt(&key->p,  input, inOutIdx) < 0 ||
@@ -728,10 +729,8 @@ static INLINE void GetTime(int* value, const byte* date, int* idx)
 static int ValidateDate(const byte* date, byte format, int dateType)
 {
     time_t ltime = time(0);
-    //time_t ttime = mytime(0);
     struct tm  certTime;
     struct tm* localTime;
-    //struct tm* testTime;
     int    i = 0;
 
     memset(&certTime, 0, sizeof(certTime));
@@ -757,7 +756,6 @@ static int ValidateDate(const byte* date, byte format, int dateType)
     assert(date[i] == 'Z');     /* only Zulu supported for this profile */
 
     localTime = gmtime(&ltime);
-    //testTime  = mygmtime(&ltime);
 
     if (dateType == BEFORE) {
         if (DateLessThan(localTime, &certTime))
