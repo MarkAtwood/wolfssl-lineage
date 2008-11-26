@@ -48,6 +48,88 @@ enum {
 };
 
 
+#ifdef _WIN32_WCE
+/* no time() or gmtime() even though in time.h header?? */
+
+#include <windows.h>
+
+#define YEAR0          1900
+#define EPOCH_YEAR     1970
+#define SECS_DAY       (24L * 60L * 60L)
+#define LEAPYEAR(year) (!((year) % 4) && (((year) % 100) || !((year) % 400)))
+#define YEARSIZE(year) (LEAPYEAR(year) ? 366 : 365)
+
+
+const int _ytab[2][12] =
+{
+    {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
+    {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
+};
+
+
+time_t mytime(time_t* timer)
+{
+    SYSTEMTIME     sysTime;
+    FILETIME       fTime;
+    ULARGE_INTEGER intTime;
+    time_t         localTime;
+
+    if (timer == NULL)
+        timer = &localTime;
+
+    GetSystemTime(&sysTime);
+    SystemTimeToFileTime(&sysTime, &fTime);
+    
+    memcpy(&intTime, &fTime, sizeof(FILETIME));
+    /* subtract EPOCH */
+    intTime.QuadPart -= 0x19db1ded53e8000;
+    /* to secs */
+    intTime.QuadPart /= 10000000;
+    *timer = intTime.QuadPart;
+
+    return *timer;
+}
+
+
+struct tm* mygmtime(const time_t* timer)
+{
+    static struct tm st_time;
+    struct tm* ret = &st_time;
+    time_t time = *timer;
+    unsigned long dayclock, dayno;
+    int year = EPOCH_YEAR;
+
+    dayclock = (unsigned long)time % SECS_DAY;
+    dayno    = (unsigned long)time / SECS_DAY;
+
+    ret->tm_sec  =  dayclock % 60;
+    ret->tm_min  = (dayclock % 3600) / 60;
+    ret->tm_hour =  dayclock / 3600;
+    ret->tm_wday = (dayno + 4) % 7;        /* day 0 a Thursday */
+
+    while(dayno >= YEARSIZE(year)) {
+        dayno -=   YEARSIZE(year);
+        year++;
+    }
+
+    ret->tm_year = year - YEAR0;
+    ret->tm_yday = dayno;
+    ret->tm_mon  = 0;
+
+    while(dayno >= _ytab[LEAPYEAR(year)][ret->tm_mon]) {
+        dayno -=   _ytab[LEAPYEAR(year)][ret->tm_mon];
+        ret->tm_mon++;
+    }
+
+    ret->tm_mday  = ++dayno;
+    ret->tm_isdst = 0;
+
+    return ret;
+}
+
+#endif /* _WIN32_WCE */
+
+
 int GetLength(const byte* input, word32* inOutIdx, int* len)
 {
     int     length = 0;
@@ -646,8 +728,10 @@ static INLINE void GetTime(int* value, const byte* date, int* idx)
 static int ValidateDate(const byte* date, byte format, int dateType)
 {
     time_t ltime = time(0);
+    //time_t ttime = mytime(0);
     struct tm  certTime;
     struct tm* localTime;
+    //struct tm* testTime;
     int    i = 0;
 
     memset(&certTime, 0, sizeof(certTime));
@@ -673,6 +757,7 @@ static int ValidateDate(const byte* date, byte format, int dateType)
     assert(date[i] == 'Z');     /* only Zulu supported for this profile */
 
     localTime = gmtime(&ltime);
+    //testTime  = mygmtime(&ltime);
 
     if (dateType == BEFORE) {
         if (DateLessThan(localTime, &certTime))
