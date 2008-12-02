@@ -1554,6 +1554,7 @@ void ClientHello::Process(input_buffer&, SSL& ssl)
         ssl.set_session(session);
         ssl.useSecurity().set_resuming(true);
         ssl.matchSuite(session->GetSuite(), SUITE_LEN);
+        if (ssl.GetError()) return;
         ssl.set_pending(ssl.getSecurity().get_parms().suite_[1]);
         ssl.set_masterSecret(session->GetSecret());
 
@@ -1568,6 +1569,7 @@ void ClientHello::Process(input_buffer&, SSL& ssl)
         return;
     }
     ssl.matchSuite(cipher_suites_, suite_len_);
+    if (ssl.GetError()) return;
     ssl.set_pending(ssl.getSecurity().get_parms().suite_[1]);
 
     if (compression_methods_ == zlib)
