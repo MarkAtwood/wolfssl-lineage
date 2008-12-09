@@ -484,6 +484,10 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
                     CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
                 }
+                /* if resumption failed, reset needed state */
+                else if (neededState == SERVER_FINISHED_COMPLETE)
+                   if (!ssl->options.resuming)
+                      neededState = SERVER_HELLODONE_COMPLETE; 
             ssl->options.connectState = FIRST_REPLY_DONE;
             CYASSL_MSG("connect state: FIRST_REPLY_DONE");
 
