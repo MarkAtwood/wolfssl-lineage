@@ -186,7 +186,7 @@ inline void err_sys(const char* msg)
 
 static int PasswordCallBack(char* passwd, int sz, int rw, void* userdata)
 {
-    strncpy(passwd, "12345678", sz);
+    strncpy(passwd, "yassl123", sz);
     return 8;
 }
 

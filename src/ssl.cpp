@@ -273,6 +273,10 @@ int SSL_connect(SSL* ssl)
         while (ssl->getStates().getClient() < neededState) {
             if (ssl->GetError()) break;
             processReply(*ssl);
+            // if resumption failed, reset needed state 
+            if (neededState == serverFinishedComplete)
+                if (!ssl->getSecurity().get_resuming())
+                    neededState = serverHelloDoneComplete;
         }
         if (!ssl->GetError())
             ssl->useStates().UseConnect() = FIRST_REPLY_DONE;
