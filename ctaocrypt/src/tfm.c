@@ -20,7 +20,7 @@
  */
 
 /*
- * Based on public domain TomsFashMath 0.10 by Tom St Denis, tomstdenis@iahu.ca,
+ * Based on public domain TomsFastMath 0.10 by Tom St Denis, tomstdenis@iahu.ca,
  * http://math.libtomcrypt.com
  */
 
@@ -31,64 +31,9 @@
 
 
 #include "tfm.h"
+#include "asm.c"  /* will define asm MACROS or C ones */
 
-/* Macros */
-#ifndef TFM_ISO
 
-#define TFM_ISO
-
-#define COMBA_START
-
-#define COMBA_CLEAR \
-   c0 = c1 = c2 = 0;
-
-#define COMBA_FORWARD \
-   do { c0 = c1; c1 = c2; c2 = 0; } while (0);
-
-#define COMBA_STORE(x) \
-   x = c0;
-
-#define COMBA_STORE2(x) \
-   x = c1;
-
-#define COMBA_FINI 
-   
-#define COMBA_ADD(i, j)                                                         \
-   do { fp_word t;                                                              \
-   t = (fp_word)c0 + ((fp_word)i) * ((fp_word)j); c0 = (fp_digit) t;            \
-   t = (fp_word)c1 + (t >> DIGIT_BIT); c1 = (fp_digit) t; c2 += t >> DIGIT_BIT; \
-   } while (0);
-   
-/* for squaring some of the terms are doubled... */
-#define SQRADD2(i, j)                                                                   \
-   do { fp_word t;                                                                      \
-   t  = ((fp_word)i) * ((fp_word)j);                                                    \
-   tt = (fp_word)c0 + t;                 c0 = (fp_digit) tt;                            \
-   tt = (fp_word)c1 + (tt >> DIGIT_BIT); c1 = (fp_digit) tt; c2 += tt >> DIGIT_BIT;     \
-   tt = (fp_word)c0 + t;                 c0 = (fp_digit) tt;                            \
-   tt = (fp_word)c1 + (tt >> DIGIT_BIT); c1 = (fp_digit) tt; c2 += tt >> DIGIT_BIT;     \
-   } while (0);
-
-#define SQRADDSC(i, j)                                                          \
-   do { fp_word t;                                                              \
-      t =  ((fp_word)i) * ((fp_word)j);                                         \
-      sc0 = (fp_digit)t; sc1 = (t >> DIGIT_BIT); sc2 = 0;                       \
-   } while (0);
-
-#define SQRADDAC(i, j)                                                          \
-   do { fp_word t;                                                              \
-   t = sc0 + ((fp_word)i) * ((fp_word)j);  sc0 = t;                             \
-   t = sc1 + (t >> DIGIT_BIT);             sc1 = t; sc2 += t >> DIGIT_BIT;      \
-   } while (0);
-
-#define SQRADDDB                                                                \
-   do { fp_word t;                                                              \
-   t = ((fp_word)sc0) + ((fp_word)sc0) + c0; c0 = t;                            \
-   t = ((fp_word)sc1) + ((fp_word)sc1) + c1 + (t >> DIGIT_BIT); c1 = t;         \
-   c2 = c2 + ((fp_word)sc2) + ((fp_word)sc2) + (t >> DIGIT_BIT);                \
-   } while (0);
-   
-#endif
 
 /* Functions */
 
@@ -474,7 +419,8 @@ void fp_mul_comba(fp_int *A, fp_int *B, fp_int *C)
       /* execute loop */
       COMBA_FORWARD;
       for (iz = 0; iz < iy; ++iz) {
-          COMBA_ADD(*tmpx++, *tmpy--);
+          /* TAO change COMBA_ADD back to MULADD */
+          MULADD(*tmpx++, *tmpy--);
       }
 
       /* store term */
@@ -1434,7 +1380,8 @@ void fp_sqr_comba(fp_int *A, fp_int *B)
 
       /* even columns have the square term in them */
       if ((ix&1) == 0) {
-          COMBA_ADD(A->dp[ix>>1], A->dp[ix>>1]);
+          /* TAO change COMBA_ADD back to SQRADD */
+          SQRADD(A->dp[ix>>1], A->dp[ix>>1]);
       }
 
       /* store it */
@@ -1573,27 +1520,8 @@ void fp_montgomery_calc_normalization(fp_int *a, fp_int *b)
   }
 }
 
-/* ISO C code */
-#define MONT_START 
-#define MONT_FINI
-#define LOOP_END
-#define LOOP_START \
-   mu = c[x] * mp
 
-#define INNERMUL                                       \
-   do { fp_word t;                                     \
-   t  = ((fp_word)_c[0] + (fp_word)cy) +               \
-   (((fp_word)mu) * ((fp_word)*tmpm++));               \
-   _c[0] = (fp_digit) t;                               \
-   cy = (fp_digit) (t >> DIGIT_BIT);                   \
-   } while (0)
 
-#define PROPCARRY \
-   do { fp_digit t = _c[0] += cy; cy = (t < cy); } while (0)
-
-/******************************************************************/
-
-#define LO  0
 
 /* computes x/R == x (mod N) via Montgomery Reduction */
 void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
@@ -1632,7 +1560,7 @@ void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
        tmpm = m->dp;
        y = 0;
        /* TAO changed || to && to remove asm INNERMUL8 for now */
-       #if (defined(TFM_SSE2) && defined(TFM_X86_64))
+       #if (defined(TFM_SSE2) || defined(TFM_X86_64))
         for (; y < (pa & ~7); y += 8) {
               INNERMUL8;
               _c   += 8;
@@ -1847,7 +1775,8 @@ void fp_reverse (unsigned char *s, int len)
 /* init a new mp_int */
 int mp_init (mp_int * a)
 {
-  fp_init(a);
+  if (a)
+    fp_init(a);
   return MP_OKAY;
 }
 
@@ -1860,12 +1789,18 @@ void mp_clear (mp_int * a)
 /* handle up to 6 inits */
 int mp_init_multi(mp_int* a, mp_int* b, mp_int* c, mp_int* d, mp_int* e, mp_int* f)
 {
-    fp_init(a);
-    fp_init(b);
-    fp_init(c);
-    fp_init(d);
-    fp_init(e);
-    fp_init(f);
+    if (a)
+        fp_init(a);
+    if (b)
+        fp_init(b);
+    if (c)
+        fp_init(c);
+    if (d)
+        fp_init(d);
+    if (e)
+        fp_init(e);
+    if (f)
+        fp_init(f);
 
     return MP_OKAY;
 }

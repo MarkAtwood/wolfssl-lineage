@@ -259,7 +259,7 @@ int RsaPrivateDecrypt(const byte* in, word32 inLen, byte* out, word32 outLen,
 {
     int plainLen, ret;
     byte*  tmp;
-    byte*  pad;
+    byte*  pad = 0;
 
     if ( !(tmp = (byte*)XMALLOC(inLen, key->heap)) )
         return MEMORY_E;
@@ -299,7 +299,7 @@ int RsaSSL_Verify(const byte* in, word32 inLen, byte* out, word32 outLen,
 {
     int plainLen, ret;
     byte*  tmp;
-    byte*  pad;
+    byte*  pad = 0;
 
     if ( !(tmp = (byte*)XMALLOC(inLen, key->heap)) )
         return MEMORY_E;

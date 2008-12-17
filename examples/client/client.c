@@ -120,6 +120,7 @@ void client_test(void* args)
 
             SSL_shutdown(ssl);
             SSL_free(ssl);
+            CloseSocket(sockfd);
         }
         avg = current_time() - start;
         avg /= times;

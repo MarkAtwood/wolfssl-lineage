@@ -27,6 +27,8 @@ always seems to be faster.  On x86-64 machines with GCC the normal math library
 may outpreform the fast one when using CFLAGS=-m64 becuase TomsFastMath can't
 yet use -m64 because of GCCs inability to do 128bit division.
 
+     **** UPDATE GCC 4.2.1 can now do 128bit division ***
+
 See notes below (0.2.0) for complete build instructions.
 
 
