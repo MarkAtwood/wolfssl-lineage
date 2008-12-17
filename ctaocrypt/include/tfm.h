@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <limits.h>
+#include <assert.h>
 
 
 #ifdef __cplusplus
@@ -336,7 +337,7 @@ typedef struct {
 /*const char *fp_ident(void);*/
 
 /* initialize [or zero] an fp int */
-#define fp_init(a)  if(a) (void)memset((a), 0, sizeof(fp_int))
+#define fp_init(a)  (void)memset((a), 0, sizeof(fp_int))
 #define fp_zero(a)  fp_init(a)
 
 /* zero/even/odd ? */

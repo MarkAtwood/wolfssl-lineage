@@ -245,6 +245,8 @@ typedef struct ProtocolVersion {
 
 
 ProtocolVersion MakeSSLv3(void);
+ProtocolVersion MakeTLSv1(void);
+ProtocolVersion MakeTLSv1_1(void);
 
 
 /* OpenSSL method type */
@@ -267,6 +269,21 @@ typedef struct buffer {
     byte*  buffer;
 } buffer;
 
+/* CyaSSL input buffer
+
+   RFC 2246:
+
+   length
+       The length (in bytes) of the following TLSPlaintext.fragment.
+       The length should not exceed 2^14.
+*/
+#define BUFFER16K_LEN RECORD_HEADER_SZ + MAX_RECORD_SIZE + \
+                      MAX_COMP_EXTRA + MAX_MSG_EXTRA
+typedef struct {
+    word32 length;
+    word32 idx;
+    byte   buffer[BUFFER16K_LEN];
+} buffer16K;
 
 /* Cipher Suites holder */
 typedef struct Suites {
@@ -285,6 +302,14 @@ int  SetCipherList(SSL_CTX* ctx, const char* list);
     typedef unsigned int (*psk_server_callback)(SSL*, const char*,
                           unsigned char*, unsigned int);
 #endif /* PSK_TYPES_DEFINED */
+
+/* I/O callbacks */
+typedef int (*CallbackIORecv)(char *buf, int sz, void *ctx);
+typedef int (*CallbackIOSend)(char *buf, int sz, void *ctx);
+
+/* default IO callbacks */
+int EnbedReceive(char *buf, int sz, void *ctx);
+int EmbedSend(char *buf, int sz, void *ctx);
 
 /* OpenSSL context type */
 struct SSL_CTX {
@@ -305,6 +330,8 @@ struct SSL_CTX {
     byte        havePSK;          /* psk key set by user */
     psk_client_callback client_psk_cb;  /* client callback */
     psk_server_callback server_psk_cb;  /* server callback */
+    CallbackIORecv CBIORecv;
+    CallbackIOSend CBIOSend;
     char        server_hint[MAX_PSK_ID_LEN];
 #endif /* NO_PSK */
 };
@@ -312,6 +339,9 @@ struct SSL_CTX {
 
 void InitSSL_Ctx(SSL_CTX*, SSL_METHOD*);
 void FreeSSL_Ctx(SSL_CTX*);
+void SetCallbackIORecv_Ctx(SSL_CTX*, CallbackIORecv);
+void SetCallbackIOSend_Ctx(SSL_CTX*, CallbackIOSend);
+void SetCallbackIOCtx(SSL* ssl, void *ctx);
 
 
 /* All cipher suite related info */
@@ -430,11 +460,10 @@ struct SSL_SESSION {
     byte         masterSecret[SECRET_LEN];
     word32       bornOn;                        /* create time in seconds   */
     word32       timeout;                       /* timeout in seconds       */
-    SSL_SESSION* next;
 };
 
 
-SSL_SESSION* GetSession(SSL*);
+SSL_SESSION* GetSession(SSL*, byte*);
 int          SetSession(SSL*, SSL_SESSION*);
 
 typedef void (*hmacfp) (SSL*, byte*, const byte*, word32, int, int);
@@ -473,25 +502,15 @@ enum AcceptState {
 typedef struct Buffers {
     buffer          certificate;            /* SSL_CTX owns */
     buffer          key;                    /* SSL_CTX owns */
-    buffer          peerCert;
-    buffer          peerKey;
-    buffer          bufferedData;           /* decrypted data */
-    buffer          bufferedInput;          /* raw partial input */
     buffer          domainName;             /* for client check */
     buffer          serverDH_P;
     buffer          serverDH_G;
     buffer          serverDH_Pub;
     buffer          serverDH_Priv;
+    buffer16K       inputBuffer;
+    buffer16K       outputBuffer;
+    buffer          clearOutputBuffer;
 } Buffers;
-
-
-typedef struct WriteBuffer {
-    buffer          send;                   /* cached memory, we own */
-    const byte*     offset;                 /* current position for sending */
-    word32          plainSz;                /* plainText size of buffer     */
-    word32          sent;                   /* plainText size already sent  */
-} WriteBuffer;
-
 
 
 typedef struct Options {
@@ -509,7 +528,6 @@ typedef struct Options {
     byte            resuming;
     byte            tls;                /* using TLS ? */
     byte            tls1_1;             /* using TLSv1.1 ? */
-    byte            isNonBlocking;      /* win32 option set on this socket */
     byte            connReset;          /* has the peer reset */
     byte            isClosed;           /* if we consider conn closed */
     byte            connectState;       /* nonblocking resume */
@@ -517,6 +535,8 @@ typedef struct Options {
     byte            usingCompression;   /* are we using compression */
     byte            haveDH;             /* server DH parms set by user */
     byte            usingPSK_cipher;    /* whether we're using psk as cipher */
+    byte            sendAlertState;     /* nonblocking resume */ 
+    byte            processReply;       /* nonblocking resume */
 #ifndef NO_PSK
     byte            havePSK;            /* psk key set by user */
     psk_client_callback client_psk_cb;
@@ -555,6 +575,13 @@ struct X509 {
 };
 
 
+/* record layer header for PlainText, Compressed, and CipherText */
+typedef struct RecordLayerHeader {
+    byte            type;
+    ProtocolVersion version;
+    byte            length[2];
+} RecordLayerHeader;
+
 /* OpenSSL ssl type */
 struct SSL {
     SSL_CTX*        ctx;
@@ -566,7 +593,7 @@ struct SSL {
     Ciphers         decrypt;
     CipherSpecs     specs;
     Keys            keys;
-    SOCKET_T        socket;
+    void           *IOCBCtx;
     RNG             rng;
     Md5             hashMd5;            /* md5 hash of handshake msgs */
     Sha             hashSha;            /* sha hash of handshake msgs */
@@ -574,13 +601,16 @@ struct SSL {
     Hashes          certHashes;         /* for cert verify */
     Signer*         caList;             /* SSL_CTX owns */
     Buffers         buffers;
-    WriteBuffer     writeBuffer;
     Options         options;
     Arrays          arrays;
     SSL_SESSION     session;
     X509            peerCert;           /* X509 peer cert */
+    RsaKey          peerRsaKey;
+    byte            peerRsaKeyPresent;
     hmacfp          hmac;
     void*           heap;               /* for user overrides */
+    RecordLayerHeader curRL;
+    word16            curSize;
 #ifdef HAVE_LIBZ
     z_stream        c_stream;           /* compression   stream */
     z_stream        d_stream;           /* decompression stream */
@@ -608,17 +638,8 @@ void FreeSSL(SSL*);
     void FreeTimeoutInfo(TimeoutInfo*, void*);
     void AddPacketInfo(const char*, TimeoutInfo*, const byte*, int, void*);
     void AddLateName(const char*, TimeoutInfo*);
+    void AddLateRecordHeader(const RecordLayerHeader* rl, TimeoutInfo* info);
 #endif
-
-
-/* record layer header for PlainText, Compressed, and CipherText */
-typedef struct RecordLayerHeader {
-    byte            type;
-    ProtocolVersion version;
-    byte            length[2];
-    /* internal add-ons after here */
-    word16          size;            /* host order length, not sent or recvd */
-} RecordLayerHeader;
 
 
 /* Record Layer Header identifier from page 12 */
@@ -635,8 +656,6 @@ enum ContentType {
 typedef struct HandShakeHeader {
     byte            type;
     word24          length;
-    /* internal add-ons after here */
-    word32          size;         /* host order length, not sent or recvd */
 } HandShakeHeader;
 
 

@@ -113,6 +113,7 @@ enum VerifyType {
 typedef struct DecodedCert {
     byte*   publicKey;
     word32  pubKeySize;
+    int     pubKeyStored;
     word32  certBegin;               /* offset to start of cert          */
     word32  sigIndex;                /* offset to start of signature     */
     word32  sigLength;               /* length of signature              */
@@ -121,8 +122,11 @@ typedef struct DecodedCert {
     byte    subjectHash[SHA_SIZE];   /* hash of all Names                */
     byte    issuerHash[SHA_SIZE];    /* hash of all Names                */
     byte*   signature;
+    int     signatureStored;
     char*   issuerCN;                /* CommonName                       */
+    int     issuerCNLen;
     char*   subjectCN;               /* CommonName                       */
+    int     subjectCNLen;
     char    issuer[ASN_NAME_MAX];    /* full name including common name  */
     char    subject[ASN_NAME_MAX];   /* full name including common name  */
     int     verify;                  /* Default to yes, but could be off */
@@ -147,6 +151,8 @@ struct Signer {
 void InitDecodedCert(DecodedCert*, byte*, void*);
 void FreeDecodedCert(DecodedCert*);
 int  ParseCert(DecodedCert*, word32, int type, int verify, Signer* signer);
+int  ParseCertRelative(DecodedCert*, word32, int type, int verify,
+                       Signer* signer);
 
 Signer* MakeSigner(void*);
 void    FreeSigners(Signer*, void*);

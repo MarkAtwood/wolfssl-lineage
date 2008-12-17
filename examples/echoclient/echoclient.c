@@ -100,7 +100,7 @@ void echoclient_test(void* args)
 
         InitCyaSSL();
         echoclient_test(&args);
-        FreeCyaSSL(0);
+        FreeCyaSSL();
 
         return args.return_code;
     }

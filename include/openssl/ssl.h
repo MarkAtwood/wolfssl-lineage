@@ -233,12 +233,7 @@ char*      X509_NAME_oneline(X509_NAME*, char*, int);
 int CyaSSL_check_domain_name(SSL* ssl, const char* dn);
 
 void InitCyaSSL(void);   /* need to call once to load library (session cache) */
-void FreeCyaSSL(void*);  /* call when done to free session cache, if overriding
-                           memory heap hint was SSL_ctx pointer so pass here if
-                           you used heap hint (even though ctx invalid) and
-                           don't use multiple SSL_ctx and FreeCyaSSL.  Just
-                           don't call FreeCyaSSL if multiple ctx, not a true
-                           resource link, just makes finding them easier      */
+void FreeCyaSSL(void);   /* call when done to free session cache mutex        */
 
 int  CyaSSL_Debugging_ON(void);   /* turn logging on, only if compiled in */
 void CyaSSL_Debugging_OFF(void);  /* turn logging off */
