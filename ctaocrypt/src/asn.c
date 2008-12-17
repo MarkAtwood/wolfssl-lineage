@@ -85,7 +85,7 @@ time_t time(time_t* timer)
     intTime.QuadPart -= 0x19db1ded53e8000;
     /* to secs */
     intTime.QuadPart /= 10000000;
-    *timer = intTime.QuadPart;
+    *timer = (time_t)intTime.QuadPart;
 
     return *timer;
 }
@@ -117,7 +117,7 @@ struct tm* gmtime(const time_t* timer)
     ret->tm_mon  = 0;
 
     while(dayno >= (unsigned long)_ytab[LEAPYEAR(year)][ret->tm_mon]) {
-        dayno -=   _ytab[LEAPYEAR(year)][ret->tm_mon];
+        dayno -= _ytab[LEAPYEAR(year)][ret->tm_mon];
         ret->tm_mon++;
     }
 
