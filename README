@@ -11,8 +11,35 @@ before calling SSL_new();
 
 *** end Note ***
 
+CyaSSL Release Candidiate 1 rc1-1.0.0 (12/17/2008)
 
-CyaSSL version 0.9.9 (7/25/2008) 
+
+Release Candidate 1 for CyaSSL 1.0.0 contains major internal changes.  Several
+areas have optimization improvements, less dynamic memory use, and the I/O
+strategy has been refactored to allow alternate I/O handling or Library use.
+Many thanks to Thierry Fournier for providing these ideas and most of the work.
+
+Because of these changes, this release is only a candidate since some problems
+are probably inevitable on some platform with some I/O use.  Please report any
+problems and we'll try to resolve them as soon as possible.  You can contact us
+at support@yassl.com or todd@yassl.com.
+
+Using TomsFastMath by passing --enable-fastmath to ./configure now uses assemblyon some platforms.  This is new so please report any problems as every compiler,mode, OS combination hasn't been tested.  On ia32 all of the registers need to
+be available so be sure to pass these options to CFLAGS:
+
+CFLAGS="-03 -fomit-frame-pointer -mdynamic-no-pic"
+
+Also if you're building in shared mode for ia32 you'll need to pass options to
+LDFLAGS as well:
+
+LDFLAGS=-Wl,-read_only_relocs,warning
+
+This gives warnings for some symblos but seems to work.
+
+
+
+
+*************************CyaSSL version 0.9.9 (7/25/2008) 
 
 This release of CyaSSL adds bug fixes, Pre-Shared Keys, over-rideable memory
 handling, and optionally TomsFastMath.  Thanks to Moisés Guimarães for the
@@ -26,6 +53,8 @@ difference, on some platforms the gains will be little but RSA encryption
 always seems to be faster.  On x86-64 machines with GCC the normal math library
 may outpreform the fast one when using CFLAGS=-m64 becuase TomsFastMath can't
 yet use -m64 because of GCCs inability to do 128bit division.
+
+     **** UPDATE GCC 4.2.1 can now do 128bit division ***
 
 See notes below (0.2.0) for complete build instructions.
 

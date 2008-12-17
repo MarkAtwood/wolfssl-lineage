@@ -73,6 +73,7 @@ enum CyaSSL_ErrorCodes {
     SIGACT_ERROR           = -239,            /* sigaction failed ??? */
     SETITIMER_ERROR        = -240,            /* setitimer failed ??? */
     LENGTH_ERROR           = -241,            /* record layer length error */
+    PEER_KEY_ERROR         = -242,            /* cant decode peer key */
     /* add strings to SetErrorString !!!!! */
 
     /* begin negotiation parameter errors */

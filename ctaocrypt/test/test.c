@@ -150,7 +150,7 @@ void ctaocrypt_test(void* args)
     else
         printf( "DSA      test passed!\n");
 #endif
-
+    
 #ifdef OPENSSL_EXTRA
     if ( (ret = openssl_test()) ) 
         err_sys("OPENSSL  test failed!\n", ret);
@@ -797,6 +797,9 @@ int dsa_test()
     ret = DsaVerify(hash, signature, &key, &answer);
     if (ret != 0) return -64;
     if (answer != 1) return -65;
+    
+    FreeDsaKey(&key);
+    fclose(file);
     
     return 0;
 }

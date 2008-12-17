@@ -99,7 +99,7 @@ static void RsaPad(const byte* input, word32 inputLen, byte* pkcsBlock,
 
 
 static word32 RsaUnPad(const byte *pkcsBlock, unsigned int pkcsBlockLen,
-                       byte *output, byte padValue)
+                       byte **output, byte padValue)
 {
     word32 maxOutputLen = (pkcsBlockLen > 10) ? (pkcsBlockLen - 10) : 0,
            invalid = 0,
@@ -124,7 +124,7 @@ static word32 RsaUnPad(const byte *pkcsBlock, unsigned int pkcsBlockLen,
     if (invalid)
         return 0;
 
-    memcpy (output, pkcsBlock+i, outputLen);
+    *output = (byte *)(pkcsBlock + i);
     return outputLen;
 }
 
@@ -226,41 +226,52 @@ done:
 int RsaPublicEncrypt(const byte* in, word32 inLen, byte* out, word32 outLen,
                      RsaKey* key, RNG* rng)
 {
-    byte*  tmp;
     int sz = mp_unsigned_bin_size(&key->n), ret;
 
     if (sz > (int)outLen)
         return RSA_BUFFER_E;
 
-    if ( !(tmp = (byte*)XMALLOC(sz, key->heap)) )
-        return MEMORY_E;
+    RsaPad(in, inLen, out, sz, RSA_BLOCK_TYPE_2, rng);
 
-    RsaPad(in, inLen, tmp, sz, RSA_BLOCK_TYPE_2, rng);
-
-    if ((ret = RsaFunction(tmp, sz, out, &outLen, RSA_PUBLIC_ENCRYPT, key)) < 0)
+    if ((ret = RsaFunction(out, sz, out, &outLen, RSA_PUBLIC_ENCRYPT, key)) < 0)
         sz = ret;
-    
-    XFREE(tmp, key->heap);
+
     return sz;
 }
 
+
+int RsaPrivateDecryptInline(byte* in, word32 inLen, byte** out, RsaKey* key)
+{
+    int plainLen, ret;
+
+    if ((ret = RsaFunction(in, inLen, in, &inLen, RSA_PRIVATE_DECRYPT, key))
+            < 0) {
+        return ret;
+    }
+ 
+    plainLen = RsaUnPad(in, inLen, out, RSA_BLOCK_TYPE_2);
+
+    return plainLen;
+}
 
 int RsaPrivateDecrypt(const byte* in, word32 inLen, byte* out, word32 outLen,
                      RsaKey* key)
 {
     int plainLen, ret;
     byte*  tmp;
+    byte*  pad = 0;
 
     if ( !(tmp = (byte*)XMALLOC(inLen, key->heap)) )
         return MEMORY_E;
 
-    if ((ret = RsaFunction(in, inLen, tmp, &inLen, RSA_PRIVATE_DECRYPT, key))
+    memcpy(tmp, in, inLen);
+
+    if ((ret = plainLen = RsaPrivateDecryptInline(tmp, inLen, &pad, key))
             < 0) {
         XFREE(tmp, key->heap);
         return ret;
     }
-  
-    plainLen = RsaUnPad(tmp, inLen, out, RSA_BLOCK_TYPE_2);
+    memcpy(out, pad, plainLen);
     memset(tmp, 0x00, inLen); 
 
     XFREE(tmp, key->heap);
@@ -269,22 +280,39 @@ int RsaPrivateDecrypt(const byte* in, word32 inLen, byte* out, word32 outLen,
 
 
 /* for Rsa Verify */
+int RsaSSL_VerifyInline(byte* in, word32 inLen, byte** out, RsaKey* key)
+{
+    int plainLen, ret;
+
+    if ((ret = RsaFunction(in, inLen, in, &inLen, RSA_PUBLIC_DECRYPT, key))
+            < 0) {
+        return ret;
+    }
+  
+    plainLen = RsaUnPad(in, inLen, out, RSA_BLOCK_TYPE_1);
+
+    return plainLen;
+}
+
 int RsaSSL_Verify(const byte* in, word32 inLen, byte* out, word32 outLen,
                      RsaKey* key)
 {
     int plainLen, ret;
     byte*  tmp;
+    byte*  pad = 0;
 
     if ( !(tmp = (byte*)XMALLOC(inLen, key->heap)) )
         return MEMORY_E;
 
-    if ((ret = RsaFunction(in, inLen, tmp, &inLen, RSA_PUBLIC_DECRYPT, key))
+    memcpy(tmp, in, inLen);
+
+    if ((ret = plainLen = RsaSSL_VerifyInline(tmp, inLen, &pad, key))
             < 0) {
         XFREE(tmp, key->heap);
         return ret;
     }
   
-    plainLen = RsaUnPad(tmp, inLen, out, RSA_BLOCK_TYPE_1);
+    memcpy(out, pad, plainLen);
     memset(tmp, 0x00, inLen); 
 
     XFREE(tmp, key->heap);
@@ -296,21 +324,16 @@ int RsaSSL_Verify(const byte* in, word32 inLen, byte* out, word32 outLen,
 int RsaSSL_Sign(const byte* in, word32 inLen, byte* out, word32 outLen,
                       RsaKey* key, RNG* rng)
 {
-    byte*  tmp;
     int sz = mp_unsigned_bin_size(&key->n), ret;
 
     if (sz > (int)outLen)
         return RSA_BUFFER_E;
 
-    if ( !(tmp = (byte*)XMALLOC(sz, key->heap)) )
-        return MEMORY_E;
+    RsaPad(in, inLen, out, sz, RSA_BLOCK_TYPE_1, rng);
 
-    RsaPad(in, inLen, tmp, sz, RSA_BLOCK_TYPE_1, rng);
-
-    if ((ret = RsaFunction(tmp, sz, out, &outLen, RSA_PRIVATE_ENCRYPT,key)) < 0)
+    if ((ret = RsaFunction(out, sz, out, &outLen, RSA_PRIVATE_ENCRYPT,key)) < 0)
         sz = ret;
     
-    XFREE(tmp, key->heap);
     return sz;
 }
 
