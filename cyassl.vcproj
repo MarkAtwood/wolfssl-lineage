@@ -217,6 +217,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\cyassl_io.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\keys.c"
 				>
 			</File>

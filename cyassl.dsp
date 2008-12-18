@@ -89,6 +89,10 @@ SOURCE=.\src\cyassl_int.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\cyassl_io.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\keys.c
 # End Source File
 # Begin Source File
