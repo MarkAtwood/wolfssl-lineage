@@ -668,9 +668,9 @@ int SendBuffered(SSL* ssl)
 /* check avalaible size into outbut buffer */
 static INLINE int CheckAvalaibleSize(SSL *ssl, int size)
 {
-    if (BUFFER16K_LEN - ssl->buffers.outputBuffer.length < size) {
+    if (BUFFER16K_LEN - ssl->buffers.outputBuffer.length < (word32)size) {
         SendBuffered(ssl);
-        if (BUFFER16K_LEN - ssl->buffers.outputBuffer.length < size) 
+        if (BUFFER16K_LEN - ssl->buffers.outputBuffer.length < (word32)size) 
             return WANT_WRITE;
     }
     return 0;
@@ -1217,7 +1217,7 @@ static int GetInputData(SSL *ssl, size_t size)
     /* check max input length */
     usedLength = ssl->buffers.inputBuffer.length - ssl->buffers.inputBuffer.idx;
     maxLength  = MAX_RECORD_SIZE - usedLength;
-    inSz       = size - usedLength;
+    inSz       = (int)(size - usedLength);
 
     if (inSz <= 0)
         return 0;
@@ -1886,7 +1886,7 @@ int ReceiveData(SSL* ssl, byte* output, int sz)
             return ssl->error;
         }
 
-    if (sz < ssl->buffers.clearOutputBuffer.length)
+    if (sz < (int)ssl->buffers.clearOutputBuffer.length)
         size = sz;
     else
         size = ssl->buffers.clearOutputBuffer.length;
