@@ -11,7 +11,36 @@ before calling SSL_new();
 
 *** end Note ***
 
-CyaSSL Release Candidiate 1 rc1-1.0.0 (12/17/2008)
+CyaSSL Release Candidiate 2 rc2-1.0.0 (1/21/2008)
+
+
+Release Candidate 2 for CyaSSL 1.0.0 adds bug fixes and adds two new stream
+ciphers along with their respective cipher suites.  CyaSSL adds support for
+HC-128 and RABBIT stream ciphers.  The new suites are:
+
+TLS_RSA_WITH_HC_128_CBC_SHA
+TLS_RSA_WITH_RABBIT_CBC_SHA
+
+And the corresponding cipher names are
+
+HC128-SHA
+RABBIT-SHA
+
+CyaSSL also adds support for building with devkitPro for PPC by changing the
+library proper to use libogc.  The examples haven't been changed yet but if
+there's interest they can be.  Here's an example ./configure to build CyaSSL
+for devkitPro:
+
+./configure --disable-shared CC=/pathTo/devkitpro/devkitPPC/bin/powerpc-gekko-gcc --host=ppc --without-zlib --enable-singleThreaded RANLIB=/pathTo/devkitpro/devkitPPC/bin/powerpc-gekko-ranlib CFLAGS="-DDEVKITPRO -DGEKKO"
+
+For linking purposes you'll need
+
+LDFLAGS="-g -mrvl -mcpu=750 -meabi -mhard-float -Wl,-Map,$(notdir $@).map"
+
+
+
+
+********************CyaSSL Release Candidiate 1 rc1-1.0.0 (12/17/2008)
 
 
 Release Candidate 1 for CyaSSL 1.0.0 contains major internal changes.  Several
@@ -35,6 +64,28 @@ LDFLAGS as well:
 LDFLAGS=-Wl,-read_only_relocs,warning
 
 This gives warnings for some symblos but seems to work.
+
+
+--To build on Linux, Solaris, *BSD, Mac OS X, or Cygwin:
+
+    ./configure
+    make
+
+    from the ./testsuite/ directory run ./testsuite 
+
+to make a debug build:
+
+    ./configure --enable-debug --disable-shared
+    make
+
+
+
+--To build on Win32
+
+Choose (Re)Build All from the project workspace
+
+Run the testsuite program
+
 
 
 

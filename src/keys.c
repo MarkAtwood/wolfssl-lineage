@@ -1,6 +1,6 @@
 /* keys.c
  *
- * Copyright (C) 2006 Sawtooth Consulting Ltd.
+ * Copyright (C) 2006-2009 Sawtooth Consulting Ltd.
  *
  * This file is part of CyaSSL.
  *
@@ -179,6 +179,36 @@ int SetCipherSpecs(SSL* ssl)
         break;
 #endif
 
+#ifdef BUILD_TLS_RSA_WITH_HC_128_CBC_SHA
+    case TLS_RSA_WITH_HC_128_CBC_SHA :
+        ssl->specs.bulk_cipher_algorithm = hc128;
+        ssl->specs.cipher_type           = stream;
+        ssl->specs.mac_algorithm         = sha_mac;
+        ssl->specs.kea                   = rsa_kea;
+        ssl->specs.hash_size             = SHA_DIGEST_SIZE;
+        ssl->specs.pad_size              = PAD_SHA;
+        ssl->specs.key_size              = HC_128_KEY_SIZE;
+        ssl->specs.block_size            = 0;
+        ssl->specs.iv_size               = HC_128_IV_SIZE;
+
+        break;
+#endif
+
+#ifdef BUILD_TLS_RSA_WITH_RABBIT_CBC_SHA
+    case TLS_RSA_WITH_RABBIT_CBC_SHA :
+        ssl->specs.bulk_cipher_algorithm = rabbit;
+        ssl->specs.cipher_type           = stream;
+        ssl->specs.mac_algorithm         = sha_mac;
+        ssl->specs.kea                   = rsa_kea;
+        ssl->specs.hash_size             = SHA_DIGEST_SIZE;
+        ssl->specs.pad_size              = PAD_SHA;
+        ssl->specs.key_size              = RABBIT_KEY_SIZE;
+        ssl->specs.block_size            = 0;
+        ssl->specs.iv_size               = RABBIT_IV_SIZE;
+
+        break;
+#endif
+
     default:
         return UNSUPPORTED_SUITE;
     }
@@ -250,6 +280,40 @@ static int SetKeys(SSL* ssl)
         else {
             Arc4SetKey(&ssl->encrypt.arc4, ssl->keys.server_write_key, sz);
             Arc4SetKey(&ssl->decrypt.arc4, ssl->keys.client_write_key, sz);
+        }
+    }
+#endif
+    
+#ifdef BUILD_HC128
+    if (ssl->specs.bulk_cipher_algorithm == hc128) {
+        if (ssl->options.side == CLIENT_END) {
+            Hc128_SetKey(&ssl->encrypt.hc128, ssl->keys.client_write_key,
+                                              ssl->keys.client_write_IV);
+            Hc128_SetKey(&ssl->decrypt.hc128, ssl->keys.server_write_key,
+                                              ssl->keys.server_write_IV);
+        }
+        else {
+            Hc128_SetKey(&ssl->encrypt.hc128, ssl->keys.server_write_key,
+                                              ssl->keys.server_write_IV);
+            Hc128_SetKey(&ssl->decrypt.hc128, ssl->keys.client_write_key,
+                                              ssl->keys.client_write_IV);
+        }
+    }
+#endif
+    
+#ifdef BUILD_RABBIT
+    if (ssl->specs.bulk_cipher_algorithm == rabbit) {
+        if (ssl->options.side == CLIENT_END) {
+            RabbitSetKey(&ssl->encrypt.rabbit, ssl->keys.client_write_key,
+                                               ssl->keys.client_write_IV);
+            RabbitSetKey(&ssl->decrypt.rabbit, ssl->keys.server_write_key,
+                                               ssl->keys.server_write_IV);
+        }
+        else {
+            RabbitSetKey(&ssl->encrypt.rabbit, ssl->keys.server_write_key,
+                                               ssl->keys.server_write_IV);
+            RabbitSetKey(&ssl->decrypt.rabbit, ssl->keys.client_write_key,
+                                               ssl->keys.client_write_IV);
         }
     }
 #endif

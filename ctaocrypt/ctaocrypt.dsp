@@ -113,6 +113,10 @@ SOURCE=.\src\dsa.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\hc128.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\hmac.c
 # End Source File
 # Begin Source File
@@ -126,6 +130,10 @@ SOURCE=.\src\md5.c
 # Begin Source File
 
 SOURCE=.\src\misc.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\rabbit.c
 # End Source File
 # Begin Source File
 
@@ -181,6 +189,10 @@ SOURCE=.\include\error.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\include\hc128.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\include\hmac.h
 # End Source File
 # Begin Source File
@@ -194,6 +206,10 @@ SOURCE=.\include\md5.h
 # Begin Source File
 
 SOURCE=.\include\misc.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\rabbit.h
 # End Source File
 # Begin Source File
 

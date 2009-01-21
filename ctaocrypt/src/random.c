@@ -1,6 +1,6 @@
 /* random.c
  *
- * Copyright (C) 2006 Sawtooth Consulting Ltd.
+ * Copyright (C) 2006-2009 Sawtooth Consulting Ltd.
  *
  * This file is part of CyaSSL.
  *
@@ -49,9 +49,11 @@ int InitRng(RNG* rng)
     byte junk[256];
 
     int  ret = GenerateSeed(&rng->seed, key, sizeof(key));
-    Arc4SetKey(&rng->cipher, key, sizeof(key));
 
-    RNG_GenerateBlock(rng, junk, sizeof(junk));  /* rid initial state */
+    if (ret == 0) {
+        Arc4SetKey(&rng->cipher, key, sizeof(key));
+        RNG_GenerateBlock(rng, junk, sizeof(junk));  /* rid initial state */
+    }
 
     return ret;
 }
@@ -115,7 +117,11 @@ int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
         output += len;
 
         if (sz)
-            sleep(1);
+#ifdef BLOCKING
+            sleep(0);             /* context switch */
+#else
+            return RAN_BLOCK_E;
+#endif
     }
     close(os->fd);
 

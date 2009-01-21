@@ -1,6 +1,6 @@
-/* cyassl_int.c
+/* cyassl_io.c
  *
- * Copyright (C) 2006 Sawtooth Consulting Ltd.
+ * Copyright (C) 2006-2009 Sawtooth Consulting Ltd.
  *
  * This file is part of CyaSSL.
  *
@@ -20,6 +20,11 @@
  */
 
 
+#ifdef _WIN32_WCE
+    /* On WinCE winsock2.h must be included before windows.h for socket stuff */
+    #include <winsock2.h>
+#endif
+
 
 #include "cyassl_int.h"
 #include "cyassl_error.h"
@@ -36,14 +41,16 @@
 #ifndef _WIN32
     #include <sys/time.h>
     #include <sys/types.h>
-    #include <sys/socket.h>
     #include <errno.h>
-    #include <netdb.h>
     #include <unistd.h>
-    #include <arpa/inet.h>
-    #include <netinet/in.h>
-    #include <sys/ioctl.h>
     #include <fcntl.h>
+    #ifndef DEVKITPRO
+        #include <sys/socket.h>
+        #include <arpa/inet.h>
+        #include <netinet/in.h>
+        #include <netdb.h>
+        #include <sys/ioctl.h>
+    #endif
 #endif /* _WIN32 */
 
 #ifdef __sun
@@ -63,6 +70,18 @@
     #define SOCKET_ECONNRESET  ECONNRESET
     #define SOCKET_EINTR       EINTR
 #endif /* _WIN32 */
+
+
+#ifdef DEVKITPRO
+    /* from network.h */
+    int net_send(int, const void*, int, unsigned int);
+    int net_recv(int, void*, int, unsigned int);
+    #define SEND_FUNCTION net_send
+    #define RECV_FUNCTION net_recv
+#else
+    #define SEND_FUNCTION send
+    #define RECV_FUNCTION recv
+#endif
 
 
 static INLINE int LastError(void)
@@ -86,9 +105,9 @@ int EnbedReceive(char *buf, int sz, void *ctx)
 {
     int recvd;
     int err;
-    int socket = (int)ctx;
+    int socket = (word)ctx;
 
-    recvd = recv(socket, (char *)buf, sz, 0);
+    recvd = RECV_FUNCTION(socket, (char *)buf, sz, 0);
 
     if (recvd == -1) {
         err = LastError();
@@ -120,11 +139,11 @@ int EnbedReceive(char *buf, int sz, void *ctx)
  */
 int EmbedSend(char *buf, int sz, void *ctx)
 {
-    int socket = (int)ctx;
+    int socket = (word)ctx;
     int sent;
     int len = sz;
 
-    sent = send(socket, &buf[sz - len], len, 0);
+    sent = SEND_FUNCTION(socket, &buf[sz - len], len, 0);
 
     if (sent == -1) {
         if (LastError() == SOCKET_EWOULDBLOCK || 

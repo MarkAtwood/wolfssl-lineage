@@ -1,6 +1,6 @@
 /* cyassl_int.c
  *
- * Copyright (C) 2006 Sawtooth Consulting Ltd.
+ * Copyright (C) 2006-2009 Sawtooth Consulting Ltd.
  *
  * This file is part of CyaSSL.
  *
@@ -20,10 +20,6 @@
  */
 
 
-#ifdef _WIN32_WCE
-    /* On WinCE winsock2.h must be included before windows.h for socket stuff */
-    #include <winsock2.h>
-#endif
 
 #include "cyassl_int.h"
 #include "cyassl_error.h"
@@ -37,41 +33,12 @@
 #include <string.h>
 #include <assert.h>
 
-#ifndef _WIN32
-    #include <sys/time.h>
-    #include <sys/types.h>
-    #include <sys/socket.h>
-    #include <errno.h>
-    #include <netdb.h>
-    #include <unistd.h>
-    #include <arpa/inet.h>
-    #include <netinet/in.h>
-    #include <sys/ioctl.h>
-    #include <fcntl.h>
-#endif /* _WIN32 */
-
 #ifdef __sun
     #include <sys/filio.h>
 #endif
 
 #define TRUE  1
 #define FALSE 0
-
-#ifdef _WIN32
-    const int SOCKET_EINVAL = WSAEINVAL;
-    const int SOCKET_EWOULDBLOCK = WSAEWOULDBLOCK;
-    const int SOCKET_EAGAIN = WSAEWOULDBLOCK;
-    const int SOCKET_ECONNRESET = WSAECONNRESET;
-    const int SOCKET_EINTR = WSAEINTR;
-#else
-    const int SOCKET_EINVAL = EINVAL;
-    const int SOCKET_EWOULDBLOCK = EWOULDBLOCK;
-    const int SOCKET_EAGAIN = EAGAIN;
-    const int SOCKET_ECONNRESET = ECONNRESET;
-    const int SOCKET_EINTR = EINTR;
-
-    SOCKET_T INVALID_SOCKET = -1;
-#endif /* _WIN32 */
 
 
 #ifndef NO_CYASSL_CLIENT
@@ -372,12 +339,27 @@ void InitSuites(Suites* suites, ProtocolVersion pv, byte haveDH, byte havePSK)
     suites->suites[idx++] = SSL_RSA_WITH_3DES_EDE_CBC_SHA;
 #endif
 
+#ifdef BUILD_TLS_RSA_WITH_HC_128_CBC_SHA
+    if (tls) {
+        suites->suites[idx++] = 0; 
+        suites->suites[idx++] = TLS_RSA_WITH_HC_128_CBC_SHA;
+    }
+#endif
+
+#ifdef BUILD_TLS_RSA_WITH_RABBIT_CBC_SHA
+    if (tls) {
+        suites->suites[idx++] = 0; 
+        suites->suites[idx++] = TLS_RSA_WITH_RABBIT_CBC_SHA;
+    }
+#endif
+
     suites->suiteSz = idx;
 }
 
 
 int InitSSL(SSL* ssl, SSL_CTX* ctx)
 {
+    int  ret;
     byte havePSK = 0;
 
     ssl->ctx     = ctx; /* only for passing to calls, options could change */
@@ -402,7 +384,9 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->buffers.clearOutputBuffer.buffer  = 0;
     ssl->buffers.clearOutputBuffer.length  = 0;
 
-    InitRng(&ssl->rng);
+    if ( (ret = InitRng(&ssl->rng)) )
+        return ret;
+
     InitMd5(&ssl->hashMd5);
     InitSha(&ssl->hashSha);
     InitRsaKey(&ssl->peerRsaKey, ctx->heap);
@@ -669,7 +653,8 @@ int SendBuffered(SSL* ssl)
 static INLINE int CheckAvalaibleSize(SSL *ssl, int size)
 {
     if (BUFFER16K_LEN - ssl->buffers.outputBuffer.length < (word32)size) {
-        SendBuffered(ssl);
+        if (SendBuffered(ssl) == SOCKET_ERROR_E)
+            return SOCKET_ERROR_E;
         if (BUFFER16K_LEN - ssl->buffers.outputBuffer.length < (word32)size) 
             return WANT_WRITE;
     }
@@ -1046,6 +1031,18 @@ static INLINE void Encrypt(SSL* ssl, byte* out, const byte* input, word32 sz)
                 AesCbcEncrypt(&ssl->encrypt.aes, out, input, sz);
                 break;
         #endif
+
+        #ifdef BUILD_HC128
+            case hc128:
+                Hc128_Process(&ssl->encrypt.hc128, out, input, sz);
+                break;
+        #endif
+
+        #ifdef BUILD_RABBIT
+            case rabbit:
+                RabbitProcess(&ssl->encrypt.rabbit, out, input, sz);
+                break;
+        #endif
     }
 }
 
@@ -1068,6 +1065,18 @@ static INLINE void Decrypt(SSL* ssl, byte* plain, const byte* input, word32 sz)
         #ifdef BUILD_AES
             case aes:
                 AesCbcDecrypt(&ssl->decrypt.aes, plain, input, sz);
+                break;
+        #endif
+
+        #ifdef BUILD_HC128
+            case hc128:
+                Hc128_Process(&ssl->decrypt.hc128, plain, input, sz);
+                break;
+        #endif
+
+        #ifdef BUILD_RABBIT
+            case rabbit:
+                RabbitProcess(&ssl->decrypt.rabbit, plain, input, sz);
                 break;
         #endif
     }
@@ -2188,6 +2197,13 @@ const char* const cipher_names[] =
     "PSK-AES256-CBC-SHA",
 #endif
 
+#ifdef BUILD_TLS_RSA_WITH_HC_128_CBC_SHA
+    "HC128-SHA",
+#endif
+
+#ifdef BUILD_TLS_RSA_WITH_RABBIT_CBC_SHA
+    "RABBIT-SHA",
+#endif
 };
 
 
@@ -2232,6 +2248,13 @@ int cipher_name_idx[] =
     TLS_PSK_WITH_AES_256_CBC_SHA,
 #endif
 
+#ifdef BUILD_TLS_RSA_WITH_HC_128_CBC_SHA
+    TLS_RSA_WITH_HC_128_CBC_SHA,    
+#endif
+
+#ifdef BUILD_TLS_RSA_WITH_RABBIT_CBC_SHA
+    TLS_RSA_WITH_RABBIT_CBC_SHA,    
+#endif
 };
 
 

@@ -1,6 +1,6 @@
 /* cyassl_int.h
  *
- * Copyright (C) 2006 Sawtooth Consulting Ltd.
+ * Copyright (C) 2006-2009 Sawtooth Consulting Ltd.
  *
  * This file is part of CyaSSL.
  *
@@ -30,6 +30,8 @@
 #include "md5.h"
 #include "des3.h"
 #include "aes.h"
+#include "hc128.h"
+#include "rabbit.h"
 #include "asn.h"
 
 #ifdef CYASSL_CALLBACKS
@@ -92,6 +94,14 @@ typedef byte word24[3];
     #endif
 #endif
 
+#if !defined(NO_HC128) && !defined(NO_TLS)
+    #define BUILD_TLS_RSA_WITH_HC_128_CBC_SHA
+#endif
+
+#if !defined(NO_RABBIT) && !defined(NO_TLS)
+    #define BUILD_TLS_RSA_WITH_RABBIT_CBC_SHA
+#endif
+
 #if !defined(NO_DH) && !defined(NO_AES) && !defined(NO_TLS) && defined(OPENSSL_EXTRA)
     #define BUILD_TLS_DHE_RSA_WITH_AES_128_CBC_SHA
     #define BUILD_TLS_DHE_RSA_WITH_AES_256_CBC_SHA
@@ -111,6 +121,14 @@ typedef byte word24[3];
 #if defined(BUILD_TLS_RSA_WITH_AES_128_CBC_SHA) || \
     defined(BUILD_TLS_RSA_WITH_AES_256_CBC_SHA)
     #define BUILD_AES
+#endif
+
+#if defined(BUILD_TLS_RSA_WITH_HC_128_CBC_SHA)
+    #define BUILD_HC128
+#endif
+
+#if defined(BUILD_TLS_RSA_WITH_RABBIT_CBC_SHA)
+    #define BUILD_RABBIT
 #endif
 
 
@@ -133,7 +151,11 @@ enum {
     TLS_PSK_WITH_AES_128_CBC_SHA      = 0x8c,
     SSL_RSA_WITH_RC4_128_SHA          = 0x05,
     SSL_RSA_WITH_RC4_128_MD5          = 0x04,
-    SSL_RSA_WITH_3DES_EDE_CBC_SHA     = 0x0A
+    SSL_RSA_WITH_3DES_EDE_CBC_SHA     = 0x0A,
+
+    /* CyaSSL extension */
+    TLS_RSA_WITH_HC_128_CBC_SHA       = 0xFC,
+    TLS_RSA_WITH_RABBIT_CBC_SHA       = 0xFD
 };
 
 
@@ -192,6 +214,12 @@ enum Misc {
     AES_256_KEY_SIZE    = 32,  /* for 256 bit             */
     AES_IV_SIZE         = 16,  /* always block size       */
     AES_128_KEY_SIZE    = 16,  /* for 128 bit             */
+
+    HC_128_KEY_SIZE     = 16,  /* 128 bits                */
+    HC_128_IV_SIZE      = 16,  /* also 128 bits           */
+
+    RABBIT_KEY_SIZE     = 16,  /* 128 bits                */
+    RABBIT_IV_SIZE      =  8,  /* 64 bits for iv          */
 
     MAX_HELLO_SZ       = 128,  /* max client or server hello */
     MAX_CERT_VERIFY_SZ = 1024, /* max   */
@@ -326,12 +354,12 @@ struct SSL_CTX {
     byte        sessionCacheFlushOff;
     byte        sendVerify;       /* for client side */
     byte        haveDH;           /* server DH parms set by user */
+    CallbackIORecv CBIORecv;
+    CallbackIOSend CBIOSend;
 #ifndef NO_PSK
     byte        havePSK;          /* psk key set by user */
     psk_client_callback client_psk_cb;  /* client callback */
     psk_server_callback server_psk_cb;  /* server callback */
-    CallbackIORecv CBIORecv;
-    CallbackIOSend CBIOSend;
     char        server_hint[MAX_PSK_ID_LEN];
 #endif /* NO_PSK */
 };
@@ -369,7 +397,9 @@ enum BulkCipherAlgorithm {
     triple_des,             /* leading 3 (3des) not valid identifier */
     des40,
     idea,
-    aes
+    aes,
+    hc128,                  /* CyaSSL extensions */
+    rabbit
 };
 
 
@@ -435,13 +465,19 @@ typedef struct Keys {
 /* cipher for now */
 typedef union {
 #ifdef BUILD_ARC4
-    Arc4 arc4;
+    Arc4   arc4;
 #endif
 #ifdef BUILD_DES3
-    Des3 des3;
+    Des3   des3;
 #endif
 #ifdef BUILD_AES
-    Aes  aes;
+    Aes    aes;
+#endif
+#ifdef BUILD_HC128
+    HC128  hc128;
+#endif
+#ifdef BUILD_RABBIT
+    Rabbit rabbit;
 #endif
 } Ciphers;
 
@@ -593,7 +629,7 @@ struct SSL {
     Ciphers         decrypt;
     CipherSpecs     specs;
     Keys            keys;
-    void           *IOCBCtx;
+    void*           IOCBCtx;
     RNG             rng;
     Md5             hashMd5;            /* md5 hash of handshake msgs */
     Sha             hashSha;            /* sha hash of handshake msgs */

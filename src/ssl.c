@@ -1,6 +1,6 @@
 /* ssl.c
  *
- * Copyright (C) 2006 Sawtooth Consulting Ltd.
+ * Copyright (C) 2006-2009 Sawtooth Consulting Ltd.
  *
  * This file is part of CyaSSL.
  *
@@ -92,7 +92,7 @@ void SSL_free(SSL* ssl)
 
 int SSL_set_fd(SSL* ssl, int fd)
 {
-    ssl->IOCBCtx = (void *)fd;
+    ssl->IOCBCtx = (void *)(word)fd;
     return SSL_SUCCESS;
 }
 
