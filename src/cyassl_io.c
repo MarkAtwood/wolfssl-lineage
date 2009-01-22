@@ -1,4 +1,4 @@
-/* cyassl_int.c
+/* cyassl_io.c
  *
  * Copyright (C) 2006-2009 Sawtooth Consulting Ltd.
  *

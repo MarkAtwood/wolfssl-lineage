@@ -26,11 +26,16 @@ And the corresponding cipher names are
 HC128-SHA
 RABBIT-SHA
 
-CyaSSL also adds support for building with DevKitPro for PPC by changing the
+CyaSSL also adds support for building with devkitPro for PPC by changing the
 library proper to use libogc.  The examples haven't been changed yet but if
 there's interest they can be.  Here's an example ./configure to build CyaSSL
-for DevKitPro:
+for devkitPro:
 
+./configure --disable-shared CC=/pathTo/devkitpro/devkitPPC/bin/powerpc-gekko-gcc --host=ppc --without-zlib --enable-singleThreaded RANLIB=/pathTo/devkitpro/devkitPPC/bin/powerpc-gekko-ranlib CFLAGS="-DDEVKITPRO -DGEKKO"
+
+For linking purposes you'll need
+
+LDFLAGS="-g -mrvl -mcpu=750 -meabi -mhard-float -Wl,-Map,$(notdir $@).map"
 
 
 
