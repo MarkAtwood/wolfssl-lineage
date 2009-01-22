@@ -1,4 +1,4 @@
-/* misc.h
+/* rabbit.h
  *
  * Copyright (C) 2006-2009 Sawtooth Consulting Ltd.
  *
@@ -20,39 +20,41 @@
  */
 
 
-#ifndef CTAO_CRYPT_MISC_H
-#define CTAO_CRYPT_MISC_H
+#ifndef NO_RABBIT
 
+#ifndef CTAO_CRYPT_RABBIT_H
+#define CTAO_CRYPT_RABBIT_H
 
 #include "types.h"
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
-
-
 
 #ifdef __cplusplus
     extern "C" {
 #endif
 
 
-#ifdef NO_INLINE
-word32 rotlFixed(word32, word32);
-word32 rotrFixed(word32, word32);
+/* Rabbit Context */
+typedef struct RabbitCtx {
+    word32 x[8];
+    word32 c[8];
+    word32 carry;
+} RabbitCtx;
+    
 
-word32 ByteReverseWord32(word32);
-void   ByteReverseWords(word32*, const word32*, word32);
-void   ByteReverseBytes(byte*, const byte*, word32);
+/* Rabbit stream cipher */
+typedef struct Rabbit {
+    RabbitCtx masterCtx;
+    RabbitCtx workCtx;
+} Rabbit;
 
-void XorWords(word*, const word*, word32);
-void xorbuf(byte*, const byte*, word32);
-#endif /* NO_INLINE */
+
+void RabbitProcess(Rabbit*, byte*, const byte*, word32);
+void RabbitSetKey(Rabbit*, const byte* key, const byte* iv);
 
 
 #ifdef __cplusplus
-    }   /* extern "C" */
+    } /* extern "C" */
 #endif
 
+#endif /* CTAO_CRYPT_RABBIT_H */
 
-#endif /* CTAO_CRYPT_MISC_H */
-
+#endif /* NO_RABBIT */

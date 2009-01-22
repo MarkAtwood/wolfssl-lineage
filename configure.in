@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(cyassl,rc1-1.0.0)
+AM_INIT_AUTOMAKE(cyassl,rc2-1.0.0)
 AM_CONFIG_HEADER(ctaocrypt/include/config.h)
 
 
@@ -55,7 +55,7 @@ then
   # if you only want server or client you can define NO_CYASSL_SERVER or
   # NO_CYASSL_CLIENT but then some of the examples and testsuite won't build
   # note that TLS needs HMAC
-  CFLAGS="-DNO_TLS -DNO_HMAC -DNO_AES -DNO_DES3 -DNO_SHA256 -DNO_ERROR_STRINGS $CFLAGS"
+  CFLAGS="-DNO_TLS -DNO_HMAC -DNO_AES -DNO_DES3 -DNO_SHA256 -DNO_ERROR_STRINGS -DNO_HC128 -DNO_RABBIT $CFLAGS"
 fi
 
 

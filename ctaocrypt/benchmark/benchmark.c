@@ -6,6 +6,8 @@
 
 #include "des3.h"
 #include "arc4.h"
+#include "hc128.h"
+#include "rabbit.h"
 #include "aes.h"
 #include "md5.h"
 #include "sha.h"
@@ -23,6 +25,8 @@
 
 void bench_des();
 void bench_arc4();
+void bench_hc128();
+void bench_rabbit();
 void bench_aes();
 
 void bench_md5();
@@ -42,6 +46,12 @@ int main(int argc, char** argv)
     bench_aes();
 #endif
     bench_arc4();
+#ifndef NO_HC128
+    bench_hc128();
+#endif
+#ifndef NO_RABBIT
+    bench_rabbit();
+#endif
 #ifndef NO_DES3
     bench_des();
 #endif
@@ -152,6 +162,50 @@ void bench_arc4()
     printf("ARC4     %d megs took %5.3f seconds, %6.2f MB/s\n", megs, total,
                                                              persec);
 }
+
+
+#ifndef NO_HC128
+void bench_hc128()
+{
+    HC128  enc;
+    double start, total, persec;
+    int    i;
+    
+    Hc128_SetKey(&enc, key, iv);
+    start = current_time();
+
+    for(i = 0; i < megs; i++)
+        Hc128_Process(&enc, cipher, plain, sizeof(plain));
+
+    total = current_time() - start;
+    persec = 1 / total * megs;
+
+    printf("HC128    %d megs took %5.3f seconds, %6.2f MB/s\n", megs, total,
+                                                             persec);
+}
+#endif /* NO_HC128 */
+
+
+#ifndef NO_RABBIT
+void bench_rabbit()
+{
+    Rabbit  enc;
+    double start, total, persec;
+    int    i;
+    
+    RabbitSetKey(&enc, key, iv);
+    start = current_time();
+
+    for(i = 0; i < megs; i++)
+        RabbitProcess(&enc, cipher, plain, sizeof(plain));
+
+    total = current_time() - start;
+    persec = 1 / total * megs;
+
+    printf("RABBIT   %d megs took %5.3f seconds, %6.2f MB/s\n", megs, total,
+                                                             persec);
+}
+#endif /* NO_RABBIT */
 
 
 void bench_md5()

@@ -17,6 +17,8 @@
 #include "hmac.h"
 #include "dh.h"
 #include "dsa.h"
+#include "hc128.h"
+#include "rabbit.h"
 
 #ifdef _MSC_VER
     /* 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy */
@@ -45,6 +47,8 @@ int  sha_test();
 int  sha256_test();
 int  hmac_test();
 int  arc4_test();
+int  hc128_test();
+int  rabbit_test();
 int  des_test();
 int  des3_test();
 int  aes_test();
@@ -105,6 +109,20 @@ void ctaocrypt_test(void* args)
         err_sys("ARC4     test failed!\n", ret);
     else
         printf( "ARC4     test passed!\n");
+
+#ifndef NO_HC128
+    if ( (ret = hc128_test()) )
+        err_sys("HC-128   test failed!\n", ret);
+    else
+        printf( "HC-128   test passed!\n");
+#endif
+
+#ifndef NO_RABBIT
+    if ( (ret = rabbit_test()) )
+        err_sys("Rabbit   test failed!\n", ret);
+    else
+        printf( "Rabbit   test passed!\n");
+#endif
 
 #ifndef NO_DES
     if ( (ret = des_test()) )
@@ -458,6 +476,150 @@ int arc4_test()
 
     return 0;
 }
+
+
+#ifndef NO_HC128
+int hc128_test()
+{
+    byte cipher[16];
+    byte plain[16];
+
+    const char* keys[] = 
+    {           
+        "\x80\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\x00\x53\xA6\xF9\x4C\x9F\xF2\x45\x98\xEB\x3E\x91\xE4\x37\x8A\xDD",
+        "\x0F\x62\xB5\x08\x5B\xAE\x01\x54\xA7\xFA\x4D\xA0\xF3\x46\x99\xEC"
+    };
+
+    const char* ivs[] =
+    {
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\x80\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\x0D\x74\xDB\x42\xA9\x10\x77\xDE\x45\xAC\x13\x7A\xE1\x48\xAF\x16",
+        "\x28\x8F\xF6\x5D\xC4\x2B\x92\xF9\x60\xC7\x2E\x95\xFC\x63\xCA\x31"
+    };
+
+
+    testVector a, b, c, d;
+    testVector test_hc128[4];
+
+    int times = sizeof(test_hc128) / sizeof(testVector), i;
+
+    a.input  = "\x00\x00\x00\x00\x00\x00\x00\x00";
+    a.output = "\x37\x86\x02\xB9\x8F\x32\xA7\x48";
+    a.inLen  = strlen(a.input);
+    a.outLen = strlen(a.output);
+
+    b.input  = "\x00\x00\x00\x00\x00\x00\x00\x00";
+    b.output = "\x33\x7F\x86\x11\xC6\xED\x61\x5F";
+    b.inLen  = strlen(b.input);
+    b.outLen = strlen(b.output);
+
+    c.input  = "\x00\x00\x00\x00\x00\x00\x00\x00";
+    c.output = "\x2E\x1E\xD1\x2A\x85\x51\xC0\x5A";
+    c.inLen  = strlen(c.input);
+    c.outLen = strlen(c.output);
+
+    d.input  = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+    d.output = "\x1C\xD8\xAE\xDD\xFE\x52\xE2\x17\xE8\x35\xD0\xB7\xE8\x4E\x29";
+    d.inLen  = strlen(d.input);
+    d.outLen = strlen(d.output);
+
+    test_hc128[0] = a;
+    test_hc128[1] = b;
+    test_hc128[2] = c;
+    test_hc128[3] = d;
+
+    for (i = 0; i < times; ++i) {
+        HC128 enc;
+        HC128 dec;
+
+        Hc128_SetKey(&enc, (byte*)keys[i], (byte*)ivs[i]);
+        Hc128_SetKey(&dec, (byte*)keys[i], (byte*)ivs[i]);
+
+        Hc128_Process(&enc, cipher, (byte*)test_hc128[i].input,
+                    (word32)test_hc128[i].outLen);
+        Hc128_Process(&dec, plain,  cipher, (word32)test_hc128[i].outLen);
+
+        if (memcmp(plain, test_hc128[i].input, test_hc128[i].outLen))
+            return -120 - i;
+
+        if (memcmp(cipher, test_hc128[i].output, test_hc128[i].outLen))
+            return -120 - 5 - i;
+    }
+
+    return 0;
+}
+#endif /* NO_HC128 */
+
+
+#ifndef NO_RABBIT
+int rabbit_test()
+{
+    byte cipher[16];
+    byte plain[16];
+
+    const char* keys[] = 
+    {           
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\xAC\xC3\x51\xDC\xF1\x62\xFC\x3B\xFE\x36\x3D\x2E\x29\x13\x28\x91"
+    };
+
+    const char* ivs[] =
+    {
+        "\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\x59\x7E\x26\xC1\x75\xF5\x73\xC3",
+        0
+    };
+
+
+    testVector a, b, c;
+    testVector test_rabbit[3];
+
+    int times = sizeof(test_rabbit) / sizeof(testVector), i;
+
+    a.input  = "\x00\x00\x00\x00\x00\x00\x00\x00";
+    a.output = "\xED\xB7\x05\x67\x37\x5D\xCD\x7C";
+    a.inLen  = strlen(a.input);
+    a.outLen = strlen(a.output);
+
+    b.input  = "\x00\x00\x00\x00\x00\x00\x00\x00";
+    b.output = "\x6D\x7D\x01\x22\x92\xCC\xDC\xE0";
+    b.inLen  = strlen(b.input);
+    b.outLen = strlen(b.output);
+
+    c.input  = "\x00\x00\x00\x00\x00\x00\x00\x00";
+    c.output = "\x9C\x51\xE2\x87\x84\xC3\x7F\xE9";
+    c.inLen  = strlen(c.input);
+    c.outLen = strlen(c.output);
+
+    test_rabbit[0] = a;
+    test_rabbit[1] = b;
+    test_rabbit[2] = c;
+
+    for (i = 0; i < times; ++i) {
+        Rabbit enc;
+        Rabbit dec;
+
+        RabbitSetKey(&enc, (byte*)keys[i], (byte*)ivs[i]);
+        RabbitSetKey(&dec, (byte*)keys[i], (byte*)ivs[i]);
+
+        RabbitProcess(&enc, cipher, (byte*)test_rabbit[i].input,
+                    (word32)test_rabbit[i].outLen);
+        RabbitProcess(&dec, plain,  cipher, (word32)test_rabbit[i].outLen);
+
+        if (memcmp(plain, test_rabbit[i].input, test_rabbit[i].outLen))
+            return -130 - i;
+
+        if (memcmp(cipher, test_rabbit[i].output, test_rabbit[i].outLen))
+            return -130 - 5 - i;
+    }
+
+    return 0;
+}
+#endif /* NO_RABBIT */
 
 
 #ifndef NO_DES

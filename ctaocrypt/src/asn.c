@@ -1,6 +1,6 @@
 /* asn.c
  *
- * Copyright (C) 2006 Sawtooth Consulting Ltd.
+ * Copyright (C) 2006-2009 Sawtooth Consulting Ltd.
  *
  * This file is part of CyaSSL.
  *
@@ -1205,6 +1205,10 @@ void CTaoCryptErrorString(int error, char* buffer)
 
     case CRYPTGEN_E : 
         strncpy(buffer, "windows crypt generation error", max);
+        break;
+
+    case RAN_BLOCK_E : 
+        strncpy(buffer, "random device read would block error", max);
         break;
 
     case MP_INIT_E :

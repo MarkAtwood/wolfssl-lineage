@@ -44,6 +44,8 @@
 		43C6C29E0DDF98D400F2D488 /* rsa.c in Sources */ = {isa = PBXBuildFile; fileRef = 43C6C28F0DDF98D400F2D488 /* rsa.c */; };
 		43C6C29F0DDF98D400F2D488 /* sha.c in Sources */ = {isa = PBXBuildFile; fileRef = 43C6C2900DDF98D400F2D488 /* sha.c */; };
 		43C6C2A00DDF98D400F2D488 /* sha256.c in Sources */ = {isa = PBXBuildFile; fileRef = 43C6C2910DDF98D400F2D488 /* sha256.c */; };
+		43D565650F1EC9A600550C88 /* hc128.c in Sources */ = {isa = PBXBuildFile; fileRef = 43D565640F1EC9A600550C88 /* hc128.c */; };
+		43D565670F1EC9CC00550C88 /* rabbit.c in Sources */ = {isa = PBXBuildFile; fileRef = 43D565660F1EC9CC00550C88 /* rabbit.c */; };
 		43F5A2580E8C59BA00CD7F1A /* client.c in Sources */ = {isa = PBXBuildFile; fileRef = 43F5A2570E8C59BA00CD7F1A /* client.c */; };
 		43F5A25B0E8C59CB00CD7F1A /* libcyassl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D2AAC046055464E500DB518D /* libcyassl.a */; };
 /* End PBXBuildFile section */
@@ -188,6 +190,8 @@
 		43CA25D00EA4010C0011ECA2 /* hmac.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 0; name = hmac.h; path = ctaocrypt/include/hmac.h; sourceTree = "<group>"; };
 		43CA25D10EA401550011ECA2 /* cyassl_callbacks.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = cyassl_callbacks.h; path = include/openssl/cyassl_callbacks.h; sourceTree = "<group>"; };
 		43CA25D20EA401550011ECA2 /* ssl.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = ssl.h; path = include/openssl/ssl.h; sourceTree = "<group>"; };
+		43D565640F1EC9A600550C88 /* hc128.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = hc128.c; path = ctaocrypt/src/hc128.c; sourceTree = "<group>"; };
+		43D565660F1EC9CC00550C88 /* rabbit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rabbit.c; path = ctaocrypt/src/rabbit.c; sourceTree = "<group>"; };
 		43F5A24F0E8C599600CD7F1A /* client */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = client; sourceTree = BUILT_PRODUCTS_DIR; };
 		43F5A2570E8C59BA00CD7F1A /* client.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = client.c; path = examples/client/client.c; sourceTree = "<group>"; };
 		D2AAC046055464E500DB518D /* libcyassl.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libcyassl.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -297,6 +301,8 @@
 		43CA25720EA3F9B20011ECA2 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				43D565660F1EC9CC00550C88 /* rabbit.c */,
+				43D565640F1EC9A600550C88 /* hc128.c */,
 				43AC92C90EB154210049F588 /* cyassl_io.c */,
 				4368F7450E9EA98A0002A123 /* benchmark.c */,
 				43F5A2570E8C59BA00CD7F1A /* client.c */,
@@ -632,6 +638,8 @@
 				43C6C2A00DDF98D400F2D488 /* sha256.c in Sources */,
 				43962ADF0DE7ED48003C5E5B /* ssl.c in Sources */,
 				43AC92CA0EB154210049F588 /* cyassl_io.c in Sources */,
+				43D565650F1EC9A600550C88 /* hc128.c in Sources */,
+				43D565670F1EC9CC00550C88 /* rabbit.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -692,6 +700,7 @@
 				);
 				INSTALL_PATH = /usr/local/lib;
 				PRODUCT_NAME = cyassl;
+				SDKROOT = macosx10.5;
 				WARNING_CFLAGS = "-Wall";
 				ZERO_LINK = YES;
 			};
@@ -969,6 +978,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
 				COPY_PHASE_STRIP = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
@@ -979,6 +989,7 @@
 				OTHER_LDFLAGS = "-lz";
 				PREBINDING = NO;
 				PRODUCT_NAME = client;
+				SDKROOT = macosx10.5;
 			};
 			name = Debug;
 		};
