@@ -52,7 +52,7 @@
     static int DoClientHello(SSL* ssl, const byte* input, word32*, word32,
                              word32);
     static int DoCertificateVerify(SSL* ssl, byte*, word32*, word32);
-    static int ProcessOldClientHello(SSL*, const byte*, word32*, word32, word16);
+    static int ProcessOldClientHello(SSL*, const byte*, word32*, word32,word16);
     static int DoClientKeyExchange(SSL* ssl, byte* input, word32*);
 #endif
 
@@ -569,17 +569,17 @@ retry:
     recvd = ssl->ctx->CBIORecv((char *)buf, (int)sz, ssl->IOCBCtx);
     if (recvd < 0)
         switch (recvd) {
-            case -1:
+            case -1:            /* general/unknown error */
                 return -1;
 
-            case -2:
+            case -2:            /* want read, would block */
                 return 0;
 
-            case -3:
+            case -3:            /* connection reset */
                 ssl->options.connReset = 1;
                 break;
 
-            case -4: 
+            case -4:            /* interrupt */
                 /* see if we got our timeout */
                 #ifdef CYASSL_CALLBACKS
                     if (ssl->toInfoOn) {
@@ -595,7 +595,7 @@ retry:
                 #endif
                 goto retry;
 
-            case -5:
+            case -5:            /* peer closed connection */
                 ssl->options.isClosed = 1;
                 return -1;
         }
@@ -606,29 +606,28 @@ retry:
 int SendBuffered(SSL* ssl)
 {
     while (ssl->buffers.outputBuffer.length > 0) {
-        int sent = ssl->ctx->CBIOSend((char *) ssl->buffers.outputBuffer.buffer +
+        int sent = ssl->ctx->CBIOSend((char*)ssl->buffers.outputBuffer.buffer +
                                       ssl->buffers.outputBuffer.idx,
                                       (int)ssl->buffers.outputBuffer.length,
                                       ssl->IOCBCtx);
-
         if (sent < 0) {
             switch (sent) {
 
-                case -2:
+                case -2:        /* would block */
                     return WANT_WRITE;
 
-                case -3:
+                case -3:        /* connection reset */
                     ssl->options.connReset = 1;
                     break;
 
-                case -4:
+                case -4:        /* interrupt */
                     /* see if we got our timeout */
                     #ifdef CYASSL_CALLBACKS
                         if (ssl->toInfoOn) {
                             struct itimerval timeout;
                             getitimer(ITIMER_REAL, &timeout);
                             if (timeout.it_value.tv_sec == 0 && 
-                                                   timeout.it_value.tv_usec == 0) {
+                                                timeout.it_value.tv_usec == 0) {
                                 strncpy(ssl->timeoutInfo.timeoutName,
                                         "send() timeout", MAX_TIMEOUT_NAME_SZ);
                                 return WANT_WRITE;
@@ -1285,12 +1284,15 @@ lbl_doProcessInit:
             /* see if sending SSLv2 client hello */
             if ( ssl->options.side == SERVER_END &&
                  ssl->options.clientState == NULL_STATE &&
-                 ssl->buffers.inputBuffer.buffer[ssl->buffers.inputBuffer.idx] != handshake) {
+                 ssl->buffers.inputBuffer.buffer[ssl->buffers.inputBuffer.idx]
+                         != handshake) {
                 ssl->options.processReply = runProcessOldClientHello;
 
                 /* how many bytes need ProcessOldClientHello */
-                b0 = ssl->buffers.inputBuffer.buffer[ssl->buffers.inputBuffer.idx++];
-                b1 = ssl->buffers.inputBuffer.buffer[ssl->buffers.inputBuffer.idx++];
+                b0 =
+                ssl->buffers.inputBuffer.buffer[ssl->buffers.inputBuffer.idx++];
+                b1 =
+                ssl->buffers.inputBuffer.buffer[ssl->buffers.inputBuffer.idx++];
                 ssl->curSize = ((b0 & 0x7f) << 8) | b1;
             }
             else {
@@ -1308,12 +1310,13 @@ lbl_doProcessInit:
             ret = ProcessOldClientHello(ssl, ssl->buffers.inputBuffer.buffer,
                                         &ssl->buffers.inputBuffer.idx,
                                         ssl->buffers.inputBuffer.length -
-                                        ssl->buffers.inputBuffer.idx, ssl->curSize);
-
+                                        ssl->buffers.inputBuffer.idx,
+                                        ssl->curSize);
             if (ret < 0)
                 return ret;
 
-            else if (ssl->buffers.inputBuffer.idx == ssl->buffers.inputBuffer.length) {
+            else if (ssl->buffers.inputBuffer.idx ==
+                     ssl->buffers.inputBuffer.length) {
                 ssl->options.processReply = doProcessInit;
                 return 0;
             }
@@ -1354,10 +1357,11 @@ lbl_getRecordLayerHeader:
             switch (ssl->curRL.type) {
                 case handshake :
                     /* debugging in DoHandShakeMsg */
-                    if ( (ret = DoHandShakeMsg(ssl, 
-                                               ssl->buffers.inputBuffer.buffer,
-                                               &ssl->buffers.inputBuffer.idx,
-                                               ssl->buffers.inputBuffer.length)) != 0)
+                    if ((ret = DoHandShakeMsg(ssl, 
+                                              ssl->buffers.inputBuffer.buffer,
+                                              &ssl->buffers.inputBuffer.idx,
+                                              ssl->buffers.inputBuffer.length))
+                                                                           != 0)
                         return ret;
                     break;
 
@@ -1393,8 +1397,10 @@ lbl_getRecordLayerHeader:
 
                 case application_data:
                     CYASSL_MSG("got app DATA");
-                    if ( (ret = DoApplicationData(ssl, ssl->buffers.inputBuffer.buffer,
-                                                  &ssl->buffers.inputBuffer.idx)) != 0) {
+                    if ((ret = DoApplicationData(ssl,
+                                                ssl->buffers.inputBuffer.buffer,
+                                               &ssl->buffers.inputBuffer.idx))
+                                                                         != 0) {
                         CYASSL_ERROR(ret);
                         return ret;
                     }
@@ -1403,7 +1409,7 @@ lbl_getRecordLayerHeader:
                 case alert:
                     CYASSL_MSG("got ALERT!");
                     if (DoAlert(ssl, ssl->buffers.inputBuffer.buffer,
-                                     &ssl->buffers.inputBuffer.idx) == alert_fatal)
+                                  &ssl->buffers.inputBuffer.idx) == alert_fatal)
                         return FATAL_ERROR;
                     break;
             
@@ -1837,7 +1843,8 @@ int SendData(SSL* ssl, const void* buffer, int sz)
         if (sent == sz) break;
 
         /* check for avalaible size */
-        if ((ret = CheckAvalaibleSize(ssl, len + MAX_COMP_EXTRA + MAX_MSG_EXTRA)) != 0)
+        if ((ret = CheckAvalaibleSize(ssl, len + MAX_COMP_EXTRA +
+                        MAX_MSG_EXTRA)) != 0)
             return ret;
 
         /* get ouput buffer */
@@ -3451,9 +3458,11 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
                 tmp = input + *inOutIdx;
                 *inOutIdx += length;
 
-                if (RsaPrivateDecryptInline(tmp, length, &out, &key) == SECRET_LEN) {
+                if (RsaPrivateDecryptInline(tmp, length, &out, &key) ==
+                                                             SECRET_LEN) {
                     memcpy(ssl->arrays.preMasterSecret, out, SECRET_LEN);
-                    if (ssl->arrays.preMasterSecret[0] != ssl->chVersion.major ||
+                    if (ssl->arrays.preMasterSecret[0] != ssl->chVersion.major
+                     ||
                         ssl->arrays.preMasterSecret[1] != ssl->chVersion.minor)
 
                         ret = PMS_VERSION_ERROR;
