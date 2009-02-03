@@ -215,6 +215,14 @@ static INLINE void tcp_listen(SOCKET_T* sockfd)
     SOCKADDR_IN_T addr;
     tcp_socket(sockfd, &addr, yasslIP, yasslPort);
 
+#ifndef _WIN32
+    {
+        int       on  = 1;
+        socklen_t len = sizeof(on);
+        setsockopt(*sockfd, SOL_SOCKET, SO_REUSEADDR, &on, len);
+    }
+#endif
+
     if (bind(*sockfd, (const struct sockaddr*)&addr, sizeof(addr)) != 0)
         err_sys("tcp bind failed");
     if (listen(*sockfd, 3) != 0)
