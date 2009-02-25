@@ -1266,6 +1266,7 @@ static int GetInputData(SSL *ssl, size_t size)
 int ProcessReply(SSL* ssl)
 {
     int    ret;
+    word32 startIdx = 0;
     byte   b0, b1;
 
     switch ((processReply)ssl->options.processReply) {
@@ -1342,9 +1343,11 @@ lbl_getRecordLayerHeader:
             if ((ret = GetInputData(ssl, ssl->curSize)) < 0)
                 return ret;
             ssl->options.processReply = runProcessingOneMessage;
+            startIdx = ssl->buffers.inputBuffer.idx;  /* in case > 1 msg per */
 
         /* the record layer is here */
         case runProcessingOneMessage:
+lbl_runProcessingOneMessage:
             if (ssl->keys.encryptionOn)
                 if (DecryptMessage(ssl, ssl->buffers.inputBuffer.buffer + 
                                         ssl->buffers.inputBuffer.idx,
@@ -1420,8 +1423,15 @@ lbl_getRecordLayerHeader:
 
             ssl->options.processReply = doProcessInit;
 
+            /* input exhausted? */
             if (ssl->buffers.inputBuffer.idx == ssl->buffers.inputBuffer.length)
                 return 0;
+            /* more messages per record */
+            else if ((ssl->buffers.inputBuffer.idx - startIdx) < ssl->curSize) {
+                ssl->options.processReply = runProcessingOneMessage;
+                goto lbl_runProcessingOneMessage;
+            }
+            /* more records */
             else
                 goto lbl_doProcessInit;
     }
