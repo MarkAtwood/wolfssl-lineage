@@ -929,8 +929,15 @@ int CyaSSL_set_compression(SSL* ssl)
             
             if (gettimeofday(&startTime, 0) < 0)
                 ERR_OUT(GETTIME_ERROR);
-            if (getitimer(ITIMER_REAL, &oldTimeout) < 0)
-                ERR_OUT(GETITIMER_ERROR);
+
+            /* use setitimer to simulate getitimer, init 0 myTimeout */
+            myTimeout.it_interval.tv_sec  = 0;
+            myTimeout.it_interval.tv_usec = 0;
+            myTimeout.it_value.tv_sec     = 0;
+            myTimeout.it_value.tv_usec    = 0;
+            if (setitimer(ITIMER_REAL, &myTimeout, &oldTimeout) < 0)
+                ERR_OUT(SETITIMER_ERROR);
+
             if (oldTimeout.it_value.tv_sec || oldTimeout.it_value.tv_usec) {
                 oldTimerOn = 1;
                 
@@ -940,9 +947,6 @@ int CyaSSL_set_compression(SSL* ssl)
                     timeout.tv_usec = oldTimeout.it_value.tv_usec;
                 }       
             }
-            /* set my timeout, w/o intervals  */
-            myTimeout.it_interval.tv_sec  = 0;
-            myTimeout.it_interval.tv_usec = 0;
             myTimeout.it_value.tv_sec  = timeout.tv_sec;
             myTimeout.it_value.tv_usec = timeout.tv_usec;
             
