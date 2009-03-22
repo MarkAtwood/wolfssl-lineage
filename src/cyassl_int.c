@@ -573,11 +573,11 @@ retry:
                 return -1;
 
             case -2:            /* want read, would block */
-                return 0;
+                return WANT_READ;
 
             case -3:            /* connection reset */
                 ssl->options.connReset = 1;
-                break;
+                return -1;
 
             case -4:            /* interrupt */
                 /* see if we got our timeout */
@@ -674,7 +674,7 @@ static int GetRecordHeader(SSL* ssl, const byte* input, word32* inOutIdx,
         return VERSION_ERROR;              /* only use requested version */
 
     /* record layer length check */
-    if (*size > MAX_RECORD_SIZE)
+    if (*size > (MAX_RECORD_SIZE + MAX_COMP_EXTRA + MAX_MSG_EXTRA))
         return LENGTH_ERROR;
 
     /* verify record type here as well */
@@ -1224,25 +1224,25 @@ static int GetInputData(SSL *ssl, size_t size)
 
     /* check max input length */
     usedLength = ssl->buffers.inputBuffer.length - ssl->buffers.inputBuffer.idx;
-    maxLength  = MAX_RECORD_SIZE - usedLength;
-    inSz       = (int)(size - usedLength);
+    maxLength  = BUFFER16K_LEN - usedLength;
+    inSz       = (int)(size - usedLength);      /* from last partial read */
 
-    if (inSz <= 0)
-        return 0;
+    if (inSz > maxLength || inSz <= 0) {
+        assert(0);        
+        return BUFFER_ERROR;
+    }
 
-    if (inSz > maxLength)
-        inSz = maxLength;
-
-    /* Put end buffer data at start */
-    if (usedLength > 0)
+    /* Put buffer data at start if not there */
+    if (usedLength > 0 && ssl->buffers.inputBuffer.idx != 0)
         memcpy(ssl->buffers.inputBuffer.buffer,
                ssl->buffers.inputBuffer.buffer + ssl->buffers.inputBuffer.idx,
                usedLength);
-
-    /* read data from network */
-    ssl->buffers.inputBuffer.length = usedLength;
+    
+    /* remove processed data */
     ssl->buffers.inputBuffer.idx    = 0;
-
+    ssl->buffers.inputBuffer.length = usedLength;
+  
+    /* read data from network */
     do {
         in = Receive(ssl, 
                      ssl->buffers.inputBuffer.buffer +
@@ -1251,10 +1251,11 @@ static int GetInputData(SSL *ssl, size_t size)
         if (in == -1)
             return SOCKET_ERROR_E;
    
-        if (in == 0)
+        if (in == WANT_READ)
             return WANT_READ;
-
+        
         ssl->buffers.inputBuffer.length += in;
+        inSz -= in;
 
     } while (ssl->buffers.inputBuffer.length < size);
 
