@@ -396,6 +396,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->error = 0;
     ssl->options.connReset = 0;
     ssl->options.isClosed  = 0;
+    ssl->options.closeNotify  = 0;
     ssl->options.usingCompression = 0;
     ssl->options.haveDH    = ctx->haveDH;
     ssl->options.usingPSK_cipher = 0;
@@ -1195,6 +1196,9 @@ static int DoAlert(SSL* ssl, byte* input, word32* inOutIdx, int* type)
     level = input[(*inOutIdx)++];
     *type  = (int)input[(*inOutIdx)++];
 
+    if (*type == close_notify)
+        ssl->options.closeNotify = 1;
+
     if (ssl->keys.encryptionOn) {
         int         aSz = ALERT_SIZE;
         const byte* mac;
@@ -1910,6 +1914,8 @@ int ReceiveData(SSL* ssl, byte* output, int sz)
     while (ssl->buffers.clearOutputBuffer.length == 0)
         if ( (ssl->error = ProcessReply(ssl)) < 0) {
             CYASSL_ERROR(ssl->error);
+            if (ssl->error == FATAL_ERROR && ssl->options.closeNotify)
+                continue;         /* see if peer reset or closed too */
             if (ssl->error == SOCKET_ERROR_E)
                 if (ssl->options.connReset || ssl->options.isClosed)
                     return 0;     /* peer reset or closed */

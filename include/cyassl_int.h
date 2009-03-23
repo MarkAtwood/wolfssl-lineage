@@ -566,6 +566,7 @@ typedef struct Options {
     byte            tls1_1;             /* using TLSv1.1 ? */
     byte            connReset;          /* has the peer reset */
     byte            isClosed;           /* if we consider conn closed */
+    byte            closeNotify;        /* we've recieved a close notify */
     byte            connectState;       /* nonblocking resume */
     byte            acceptState;        /* nonblocking resume */
     byte            usingCompression;   /* are we using compression */
