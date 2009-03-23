@@ -1180,9 +1180,9 @@ static int DoApplicationData(SSL* ssl, byte* input, word32* inOutIdx)
 
 
 /* process alert, return level */
-static int DoAlert(SSL* ssl, byte* input, word32* inOutIdx)
+static int DoAlert(SSL* ssl, byte* input, word32* inOutIdx, int* type)
 {
-    byte level, type;
+    byte level;
 
     #ifdef CYASSL_CALLBACKS
         if (ssl->hsInfoOn)
@@ -1193,7 +1193,7 @@ static int DoAlert(SSL* ssl, byte* input, word32* inOutIdx)
                           RECORD_HEADER_SZ, 2 + RECORD_HEADER_SZ, ssl->heap);
     #endif
     level = input[(*inOutIdx)++];
-    type  = input[(*inOutIdx)++];
+    *type  = (int)input[(*inOutIdx)++];
 
     if (ssl->keys.encryptionOn) {
         int         aSz = ALERT_SIZE;
@@ -1266,7 +1266,7 @@ static int GetInputData(SSL *ssl, size_t size)
    negative number is error */
 int ProcessReply(SSL* ssl)
 {
-    int    ret;
+    int    ret, type;
     word32 startIdx = 0;
     byte   b0, b1;
 
@@ -1413,7 +1413,10 @@ lbl_runProcessingOneMessage:
                 case alert:
                     CYASSL_MSG("got ALERT!");
                     if (DoAlert(ssl, ssl->buffers.inputBuffer.buffer,
-                                  &ssl->buffers.inputBuffer.idx) == alert_fatal)
+                           &ssl->buffers.inputBuffer.idx, &type) == alert_fatal)
+                        return FATAL_ERROR;
+                    /* catch warnings that are handled as errors */
+                    if (type == close_notify || type == decrypt_error)
                         return FATAL_ERROR;
                     break;
             

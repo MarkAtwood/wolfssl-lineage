@@ -723,7 +723,8 @@ enum AlertDescription {
     certificate_revoked     = 44,
     certificate_expired     = 45,
     certificate_unknown     = 46,
-    illegal_parameter       = 47
+    illegal_parameter       = 47,
+    decrypt_error           = 51
 };
 
 

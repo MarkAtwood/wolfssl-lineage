@@ -134,7 +134,7 @@ int SSL_read(SSL* ssl, void* buffer, int sz)
 int SSL_shutdown(SSL* ssl)
 {
     /* try to send alert, not an error if can't */
-    if (!ssl->options.isClosed) {
+    if (!ssl->options.isClosed && !ssl->options.connReset) {
         ssl->error = SendAlert(ssl, alert_warning, close_notify);
         if (ssl->error < 0)
             return SSL_FATAL_ERROR;
