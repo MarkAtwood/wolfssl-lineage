@@ -93,6 +93,8 @@ void SSL_free(SSL* ssl)
 int SSL_set_fd(SSL* ssl, int fd)
 {
     ssl->IOCBCtx = (void *)(word)fd;
+    TurnOffSigPipe(fd);
+
     return SSL_SUCCESS;
 }
 

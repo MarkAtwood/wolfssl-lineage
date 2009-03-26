@@ -367,9 +367,12 @@ struct SSL_CTX {
 
 void InitSSL_Ctx(SSL_CTX*, SSL_METHOD*);
 void FreeSSL_Ctx(SSL_CTX*);
+
 void SetCallbackIORecv_Ctx(SSL_CTX*, CallbackIORecv);
 void SetCallbackIOSend_Ctx(SSL_CTX*, CallbackIOSend);
 void SetCallbackIOCtx(SSL* ssl, void *ctx);
+
+void TurnOffSigPipe(int);
 
 
 /* All cipher suite related info */
