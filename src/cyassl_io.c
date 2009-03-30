@@ -174,14 +174,3 @@ void SetCallbackIOSend_Ctx(SSL_CTX *ctx, CallbackIOSend CBIOSend) {
 void SetCallbackIOCtx(SSL* ssl, void *ctx) {
 	ssl->IOCBCtx = ctx;
 }
-
-
-void TurnOffSigPipe(int fd)
-{
-#ifndef _WIN32
-    int       on  = 1;
-    socklen_t len = sizeof(on);
-
-    setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &on, len);
-#endif
-}

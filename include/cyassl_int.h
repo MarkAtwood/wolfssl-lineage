@@ -372,8 +372,6 @@ void SetCallbackIORecv_Ctx(SSL_CTX*, CallbackIORecv);
 void SetCallbackIOSend_Ctx(SSL_CTX*, CallbackIOSend);
 void SetCallbackIOCtx(SSL* ssl, void *ctx);
 
-void TurnOffSigPipe(int);
-
 
 /* All cipher suite related info */
 typedef struct CipherSpecs {
