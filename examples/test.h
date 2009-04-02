@@ -183,7 +183,7 @@ static INLINE void tcp_socket(SOCKET_T* sockfd, SOCKADDR_IN_T* addr,
     }
 #endif
 
-    *sockfd = socket(AF_INET_V, SOCK_STREAM, 0);
+    *sockfd = socket(AF_INET_V, SOCK_DGRAM, 0);
     memset(addr, 0, sizeof(SOCKADDR_IN_T));
 
 #ifndef TEST_IPV6

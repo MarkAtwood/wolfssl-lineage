@@ -174,3 +174,22 @@ void SetCallbackIOSend_Ctx(SSL_CTX *ctx, CallbackIOSend CBIOSend) {
 void SetCallbackIOCtx(SSL* ssl, void *ctx) {
 	ssl->IOCBCtx = ctx;
 }
+
+
+#ifdef CYASSL_DTLS
+
+int IsUDP(void* ctx)
+{
+    int socket = (word)ctx;
+    int on     = 0;
+    socklen_t len = sizeof(on);
+
+    if (getsockopt(socket, SOL_SOCKET, SO_TYPE, &on, &len) == 0)
+        if (on == SOCK_DGRAM)
+            return 1;
+
+    return 0;
+}
+
+#endif
+

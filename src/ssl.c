@@ -93,6 +93,7 @@ void SSL_free(SSL* ssl)
 int SSL_set_fd(SSL* ssl, int fd)
 {
     ssl->IOCBCtx = (void *)(word)fd;
+
     return SSL_SUCCESS;
 }
 
@@ -134,7 +135,7 @@ int SSL_read(SSL* ssl, void* buffer, int sz)
 int SSL_shutdown(SSL* ssl)
 {
     /* try to send alert, not an error if can't */
-    if (!ssl->options.isClosed) {
+    if (!ssl->options.isClosed && !ssl->options.connReset) {
         ssl->error = SendAlert(ssl, alert_warning, close_notify);
         if (ssl->error < 0)
             return SSL_FATAL_ERROR;
@@ -475,6 +476,16 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
         return method;
     }
 
+    #ifdef CYASSL_DTLS
+        SSL_METHOD* DTLSv1_client_method(void)
+        {
+            SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
+            if (method)
+                InitSSL_Method(method, MakeDTLSv1());
+            return method;
+        }
+    #endif
+
 
     /* please see note at top of README if you get an error from connect */
     int SSL_connect(SSL* ssl)
@@ -484,6 +495,14 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
         CYASSL_ENTER("SSL_connect()");
 
         assert(ssl->options.side == CLIENT_END);
+
+#ifdef CYASSL_DTLS
+        if (ssl->version.major == 0xfe && ssl->version.minor == 0xff) {
+            ssl->options.dtls   = 1;
+            ssl->options.tls    = 1;
+            ssl->options.tls1_1 = 1;
+        }
+#endif
 
         if (ssl->buffers.outputBuffer.length > 0) {
             if ( (ssl->error = SendBuffered(ssl)) == 0) {
@@ -510,6 +529,10 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
         case CLIENT_HELLO_SENT :
             neededState = ssl->options.resuming ? SERVER_FINISHED_COMPLETE :
                                           SERVER_HELLODONE_COMPLETE;
+            #ifdef CYASSL_DTLS
+                if (ssl->options.dtls)
+                    neededState = SERVER_HELLOVERIFYREQUEST_COMPLETE;
+            #endif
             /* get response */
             while (ssl->options.serverState < neededState)
                 if ( (ssl->error = ProcessReply(ssl)) < 0) {
@@ -519,7 +542,46 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
                 /* if resumption failed, reset needed state */
                 else if (neededState == SERVER_FINISHED_COMPLETE)
                    if (!ssl->options.resuming)
-                      neededState = SERVER_HELLODONE_COMPLETE; 
+                      neededState = SERVER_HELLODONE_COMPLETE;
+
+            ssl->options.connectState = HELLO_AGAIN;
+            CYASSL_MSG("connect state: HELLO_AGAIN");
+
+        case HELLO_AGAIN :
+            #ifdef CYASSL_DTLS
+                if (ssl->options.dtls) {
+                    /* re-init hashes, exclude first hello and verify request */
+                    InitMd5(&ssl->hashMd5);
+                    InitSha(&ssl->hashSha);
+                    if ( (ssl->error = SendClientHello(ssl)) != 0) {
+                        CYASSL_ERROR(ssl->error);
+                        return SSL_FATAL_ERROR;
+                    }
+                }
+            #endif
+
+            ssl->options.connectState = HELLO_AGAIN_REPLY;
+            CYASSL_MSG("connect state: HELLO_AGAIN_REPLY");
+
+        case HELLO_AGAIN_REPLY :
+            #ifdef CYASSL_DTLS
+                if (ssl->options.dtls) {
+                    neededState = ssl->options.resuming ?
+                           SERVER_FINISHED_COMPLETE : SERVER_HELLODONE_COMPLETE;
+            
+                    /* get response */
+                    while (ssl->options.serverState < neededState)
+                        if ( (ssl->error = ProcessReply(ssl)) < 0) {
+                                CYASSL_ERROR(ssl->error);
+                                return SSL_FATAL_ERROR;
+                        }
+                        /* if resumption failed, reset needed state */
+                        else if (neededState == SERVER_FINISHED_COMPLETE)
+                            if (!ssl->options.resuming)
+                                neededState = SERVER_HELLODONE_COMPLETE; 
+                }
+            #endif
+
             ssl->options.connectState = FIRST_REPLY_DONE;
             CYASSL_MSG("connect state: FIRST_REPLY_DONE");
 
@@ -929,8 +991,15 @@ int CyaSSL_set_compression(SSL* ssl)
             
             if (gettimeofday(&startTime, 0) < 0)
                 ERR_OUT(GETTIME_ERROR);
-            if (getitimer(ITIMER_REAL, &oldTimeout) < 0)
-                ERR_OUT(GETITIMER_ERROR);
+
+            /* use setitimer to simulate getitimer, init 0 myTimeout */
+            myTimeout.it_interval.tv_sec  = 0;
+            myTimeout.it_interval.tv_usec = 0;
+            myTimeout.it_value.tv_sec     = 0;
+            myTimeout.it_value.tv_usec    = 0;
+            if (setitimer(ITIMER_REAL, &myTimeout, &oldTimeout) < 0)
+                ERR_OUT(SETITIMER_ERROR);
+
             if (oldTimeout.it_value.tv_sec || oldTimeout.it_value.tv_usec) {
                 oldTimerOn = 1;
                 
@@ -940,9 +1009,6 @@ int CyaSSL_set_compression(SSL* ssl)
                     timeout.tv_usec = oldTimeout.it_value.tv_usec;
                 }       
             }
-            /* set my timeout, w/o intervals  */
-            myTimeout.it_interval.tv_sec  = 0;
-            myTimeout.it_interval.tv_usec = 0;
             myTimeout.it_value.tv_sec  = timeout.tv_sec;
             myTimeout.it_value.tv_usec = timeout.tv_usec;
             

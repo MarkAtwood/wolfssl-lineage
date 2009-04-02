@@ -71,7 +71,9 @@ void client_test(void* args)
 
     ((func_args*)args)->return_code = -1; /* error state */
 
-#ifndef NO_TLS
+#if defined(CYASSL_DTLS)
+    method  = DTLSv1_client_method();
+#elif  !defined(NO_TLS)
     method  = TLSv1_client_method();
 #else
     method  = SSLv3_client_method();

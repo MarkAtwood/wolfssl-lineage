@@ -44,6 +44,10 @@
     #define LITTLE_ENDIAN_ORDER
 #endif
 
+#ifdef IPHONE
+    #define SIZEOF_LONG_LONG 8
+#endif
+
 
 typedef unsigned char  byte;
 typedef unsigned short word16;

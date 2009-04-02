@@ -223,6 +223,9 @@ int SetCipherSpecs(SSL* ssl)
 #endif
     }
 
+    if (ssl->options.dtls)
+        ssl->hmac = TLS_hmac;
+
     return 0;
 }
 

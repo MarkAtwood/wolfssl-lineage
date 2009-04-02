@@ -298,7 +298,16 @@ void Hc128_Process(HC128* ctx, byte* output, const byte* input, word32 msglen)
   {
       generate_keystream(ctx, keystream);
 
-      for (i = 0; i < msglen; i ++)
+#ifdef BIG_ENDIAN_ORDER
+      {
+          word32 wordsLeft = msglen / sizeof(word32);
+          if (msglen % sizeof(word32)) wordsLeft++;
+          
+          ByteReverseWords(keystream, keystream, wordsLeft * sizeof(word32));
+      }
+#endif
+
+      for (i = 0; i < msglen; i++)
 	      output[i] = input[i] ^ ((byte*)keystream)[i];
   }
 
