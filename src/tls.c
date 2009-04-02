@@ -254,7 +254,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
     c16toa((word16)sz, length);
 #ifdef CYASSL_DTLS
     if (ssl->options.dtls)
-        c32toa((word32)ssl->keys.dtls_epoch, seq);
+        c16toa(ssl->keys.dtls_epoch, seq);
 #endif
     c32toa(GetSEQIncrement(ssl, verify), &seq[sizeof(word32)]);
     

@@ -431,9 +431,11 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->options.acceptState  = ACCEPT_BEGIN; 
     ssl->options.processReply = doProcessInit;
 
+#ifdef CYASSL_DTLS
     ssl->keys.dtls_sequence_number  = 0;
     ssl->keys.dtls_handshake_number = 0;
     ssl->keys.dtls_epoch   = 0;
+#endif
     ssl->keys.encryptionOn = 0;     /* initially off */
     ssl->options.sessionCacheOff      = ctx->sessionCacheOff;
     ssl->options.sessionCacheFlushOff = ctx->sessionCacheFlushOff;
@@ -1001,11 +1003,20 @@ static int DoFinished(SSL* ssl, const byte* input, word32* inOutIdx)
 {
     byte   verifyMAC[SHA_DIGEST_SIZE];
     int    finishedSz = ssl->options.tls ? TLS_FINISHED_SZ : FINISHED_SZ;
+    int    headerSz = HANDSHAKE_HEADER_SZ;
     word32 macSz = finishedSz + HANDSHAKE_HEADER_SZ,
            idx = *inOutIdx,
            padSz = ssl->keys.encryptSz - HANDSHAKE_HEADER_SZ - finishedSz -
                    ssl->specs.hash_size;
     const byte* mac;
+
+    #ifdef CYASSL_DTLS
+        if (ssl->options.dtls) {
+            headerSz += DTLS_HANDSHAKE_EXTRA;
+            macSz    += DTLS_HANDSHAKE_EXTRA;
+            padSz    -= DTLS_HANDSHAKE_EXTRA;
+        }
+    #endif
 
     #ifdef CYASSL_CALLBACKS
         if (ssl->hsInfoOn) AddPacketName("Finished", &ssl->handShakeInfo);
@@ -1014,7 +1025,7 @@ static int DoFinished(SSL* ssl, const byte* input, word32* inOutIdx)
     if (memcmp(input + idx, &ssl->verifyHashes, finishedSz))
         return VERIFY_FINISHED_ERROR;
 
-    ssl->hmac(ssl, verifyMAC, input + idx - HANDSHAKE_HEADER_SZ, macSz,
+    ssl->hmac(ssl, verifyMAC, input + idx - headerSz, macSz,
          handshake, 1);
     idx += finishedSz;
 
@@ -2713,11 +2724,12 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             c32toa(ticks, output + idx);
                 /* store random */
             memcpy(ssl->arrays.clientRandom, output + idx, RAN_LEN);
-        } else
+        } else {
 #ifdef CYASSL_DTLS
                 /* send same random on hello again */
             memcpy(output + idx, ssl->arrays.clientRandom, RAN_LEN);
 #endif
+        }
         idx += RAN_LEN;
 
             /* then session id */
