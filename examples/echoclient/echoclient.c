@@ -42,7 +42,9 @@ void echoclient_test(void* args)
 
     tcp_connect(&sockfd, yasslIP, yasslPort);
 
-#ifndef NO_TLS
+#if defined(CYASSL_DTLS)
+    method  = DTLSv1_client_method();
+#elif  !defined(NO_TLS)
     method = TLSv1_client_method();
 #else
     method = SSLv3_client_method();

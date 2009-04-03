@@ -53,7 +53,9 @@ THREAD_RETURN CYASSL_API server_test(void* args)
     int  idx;
    
     ((func_args*)args)->return_code = -1; /* error state */
-#ifndef NO_TLS
+#if defined(CYASSL_DTLS)
+    method  = DTLSv1_server_method();
+#elif  !defined(NO_TLS)
     method = TLSv1_server_method();
 #else
     method = SSLv3_server_method();
@@ -84,7 +86,9 @@ THREAD_RETURN CYASSL_API server_test(void* args)
 
     ssl = SSL_new(ctx);
     tcp_accept(&sockfd, &clientfd, (func_args*)args);
+#ifndef CYASSL_DTLS
     CloseSocket(sockfd);
+#endif
 
     SSL_set_fd(ssl, clientfd);
 

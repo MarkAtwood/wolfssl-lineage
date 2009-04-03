@@ -183,7 +183,11 @@ static INLINE void tcp_socket(SOCKET_T* sockfd, SOCKADDR_IN_T* addr,
     }
 #endif
 
+#ifdef CYASSL_DTLS
+    *sockfd = socket(AF_INET_V, SOCK_DGRAM, 0);
+#else
     *sockfd = socket(AF_INET_V, SOCK_STREAM, 0);
+#endif
     memset(addr, 0, sizeof(SOCKADDR_IN_T));
 
 #ifndef TEST_IPV6
@@ -225,15 +229,73 @@ static INLINE void tcp_listen(SOCKET_T* sockfd)
 
     if (bind(*sockfd, (const struct sockaddr*)&addr, sizeof(addr)) != 0)
         err_sys("tcp bind failed");
+#ifndef CYASSL_DTLS
     if (listen(*sockfd, 3) != 0)
         err_sys("tcp listen failed");
+#endif
 }
 
+
+static INLINE int udp_read_connect(SOCKET_T sockfd)
+{
+    SOCKADDR_IN_T cliaddr;
+    byte          b;
+    int           n;
+    socklen_t     len = sizeof(cliaddr);
+
+    n = recvfrom(sockfd, &b, sizeof(b), MSG_PEEK, (struct sockaddr*)&cliaddr,
+                 &len);
+    if (n == 1) {
+        if (connect(sockfd, (const struct sockaddr*)&cliaddr,
+                    sizeof(cliaddr)) != 0)
+            err_sys("udp connect failed");
+    }
+    else
+        err_sys("recvfrom failed");
+
+    return sockfd;
+}
+
+static INLINE void udp_accept(SOCKET_T* sockfd, int* clientfd, func_args* args)
+{
+    SOCKADDR_IN_T addr;
+
+    tcp_socket(sockfd, &addr, yasslIP, yasslPort);
+
+
+#ifndef _WIN32
+    {
+        int       on  = 1;
+        socklen_t len = sizeof(on);
+        setsockopt(*sockfd, SOL_SOCKET, SO_REUSEADDR, &on, len);
+    }
+#endif
+
+    if (bind(*sockfd, (const struct sockaddr*)&addr, sizeof(addr)) != 0)
+        err_sys("tcp bind failed");
+
+#if defined(_POSIX_THREADS) && defined(NO_MAIN_DRIVER)
+    /* signal ready to accept data */
+    {
+    tcp_ready* ready = args->signal;
+    pthread_mutex_lock(&ready->mutex);
+    ready->ready = 1;
+    pthread_cond_signal(&ready->cond);
+    pthread_mutex_unlock(&ready->mutex);
+    }
+#endif
+
+    *clientfd = udp_read_connect(*sockfd);
+}
 
 static INLINE void tcp_accept(SOCKET_T* sockfd, int* clientfd, func_args* args)
 {
     SOCKADDR_IN_T client;
     socklen_t client_len = sizeof(client);
+
+    #ifdef CYASSL_DTLS
+        return udp_accept(sockfd, clientfd, args);
+    #endif
 
     tcp_listen(sockfd);
 

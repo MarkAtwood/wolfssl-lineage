@@ -30,7 +30,9 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
 
     tcp_listen(&sockfd);
 
-#ifndef NO_TLS
+#if defined(CYASSL_DTLS)
+    method  = DTLSv1_server_method();
+#elif  !defined(NO_TLS)
     method = TLSv1_server_method();
 #else
     method = SSLv3_server_method();
@@ -68,8 +70,14 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
 
         SOCKADDR_IN_T client;
         socklen_t   client_len = sizeof(client);
-        int         clientfd   = accept(sockfd, (struct sockaddr*)&client,
-                                        (ACCEPT_THIRD_T)&client_len);
+        int         clientfd;
+                
+#ifndef CYASSL_DTLS 
+        clientfd = accept(sockfd, (struct sockaddr*)&client,
+                         (ACCEPT_THIRD_T)&client_len);
+#else
+        clientfd = udp_read_connect(sockfd);
+#endif
         if (clientfd == -1) err_sys("tcp accept failed");
 
         ssl = SSL_new(ctx);
@@ -120,7 +128,9 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
         }
         SSL_shutdown(ssl);
         SSL_free(ssl);
+#ifndef CYASLS_DTLS
         CloseSocket(clientfd);
+#endif
     }
 
     CloseSocket(sockfd);

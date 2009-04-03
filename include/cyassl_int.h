@@ -188,6 +188,7 @@ enum Misc {
     RAN_LEN      = 32,         /* random length           */
     SEED_LEN     = RAN_LEN * 2, /* tls prf seed length    */
     ID_LEN       = 32,         /* session id length       */
+    MAX_COOKIE_LEN = 32,       /* max dtls cookie size    */
     SUITE_LEN    =  2,         /* cipher suite sz length  */
     ENUM_LEN     =  1,         /* always a byte           */
     COMP_LEN     =  1,         /* compression length      */
@@ -197,6 +198,11 @@ enum Misc {
     CERT_HEADER_SZ      = 3,   /* always 3 bytes          */
     REQ_HEADER_SZ       = 2,   /* cert request header sz  */
     HINT_LEN_SZ         = 2,   /* length of hint size field */
+
+    DTLS_HANDSHAKE_HEADER_SZ = 12, /* normal + seq(2) + offset(3) + length(3) */
+    DTLS_RECORD_HEADER_SZ    = 13, /* normal + epoch(2) + seq_num(6) */
+    DTLS_HANDSHAKE_EXTRA     = 8,  /* diff from normal */
+    DTLS_RECORD_EXTRA        = 8,  /* diff from normal */
 
     FINISHED_LABEL_SZ   = 15,  /* TLS finished label size */
     TLS_FINISHED_SZ     = 12,  /* TLS has a shorter size  */
@@ -239,6 +245,7 @@ enum Misc {
 enum states {
     NULL_STATE = 0,
 
+    SERVER_HELLOVERIFYREQUEST_COMPLETE,
     SERVER_HELLO_COMPLETE,
     SERVER_CERT_COMPLETE,
     SERVER_KEYEXCHANGE_COMPLETE,
@@ -276,6 +283,9 @@ ProtocolVersion MakeSSLv3(void);
 ProtocolVersion MakeTLSv1(void);
 ProtocolVersion MakeTLSv1_1(void);
 
+#ifdef CYASSL_DTLS
+    ProtocolVersion MakeDTLSv1(void);
+#endif
 
 /* OpenSSL method type */
 struct SSL_METHOD {
@@ -338,6 +348,10 @@ typedef int (*CallbackIOSend)(char *buf, int sz, void *ctx);
 /* default IO callbacks */
 int EnbedReceive(char *buf, int sz, void *ctx);
 int EmbedSend(char *buf, int sz, void *ctx);
+
+#ifdef CYASSL_DTLS
+    int IsUDP(void*);
+#endif
 
 /* OpenSSL context type */
 struct SSL_CTX {
@@ -457,6 +471,13 @@ typedef struct Keys {
 
     word32 peer_sequence_number;
     word32 sequence_number;
+    
+#ifdef CYASSL_DTLS
+    word32 dtls_sequence_number;
+    word16 dtls_handshake_number;
+    word16 dtls_epoch;
+    word16 dtls_peer_epoch;
+#endif
 
     word32 encryptSz;             /* last size of encrypted data   */
     byte   encryptionOn;          /* true after change cipher spec */
@@ -510,6 +531,8 @@ typedef void (*hmacfp) (SSL*, byte*, const byte*, word32, int, int);
 enum ConnectState {
     CONNECT_BEGIN = 0,
     CLIENT_HELLO_SENT,
+    HELLO_AGAIN,               /* HELLO_AGAIN s for DTLS case */
+    HELLO_AGAIN_REPLY,
     FIRST_REPLY_DONE,
     FIRST_REPLY_FIRST,
     FIRST_REPLY_SECOND,
@@ -523,6 +546,8 @@ enum ConnectState {
 /* server accpet state for nonblocking restart */
 enum AcceptState {
     ACCEPT_BEGIN = 0,
+    ACCEPT_CLIENT_HELLO_DONE,
+    HELLO_VERIFY_SENT,
     ACCEPT_FIRST_REPLY_DONE,
     SERVER_HELLO_SENT,
     CERT_SENT,
@@ -565,6 +590,7 @@ typedef struct Options {
     byte            resuming;
     byte            tls;                /* using TLS ? */
     byte            tls1_1;             /* using TLSv1.1 ? */
+    byte            dtls;               /* using datagrams ? */
     byte            connReset;          /* has the peer reset */
     byte            isClosed;           /* if we consider conn closed */
     byte            closeNotify;        /* we've recieved a close notify */
@@ -589,6 +615,9 @@ typedef struct Arrays {
     byte            sessionID[ID_LEN];
     byte            preMasterSecret[ENCRYPT_LEN];
     byte            masterSecret[SECRET_LEN];
+#ifdef CYASSL_DTLS
+    byte            cookie[MAX_COOKIE_LEN];
+#endif
 #ifndef NO_PSK
     char            client_identity[MAX_PSK_ID_LEN];
     char            server_hint[MAX_PSK_ID_LEN];
@@ -619,6 +648,17 @@ typedef struct RecordLayerHeader {
     ProtocolVersion version;
     byte            length[2];
 } RecordLayerHeader;
+
+
+/* record layer header for DTLS PlainText, Compressed, and CipherText */
+typedef struct DtlsRecordLayerHeader {
+    byte            type;
+    ProtocolVersion version;
+    byte            epoch[2];             /* increment on cipher state change */
+    byte            sequence_number[6];   /* per record */
+    byte            length[2];
+} DtlsRecordLayerHeader;
+
 
 /* OpenSSL ssl type */
 struct SSL {
@@ -697,11 +737,22 @@ typedef struct HandShakeHeader {
 } HandShakeHeader;
 
 
+/* DTLS handshake header, same for each message type */
+typedef struct DtlsHandShakeHeader {
+    byte            type;
+    word24          length;
+    byte            message_seq[2];    /* start at 0, restransmit gets same # */
+    word24          fragment_offset;   /* bytes in previous fragments */
+    word24          fragment_length;   /* length of this fragment */
+} DtlsHandShakeHeader;
+
+
 enum HandShakeType {
     no_shake            = -1,
     hello_request       = 0, 
     client_hello        = 1, 
     server_hello        = 2,
+    hello_verify_request = 3,       /* DTLS addition */
     certificate         = 11, 
     server_key_exchange = 12,
     certificate_request = 13, 
@@ -772,6 +823,9 @@ int  StoreKeys(SSL* ssl, const byte* keyData);
 #ifndef NO_CYASSL_SERVER
     int SendServerHello(SSL*);
     int SendServerHelloDone(SSL*);
+    #ifdef CYASSL_DTLS
+        int SendHelloVerifyRequest(SSL*);
+    #endif
 #endif /* NO_CYASSL_SERVER */
 
 

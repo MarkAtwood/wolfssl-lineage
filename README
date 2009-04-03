@@ -2,16 +2,30 @@
 
 CyaSSL takes a different approach to certificate verification than OpenSSL does.The default policy for the client is to verify the server, this means that if
 you don't load CAs to verify the server you'll get a connect error, unable to 
-verify.  It you want to mimic OpenSSL behavior of not verifying the server and
-reducing security you can do this by calling:
+verify.  It you want to mimic OpenSSL behavior of having SSL_connect succeed
+even if verifying the server fails and reducing security you can do this by
+calling:
 
 SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, 0);
 
-before calling SSL_new();
+before calling SSL_new();  Though it's not recommended.
 
 *** end Note ***
 
-CyaSSL Release Candidiate 3 rc3-1.0.0 (2/25/2009)
+CyaSSL Release 1.0.2 (4/3/2009)
+
+Release 1.0.2 for CyaSSL adds bug fixes for a couple I/O issues.  Some systems
+will send a SIGPIPE on socket recv() at any time and this should be handled by
+the application by turning off SIGPIPE through setsockopt() or returning from
+the handler.
+
+Release 1.0.2 includes an alpha release of DTLS for both client and servers.
+This is only for testing purposes at this time.  Rebroadcast and reordering
+aren't fully implemented at this time but will be for the next release.
+
+For general build instructions see rc1 below.
+
+*****************CyaSSL Release Candidiate 3 rc3-1.0.0 (2/25/2009)
 
 
 Release Candidate 3 for CyaSSL 1.0.0 adds bug fixes and adds a project file for
