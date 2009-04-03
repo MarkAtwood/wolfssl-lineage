@@ -229,6 +229,15 @@ static INLINE word32 GetSEQIncrement(SSL* ssl, int verify)
 }
 
 
+static INLINE word32 GetEpoch(SSL* ssl, int verify)
+{
+    if (verify)
+        return ssl->keys.dtls_peer_epoch; 
+    else
+        return ssl->keys.dtls_epoch; 
+}
+
+
 static INLINE const byte* GetMacSecret(SSL* ssl, int verify)
 {
     if ( (ssl->options.side == CLIENT_END && !verify) ||
@@ -254,7 +263,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
     c16toa((word16)sz, length);
 #ifdef CYASSL_DTLS
     if (ssl->options.dtls)
-        c16toa(ssl->keys.dtls_epoch, seq);
+        c16toa(GetEpoch(ssl, verify), seq);
 #endif
     c32toa(GetSEQIncrement(ssl, verify), &seq[sizeof(word32)]);
     

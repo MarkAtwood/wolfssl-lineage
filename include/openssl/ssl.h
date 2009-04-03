@@ -69,6 +69,7 @@ SSL_METHOD *TLSv1_1_client_method(void);
 
 #ifdef CYASSL_DTLS
     SSL_METHOD *DTLSv1_client_method(void);
+    SSL_METHOD *DTLSv1_server_method(void);
 #endif
 
 #ifndef NO_FILESYSTEM

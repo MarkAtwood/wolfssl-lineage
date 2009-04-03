@@ -188,6 +188,7 @@ enum Misc {
     RAN_LEN      = 32,         /* random length           */
     SEED_LEN     = RAN_LEN * 2, /* tls prf seed length    */
     ID_LEN       = 32,         /* session id length       */
+    MAX_COOKIE_LEN = 32,       /* max dtls cookie size    */
     SUITE_LEN    =  2,         /* cipher suite sz length  */
     ENUM_LEN     =  1,         /* always a byte           */
     COMP_LEN     =  1,         /* compression length      */
@@ -475,6 +476,7 @@ typedef struct Keys {
     word32 dtls_sequence_number;
     word16 dtls_handshake_number;
     word16 dtls_epoch;
+    word16 dtls_peer_epoch;
 #endif
 
     word32 encryptSz;             /* last size of encrypted data   */
@@ -544,6 +546,8 @@ enum ConnectState {
 /* server accpet state for nonblocking restart */
 enum AcceptState {
     ACCEPT_BEGIN = 0,
+    ACCEPT_CLIENT_HELLO_DONE,
+    HELLO_VERIFY_SENT,
     ACCEPT_FIRST_REPLY_DONE,
     SERVER_HELLO_SENT,
     CERT_SENT,
@@ -611,6 +615,9 @@ typedef struct Arrays {
     byte            sessionID[ID_LEN];
     byte            preMasterSecret[ENCRYPT_LEN];
     byte            masterSecret[SECRET_LEN];
+#ifdef CYASSL_DTLS
+    byte            cookie[MAX_COOKIE_LEN];
+#endif
 #ifndef NO_PSK
     char            client_identity[MAX_PSK_ID_LEN];
     char            server_hint[MAX_PSK_ID_LEN];
@@ -816,6 +823,9 @@ int  StoreKeys(SSL* ssl, const byte* keyData);
 #ifndef NO_CYASSL_SERVER
     int SendServerHello(SSL*);
     int SendServerHelloDone(SSL*);
+    #ifdef CYASSL_DTLS
+        int SendHelloVerifyRequest(SSL*);
+    #endif
 #endif /* NO_CYASSL_SERVER */
 
 

@@ -496,13 +496,13 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
         assert(ssl->options.side == CLIENT_END);
 
-#ifdef CYASSL_DTLS
-        if (ssl->version.major == 0xfe && ssl->version.minor == 0xff) {
-            ssl->options.dtls   = 1;
-            ssl->options.tls    = 1;
-            ssl->options.tls1_1 = 1;
-        }
-#endif
+        #ifdef CYASSL_DTLS
+            if (ssl->version.major == 0xfe && ssl->version.minor == 0xff) {
+                ssl->options.dtls   = 1;
+                ssl->options.tls    = 1;
+                ssl->options.tls1_1 = 1;
+            }
+        #endif
 
         if (ssl->buffers.outputBuffer.length > 0) {
             if ( (ssl->error = SendBuffered(ssl)) == 0) {
@@ -669,11 +669,32 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
     }
 
 
+    #ifdef CYASSL_DTLS
+        SSL_METHOD* DTLSv1_server_method(void)
+        {
+            SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
+            if (method) {
+                InitSSL_Method(method, MakeDTLSv1());
+                method->side = SERVER_END;
+            }
+            return method;
+        }
+    #endif
+
+
     int SSL_accept(SSL* ssl)
     {
         assert(ssl->options.side == SERVER_END);
 
         CYASSL_ENTER("SSL_accept()");
+
+        #ifdef CYASSL_DTLS
+            if (ssl->version.major == 0xfe && ssl->version.minor == 0xff) {
+                ssl->options.dtls   = 1;
+                ssl->options.tls    = 1;
+                ssl->options.tls1_1 = 1;
+            }
+        #endif
 
         if (ssl->buffers.outputBuffer.length > 0) {
             if ( (ssl->error = SendBuffered(ssl)) == 0) {
@@ -695,6 +716,35 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
                     CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
                 }
+            ssl->options.acceptState = ACCEPT_CLIENT_HELLO_DONE;
+            CYASSL_MSG("accept state ACCEPT_CLIENT_HELLO_DONE");
+
+        case ACCEPT_CLIENT_HELLO_DONE :
+            #ifdef CYASSL_DTLS
+                if (ssl->options.dtls)
+                    if ( (ssl->error = SendHelloVerifyRequest(ssl)) != 0) {
+                        CYASSL_ERROR(ssl->error);
+                        return SSL_FATAL_ERROR;
+                    }
+            #endif
+            ssl->options.acceptState = HELLO_VERIFY_SENT;
+            CYASSL_MSG("accept state HELLO_VERIFY_SENT");
+
+        case HELLO_VERIFY_SENT:
+            #ifdef CYASSL_DTLS
+                if (ssl->options.dtls) {
+                    ssl->options.clientState = NULL_STATE;  /* get again */
+                    /* re-init hashes, exclude first hello and verify request */
+                    InitMd5(&ssl->hashMd5);
+                    InitSha(&ssl->hashSha);
+
+                    while (ssl->options.clientState < CLIENT_HELLO_COMPLETE)
+                        if ( (ssl->error = ProcessReply(ssl)) < 0) {
+                            CYASSL_ERROR(ssl->error);
+                            return SSL_FATAL_ERROR;
+                        }
+                }
+            #endif
             ssl->options.acceptState = ACCEPT_FIRST_REPLY_DONE;
             CYASSL_MSG("accept state ACCEPT_FIRST_REPLY_DONE");
 

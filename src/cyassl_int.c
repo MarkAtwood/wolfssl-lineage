@@ -434,7 +434,8 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
 #ifdef CYASSL_DTLS
     ssl->keys.dtls_sequence_number  = 0;
     ssl->keys.dtls_handshake_number = 0;
-    ssl->keys.dtls_epoch   = 0;
+    ssl->keys.dtls_epoch      = 0;
+    ssl->keys.dtls_peer_epoch = 0;
 #endif
     ssl->keys.encryptionOn = 0;     /* initially off */
     ssl->options.sessionCacheOff      = ctx->sessionCacheOff;
@@ -1422,7 +1423,7 @@ static int GetInputData(SSL *ssl, size_t size)
    negative number is error */
 int ProcessReply(SSL* ssl)
 {
-    int    ret, type, readSz;
+    int    ret, type, readSz, used;
     word32 startIdx = 0;
     byte   b0, b1;
 
@@ -1441,8 +1442,19 @@ lbl_doProcessInit:
             #endif
 
             /* get header or return error */
-            if ((ret = GetInputData(ssl, readSz)) < 0)
-                return ret;
+            if (!ssl->options.dtls) {
+                if ((ret = GetInputData(ssl, readSz)) < 0)
+                    return ret;
+            } else {
+            #ifdef CYASSL_DTLS
+                /* read ahead may already have header */
+                used = ssl->buffers.inputBuffer.length -
+                       ssl->buffers.inputBuffer.idx;
+                if (used < readSz)
+                    if ((ret = GetInputData(ssl, readSz)) < 0)
+                        return ret;
+            #endif
+            }
 
 #ifndef NO_CYASSL_SERVER
 
@@ -1475,8 +1487,8 @@ lbl_doProcessInit:
             } else {
 #ifdef CYASSL_DTLS
                 /* read ahead may already have */
-                int used = ssl->buffers.inputBuffer.length -
-                           ssl->buffers.inputBuffer.idx;
+                used = ssl->buffers.inputBuffer.length -
+                       ssl->buffers.inputBuffer.idx;
                 if (used < ssl->curSize)
                     if ((ret = GetInputData(ssl, ssl->curSize)) < 0)
                         return ret;
@@ -1521,8 +1533,8 @@ lbl_getRecordLayerHeader:
             } else {
 #ifdef CYASSL_DTLS
                 /* read ahead may already have */
-                int used = ssl->buffers.inputBuffer.length -
-                ssl->buffers.inputBuffer.idx;
+                used = ssl->buffers.inputBuffer.length -
+                       ssl->buffers.inputBuffer.idx;
                 if (used < ssl->curSize)
                     if ((ret = GetInputData(ssl, ssl->curSize)) < 0)
                         return ret;
@@ -1572,6 +1584,11 @@ lbl_runProcessingOneMessage:
                     ssl->buffers.inputBuffer.idx++;
                     ssl->keys.encryptionOn = 1;
 
+                    #ifdef CYASSL_DTLS
+                        if (ssl->options.dtls)
+                            ssl->keys.dtls_peer_epoch++;
+                    #endif
+
                     #ifdef HAVE_LIBZ
                         if (ssl->options.usingCompression)
                             if ( (ret = InitStreams(ssl)) != 0)
@@ -1618,6 +1635,11 @@ lbl_runProcessingOneMessage:
                 return 0;
             /* more messages per record */
             else if ((ssl->buffers.inputBuffer.idx - startIdx) < ssl->curSize) {
+                #ifdef CYASSL_DTLS
+                    /* read-ahead but dtls doesn't bundle messages per record */
+                    if (ssl->options.dtls)
+                        goto lbl_doProcessInit;
+                #endif
                 ssl->options.processReply = runProcessingOneMessage;
                 goto lbl_runProcessingOneMessage;
             }
@@ -1915,18 +1937,22 @@ int SendFinished(SSL* ssl)
 
 int SendCertificate(SSL* ssl)
 {
-    int    sendSz, ret = 0;
+    int    sendSz, length, ret = 0;
     word32 i = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
     byte*  output = 0;
-
-    RecordLayerHeader* rl;
-    HandShakeHeader*   hs;
 
     if (ssl->options.usingPSK_cipher) return 0;  /* not needed */
 
     /* list + cert size */
-    sendSz = ssl->buffers.certificate.length + 2 * CERT_HEADER_SZ +
-        RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
+    length = ssl->buffers.certificate.length + 2 * CERT_HEADER_SZ;
+    sendSz = length + RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
+
+    #ifdef CYASSL_DTLS
+        if (ssl->options.dtls) {
+            sendSz += DTLS_RECORD_EXTRA + DTLS_HANDSHAKE_EXTRA;
+            i      += DTLS_RECORD_EXTRA + DTLS_HANDSHAKE_EXTRA;
+        }
+    #endif
 
     /* check for avalaible size */
     if ((ret = CheckAvalaibleSize(ssl, sendSz)) != 0)
@@ -1936,16 +1962,7 @@ int SendCertificate(SSL* ssl)
     output = ssl->buffers.outputBuffer.buffer +
              ssl->buffers.outputBuffer.idx;
 
-    /* record layer header */
-    rl = (RecordLayerHeader*)output;
-    rl->type    = handshake;
-    rl->version = ssl->version;
-    c16toa((word16)(sendSz - RECORD_HEADER_SZ), rl->length);      
-
-    /* make handshake header */
-    hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
-    hs->type = certificate;
-    c32to24(ssl->buffers.certificate.length + 2 * CERT_HEADER_SZ, hs->length);
+    AddHeaders(output, length, certificate, ssl);
 
     /* list total */
     c32to24(ssl->buffers.certificate.length + CERT_HEADER_SZ, output + i);
@@ -1981,9 +1998,6 @@ int SendCertificateRequest(SSL* ssl)
     int    sendSz;
     word32 i = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
     
-    RecordLayerHeader *rl;
-    HandShakeHeader   *hs;
-
     int  typeTotal = 1;  /* only rsa for now */
     int  reqSz = ENUM_LEN + typeTotal + REQ_HEADER_SZ;  /* add auth later */
 
@@ -1991,24 +2005,20 @@ int SendCertificateRequest(SSL* ssl)
 
     sendSz = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ + reqSz;
 
+    #ifdef CYASSL_DTLS
+        if (ssl->options.dtls) {
+            sendSz += DTLS_RECORD_EXTRA + DTLS_HANDSHAKE_EXTRA;
+            i      += DTLS_RECORD_EXTRA + DTLS_HANDSHAKE_EXTRA;
+        }
+    #endif
     /* check for avalaible size */
     if ((ret = CheckAvalaibleSize(ssl, sendSz)) != 0)
         return ret;
 
     /* get ouput buffer */
-    output = ssl->buffers.outputBuffer.buffer + 
-             ssl->buffers.outputBuffer.idx;
+    output = ssl->buffers.outputBuffer.buffer + ssl->buffers.outputBuffer.idx;
 
-    /* record layer header */
-    rl = (RecordLayerHeader*)output;
-    rl->type    = handshake;
-    rl->version = ssl->version;
-    c16toa((word16)(sendSz - RECORD_HEADER_SZ), rl->length);      
-
-    /* make handshake header */
-    hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
-    hs->type = certificate_request;
-    c32to24(reqSz, hs->length);
+    AddHeaders(output, reqSz, certificate_request, ssl);
 
     /* write to output */
     output[i++] = typeTotal;  /* # of types */
@@ -3156,8 +3166,6 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     int SendCertificateVerify(SSL* ssl)
     {
         byte              *output;
-        RecordLayerHeader *rl;
-        HandShakeHeader   *hs;
         int                sendSz = 0, length, ret;
         word32             idx = 0;
         RsaKey             key;
@@ -3179,6 +3187,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         if (ret == 0) {
             byte* verify = (byte*)&output[RECORD_HEADER_SZ +
                                           HANDSHAKE_HEADER_SZ];
+            #ifdef CYASSL_DTLS
+                if (ssl->options.dtls)
+                    verify += DTLS_RECORD_EXTRA + DTLS_HANDSHAKE_EXTRA;
+            #endif
             length = RsaEncryptSize(&key);
             c16toa((word16)length, verify);   /* prepend verify header */
 
@@ -3187,18 +3199,16 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
             if (ret > 0) {
                 ret = 0;  /* reset */
-                hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
-                hs->type = certificate_verify;
-                c32to24(length + VERIFY_HEADER, hs->length);
 
-                rl = (RecordLayerHeader*)output;
-                rl->type = handshake;
-                rl->version = ssl->version;
-                c16toa((word16)(length + VERIFY_HEADER + HANDSHAKE_HEADER_SZ),
-                       rl->length);
+                AddHeaders(output, length + VERIFY_HEADER, certificate_verify,
+                           ssl);
 
                 sendSz = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ + length +
-                            VERIFY_HEADER;
+                                            VERIFY_HEADER;
+                #ifdef CYASSL_DTLS
+                    if (ssl->options.dtls)
+                        sendSz += DTLS_RECORD_EXTRA + DTLS_HANDSHAKE_EXTRA;
+                #endif
                 HashOutput(ssl, output, sendSz, 0);
             }
         }
@@ -3230,8 +3240,6 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     int SendServerHello(SSL* ssl)
     {
         byte              *output;
-        RecordLayerHeader *rl;
-        HandShakeHeader   *hs;
         word32             length, idx = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
         int                sendSz;
         int                ret;
@@ -3249,17 +3257,15 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         output = ssl->buffers.outputBuffer.buffer + 
                  ssl->buffers.outputBuffer.idx;
 
-        /* handshake header */
-        hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
-        hs->type = server_hello;
-        c32to24(length, hs->length);
+        sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
+        AddHeaders(output, length, server_hello, ssl);
 
-        /* record layer header */
-        rl = (RecordLayerHeader*)output;
-        rl->type    = handshake;
-        rl->version = ssl->version;
-        c16toa((word16)(length + HANDSHAKE_HEADER_SZ), rl->length);
-
+        #ifdef CYASSL_DTLS
+            if (ssl->options.dtls) {
+                idx    += DTLS_RECORD_EXTRA + DTLS_HANDSHAKE_EXTRA;
+                sendSz += DTLS_RECORD_EXTRA + DTLS_HANDSHAKE_EXTRA;
+            }
+        #endif
         /* now write to output */
             /* first version */
         memcpy(output + idx, &ssl->version, sizeof(ProtocolVersion));
@@ -3288,7 +3294,6 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         else
             output[idx++] = NO_COMPRESSION;
             
-        sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
         ssl->buffers.outputBuffer.length += sendSz;
         HashOutput(ssl, output, sendSz, 0);
 
@@ -3308,8 +3313,6 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     int SendServerKeyExchange(SSL* ssl)
     {
         byte              *output;
-        RecordLayerHeader *rl;
-        HandShakeHeader   *hs;
         word32             length, idx = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
         int                sendSz;
         int                ret = 0;
@@ -3325,6 +3328,12 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             length += + HINT_LEN_SZ;
             sendSz = length + HANDSHAKE_HEADER_SZ + RECORD_HEADER_SZ;
 
+            #ifdef CYASSL_DTLS 
+                if (ssl->options.dtls) {
+                    sendSz += DTLS_RECORD_EXTRA + DTLS_HANDSHAKE_EXTRA;
+                    idx    += DTLS_RECORD_EXTRA + DTLS_HANDSHAKE_EXTRA;
+                }
+            #endif
             /* check for avalaible size */
             if ((ret = CheckAvalaibleSize(ssl, sendSz)) != 0)
                return ret;
@@ -3333,21 +3342,12 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             output = ssl->buffers.outputBuffer.buffer + 
                      ssl->buffers.outputBuffer.idx;
 
-            /* handshake header */
-            hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
-            hs->type = server_key_exchange;
-            c32to24(length, hs->length);
-
-            /* record layer header */
-            rl = (RecordLayerHeader*)output;
-            rl->type    = handshake;
-            rl->version = ssl->version;
-            c16toa((word16)(length + HANDSHAKE_HEADER_SZ), rl->length);
+            AddHeaders(output, length, server_key_exchange, ssl);
 
             /* key data */
             c16toa((word16)(length - HINT_LEN_SZ), output + idx);
             idx += HINT_LEN_SZ;
-            memcpy(output + idx, ssl->arrays.server_hint, length -HINT_LEN_SZ);
+            memcpy(output + idx, ssl->arrays.server_hint, length - HINT_LEN_SZ);
 
             HashOutput(ssl, output, sendSz, 0);
 
@@ -3521,8 +3521,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             ssl->version.minor  = 0;
             InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, FALSE);
         }
+        /* random */
         memcpy(ssl->arrays.clientRandom, input + i, RAN_LEN);
         i += RAN_LEN;
+        /* session id */
         b = input[i++];
         if (b) {
             if (i + ID_LEN > totalSz)
@@ -3531,6 +3533,21 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             i += b;
             ssl->options.resuming= 1; /* client wants to resume */
         }
+        
+        #ifdef CYASSL_DTLS
+            /* cookie */
+            if (ssl->options.dtls) {
+                b = input[i++];
+                if (b) {
+                    if (b > MAX_COOKIE_LEN)
+                        return BUFFER_ERROR;
+                    if (i + b > totalSz)
+                        return INCOMPLETE_DATA;
+                    memcpy(ssl->arrays.cookie, input + i, b);
+                    i += b;
+                }
+            }
+        #endif
 
         if (i + LENGTH_SZ > totalSz)
             return INCOMPLETE_DATA;
@@ -3633,11 +3650,13 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     int SendServerHelloDone(SSL* ssl)
     {
         byte              *output;
-        RecordLayerHeader *rl;
-        HandShakeHeader   *hs;
         int                sendSz = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
         int                ret;
 
+        #ifdef CYASSL_DTLS
+            if (ssl->options.dtls)
+                sendSz += DTLS_RECORD_EXTRA + DTLS_HANDSHAKE_EXTRA;
+        #endif
         /* check for avalaible size */
         if ((ret = CheckAvalaibleSize(ssl, sendSz)) != 0)
             return ret;
@@ -3646,16 +3665,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         output = ssl->buffers.outputBuffer.buffer +
                  ssl->buffers.outputBuffer.idx;
 
-        /* handshake header */
-        hs = (HandShakeHeader*)&output[RECORD_HEADER_SZ];
-        hs->type = server_hello_done;
-        c32to24(0, hs->length);
-
-        /* record layer header */
-        rl = (RecordLayerHeader*)output;
-        rl->type    = handshake;
-        rl->version = ssl->version;
-        c16toa(HANDSHAKE_HEADER_SZ, rl->length);
+        AddHeaders(output, 0, server_hello_done, ssl);
 
         HashOutput(ssl, output, sendSz, 0);
 #ifdef CYASSL_CALLBACKS
@@ -3666,6 +3676,44 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
                           ssl->heap);
 #endif
         ssl->options.serverState = SERVER_HELLODONE_COMPLETE;
+
+        ssl->buffers.outputBuffer.length += sendSz;
+
+        return SendBuffered(ssl);
+    }
+
+
+    int SendHelloVerifyRequest(SSL* ssl)
+    {
+        byte* output;
+        int   length = VERSION_SZ + ENUM_LEN;
+        int   idx    = DTLS_RECORD_HEADER_SZ + DTLS_HANDSHAKE_HEADER_SZ;
+        int   sendSz = length + idx;
+        int   ret;
+
+        /* check for avalaible size */
+        if ((ret = CheckAvalaibleSize(ssl, sendSz)) != 0)
+            return ret;
+
+        /* get ouput buffer */
+        output = ssl->buffers.outputBuffer.buffer +
+                 ssl->buffers.outputBuffer.idx;
+
+        AddHeaders(output, length, hello_verify_request, ssl);
+
+        memcpy(output + idx, &ssl->chVersion, VERSION_SZ);
+        idx += VERSION_SZ;
+        output[idx++] = 0;     /* no cookie for now */
+
+        HashOutput(ssl, output, sendSz, 0);
+#ifdef CYASSL_CALLBACKS
+        if (ssl->hsInfoOn)
+            AddPacketName("HelloVerifyRequest", &ssl->handShakeInfo);
+        if (ssl->toInfoOn)
+            AddPacketInfo("HelloVerifyRequest", &ssl->timeoutInfo, output,
+                          sendSz, ssl->heap);
+#endif
+        ssl->options.serverState = SERVER_HELLOVERIFYREQUEST_COMPLETE;
 
         ssl->buffers.outputBuffer.length += sendSz;
 
