@@ -140,6 +140,14 @@ static INLINE void ato16(const byte* c, word16* u16)
 }
 
 
+/* convert opaque to 32 bit integer */
+static INLINE void ato32(const byte* c, word32* u32)
+{
+    *u32 = 0;
+    *u32 = (c[0] << 24) | (c[1] << 16) | (c[2] << 8) | c[3];
+}
+
+
 #ifdef HAVE_LIBZ
 
     /* alloc user allocs to work with zlib */
@@ -432,8 +440,9 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->options.processReply = doProcessInit;
 
 #ifdef CYASSL_DTLS
-    ssl->keys.dtls_sequence_number  = 0;
-    ssl->keys.dtls_handshake_number = 0;
+    ssl->keys.dtls_sequence_number       = 0;
+    ssl->keys.dtls_peer_sequence_number  = 0;
+    ssl->keys.dtls_handshake_number      = 0;
     ssl->keys.dtls_epoch      = 0;
     ssl->keys.dtls_peer_epoch = 0;
 #endif
@@ -790,7 +799,9 @@ static int GetRecordHeader(SSL* ssl, const byte* input, word32* inOutIdx,
         /* type and version in same sport */
         memcpy(rh, input + *inOutIdx, ENUM_LEN + VERSION_SZ);
         *inOutIdx += ENUM_LEN + VERSION_SZ;
-        *inOutIdx += 8;  /* skip epoch and seq for now */
+        *inOutIdx += 4;  /* skip epoch and first 2 seq bytes for now */
+        ato32(input + *inOutIdx, &ssl->keys.dtls_peer_sequence_number);
+        *inOutIdx += 4;  /* advance past rest of seq */
         ato16(input + *inOutIdx, size);
         *inOutIdx += LENGTH_SZ;
 #endif
@@ -2067,6 +2078,13 @@ int SendData(SSL* ssl, const void* buffer, int sz)
 #endif
 
         if (sent == sz) break;
+
+#ifdef CYASSL_DTLS
+        if (ssl->options.dtls) {
+            len    = min(len, MAX_UDP_SIZE);
+            buffSz = len;
+        }
+#endif
 
         /* check for avalaible size */
         if ((ret = CheckAvalaibleSize(ssl, len + MAX_COMP_EXTRA +

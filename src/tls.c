@@ -222,6 +222,14 @@ static INLINE void c32toa(word32 u32, byte* c)
 
 static INLINE word32 GetSEQIncrement(SSL* ssl, int verify)
 {
+#ifdef CYASSL_DTLS
+    if (ssl->options.dtls) {
+        if (verify)
+            return ssl->keys.dtls_peer_sequence_number; /* explicit from peer */
+        else
+            return ssl->keys.dtls_sequence_number - 1; /* already incremented */
+    }
+#endif
     if (verify)
         return ssl->keys.peer_sequence_number++; 
     else

@@ -170,6 +170,7 @@ enum Misc {
     SIZEOF_SENDER   =  4,       /* clnt or srvr           */
     FINISHED_SZ     = MD5_DIGEST_SIZE + SHA_DIGEST_SIZE,
     MAX_RECORD_SIZE = 16384,    /* 2^14, max size by standard */
+    MAX_UDP_SIZE    = 1400,     /* don't exceed MTU */
     MAX_MSG_EXTRA   = 68,       /* max added to msg, mac + pad */
     MAX_COMP_EXTRA  = 1024,     /* max compression extra */
     MAX_DH_SZ       = 612,      /* 2240 p, pub, g + 2 byte size for each */
@@ -474,6 +475,7 @@ typedef struct Keys {
     
 #ifdef CYASSL_DTLS
     word32 dtls_sequence_number;
+    word32 dtls_peer_sequence_number;
     word16 dtls_handshake_number;
     word16 dtls_epoch;
     word16 dtls_peer_epoch;
