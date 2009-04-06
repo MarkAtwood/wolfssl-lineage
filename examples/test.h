@@ -239,13 +239,13 @@ static INLINE void tcp_listen(SOCKET_T* sockfd)
 static INLINE int udp_read_connect(SOCKET_T sockfd)
 {
     SOCKADDR_IN_T cliaddr;
-    byte          b;
+    byte          b[1500];
     int           n;
     socklen_t     len = sizeof(cliaddr);
 
-    n = recvfrom(sockfd, &b, sizeof(b), MSG_PEEK, (struct sockaddr*)&cliaddr,
+    n = recvfrom(sockfd, b, sizeof(b), MSG_PEEK, (struct sockaddr*)&cliaddr,
                  &len);
-    if (n == 1) {
+    if (n > 0) {
         if (connect(sockfd, (const struct sockaddr*)&cliaddr,
                     sizeof(cliaddr)) != 0)
             err_sys("udp connect failed");
@@ -294,7 +294,8 @@ static INLINE void tcp_accept(SOCKET_T* sockfd, int* clientfd, func_args* args)
     socklen_t client_len = sizeof(client);
 
     #ifdef CYASSL_DTLS
-        return udp_accept(sockfd, clientfd, args);
+        udp_accept(sockfd, clientfd, args);
+        return;
     #endif
 
     tcp_listen(sockfd);
