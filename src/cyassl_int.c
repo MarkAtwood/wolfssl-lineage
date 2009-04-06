@@ -2750,8 +2750,6 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         if (ssl->options.connectState == CONNECT_BEGIN) {
             RNG_GenerateBlock(&ssl->rng, output + idx, RAN_LEN);
             
-            time_t ticks = time(0);
-            c32toa(ticks, output + idx);
                 /* store random */
             memcpy(ssl->arrays.clientRandom, output + idx, RAN_LEN);
         } else {
