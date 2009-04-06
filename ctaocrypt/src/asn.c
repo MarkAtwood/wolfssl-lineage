@@ -284,6 +284,7 @@ int RsaPublicKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
 {
     word32 begin = *inOutIdx;
     int    length;
+    byte   b;
 
     if (GetSequence(input, inOutIdx, &length) < 0)
         return ASN_PARSE_E;
@@ -292,6 +293,52 @@ int RsaPublicKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
         return ASN_INPUT_E;
 
     key->type = RSA_PUBLIC;
+    b = input[*inOutIdx];
+
+#ifdef OPENSSL_EXTRA    
+    if (b != ASN_INTEGER) {
+        /* not from decoded cert, will have algo id, skip past */
+        if (GetSequence(input, inOutIdx, &length) < 0)
+            return ASN_PARSE_E;
+        
+        b = input[(*inOutIdx)++];
+        if (b != ASN_OBJECT_ID) 
+            return ASN_OBJECT_ID_E;
+        
+        if (GetLength(input, inOutIdx, &length) < 0)
+            return ASN_PARSE_E;
+        
+        *inOutIdx += length;   /* skip past */
+        
+        /* could have NULL tag and 0 terminator, but may not */
+        b = input[(*inOutIdx)++];
+        
+        if (b == ASN_TAG_NULL) {
+            b = input[(*inOutIdx)++];
+            if (b != 0) 
+                return ASN_EXPECT_0_E;
+        }
+        else
+        /* go back, didn't have it */
+            (*inOutIdx)--;
+        
+        /* should have bit tag length and seq next */
+        b = input[(*inOutIdx)++];
+        if (b != ASN_BIT_STRING)
+            return ASN_BITSTR_E;
+        
+        if (GetLength(input, inOutIdx, &length) < 0)
+            return ASN_PARSE_E;
+        
+        /* could have 0 */
+        b = input[(*inOutIdx)++];
+        if (b != 0)
+            (*inOutIdx)--;
+        
+        if (GetSequence(input, inOutIdx, &length) < 0)
+            return ASN_PARSE_E;
+    }
+#endif /* OPENSSL_EXTRA */
 
     if (GetInt(&key->n,  input, inOutIdx) < 0 ||
         GetInt(&key->e,  input, inOutIdx) < 0 )  return ASN_RSA_KEY_E;
