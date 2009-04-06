@@ -57,6 +57,10 @@ void echoclient_test(void* args)
     ssl = SSL_new(ctx);
 
     SSL_set_fd(ssl, sockfd);
+#if defined(_WIN32) && defined(CYASSL_DTLS) && defined(NO_MAIN_DRIVER)
+    /* let echoserver bind first, TODO: add Windows signal like pthreads does */
+    Sleep(100);
+#endif
     if (SSL_connect(ssl) != SSL_SUCCESS) err_sys("SSL_connect failed");
 
     while (fgets(send, sizeof(send), fin)) {
