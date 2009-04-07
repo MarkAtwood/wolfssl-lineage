@@ -7,6 +7,18 @@
     #define ECHO_OUT
 #endif
 
+static void SignalReady(void* args)
+{
+#if defined(_POSIX_THREADS) && defined(NO_MAIN_DRIVER)
+    /* signal ready to tcp_accept */
+    func_args* server_args = (func_args*)args;
+    tcp_ready* ready = server_args->signal;
+    pthread_mutex_lock(&ready->mutex);
+    ready->ready = 1;
+    pthread_cond_signal(&ready->cond);
+    pthread_mutex_unlock(&ready->mutex);
+#endif
+}
 
 THREAD_RETURN CYASSL_API echoserver_test(void* args)
 {
@@ -51,28 +63,17 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
             != SSL_SUCCESS)
         err_sys("can't load server key file");
 
-#if defined(_POSIX_THREADS) && defined(NO_MAIN_DRIVER)
-    /* signal ready to tcp_accept */
-    {
-    func_args* server_args = (func_args*)args;
-    tcp_ready* ready = server_args->signal;
-    pthread_mutex_lock(&ready->mutex);
-    ready->ready = 1;
-    pthread_cond_signal(&ready->cond);
-    pthread_mutex_unlock(&ready->mutex);
-    }
-#endif
+    SignalReady(args);
 
     while (!shutdown) {
         SSL* ssl = 0;
         char command[1024];
         int  echoSz = 0;
-
-        SOCKADDR_IN_T client;
-        socklen_t   client_len = sizeof(client);
-        int         clientfd;
+        int  clientfd;
                 
 #ifndef CYASSL_DTLS 
+        SOCKADDR_IN_T client;
+        socklen_t     client_len = sizeof(client);
         clientfd = accept(sockfd, (struct sockaddr*)&client,
                          (ACCEPT_THIRD_T)&client_len);
 #else
@@ -94,6 +95,10 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
             if ( strncmp(command, "quit", 4) == 0) {
                 printf("client sent quit command: shutting down!\n");
                 shutdown = 1;
+                break;
+            }
+            if ( strncmp(command, "break", 5) == 0) {
+                printf("client sent break command: closing session!\n");
                 break;
             }
             else if ( strncmp(command, "GET", 3) == 0) {
@@ -128,8 +133,10 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
         }
         SSL_shutdown(ssl);
         SSL_free(ssl);
-#ifndef CYASLS_DTLS
         CloseSocket(clientfd);
+#ifdef CYASSL_DTLS
+        tcp_listen(&sockfd);
+        SignalReady(args);
 #endif
     }
 

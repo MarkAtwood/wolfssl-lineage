@@ -21,6 +21,7 @@ void echoclient_test(void* args)
     SSL_CTX*    ctx    = 0;
     SSL*        ssl    = 0;
 
+    int sendSz;
     int argc    = 0;
     char** argv = 0;
 
@@ -65,7 +66,7 @@ void echoclient_test(void* args)
 
     while (fgets(send, sizeof(send), fin)) {
 
-        int  sendSz = (int)strlen(send) + 1;
+        sendSz = (int)strlen(send) + 1;
 
         if (SSL_write(ssl, send, sendSz) != sendSz)
             err_sys("SSL_write failed");
@@ -78,6 +79,13 @@ void echoclient_test(void* args)
         if (SSL_read(ssl, reply, sizeof(reply)) > 0) 
             fputs(reply, fout);
     }
+
+#ifdef CYASSL_DTLS
+    strncpy(send, "break", 6);
+    sendSz = (int)strlen(send);
+    /* try to tell server done */
+    SSL_write(ssl, send, sendSz);
+#endif
 
     SSL_shutdown(ssl);
     SSL_free(ssl);

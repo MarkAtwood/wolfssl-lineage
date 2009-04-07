@@ -77,7 +77,9 @@ int main(int argc, char** argv)
         echoclient_test(&echo_args);
         if (echo_args.return_code != 0) return echo_args.return_code;  
 
-#ifndef CYASSL_DTLS
+#ifdef CYASSL_DTLS
+        wait_tcp_ready(&server_args);
+#endif
         /* send quit to echoserver */
         echo_args.argc = 2;
         strcpy(echo_args.argv[1], "quit");
@@ -86,7 +88,6 @@ int main(int argc, char** argv)
         if (echo_args.return_code != 0) return echo_args.return_code;
         join_thread(serverThread);
         if (server_args.return_code != 0) return server_args.return_code;
-#endif
     }
 
     /* validate output equals input */

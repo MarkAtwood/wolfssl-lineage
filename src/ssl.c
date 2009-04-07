@@ -497,7 +497,8 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
         assert(ssl->options.side == CLIENT_END);
 
         #ifdef CYASSL_DTLS
-            if (ssl->version.major == 0xfe && ssl->version.minor == 0xff) {
+            if (ssl->version.major == DTLS_MAJOR && 
+                                      ssl->version.minor == DTLS_MINOR) {
                 ssl->options.dtls   = 1;
                 ssl->options.tls    = 1;
                 ssl->options.tls1_1 = 1;
@@ -530,7 +531,7 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
             neededState = ssl->options.resuming ? SERVER_FINISHED_COMPLETE :
                                           SERVER_HELLODONE_COMPLETE;
             #ifdef CYASSL_DTLS
-                if (ssl->options.dtls)
+                if (ssl->options.dtls && !ssl->options.resuming)
                     neededState = SERVER_HELLOVERIFYREQUEST_COMPLETE;
             #endif
             /* get response */
@@ -541,15 +542,18 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
                 }
                 /* if resumption failed, reset needed state */
                 else if (neededState == SERVER_FINISHED_COMPLETE)
-                   if (!ssl->options.resuming)
-                      neededState = SERVER_HELLODONE_COMPLETE;
+                    if (!ssl->options.resuming)
+                        if (!ssl->options.dtls)
+                            neededState = SERVER_HELLODONE_COMPLETE;
+                        else
+                            neededState = SERVER_HELLOVERIFYREQUEST_COMPLETE;
 
             ssl->options.connectState = HELLO_AGAIN;
             CYASSL_MSG("connect state: HELLO_AGAIN");
 
         case HELLO_AGAIN :
             #ifdef CYASSL_DTLS
-                if (ssl->options.dtls) {
+                if (ssl->options.dtls && !ssl->options.resuming) {
                     /* re-init hashes, exclude first hello and verify request */
                     InitMd5(&ssl->hashMd5);
                     InitSha(&ssl->hashSha);
@@ -689,7 +693,8 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
         CYASSL_ENTER("SSL_accept()");
 
         #ifdef CYASSL_DTLS
-            if (ssl->version.major == 0xfe && ssl->version.minor == 0xff) {
+            if (ssl->version.major == DTLS_MAJOR &&
+                                      ssl->version.minor == DTLS_MINOR) {
                 ssl->options.dtls   = 1;
                 ssl->options.tls    = 1;
                 ssl->options.tls1_1 = 1;
@@ -721,7 +726,7 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
         case ACCEPT_CLIENT_HELLO_DONE :
             #ifdef CYASSL_DTLS
-                if (ssl->options.dtls)
+                if (ssl->options.dtls && !ssl->options.resuming)
                     if ( (ssl->error = SendHelloVerifyRequest(ssl)) != 0) {
                         CYASSL_ERROR(ssl->error);
                         return SSL_FATAL_ERROR;
@@ -732,7 +737,7 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
         case HELLO_VERIFY_SENT:
             #ifdef CYASSL_DTLS
-                if (ssl->options.dtls) {
+                if (ssl->options.dtls && !ssl->options.resuming) {
                     ssl->options.clientState = NULL_STATE;  /* get again */
                     /* re-init hashes, exclude first hello and verify request */
                     InitMd5(&ssl->hashMd5);

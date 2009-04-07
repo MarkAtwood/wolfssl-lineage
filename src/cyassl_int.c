@@ -301,7 +301,7 @@ void InitSuites(Suites* suites, ProtocolVersion pv, byte haveDH, byte havePSK)
     (void)tls;  /* shut up compiler */
 
 #ifdef CYASSL_DTLS
-    if (pv.major == 0xfe && pv.minor == 0xff)
+    if (pv.major == DTLS_MAJOR && pv.minor == DTLS_MINOR)
         tls = 1;
 #endif
 
@@ -527,8 +527,8 @@ ProtocolVersion MakeSSLv3(void)
 ProtocolVersion MakeDTLSv1(void)
 {
     ProtocolVersion pv;
-    pv.major = 0xfe;
-    pv.minor = 0xff;
+    pv.major = DTLS_MAJOR;
+    pv.minor = DTLS_MINOR;
 
     return pv;
 }

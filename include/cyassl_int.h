@@ -163,6 +163,8 @@ enum Misc {
     SERVER_END = 0,
     CLIENT_END,
 
+    DTLS_MAJOR      = 0xfe,     /* DTLS major version number */
+    DTLS_MINOR      = 0xff,     /* DTLS minor version number */
     NO_COMPRESSION  =  0,
     ZLIB_COMPRESSION = 221,     /* CyaSSL zlib compression */
     SECRET_LEN      = 48,       /* pre RSA and all master */

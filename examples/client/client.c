@@ -58,6 +58,8 @@ void client_test(void* args)
 #ifdef TEST_RESUME
     SSL*         sslResume = 0;
     SSL_SESSION* session = 0;
+    char         resumeMsg[] = "resuming cyassl!";
+    int          resumeSz    = sizeof(resumeMsg);
 #endif
 
     char msg[] = "hello cyassl!";
@@ -169,6 +171,12 @@ void client_test(void* args)
     }
    
 #ifdef TEST_RESUME
+    #ifdef CYASSL_DTLS
+        strncpy(msg, "break", 6);
+        msgSz = (int)strlen(msg);
+        /* try to send session close */
+        SSL_write(ssl, msg, msgSz);
+    #endif
     session   = SSL_get_session(ssl);
     sslResume = SSL_new(ctx);
 #endif
@@ -178,6 +186,13 @@ void client_test(void* args)
     CloseSocket(sockfd);
 
 #ifdef TEST_RESUME
+    #ifdef CYASSL_DTLS
+        #ifdef _WIN32
+            Sleep(500);
+        #else
+            sleep(1);
+        #endif
+    #endif
     if (argc == 3)
         tcp_connect(&sockfd, argv[1], (short)atoi(argv[2]));
     else
@@ -187,14 +202,17 @@ void client_test(void* args)
     
     if (SSL_connect(sslResume) != SSL_SUCCESS) err_sys("SSL resume failed");
   
-    if (SSL_write(sslResume, msg, msgSz) != msgSz)
+    if (SSL_write(sslResume, resumeMsg, resumeSz) != resumeSz)
         err_sys("SSL_write failed");
 
     input = SSL_read(sslResume, reply, sizeof(reply));
     if (input > 0) {
         reply[input] = 0;
-        printf("Server response: %s\n", reply);
+        printf("Server resume response: %s\n", reply);
     }
+
+    /* try to send session break */
+    SSL_write(sslResume, msg, msgSz); 
 
     SSL_shutdown(sslResume);
     SSL_free(sslResume);
@@ -233,7 +251,7 @@ void client_test(void* args)
 
     void test_buffer(SSL_CTX* ctx)
     {
-        // test buffer load
+        /* test buffer load */
         long  sz = 0;
         byte  buff[4096];
         FILE* file = fopen(caCert, "rb");
