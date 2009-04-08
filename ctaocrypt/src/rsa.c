@@ -34,7 +34,9 @@ enum {
     RSA_PRIVATE_DECRYPT = 3,
 
     RSA_BLOCK_TYPE_1 = 1,
-    RSA_BLOCK_TYPE_2 = 2
+    RSA_BLOCK_TYPE_2 = 2,
+
+    RSA_MIN_PAD_SZ   = 11      /* seperator + 0 + pad value + 8 pads */
 };
 
 
@@ -231,6 +233,9 @@ int RsaPublicEncrypt(const byte* in, word32 inLen, byte* out, word32 outLen,
     if (sz > (int)outLen)
         return RSA_BUFFER_E;
 
+    if (inLen > (word32)(sz - RSA_MIN_PAD_SZ))
+        return RSA_BUFFER_E;
+
     RsaPad(in, inLen, out, sz, RSA_BLOCK_TYPE_2, rng);
 
     if ((ret = RsaFunction(out, sz, out, &outLen, RSA_PUBLIC_ENCRYPT, key)) < 0)
@@ -327,6 +332,9 @@ int RsaSSL_Sign(const byte* in, word32 inLen, byte* out, word32 outLen,
     int sz = mp_unsigned_bin_size(&key->n), ret;
 
     if (sz > (int)outLen)
+        return RSA_BUFFER_E;
+
+    if (inLen > (word32)(sz - RSA_MIN_PAD_SZ))
         return RSA_BUFFER_E;
 
     RsaPad(in, inLen, out, sz, RSA_BLOCK_TYPE_1, rng);

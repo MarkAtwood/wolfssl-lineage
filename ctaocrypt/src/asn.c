@@ -1307,7 +1307,8 @@ void CTaoCryptErrorString(int error, char* buffer)
         break; 
 
     case RSA_BUFFER_E :
-        strncpy(buffer, "RSA buffer error, too small", max);
+        strncpy(buffer, "RSA buffer error, output too small or input too big",
+                max);
         break; 
 
     case ASN_PARSE_E :

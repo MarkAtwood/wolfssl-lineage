@@ -535,18 +535,20 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
                     neededState = SERVER_HELLOVERIFYREQUEST_COMPLETE;
             #endif
             /* get response */
-            while (ssl->options.serverState < neededState)
+            while (ssl->options.serverState < neededState) {
                 if ( (ssl->error = ProcessReply(ssl)) < 0) {
                     CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
                 }
                 /* if resumption failed, reset needed state */
                 else if (neededState == SERVER_FINISHED_COMPLETE)
-                    if (!ssl->options.resuming)
+                    if (!ssl->options.resuming) {
                         if (!ssl->options.dtls)
                             neededState = SERVER_HELLODONE_COMPLETE;
                         else
                             neededState = SERVER_HELLOVERIFYREQUEST_COMPLETE;
+                    }
+            }
 
             ssl->options.connectState = HELLO_AGAIN;
             CYASSL_MSG("connect state: HELLO_AGAIN");
@@ -574,7 +576,7 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
                            SERVER_FINISHED_COMPLETE : SERVER_HELLODONE_COMPLETE;
             
                     /* get response */
-                    while (ssl->options.serverState < neededState)
+                    while (ssl->options.serverState < neededState) {
                         if ( (ssl->error = ProcessReply(ssl)) < 0) {
                                 CYASSL_ERROR(ssl->error);
                                 return SSL_FATAL_ERROR;
@@ -582,7 +584,8 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
                         /* if resumption failed, reset needed state */
                         else if (neededState == SERVER_FINISHED_COMPLETE)
                             if (!ssl->options.resuming)
-                                neededState = SERVER_HELLODONE_COMPLETE; 
+                                neededState = SERVER_HELLODONE_COMPLETE;
+                    }
                 }
             #endif
 
