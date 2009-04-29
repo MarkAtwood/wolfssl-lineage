@@ -81,7 +81,7 @@ at support@yassl.com or todd@yassl.com.
 Using TomsFastMath by passing --enable-fastmath to ./configure now uses assemblyon some platforms.  This is new so please report any problems as every compiler,mode, OS combination hasn't been tested.  On ia32 all of the registers need to
 be available so be sure to pass these options to CFLAGS:
 
-CFLAGS="-O3 -fomit-frame-pointer -mdynamic-no-pic"
+CFLAGS="-O3 -fomit-frame-pointer"
 
 OS X will also need -mdynamic-no-pic added to CFLAGS
 

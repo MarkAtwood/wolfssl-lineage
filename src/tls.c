@@ -343,7 +343,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
     }
 
 
-#ifdef BUILD_OPENSSL_EXTRA
+#ifdef OPENSSL_EXTRA
 
     SSL_METHOD *SSLv23_server_method(void)
     {
@@ -355,7 +355,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
         return method;
     }
 
-#endif /* BUILD_OPENSSL_EXTRA */
+#endif /* OPENSSL_EXTRA */
 
 
 

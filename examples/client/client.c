@@ -70,7 +70,6 @@ void client_test(void* args)
     int     argc = ((func_args*)args)->argc;
     char**  argv = ((func_args*)args)->argv;
 
-
     ((func_args*)args)->return_code = -1; /* error state */
 
 #if defined(CYASSL_DTLS)
@@ -119,7 +118,7 @@ void client_test(void* args)
             tcp_connect(&sockfd, yasslIP, yasslPort);
             ssl = SSL_new(ctx);
             SSL_set_fd(ssl, sockfd);
-            if (SSL_connect(ssl) != SSL_SUCCESS) 
+            if (SSL_connect(ssl) != SSL_SUCCESS)
                 err_sys("SSL_connect failed");
 
             SSL_shutdown(ssl);
@@ -238,6 +237,9 @@ void client_test(void* args)
         args.argv = argv;
 
         InitCyaSSL();
+#ifdef DEBUG_CYASSL
+        CyaSSL_Debugging_ON();
+#endif
         client_test(&args);
         FreeCyaSSL();
 

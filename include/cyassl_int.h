@@ -176,6 +176,7 @@ enum Misc {
     MAX_MSG_EXTRA   = 68,       /* max added to msg, mac + pad */
     MAX_COMP_EXTRA  = 1024,     /* max compression extra */
     MAX_DH_SZ       = 612,      /* 2240 p, pub, g + 2 byte size for each */
+    MAX_STR_VERSION = 8,        /* string rep of protocol version */
 
     PAD_MD5        = 48,       /* pad length for finished */
     PAD_SHA        = 40,       /* pad length for finished */
@@ -371,6 +372,7 @@ struct SSL_CTX {
     byte        sessionCacheFlushOff;
     byte        sendVerify;       /* for client side */
     byte        haveDH;           /* server DH parms set by user */
+    byte        partialWrite;     /* only one msg per write call */
     CallbackIORecv CBIORecv;
     CallbackIOSend CBIOSend;
 #ifndef NO_PSK
@@ -576,6 +578,10 @@ typedef struct Buffers {
     buffer16K       inputBuffer;
     buffer16K       outputBuffer;
     buffer          clearOutputBuffer;
+    int             prevSent;              /* previous plain text bytes sent
+                                              when got WANT_READ            */
+    int             plainSz;               /* plain text bytes in buffer to send
+                                              when got WANT_READ            */
 } Buffers;
 
 
@@ -598,6 +604,7 @@ typedef struct Options {
     byte            connReset;          /* has the peer reset */
     byte            isClosed;           /* if we consider conn closed */
     byte            closeNotify;        /* we've recieved a close notify */
+    byte            sentNotify;         /* we've sent a close notify */
     byte            connectState;       /* nonblocking resume */
     byte            acceptState;        /* nonblocking resume */
     byte            usingCompression;   /* are we using compression */
@@ -605,6 +612,7 @@ typedef struct Options {
     byte            usingPSK_cipher;    /* whether we're using psk as cipher */
     byte            sendAlertState;     /* nonblocking resume */ 
     byte            processReply;       /* nonblocking resume */
+    byte            partialWrite;       /* only one msg per write call */
 #ifndef NO_PSK
     byte            havePSK;            /* psk key set by user */
     psk_client_callback client_psk_cb;
@@ -670,12 +678,16 @@ struct SSL {
     int             error;
     ProtocolVersion version;            /* negotiated version */
     ProtocolVersion chVersion;          /* client hello version */
+    char            strVersion[MAX_STR_VERSION + 1];
     Suites          suites;
     Ciphers         encrypt;
     Ciphers         decrypt;
     CipherSpecs     specs;
     Keys            keys;
-    void*           IOCBCtx;
+    int             rfd;                /* read  file descriptor */
+    int             wfd;                /* write file descriptor */
+    void*           IOCB_ReadCtx;
+    void*           IOCB_WriteCtx;
     RNG             rng;
     Md5             hashMd5;            /* md5 hash of handshake msgs */
     Sha             hashSha;            /* sha hash of handshake msgs */

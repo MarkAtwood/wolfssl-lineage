@@ -74,6 +74,7 @@ enum CyaSSL_ErrorCodes {
     SETITIMER_ERROR        = -240,            /* setitimer failed ??? */
     LENGTH_ERROR           = -241,            /* record layer length error */
     PEER_KEY_ERROR         = -242,            /* cant decode peer key */
+    ZERO_RETURN            = -243,            /* peer sent close notify */
     /* add strings to SetErrorString !!!!! */
 
     /* begin negotiation parameter errors */

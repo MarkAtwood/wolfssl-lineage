@@ -11,7 +11,7 @@ const char*   SSLeay_version(int type);
 unsigned long SSLeay(void);
 
 
-#define SSLEAY_VERSION 0x0090800fL
+#define SSLEAY_VERSION 0x0090600fL
 #define SSLEAY_VERSION_NUMBER SSLEAY_VERSION
 
 

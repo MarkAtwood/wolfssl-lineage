@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "md5.h"
+#include "md4.h"
 #include "sha.h"
 #include "sha256.h"
 #include "arc4.h"
@@ -43,6 +44,7 @@ typedef struct testVector {
 } testVector;
 
 int  md5_test();
+int  md4_test();
 int  sha_test();
 int  sha256_test();
 int  hmac_test();
@@ -85,6 +87,13 @@ void ctaocrypt_test(void* args)
         err_sys("MD5      test failed!\n", ret);
     else
         printf( "MD5      test passed!\n");
+
+#ifndef NO_MD4
+    if ( (ret = md4_test()) ) 
+        err_sys("MD4      test failed!\n", ret);
+    else
+        printf( "MD4      test passed!\n");
+#endif
 
     if ( (ret = sha_test()) ) 
         err_sys("SHA      test failed!\n", ret);
@@ -257,6 +266,84 @@ int md5_test()
     return 0;
 }
 
+
+#ifndef NO_MD4
+
+int md4_test()
+{
+    Md4  md4;
+    byte hash[MD4_DIGEST_SIZE];
+
+    testVector a, b, c, d, e, f, g;
+    testVector test_md4[7];
+    int times = sizeof(test_md4) / sizeof(testVector), i;
+
+    a.input  = "";
+    a.output = "\x31\xd6\xcf\xe0\xd1\x6a\xe9\x31\xb7\x3c\x59\xd7\xe0\xc0\x89" 
+               "\xc0";
+    a.inLen  = strlen(a.input);
+    a.outLen = strlen(a.output);
+
+    b.input  = "a";
+    b.output = "\xbd\xe5\x2c\xb3\x1d\xe3\x3e\x46\x24\x5e\x05\xfb\xdb\xd6\xfb" 
+               "\x24";
+    b.inLen  = strlen(b.input);
+    b.outLen = strlen(b.output);
+
+    c.input  = "abc";
+    c.output = "\xa4\x48\x01\x7a\xaf\x21\xd8\x52\x5f\xc1\x0a\xe8\x7a\xa6\x72" 
+               "\x9d";
+    c.inLen  = strlen(c.input);
+    c.outLen = strlen(c.output);
+
+    d.input  = "message digest";
+    d.output = "\xd9\x13\x0a\x81\x64\x54\x9f\xe8\x18\x87\x48\x06\xe1\xc7\x01" 
+               "\x4b";
+    d.inLen  = strlen(d.input);
+    d.outLen = strlen(d.output);
+
+    e.input  = "abcdefghijklmnopqrstuvwxyz";
+    e.output = "\xd7\x9e\x1c\x30\x8a\xa5\xbb\xcd\xee\xa8\xed\x63\xdf\x41\x2d" 
+               "\xa9";
+    e.inLen  = strlen(e.input);
+    e.outLen = strlen(e.output);
+
+    f.input  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345"
+               "6789";
+    f.output = "\x04\x3f\x85\x82\xf2\x41\xdb\x35\x1c\xe6\x27\xe1\x53\xe7\xf0" 
+               "\xe4";
+    f.inLen  = strlen(f.input);
+    f.outLen = strlen(f.output);
+
+    g.input  = "1234567890123456789012345678901234567890123456789012345678"
+               "9012345678901234567890";
+    g.output = "\xe3\x3b\x4d\xdc\x9c\x38\xf2\x19\x9c\x3e\x7b\x16\x4f\xcc\x05" 
+               "\x36";
+    g.inLen  = strlen(g.input);
+    g.outLen = strlen(g.output);
+
+    test_md4[0] = a;
+    test_md4[1] = b;
+    test_md4[2] = c;
+    test_md4[3] = d;
+    test_md4[4] = e;
+    test_md4[5] = f;
+    test_md4[6] = g;
+
+    InitMd4(&md4);
+
+    for (i = 0; i < times; ++i) {
+        Md4Update(&md4, (byte*)test_md4[i].input, (word32)test_md4[i].inLen);
+        Md4Final(&md4, hash);
+
+        if (memcmp(hash, test_md4[i].output, MD4_DIGEST_SIZE) != 0)
+            return -205 - i;
+    }
+
+    return 0;
+}
+
+#endif /* NO_MD4 */
 
 int sha_test()
 {
@@ -899,7 +986,7 @@ int dh_test()
         return -54;
 
     ret = DhAgree(&key, agree, &agreeSz, priv, privSz, pub2, pubSz2);
-    ret = DhAgree(&key, agree2, &agreeSz2, priv2, privSz2, pub, pubSz);
+    ret = DhAgree(&key2, agree2, &agreeSz2, priv2, privSz2, pub, pubSz);
     if (ret != 0)
         return -55;
 

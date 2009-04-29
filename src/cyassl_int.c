@@ -268,6 +268,7 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
 
     ctx->CBIORecv = EnbedReceive;
     ctx->CBIOSend = EmbedSend;
+    ctx->partialWrite = 0;
 
     ctx->caList = 0;
     /* remove DH later if server didn't set, add psk later  */
@@ -390,6 +391,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->ctx     = ctx; /* only for passing to calls, options could change */
     ssl->version = ctx->method->version;
     ssl->suites  = ctx->suites;
+    strncpy(ssl->strVersion, "NOT SET", MAX_STR_VERSION);  /* wait til negot */
 
 #ifdef HAVE_LIBZ
     ssl->didStreamInit = 0;
@@ -408,6 +410,8 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->buffers.serverDH_Priv.buffer = 0;
     ssl->buffers.clearOutputBuffer.buffer  = 0;
     ssl->buffers.clearOutputBuffer.length  = 0;
+    ssl->buffers.prevSent                  = 0;
+    ssl->buffers.plainSz                   = 0;
 
     if ( (ret = InitRng(&ssl->rng)) )
         return ret;
@@ -422,6 +426,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->options.connReset = 0;
     ssl->options.isClosed  = 0;
     ssl->options.closeNotify  = 0;
+    ssl->options.sentNotify   = 0;
     ssl->options.usingCompression = 0;
     ssl->options.haveDH    = ctx->haveDH;
     ssl->options.usingPSK_cipher = 0;
@@ -461,6 +466,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->options.tls    = 0;
     ssl->options.tls1_1 = 0;
     ssl->options.dtls   = 0;
+    ssl->options.partialWrite = ctx->partialWrite;
 
     /* SSL_CTX still owns certificate, key, and caList buffers */
     ssl->buffers.certificate = ctx->certificate;
@@ -490,6 +496,12 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
         else 
             InitSuites(&ssl->suites, ssl->version, TRUE, havePSK);
     }
+
+    ssl->rfd = -1;   /* set to invalid descriptor */
+    ssl->wfd = -1;
+
+    ssl->IOCB_ReadCtx  = &ssl->rfd;   /* prevent invalid pointer acess if not */
+    ssl->IOCB_WriteCtx = &ssl->wfd;   /* correctly set */
 
     return 0;
 }
@@ -691,7 +703,7 @@ static word32 Receive(SSL* ssl, byte* buf, word32 sz, int flags)
     int recvd;
 
 retry:
-    recvd = ssl->ctx->CBIORecv((char *)buf, (int)sz, ssl->IOCBCtx);
+    recvd = ssl->ctx->CBIORecv((char *)buf, (int)sz, ssl->IOCB_ReadCtx);
     if (recvd < 0)
         switch (recvd) {
             case -1:            /* general/unknown error */
@@ -734,7 +746,7 @@ int SendBuffered(SSL* ssl)
         int sent = ssl->ctx->CBIOSend((char*)ssl->buffers.outputBuffer.buffer +
                                       ssl->buffers.outputBuffer.idx,
                                       (int)ssl->buffers.outputBuffer.length,
-                                      ssl->IOCBCtx);
+                                      ssl->IOCB_WriteCtx);
         if (sent < 0) {
             switch (sent) {
 
@@ -1631,8 +1643,12 @@ lbl_runProcessingOneMessage:
                     if (DoAlert(ssl, ssl->buffers.inputBuffer.buffer,
                            &ssl->buffers.inputBuffer.idx, &type) == alert_fatal)
                         return FATAL_ERROR;
+
                     /* catch warnings that are handled as errors */
-                    if (type == close_notify || type == decrypt_error)
+                    if (type == close_notify)
+                        return ssl->error = ZERO_RETURN;
+                           
+                    if (type == decrypt_error)
                         return FATAL_ERROR;
                     break;
             
@@ -2068,6 +2084,21 @@ int SendData(SSL* ssl, const void* buffer, int sz)
         return ssl->error = NOT_READY_ERROR;
     }
 
+    /* last time system socket output buffer was full, try again to send */
+    if (ssl->buffers.outputBuffer.length > 0) {
+        if ( (ssl->error = SendBuffered(ssl)) < 0) {
+            CYASSL_ERROR(ssl->error);
+            if (ssl->error == SOCKET_ERROR_E && ssl->options.connReset)
+                return 0;     /* peer reset */
+            return ssl->error;
+        }
+        else {
+            /* advance sent to previous sent + plain size just sent */
+            sent = ssl->buffers.prevSent + ssl->buffers.plainSz;
+            CYASSL_MSG("sent write buffered data");
+        }
+    }
+
     for (;;) {
         int   len = min(sz - sent, MAX_RECORD_SIZE);
         byte* out;
@@ -2111,12 +2142,21 @@ int SendData(SSL* ssl, const void* buffer, int sz)
 
         if ( (ret = SendBuffered(ssl)) < 0) {
             CYASSL_ERROR(ret);
+            if (ret == WANT_WRITE) {
+                /* store for next call */
+                ssl->buffers.plainSz  = len;
+                ssl->buffers.prevSent = sent;
+            }
             if (ret == SOCKET_ERROR_E && ssl->options.connReset)
                 return 0;  /* peer reset */
             return ssl->error = ret;
         }
 
         sent += len;
+
+        /* only one message per attempt */
+        if (ssl->options.partialWrite == 1)
+            break;
     }
  
     return sent;
@@ -2137,11 +2177,16 @@ int ReceiveData(SSL* ssl, byte* output, int sz)
         return ssl->error = NOT_READY_ERROR;
     }
 
+    if (ssl->options.connReset || ssl->options.isClosed)
+        return 0;
+
     while (ssl->buffers.clearOutputBuffer.length == 0)
         if ( (ssl->error = ProcessReply(ssl)) < 0) {
             CYASSL_ERROR(ssl->error);
-            if (ssl->error == FATAL_ERROR && ssl->options.closeNotify)
-                continue;         /* see if peer reset or closed too */
+            if (ssl->error == ZERO_RETURN) {
+                ssl->options.isClosed = 1;
+                return 0;         /* no more data coming */
+            }
             if (ssl->error == SOCKET_ERROR_E)
                 if (ssl->options.connReset || ssl->options.isClosed)
                     return 0;     /* peer reset or closed */
@@ -2402,6 +2447,10 @@ void SetErrorString(int error, char* buffer)
         strncpy(buffer, "cant decode peer key", max);
         break;
 
+    case ZERO_RETURN:
+        strncpy(buffer, "peer sent close notify alert", max);
+        break;
+
     default :
         strncpy(buffer, "unknown error number", max);
     }
@@ -2527,6 +2576,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
     if (!list)
         return 0;
+    
+    if (*list == 0) return 1;   /* CyaSSL default */
 
     for(;;) {
         size_t len;

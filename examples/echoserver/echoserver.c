@@ -161,6 +161,9 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
         args.argv = argv;
 
         InitCyaSSL();
+#ifdef DEBUG_CYASSL
+        CyaSSL_Debugging_ON();
+#endif
         echoserver_test(&args);
         FreeCyaSSL();
 

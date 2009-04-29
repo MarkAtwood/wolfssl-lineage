@@ -39,7 +39,7 @@
 #endif
 
 typedef unsigned char DES_cblock[8];
-typedef const DES_cblock const_DES_cblock;
+typedef /* const */ DES_cblock const_DES_cblock;
 typedef DES_cblock DES_key_schedule;
 
 
@@ -49,7 +49,8 @@ enum {
 };
 
 
-int DES_key_sched(const_DES_cblock* key, DES_key_schedule* schedule);
+void DES_set_key_unchecked(const_DES_cblock*, DES_key_schedule*);
+int  DES_key_sched(const_DES_cblock* key, DES_key_schedule* schedule);
 void DES_cbc_encrypt(const unsigned char* input, unsigned char* output,
                      long length, DES_key_schedule* schedule, DES_cblock* ivec,
                      int enc);
@@ -57,6 +58,9 @@ void DES_ncbc_encrypt(const unsigned char* input, unsigned char* output,
                       long length, DES_key_schedule* schedule, DES_cblock* ivec,
                       int enc);
 
+
+void DES_set_odd_parity(DES_cblock*);
+void DES_ecb_encrypt(DES_cblock*, DES_cblock*, DES_key_schedule*, int);
 
 #ifdef __cplusplus
     } /* extern "C" */

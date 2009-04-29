@@ -105,7 +105,7 @@ int EnbedReceive(char *buf, int sz, void *ctx)
 {
     int recvd;
     int err;
-    int socket = (word)ctx;
+    int socket = *(int*)ctx;
 
     recvd = RECV_FUNCTION(socket, (char *)buf, sz, 0);
 
@@ -139,7 +139,7 @@ int EnbedReceive(char *buf, int sz, void *ctx)
  */
 int EmbedSend(char *buf, int sz, void *ctx)
 {
-    int socket = (word)ctx;
+    int socket = *(int*)ctx;
     int sent;
     int len = sz;
 
@@ -171,8 +171,12 @@ void SetCallbackIOSend_Ctx(SSL_CTX *ctx, CallbackIOSend CBIOSend) {
     ctx->CBIOSend = CBIOSend;
 }
 
-void SetCallbackIOCtx(SSL* ssl, void *ctx) {
-	ssl->IOCBCtx = ctx;
+void SetCallbackIO_ReadCtx(SSL* ssl, void *rctx) {
+	ssl->IOCB_ReadCtx = rctx;
+}
+
+void SetCallbackIO_WriteCtx(SSL* ssl, void *wctx) {
+	ssl->IOCB_WriteCtx = wctx;
 }
 
 
