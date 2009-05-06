@@ -42,6 +42,7 @@
 #endif
 
 
+
 typedef struct SSL          SSL;          
 typedef struct SSL_SESSION  SSL_SESSION;
 typedef struct SSL_METHOD   SSL_METHOD;
@@ -69,6 +70,7 @@ typedef struct ASN1_TIME      ASN1_TIME;
 typedef struct ASN1_INTEGER   ASN1_INTEGER;
 typedef struct CRYPTO_dynlock_value CRYPTO_dynlock_value;
 
+#define ASN1_UTCTIME ASN1_TIME
 
 typedef struct MD4_CTX {
     int buffer[32];      /* big enough to hold, check size in Init */
@@ -508,6 +510,16 @@ X509*      SSL_get_peer_certificate(SSL* ssl);
 X509_NAME* X509_get_issuer_name(X509* cert);
 X509_NAME* X509_get_subject_name(X509* cert);
 char*      X509_NAME_oneline(X509_NAME*, char*, int);
+
+int SSL_want_read(SSL*);
+int SSL_want_write(SSL*);
+
+int BIO_printf(BIO*, const char*, ...);
+int ASN1_UTCTIME_print(BIO*, const ASN1_UTCTIME*);
+
+int   sk_num(X509_REVOKED*);
+void* sk_value(X509_REVOKED*, int);
+
 /* extra ends */
 
 

@@ -475,6 +475,11 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
 
     ssl->peerCert.issuer.sz    = 0;
     ssl->peerCert.subject.sz   = 0;
+    
+    /* make sure server has cert and key unless using PSK */
+    if (ssl->options.side == SERVER_END && !havePSK)
+        if (!ssl->buffers.certificate.buffer || !ssl->buffers.key.buffer)
+            return NO_PRIVATE_KEY;
 
 #ifndef NO_PSK
     ssl->arrays.client_identity[0] = 0;
@@ -2176,9 +2181,6 @@ int ReceiveData(SSL* ssl, byte* output, int sz)
         CYASSL_ERROR(NOT_READY_ERROR);
         return ssl->error = NOT_READY_ERROR;
     }
-
-    if (ssl->options.connReset || ssl->options.isClosed)
-        return 0;
 
     while (ssl->buffers.clearOutputBuffer.length == 0)
         if ( (ssl->error = ProcessReply(ssl)) < 0) {

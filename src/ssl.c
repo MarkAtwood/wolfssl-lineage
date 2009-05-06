@@ -174,6 +174,24 @@ int SSL_get_error(SSL* ssl, int dummy)
 }
 
 
+int SSL_want_read(SSL* ssl)
+{
+    if (ssl->error == WANT_READ)
+        return 1;
+
+    return 0;
+}
+
+
+int SSL_want_write(SSL* ssl)
+{
+    if (ssl->error == WANT_WRITE)
+        return 1;
+
+    return 0;
+}
+
+
 char* ERR_error_string(unsigned long errNumber, char* buffer)
 {
     static char* msg = "Please supply a buffer for error string";
@@ -1534,7 +1552,7 @@ int CyaSSL_set_compression(SSL* ssl)
 
     int RAND_status(void)
     {
-        return 1;  /* CTaoCrypt provides enough seed */
+        return 1;  /* CTaoCrypt provides enough seed internally */
     }
 
 
@@ -1783,7 +1801,7 @@ int CyaSSL_set_compression(SSL* ssl)
 
     void SSL_set_connect_state(SSL* ssl)
     {
-   
+        /* client by default */ 
     }
 
 
@@ -1990,7 +2008,11 @@ int CyaSSL_set_compression(SSL* ssl)
 
     int RAND_load_file(const char* fname, long len)
     {
-        return 0;
+        /* CTaoCrypt provides enough entropy internally or will report error */
+        if (len == -1)
+            return 1024;
+        else
+            return (int)len;
     }
 
 
@@ -2448,7 +2470,29 @@ int CyaSSL_set_compression(SSL* ssl)
     {
     }
 
+    int BIO_printf(BIO* bio, const char* format, ...)
+    {
+        return 0;
+    }
+
+
+    int ASN1_UTCTIME_print(BIO* bio, const ASN1_UTCTIME* a)
+    {
+        return 0;
+    }
     
+
+    int  sk_num(X509_REVOKED* rev)
+    {
+        return 0;
+    }
+
+
+    void* sk_value(X509_REVOKED* rev, int i)
+    {
+        return 0;
+    }
+
 
 
 #endif /* OPENSSL_EXTRA */

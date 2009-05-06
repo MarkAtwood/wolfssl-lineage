@@ -63,8 +63,8 @@
    Enable these if you are going to be doing a lot of small (<= 16 digit) multiplications say in ECC
    Or if you're on a 64-bit machine doing RSA as a 1024-bit integer == 16 digits ;-)
  */
-//need to refactor the function
-//#define TFM_SMALL_SET
+/* need to refactor the function */
+/*#define TFM_SMALL_SET */
 
 /* do we want huge code 
    Enable these if you are doing 20, 24, 28, 32, 48, 64 digit multiplications (useful for RSA)
@@ -137,9 +137,9 @@
 #if (CHAR_BIT & 7)
    #error CHAR_BIT must be a multiple of eight.
 #endif
-/*#if FP_MAX_SIZE % CHAR_BIT
+#if FP_MAX_SIZE % CHAR_BIT
    #error FP_MAX_SIZE must be a multiple of CHAR_BIT
-#endif*/
+#endif
 
 /* autodetect x86-64 and make sure we are using 64-bit digits with x86-64 asm */
 #if defined(__x86_64__)
