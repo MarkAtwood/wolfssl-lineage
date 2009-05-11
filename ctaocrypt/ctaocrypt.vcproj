@@ -193,6 +193,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\md4.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\md5.h"
 				>
 			</File>
@@ -282,6 +286,10 @@
 			</File>
 			<File
 				RelativePath=".\src\integer.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\md4.c"
 				>
 			</File>
 			<File
