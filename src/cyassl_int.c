@@ -2581,6 +2581,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     
     if (*list == 0) return 1;   /* CyaSSL default */
 
+    if (strncmp(haystack, "ALL", 3) == 0) return 1;  /* CyaSSL defualt */
+
     for(;;) {
         size_t len;
         prev = haystack;
