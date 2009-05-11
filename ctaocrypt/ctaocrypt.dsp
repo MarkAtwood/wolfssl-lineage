@@ -125,6 +125,10 @@ SOURCE=.\src\integer.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\md4.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\md5.c
 # End Source File
 # Begin Source File
@@ -198,6 +202,10 @@ SOURCE=.\include\hmac.h
 # Begin Source File
 
 SOURCE=.\include\integer.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\md4.h
 # End Source File
 # Begin Source File
 
