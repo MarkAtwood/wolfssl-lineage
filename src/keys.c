@@ -223,8 +223,10 @@ int SetCipherSpecs(SSL* ssl)
 #endif
     }
 
+#ifdef CYASSL_DTLS
     if (ssl->options.dtls)
         ssl->hmac = TLS_hmac;
+#endif
 
     return 0;
 }

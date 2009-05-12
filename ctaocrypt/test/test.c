@@ -133,7 +133,7 @@ void ctaocrypt_test(void* args)
         printf( "Rabbit   test passed!\n");
 #endif
 
-#ifndef NO_DES
+#ifndef NO_DES3
     if ( (ret = des_test()) )
         err_sys("DES      test failed!\n", ret);
     else
@@ -709,7 +709,7 @@ int rabbit_test()
 #endif /* NO_RABBIT */
 
 
-#ifndef NO_DES
+#ifndef NO_DES3
 int des_test()
 {
     const byte vector[] = { /* "now is the time for all " w/o trailing 0 */
@@ -755,7 +755,7 @@ int des_test()
 
     return 0;
 }
-#endif /* NO_DES */
+#endif /* NO_DES3 */
 
 
 #ifndef NO_DES3

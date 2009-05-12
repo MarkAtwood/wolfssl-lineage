@@ -12,7 +12,18 @@ before calling SSL_new();  Though it's not recommended.
 
 *** end Note ***
 
-CyaSSL Release 1.0.2 (4/3/2009)
+CyaSSL Release 1.0.3 (5/10/2009)
+
+Release 1.0.3 for CyaSSL adds bug fixes and add increased support for OpenSSL
+compatibility when building other applications.
+
+Release 1.0.3 includes an alpha release of DTLS for both client and servers.
+This is only for testing purposes at this time.  Rebroadcast and reordering
+aren't fully implemented at this time but will be for the next release.
+
+For general build instructions see rc1 below.
+
+******************CyaSSL Release 1.0.2 (4/3/2009)
 
 Release 1.0.2 for CyaSSL adds bug fixes for a couple I/O issues.  Some systems
 will send a SIGPIPE on socket recv() at any time and this should be handled by

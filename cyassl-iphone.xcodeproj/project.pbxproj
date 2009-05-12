@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		43809E9B0FB7AD1C0050922E /* md4.c in Sources */ = {isa = PBXBuildFile; fileRef = 43809E9A0FB7AD1C0050922E /* md4.c */; };
+		43809E9D0FB7AD320050922E /* md4.h in Headers */ = {isa = PBXBuildFile; fileRef = 43809E9C0FB7AD320050922E /* md4.h */; };
 		43962ADF0DE7ED48003C5E5B /* ssl.c in Sources */ = {isa = PBXBuildFile; fileRef = 43C6C2790DDF984100F2D488 /* ssl.c */; };
 		43AC92CA0EB154210049F588 /* cyassl_io.c in Sources */ = {isa = PBXBuildFile; fileRef = 43AC92C90EB154210049F588 /* cyassl_io.c */; };
 		43C6C27B0DDF984100F2D488 /* cyassl_int.c in Sources */ = {isa = PBXBuildFile; fileRef = 43C6C2770DDF984100F2D488 /* cyassl_int.c */; };
@@ -65,6 +67,8 @@
 
 /* Begin PBXFileReference section */
 		4368F6E40E9EA1140002A123 /* test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = test.c; path = ctaocrypt/test/test.c; sourceTree = "<group>"; };
+		43809E9A0FB7AD1C0050922E /* md4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = md4.c; path = ctaocrypt/src/md4.c; sourceTree = "<group>"; };
+		43809E9C0FB7AD320050922E /* md4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = md4.h; path = ctaocrypt/include/md4.h; sourceTree = "<group>"; };
 		43AC92C90EB154210049F588 /* cyassl_io.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = cyassl_io.c; path = src/cyassl_io.c; sourceTree = "<group>"; };
 		43C6C2770DDF984100F2D488 /* cyassl_int.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = cyassl_int.c; path = src/cyassl_int.c; sourceTree = "<group>"; };
 		43C6C2780DDF984100F2D488 /* keys.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = keys.c; path = src/keys.c; sourceTree = "<group>"; };
@@ -158,6 +162,7 @@
 		43CA25720EA3F9B20011ECA2 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				43809E9A0FB7AD1C0050922E /* md4.c */,
 				43D565660F1EC9CC00550C88 /* rabbit.c */,
 				43D565640F1EC9A600550C88 /* hc128.c */,
 				43AC92C90EB154210049F588 /* cyassl_io.c */,
@@ -188,6 +193,7 @@
 		43CA25B90EA400A60011ECA2 /* headers */ = {
 			isa = PBXGroup;
 			children = (
+				43809E9C0FB7AD320050922E /* md4.h */,
 				43D565A50F29041C00550C88 /* hc128.h */,
 				43D565A30F29040000550C88 /* rabbit.h */,
 				43CA25D10EA401550011ECA2 /* cyassl_callbacks.h */,
@@ -235,6 +241,7 @@
 			files = (
 				43D565A40F29040000550C88 /* rabbit.h in Headers */,
 				43D565A60F29041C00550C88 /* hc128.h in Headers */,
+				43809E9D0FB7AD320050922E /* md4.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -308,6 +315,7 @@
 				43AC92CA0EB154210049F588 /* cyassl_io.c in Sources */,
 				43D565650F1EC9A600550C88 /* hc128.c in Sources */,
 				43D565670F1EC9CC00550C88 /* rabbit.c in Sources */,
+				43809E9B0FB7AD1C0050922E /* md4.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
