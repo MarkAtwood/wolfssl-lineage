@@ -307,12 +307,12 @@ static void DesSetKey(const byte* key, int dir, word32* out)
     if (dir == DES_DECRYPTION)
         for (i = 0; i < 16; i += 2) {
             word32 swap = out[i];
-            out[i] = out[DES_KEY_SIZE - 2 - i];
-            out[DES_KEY_SIZE - 2 - i] = swap;
+            out[i] = out[DES_KS_SIZE - 2 - i];
+            out[DES_KS_SIZE - 2 - i] = swap;
 
             swap = out[i + 1];
-            out[i + 1] = out[DES_KEY_SIZE - 1 - i];
-            out[DES_KEY_SIZE - 1 - i] = swap;
+            out[i + 1] = out[DES_KS_SIZE - 1 - i];
+            out[DES_KS_SIZE - 1 - i] = swap;
         }
    
 }

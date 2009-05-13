@@ -67,6 +67,10 @@ THREAD_RETURN CYASSL_API server_test(void* args)
     SSL_CTX_use_psk_identity_hint(ctx, "cyassl server");
 #endif
 
+#ifdef OPENSSL_EXTRA
+    SSL_CTX_set_default_passwd_cb(ctx, PasswordCallBack);
+#endif
+
     SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
 
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)

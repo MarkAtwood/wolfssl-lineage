@@ -140,6 +140,13 @@ static INLINE void err_sys(const char* msg)
 }
 
 
+static int PasswordCallBack(char* passwd, int sz, int rw, void* userdata)
+{
+    strncpy(passwd, "yassl123", sz);
+    return 8;
+}
+
+
 static INLINE void showPeer(SSL* ssl)
 {
 #ifdef OPENSSL_EXTRA
@@ -408,6 +415,9 @@ static INLINE unsigned int my_psk_server_cb(SSL* ssl, const char* identity,
     }
 
 #endif /* _WIN32 */
+
+
+
 
 
 #endif /* CyaSSL_TEST_H */

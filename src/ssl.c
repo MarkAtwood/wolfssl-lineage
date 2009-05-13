@@ -283,7 +283,8 @@ static int AddCA(SSL_CTX* ctx, buffer der)
 
 #ifndef NO_FILESYSTEM
 
-static int PemToDer(const char* fileName, int type, buffer* der, void* heap)
+static int PemToDer(const char* fileName, int type, buffer* der, void* heap,
+                    EncryptedInfo* info)
 {
     long   begin    = -1;
     long   end      =  0;
@@ -315,6 +316,46 @@ static int PemToDer(const char* fileName, int type, buffer* der, void* heap)
             begin = ftell(file);
             break;
         }
+
+#ifdef OPENSSL_EXTRA
+
+    /* remove encrypted header if there */
+    if (fgets(line, sizeof(line), file)) {
+        char encHeader[] = "Proc-Type";
+        if (strncmp(encHeader, line, strlen(encHeader)) == 0 &&
+            fgets(line, sizeof(line), file)) {
+
+            char* start  = strstr(line, "DES");
+            char* finish = strstr(line, ",");
+            if (!start)
+                start = strstr(line, "AES");
+
+            if (!info) return SSL_BAD_FILE;
+
+            if (start && finish && (start < finish)) {
+                char* newline = strstr(line, "\r");
+
+                memcpy(info->name, start, finish - start);
+                info->name[finish - start] = 0;
+                memcpy(info->iv, finish + 1, sizeof(info->iv));
+
+                if (!newline) newline = strstr(line, "\n");
+                if (newline && (newline > finish)) {
+                    info->ivSz = newline - (finish + 1);
+                    info->set = 1;
+                }
+                else
+                    return SSL_BAD_FILE;
+            }
+            else
+                return SSL_BAD_FILE;
+
+            fgets(line, sizeof(line), file);   /* get a blank line */
+            begin = ftell(file);
+        }
+    }
+
+#endif /* OPENSSL_EXTRA */
 
     while(fgets(line, sizeof(line), file))
         if (strncmp(footer, line, strlen(footer)) == 0) {
@@ -358,14 +399,17 @@ static int PemToDer(const char* fileName, int type, buffer* der, void* heap)
 static int ProcessFile(SSL_CTX* ctx, const char* file, int format, int type)
 {
     buffer der; 
+    EncryptedInfo info;
+
     der.buffer = 0;
+    info.set   = 0;
 
     if (format != SSL_FILETYPE_ASN1 && format != SSL_FILETYPE_PEM)
         return SSL_BAD_FILETYPE;
 
     if (format == SSL_FILETYPE_PEM) {
         if (PemToDer(file, type == PRIVATEKEY_TYPE ? type : CERT_TYPE, &der,
-                     ctx->heap) < 0) {
+                     ctx->heap, &info) < 0) {
             XFREE(der.buffer, ctx->heap);
             return SSL_BAD_FILE;
         }
@@ -392,6 +436,59 @@ static int ProcessFile(SSL_CTX* ctx, const char* file, int format, int type)
         }
         fclose(input);
     }
+
+#ifdef OPENSSL_EXTRA
+
+    if (info.set) {
+        /* decrypt */
+        char password[80];
+        int  passwordSz;
+
+        byte key[AES_256_KEY_SIZE];
+        byte  iv[AES_IV_SIZE];
+
+        if (!ctx->passwd_cb) return -1;
+
+        /* use file's salt for key derivation, hex decode first */
+        if (Base16Decode(info.iv, info.ivSz, info.iv, &info.ivSz) != 0)
+            return -1;
+
+        passwordSz = ctx->passwd_cb(password, sizeof(password), 0,
+                                    ctx->userdata);
+        if (EVP_BytesToKey(info.name, "MD5", info.iv, (byte*)password,
+                           passwordSz, 1, key, iv) <= 0)
+            return -1;
+
+        if (strncmp(info.name, "DES-CBC", 7) == 0) {
+            Des des;
+            Des_SetKey(&des, key, info.iv, DES_DECRYPTION);
+            Des_CbcDecrypt(&des, der.buffer, der.buffer, der.length);
+        }
+        else if (strncmp(info.name, "DES-EDE3-CBC", 13) == 0) {
+            Des3 des;
+            Des3_SetKey(&des, key, info.iv, DES_DECRYPTION);
+            Des3_CbcDecrypt(&des, der.buffer, der.buffer, der.length);
+        }
+        else if (strncmp(info.name, "AES-128-CBC", 13) == 0) {
+            Aes aes;
+            AesSetKey(&aes, key, AES_128_KEY_SIZE, info.iv, AES_DECRYPTION);
+            AesCbcDecrypt(&aes, der.buffer, der.buffer, der.length);
+        }
+        else if (strncmp(info.name, "AES-192-CBC", 13) == 0) {
+            Aes aes;
+            AesSetKey(&aes, key, AES_192_KEY_SIZE, info.iv, AES_DECRYPTION);
+            AesCbcDecrypt(&aes, der.buffer, der.buffer, der.length);
+        }
+        else if (strncmp(info.name, "AES-256-CBC", 13) == 0) {
+            Aes aes;
+            AesSetKey(&aes, key, AES_256_KEY_SIZE, info.iv, AES_DECRYPTION);
+            AesCbcDecrypt(&aes, der.buffer, der.buffer, der.length);
+        }
+        else 
+            return SSL_BAD_FILE;
+    }
+
+#endif /* OPENSSL_EXTRA */
 
     if (type == CA_TYPE)
         return AddCA(ctx, der);     /* takes der over */
@@ -2294,16 +2391,15 @@ int CyaSSL_set_compression(SSL* ssl)
     }
 
 
-
     void SSL_CTX_set_default_passwd_cb_userdata(SSL_CTX* ctx, void* userdata)
     {
-      
+        ctx->userdata = userdata;
     }
 
 
     void SSL_CTX_set_default_passwd_cb(SSL_CTX* ctx, pem_password_cb cb)
     {
-        
+        ctx->passwd_cb = cb;
     }
 
 
@@ -2311,8 +2407,6 @@ int CyaSSL_set_compression(SSL* ssl)
     {
         return ProcessFile(ctx, file, type, PRIVATEKEY_TYPE);
     }
-
-
 
 
     long SSL_CTX_set_timeout(SSL_CTX* ctx, long to)
@@ -2493,6 +2587,91 @@ int CyaSSL_set_compression(SSL* ssl)
         return 0;
     }
 
+
+    int EVP_BytesToKey(const EVP_CIPHER* type, const EVP_MD* md,
+                       const byte* salt, const byte* data, int sz, int count,
+                       byte* key, byte* iv)
+    {
+        int keyLen = 0;
+        int ivLen  = 0;
+
+        Md5    myMD;
+        byte   digest[MD5_DIGEST_SIZE];
+
+        int j;
+        int keyLeft;
+        int ivLeft;
+        int keyOutput = 0;
+
+        InitMd5(&myMD);
+
+        /* only support MD5 for now */
+        if (strncmp(md, "MD5", 3)) return 0;
+
+        /* only support CBC DES and AES for now */
+        if (strncmp(type, "DES-CBC", 7) == 0) {
+            keyLen = DES_KEY_SIZE;
+            ivLen  = DES_IV_SIZE;
+        }
+        else if (strncmp(type, "DES-EDE3-CBC", 12) == 0) {
+            keyLen = DES3_KEY_SIZE;
+            ivLen  = DES_IV_SIZE;
+        }
+        else if (strncmp(type, "AES-128-CBC", 11) == 0) {
+            keyLen = AES_128_KEY_SIZE;
+            ivLen  = AES_IV_SIZE;
+        }
+        else if (strncmp(type, "AES-192-CBC", 11) == 0) {
+            keyLen = AES_192_KEY_SIZE;
+            ivLen  = AES_IV_SIZE;
+        }
+        else if (strncmp(type, "AES-256-CBC", 11) == 0) {
+            keyLen = AES_256_KEY_SIZE;
+            ivLen  = AES_IV_SIZE;
+        }
+        else
+            return 0;
+
+        keyLeft   = keyLen;
+        ivLeft    = ivLen;
+
+        while (keyOutput < (keyLen + ivLen)) {
+            int digestLeft = MD5_DIGEST_SIZE;
+            /* D_(i - 1) */
+            if (keyOutput)                      /* first time D_0 is empty */
+                Md5Update(&myMD, digest, MD5_DIGEST_SIZE);
+            /* data */
+            Md5Update(&myMD, data, sz);
+            /* salt */
+            if (salt)
+                Md5Update(&myMD, salt, EVP_SALT_SIZE);
+            Md5Final(&myMD, digest);
+            /* count */
+            for (j = 1; j < count; j++) {
+                Md5Update(&myMD, digest, MD5_DIGEST_SIZE);
+                Md5Final(&myMD, digest);
+            }
+
+            if (keyLeft) {
+                int store = min(keyLeft, MD5_DIGEST_SIZE);
+                memcpy(&key[keyLen - keyLeft], digest, store);
+
+                keyOutput  += store;
+                keyLeft    -= store;
+                digestLeft -= store;
+            }
+
+            if (ivLeft && digestLeft) {
+                int store = min(ivLeft, digestLeft);
+                memcpy(&iv[ivLen - ivLeft], &digest[MD5_DIGEST_SIZE -
+                                                    digestLeft], store);
+                keyOutput += store;
+                ivLeft    -= store;
+            }
+        }
+        assert(keyOutput == (keyLen + ivLen));
+        return keyOutput;
+    }
 
 
 #endif /* OPENSSL_EXTRA */

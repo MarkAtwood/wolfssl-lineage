@@ -219,9 +219,11 @@ enum Misc {
     SESSION_FLUSH_COUNT = 256, /* Flush session cache unless user turns off */ 
 
     RC4_KEY_SIZE        = 16,  /* always 128bit           */
+    DES_KEY_SIZE        =  8,  /* des                     */
     DES3_KEY_SIZE       = 24,  /* 3 des ede               */
     DES_IV_SIZE         = DES_BLOCK_SIZE,
     AES_256_KEY_SIZE    = 32,  /* for 256 bit             */
+    AES_192_KEY_SIZE    = 24,  /* for 192 bit             */
     AES_IV_SIZE         = 16,  /* always block size       */
     AES_128_KEY_SIZE    = 16,  /* for 128 bit             */
 
@@ -230,6 +232,8 @@ enum Misc {
 
     RABBIT_KEY_SIZE     = 16,  /* 128 bits                */
     RABBIT_IV_SIZE      =  8,  /* 64 bits for iv          */
+
+    EVP_SALT_SIZE       =  8,  /* evp salt size 64 bits   */
 
     MAX_HELLO_SZ       = 128,  /* max client or server hello */
     MAX_CERT_VERIFY_SZ = 1024, /* max   */
@@ -273,6 +277,8 @@ enum states {
 
     #undef X509_NAME
     typedef struct X509_NAME   X509_NAME;
+
+    typedef int (*pem_password_cb)(char*, int, int, void*);
 #endif /* SSL_TYPES_DEFINED */
 
 
@@ -381,6 +387,10 @@ struct SSL_CTX {
     psk_server_callback server_psk_cb;  /* server callback */
     char        server_hint[MAX_PSK_ID_LEN];
 #endif /* NO_PSK */
+#ifdef OPENSSL_EXTRA
+    pem_password_cb passwd_cb;
+    void*            userdata;
+#endif /* OPENSSL_EXTRA */
 };
 
 
@@ -721,6 +731,20 @@ struct SSL {
 
 int  InitSSL(SSL*, SSL_CTX*);
 void FreeSSL(SSL*);
+
+
+enum {
+    IV_SZ   = 32,          /* max iv sz */
+    NAME_SZ = 80,          /* max one line */
+};
+
+
+typedef struct EncryptedInfo {
+    char   name[NAME_SZ];
+    byte   iv[IV_SZ];
+    word32 ivSz;
+    byte   set;
+} EncryptedInfo;
 
 
 #ifdef CYASSL_CALLBACKS

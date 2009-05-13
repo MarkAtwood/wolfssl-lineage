@@ -52,6 +52,10 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
     ctx    = SSL_CTX_new(method);
     /* SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_OFF); */
 
+#ifdef OPENSSL_EXTRA
+    SSL_CTX_set_default_passwd_cb(ctx, PasswordCallBack);
+#endif
+
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
         err_sys("can't load ca file");
 

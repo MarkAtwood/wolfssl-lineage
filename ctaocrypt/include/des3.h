@@ -34,7 +34,7 @@
 
 enum {
     DES_BLOCK_SIZE  = 8,
-    DES_KEY_SIZE    = 32,
+    DES_KS_SIZE     = 32,
 
     DES_ENCRYPTION  = 0,
     DES_DECRYPTION  = 1,
@@ -43,7 +43,7 @@ enum {
 
 /* DES encryption and decryption */
 typedef struct Des {
-    word32 key[DES_KEY_SIZE];
+    word32 key[DES_KS_SIZE];
     word32 reg[DES_BLOCK_SIZE / sizeof(word32)];      /* for CBC mode */
     word32 tmp[DES_BLOCK_SIZE / sizeof(word32)];      /* same         */
 } Des;
@@ -51,7 +51,7 @@ typedef struct Des {
 
 /* DES3 encryption and decryption */
 typedef struct Des3 {
-    word32 key[3][DES_KEY_SIZE];
+    word32 key[3][DES_KS_SIZE];
     word32 reg[DES_BLOCK_SIZE / sizeof(word32)];      /* for CBC mode */
     word32 tmp[DES_BLOCK_SIZE / sizeof(word32)];      /* same         */
 } Des3;

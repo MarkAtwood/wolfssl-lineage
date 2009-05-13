@@ -42,6 +42,7 @@
 #endif
 
 typedef char EVP_MD;
+typedef char EVP_CIPHER;
 
 const EVP_MD* EVP_md5(void);
 const EVP_MD* EVP_sha1(void);
@@ -67,7 +68,8 @@ int EVP_DigestUpdate(EVP_MD_CTX* ctx, const void* data, size_t sz);
 int EVP_DigestFinal(EVP_MD_CTX* ctx, unsigned char* md, unsigned int* s);
 int EVP_DigestFinal_ex(EVP_MD_CTX* ctx, unsigned char* md, unsigned int* s);
 
-
+int EVP_BytesToKey(const EVP_CIPHER*, const EVP_MD*, const byte*, const byte*,
+                   int, int, byte*, byte*);
 
 #ifdef __cplusplus
     } /* extern "C" */

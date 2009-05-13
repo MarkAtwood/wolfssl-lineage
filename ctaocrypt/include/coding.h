@@ -38,6 +38,9 @@ int Base64Decode(const byte* in, word32 inLen, byte* out, word32* outLen);
     int Base64Encode(const byte* in, word32 inLen, byte* out, word32* outLen);
 #endif
 
+#ifdef OPENSSL_EXTRA
+    int Base16Decode(const byte* in, word32 inLen, byte* out, word32* outLen);
+#endif
 
 #ifdef __cplusplus
     } /* extern "C" */

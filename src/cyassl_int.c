@@ -266,6 +266,11 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->server_psk_cb      = 0;
 #endif /* NO_PSK */
 
+#ifdef OPENSSL_EXTRA
+    ctx->passwd_cb   = 0;
+    ctx->userdata    = 0;
+#endif /* OPENSSL_EXTRA */
+
     ctx->CBIORecv = EnbedReceive;
     ctx->CBIOSend = EmbedSend;
     ctx->partialWrite = 0;

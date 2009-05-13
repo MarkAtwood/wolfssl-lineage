@@ -84,7 +84,11 @@ void client_test(void* args)
 #ifndef NO_PSK
     SSL_CTX_set_psk_client_callback(ctx, my_psk_client_cb);
 #endif
-    
+
+#ifdef OPENSSL_EXTRA
+    SSL_CTX_set_default_passwd_cb(ctx, PasswordCallBack);
+#endif
+
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
         err_sys("can't load ca file");
 

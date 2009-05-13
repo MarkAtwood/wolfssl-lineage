@@ -185,3 +185,51 @@ int Base64Encode(const byte* in, word32 inLen, byte* out, word32* outLen)
 
 
 #endif /* BUILD_CTAOCRYPT_EXTRA */
+
+
+#ifdef OPENSSL_EXTRA
+
+
+static
+const byte hexDecode[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                           BAD, BAD, BAD, BAD, BAD, BAD, BAD,
+                           10, 11, 12, 13, 14, 15 
+                         };  /* A starts at 0x41 not 0x3A */
+
+int Base16Decode(const byte* in, word32 inLen, byte* out, word32* outLen)
+{
+    word32 inIdx  = 0;
+    word32 outIdx = 0;
+
+    if (inLen % 2)
+        return -1;
+
+    if (*outLen < (inLen / 2))
+        return -1;
+
+    while (inLen) {
+        byte b  = in[inIdx++] - 0x30;  /* 0 starts at 0x30 */
+        byte b2 = in[inIdx++] - 0x30;
+
+        /* sanity checks */
+        if (b >=  sizeof(hexDecode)/sizeof(hexDecode[0]))
+            return -1;
+        if (b2 >= sizeof(hexDecode)/sizeof(hexDecode[0]))
+            return -1;
+
+        b  = hexDecode[b];
+        b2 = hexDecode[b2];
+
+        if (b == BAD || b2 == BAD)
+            return -1;
+        
+        out[outIdx++] = (b << 4) | b2;
+        inLen -= 2;
+    }
+
+    *outLen = outIdx;
+    return 0;
+}
+
+
+#endif  /* OPENSSL_EXTRA */
