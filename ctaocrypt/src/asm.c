@@ -286,7 +286,10 @@ asm(                           \
    "paddq %%mm5,%%mm3    \n\t" \
    "movd %%mm3,28(%0)    \n\t" \
    "psrlq $32, %%mm3     \n\t" \
-:"=r"(_c) : "0"(_c), "g"(tmpm) );
+:"=r"(_c) : "0"(_c), "r"(tmpm) );
+
+/* TAO switched tmpm from "g" to "r" after gcc tried to index the indexed stack
+   pointer */
 
 #define LOOP_END \
 asm( "movd %%mm3,%0  \n" :"=r"(cy))
@@ -491,12 +494,14 @@ asm(                                            \
 
 #define SQRADDSC(i, j)                                    \
 asm(                                                     \
-     "movl  %6,%%eax     \n\t"                            \
-     "mull  %7           \n\t"                            \
+     "movl  %3,%%eax     \n\t"                            \
+     "mull  %4           \n\t"                            \
      "movl  %%eax,%0     \n\t"                            \
      "movl  %%edx,%1     \n\t"                            \
      "xorl  %2,%2        \n\t"                            \
-     :"=r"(sc0), "=r"(sc1), "=r"(sc2): "0"(sc0), "1"(sc1), "2"(sc2), "g"(i), "g"(j) :"%eax","%edx","%cc");
+     :"=r"(sc0), "=r"(sc1), "=r"(sc2): "g"(i), "g"(j) :"%eax","%edx","%cc");
+
+/* TAO removed sc0,1,2 as input to remove warning so %6,%7 become %3,%4 */
 
 #define SQRADDAC(i, j)                                    \
 asm(                                                     \
@@ -559,12 +564,14 @@ asm(                                                     \
 
 #define SQRADDSC(i, j)                                    \
 asm(                                                     \
-     "movq  %6,%%rax     \n\t"                            \
-     "mulq  %7           \n\t"                            \
+     "movq  %3,%%rax     \n\t"                            \
+     "mulq  %4           \n\t"                            \
      "movq  %%rax,%0     \n\t"                            \
      "movq  %%rdx,%1     \n\t"                            \
      "xorq  %2,%2        \n\t"                            \
-     :"=r"(sc0), "=r"(sc1), "=r"(sc2): "0"(sc0), "1"(sc1), "2"(sc2), "g"(i), "g"(j) :"%rax","%rdx","%cc");
+     :"=r"(sc0), "=r"(sc1), "=r"(sc2): "g"(i), "g"(j) :"%rax","%rdx","%cc");
+
+/* TAO removed sc0,1,2 as input to remove warning so %6,%7 become %3,%4 */
 
 #define SQRADDAC(i, j)                                                         \
 asm(                                                     \
@@ -635,14 +642,16 @@ asm(                                            \
 
 #define SQRADDSC(i, j)                                                         \
 asm(                                            \
-     "movd  %6,%%mm0     \n\t"                            \
-     "movd  %7,%%mm1     \n\t"                            \
+     "movd  %3,%%mm0     \n\t"                            \
+     "movd  %4,%%mm1     \n\t"                            \
      "pmuludq %%mm1,%%mm0\n\t"                            \
      "movd  %%mm0,%0     \n\t"                            \
      "psrlq $32,%%mm0    \n\t"                            \
      "movd  %%mm0,%1     \n\t"                            \
      "xorl  %2,%2        \n\t"                            \
-     :"=r"(sc0), "=r"(sc1), "=r"(sc2): "0"(sc0), "1"(sc1), "2"(sc2), "m"(i), "m"(j));
+     :"=r"(sc0), "=r"(sc1), "=r"(sc2): "m"(i), "m"(j));
+
+/* TAO removed sc0,1,2 as input to remove warning so %6,%7 become %3,%4 */
 
 #define SQRADDAC(i, j)                                                         \
 asm(                                            \
@@ -999,8 +1008,7 @@ asm(                              \
 
 #endif
 
-/*
-#include "fp_sqr_comba_generic.c"
+#ifdef TFM_SMALL_SET
 #include "fp_sqr_comba_small_set.i"
 #include "fp_sqr_comba_3.i"
 #include "fp_sqr_comba_4.i"
@@ -1016,7 +1024,7 @@ asm(                              \
 #include "fp_sqr_comba_32.i"
 #include "fp_sqr_comba_48.i"
 #include "fp_sqr_comba_64.i"
-*/
+#endif
 /* end fp_sqr_comba.c asm */
 
 /* start fp_mul_comba.c asm */
@@ -1272,7 +1280,7 @@ asm(                             \
 #endif
 
 
-/*
+#ifdef TFM_SMALL_SET
 #include "fp_mul_comba_small_set.i"
 #include "fp_mul_comba_3.i"
 #include "fp_mul_comba_4.i"
@@ -1288,7 +1296,7 @@ asm(                             \
 #include "fp_mul_comba_32.i"
 #include "fp_mul_comba_48.i"
 #include "fp_mul_comba_64.i"
-*/
+#endif
 
 /* end fp_mul_comba.c asm */
 

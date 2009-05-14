@@ -1521,7 +1521,9 @@ void fp_montgomery_calc_normalization(fp_int *a, fp_int *b)
 }
 
 
-
+#ifdef TFM_SMALL_MONT_SET
+    #include "fp_mont_small.i"
+#endif
 
 /* computes x/R == x (mod N) via Montgomery Reduction */
 void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
@@ -1531,8 +1533,17 @@ void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
 
    /* bail if too large */
    if (m->used > (FP_SIZE/2)) {
+      (void)mu;                     /* shut up compiler */
       return;
    }
+
+#ifdef TFM_SMALL_MONT_SET
+   if (m->used <= 16) {
+      fp_montgomery_reduce_small(a, m, mp);
+      return;
+   }
+#endif
+
 
 #if defined(USE_MEMSET)
    /* now zero the buff */
@@ -1559,7 +1570,6 @@ void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
        _c   = c + x;
        tmpm = m->dp;
        y = 0;
-       /* TAO changed || to && to remove asm INNERMUL8 for now */
        #if (defined(TFM_SSE2) || defined(TFM_X86_64))
         for (; y < (pa & ~7); y += 8) {
               INNERMUL8;

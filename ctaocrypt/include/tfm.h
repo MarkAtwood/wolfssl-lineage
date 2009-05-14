@@ -80,7 +80,7 @@
 #define TFM_MUL12
 #define TFM_MUL17
 #endif
-#if 0 /* Generics only */
+#ifdef TFM_SMALL_SET
 #define TFM_MUL20
 #define TFM_MUL24
 #define TFM_MUL28
@@ -99,7 +99,7 @@
 #define TFM_SQR12
 #define TFM_SQR17
 #endif
-#if 0 /* Generics only */
+#ifdef TFM_SMALL_SET
 #define TFM_SQR20
 #define TFM_SQR24
 #define TFM_SQR28

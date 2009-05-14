@@ -1488,6 +1488,7 @@ Optional Features:
   --enable-opensslExtra   Enable extra OpenSSL API, size+ (default: disabled)
   --enable-ipv6           Enable testing of IPV6 (default: disabled)
   --enable-fastmath       Enable fast math for BigInts(default: disabled)
+  --enable-fasthugemath   Enable fast math + huge code for BigInts(def: off)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -4433,7 +4434,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 4436 "configure"' > conftest.$ac_ext
+  echo '#line 4437 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7468,11 +7469,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7471: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7472: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7475: \$? = $ac_status" >&5
+   echo "$as_me:7476: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7730,11 +7731,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7733: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7734: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7737: \$? = $ac_status" >&5
+   echo "$as_me:7738: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7792,11 +7793,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7795: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7796: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7799: \$? = $ac_status" >&5
+   echo "$as_me:7800: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -9995,7 +9996,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9998 "configure"
+#line 9999 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10093,7 +10094,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10096 "configure"
+#line 10097 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12341,11 +12342,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12344: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12345: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:12348: \$? = $ac_status" >&5
+   echo "$as_me:12349: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -12403,11 +12404,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12406: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12407: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:12410: \$? = $ac_status" >&5
+   echo "$as_me:12411: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -13739,7 +13740,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 13742 "configure"
+#line 13743 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13837,7 +13838,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 13840 "configure"
+#line 13841 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14722,11 +14723,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14725: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14726: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14729: \$? = $ac_status" >&5
+   echo "$as_me:14730: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14784,11 +14785,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14787: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14788: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14791: \$? = $ac_status" >&5
+   echo "$as_me:14792: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16905,11 +16906,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16908: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16909: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16912: \$? = $ac_status" >&5
+   echo "$as_me:16913: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17167,11 +17168,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17170: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17171: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17174: \$? = $ac_status" >&5
+   echo "$as_me:17175: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17229,11 +17230,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17232: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17233: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17236: \$? = $ac_status" >&5
+   echo "$as_me:17237: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -19432,7 +19433,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 19435 "configure"
+#line 19436 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -19530,7 +19531,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 19533 "configure"
+#line 19534 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -21630,7 +21631,9 @@ _ACEOF
 
 
 
-OPTIMIZE_CFLAGS=""
+OPTIMIZE_CFLAGS="-Os -fomit-frame-pointer"
+OPTIMIZE_FAST_CFLAGS="-O3 -fomit-frame-pointer"
+OPTIMIZE_HUGE_CFLAGS="-funroll-loops -DTFM_SMALL_SET"
 DEBUG_CFLAGS="-g -DDEBUG -DDEBUG_CYASSL"
 
 
@@ -21648,7 +21651,7 @@ then
   CFLAGS="$DEBUG_CFLAGS $CFLAGS"
 else
   # Optimized version. No debug
-  CFLAGS="$OPTIMIZE_CFLAGS $CFLAGS -DNDEBUG"
+  CFLAGS="$CFLAGS -DNDEBUG"
 fi
 
 
@@ -21666,7 +21669,7 @@ then
   # if you only want server or client you can define NO_CYASSL_SERVER or
   # NO_CYASSL_CLIENT but then some of the examples and testsuite won't build
   # note that TLS needs HMAC
-  CFLAGS="-DNO_TLS -DNO_HMAC -DNO_AES -DNO_DES3 -DNO_SHA256 -DNO_ERROR_STRINGS -DNO_HC128 -DNO_RABBIT $CFLAGS"
+  CFLAGS="-DNO_TLS -DNO_HMAC -DNO_AES -DNO_DES3 -DNO_SHA256 -DNO_ERROR_STRINGS -DNO_HC128 -DNO_RABBIT -DNO_PSK $CFLAGS"
 fi
 
 
@@ -21712,15 +21715,6 @@ then
 fi
 
 
-if test "$GCC" = "yes"
-then
-    if test "$ENABLED_DEBUG" = "no"
-    then
-        CFLAGS="$CFLAGS -Os -fomit-frame-pointer"
-    fi
-fi
-
-
 # Check whether --enable-ipv6 was given.
 if test "${enable_ipv6+set}" = set; then
   enableval=$enable_ipv6;  ENABLED_IPV6=$enableval
@@ -21748,6 +21742,40 @@ fi
 if test "$ENABLED_FASTMATH" = "yes"
 then
     CFLAGS="$CFLAGS -DUSE_FAST_MATH"
+fi
+
+
+# Check whether --enable-fasthugemath was given.
+if test "${enable_fasthugemath+set}" = set; then
+  enableval=$enable_fasthugemath;  ENABLED_FASTHUGEMATH=$enableval
+else
+   ENABLED_FASTHUGEMATH=no
+
+fi
+
+
+if test "$ENABLED_FASTHUGEMATH" = "yes"
+then
+    ENABLED_FASTMATH="yes"
+    CFLAGS="$CFLAGS -DUSE_FAST_MATH"
+fi
+
+
+if test "$GCC" = "yes"
+then
+    if test "$ENABLED_DEBUG" = "no"
+    then
+        if test "$ENABLED_FASTMATH" = "yes"
+        then
+            CFLAGS="$CFLAGS $OPTIMIZE_FAST_CFLAGS"
+            if test "$ENABLED_FASTHUGEMATH" = "yes"
+            then
+                CFLAGS="$CFLAGS $OPTIMIZE_HUGE_CFLAGS"
+            fi
+        else
+            CFLAGS="$CFLAGS $OPTIMIZE_CFLAGS"
+        fi
+    fi
 fi
 
 
