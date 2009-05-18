@@ -63,12 +63,14 @@
     #define SOCKET_EAGAIN      WSAEWOULDBLOCK
     #define SOCKET_ECONNRESET  WSAECONNRESET
     #define SOCKET_EINTR       WSAEINTR
+    #define SOCKET_EPIPE       WSAEPIPE
 #else
     #define SOCKET_EINVAL      EINVAL
     #define SOCKET_EWOULDBLOCK EWOULDBLOCK
     #define SOCKET_EAGAIN      EAGAIN
     #define SOCKET_ECONNRESET  ECONNRESET
     #define SOCKET_EINTR       EINTR
+    #define SOCKET_EPIPE       EPIPE
 #endif /* _WIN32 */
 
 
@@ -136,6 +138,7 @@ int EnbedReceive(char *buf, int sz, void *ctx)
  *           -2 : want write
  *           -3 : connexion reset
  *           -4 : interrupt
+ *           -5 : pipe error / connection closed
  */
 int EmbedSend(char *buf, int sz, void *ctx)
 {
@@ -155,6 +158,9 @@ int EmbedSend(char *buf, int sz, void *ctx)
 
         else if (LastError() == SOCKET_EINTR)
             return -4;
+
+        else if (LastError() == SOCKET_EPIPE)
+            return -5;
 
         else
             return -1;

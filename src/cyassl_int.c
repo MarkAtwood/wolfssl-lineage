@@ -782,6 +782,10 @@ int SendBuffered(SSL* ssl)
                         }
                     #endif
                     continue;
+
+                case -5:        /* epipe / conn closed, same as reset */
+                    ssl->options.connReset = 1;
+                    break;
             }
 
             return SOCKET_ERROR_E;
