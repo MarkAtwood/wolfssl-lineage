@@ -522,26 +522,38 @@ static int ProcessFile(SSL_CTX* ctx, const char* file, int format, int type)
 int SSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file,
                                   const char* path)
 {
-    return ProcessFile(ctx, file, SSL_FILETYPE_PEM, CA_TYPE);
+    if (ProcessFile(ctx, file, SSL_FILETYPE_PEM, CA_TYPE) == SSL_SUCCESS)
+        return SSL_SUCCESS;
+
+    return SSL_FAILURE;
 }
 
 
 int SSL_CTX_use_certificate_file(SSL_CTX* ctx, const char* file, int type)
 {
-    return ProcessFile(ctx, file, type, CERT_TYPE);
+    if (ProcessFile(ctx, file, type, CERT_TYPE) == SSL_SUCCESS)
+        return SSL_SUCCESS;
+
+    return SSL_FAILURE;
 }
 
 
 int SSL_CTX_use_PrivateKey_file(SSL_CTX* ctx, const char* file, int type)
 {
-    return ProcessFile(ctx, file, type, PRIVATEKEY_TYPE);
+    if (ProcessFile(ctx, file, type, PRIVATEKEY_TYPE) == SSL_SUCCESS)
+        return SSL_SUCCESS;
+
+    return SSL_FAILURE;
 }
 
 
 int SSL_CTX_use_certificate_chain_file(SSL_CTX* ctx, const char* file)
 {
     /* add first to ctx, all tested implementations support this */
-    return ProcessFile(ctx, file, SSL_FILETYPE_PEM, CERT_TYPE);
+   if (ProcessFile(ctx, file, SSL_FILETYPE_PEM, CERT_TYPE) == SSL_SUCCESS)
+       return SSL_SUCCESS;
+
+   return SSL_FAILURE;
 }
 
 #endif /* NO_FILESYSTEM */
@@ -2419,7 +2431,10 @@ int CyaSSL_set_compression(SSL* ssl)
 
     int SSL_CTX_use_RSAPrivateKey_file(SSL_CTX* ctx, const char* file, int type)
     {
-        return ProcessFile(ctx, file, type, PRIVATEKEY_TYPE);
+        if (ProcessFile(ctx, file, type, PRIVATEKEY_TYPE) == SSL_SUCCESS)
+            return SSL_SUCCESS;
+
+        return SSL_FAILURE;
     }
 
 
