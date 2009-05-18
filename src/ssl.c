@@ -500,6 +500,20 @@ static int ProcessFile(SSL_CTX* ctx, const char* file, int format, int type)
         XFREE(der.buffer, ctx->heap);
         return SSL_BAD_CERTTYPE;
     }
+    
+    if (type == PRIVATEKEY_TYPE) {
+        /* make sure key can be used */
+        RsaKey key;
+        word32 idx = 0;
+        
+        InitRsaKey(&key, 0);
+        if (RsaPrivateKeyDecode(der.buffer, &idx, &key, der.length) != 0) {
+            FreeRsaKey(&key);
+            return SSL_BAD_FILE;
+        }
+        
+        FreeRsaKey(&key);
+    }
 
     return SSL_SUCCESS;
 }
