@@ -58,6 +58,10 @@
 #endif
 
 #ifdef _WIN32
+    /* no epipe yet */
+    #ifndef WSAEPIPE
+        #define WSAEPIPE       -12345
+    #endif
     #define SOCKET_EINVAL      WSAEINVAL
     #define SOCKET_EWOULDBLOCK WSAEWOULDBLOCK
     #define SOCKET_EAGAIN      WSAEWOULDBLOCK
