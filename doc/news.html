@@ -1,6 +1,8 @@
 <html>
-<title>yaSSL.com Open Source SSL TLS Security Library</title>
+<head>
+<title>yaSSL | News Security Library</title>
 <link rel="stylesheet" href="yassl.css" type="text/css" />
+</head>
 
 <body bgcolor="black">
 &nbsp;
@@ -9,26 +11,125 @@
 <td width="98%" valign="top">
 
 <br />
-<span class="subHeader">
-10/15/2006 New: yaSSL now supports zlib compression, see the notes README for
-more details
-<a href="flossException.html">here</a>.
-
-
-<p>Coming Soon: more yaSSH, more CyaSSL, and more documentation.
-
-<p> If you're interested in joining in the development of yaSSH please drop us
-a note, info at yassl.com.
-
-<p> Please feel free to use the Forums link on the front page for general 
-questions.
-
+<span class="pageName">
+<center><h2>News</h2></center>
 </span>
 
-<p><a href="http://yassl.com/">Home</a>
+
+<a name="r3">
+<span class="pageName">
+<h3>CyaSSL Release 1.0.3</h3>
+</span>
+<span class="bodyText">
+<p> (5/10/2009) CyaSSL Release 1.0.3 is now available for download.
+Release 1.0.3 for CyaSSL adds bug fixes and increases OpenSSL compatibility
+support for building other applications.
+
+<p>Release 1.0.3 includes an alpha release of DTLS for both client and servers.
+This is only for testing purposes at this time.  Rebroadcast and reordering
+aren't fully implemented at this time but will be for the next release.
+
+</a>
+</span>
+
+
+
+<a name="r1">
+<span class="pageName">
+<h3>CyaSSL Release 1.0.2</h3>
+</span>
+<span class="bodyText">
+<p> (4/2/2009) CyaSSL Release 1.0.2 is now available for download.
+Release 1.0.2 for CyaSSL adds bug fixes for a couple I/O issues. Some systems
+will send a SIGPIPE on socket recv() at any time and this should be handled by
+the application by turning off SIGPIPE through setsockopt() or returning from
+the handler.
+
+<p>Release 1.0.2 includes an alpha release of DTLS for both client and servers.
+This is only for testing purposes at this time.  Rebroadcast and reordering
+aren't fully implemented at this time but will be for the next release.
+
+</a>
+</span>
+
+
+
+
+<a name="rc3">
+<span class="pageName">
+<h3>CyaSSL RC3</h3>
+</span>
+<span class="bodyText">
+<p> (2/25/2009) CyaSSL Release Candidate 3 1.0.0 is now available for download. 
+Release Candidate 3 for CyaSSL 1.0.0 adds bug fixes and adds a project file 
+for iPhone development with Xcode. cyassl-iphone.xcodeproj is located in the 
+root directory.  This release also includes a fix for supporting other 
+implementations that bundle mulitple messages at the record layer, this was 
+lost when cyassl i/o was re-implemented but is now fixed.
+
+
+</a>
+</span>
+
+<a name="rc2">
+<span class="pageName">
+<h3>CyaSSL RC2</h3>
+</span>
+<span class="bodyText">
+<p> (1/21/2009) CyaSSL Release Candidate 2 1.0.0 is now available for download.
+    This release includes new stream ciphers HC-128 and RABBIT, they are also
+    available as cipher suites.  Building for the Nintendo Wii and Gamecube are
+    also supported through devkitPro.
+    See the README for detials.
+
+
+</a>
+</span>
+
+<a name="rc1">
+<span class="pageName">
+<h3>CyaSSL RC1</h3>
+</span>
+<span class="bodyText">
+<p> (12/17/2008) CyaSSL Release Candidate 1 1.0.0 is now available for download.
+    This release includes optimization improvements, reduced memory use, and
+    an alternate I/O implementation.
+    See the README for details.
+
+
+</a>
+</span>
+
+
+<a name="yassl196">
+<span class="pageName">
+<h3>yaSSL 1.9.6</h3>
+</span>
+<span class="bodyText">
+<p> (11/13/2008) yaSSL Release  1.9.6 is now available for download.
+    This release of yaSSL continas bug fixes, adds autoconf shared library
+    support and has better server suite detection based on certificate use and
+    private keys.
+    See the README for details.
+
+
+</a>
+</span>
+
+
+
+<p><center><a href="http://yassl.com/"><img src="yassl.png" width="58" height="30" /></a></center>
 
 </td>
 </table>
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+var pageTracker = _gat._getTracker("UA-858874-2");
+pageTracker._trackPageview();
+</script>
 </body>
 
 

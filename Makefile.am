@@ -10,4 +10,6 @@ lib-only:
 openssl-links:
 	cd lib; ln -s ../taocrypt/src/.libs/libtaocrypt.a libcrypto.a; \
     ln -s ../src/.libs/libyassl.a libssl.a; cd ../
-    
+
+install:
+

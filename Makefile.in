@@ -536,7 +536,6 @@ check: check-recursive
 all-am: Makefile
 installdirs: installdirs-recursive
 installdirs-am:
-install: install-recursive
 install-exec: install-exec-recursive
 install-data: install-data-recursive
 uninstall: uninstall-recursive
@@ -644,6 +643,8 @@ lib-only:
 openssl-links:
 	cd lib; ln -s ../taocrypt/src/.libs/libtaocrypt.a libcrypto.a; \
     ln -s ../src/.libs/libyassl.a libssl.a; cd ../
+
+install:
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

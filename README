@@ -81,7 +81,7 @@ See libcurl build instructions below under 1.3.0 and note in 1.5.8.
 
 
 
-    Since yaSSL now supports zlib, as does libcur, the libcurl build test can
+    Since yaSSL now supports zlib, as does libcurl, the libcurl build test can
     fail if yaSSL is built with zlib support since the zlib library isn't 
     passed.  You can do two things to fix this: 
 

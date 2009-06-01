@@ -1,8 +1,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>yaSSL.com Open Source SSL TLS Security Library</title>
+<title>yaSSL - Open Source SSL TLS Security Library</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta name="keywords" content="Embedded ssl, ssl library, ssl libraries, tls library, lib tls, embedded tls, open source ssl, programming ssl, encryption libraries, vxworks ssl, Linux ssl, mysql ssl, cryptography library, aes cryptography, C++ ssl, crypto source code, crypto library, md5, aes, sha1, gpl ssl" />
 <link rel="stylesheet" href="yassl.css" type="text/css" />
 <script language="JavaScript" type="text/javascript">
 //--------------- LOCALIZEABLE GLOBALS ---------------
@@ -58,6 +59,9 @@ var TODAY = monthname[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear()
           <td width="165"><a href="license.html" class="navText">License</a></td>
         </tr>
         <tr>
+          <td width="165"><a href="news.html" class="navText">News</a></td>
+        </tr>
+        <tr>
           <td width="165"><a href="http://sourceforge.net/cvs/?group_id=129181" class="navText">CVS</a></td>
         </tr>
         <tr>
@@ -107,6 +111,7 @@ var TODAY = monthname[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear()
 		<p align="left" class="pageName">Features</p>
 		<span class="bodyText">
 		<img src="arrowlb.gif" width="4" height="7" alt="" border="0" vspace="0" hspace="0">&nbsp; SSL version 3 and TLS versions 1 and 1.1 (client and server)<br />
+		<img src="arrowlb.gif" width="4" height="7" alt="" border="0" vspace="0" hspace="0">&nbsp; DTLS initial support (client and server)<br />
 		<img src="arrowlb.gif" width="4" height="7" alt="" border="0" vspace="0" hspace="0">&nbsp; OpenSSL compatibility layer <br />
 		<img src="arrowlb.gif" width="4" height="7" alt="" border="0" vspace="0" hspace="0">&nbsp; MySQL integration <br />
 		<img src="arrowlb.gif" width="4" height="7" alt="" border="0" vspace="0" hspace="0">&nbsp; libcurl support <br />
@@ -120,7 +125,7 @@ var TODAY = monthname[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear()
 		<img src="arrowlb.gif" width="4" height="7" alt="" border="0" vspace="0" hspace="0">&nbsp; Interchangeable crypto and   certificate libraries <br />
 		<img src="arrowlb.gif" width="4" height="7" alt="" border="0" vspace="0" hspace="0">&nbsp; PEM and DER certificate support <br />
 		<img src="arrowlb.gif" width="4" height="7" alt="" border="0" vspace="0" hspace="0">&nbsp; Very fast <br />
-		<img src="arrowlb.gif" width="4" height="7" alt="" border="0" vspace="0" hspace="0">&nbsp; Multiple OS support: Win32/64, Linux, Solaris, FreeBSD, NetBSD, OpenBSD, Mac OS X, and contact us for help with embedded systems like QNX, VxWorks, and MontaVista </span><span class="bodyText style1"><br />
+		<img src="arrowlb.gif" width="4" height="7" alt="" border="0" vspace="0" hspace="0">&nbsp; Multiple OS support: Win32/64, Linux, Solaris, FreeBSD, NetBSD, OpenBSD, Mac OS X, Nintendo Wii and Gamecube through DevKitPro support, contact us for help with embedded systems like QNX, VxWorks, and MontaVista </span><span class="bodyText style1"><br />
 		</span>
 	  </td>
 	  <td width="4%" valign="top" ></td>
@@ -129,15 +134,22 @@ var TODAY = monthname[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear()
 		  &nbsp;
 		  <p align="center" class="pageName">New!</p>
 		  <span class="smallText">
-          CyaSSL 0.9.9 now has PSK, alternate memory handling and fast math
-          options.  Also check out the benchmark utility showing performance.
-          See the README for details.
 
-		  <p>A C embedded version of yaSSL, CyaSSL is now available for
-          download.  This version is optimized for small footprint, both on 
-          disk and for memory use.  The complete SSLv3/TLSv1.1 client/server
-          footprint is under 60K, and smaller versions can be built.
-          Features are still being added.
+             <br><a href="news.html#r3">CyaSSL Release 1.0.3 with improved stunnel support</a>
+             <p>
+             <br><a href="news.html#r1">CyaSSL Release 1.0.2 with DTLS support</a>
+             <p>
+             <br><a href="news.html#rc3">CyaSSL RC3-1.0.0 with iPhone Xcode support</a>
+             <p>
+             <br><a href="news.html#rc2">CyaSSL RC2-1.0.0 with new stream ciphers + Wii & Gamecube support w/ DevKitPro</a>
+
+             <p>
+             <br><a href="news.html#rc1">CyaSSL RC1-1.0.0 with memory and speed optimizations</a>
+
+             <p>
+             <br><a href="news.html#yassl196">yaSSL 1.9.6 with shared library support</a>
+
+
           </span>  </td>
 	  <td width="1%" valign="top" bgcolor="#99CCFF">
 	  <td width="4%"></td>
@@ -153,5 +165,13 @@ var TODAY = monthname[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear()
  </tr>
 </table>
 &nbsp;
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+var pageTracker = _gat._getTracker("UA-858874-2");
+pageTracker._trackPageview();
+</script>
 </body>
 </html>
