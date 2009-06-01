@@ -204,6 +204,13 @@ void client_test(void* args)
     SSL_set_session(sslResume, session);
     
     if (SSL_connect(sslResume) != SSL_SUCCESS) err_sys("SSL resume failed");
+
+#ifdef OPENSSL_EXTRA
+    if (SSL_session_reused(sslResume))
+        printf("reused session id\n");
+    else
+        printf("didn't reuse session id!!!\n");
+#endif
   
     if (SSL_write(sslResume, resumeMsg, resumeSz) != resumeSz)
         err_sys("SSL_write failed");

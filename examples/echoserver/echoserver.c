@@ -7,6 +7,12 @@
     #define ECHO_OUT
 #endif
 
+
+#ifdef SESSION_STATS
+    void PrintSessionStats(void);
+#endif
+
+
 static void SignalReady(void* args)
 {
 #if defined(_POSIX_THREADS) && defined(NO_MAIN_DRIVER)
@@ -105,7 +111,13 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
                 printf("client sent break command: closing session!\n");
                 break;
             }
-            else if ( strncmp(command, "GET", 3) == 0) {
+#ifdef SESSION_STATS
+            if ( strncmp(command, "printstats", 10) == 0) {
+                PrintSessionStats();
+                break;
+            }
+#endif
+            if ( strncmp(command, "GET", 3) == 0) {
                 char type[]   = "HTTP/1.0 200 ok\r\nContent-type:"
                                 " text/html\r\n\r\n";
                 char header[] = "<html><body BGCOLOR=\"#ffffff\">\n<pre>\n";

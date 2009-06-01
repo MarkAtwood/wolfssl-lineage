@@ -265,17 +265,38 @@ static int AddCA(SSL_CTX* ctx, buffer der)
 
 #ifndef NO_SESSION_CACHE
 
-    #ifndef CACHE_BUFFER_SIZE
-        #define CACHE_BUFFER_SIZE 128
+    /* basic config gives a cache with 33 sessions, adequate for clients and
+       embedded servers
+
+       BIG_SESSION_CACHE allows 1055 sessions, adequate for servers that aren't
+       under heavy load, basically allows 200 new sessions per minute
+
+       HUGE_SESSION_CACHE yields 65,791 sessions, for servers under heavy load,
+       allows over 13,000 new sessions per minute or over 200 new sessions per
+       second
+    */
+    #ifdef HUGE_SESSION_CACHE
+        #define SESSIONS_PER_ROW 11
+        #define SESSION_ROWS 5981
+    #elif defined(BIG_SESSION_CACHE)
+        #define SESSIONS_PER_ROW 5
+        #define SESSION_ROWS 211
+    #else
+        #define SESSIONS_PER_ROW 3
+        #define SESSION_ROWS 11
     #endif
 
-    static SSL_SESSION sessions[CACHE_BUFFER_SIZE];
-    static int sessIdx  = 0;         /* current open slot */
-    static int sessFull = 0;         /* once full, most recent search changes */
+    typedef struct SessionRow {
+        int nextIdx;                           /* where to place next one   */
+        int totalCount;                        /* sessions ever on this row */
+        SSL_SESSION Sessions[SESSIONS_PER_ROW];
+    } SessionRow;
+
+    static SessionRow SessionCache[SESSION_ROWS];
 
     /* quiet compiler */
     #ifndef SINGLE_THREADED
-        static CyaSSL_Mutex mutex;   /* sessions mutex */
+        static CyaSSL_Mutex mutex;   /* SessionCache mutex */
     #endif
 
 #endif /* NO_SESSION_CACHE */
@@ -592,8 +613,9 @@ void SSL_load_error_strings(void)   /* compatibility only */
 {}
 
 
-int SSL_library_init(void)  /* compatiblity only */
+int SSL_library_init(void)
 {
+    InitCyaSSL();
     return SSL_SUCCESS;
 }
 
@@ -1026,6 +1048,15 @@ void FreeCyaSSL()
 
 #ifndef NO_SESSION_CACHE
 
+
+word32 HashSession(const byte* sessionID)
+{
+    /* id is random, just make 32 bit number from first 4 bytes for now */
+    return (sessionID[0] << 24) | (sessionID[1] << 16) | (sessionID[2] <<  8) |
+            sessionID[3];
+}
+
+
 void SSL_flush_sessions(SSL_CTX* ctx, long tm)
 {
     /* static table now, no flusing needed */
@@ -1036,20 +1067,22 @@ SSL_SESSION* GetSession(SSL* ssl, byte* masterSecret)
 {
     SSL_SESSION* ret = 0;
     const byte*  id = ssl->arrays.sessionID;
-    int          idx;
+    word32       row, idx;
 
     if (ssl->options.sessionCacheOff)
         return 0;
 
+    row = HashSession(id) % SESSION_ROWS;
+
     LockMutex(&mutex);
-    
-    if (sessFull)
-        idx = CACHE_BUFFER_SIZE - 1;
+   
+    if (SessionCache[row].totalCount >= SESSIONS_PER_ROW)
+        idx = SESSIONS_PER_ROW - 1;
     else
-        idx = sessIdx - 1;
-    
+        idx = SessionCache[row].nextIdx - 1;
+
     for (; idx >= 0; idx--) {
-        SSL_SESSION* current = &sessions[idx];
+        SSL_SESSION* current = &SessionCache[row].Sessions[idx];
         if (memcmp(current->sessionID, id, ID_LEN) == 0) {
             if (LowResTimer() < (current->bornOn + current->timeout)) {
                 ret = current;
@@ -1083,25 +1116,64 @@ int SetSession(SSL* ssl, SSL_SESSION* session)
 
 void AddSession(SSL* ssl)
 {
+    word32 row, idx;
+
     if (ssl->options.sessionCacheOff)
         return;
 
+    row = HashSession(ssl->arrays.sessionID) % SESSION_ROWS;
+
     LockMutex(&mutex);
 
-    if (sessIdx == CACHE_BUFFER_SIZE) {
-        sessIdx  = 0;                    /* restart */
-        sessFull = 1;
-    }
-    memcpy(sessions[sessIdx].masterSecret, ssl->arrays.masterSecret,SECRET_LEN);
-    memcpy(sessions[sessIdx].sessionID, ssl->arrays.sessionID, ID_LEN);
-    
-    sessions[sessIdx].timeout = DEFAULT_TIMEOUT;
-    sessions[sessIdx].bornOn  = LowResTimer();    
-    
-    sessIdx++;
- 
+    idx = SessionCache[row].nextIdx++;
+
+    memcpy(SessionCache[row].Sessions[idx].masterSecret,
+           ssl->arrays.masterSecret, SECRET_LEN);
+    memcpy(SessionCache[row].Sessions[idx].sessionID, ssl->arrays.sessionID,
+           ID_LEN);
+
+    SessionCache[row].Sessions[idx].timeout = DEFAULT_TIMEOUT;
+    SessionCache[row].Sessions[idx].bornOn  = LowResTimer();
+
+    SessionCache[row].totalCount++;
+    if (SessionCache[row].nextIdx == SESSIONS_PER_ROW)
+        SessionCache[row].nextIdx = 0;
+
     UnLockMutex(&mutex);        
 }
+
+
+    #ifdef SESSION_STATS
+
+    void PrintSessionStats(void)
+    {
+        word32 totalSessionsSeen = 0;
+        word32 totalSessionsNow = 0;
+        word32 rowNow[SESSION_ROWS];
+        int    i;
+        
+        for (i = 0; i < SESSION_ROWS; i++) {
+            totalSessionsSeen += SessionCache[i].totalCount;
+
+            if (SessionCache[i].totalCount >= SESSIONS_PER_ROW)
+                rowNow[i] = SESSIONS_PER_ROW;
+            else if (SessionCache[i].nextIdx == 0)
+                rowNow[i] = 0;
+            else
+                rowNow[i] = SessionCache[i].nextIdx;
+        
+            totalSessionsNow += rowNow[i];
+        }
+
+        printf("Total Sessions Seen = %d\n", totalSessionsSeen);
+        printf("Total Sessions Now  = %d\n", totalSessionsNow);
+        printf("Sessions per row now: \n");
+
+        for (i = 0; i < SESSION_ROWS; i++)
+            printf("    %d\n", rowNow[i]);
+    }
+
+    #endif /* SESSION_STATS */
 
 #endif /* NO_SESSION_CACHE */
 
@@ -2100,13 +2172,14 @@ int CyaSSL_set_compression(SSL* ssl)
 
     void OpenSSL_add_all_algorithms(void)
     {
-     
+        InitCyaSSL(); 
     }
 
 
     int SSLeay_add_ssl_algorithms(void)
     {
-        return 0;
+        InitCyaSSL();
+        return SSL_SUCCESS;
     }
 
 

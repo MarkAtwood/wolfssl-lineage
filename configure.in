@@ -131,6 +131,30 @@ then
 fi
 
 
+AC_ARG_ENABLE(bigcache,
+    [  --enable-bigcache       Enable big session cache (default: disabled)],
+    [ ENABLED_BIGCACHE=$enableval ],
+    [ ENABLED_BIGCACHE=no ]
+    )
+
+if test "$ENABLED_BIGCACHE" = "yes"
+then
+    CFLAGS="$CFLAGS -DBIG_SESSION_CACHE"
+fi
+
+
+AC_ARG_ENABLE(hugecache,
+    [  --enable-hugecache      Enable huge session cache (default: disabled)],
+    [ ENABLED_HUGECACHE=$enableval ],
+    [ ENABLED_HUGECACHE=no ]
+    )
+
+if test "$ENABLED_HUGECACHE" = "yes"
+then
+    CFLAGS="$CFLAGS -DHUGE_SESSION_CACHE"
+fi
+
+
 if test "$GCC" = "yes"
 then
     if test "$ENABLED_DEBUG" = "no"
