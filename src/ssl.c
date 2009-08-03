@@ -1049,7 +1049,7 @@ void FreeCyaSSL()
 #ifndef NO_SESSION_CACHE
 
 
-word32 HashSession(const byte* sessionID)
+static INLINE word32 HashSession(const byte* sessionID)
 {
     /* id is random, just make 32 bit number from first 4 bytes for now */
     return (sessionID[0] << 24) | (sessionID[1] << 16) | (sessionID[2] <<  8) |
@@ -1149,28 +1149,45 @@ void AddSession(SSL* ssl)
     {
         word32 totalSessionsSeen = 0;
         word32 totalSessionsNow = 0;
-        word32 rowNow[SESSION_ROWS];
+        word32 rowNow;
         int    i;
+        double E;               /* expected freq */
+        double chiSquare = 0;
         
         for (i = 0; i < SESSION_ROWS; i++) {
             totalSessionsSeen += SessionCache[i].totalCount;
 
             if (SessionCache[i].totalCount >= SESSIONS_PER_ROW)
-                rowNow[i] = SESSIONS_PER_ROW;
+                rowNow = SESSIONS_PER_ROW;
             else if (SessionCache[i].nextIdx == 0)
-                rowNow[i] = 0;
+                rowNow = 0;
             else
-                rowNow[i] = SessionCache[i].nextIdx;
+                rowNow = SessionCache[i].nextIdx;
         
-            totalSessionsNow += rowNow[i];
+            totalSessionsNow += rowNow;
         }
 
         printf("Total Sessions Seen = %d\n", totalSessionsSeen);
         printf("Total Sessions Now  = %d\n", totalSessionsNow);
-        printf("Sessions per row now: \n");
 
-        for (i = 0; i < SESSION_ROWS; i++)
-            printf("    %d\n", rowNow[i]);
+        E = (double)totalSessionsSeen / SESSION_ROWS;
+
+        for (i = 0; i < SESSION_ROWS; i++) {
+            double diff = SessionCache[i].totalCount - E;
+            diff *= diff;                /* sqaure    */
+            diff /= E;                   /* normalize */
+
+            chiSquare += diff;
+        }
+        printf("  chi-square = %5.1f, d.f. = %d\n", chiSquare,
+                                                     SESSION_ROWS - 1);
+        if (SESSION_ROWS == 11)
+            printf(" .05 p value =  18.3, chi-square should be less\n");
+        else if (SESSION_ROWS == 211)
+            printf(".05 p value  = 244.8, chi-square should be less\n");
+        else if (SESSION_ROWS == 5981)
+            printf(".05 p value  = 6161.0, chi-square should be less\n");
+        printf("\n");
     }
 
     #endif /* SESSION_STATS */

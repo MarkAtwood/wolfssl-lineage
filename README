@@ -12,7 +12,23 @@ before calling SSL_new();  Though it's not recommended.
 
 *** end Note ***
 
-CyaSSL Release 1.0.3 (5/10/2009)
+CyaSSL Release 1.0.3 (8/03/2009)
+
+Release 1.0.6 for CyaSSL adds bug fixes, an improved session cache, and faster
+math with a huge code option.
+
+The session cache now defaults to a client mode, also good for embedded servers.
+For servers not under heavy load (less than 200 new sessions per minute), defineBIG_SESSION_CACHE.  If the server will be under heavy load, define
+HUGE_SESSION_CACHE.
+
+There is now a fasthugemath option for configure.  This enables fastmath plus
+even faster math by greatly increasing the code size of the math library. Use
+the benchmark utility to compare public key operations.
+
+
+For general build instructions see rc1 below.
+
+******************CyaSSL Release 1.0.3 (5/10/2009)
 
 Release 1.0.3 for CyaSSL adds bug fixes and add increased support for OpenSSL
 compatibility when building other applications.

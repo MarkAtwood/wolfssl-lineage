@@ -149,8 +149,8 @@
 		4368F7540E9EA9FD0002A123 /* server */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = server; sourceTree = BUILT_PRODUCTS_DIR; };
 		4368F7650E9EAB090002A123 /* echoclient */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = echoclient; sourceTree = BUILT_PRODUCTS_DIR; };
 		4368F7990E9EABB80002A123 /* echoserver */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = echoserver; sourceTree = BUILT_PRODUCTS_DIR; };
-		43809E5C0FB7AC420050922E /* md4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = md4.c; path = ctaocrypt/src/md4.c; sourceTree = "<group>"; };
-		43809E5E0FB7AC5B0050922E /* md4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = md4.h; path = ctaocrypt/include/md4.h; sourceTree = "<group>"; };
+		43809E5C0FB7AC420050922E /* md4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = md4.c; path = ctaocrypt/src/md4.c; sourceTree = "<group>"; };
+		43809E5E0FB7AC5B0050922E /* md4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = md4.h; path = ctaocrypt/include/md4.h; sourceTree = "<group>"; };
 		43AC92C90EB154210049F588 /* cyassl_io.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = cyassl_io.c; path = src/cyassl_io.c; sourceTree = "<group>"; };
 		43C6C2770DDF984100F2D488 /* cyassl_int.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = cyassl_int.c; path = src/cyassl_int.c; sourceTree = "<group>"; };
 		43C6C2780DDF984100F2D488 /* keys.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = keys.c; path = src/keys.c; sourceTree = "<group>"; };
