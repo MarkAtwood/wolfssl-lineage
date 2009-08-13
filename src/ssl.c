@@ -105,6 +105,22 @@ int SSL_set_fd(SSL* ssl, int fd)
 }
 
 
+int CyaSSL_negotiate(SSL* ssl)
+{
+    int err;
+
+    if (ssl->options.side == SERVER_END)
+        err = SSL_accept(ssl);
+    else
+        err = SSL_connect(ssl);
+
+    if (err == SSL_SUCCESS)
+        return 0;
+    else
+        return err;
+}
+
+
 int SSL_write(SSL* ssl, const void* buffer, int sz)
 {
     int ret;
@@ -1082,7 +1098,12 @@ SSL_SESSION* GetSession(SSL* ssl, byte* masterSecret)
         idx = SessionCache[row].nextIdx - 1;
 
     for (; idx >= 0; idx--) {
-        SSL_SESSION* current = &SessionCache[row].Sessions[idx];
+        SSL_SESSION* current;
+        
+        if (idx >= SESSIONS_PER_ROW)    /* server could have restarted, idx  */
+            break;                      /* would be word32(-1) and seg fault */
+        
+        current = &SessionCache[row].Sessions[idx];
         if (memcmp(current->sessionID, id, ID_LEN) == 0) {
             if (LowResTimer() < (current->bornOn + current->timeout)) {
                 ret = current;
@@ -1761,6 +1782,11 @@ int CyaSSL_set_compression(SSL* ssl)
         return 0;
     }
 
+    void ERR_clear_error(void)
+    {
+        /* TODO: */
+    }
+
 
     int RAND_status(void)
     {
@@ -1832,14 +1858,14 @@ int CyaSSL_set_compression(SSL* ssl)
     long SSL_CTX_set_options(SSL_CTX* ctx, long opt)
     {
         /* TDOD: */
-        return SSL_SUCCESS;
+        return opt;
     }
 
 
     int SSL_CTX_check_private_key(SSL_CTX* ctx)
     {
         /* TODO: check private against public for RSA match */
-        return SSL_NOT_IMPLEMENTED;
+        return SSL_SUCCESS;
     }
 
 

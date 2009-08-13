@@ -446,6 +446,11 @@ enum { /* ssl Constants */
     SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER = 92,
     SSL_OP_NO_SSLv2       = 93,
 
+    SSL_R_SSL_HANDSHAKE_FAILURE           = 101,
+    SSL_R_TLSV1_ALERT_UNKNOWN_CA          = 102,
+    SSL_R_SSLV3_ALERT_CERTIFICATE_UNKNOWN = 103,
+    SSL_R_SSLV3_ALERT_BAD_CERTIFICATE     = 104,
+
     PEM_BUFSIZE = 1024,
 };
 
@@ -480,6 +485,8 @@ enum {  /* ERR Constants */
 unsigned long ERR_get_error_line_data(const char**, int*, const char**, int *);
 
 unsigned long ERR_get_error(void);
+void          ERR_clear_error(void);
+
 void SSL_set_accept_state(SSL*);
 
 int  RAND_status(void);

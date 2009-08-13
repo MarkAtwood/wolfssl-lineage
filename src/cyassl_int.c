@@ -41,6 +41,9 @@
 #define FALSE 0
 
 
+int CyaSSL_negotiate(SSL*);
+
+
 #ifndef NO_CYASSL_CLIENT
     static int DoHelloVerifyRequest(SSL* ssl, const byte* input, word32*);
     static int DoServerHello(SSL* ssl, const byte* input, word32*);
@@ -985,8 +988,10 @@ static int DoCertificate(SSL* ssl, byte* input, word32* inOutIdx)
         ret = ParseCertRelative(&dCert, myCert.length, CERT_TYPE,
                                 !ssl->options.verifyNone, ssl->caList);
 
-        if (!firstTime || ret != 0)
-            goto DoCertificate_free_cert;
+        if (!firstTime || ret != 0) {
+            FreeDecodedCert(&dCert);
+            continue;
+        }
         
         /* first one has peer's key */
         firstTime = 0;
@@ -1002,19 +1007,19 @@ static int DoCertificate(SSL* ssl, byte* input, word32* inOutIdx)
                         dCert.subjectCN,
                         ssl->buffers.domainName.length - 1)) {
                 ret = DOMAIN_NAME_MISMATCH;
-                goto DoCertificate_free_cert;
+                FreeDecodedCert(&dCert);
+                continue;
             }
 
         /* decode peer key */
         if (RsaPublicKeyDecode(dCert.publicKey, &idx,
                                &ssl->peerRsaKey, dCert.pubKeySize) != 0) {
             ret = PEER_KEY_ERROR;
-            goto DoCertificate_free_cert;
+            FreeDecodedCert(&dCert);
+            continue;
         }
-
         ssl->peerRsaKeyPresent = 1;
 
-DoCertificate_free_cert:
         FreeDecodedCert(&dCert);
     }
 
@@ -1466,12 +1471,12 @@ int ProcessReply(SSL* ssl)
     int    used;
 #endif
 
-    switch ((processReply)ssl->options.processReply) {
+    for (;;) {
+        switch ((processReply)ssl->options.processReply) {
 
         /* in the CYASSL_SERVER case, get the first byte for detecting 
          * old client hello */
         case doProcessInit:
-lbl_doProcessInit:
             
             readSz = RECORD_HEADER_SZ;
             
@@ -1513,7 +1518,7 @@ lbl_doProcessInit:
             }
             else {
                 ssl->options.processReply = getRecordLayerHeader;
-                goto lbl_getRecordLayerHeader;
+                continue;
             }
 
         /* in the CYASSL_SERVER case, run the old client hello */
@@ -1524,14 +1529,14 @@ lbl_doProcessInit:
                 if ((ret = GetInputData(ssl, ssl->curSize)) < 0)
                     return ret;
             } else {
-#ifdef CYASSL_DTLS
+            #ifdef CYASSL_DTLS
                 /* read ahead may already have */
                 used = ssl->buffers.inputBuffer.length -
                        ssl->buffers.inputBuffer.idx;
                 if (used < ssl->curSize)
                     if ((ret = GetInputData(ssl, ssl->curSize)) < 0)
                         return ret;
-#endif
+            #endif  /* CYASSL_DTLS */
             }
 
             ret = ProcessOldClientHello(ssl, ssl->buffers.inputBuffer.buffer,
@@ -1548,11 +1553,10 @@ lbl_doProcessInit:
                 return 0;
             }
 
-#endif
+#endif  /* NO_CYASSL_SERVER */
 
         /* get the record layer header */
         case getRecordLayerHeader:
-lbl_getRecordLayerHeader:
 
             ret = GetRecordHeader(ssl, ssl->buffers.inputBuffer.buffer,
                                        &ssl->buffers.inputBuffer.idx,
@@ -1585,7 +1589,7 @@ lbl_getRecordLayerHeader:
 
         /* the record layer is here */
         case runProcessingOneMessage:
-lbl_runProcessingOneMessage:
+
             if (ssl->keys.encryptionOn)
                 if (DecryptMessage(ssl, ssl->buffers.inputBuffer.buffer + 
                                         ssl->buffers.inputBuffer.idx,
@@ -1680,15 +1684,20 @@ lbl_runProcessingOneMessage:
             else if ((ssl->buffers.inputBuffer.idx - startIdx) < ssl->curSize) {
                 #ifdef CYASSL_DTLS
                     /* read-ahead but dtls doesn't bundle messages per record */
-                    if (ssl->options.dtls)
-                        goto lbl_doProcessInit;
+                    if (ssl->options.dtls) {
+                        ssl->options.processReply = doProcessInit;
+                        continue;
+                    }
                 #endif
                 ssl->options.processReply = runProcessingOneMessage;
-                goto lbl_runProcessingOneMessage;
+                continue;
             }
             /* more records */
-            else
-                goto lbl_doProcessInit;
+            else {
+                ssl->options.processReply = doProcessInit;
+                continue;
+            }
+        }
     }
 
     return 0;
@@ -2094,8 +2103,9 @@ int SendData(SSL* ssl, const void* buffer, int sz)
         ssl->error = 0;
 
     if (ssl->options.handShakeState != HANDSHAKE_DONE) {
-        CYASSL_ERROR(NOT_READY_ERROR);
-        return ssl->error = NOT_READY_ERROR;
+        int err;
+        if ( (err = CyaSSL_negotiate(ssl)) != 0) 
+            return  err;
     }
 
     /* last time system socket output buffer was full, try again to send */
@@ -2187,8 +2197,9 @@ int ReceiveData(SSL* ssl, byte* output, int sz)
         ssl->error = 0;
 
     if (ssl->options.handShakeState != HANDSHAKE_DONE) {
-        CYASSL_ERROR(NOT_READY_ERROR);
-        return ssl->error = NOT_READY_ERROR;
+        int err;
+        if ( (err = CyaSSL_negotiate(ssl)) != 0)
+            return  err;
     }
 
     while (ssl->buffers.clearOutputBuffer.length == 0)

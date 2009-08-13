@@ -12,7 +12,7 @@ before calling SSL_new();  Though it's not recommended.
 
 *** end Note ***
 
-CyaSSL Release 1.0.3 (8/03/2009)
+CyaSSL Release 1.0.6 (8/03/2009)
 
 Release 1.0.6 for CyaSSL adds bug fixes, an improved session cache, and faster
 math with a huge code option.
