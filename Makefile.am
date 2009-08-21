@@ -7,7 +7,8 @@ basic:
 
 openssl-links:
 	cd lib; ln -s ../src/.libs/libcyassl.a libcrypto.a; \
-    ln -s ../src/.libs/libcyassl.a libssl.a; cd ../
+    ln -s ../src/.libs/libcyassl.a libssl.a; \
+    ln -s ../src/.libs/libcyassl.a libcyassl.a; cd ../
 
 install:
 	mkdir /usr/local/cyassl; \

@@ -1432,9 +1432,9 @@ static int GetInputData(SSL *ssl, size_t size)
     
     /* Put buffer data at start if not there */
     if (usedLength > 0 && ssl->buffers.inputBuffer.idx != 0)
-        memcpy(ssl->buffers.inputBuffer.buffer,
-               ssl->buffers.inputBuffer.buffer + ssl->buffers.inputBuffer.idx,
-               usedLength);
+        memmove(ssl->buffers.inputBuffer.buffer,
+                ssl->buffers.inputBuffer.buffer + ssl->buffers.inputBuffer.idx,
+                usedLength);
     
     /* remove processed data */
     ssl->buffers.inputBuffer.idx    = 0;

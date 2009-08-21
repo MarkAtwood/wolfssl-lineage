@@ -12,7 +12,68 @@ before calling SSL_new();  Though it's not recommended.
 
 *** end Note ***
 
-CyaSSL Release 1.0.6 (8/03/2009)
+CyaSSL Release 1.0.7 (8/14/2009)
+
+Release 1.0.7 for CyaSSL adds bug fixes, a check against malicious session
+cache use, and support for lighttpd.
+
+CyaSSL was tested against lighttpd 1.4.23.  To build CyaSSL for use with 
+lighttpd use the following commands from the CyaSSL install dir <CyaSSLDir>:
+
+./configure --disable-shared --enable-opensslExtra --enable-fastmath --without-zlib
+
+make
+make openssl-links
+
+Then to build lighttpd with CyaSSL use the following commands from the
+lighttpd install dir:
+
+./configure --with-openssl --with-openssl-includes=<CyaSSLDir>/include --with-openssl-libs=<CyaSSLDir>/lib LDFLAGS=-lm
+
+make
+
+On some systems you may get a linker error about a duplicate symbol for
+MD5_Init or other MD5 calls.  This seems to be caused by the lighttpd src file
+md5.c, which defines MD5_Init(), and is included in liblightcomp_la-md5.o.
+When liblightcomp is linked with the SSL_LIBs the linker may complain about
+the duplicate symbol.  This can be fixed by editing the lighttpd src file md5.c
+and adding this line to the beginning of the file:
+
+#if 0
+
+and this line to the end of the file
+
+#endif
+
+Then from the lighttpd src dir do a:
+
+make clean
+make
+
+
+If you get link errors about undefined symbols more than likely the actual
+OpenSSL libraries are found by the linker before the CyaSSL openssl-links that
+point to the CyaSSL library, causing the linker confusion.  This can be fixed
+by editing the Makefile in the lighttpd src directory and changing the line:
+
+SSL_LIB = -lssl -lcrypto
+
+to
+
+SSL_LIB = -lcyassl
+
+Then from the lighttpd src dir do a:
+
+make clean
+make
+
+This should remove any confusion the linker may be having with missing symbols.
+
+For any questions or concerns please contact support@yassl.com .
+
+For general build instructions see rc1 below.
+
+******************CyaSSL Release 1.0.6 (8/03/2009)
 
 Release 1.0.6 for CyaSSL adds bug fixes, an improved session cache, and faster
 math with a huge code option.

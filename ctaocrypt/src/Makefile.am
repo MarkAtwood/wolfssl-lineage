@@ -1,2 +1,2 @@
-EXTRA_DIST = ../include/*.h *.c
+EXTRA_DIST = ../include/*.h *.c *.i
 
