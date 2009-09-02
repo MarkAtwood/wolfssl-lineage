@@ -149,8 +149,11 @@ void client_test(void* args)
     NonBlockingSSL_Connect(ssl);
 #else
     #ifndef CYASSL_CALLBACKS
-        if (SSL_connect(ssl) != SSL_SUCCESS) /* see note at top of README */
+        if (SSL_connect(ssl) != SSL_SUCCESS) { /* see note at top of README */
+            int err = SSL_get_error(ssl, 0);
+            printf("err = %d\n", err);
             err_sys("SSL_connect failed");/* if you're getting an error here  */
+        }
     #else
         timeout.tv_sec  = 2;
         timeout.tv_usec = 0;

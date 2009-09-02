@@ -163,8 +163,16 @@ enum Misc {
     SERVER_END = 0,
     CLIENT_END,
 
+    SEND_CERT       = 1,
+    SEND_BLANK_CERT = 2,
+
     DTLS_MAJOR      = 0xfe,     /* DTLS major version number */
     DTLS_MINOR      = 0xff,     /* DTLS minor version number */
+    SSLv3_MAJOR     = 3,        /* SSLv3 and TLSv1+  major version number */
+    SSLv3_MINOR     = 0,        /* TLSv1   minor version number */
+    TLSv1_MINOR     = 1,        /* TLSv1   minor version number */
+    TLSv1_1_MINOR   = 2,        /* TLSv1_1 minor version number */
+    TLSv1_2_MINOR   = 3,        /* TLSv1_2 minor version number */
     NO_COMPRESSION  =  0,
     ZLIB_COMPRESSION = 221,     /* CyaSSL zlib compression */
     SECRET_LEN      = 48,       /* pre RSA and all master */
@@ -292,6 +300,7 @@ typedef struct ProtocolVersion {
 ProtocolVersion MakeSSLv3(void);
 ProtocolVersion MakeTLSv1(void);
 ProtocolVersion MakeTLSv1_1(void);
+ProtocolVersion MakeTLSv1_2(void);
 
 #ifdef CYASSL_DTLS
     ProtocolVersion MakeDTLSv1(void);
@@ -438,7 +447,8 @@ enum MACAlgorithm {
     no_mac,
     md5_mac,
     sha_mac,
-    rmd_mac
+    rmd_mac,
+    sha256_mac
 };
 
 
@@ -606,7 +616,7 @@ typedef struct Options {
     byte            verifyPeer;
     byte            verifyNone;
     byte            failNoCert;
-    byte            sendVerify;
+    byte            sendVerify;         /* false = 0, true = 1, sendBlank = 2 */
     byte            resuming;
     byte            tls;                /* using TLS ? */
     byte            tls1_1;             /* using TLSv1.1 ? */
@@ -853,6 +863,7 @@ void AddSession(SSL*);
 int  DeriveKeys(SSL* ssl);
 int  StoreKeys(SSL* ssl, const byte* keyData);
 
+int IsAtLeastTLSv1_2(const SSL* ssl);
 
 #ifndef NO_CYASSL_CLIENT
     int SendClientHello(SSL*);

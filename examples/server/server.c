@@ -101,8 +101,11 @@ THREAD_RETURN CYASSL_API server_test(void* args)
     NonBlockingSSL_Accept(ssl);
 #else
     #ifndef CYASSL_CALLBACKS
-        if (SSL_accept(ssl) != SSL_SUCCESS)
+        if (SSL_accept(ssl) != SSL_SUCCESS) {
+            int err = SSL_get_error(ssl, 0);
+            printf("error = %d\n", err);
             err_sys("SSL_accept failed");
+        }
     #else
         NonBlockingSSL_Accept(ssl);
     #endif

@@ -540,8 +540,8 @@ void FreeSSL(SSL* ssl)
 ProtocolVersion MakeSSLv3(void)
 {
     ProtocolVersion pv;
-    pv.major = 3;
-    pv.minor = 0;
+    pv.major = SSLv3_MAJOR;
+    pv.minor = SSLv3_MINOR;
 
     return pv;
 }
@@ -1991,12 +1991,22 @@ int SendCertificate(SSL* ssl)
 {
     int    sendSz, length, ret = 0;
     word32 i = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
+    word32 certSz, listSz;
     byte*  output = 0;
 
     if (ssl->options.usingPSK_cipher) return 0;  /* not needed */
 
-    /* list + cert size */
-    length = ssl->buffers.certificate.length + 2 * CERT_HEADER_SZ;
+    if (ssl->options.sendVerify == SEND_BLANK_CERT) {
+        certSz = 0;
+        length = CERT_HEADER_SZ;
+        listSz = 0;
+    }
+    else {
+        certSz = ssl->buffers.certificate.length;
+        /* list + cert size */
+        length = certSz + 2 * CERT_HEADER_SZ;
+        listSz = certSz + CERT_HEADER_SZ;
+    }
     sendSz = length + RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
 
     #ifdef CYASSL_DTLS
@@ -2017,16 +2027,16 @@ int SendCertificate(SSL* ssl)
     AddHeaders(output, length, certificate, ssl);
 
     /* list total */
-    c32to24(ssl->buffers.certificate.length + CERT_HEADER_SZ, output + i);
+    c32to24(listSz, output + i);
     i += CERT_HEADER_SZ;
 
     /* member */
-    c32to24(ssl->buffers.certificate.length, output + i);
-    i += CERT_HEADER_SZ;
-    memcpy(output + i, ssl->buffers.certificate.buffer,
-           ssl->buffers.certificate.length);
-    i += ssl->buffers.certificate.length;
-
+    if (certSz) {
+        c32to24(certSz, output + i);
+        i += CERT_HEADER_SZ;
+        memcpy(output + i, ssl->buffers.certificate.buffer, certSz);
+        i += certSz;
+    }
     HashOutput(ssl, output, sendSz, 0);
     #ifdef CYASSL_CALLBACKS
         if (ssl->hsInfoOn) AddPacketName("Certificate", &ssl->handShakeInfo);
@@ -2986,9 +2996,11 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         }
 
         /* don't send client cert or cert verify if user hasn't provided
-           cert or private key */
+           cert and private key */
         if (ssl->buffers.certificate.buffer && ssl->buffers.key.buffer)
-            ssl->options.sendVerify = 1;
+            ssl->options.sendVerify = SEND_CERT;
+        else if (IsAtLeastTLSv1_2(ssl))
+            ssl->options.sendVerify = SEND_BLANK_CERT;
 
         return 0;
     }
@@ -3109,8 +3121,27 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
             ret = RsaSSL_VerifyInline(signature, length,&out, &ssl->peerRsaKey);
 
-            if (ret != sizeof(hash) || memcmp(out, hash, sizeof(hash)))
-                return VERIFY_SIGN_ERROR;
+            if (IsAtLeastTLSv1_2(ssl)) {
+                byte   encodedSig[MAX_ENCODED_SIG_SZ];
+                word32 sigSz;
+                byte*  digest;
+                int    hashType;
+                int    digestSz;
+
+                /* sha1 for now */
+                digest   = &hash[MD5_DIGEST_SIZE];
+                hashType = SHAh;
+                digestSz = SHA_DIGEST_SIZE;
+
+                sigSz = EncodeSignature(encodedSig, digest, digestSz, hashType);
+
+                if (sigSz != ret || memcmp(out, encodedSig, sigSz) != 0)
+                    return VERIFY_SIGN_ERROR;
+            }
+            else { 
+                if (ret != sizeof(hash) || memcmp(out, hash, sizeof(hash)))
+                    return VERIFY_SIGN_ERROR;
+            }
         }
 
         ssl->options.serverState = SERVER_KEYEXCHANGE_COMPLETE;
@@ -3263,6 +3294,9 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         word32             idx = 0;
         RsaKey             key;
 
+        if (ssl->options.sendVerify == SEND_BLANK_CERT)
+            return 0;  /* sent blank cert, can't verify */
+
         /* check for avalaible size */
         if ((ret = CheckAvalaibleSize(ssl, MAX_CERT_VERIFY_SZ)) != 0)
             return ret;
@@ -3278,8 +3312,11 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         ret = RsaPrivateKeyDecode(ssl->buffers.key.buffer, &idx, &key,
                                   ssl->buffers.key.length); 
         if (ret == 0) {
-            byte* verify = (byte*)&output[RECORD_HEADER_SZ +
-                                          HANDSHAKE_HEADER_SZ];
+            byte*  verify = (byte*)&output[RECORD_HEADER_SZ +
+                                           HANDSHAKE_HEADER_SZ];
+            byte*  signBuffer = ssl->certHashes.md5;
+            word32 signSz = sizeof(Hashes);
+
             #ifdef CYASSL_DTLS
                 if (ssl->options.dtls)
                     verify += DTLS_RECORD_EXTRA + DTLS_HANDSHAKE_EXTRA;
@@ -3287,7 +3324,22 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             length = RsaEncryptSize(&key);
             c16toa((word16)length, verify);   /* prepend verify header */
 
-            ret = RsaSSL_Sign(ssl->certHashes.md5, sizeof(Hashes), verify +
+            if (IsAtLeastTLSv1_2(ssl)) {
+                byte  encodedSig[MAX_ENCODED_SIG_SZ];
+                byte* digest;
+                int   hashType;
+                int   digestSz;
+
+                /* sha1 for now */
+                digest   = ssl->certHashes.sha;
+                hashType = SHAh;
+                digestSz = SHA_DIGEST_SIZE;
+
+                signSz = EncodeSignature(encodedSig, digest, digestSz,hashType);
+                signBuffer = encodedSig;
+            }
+
+            ret = RsaSSL_Sign(signBuffer, signSz, verify +
                   VERIFY_HEADER, ENCRYPT_LEN, &key, &ssl->rng);
 
             if (ret > 0) {
@@ -3733,8 +3785,29 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         /* TODO: when add DSS support check here  */
         if (ssl->peerRsaKeyPresent != 0) {
             outLen = RsaSSL_VerifyInline(sig, sz, &out, &ssl->peerRsaKey);
-            if (memcmp(out, ssl->certHashes.md5, sizeof(ssl->certHashes)) == 0)
-                ret = 0;
+
+            if (IsAtLeastTLSv1_2(ssl)) {
+                byte   encodedSig[MAX_ENCODED_SIG_SZ];
+                word32 sigSz;
+                byte*  digest;
+                int    hashType;
+                int    digestSz;
+
+                /* sha1 for now */
+                digest   = ssl->certHashes.sha;
+                hashType = SHAh;
+                digestSz = SHA_DIGEST_SIZE;
+
+                sigSz = EncodeSignature(encodedSig, digest, digestSz, hashType);
+
+                if (outLen == sigSz && memcmp(out, encodedSig, sigSz) == 0)
+                    ret = 0;
+            }
+            else {
+                if (outLen == sizeof(ssl->certHashes) && memcmp(out,
+                             ssl->certHashes.md5, sizeof(ssl->certHashes)) == 0)
+                    ret = 0;
+            }
         }
         return ret;
     }

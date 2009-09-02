@@ -154,6 +154,8 @@ int  ParseCert(DecodedCert*, word32, int type, int verify, Signer* signer);
 int  ParseCertRelative(DecodedCert*, word32, int type, int verify,
                        Signer* signer);
 
+word32 EncodeSignature(byte* out, const byte* digest, word32 digSz,int hashOID);
+
 Signer* MakeSigner(void*);
 void    FreeSigners(Signer*, void*);
 

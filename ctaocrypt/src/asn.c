@@ -1017,8 +1017,7 @@ static word32 SetAlgoID(int algoOID, byte* output)
 }
 
 
-static word32 EncodeSignature(byte* out, const byte* digest, word32 digSz,
-                              int hashOID)
+word32 EncodeSignature(byte* out, const byte* digest, word32 digSz, int hashOID)
 {
     byte digArray[MAX_ENCODED_DIG_SZ];
     byte algoArray[MAX_ALGO_SZ];

@@ -113,6 +113,8 @@ SSL_METHOD *TLSv1_server_method(void);
 SSL_METHOD *TLSv1_client_method(void);
 SSL_METHOD *TLSv1_1_server_method(void);  
 SSL_METHOD *TLSv1_1_client_method(void);
+SSL_METHOD *TLSv1_2_server_method(void);  
+SSL_METHOD *TLSv1_2_client_method(void);
 
 #ifdef CYASSL_DTLS
     SSL_METHOD *DTLSv1_client_method(void);

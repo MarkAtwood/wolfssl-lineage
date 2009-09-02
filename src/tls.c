@@ -53,26 +53,27 @@ static INLINE void get_xor(byte *digest, word32 digLen, byte* md5, byte* sha)
 
 
 
-/* compute p_hash for MD5 or SHA-1 for TLSv1 PRF */
+/* compute p_hash for MD5, SHA-1, or SHA-256 for TLSv1 PRF */
 void p_hash(byte* result, word32 resLen, const byte* secret, word32 secLen,
             const byte* seed, word32 seedLen, int hash)
 {
-    word32   len = hash == md5_mac ? MD5_DIGEST_SIZE : SHA_DIGEST_SIZE;
+    word32   len = hash == md5_mac ? MD5_DIGEST_SIZE : hash == sha_mac ?
+                                           SHA_DIGEST_SIZE : SHA256_DIGEST_SIZE;
     word32   times = resLen / len;
     word32   lastLen = resLen % len;
     word32   lastTime;
     word32   i;
     word32   idx = 0;
-    byte     previous[SHA_DIGEST_SIZE];  /* max size */
-    byte     current[SHA_DIGEST_SIZE];   /* max size */
+    byte     previous[SHA256_DIGEST_SIZE];  /* max size */
+    byte     current[SHA256_DIGEST_SIZE];   /* max size */
 
     Hmac hmac;
 
     if (lastLen) times += 1;
     lastTime = times - 1;
 
-    HmacSetKey(&hmac, hash == md5_mac ? MD5 : SHA, secret, secLen);
-                                                
+    HmacSetKey(&hmac, hash == md5_mac ? MD5 : hash == sha_mac ? SHA : SHA256,
+               secret, secLen);
     HmacUpdate(&hmac, seed, seedLen);       /* A0 = seed */
     HmacFinal(&hmac, previous);             /* A1 */
 
@@ -96,7 +97,8 @@ void p_hash(byte* result, word32 resLen, const byte* secret, word32 secLen,
 
 /* compute TLSv1 PRF (pseudo random function using HMAC) */
 static void PRF(byte* digest, word32 digLen, const byte* secret, word32 secLen,
-            const byte* label, word32 labLen, const byte* seed, word32 seedLen)
+            const byte* label, word32 labLen, const byte* seed, word32 seedLen,
+            int useSha256)
 {
     word32 half = (secLen + 1) / 2;
 
@@ -115,6 +117,12 @@ static void PRF(byte* digest, word32 digLen, const byte* secret, word32 secLen,
 
     memcpy(labelSeed, label, labLen);
     memcpy(labelSeed + labLen, seed, seedLen);
+
+    if (useSha256) {
+        p_hash(digest, digLen, secret, secLen, labelSeed, labLen + seedLen,
+               sha256_mac);
+        return;
+    }
 
     p_hash(md5_result, digLen, md5_half, half, labelSeed, labLen + seedLen,
            md5_mac);
@@ -138,15 +146,16 @@ void BuildTlsFinished(SSL* ssl, Hashes* hashes, const byte* sender)
         side = tls_server;
 
     PRF(hashes->md5, TLS_FINISHED_SZ, ssl->arrays.masterSecret, SECRET_LEN,
-        side, FINISHED_LABEL_SZ, handshake_hash, FINISHED_SZ);
+        side, FINISHED_LABEL_SZ, handshake_hash, FINISHED_SZ,
+        IsAtLeastTLSv1_2(ssl));
 }
 
 
 ProtocolVersion MakeTLSv1(void)
 {
     ProtocolVersion pv;
-    pv.major = 3;
-    pv.minor = 1;
+    pv.major = SSLv3_MAJOR;
+    pv.minor = TLSv1_MINOR;
 
     return pv;
 }
@@ -155,8 +164,18 @@ ProtocolVersion MakeTLSv1(void)
 ProtocolVersion MakeTLSv1_1(void)
 {
     ProtocolVersion pv;
-    pv.major = 3;
-    pv.minor = 2;
+    pv.major = SSLv3_MAJOR;
+    pv.minor = TLSv1_1_MINOR;
+
+    return pv;
+}
+
+
+ProtocolVersion MakeTLSv1_2(void)
+{
+    ProtocolVersion pv;
+    pv.major = SSLv3_MAJOR;
+    pv.minor = TLSv1_2_MINOR;
 
     return pv;
 }
@@ -177,8 +196,8 @@ int DeriveTlsKeys(SSL* ssl)
     memcpy(seed, ssl->arrays.serverRandom, RAN_LEN);
     memcpy(&seed[RAN_LEN], ssl->arrays.clientRandom, RAN_LEN);
 
-    PRF(key_data, length, ssl->arrays.masterSecret, SECRET_LEN,
-        key_label, KEY_LABEL_SZ, seed, SEED_LEN);
+    PRF(key_data, length, ssl->arrays.masterSecret, SECRET_LEN, key_label,
+        KEY_LABEL_SZ, seed, SEED_LEN, IsAtLeastTLSv1_2(ssl));
 
     return StoreKeys(ssl, key_data);
 }
@@ -194,7 +213,7 @@ int MakeTlsMasterSecret(SSL* ssl)
     PRF(ssl->arrays.masterSecret, SECRET_LEN,
         ssl->arrays.preMasterSecret, ssl->arrays.preMasterSz,
         master_label, MASTER_LABEL_SZ, 
-        seed, SEED_LEN);
+        seed, SEED_LEN, IsAtLeastTLSv1_2(ssl));
 
     return DeriveTlsKeys(ssl);
 }
@@ -296,6 +315,15 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
 }
 
 
+int IsAtLeastTLSv1_2(const SSL* ssl)
+{
+    if (ssl->version.major == SSLv3_MAJOR && ssl->version.minor >=TLSv1_2_MINOR)
+        return 1;
+
+    return 0;
+}
+
+
 #ifndef NO_CYASSL_CLIENT
 
     SSL_METHOD* TLSv1_client_method(void)
@@ -312,6 +340,15 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
         SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
         if (method)
             InitSSL_Method(method, MakeTLSv1_1());
+        return method;
+    }
+
+
+    SSL_METHOD* TLSv1_2_client_method(void)
+    {
+        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
+        if (method)
+            InitSSL_Method(method, MakeTLSv1_2());
         return method;
     }
 
@@ -337,6 +374,17 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
         SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
         if (method) {
             InitSSL_Method(method, MakeTLSv1_1());
+            method->side = SERVER_END;
+        }
+        return method;
+    }
+
+
+    SSL_METHOD* TLSv1_2_server_method(void)
+    {
+        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
+        if (method) {
+            InitSSL_Method(method, MakeTLSv1_2());
             method->side = SERVER_END;
         }
         return method;
