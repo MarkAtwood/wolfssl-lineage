@@ -12,10 +12,15 @@ before calling SSL_new();  Though it's not recommended.
 
 *** end Note ***
 
-CyaSSL Release 1.0.7 (8/14/2009)
+CyaSSL Release 1.1.0 (9/2/2009)
 
-Release 1.0.7 for CyaSSL adds bug fixes, a check against malicious session
-cache use, and support for lighttpd.
+Release 1.1.0 for CyaSSL adds bug fixes, a check against malicious session
+cache use, support for lighttpd, and TLS 1.2.
+
+To get TLS 1.2 support please use the client and server functions:
+
+SSL_METHOD *TLSv1_2_server_method(void);
+SSL_METHOD *TLSv1_2_client_method(void);
 
 CyaSSL was tested against lighttpd 1.4.23.  To build CyaSSL for use with 
 lighttpd use the following commands from the CyaSSL install dir <CyaSSLDir>:
