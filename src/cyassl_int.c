@@ -450,6 +450,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->options.clientState = NULL_STATE;
     ssl->options.connectState = CONNECT_BEGIN;
     ssl->options.acceptState  = ACCEPT_BEGIN; 
+    ssl->options.handShakeState  = NULL_STATE; 
     ssl->options.processReply = doProcessInit;
 
 #ifdef CYASSL_DTLS
