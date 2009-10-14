@@ -197,6 +197,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\hc128.hpp"
+				>
+			</File>
+			<File
 				RelativePath=".\include\hmac.hpp"
 				>
 			</File>
@@ -234,6 +238,10 @@
 			</File>
 			<File
 				RelativePath=".\include\pwdbased.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\include\rabbit.hpp"
 				>
 			</File>
 			<File
@@ -337,6 +345,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\hc128.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\integer.cpp"
 				>
 			</File>
@@ -354,6 +366,10 @@
 			</File>
 			<File
 				RelativePath=".\src\misc.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\rabbit.cpp"
 				>
 			</File>
 			<File
