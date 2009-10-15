@@ -12,19 +12,23 @@
 <br />
 
 <span class="navText">
-CyaSSL Release notes, version 1.0.3
+CyaSSL Release notes, version 1.1.0
 
-<p>Release 1.0.3 for CyaSSL adds bug fixes and adds increased OpenSSL
-compatibility support for building other applications.
+<p>Release 1.1.0 for CyaSSL adds bug fixes, a check against malicious session
+cache use, support for lighttpd, and TLS 1.2.
 
-<p>Release 1.0.3 includes an alpha release of DTLS for both client and servers.
-This is only for testing purposes at this time.  Rebroadcast and reordering
-aren't fully implemented at this time but will be for the next release.
+<p> To get TLS 1.2 support please use the client and server functions:
+
+<p>SSL_METHOD *TLSv1_2_server_method(void);
+<p>SSL_METHOD *TLSv1_2_client_method(void);
+
+<p>CyaSSL was tested against lighttpd 1.4.23. 
+
 
 <p>See the notes in README for build instructions. 
 </span>
 
-<p><center><a href="http://yassl.com/"><img src="yassl.png" width="58" height="30" /></a></center>
+<p><center><a href="http://yassl.com/"><img src="logo.png" width="61" height="60" /></a></center>
 
 </td>
 </table>

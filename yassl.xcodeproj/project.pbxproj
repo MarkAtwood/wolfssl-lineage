@@ -65,6 +65,10 @@
 		4384B4F70E7F661E009740F0 /* yassl_error.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4EA0E7F661E009740F0 /* yassl_error.cpp */; };
 		4384B4F80E7F661E009740F0 /* yassl_imp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4EB0E7F661E009740F0 /* yassl_imp.cpp */; };
 		4384B4F90E7F661E009740F0 /* yassl_int.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4384B4EC0E7F661E009740F0 /* yassl_int.cpp */; };
+		43BA0C801086993B007586F1 /* hc128.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 43BA0C7E1086993B007586F1 /* hc128.hpp */; };
+		43BA0C811086993B007586F1 /* rabbit.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 43BA0C7F1086993B007586F1 /* rabbit.hpp */; };
+		43BA0C84108699AB007586F1 /* hc128.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43BA0C82108699AB007586F1 /* hc128.cpp */; };
+		43BA0C85108699AB007586F1 /* rabbit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43BA0C83108699AB007586F1 /* rabbit.cpp */; };
 		43F81F150E803A69005533AC /* test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43F81F140E803A69005533AC /* test.cpp */; };
 		43F81F1A0E803B12005533AC /* libtaocrypt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4384B38E0E7F5052009740F0 /* libtaocrypt.a */; };
 		43F81F3A0E804D25005533AC /* server.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 43F81F390E804D25005533AC /* server.cpp */; };
@@ -284,6 +288,10 @@
 		4384B4EA0E7F661E009740F0 /* yassl_error.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = yassl_error.cpp; path = src/yassl_error.cpp; sourceTree = "<group>"; };
 		4384B4EB0E7F661E009740F0 /* yassl_imp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = yassl_imp.cpp; path = src/yassl_imp.cpp; sourceTree = "<group>"; };
 		4384B4EC0E7F661E009740F0 /* yassl_int.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = yassl_int.cpp; path = src/yassl_int.cpp; sourceTree = "<group>"; };
+		43BA0C7E1086993B007586F1 /* hc128.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; lineEnding = 2; name = hc128.hpp; path = taocrypt/include/hc128.hpp; sourceTree = "<group>"; };
+		43BA0C7F1086993B007586F1 /* rabbit.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = rabbit.hpp; path = taocrypt/include/rabbit.hpp; sourceTree = "<group>"; };
+		43BA0C82108699AB007586F1 /* hc128.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = hc128.cpp; path = taocrypt/src/hc128.cpp; sourceTree = "<group>"; };
+		43BA0C83108699AB007586F1 /* rabbit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = rabbit.cpp; path = taocrypt/src/rabbit.cpp; sourceTree = "<group>"; };
 		43F81F0B0E803965005533AC /* test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = test; sourceTree = BUILT_PRODUCTS_DIR; };
 		43F81F140E803A69005533AC /* test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = test.cpp; path = taocrypt/test/test.cpp; sourceTree = "<group>"; };
 		43F81F340E804D03005533AC /* server */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = server; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -408,6 +416,8 @@
 		4378CEEF0EA41F320026B37F /* src */ = {
 			isa = PBXGroup;
 			children = (
+				43BA0C82108699AB007586F1 /* hc128.cpp */,
+				43BA0C83108699AB007586F1 /* rabbit.cpp */,
 				430058C30E9EAF8900B8BAB2 /* echoserver.cpp */,
 				430058C10E9EAF6F00B8BAB2 /* echoclient.cpp */,
 				430058BF0E9EAF5A00B8BAB2 /* client.cpp */,
@@ -461,6 +471,8 @@
 		4378CEF10EA41F500026B37F /* headers */ = {
 			isa = PBXGroup;
 			children = (
+				43BA0C7E1086993B007586F1 /* hc128.hpp */,
+				43BA0C7F1086993B007586F1 /* rabbit.hpp */,
 				4378CF3B0EA420160026B37F /* test.hpp */,
 				4378CF270EA420040026B37F /* crypto.h */,
 				4378CF280EA420040026B37F /* des.h */,
@@ -553,6 +565,8 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				43BA0C801086993B007586F1 /* hc128.hpp in Headers */,
+				43BA0C811086993B007586F1 /* rabbit.hpp in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -820,6 +834,8 @@
 				4384B4DC0E7F65EE009740F0 /* template_instnt.cpp in Sources */,
 				4384B4DD0E7F65EE009740F0 /* tftables.cpp in Sources */,
 				4384B4DE0E7F65EE009740F0 /* twofish.cpp in Sources */,
+				43BA0C84108699AB007586F1 /* hc128.cpp in Sources */,
+				43BA0C85108699AB007586F1 /* rabbit.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

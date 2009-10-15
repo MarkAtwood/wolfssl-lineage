@@ -42,7 +42,7 @@
 #include "rsa.h"
 
 
-#define YASSL_VERSION "1.9.6"
+#define YASSL_VERSION "1.9.8"
 
 
 #if defined(__cplusplus)

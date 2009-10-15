@@ -23,6 +23,8 @@
 #include "coding.hpp"
 #include "random.hpp"
 #include "pwdbased.hpp"
+#include "rabbit.hpp"
+#include "hc128.hpp"
 
 
 
@@ -82,7 +84,8 @@ using TaoCrypt::PBKDF2_HMAC;
 using TaoCrypt::tcArrayDelete;
 using TaoCrypt::GetCert;
 using TaoCrypt::GetPKCS_Cert;
-
+using TaoCrypt::Rabbit;
+using TaoCrypt::HC128;
 
 struct testVector {
     byte*  input_;
@@ -117,6 +120,8 @@ int  dsa_test();
 int  dh_test();
 int  pwdbased_test();
 int  pkcs12_test();
+int  rabbit_test();
+int  hc128_test();
 
 TaoCrypt::RandomNumberGenerator rng;
 
@@ -225,6 +230,16 @@ void taocrypt_test(void* args)
         err_sys("ARC4     test failed!\n", ret);
     else
         printf( "ARC4     test passed!\n");
+
+    if ( (ret = rabbit_test()) )
+        err_sys("Rabbit   test failed!\n", ret);
+    else
+        printf( "Rabbit   test passed!\n");
+
+    if ( (ret = hc128_test()) )
+        err_sys("HC128    test failed!\n", ret);
+    else
+        printf( "HC128    test passed!\n");
 
     if ( (ret = des_test()) )
         err_sys("DES      test failed!\n", ret);
@@ -755,6 +770,114 @@ int arc4_test()
 
         if (memcmp(cipher, test_arc4[i].output_, test_arc4[i].outLen_))
             return -40 - i;
+    }
+
+    return 0;
+}
+
+
+int rabbit_test()
+{
+    byte cipher[16];
+    byte plain[16];
+
+    const char* keys[] = 
+    {           
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\xAC\xC3\x51\xDC\xF1\x62\xFC\x3B\xFE\x36\x3D\x2E\x29\x13\x28\x91"
+    };
+
+    const char* ivs[] =
+    {
+        "\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\x59\x7E\x26\xC1\x75\xF5\x73\xC3",
+        0
+    };
+
+
+    testVector test_rabbit[] =
+    {
+        testVector("\x00\x00\x00\x00\x00\x00\x00\x00",
+                   "\xED\xB7\x05\x67\x37\x5D\xCD\x7C"),
+        testVector("\x00\x00\x00\x00\x00\x00\x00\x00",
+                   "\x6D\x7D\x01\x22\x92\xCC\xDC\xE0"),
+        testVector("\x00\x00\x00\x00\x00\x00\x00\x00",
+                   "\x9C\x51\xE2\x87\x84\xC3\x7F\xE9")
+    };
+
+
+    int times( sizeof(test_rabbit) / sizeof(testVector) );
+    for (int i = 0; i < times; ++i) {
+        Rabbit::Encryption enc;
+        Rabbit::Decryption dec;
+
+        enc.SetKey((byte*)keys[i], (byte*)ivs[i]);
+        dec.SetKey((byte*)keys[i], (byte*)ivs[i]);
+
+        enc.Process(cipher, test_rabbit[i].input_, test_rabbit[i].outLen_);
+        dec.Process(plain,  cipher, test_rabbit[i].outLen_);
+
+        if (memcmp(plain, test_rabbit[i].input_, test_rabbit[i].outLen_))
+            return -230 - i;
+
+        if (memcmp(cipher, test_rabbit[i].output_, test_rabbit[i].outLen_))
+            return -240 - i;
+    }
+
+    return 0;
+}
+
+
+int hc128_test()
+{
+    byte cipher[16];
+    byte plain[16];
+
+    const char* keys[] = 
+    {           
+        "\x80\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\x00\x53\xA6\xF9\x4C\x9F\xF2\x45\x98\xEB\x3E\x91\xE4\x37\x8A\xDD",
+        "\x0F\x62\xB5\x08\x5B\xAE\x01\x54\xA7\xFA\x4D\xA0\xF3\x46\x99\xEC"
+    };
+
+    const char* ivs[] =
+    {
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\x80\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        "\x0D\x74\xDB\x42\xA9\x10\x77\xDE\x45\xAC\x13\x7A\xE1\x48\xAF\x16",
+        "\x28\x8F\xF6\x5D\xC4\x2B\x92\xF9\x60\xC7\x2E\x95\xFC\x63\xCA\x31"
+    };
+
+    testVector test_hc128[] =
+    {
+        testVector("\x00\x00\x00\x00\x00\x00\x00\x00",
+                   "\x37\x86\x02\xB9\x8F\x32\xA7\x48"),
+        testVector("\x00\x00\x00\x00\x00\x00\x00\x00",
+                   "\x33\x7F\x86\x11\xC6\xED\x61\x5F"),
+        testVector("\x00\x00\x00\x00\x00\x00\x00\x00",
+                   "\x2E\x1E\xD1\x2A\x85\x51\xC0\x5A"),
+      testVector("\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+                 "\x1C\xD8\xAE\xDD\xFE\x52\xE2\x17\xE8\x35\xD0\xB7\xE8\x4E\x29")
+    };
+
+    int times( sizeof(test_hc128) / sizeof(testVector) );
+    for (int i = 0; i < times; ++i) {
+        HC128::Encryption enc;
+        HC128::Decryption dec;
+
+        enc.SetKey((byte*)keys[i], (byte*)ivs[i]);
+        dec.SetKey((byte*)keys[i], (byte*)ivs[i]);
+
+        enc.Process(cipher, test_hc128[i].input_, test_hc128[i].outLen_);
+        dec.Process(plain,  cipher, test_hc128[i].outLen_);
+
+        if (memcmp(plain, test_hc128[i].input_, test_hc128[i].outLen_))
+            return -330 - i;
+
+        if (memcmp(cipher, test_hc128[i].output_, test_hc128[i].outLen_))
+            return -340 - i;
     }
 
     return 0;
