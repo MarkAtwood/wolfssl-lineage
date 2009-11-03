@@ -4,6 +4,9 @@
 <link rel="stylesheet" href="yassl.css" type="text/css" />
 </head>
 
+<meta name="keywords" content="Embedded ssl, ssl library, ssl libraries, tls library, lib tls, embedded tls, open source ssl, programming ssl, encryption libraries, vxworks ssl, Linux ssl, mysql ssl, cryptography library, aes cryptography, C++ ssl, crypto source code, crypto library, md5, aes, sha1, gpl ssl" />
+
+
 <body bgcolor="black">
 &nbsp;
 <table align="center" width="859" height="700" border="0" cellspacing="0" cellpadding="0" bgcolor="#E6F3FF">
@@ -12,15 +15,10 @@
 <br />
 
 <span class="navText">
-CyaSSL Release notes, version 1.1.0
+CyaSSL Release notes, version 1.2.0
 
-<p>Release 1.1.0 for CyaSSL adds bug fixes, a check against malicious session
-cache use, support for lighttpd, and TLS 1.2.
-
-<p> To get TLS 1.2 support please use the client and server functions:
-
-<p>SSL_METHOD *TLSv1_2_server_method(void);
-<p>SSL_METHOD *TLSv1_2_client_method(void);
+<p>Release 1.2.0 for CyaSSL adds bug fixes and session negotiation when first
+use is read or write.
 
 <p>CyaSSL was tested against lighttpd 1.4.23. 
 

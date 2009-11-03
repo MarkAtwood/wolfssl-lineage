@@ -137,6 +137,10 @@ SOURCE=.\src\hash.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\hc128.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\integer.cpp
 # End Source File
 # Begin Source File
@@ -154,6 +158,10 @@ SOURCE=.\src\md5.cpp
 # Begin Source File
 
 SOURCE=.\src\misc.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\rabbit.cpp
 # End Source File
 # Begin Source File
 
@@ -237,6 +245,10 @@ SOURCE=.\include\hash.hpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\include\hc128.hpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\include\hmac.hpp
 # End Source File
 # Begin Source File
@@ -270,6 +282,10 @@ SOURCE=.\include\modes.hpp
 # Begin Source File
 
 SOURCE=.\include\pwdbased.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\rabbit.hpp
 # End Source File
 # Begin Source File
 
