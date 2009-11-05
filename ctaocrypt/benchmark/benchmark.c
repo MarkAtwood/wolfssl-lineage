@@ -27,7 +27,7 @@ void bench_des();
 void bench_arc4();
 void bench_hc128();
 void bench_rabbit();
-void bench_aes();
+void bench_aes(int);
 
 void bench_md5();
 void bench_sha();
@@ -43,7 +43,8 @@ double current_time();
 int main(int argc, char** argv)
 {
 #ifndef NO_AES
-    bench_aes();
+    bench_aes(0);
+    bench_aes(1);
 #endif
     bench_arc4();
 #ifndef NO_HC128
@@ -99,7 +100,7 @@ byte cipher[1024*1024];
 
 
 #ifndef NO_AES
-void bench_aes()
+void bench_aes(int show)
 {
     Aes    enc;
     double start, total, persec;
@@ -115,8 +116,9 @@ void bench_aes()
 
     persec = 1 / total * megs;
 
-    printf("AES      %d megs took %5.3f seconds, %6.2f MB/s\n", megs, total,
-                                                             persec);
+    if (show)
+        printf("AES      %d megs took %5.3f seconds, %6.2f MB/s\n", megs, total,
+                                                                    persec);
 }
 #endif
 

@@ -12,7 +12,14 @@ before calling SSL_new();  Though it's not recommended.
 
 *** end Note ***
 
-CyaSSL Release 1.1.0 (9/2/2009)
+CyaSSL Release 1.2.0 (11/2/2009)
+
+Release 1.2.0 for CyaSSL adds bug fixes and session negotiation if first use is
+read or write.
+
+For general build instructions see rc1 below.
+
+******************** CyaSSL Release 1.1.0 (9/2/2009)
 
 Release 1.1.0 for CyaSSL adds bug fixes, a check against malicious session
 cache use, support for lighttpd, and TLS 1.2.

@@ -67,7 +67,8 @@ SSL_CTX* SSL_CTX_new(SSL_METHOD* method)
 
 void SSL_CTX_free(SSL_CTX* ctx)
 {
-    FreeSSL_Ctx(ctx);
+    if (ctx)
+        FreeSSL_Ctx(ctx);
 }
 
 
