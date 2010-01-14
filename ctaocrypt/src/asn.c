@@ -56,19 +56,6 @@ enum {
 
 #include <windows.h>
 
-#define YEAR0          1900
-#define EPOCH_YEAR     1970
-#define SECS_DAY       (24L * 60L * 60L)
-#define LEAPYEAR(year) (!((year) % 4) && (((year) % 100) || !((year) % 400)))
-#define YEARSIZE(year) (LEAPYEAR(year) ? 366 : 365)
-
-
-const int _ytab[2][12] =
-{
-    {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
-    {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
-};
-
 
 time_t time(time_t* timer)
 {
@@ -103,6 +90,18 @@ time_t time(time_t* timer)
 #endif
 #if defined(_WIN32_WCE) || defined(THREADX)
 {
+    #define YEAR0          1900
+    #define EPOCH_YEAR     1970
+    #define SECS_DAY       (24L * 60L * 60L)
+    #define LEAPYEAR(year) (!((year) % 4) && (((year) % 100) || !((year) %400)))
+    #define YEARSIZE(year) (LEAPYEAR(year) ? 366 : 365)
+
+    static const int _ytab[2][12] =
+    {
+        {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
+        {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
+    };
+
     static struct tm st_time;
     struct tm* ret = &st_time;
     time_t time = *timer;

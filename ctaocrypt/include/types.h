@@ -129,9 +129,10 @@ enum {
 /* default to libc stuff */
 /* XCALLOC not used by CyaSSL or either math lib */
 /* XREALLOC is used once in mormal math lib, not in fast math lib */
+/* XFREE on some embeded systems doesn't like free(0) so test  */
 #ifndef XMALLOC_USER
     #define XMALLOC(s, h)     malloc(s)
-    #define XFREE(p, h)       free(p)
+    #define XFREE(p, h)       if (p) free(p)
     #define XREALLOC(p, n, h) realloc(p, n)
     #define XCALLOC(n, s, h)  calloc(n, s)
 #else
