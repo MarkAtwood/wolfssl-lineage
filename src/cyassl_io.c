@@ -39,17 +39,19 @@
 #include <assert.h>
 
 #ifndef _WIN32
-    #include <sys/time.h>
     #include <sys/types.h>
     #include <errno.h>
     #include <unistd.h>
     #include <fcntl.h>
-    #ifndef DEVKITPRO
+    #if !(defined(DEVKITPRO) || defined(THREADX))
         #include <sys/socket.h>
         #include <arpa/inet.h>
         #include <netinet/in.h>
         #include <netdb.h>
         #include <sys/ioctl.h>
+    #endif
+    #ifdef THREADX
+        #include <socket.h>
     #endif
 #endif /* _WIN32 */
 

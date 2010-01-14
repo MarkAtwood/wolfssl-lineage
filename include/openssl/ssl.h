@@ -369,6 +369,15 @@ enum {
     SSL_OP_NETSCAPE_CA_DN_BUG = 17,
     SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG = 18,
     SSL_OP_SINGLE_DH_USE = 19,
+    SSL_OP_NO_TICKET = 20,
+    SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS = 21,
+    SSL_OP_NO_QUERY_MTU = 22,
+    SSL_OP_COOKIE_EXCHANGE = 23,
+    SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION = 24,
+    SSL_OP_SINGLE_ECDH_USE = 25,
+    SSL_OP_CIPHER_SERVER_PREFERENCE = 26,
+
+    SSL_MAX_SSL_SESSION_ID_LENGTH = 32,
 
     EVP_R_BAD_DECRYPT = 2,
 
@@ -528,6 +537,20 @@ int ASN1_UTCTIME_print(BIO*, const ASN1_UTCTIME*);
 
 int   sk_num(X509_REVOKED*);
 void* sk_value(X509_REVOKED*, int);
+
+/* stunnel 4.28 needs */
+void* SSL_CTX_get_ex_data(const SSL_CTX*, int);
+int   SSL_CTX_set_ex_data(SSL_CTX*, int, void*);
+void  SSL_CTX_sess_set_get_cb(SSL_CTX*, SSL_SESSION*(*f)(SSL*, unsigned char*,
+                                                         int, int*));
+void  SSL_CTX_sess_set_new_cb(SSL_CTX*, int (*f)(SSL*, SSL_SESSION*));
+void  SSL_CTX_sess_set_remove_cb(SSL_CTX*, void (*f)(SSL_CTX*, SSL_SESSION*));
+
+int          i2d_SSL_SESSION(SSL_SESSION*, unsigned char**);
+SSL_SESSION* d2i_SSL_SESSION(SSL_SESSION**,const unsigned char**, long);
+
+long SSL_SESSION_get_timeout(const SSL_SESSION*);
+int  SSL_CTX_get_ex_new_index(long, void*, void*, void*, void*);
 
 /* extra ends */
 

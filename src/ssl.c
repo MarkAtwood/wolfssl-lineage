@@ -1084,8 +1084,9 @@ SSL_SESSION* GetSession(SSL* ssl, byte* masterSecret)
 {
     SSL_SESSION* ret = 0;
     const byte*  id = ssl->arrays.sessionID;
-    word32       row, idx;
-
+    word32       row;
+    int          idx;
+    
     if (ssl->options.sessionCacheOff)
         return 0;
 
@@ -2817,6 +2818,63 @@ int CyaSSL_set_compression(SSL* ssl)
         }
         assert(keyOutput == (keyLen + ivLen));
         return keyOutput;
+    }
+
+    /* stunnel 4.28 needs */
+    void* SSL_CTX_get_ex_data(const SSL_CTX* ctx, int d)
+    {
+        return 0;
+    }
+
+
+    int SSL_CTX_set_ex_data(SSL_CTX* ctx, int d, void* p)
+    {
+        return SSL_SUCCESS;
+    }
+
+
+    void SSL_CTX_sess_set_get_cb(SSL_CTX* ctx, SSL_SESSION*(*f)(SSL*,
+                                                    unsigned char*, int, int*))
+    {
+       
+    }
+
+
+    void SSL_CTX_sess_set_new_cb(SSL_CTX* ctx, int (*f)(SSL*, SSL_SESSION*))
+    {
+
+    }
+
+
+    void SSL_CTX_sess_set_remove_cb(SSL_CTX* ctx, void (*f)(SSL_CTX*,
+                                                            SSL_SESSION*))
+    {
+
+    }
+
+
+    int i2d_SSL_SESSION(SSL_SESSION* sess, unsigned char** p)
+    {
+        return sizeof(SSL_SESSION);
+    }
+
+
+    SSL_SESSION* d2i_SSL_SESSION(SSL_SESSION** sess, const unsigned char** p,
+                                 long i)
+    {
+        return *sess;
+    }
+
+
+    long SSL_SESSION_get_timeout(const SSL_SESSION* sess)
+    {
+        return sess->timeout;
+    }
+
+
+    int SSL_CTX_get_ex_new_index(long idx, void* arg, void* a, void* b, void* c)
+    {
+        return 0; 
     }
 
 

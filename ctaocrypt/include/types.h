@@ -48,6 +48,10 @@
     #define SIZEOF_LONG_LONG 8
 #endif
 
+#ifdef THREADX
+    #define SIZEOF_LONG_LONG 8
+#endif
+
 
 typedef unsigned char  byte;
 typedef unsigned short word16;
@@ -97,6 +101,8 @@ enum {
         #define INLINE __inline
     #elif __GNUC__
         #define INLINE inline
+    #elif THREADX
+        #define INLINE _Inline
     #else
         #define INLINE 
     #endif

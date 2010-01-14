@@ -26,6 +26,9 @@
 #include "error.h"
 #include <time.h> 
 #include <assert.h>
+#ifdef THREADX
+    #include "rtptime.h"   /* rtp_get_system_sec() */
+#endif
 
 #ifdef _MSC_VER
     /* 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy */
@@ -90,8 +93,15 @@ time_t time(time_t* timer)
     return *timer;
 }
 
+#endif  /* _WIN32_WCE */
 
-struct tm* gmtime(const time_t* timer)
+
+#ifdef _WIN32_WCE
+    struct tm* gmtime(const time_t* timer)
+#elif  THREADX                                 /* has a gmtime() but hangs */
+    struct tm* my_gmtime(const time_t* timer)
+#endif
+#if defined(_WIN32_WCE) || defined(THREADX)
 {
     static struct tm st_time;
     struct tm* ret = &st_time;
@@ -127,7 +137,7 @@ struct tm* gmtime(const time_t* timer)
     return ret;
 }
 
-#endif /* _WIN32_WCE */
+#endif /* _WIN32_WCE || THREADX */
 
 
 int GetLength(const byte* input, word32* inOutIdx, int* len)
@@ -782,11 +792,16 @@ static INLINE void GetTime(int* value, const byte* date, int* idx)
 /* Make sure before and after dates are valid */
 static int ValidateDate(const byte* date, byte format, int dateType)
 {
-    time_t ltime = time(0);
+    time_t ltime;
     struct tm  certTime;
     struct tm* localTime;
     int    i = 0;
 
+#ifdef THREADX
+    ltime = (time_t)rtp_get_system_sec();
+#else
+    ltime = time(0);
+#endif
     memset(&certTime, 0, sizeof(certTime));
 
     if (format == ASN_UTC_TIME) {
@@ -809,7 +824,11 @@ static int ValidateDate(const byte* date, byte format, int dateType)
 
     assert(date[i] == 'Z');     /* only Zulu supported for this profile */
 
+#ifdef THREADX
+    localTime = my_gmtime(&ltime);
+#else
     localTime = gmtime(&ltime);
+#endif
 
     if (dateType == BEFORE) {
         if (DateLessThan(localTime, &certTime))

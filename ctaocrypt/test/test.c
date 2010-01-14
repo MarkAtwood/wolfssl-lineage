@@ -34,6 +34,12 @@
 #endif
 
 
+#ifdef THREADX
+    /* since just testing, use THREADX log printf instead */
+    int dc_log_printf(char*, ...);
+        #undef printf
+        #define printf dc_log_printf
+#endif
 
 
 typedef struct testVector {
@@ -66,7 +72,9 @@ int PemToDer(const char* inName, const char* outName);
 void err_sys(const char* msg, int es)
 {
     printf("%s error = %d\n", msg, es);
-    exit(es);    
+#ifndef THREADX
+    exit(es);
+#endif
 }
 
 /* func_args from test.h, so don't have to pull in other junk */

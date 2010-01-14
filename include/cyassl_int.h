@@ -41,6 +41,10 @@
 
 #ifdef _WIN32
     #include <windows.h>
+#elif THREADX
+    #ifndef SINGLE_THREADED
+        #include "tx_api.h"
+    #endif
 #else
     #include <unistd.h>
     #ifndef SINGLE_THREADED
@@ -918,6 +922,14 @@ word32  LowResTimer(void);
         #define FreeMutex(m)     pthread_mutex_destroy(m)
         #define LockMutex(m)     pthread_mutex_lock(m) 
         #define UnLockMutex(m)   pthread_mutex_unlock(m)
+
+    #elif defined(THREADX)
+        typedef TX_MUTEX CyaSSL_Mutex;
+
+        #define InitMutex(m)     tx_mutex_create(m,"CyaSSL Mutex",TX_NO_INHERIT)
+        #define FreeMutex(m)     tx_mutex_delete(m)
+        #define LockMutex(m)     tx_mutex_get(m, TX_WAIT_FOREVER)
+        #define UnLockMutex(m)   tx_mutex_put(m)
 
     #else
         #error Need a mutex type in multithreaded mode

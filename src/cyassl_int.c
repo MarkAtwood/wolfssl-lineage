@@ -588,25 +588,24 @@ ProtocolVersion MakeDTLSv1(void)
         return (word32)Timer();
     }
 
-#else /* _WIN32 */
 
-    #include <sys/time.h>
+#elif THREADX
 
-    timer_d Timer(void)
-    {
-        struct timeval tv;
-        gettimeofday(&tv, 0);
-
-        return (double)tv.tv_sec + (double)tv.tv_usec / 1000000;
-    }
-
+    #include "rtptime.h"
 
     word32 LowResTimer(void)
     {
-        struct timeval tv;
-        gettimeofday(&tv, 0);
+        return (word32)rtp_get_system_sec();
+    }
 
-        return tv.tv_sec; 
+
+#else /* !_WIN32 && !THREADX */
+
+    #include <time.h>
+
+    word32 LowResTimer(void)
+    {
+        return time(0); 
     }
 
 
@@ -1700,8 +1699,6 @@ int ProcessReply(SSL* ssl)
             }
         }
     }
-
-    return 0;
 }
 
 
@@ -4004,10 +4001,18 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
     }
 
 
+#ifdef THREADX
+    int dc_log_printf(char*, ...);
+#endif
+
     void CYASSL_MSG(const char* msg)
     {
         if (logging)
+#ifdef THREADX
+            dc_log_printf("%s\n", msg);
+#else
             fprintf(stderr, "%s\n", msg);
+#endif
     }
 
 
