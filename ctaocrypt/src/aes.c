@@ -27,7 +27,6 @@
 #else
     #include "misc.c"
 #endif
-#include <assert.h>
 
 
 static const word32 rcon[] = {
@@ -711,13 +710,14 @@ static const word32 Td[5][256] = {
 #define GETBYTE(x, y) (word32)((byte)((x) >> (8 * (y))))
 
 
-void AesSetKey(Aes* aes, const byte* userKey, word32 keylen, const byte* iv,
+int AesSetKey(Aes* aes, const byte* userKey, word32 keylen, const byte* iv,
                int dir)
 {
     word32 temp, *rk = aes->key;
     unsigned int i = 0;
 
-    assert( (keylen == 16) || (keylen == 24) || (keylen == 32) );
+    if (!((keylen == 16) || (keylen == 24) || (keylen == 32)))
+        return -1;
 
     aes->rounds = keylen/4 + 6;
 
@@ -837,6 +837,8 @@ void AesSetKey(Aes* aes, const byte* userKey, word32 keylen, const byte* iv,
         }
     }
     memcpy(aes->reg, iv, AES_BLOCK_SIZE);
+
+    return 0;
 }
 
 

@@ -42,13 +42,11 @@
 
     STATIC INLINE word32 rotlFixed(word32 x, word32 y)
     {
-        assert(y < 32);
         return y ? _lrotl(x, y) : x;
     }
 
     STATIC INLINE word32 rotrFixed(word32 x, word32 y)
     {
-        assert(y < 32);
         return y ? _lrotr(x, y) : x;
     }
 
@@ -56,14 +54,12 @@
 
     STATIC INLINE word32 rotlFixed(word32 x, word32 y)
     {
-        assert(y < 32);
         return (x << y) | (x >> (sizeof(y) * 8 - y));
     }   
 
 
     STATIC INLINE word32 rotrFixed(word32 x, word32 y)
     {
-        assert(y < 32);
         return (x >> y) | (x << (sizeof(y) * 8 - y));
     }
 
@@ -91,8 +87,6 @@ STATIC INLINE void ByteReverseWords(word32* out, const word32* in,
                                     word32 byteCount)
 {
     word32 count = byteCount/sizeof(word32), i;
-
-    assert(byteCount % sizeof(word32) == 0);
 
     for (i = 0; i < count; i++)
         out[i] = ByteReverseWord32(in[i]);

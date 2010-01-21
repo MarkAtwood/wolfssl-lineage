@@ -37,7 +37,6 @@
 #endif
 
 #include <stdlib.h>
-#include <assert.h>
 
 
 #define TRUE  1
@@ -692,7 +691,10 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
         CYASSL_ENTER("SSL_connect()");
 
-        assert(ssl->options.side == CLIENT_END);
+        if (ssl->options.side != CLIENT_END) {
+            CYASSL_ERROR(ssl->error = SIDE_ERROR);
+            return SSL_FATAL_ERROR;
+        }
 
         #ifdef CYASSL_DTLS
             if (ssl->version.major == DTLS_MAJOR && 
@@ -889,7 +891,10 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
     int SSL_accept(SSL* ssl)
     {
-        assert(ssl->options.side == SERVER_END);
+        if (ssl->options.side != SERVER_END) {
+            CYASSL_ERROR(ssl->error = SIDE_ERROR);
+            return SSL_FATAL_ERROR;
+        }
 
         CYASSL_ENTER("SSL_accept()");
 
@@ -1639,7 +1644,9 @@ int CyaSSL_set_compression(SSL* ssl)
 
     void MD5_Init(MD5_CTX* md5)
     {
-        assert(sizeof(MD5_CTX) >= sizeof(Md5));
+        typedef char md5_test[sizeof(MD5_CTX) >= sizeof(Md5) ? 1 : -1];
+        (void)sizeof(md5_test);
+
         InitMd5((Md5*)md5);
     }
 
@@ -1658,7 +1665,9 @@ int CyaSSL_set_compression(SSL* ssl)
 
     void SHA_Init(SHA_CTX* sha)
     {
-        assert(sizeof(SHA_CTX) >= sizeof(Sha));
+        typedef char sha_test[sizeof(SHA_CTX) >= sizeof(Sha) ? 1 : -1];
+        (void)sizeof(sha_test);
+
         InitSha((Sha*)sha);
     }
 
@@ -2816,7 +2825,8 @@ int CyaSSL_set_compression(SSL* ssl)
                 ivLeft    -= store;
             }
         }
-        assert(keyOutput == (keyLen + ivLen));
+        if (keyOutput != (keyLen + ivLen))
+            return 0;
         return keyOutput;
     }
 

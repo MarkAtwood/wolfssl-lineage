@@ -37,7 +37,6 @@
     #include "tfm.h"
 #else
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>

@@ -51,8 +51,9 @@ enum {
     MP_MULMOD_E        = -117,  /* mp_mulmod error state, can't multiply mod */
     MP_MOD_E           = -118,  /* mp_mod error state, can't mod */
     MP_INVMOD_E        = -119,  /* mp_invmod error state, can't inv mod */
+    MP_CMP_E           = -120,  /* mp_cmp error state */
 
-    MEMORY_E           = -120,  /* out of memory error */
+    MEMORY_E           = -125,  /* out of memory error */
 
     RSA_WRONG_TYPE_E   = -130,  /* RSA wrong block type for RSA function */
     RSA_BUFFER_E       = -131,  /* RSA buffer error, output too small or 

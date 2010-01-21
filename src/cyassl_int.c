@@ -29,9 +29,9 @@
     #include "zlib.h"
 #endif
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #ifdef __sun
     #include <sys/filio.h>
@@ -1426,7 +1426,6 @@ static int GetInputData(SSL *ssl, size_t size)
 #endif
     
     if (inSz > maxLength || inSz <= 0) {
-        assert(0);        
         return BUFFER_ERROR;
     }
     
@@ -2331,6 +2330,10 @@ void SetErrorString(int error, char* buffer)
 
     case PARSE_ERROR :
         strncpy(buffer, "parse error on header", max);
+        break;
+
+    case SIDE_ERROR :
+        strncpy(buffer, "wrong client/server type", max);
         break;
 
     case UNKNOWN_HANDSHAKE_TYPE :

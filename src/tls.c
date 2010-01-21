@@ -26,7 +26,6 @@
 #include "hmac.h"
 
 #include <string.h>
-#include <assert.h>
 
 
 #ifndef NO_TLS
@@ -108,9 +107,12 @@ static void PRF(byte* digest, word32 digLen, const byte* secret, word32 secLen,
     byte md5_result[MAX_PRF_DIG];       /* digLen is real size */
     byte sha_result[MAX_PRF_DIG];       /* digLen is real size */
 
-    assert(half <= MAX_PRF_HALF);
-    assert(labLen + seedLen <= MAX_PRF_LABSEED);
-    assert(digLen <= MAX_PRF_DIG);
+    if (half > MAX_PRF_HALF)
+        return;
+    if (labLen + seedLen > MAX_PRF_LABSEED)
+        return;
+    if (digLen > MAX_PRF_DIG)
+        return;
     
     memcpy(md5_half, secret, half);
     memcpy(sha_half, secret + half - secLen % 2, half);
@@ -414,20 +416,18 @@ int IsAtLeastTLSv1_2(const SSL* ssl)
 /* catch CyaSSL programming errors */
 void BuildTlsFinished(SSL* ssl, Hashes* hashes, const byte* sender)
 {
-    assert(0);
+   
 }
 
 
 int DeriveTlsKeys(SSL* ssl)
 {
-    assert(0);
     return -1;
 }
 
 
 int MakeTlsMasterSecret(SSL* ssl)
 { 
-    assert(0);
     return -1;
 }
 

@@ -25,7 +25,6 @@
 #include "cyassl_error.h"
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 
 #ifndef NO_TLS

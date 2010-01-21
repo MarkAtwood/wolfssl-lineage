@@ -49,7 +49,7 @@ typedef struct Aes {
 } Aes;
 
 
-void AesSetKey(Aes* aes, const byte* key, word32 len, const byte* iv, int dir);
+int  AesSetKey(Aes* aes, const byte* key, word32 len, const byte* iv, int dir);
 void AesCbcEncrypt(Aes* aes, byte* out, const byte* in, word32 sz);
 void AesCbcDecrypt(Aes* aes, byte* out, const byte* in, word32 sz);
 

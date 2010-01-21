@@ -36,12 +36,10 @@
 #ifndef CTAO_CRYPT_TFM_H
 #define CTAO_CRYPT_TFM_H
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <limits.h>
-#include <assert.h>
 
 
 #ifdef __cplusplus

@@ -21,7 +21,6 @@
 
 
 #include "coding.h"
-#include <assert.h>
 
 
 enum {
@@ -178,7 +177,8 @@ int Base64Encode(const byte* in, word32 inLen, byte* out, word32* outLen)
     } 
 
     out[i++] = '\n';
-    assert(i == outSz);
+    if (i != outSz)
+        return -1;
 
     return 0; 
 }

@@ -28,12 +28,13 @@
 
 
 
-static void InitHmac(Hmac* hmac, int type)
+static int InitHmac(Hmac* hmac, int type)
 {
     hmac->innerHashKeyed = 0;
     hmac->macType = type;
 
-    assert(type == MD5 || type == SHA || type == SHA256);
+    if (!(type == MD5 || type == SHA || type == SHA256))
+        return -1;
 
     if (type == MD5)
         InitMd5(&hmac->hash.md5);
@@ -43,6 +44,8 @@ static void InitHmac(Hmac* hmac, int type)
     else if (type == SHA256)
         InitSha256(&hmac->hash.sha256);
 #endif
+
+    return 0;
 }
 
 

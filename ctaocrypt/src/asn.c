@@ -20,15 +20,15 @@
  */
 
 
+#ifdef THREADX
+    #include "os.h"           /* dc_rtc_api needs    */
+    #include "dc_rtc_api.h"   /* to get current time */
+#endif
 #include "asn.h"
 #include "sha.h"
 #include "md5.h"
 #include "error.h"
 #include <time.h> 
-#include <assert.h>
-#ifdef THREADX
-    #include "rtptime.h"   /* rtp_get_system_sec() */
-#endif
 
 #ifdef _MSC_VER
     /* 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy */
@@ -36,11 +36,12 @@
 #endif
 
 
+#ifndef TRUE
 enum {
     FALSE = 0,
     TRUE  = 1
 };
-
+#endif
 
 enum {
     ISSUER  = 0,
@@ -80,15 +81,9 @@ time_t time(time_t* timer)
     return *timer;
 }
 
-#endif  /* _WIN32_WCE */
 
 
-#ifdef _WIN32_WCE
-    struct tm* gmtime(const time_t* timer)
-#elif  THREADX                                 /* has a gmtime() but hangs */
-    struct tm* my_gmtime(const time_t* timer)
-#endif
-#if defined(_WIN32_WCE) || defined(THREADX)
+struct tm* gmtime(const time_t* timer)
 {
     #define YEAR0          1900
     #define EPOCH_YEAR     1970
@@ -136,7 +131,35 @@ time_t time(time_t* timer)
     return ret;
 }
 
-#endif /* _WIN32_WCE || THREADX */
+#endif /* _WIN32_WCE */
+
+
+
+#ifdef  THREADX
+
+#define YEAR0          1900
+
+struct tm* my_gmtime(const time_t* timer)       /* has a gmtime() but hangs */
+{
+    static struct tm st_time;
+    struct tm* ret = &st_time;
+
+    DC_RTC_CALENDAR cal;
+    dc_rtc_time_get(&cal, TRUE);
+
+    ret->tm_year  = cal.year - YEAR0;       /* gm starts at 1900 */
+    ret->tm_mon   = cal.month - 1;          /* gm starts at 0 */
+    ret->tm_mday  = cal.day;
+    ret->tm_hour  = cal.hour;
+    ret->tm_min   = cal.minute;
+    ret->tm_sec   = cal.second;
+
+    return ret;
+}
+
+#endif /* THREADX */
+
+
 
 
 int GetLength(const byte* input, word32* inOutIdx, int* len)
@@ -797,7 +820,7 @@ static int ValidateDate(const byte* date, byte format, int dateType)
     int    i = 0;
 
 #ifdef THREADX
-    ltime = (time_t)rtp_get_system_sec();
+    ltime = 0;              /* not used by THREADX my_gmtime, time(0) hangs */
 #else
     ltime = time(0);
 #endif
@@ -821,7 +844,8 @@ static int ValidateDate(const byte* date, byte format, int dateType)
     GetTime(&certTime.tm_min,  date, &i); 
     GetTime(&certTime.tm_sec,  date, &i); 
 
-    assert(date[i] == 'Z');     /* only Zulu supported for this profile */
+    if (date[i] != 'Z')     /* only Zulu supported for this profile */
+        return 0;
 
 #ifdef THREADX
     localTime = my_gmtime(&ltime);
@@ -1313,6 +1337,10 @@ void CTaoCryptErrorString(int error, char* buffer)
 
     case MP_INVMOD_E :
         strncpy(buffer, "mp_invmod error state, can't inv mod", max);
+        break; 
+        
+    case MP_CMP_E :
+        strncpy(buffer, "mp_cmp error state", max);
         break; 
         
     case MEMORY_E :

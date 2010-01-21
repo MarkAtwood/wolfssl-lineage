@@ -24,7 +24,6 @@
 #include "rsa.h"
 #include "random.h"
 #include "error.h"
-#include <assert.h>
 
 
 enum {
@@ -80,8 +79,6 @@ static void RsaPad(const byte* input, word32 inputLen, byte* pkcsBlock,
     pkcsBlock++; pkcsBlockLen--;
     pkcsBlock[0] = padValue;  /* insert padValue */
 
-    assert(padValue == RSA_BLOCK_TYPE_1 || padValue == RSA_BLOCK_TYPE_2);
-
     if (padValue == RSA_BLOCK_TYPE_1)
         /* pad with 0xff bytes */
         memset(&pkcsBlock[1], 0xFF, pkcsBlockLen - inputLen - 2);
@@ -118,7 +115,8 @@ static word32 RsaUnPad(const byte *pkcsBlock, unsigned int pkcsBlockLen,
     /* skip past the padding until we find the separator */
     while (i<pkcsBlockLen && pkcsBlock[i++]) { /* null body */
         }
-    assert(i==pkcsBlockLen || pkcsBlock[i-1]==0);
+    if(!(i==pkcsBlockLen || pkcsBlock[i-1]==0))
+        return 0;
 
     outputLen = pkcsBlockLen - i;
     invalid = (outputLen > maxOutputLen) || invalid;

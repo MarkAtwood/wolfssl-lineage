@@ -25,7 +25,6 @@
 #include "sha.h"
 #include "random.h"
 #include "error.h"
-#include <assert.h>
 
 
 enum {
@@ -92,7 +91,8 @@ int DsaSign(const byte* digest, byte* out, DsaKey* key, RNG* rng)
     if (mp_read_unsigned_bin(&k, buffer, sz) != MP_OKAY)
         ret = MP_READ_E;
 
-    if (mp_cmp_d(&k, 1) != MP_GT) assert(0);
+    if (mp_cmp_d(&k, 1) != MP_GT)
+        ret = MP_CMP_E;
 
     /* inverse k mod q */
     if (ret == 0 && mp_invmod(&k, &key->q, &kInv) != MP_OKAY)
