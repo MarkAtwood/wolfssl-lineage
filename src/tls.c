@@ -400,7 +400,8 @@ int IsAtLeastTLSv1_2(const SSL* ssl)
         SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
         if (method) {
             InitSSL_Method(method, MakeTLSv1());
-            method->side = SERVER_END;
+            method->side      = SERVER_END;
+            method->downgrade = 1;
         }
         return method;
     }

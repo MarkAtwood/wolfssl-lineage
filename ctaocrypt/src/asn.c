@@ -673,6 +673,12 @@ static int GetName(DecodedCert* cert, int nameType)
             if (GetLength(cert->source, &cert->srcIdx, &strLen) < 0)
                 return ASN_PARSE_E;
 
+            if (strLen > (int)(ASN_NAME_MAX - idx))
+                return ASN_PARSE_E; 
+
+            if (4  > (ASN_NAME_MAX - idx))  /* make sure room for biggest */
+                return ASN_PARSE_E;         /* pre fix header too "/CN=" */
+
             if (id == ASN_COMMON_NAME) {
                 if (nameType == ISSUER) {
                     cert->issuerCN = (char *)&cert->source[cert->srcIdx];
@@ -738,7 +744,12 @@ static int GetName(DecodedCert* cert, int nameType)
             if (GetLength(cert->source, &cert->srcIdx, &adv) < 0)
                 return ASN_PARSE_E;
 
+            if (adv > (int)(ASN_NAME_MAX - idx))
+                return ASN_PARSE_E; 
+
             if (email) {
+                if (14 > (ASN_NAME_MAX - idx))
+                    return ASN_PARSE_E; 
                 memcpy(&full[idx], "/emailAddress=", 14);
                 idx += 14;
 

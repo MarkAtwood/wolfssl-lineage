@@ -313,10 +313,11 @@ ProtocolVersion MakeTLSv1_2(void);
 /* OpenSSL method type */
 struct SSL_METHOD {
     ProtocolVersion version;
-    int             side;           /* connection side, server or client */
-    int             verifyPeer;     /* request or send certificate       */
-    int             verifyNone;     /* whether to verify certificate     */
-    int             failNoCert;
+    int             side;         /* connection side, server or client */
+    int             verifyPeer;   /* request or send certificate       */
+    int             verifyNone;   /* whether to verify certificate     */
+    int             failNoCert;   /* fail if no certificate            */
+    int             downgrade;    /* whether to downgrade version, default no */
 };
 
 
@@ -620,6 +621,7 @@ typedef struct Options {
     byte            verifyPeer;
     byte            verifyNone;
     byte            failNoCert;
+    byte            downgrade;          /* allow downgrade of versions */
     byte            sendVerify;         /* false = 0, true = 1, sendBlank = 2 */
     byte            resuming;
     byte            tls;                /* using TLS ? */

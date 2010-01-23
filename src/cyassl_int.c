@@ -252,6 +252,7 @@ void InitSSL_Method(SSL_METHOD* method, ProtocolVersion pv)
     method->verifyPeer = 0;
     method->verifyNone = 0;
     method->failNoCert = 0;
+    method->downgrade  = 0;
 }
 
 
@@ -429,7 +430,8 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     InitRsaKey(&ssl->peerRsaKey, ctx->heap);
 
     ssl->peerRsaKeyPresent = 0;
-    ssl->options.side  = ctx->method->side;
+    ssl->options.side      = ctx->method->side;
+    ssl->options.downgrade = ctx->method->downgrade;
     ssl->error = 0;
     ssl->options.connReset = 0;
     ssl->options.isClosed  = 0;
@@ -838,8 +840,14 @@ static int GetRecordHeader(SSL* ssl, const byte* input, word32* inOutIdx,
 
     /* catch version mismatch */
     if (rh->version.major != ssl->version.major || 
-        rh->version.minor != ssl->version.minor)
-        return VERSION_ERROR;              /* only use requested version */
+        rh->version.minor != ssl->version.minor) {
+        
+        if (ssl->options.side == SERVER_END && ssl->options.downgrade == 1 &&
+            ssl->options.acceptState == ACCEPT_BEGIN)
+            ;                                  /* haven't negotiated yet */
+        else
+            return VERSION_ERROR;              /* only use requested version */
+    }
 
     /* record layer length check */
     if (*size > (MAX_RECORD_SIZE + MAX_COMP_EXTRA + MAX_MSG_EXTRA))
@@ -3566,6 +3574,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         ssl->chVersion = pv;  /* store */
 
         if (ssl->version.minor > 0 && pv.minor == 0) {
+            if (!ssl->options.downgrade)
+                return VERSION_ERROR;
             /* turn off tls */
             ssl->options.tls    = 0;
             ssl->options.tls1_1 = 0;
@@ -3577,13 +3587,22 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         ato16(&input[idx], &clSuites.suiteSz);
         idx += 2;
 
+        if (clSuites.suiteSz > MAX_SUITE_SZ)
+            return BUFFER_ERROR;
+
         /* session size */
         ato16(&input[idx], &sessionSz);
         idx += 2;
+
+        if (sessionSz > ID_LEN)
+            return BUFFER_ERROR;
     
         /* random size */
         ato16(&input[idx], &randomSz);
         idx += 2;
+
+        if (randomSz > RAN_LEN)
+            return BUFFER_ERROR;
 
         /* suites */
         for (i = 0, j = 0; i < clSuites.suiteSz; i += 3) {    
@@ -3661,6 +3680,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         ssl->chVersion = pv;   /* store */
         i += sizeof(pv);
         if (ssl->version.minor > 0 && pv.minor == 0) {
+            if (!ssl->options.downgrade)
+                return VERSION_ERROR;
             /* turn off tls */
             ssl->options.tls    = 0;
             ssl->options.tls1_1 = 0;
@@ -3704,6 +3725,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         /* suites and comp len */
         if (i + clSuites.suiteSz + ENUM_LEN > totalSz)
             return INCOMPLETE_DATA;
+        if (clSuites.suiteSz > MAX_SUITE_SZ)
+            return BUFFER_ERROR;
         memcpy(clSuites.suites, input + i, clSuites.suiteSz);
         i += clSuites.suiteSz;
 

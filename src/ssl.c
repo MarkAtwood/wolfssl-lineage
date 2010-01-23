@@ -378,7 +378,7 @@ static int PemToDer(const char* fileName, int type, buffer* der, void* heap,
 
                 if (!newline) newline = strstr(line, "\n");
                 if (newline && (newline > finish)) {
-                    info->ivSz = newline - (finish + 1);
+                    info->ivSz = (word32)(newline - (finish + 1));
                     info->set = 1;
                 }
                 else
