@@ -39,13 +39,12 @@
 
 #ifdef __sun
  
-#include <assert.h>
 
 // Handler for pure virtual functions
 namespace __Crun {
     static void pure_error(void)
     {
-       assert(0); // "Pure virtual method called, Aborted", GCC 4.2 str cmp fix
+       // "Pure virtual method called, Aborted", GCC 4.2 str cmp fix
     }
 } // namespace __Crun
 
@@ -57,9 +56,7 @@ namespace __Crun {
 #if __GNUC__ > 2
 
 extern "C" {
-#if !defined(DO_TAOCRYPT_KERNEL_MODE)
-    #include <assert.h>
-#else
+#if defined(DO_TAOCRYPT_KERNEL_MODE)
     #include "kernelc.hpp"
 #endif
 
@@ -68,7 +65,6 @@ static int __cxa_pure_virtual() __attribute__((noinline, used));
 static int __cxa_pure_virtual()
 {
     // oops, pure virtual called!
-    assert("Pure virtual method called." == "Aborted");
     return 0;
 }
 

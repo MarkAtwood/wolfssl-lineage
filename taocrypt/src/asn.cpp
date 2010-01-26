@@ -118,7 +118,8 @@ bool ValidateDate(const byte* date, byte format, CertDecoder::DateType dt)
     GetTime(certTime.tm_min,  date, i); 
     GetTime(certTime.tm_sec,  date, i); 
 
-    assert(date[i] == 'Z');     // only Zulu supported for this profile
+    if (date[i] != 'Z')     // only Zulu supported for this profile
+        return false;
 
     time_t ltime = time(0);
     tm* localTime = gmtime(&ltime);
@@ -863,7 +864,8 @@ void CertDecoder::GetCompareHash(const byte* plain, word32 sz, byte* digest,
 // validate signature signed by someone else
 bool CertDecoder::ValidateSignature(SignerList* signers)
 {
-    assert(signers);
+    if (!signers)
+        return false;
 
     SignerList::iterator first = signers->begin();
     SignerList::iterator last  = signers->end();

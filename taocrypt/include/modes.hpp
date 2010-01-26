@@ -68,9 +68,7 @@ public:
     explicit Mode_BASE(int sz, CipherDir dir, Mode mode) 
         : blockSz_(sz), reg_(reinterpret_cast<byte*>(r_)),
           tmp_(reinterpret_cast<byte*>(t_)), dir_(dir), mode_(mode)
-    { 
-        assert(sz <= MaxBlockSz);
-    }
+    {}
     virtual ~Mode_BASE() {}
 
     virtual void Process(byte*, const byte*, word32);

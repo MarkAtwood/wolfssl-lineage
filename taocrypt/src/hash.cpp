@@ -29,7 +29,6 @@
 
 #include "runtime.hpp"
 #include <string.h>
-#include <assert.h>
 
 #include "hash.hpp"
 
@@ -39,8 +38,6 @@ namespace TaoCrypt {
 
 HASHwithTransform::HASHwithTransform(word32 digSz, word32 buffSz)
 {
-    assert(digSz  <= MaxDigestSz);
-    assert(buffSz <= MaxBufferSz);
 }
 
 
@@ -121,8 +118,6 @@ void HASHwithTransform::Final(byte* hash)
 
 HASH64withTransform::HASH64withTransform(word32 digSz, word32 buffSz)
 {
-    assert(digSz  <= MaxDigestSz);
-    assert(buffSz <= MaxBufferSz);
 }
 
 

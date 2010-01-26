@@ -12,6 +12,16 @@ before calling SSL_new();
 
 *** end Note ***
 
+*****************yaSSL Release notes, version 1.9.9 (1/26/2010)
+
+    This release of yaSSL contains bug fixes, the removal of assert() s and
+    a security patch for a buffer overflow possibility in certificate name
+    processing. 
+
+See normal  build instructions below under 1.0.6.
+See libcurl build instructions below under 1.3.0 and note in 1.5.8.
+
+
 *****************yaSSL Release notes, version 1.9.8 (10/14/09)
 
     This release of yaSSL contains bug fixes and adds new stream ciphers

@@ -97,7 +97,6 @@ namespace STL = STL_NAMESPACE;
 extern "C" {
 
     int __cxa_pure_virtual() {
-      assert("Pure virtual method called." == "Aborted");
       return 0;
     }
 

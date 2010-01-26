@@ -33,7 +33,6 @@
 #define yaSSL_TYPES_HPP
 
 #include <stddef.h>
-#include <assert.h>
 #include "type_traits.hpp"
 
 
@@ -89,10 +88,10 @@ namespace yaSSL {
     #define NEW_YS new (yaSSL::ys)
 
     // to resolve compiler generated operator delete on base classes with
-    // virtual destructors (when on stack), make sure doesn't get called
+    // virtual destructors (when on stack)
     class virtual_base {
     public:
-        static void operator delete(void*) { assert(0); }
+        static void operator delete(void*) { }
     };
 
 
