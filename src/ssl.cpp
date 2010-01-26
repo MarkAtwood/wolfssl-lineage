@@ -1107,7 +1107,6 @@ int EVP_BytesToKey(const EVP_CIPHER* type, const EVP_MD* md, const byte* salt,
             ivLeft    -= store;
         }
     }
-    assert(keyOutput == (keyLen + ivLen));
     return keyOutput;
 }
 

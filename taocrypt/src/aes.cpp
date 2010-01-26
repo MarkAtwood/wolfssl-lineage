@@ -93,8 +93,13 @@ void AES::Process(byte* out, const byte* in, word32 sz)
 
 void AES::SetKey(const byte* userKey, word32 keylen, CipherDir /*dummy*/)
 {
-    assert( (keylen == 16) || (keylen == 24) || (keylen == 32) );
-
+    if (keylen <= 16)
+        keylen = 16;
+    else if (keylen >= 32)
+        keylen = 32;
+    else if (keylen != 24)
+        keylen = 24;
+    
     rounds_ = keylen/4 + 6;
 
     word32 temp, *rk = key_;

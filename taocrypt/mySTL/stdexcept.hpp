@@ -33,7 +33,6 @@
 
 
 #include <string.h>  // strncpy
-#include <assert.h>  // assert
 #include <stdlib.h>  // size_t
 
 
@@ -48,7 +47,7 @@ public:
     virtual const char* what() const { return ""; }
 
     // for compiler generated call, never used
-    static void operator delete(void*) { assert(0); }
+    static void operator delete(void*) { }
 private:
     // don't allow dynamic creation of exceptions
     static void* operator new(size_t);

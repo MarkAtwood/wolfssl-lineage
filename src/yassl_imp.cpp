@@ -934,8 +934,6 @@ Data::Data(uint16 len, opaque* b)
 
 void Data::SetData(uint16 len, const opaque* buffer)
 {
-    assert(write_buffer_ == 0);
-
     length_ = len;
     write_buffer_ = buffer;
 }

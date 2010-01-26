@@ -334,7 +334,6 @@ int CertManager::SetPrivateKey(const x509& key)
 // Store OpenSSL type peer's cert
 void CertManager::setPeerX509(X509* x)
 {
-    assert(peerX509_ == 0);
     if (x == 0) return;
 
     X509_NAME* issuer   = x->GetIssuer();

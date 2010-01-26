@@ -255,7 +255,6 @@ void AbstractGroup::SimultaneousMultiply(Integer *results, const Integer &base,
 
     for (i=0; i<expCount; i++)
     {
-        assert(expBegin->NotNegative());
         exponents.push_back(WindowSlider(*expBegin++, InversionIsFast(), 0));
         exponents[i].FindNextWindow();
         buckets[i].resize(1<<(exponents[i].windowSize-1), Identity());

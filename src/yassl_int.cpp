@@ -1442,7 +1442,6 @@ void SSL::addBuffer(output_buffer* b)
 
 void SSL_SESSION::CopyX509(X509* x)
 {
-    assert(peerX509_ == 0);
     if (x == 0) return;
 
     X509_NAME* issuer   = x->GetIssuer();
@@ -2255,7 +2254,6 @@ Buffers::~Buffers()
 
 void Buffers::SetRawInput(input_buffer* ib)
 {
-    assert(rawInput_ == 0);
     rawInput_ = ib;
 }
 
@@ -2543,14 +2541,12 @@ ASN1_STRING* StringHolder::GetString()
     // these versions should never get called
     int Compress(const byte* in, int sz, input_buffer& buffer)
     {
-        assert(0);  
         return -1;
     } 
 
 
     int DeCompress(input_buffer& in, int sz, input_buffer& out)
     {
-        assert(0);  
         return -1;
     } 
 

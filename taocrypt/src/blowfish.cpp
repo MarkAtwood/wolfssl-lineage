@@ -93,7 +93,10 @@ void Blowfish::Process(byte* out, const byte* in, word32 sz)
 
 void Blowfish::SetKey(const byte* key_string, word32 keylength, CipherDir dir)
 {
-	assert(keylength >= 4 && keylength <= 56);
+    if (keylength < 4)
+        keylength = 4;
+    else if (keylength > 56)
+        keylength = 56;
 
 	unsigned i, j=0, k;
 	word32 data, dspace[2] = {0, 0};
