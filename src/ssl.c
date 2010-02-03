@@ -1260,6 +1260,47 @@ int CyaSSL_set_compression(SSL* ssl)
 }
 
 
+#ifndef _WIN32
+    #ifndef NO_WRITEV
+
+        /* simulate writev semantics, doesn't actually do block at a time though
+           because of SSL_write behavior and because front adds may be small */
+        int CyaSSL_writev(SSL* ssl, const struct iovec* iov, int iovcnt)
+        {
+            byte  tmp[MAX_RECORD_SIZE];
+            byte* buffer    = tmp;
+            int   send      = 0;
+            int   newBuffer = 0;
+            int   idx       = 0;
+            int   i;
+            int   ret;
+
+            for (i = 0; i < iovcnt; i++)
+                send += iov[i].iov_len;
+
+            if (send > sizeof(tmp)) {
+                byte* tmp2 = (byte*) XMALLOC(send, ssl->heap);
+                if (!tmp2)
+                    return MEMORY_ERROR;
+                buffer = tmp2;
+                newBuffer = 1;
+            }
+
+            for (i = 0; i < iovcnt; i++) {
+                memcpy(&buffer[idx], iov[i].iov_base, iov[i].iov_len);
+                idx += iov[i].iov_len;
+            }
+
+            ret = SSL_write(ssl, buffer, send);
+
+            if (newBuffer) XFREE(buffer, ssl->heap);
+
+            return ret;
+        }
+    #endif
+#endif
+
+
 #ifdef CYASSL_CALLBACKS
 
     typedef struct itimerval Itimerval;

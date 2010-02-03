@@ -800,8 +800,6 @@ int mp_invmod (mp_int * a, mp_int * b, mp_int * c)
 #ifdef BN_MP_INVMOD_SLOW_C
   return mp_invmod_slow(a, b, c);
 #endif
-
-  return MP_VAL;
 }
 
 

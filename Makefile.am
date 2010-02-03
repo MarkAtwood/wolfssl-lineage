@@ -11,10 +11,10 @@ openssl-links:
     ln -s ../src/.libs/libcyassl.a libcyassl.a; cd ../
 
 install:
-	mkdir /usr/local/cyassl; \
-    mkdir /usr/local/cyassl/include; \
-    mkdir /usr/local/cyassl/include/openssl; \
-    cp include/openssl/*.h /usr/local/cyassl/include/openssl; \
+	mkdir ${prefix}/cyassl; \
+    mkdir ${prefix}/cyassl/include; \
+    mkdir ${prefix}/cyassl/include/openssl; \
+    cp include/openssl/*.h ${prefix}/cyassl/include/openssl; \
     make openssl-links; \
-    mkdir /usr/local/cyassl/lib; \
-    cp lib/*.a /usr/local/cyassl/lib
+    mkdir ${prefix}/cyassl/lib; \
+    cp lib/*.a ${prefix}/cyassl/lib

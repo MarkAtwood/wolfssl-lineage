@@ -217,7 +217,6 @@ BIO_METHOD* BIO_f_base64(void);
 void        BIO_set_flags(BIO*, int);
 
 void OpenSSL_add_all_algorithms(void);
-int  SSL_library_init();
 int  SSLeay_add_ssl_algorithms(void);
 
 void        RAND_screen(void);
@@ -498,7 +497,6 @@ unsigned long ERR_get_error_line_data(const char**, int*, const char**, int *);
 unsigned long ERR_get_error(void);
 void          ERR_clear_error(void);
 
-void SSL_set_accept_state(SSL*);
 
 int  RAND_status(void);
 int  RAND_bytes(unsigned char* buf, int num);
@@ -506,7 +504,6 @@ SSL_METHOD *SSLv23_server_method(void);
 long SSL_CTX_set_options(SSL_CTX*, long);
 int  SSL_CTX_check_private_key(SSL_CTX*);
 
-void SSL_set_shutdown(SSL*, int);
 
 void ERR_free_strings(void);
 void ERR_remove_state(unsigned long);
@@ -518,16 +515,12 @@ long SSL_CTX_get_mode(SSL_CTX* ctx);
 void SSL_CTX_set_default_read_ahead(SSL_CTX* ctx, int m);
 
 long SSL_CTX_sess_set_cache_size(SSL_CTX*, long);
-long SSL_CTX_sess_get_cache_size(SSL_CTX*);
 
 int  SSL_CTX_set_default_verify_paths(SSL_CTX*);
 int  SSL_CTX_set_session_id_context(SSL_CTX*, const unsigned char*,
                                     unsigned int);
 
 X509*      SSL_get_peer_certificate(SSL* ssl);
-X509_NAME* X509_get_issuer_name(X509* cert);
-X509_NAME* X509_get_subject_name(X509* cert);
-char*      X509_NAME_oneline(X509_NAME*, char*, int);
 
 int SSL_want_read(SSL*);
 int SSL_want_write(SSL*);
@@ -569,6 +562,13 @@ void CyaSSL_Debugging_OFF(void);  /* turn logging off */
 
 int CyaSSL_set_compression(SSL* ssl);  /* turn on CyaSSL data compression */
 
+#ifndef _WIN32
+    #ifndef NO_WRITEV
+        #include <sys/uio.h>
+        /* allow writv style writing */
+        int CyaSSL_writev(SSL* ssl, const struct iovec* iov, int iovcnt);
+    #endif
+#endif
 
 #ifdef NO_FILESYSTEM
 
