@@ -71,7 +71,7 @@ THREAD_RETURN CYASSL_API server_test(void* args)
     SSL_CTX_set_default_passwd_cb(ctx, PasswordCallBack);
 #endif
 
-    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
+    SSL_CTX_set_verify(ctx,SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,0);
 
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
         err_sys("can't load ca file");
@@ -103,7 +103,8 @@ THREAD_RETURN CYASSL_API server_test(void* args)
     #ifndef CYASSL_CALLBACKS
         if (SSL_accept(ssl) != SSL_SUCCESS) {
             int err = SSL_get_error(ssl, 0);
-            printf("error = %d\n", err);
+            char buffer[80];
+            printf("error = %d, %s\n", err, ERR_error_string(err, buffer));
             err_sys("SSL_accept failed");
         }
     #else

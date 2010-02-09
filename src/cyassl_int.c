@@ -2344,6 +2344,10 @@ void SetErrorString(int error, char* buffer)
         strncpy(buffer, "wrong client/server type", max);
         break;
 
+    case NO_PEER_CERT :
+        strncpy(buffer, "peer didn't send cert", max);
+        break;
+
     case UNKNOWN_HANDSHAKE_TYPE :
         strncpy(buffer, "weird handshake type", max);
         break;
@@ -3917,6 +3921,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         int    ret = 0;
         word32 length = 0;
         byte*  out;
+
+        if (ssl->options.verifyPeer && ssl->options.failNoCert)
+            if (!ssl->peerCert.issuer.sz)
+                return NO_PEER_CERT;
 
         #ifdef CYASSL_CALLBACKS
             if (ssl->hsInfoOn)

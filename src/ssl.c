@@ -2013,7 +2013,10 @@ int CyaSSL_set_compression(SSL* ssl)
 
     X509* SSL_get_peer_certificate(SSL* ssl)
     {
-        return &ssl->peerCert;
+        if (ssl->peerCert.issuer.sz)
+            return &ssl->peerCert;
+        else
+            return 0;
     }
 
 

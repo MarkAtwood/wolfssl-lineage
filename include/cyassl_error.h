@@ -76,6 +76,7 @@ enum CyaSSL_ErrorCodes {
     PEER_KEY_ERROR         = -242,            /* cant decode peer key */
     ZERO_RETURN            = -243,            /* peer sent close notify */
     SIDE_ERROR             = -244,            /* wrong client/server type */
+    NO_PEER_CERT           = -245,            /* peer didn't send key */
     /* add strings to SetErrorString !!!!! */
 
     /* begin negotiation parameter errors */
