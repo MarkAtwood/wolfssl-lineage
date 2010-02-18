@@ -1163,13 +1163,11 @@ int fp_exptmod(fp_int * G, fp_int * X, fp_int * P, fp_int * Y)
 {
    fp_int tmp;
    int    err;
-   
-#ifdef TFM_CHECK
+  
    /* prevent overflows */
    if (P->used > (FP_SIZE/2)) {
       return FP_VAL;
    }
-#endif
 
    /* is X negative?  */
    if (X->sign == FP_NEG) {

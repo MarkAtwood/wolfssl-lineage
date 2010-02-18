@@ -26,32 +26,35 @@ static void SignalReady(void* args)
 #endif
 }
 
+
 THREAD_RETURN CYASSL_API echoserver_test(void* args)
 {
     SOCKET_T    sockfd = 0;
     SSL_METHOD* method = 0;
     SSL_CTX*    ctx    = 0;
 
+    int    outCreated = 0;
     int    shutdown = 0;
-    int    argc    = 0;
-    char** argv = 0;
+    int    argc = ((func_args*)args)->argc;
+    char** argv = ((func_args*)args)->argv;
 
 #ifdef ECHO_OUT
     FILE* fout = stdout;
-    if (argc >= 2) fout = fopen(argv[1], "w");
+    if (argc >= 2) {
+        fout = fopen(argv[1], "w");
+        outCreated = 1;
+    }
     if (!fout) err_sys("can't open output file");
 #endif
 
     ((func_args*)args)->return_code = -1; /* error state */
-    argc = ((func_args*)args)->argc;
-    argv = ((func_args*)args)->argv;
 
     tcp_listen(&sockfd);
 
 #if defined(CYASSL_DTLS)
     method  = DTLSv1_server_method();
 #elif  !defined(NO_TLS)
-    method = TLSv1_server_method();
+    method = SSLv23_server_method();
 #else
     method = SSLv3_server_method();
 #endif
@@ -158,6 +161,11 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
 
     CloseSocket(sockfd);
     SSL_CTX_free(ctx);
+
+#ifdef ECHO_OUT
+    if (outCreated)
+        fclose(fout);
+#endif
 
     ((func_args*)args)->return_code = 0;
     return 0;

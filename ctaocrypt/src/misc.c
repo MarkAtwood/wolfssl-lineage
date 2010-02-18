@@ -38,6 +38,8 @@
 
 #ifdef INTEL_INTRINSICS
 
+    #include <stdlib.h>      /* get intrinsic definitions */
+
     #pragma intrinsic(_lrotl, _lrotr)
 
     STATIC INLINE word32 rotlFixed(word32 x, word32 y)
