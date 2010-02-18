@@ -286,7 +286,7 @@ RNG rng;
 void bench_rsa()
 {
     int    i;
-    byte   tmp[1024];
+    byte   tmp[4096];
     size_t bytes;
     word32 idx = 0;
 
@@ -305,15 +305,14 @@ void bench_rsa()
         return;
     }
 
-    bytes = fread(tmp, 1, 1024, file);
+    bytes = fread(tmp, 1, sizeof(tmp), file);
     InitRsaKey(&key, 0);
     bytes = RsaPrivateKeyDecode(tmp, &idx, &key, (word32)bytes);
-
     
     start = current_time();
 
     for (i = 0; i < times; i++)
-        RsaPublicEncrypt(message, len, cipher, sizeof(cipher), &key, &rng);
+        bytes = RsaPublicEncrypt(message,len,cipher,sizeof(cipher), &key, &rng);
 
     total = current_time() - start;
     each  = total / times;   /* per second   */
@@ -325,7 +324,7 @@ void bench_rsa()
     start = current_time();
 
     for (i = 0; i < times; i++)
-        RsaPrivateDecryptInline(cipher, 128, &output, &key);
+        RsaPrivateDecryptInline(cipher, bytes, &output, &key);
 
     total = current_time() - start;
     each  = total / times;   /* per second   */

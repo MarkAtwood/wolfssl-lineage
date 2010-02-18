@@ -37,7 +37,9 @@
 #endif
 
 #include <stdlib.h>
-
+#ifndef _WIN32
+    #include <errno.h>
+#endif
 
 #define TRUE  1
 #define FALSE 0
@@ -127,6 +129,10 @@ int SSL_write(SSL* ssl, const void* buffer, int sz)
 
     CYASSL_ENTER("SSL_write()");
 
+#ifndef _WIN32
+    errno = 0;
+#endif
+
     ret = SendData(ssl, buffer, sz);
 
     CYASSL_LEAVE("SSL_write()", ret);
@@ -143,6 +149,10 @@ int SSL_read(SSL* ssl, void* buffer, int sz)
     int ret; 
 
     CYASSL_ENTER("SSL_read()");
+
+#ifndef _WIN32
+        errno = 0;
+#endif
 
     ret = ReceiveData(ssl, (byte*)buffer, min(sz, MAX_RECORD_SIZE));
 
@@ -691,6 +701,10 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
         CYASSL_ENTER("SSL_connect()");
 
+        #ifndef _WIN32
+            errno = 0;
+        #endif
+
         if (ssl->options.side != CLIENT_END) {
             CYASSL_ERROR(ssl->error = SIDE_ERROR);
             return SSL_FATAL_ERROR;
@@ -891,12 +905,16 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
     int SSL_accept(SSL* ssl)
     {
+        CYASSL_ENTER("SSL_accept()");
+
+        #ifndef _WIN32
+            errno = 0;
+        #endif
+
         if (ssl->options.side != SERVER_END) {
             CYASSL_ERROR(ssl->error = SIDE_ERROR);
             return SSL_FATAL_ERROR;
         }
-
-        CYASSL_ENTER("SSL_accept()");
 
         #ifdef CYASSL_DTLS
             if (ssl->version.major == DTLS_MAJOR &&

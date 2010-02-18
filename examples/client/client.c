@@ -150,8 +150,9 @@ void client_test(void* args)
 #else
     #ifndef CYASSL_CALLBACKS
         if (SSL_connect(ssl) != SSL_SUCCESS) { /* see note at top of README */
-            int err = SSL_get_error(ssl, 0);
-            printf("err = %d\n", err);
+            int  err = SSL_get_error(ssl, 0);
+            char buffer[80];
+            printf("err = %d, %s\n", err, ERR_error_string(err, buffer));
             err_sys("SSL_connect failed");/* if you're getting an error here  */
         }
     #else

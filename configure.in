@@ -1,11 +1,10 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(cyassl,1.3.1)
+AM_INIT_AUTOMAKE(cyassl,1.4.0)
 AM_CONFIG_HEADER(ctaocrypt/include/config.h)
 
 
 dnl Include m4
-sinclude(check_zlib.m4)
 sinclude(lib_socket_nsl.m4)
 sinclude(acx_pthread.m4)
 
@@ -155,6 +154,44 @@ then
 fi
 
 
+trylibzdir=""
+AC_ARG_WITH(libz,
+    [  --with-libz=PATH        PATH to libz install (default /usr/) ],
+    [
+        AC_MSG_CHECKING([for libz])
+        CPPFLAGS="$CPPFLAGS -DHAVE_LIBZ"
+        LDFLAGS="$LDFLAGS -lz"
+
+        AC_TRY_LINK([#include <zlib.h>], [ deflateInit(NULL, 8); ],
+            [ libz_linked=yes ], [ libz_linked=no ])
+
+        if test "x$libz_linked" == "xno" ; then
+            if test "x$withval" != "xno" ; then
+                trylibzdir=$withval
+            fi
+            if test "x$withval" == "xyes" ; then
+                trylibzdir="/usr"
+            fi
+
+            LDFLAGS="$LDFLAGS -L$trylibzdir/lib"
+            CPPFLAGS="$CPPFLAGS -I$trylibzdir/include"
+
+            AC_TRY_LINK([#include <zlib.h>], [ deflateInit(NULL, 8); ],
+                [ libz_linked=yes ], [ libz_linked=no ])
+
+            if test "x$libz_linked" == "xno" ; then
+                AC_MSG_ERROR([libz isn't found.
+                If it's already installed, specify its path using --with-libz=/dir/])
+            fi
+            AC_MSG_RESULT([yes])
+        else
+            AC_MSG_RESULT([yes])
+        fi
+
+    ]
+)
+
+
 if test "$GCC" = "yes"
 then
     if test "$ENABLED_DEBUG" = "no"
@@ -174,7 +211,6 @@ fi
 
 
 
-CHECK_ZLIB
 
 ACX_PTHREAD
 

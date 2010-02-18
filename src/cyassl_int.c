@@ -3923,8 +3923,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         byte*  out;
 
         if (ssl->options.verifyPeer && ssl->options.failNoCert)
-            if (!ssl->peerCert.issuer.sz)
+            if (!ssl->peerCert.issuer.sz) {
+                CYASSL_MSG("client didn't present peer cert");
                 return NO_PEER_CERT;
+            }
 
         #ifdef CYASSL_CALLBACKS
             if (ssl->hsInfoOn)

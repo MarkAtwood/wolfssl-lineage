@@ -393,8 +393,6 @@ int IsAtLeastTLSv1_2(const SSL* ssl)
     }
 
 
-#ifdef OPENSSL_EXTRA
-
     SSL_METHOD *SSLv23_server_method(void)
     {
         SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
@@ -405,8 +403,6 @@ int IsAtLeastTLSv1_2(const SSL* ssl)
         }
         return method;
     }
-
-#endif /* OPENSSL_EXTRA */
 
 
 
