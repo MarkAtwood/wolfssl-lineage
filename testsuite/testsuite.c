@@ -4,6 +4,10 @@
 #include "../examples/test.h"
 #include "md5.h"
 
+#ifdef SINGLE_THREADED
+    #error testsuite needs threads to run, please run ctaocrypt/test, \
+           and the examples/ individually
+#endif
 
 void wait_tcp_ready(func_args*);
 void ctaocrypt_test(void*);

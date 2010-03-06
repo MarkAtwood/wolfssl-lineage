@@ -90,6 +90,15 @@ int  DeriveTlsKeys(SSL* ssl);
 #endif /* min */
 
 
+int IsAtLeastTLSv1_2(const SSL* ssl)
+{
+    if (ssl->version.major == SSLv3_MAJOR && ssl->version.minor >=TLSv1_2_MINOR)
+        return 1;
+
+    return 0;
+}
+
+
 static INLINE void c32to24(word32 in, word24 out)
 {
     out[0] = (in >> 16) & 0xff;
@@ -275,7 +284,7 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->userdata    = 0;
 #endif /* OPENSSL_EXTRA */
 
-    ctx->CBIORecv = EnbedReceive;
+    ctx->CBIORecv = EmbedReceive;
     ctx->CBIOSend = EmbedSend;
     ctx->partialWrite = 0;
 
@@ -3470,14 +3479,14 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
     int SendServerKeyExchange(SSL* ssl)
     {
-        byte              *output;
-        word32             length, idx = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
-        int                sendSz;
-        int                ret = 0;
+        int ret = 0;
 
         if (ssl->specs.kea != psk_kea) return 0;
 
         #ifndef NO_PSK
+            byte    *output;
+            word32   length, idx = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
+            int      sendSz;
             if (ssl->arrays.server_hint[0] == 0) return 0; /* don't send */
 
             /* include size part */

@@ -63,14 +63,12 @@
     #ifndef WSAEPIPE
         #define WSAEPIPE       -12345
     #endif
-    #define SOCKET_EINVAL      WSAEINVAL
     #define SOCKET_EWOULDBLOCK WSAEWOULDBLOCK
     #define SOCKET_EAGAIN      WSAEWOULDBLOCK
     #define SOCKET_ECONNRESET  WSAECONNRESET
     #define SOCKET_EINTR       WSAEINTR
     #define SOCKET_EPIPE       WSAEPIPE
 #else
-    #define SOCKET_EINVAL      EINVAL
     #define SOCKET_EWOULDBLOCK EWOULDBLOCK
     #define SOCKET_EAGAIN      EAGAIN
     #define SOCKET_ECONNRESET  ECONNRESET
@@ -108,7 +106,7 @@ static INLINE int LastError(void)
  *           -4 : interrupt
  *           -5 : connexion close
  */
-int EnbedReceive(char *buf, int sz, void *ctx)
+int EmbedReceive(char *buf, int sz, void *ctx)
 {
     int recvd;
     int err;

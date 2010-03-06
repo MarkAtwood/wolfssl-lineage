@@ -67,14 +67,20 @@
 #endif
 
 
-#ifndef _POSIX_THREADS
+#ifdef SINGLE_THREADED
     typedef unsigned int  THREAD_RETURN;
-    typedef HANDLE        THREAD_TYPE;
-    #define CYASSL_API __stdcall
+    typedef void*         THREAD_TYPE;
+    #define CYASSL_API
 #else
-    typedef void*         THREAD_RETURN;
-    typedef pthread_t     THREAD_TYPE;
-    #define CYASSL_API 
+    #ifndef _POSIX_THREADS
+        typedef unsigned int  THREAD_RETURN;
+        typedef HANDLE        THREAD_TYPE;
+        #define CYASSL_API __stdcall
+    #else
+        typedef void*         THREAD_RETURN;
+        typedef pthread_t     THREAD_TYPE;
+        #define CYASSL_API 
+    #endif
 #endif
 
 

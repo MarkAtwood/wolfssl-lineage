@@ -2401,7 +2401,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=cyassl
- VERSION=1.4.0
+ VERSION=1.4.1
 
 
 cat >>confdefs.h <<_ACEOF
@@ -21666,7 +21666,7 @@ then
   # if you only want server or client you can define NO_CYASSL_SERVER or
   # NO_CYASSL_CLIENT but then some of the examples and testsuite won't build
   # note that TLS needs HMAC
-  CFLAGS="-DNO_TLS -DNO_HMAC -DNO_AES -DNO_DES3 -DNO_SHA256 -DNO_ERROR_STRINGS -DNO_HC128 -DNO_RABBIT -DNO_PSK $CFLAGS"
+  CFLAGS="-DNO_TLS -DNO_HMAC -DNO_AES -DNO_DES3 -DNO_SHA256 -DNO_ERROR_STRINGS -DNO_HC128 -DNO_RABBIT -DNO_PSK -DNO_DSA -DNO_DH $CFLAGS"
 fi
 
 
@@ -21796,7 +21796,7 @@ if test "${with_libz+set}" = set; then
         { echo "$as_me:$LINENO: checking for libz" >&5
 echo $ECHO_N "checking for libz... $ECHO_C" >&6; }
         CPPFLAGS="$CPPFLAGS -DHAVE_LIBZ"
-        LDFLAGS="$LDFLAGS -lz"
+        LIBS="$LIBS -lz"
 
         cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */

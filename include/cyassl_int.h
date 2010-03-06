@@ -370,7 +370,7 @@ typedef int (*CallbackIORecv)(char *buf, int sz, void *ctx);
 typedef int (*CallbackIOSend)(char *buf, int sz, void *ctx);
 
 /* default IO callbacks */
-int EnbedReceive(char *buf, int sz, void *ctx);
+int EmbedReceive(char *buf, int sz, void *ctx);
 int EmbedSend(char *buf, int sz, void *ctx);
 
 #ifdef CYASSL_DTLS

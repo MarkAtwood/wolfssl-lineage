@@ -317,15 +317,6 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
 }
 
 
-int IsAtLeastTLSv1_2(const SSL* ssl)
-{
-    if (ssl->version.major == SSLv3_MAJOR && ssl->version.minor >=TLSv1_2_MINOR)
-        return 1;
-
-    return 0;
-}
-
-
 #ifndef NO_CYASSL_CLIENT
 
     SSL_METHOD* TLSv1_client_method(void)

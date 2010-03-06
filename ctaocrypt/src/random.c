@@ -35,9 +35,12 @@
     #include <windows.h>
     #include <wincrypt.h>
 #else
-    #include <errno.h>
-    #include <fcntl.h>
-    #include <unistd.h>
+    #ifndef NO_DEV_RANDOM
+        #include <fcntl.h>
+        #include <unistd.h>
+    #else
+        /* include headers that may be needed to get good seed */
+    #endif
 #endif /* _WIN32 */
 
 
@@ -115,7 +118,12 @@ int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
 }
 
 
-#else /* !_WIN32 && !THREADX */
+#elif NO_DEV_RANDOM
+
+#error "you need to write an os specific GenerateSeed() here"
+
+
+#else /* !_WIN32 && !THREADX && !NO_DEV_RANDOM */
 
 
 /* may block */
