@@ -570,7 +570,6 @@ public:
 
     static void TAOCRYPT_CDECL Square2(word *R, const word *A);
     static void TAOCRYPT_CDECL Square4(word *R, const word *A);
-    static void TAOCRYPT_CDECL Square8(word *R, const word *A);
     static unsigned int TAOCRYPT_CDECL SquareRecursionLimit() {return 4;}
 };
 
@@ -2179,8 +2178,6 @@ void RecursiveMultiply(word *R, word *T, const word *A, const word *B,
 
 void RecursiveSquare(word *R, word *T, const word *A, unsigned int N)                     
 {
-    if (LowLevel::SquareRecursionLimit() >= 8 && N==8)
-        LowLevel::Square8(R, A);
     if (LowLevel::SquareRecursionLimit() >= 4 && N==4)
         LowLevel::Square4(R, A);
     else if (N==2)

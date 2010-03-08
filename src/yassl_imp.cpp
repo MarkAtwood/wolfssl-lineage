@@ -999,6 +999,11 @@ void Data::Process(input_buffer& input, SSL& ssl)
     int dataSz = msgSz - ivExtra - digestSz - pad - padByte;   
     opaque verify[SHA_LEN];
 
+    if (dataSz < 0) {
+        ssl.SetError(bad_input);
+        return;
+    }
+
     const byte* rawData = input.get_buffer() + input.get_current();
 
     // read data
