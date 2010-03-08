@@ -1333,7 +1333,9 @@ static int DoApplicationData(SSL* ssl, byte* input, word32* inOutIdx)
         padByte = 1;
     }
 
-    dataSz = msgSz - ivExtra - digestSz - pad - padByte;   
+    dataSz = msgSz - ivExtra - digestSz - pad - padByte;
+    if (dataSz < 0)
+        return BUFFER_ERROR;
 
     /* read data */
     if (dataSz) {
