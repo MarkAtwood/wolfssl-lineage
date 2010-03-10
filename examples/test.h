@@ -22,6 +22,7 @@
     #include <unistd.h>
     #include <netdb.h>
     #include <netinet/in.h>
+    #include <netinet/tcp.h>
     #include <arpa/inet.h>
     #include <sys/ioctl.h>
     #include <sys/time.h>
@@ -181,7 +182,7 @@ static INLINE void tcp_socket(SOCKET_T* sockfd, SOCKADDR_IN_T* addr,
     const char* host = peer;
 
     /* peer could be in human readable form */
-    if (isalpha(peer[0])) {
+    if (peer != INADDR_ANY && isalpha(peer[0])) {
         struct hostent* entry = gethostbyname(peer);
 
         if (entry) {
@@ -206,7 +207,10 @@ static INLINE void tcp_socket(SOCKET_T* sockfd, SOCKADDR_IN_T* addr,
 #ifndef TEST_IPV6
     addr->sin_family = AF_INET_V;
     addr->sin_port = htons(port);
-    addr->sin_addr.s_addr = inet_addr(host);
+    if (host == INADDR_ANY)
+        addr->sin_addr.s_addr = INADDR_ANY;
+    else
+        addr->sin_addr.s_addr = inet_addr(host);
 #else
     addr->sin6_family = AF_INET_V;
     addr->sin6_port = htons(port);
@@ -217,7 +221,19 @@ static INLINE void tcp_socket(SOCKET_T* sockfd, SOCKADDR_IN_T* addr,
     {
         int       on = 1;
         socklen_t len = sizeof(on);
-        setsockopt(*sockfd, SOL_SOCKET, SO_NOSIGPIPE, &on, len);
+        int       res = setsockopt(*sockfd, SOL_SOCKET, SO_NOSIGPIPE, &on, len);
+        if (res < 0)
+            err_sys("setsockopt SO_NOSIGPIPE failed\n");
+    }
+#endif
+
+#ifdef TCP_NODELAY
+    {
+        int       on = 1;
+        socklen_t len = sizeof(on);
+        int       res = setsockopt(*sockfd, IPPROTO_TCP, TCP_NODELAY, &on, len);
+        if (res < 0)
+            err_sys("setsockopt TCP_NODELAY failed\n");
     }
 #endif
 
@@ -237,7 +253,14 @@ static INLINE void tcp_connect(SOCKET_T* sockfd, const char* ip, word16 port)
 static INLINE void tcp_listen(SOCKET_T* sockfd)
 {
     SOCKADDR_IN_T addr;
+
+    /* don't use INADDR_ANY by default, firewall may block, make user switch
+       on */
+#ifdef USE_ANY_ADDR
+    tcp_socket(sockfd, &addr, INADDR_ANY, yasslPort);
+#else
     tcp_socket(sockfd, &addr, yasslIP, yasslPort);
+#endif
 
 #ifndef _WIN32
     {
@@ -250,7 +273,7 @@ static INLINE void tcp_listen(SOCKET_T* sockfd)
     if (bind(*sockfd, (const struct sockaddr*)&addr, sizeof(addr)) != 0)
         err_sys("tcp bind failed");
 #ifndef CYASSL_DTLS
-    if (listen(*sockfd, 3) != 0)
+    if (listen(*sockfd, 5) != 0)
         err_sys("tcp listen failed");
 #endif
 }

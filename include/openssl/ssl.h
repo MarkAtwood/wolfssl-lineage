@@ -142,6 +142,8 @@ void SSL_CTX_free(SSL_CTX*);
 void SSL_free(SSL*);
 int  SSL_shutdown(SSL*);
 
+void SSL_CTX_set_quiet_shutdown(SSL_CTX*, int);
+
 int  SSL_get_error(SSL*, int);
 
 int          SSL_set_session(SSL *ssl, SSL_SESSION *session);
@@ -212,12 +214,21 @@ BIO* BIO_pop(BIO*);
 int  BIO_flush(BIO*);
 int  BIO_pending(BIO*);
 
+BIO_METHOD* BIO_f_buffer(void);
+long        BIO_set_write_buffer_size(BIO*, long size);
+BIO_METHOD* BIO_f_ssl(void);
+BIO*        BIO_new_socket(int sfd, int flag);
+void        SSL_set_bio(SSL*, BIO* rd, BIO* wr);
+int         BIO_eof(BIO*);
+long        BIO_set_ssl(BIO*, SSL*, int flag);
+
 BIO_METHOD* BIO_s_mem(void);
 BIO_METHOD* BIO_f_base64(void);
 void        BIO_set_flags(BIO*, int);
 
 void OpenSSL_add_all_algorithms(void);
 int  SSLeay_add_ssl_algorithms(void);
+int  SSLeay_add_all_algorithms(void);
 
 void        RAND_screen(void);
 const char* RAND_file_name(char*, size_t);
@@ -390,6 +401,8 @@ enum {
     SSL_MODE_ENABLE_PARTIAL_WRITE = 2,
 
     BIO_FLAGS_BASE64_NO_NL = 1,
+    BIO_CLOSE   = 1,
+    BIO_NOCLOSE = 0,
 
     NID_undef = 0,
 
@@ -401,6 +414,14 @@ enum {
     X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD = 14,
     X509_V_ERR_CRL_HAS_EXPIRED                = 15,
     X509_V_ERR_CERT_REVOKED                   = 16,
+    X509_V_ERR_CERT_CHAIN_TOO_LONG            = 17,
+    X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT      = 18,
+    X509_V_ERR_CERT_NOT_YET_VALID             = 19,
+    X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD = 20,
+    X509_V_ERR_CERT_HAS_EXPIRED               = 21,
+    X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD  = 22,
+
+    X509_V_OK = 0,
 
     CRYPTO_LOCK = 1,
     CRYPTO_NUM_LOCKS = 10,

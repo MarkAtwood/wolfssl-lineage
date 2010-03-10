@@ -12,7 +12,35 @@ before calling SSL_new();  Though it's not recommended.
 
 *** end Note ***
 
-CyaSSL Release 1.4.0 (2/18/2010)
+CyaSSL Release 1.x.x (3/xx/2010)
+
+The client may run out of tcp ephemeral ports, they will end up in the TIME_WAIT
+queue, and can't be reused by default.  There are generally two ways to fix
+this.  1) Reduce the length sockets remain on the TIME_WAIT queue or 2) Allow
+items on the TIME_WAIT queue to be reused.
+
+
+To reduce the TIME_WAIT length in OS X to 1 second (1000 milliseconds)
+
+sudo sysctl -w net.inet.tcp.msl=1000
+
+In Linux
+
+sudo sysctl -w net.ipv4.tcp_tw_reuse=1
+
+allows reuse of sockets in TIME_WAIT
+
+sudo sysctl -w net.ipv4.tcp_tw_recycle=1
+
+works but seems to remove sockets from  TIME_WAIT entirely?
+
+sudo sysctl -w net.ipv4.tcp_fin_timeout=1
+
+doen't control TIME_WAIT, it controls FIN_WAIT(2) contrary to some posts
+
+
+
+******************** CyaSSL Release 1.4.0 (2/18/2010)
 
 Release 1.3.0 for CyaSSL adds bug fixes, better multi TLS/SSL version support
 through SSLv23_server_method(), and improved documentation in the doc/ folder.

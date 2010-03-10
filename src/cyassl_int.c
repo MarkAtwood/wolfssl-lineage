@@ -297,6 +297,7 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->sessionCacheOff      = 0;  /* initially on */
     ctx->sessionCacheFlushOff = 0;  /* initially on */
     ctx->sendVerify = 0;
+    ctx->quietShutdown = 0;
 }
 
 
@@ -486,7 +487,8 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->options.tls    = 0;
     ssl->options.tls1_1 = 0;
     ssl->options.dtls   = 0;
-    ssl->options.partialWrite = ctx->partialWrite;
+    ssl->options.partialWrite  = ctx->partialWrite;
+    ssl->options.quietShutdown = ctx->quietShutdown;
 
     /* SSL_CTX still owns certificate, key, and caList buffers */
     ssl->buffers.certificate = ctx->certificate;
@@ -524,6 +526,8 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
 
     ssl->rfd = -1;   /* set to invalid descriptor */
     ssl->wfd = -1;
+    ssl->biord = 0;
+    ssl->biowr = 0;
 
     ssl->IOCB_ReadCtx  = &ssl->rfd;   /* prevent invalid pointer acess if not */
     ssl->IOCB_WriteCtx = &ssl->wfd;   /* correctly set */
@@ -540,7 +544,9 @@ void FreeSSL(SSL* ssl)
     XFREE(ssl->buffers.serverDH_P.buffer, ssl->heap);
     XFREE(ssl->buffers.domainName.buffer, ssl->heap);
     FreeRsaKey(&ssl->peerRsaKey);
-
+    BIO_free(ssl->biord);
+    if (ssl->biord != ssl->biowr)        /* in case same as write */
+        BIO_free(ssl->biowr);
 #ifdef HAVE_LIBZ
     FreeStreams(ssl);
 #endif

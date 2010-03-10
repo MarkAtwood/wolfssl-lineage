@@ -169,6 +169,11 @@ int SSL_shutdown(SSL* ssl)
 {
     CYASSL_ENTER("SSL_shutdown()");
 
+    if (ssl->options.quietShutdown) {
+        CYASSL_MSG("quiet shutdown, no close notify sent"); 
+        return 0;
+    }
+
     /* try to send close notify, not an error if can't */
     if (!ssl->options.isClosed && !ssl->options.connReset &&
                                   !ssl->options.sentNotify) {
@@ -629,7 +634,10 @@ SSL_SESSION* SSL_get_session(SSL* ssl)
 
 int SSL_set_session(SSL* ssl, SSL_SESSION* session)
 {
-    return SetSession(ssl, session);
+    if (session)
+        return SetSession(ssl, session);
+
+    return SSL_FAILURE;
 }
 
 #endif /* NO_SESSION_CACHE */
@@ -2211,40 +2219,158 @@ int CyaSSL_set_compression(SSL* ssl)
     }
 
 
-
-    BIO* BIO_new(BIO_METHOD* bioMethod)
+    BIO_METHOD* BIO_f_buffer(void)
     {
+        static BIO_METHOD meth;
+        meth.type = BIO_BUFFER;
+
+        return &meth;
+    }
+
+
+    long BIO_set_write_buffer_size(BIO* bio, long size)
+    {
+        /* CyaSSL has internal buffer, compatibility only */
+        return size; 
+    }
+
+
+    BIO_METHOD* BIO_f_ssl(void)
+    {
+        static BIO_METHOD meth;
+        meth.type = BIO_SSL;
+
+        return &meth;
+    }
+
+
+    BIO* BIO_new_socket(int sfd, int close)
+    {
+        BIO* bio = (BIO*) XMALLOC(sizeof(BIO), 0);
+        if (bio) { 
+            bio->type  = BIO_SOCKET;
+            bio->fd    = sfd;
+            bio->close = close;
+        }
+        return bio; 
+    }
+
+
+    void SSL_set_bio(SSL* ssl, BIO* rd, BIO* wr)
+    {
+        SSL_set_rfd(ssl, rd->fd);
+        SSL_set_wfd(ssl, wr->fd);
+
+        ssl->biord = rd;
+        ssl->biowr = wr;
+    }
+
+
+    int BIO_eof(BIO* b)
+    {
+        if (b->eof)
+            return 1;
+
+        return 0;        
+    }
+
+
+    long BIO_set_ssl(BIO* b, SSL* ssl, int close)
+    {
+        b->ssl   = ssl;
+        b->close = close;
+    /* add to ssl for bio free if SSL_free called before/instead of free_all? */
+
         return 0;
+    }
+
+
+    BIO* BIO_new(BIO_METHOD* method)
+    {
+        BIO* bio = (BIO*) XMALLOC(sizeof(BIO), 0);
+        if (bio) {
+            bio->type  = method->type;
+            bio->close = 0;
+            bio->eof   = 0;
+            bio->ssl   = 0;
+            bio->fd    = 0;
+            bio->prev  = 0;
+            bio->next  = 0;
+        }
+        return bio;
     }
 
 
     int BIO_free(BIO* bio)
     {
+        /* unchain? */
+        if (bio) {
+            if (bio->close) {
+                if (bio->ssl)
+                    SSL_free(bio->ssl);
+            }
+            XFREE(bio, 0);
+        }
         return 0;
     }
 
 
     int BIO_free_all(BIO* bio)
     {
+        BIO* next = bio;
+
+        while ( (bio = next) ) {
+            next = bio->next;
+            BIO_free(bio);
+        }
         return 0;
     }
 
 
     int BIO_read(BIO* bio, void* buf, int len)
     {
-        return 0;
+        int  ret;
+        SSL* ssl = 0;
+        BIO* front = bio;
+
+        while(bio && ((ssl = bio->ssl) == 0) )
+            bio = bio->next;
+
+        if (ssl == 0) return -1;
+
+        ret = SSL_read(ssl, buf, len);
+        if (ret == 0)
+            front->eof = 1;
+
+        return ret;
     }
 
 
     int BIO_write(BIO* bio, const void* data, int len)
     {
-        return 0;
+        int  ret;
+        SSL* ssl = 0;
+        BIO* front = bio;
+
+        while(bio && ((ssl = bio->ssl) == 0) )
+            bio = bio->next;
+
+        if (ssl == 0) return -1;
+
+        ret = SSL_write(ssl, data, len);
+        if (ret == 0)
+            front->eof = 1;
+
+        return ret;
     }
 
 
     BIO* BIO_push(BIO* top, BIO* append)
     {
-        return 0;
+        top->next    = append;
+        append->prev = top;
+
+        return top;
     }
 
 
@@ -2256,7 +2382,8 @@ int CyaSSL_set_compression(SSL* ssl)
 
     int BIO_flush(BIO* bio)
     {
-        return 0;
+        /* for CyaSSL no flushing needed */
+        return 1;
     }
 
 
@@ -2294,10 +2421,23 @@ int CyaSSL_set_compression(SSL* ssl)
 
     int SSLeay_add_ssl_algorithms(void)
     {
-        InitCyaSSL();
+        OpenSSL_add_all_algorithms(); 
         return SSL_SUCCESS;
     }
 
+
+    int SSLeay_add_all_algorithms(void)
+    {
+        OpenSSL_add_all_algorithms(); 
+        return SSL_SUCCESS;
+    }
+
+    
+    void SSL_CTX_set_quiet_shutdown(SSL_CTX* ctx, int mode)
+    {
+        if (mode)
+            ctx->quietShutdown = 1;
+    }
 
 
     void RAND_screen(void)

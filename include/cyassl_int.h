@@ -286,6 +286,8 @@ enum states {
     typedef struct SSL_SESSION SSL_SESSION;
     typedef struct SSL         SSL;
     typedef struct X509        X509;
+    typedef struct BIO         BIO;
+    typedef struct BIO_METHOD  BIO_METHOD;
 
     #undef X509_NAME
     typedef struct X509_NAME   X509_NAME;
@@ -309,6 +311,32 @@ ProtocolVersion MakeTLSv1_2(void);
 #ifdef CYASSL_DTLS
     ProtocolVersion MakeDTLSv1(void);
 #endif
+
+
+enum BIO_TYPE {
+    BIO_BUFFER = 1,
+    BIO_SOCKET = 2,
+    BIO_SSL    = 3
+};
+
+
+/* OpenSSL BIO_METHOD type */
+struct BIO_METHOD {
+    byte type;               /* method type */
+};
+
+
+/* OpenSSL BIO type */
+struct BIO {
+    byte type;          /* method type */
+    byte close;         /* close flag */
+    byte eof;           /* eof flag */
+    SSL* ssl;           /* possible associated ssl */
+    int  fd;            /* possible file descriptor */
+    BIO* prev;          /* previous in chain */
+    BIO* next;          /* next in chain */
+};
+
 
 /* OpenSSL method type */
 struct SSL_METHOD {
@@ -393,6 +421,7 @@ struct SSL_CTX {
     byte        sendVerify;       /* for client side */
     byte        haveDH;           /* server DH parms set by user */
     byte        partialWrite;     /* only one msg per write call */
+    byte        quietShutdown;    /* don't send close notify */
     CallbackIORecv CBIORecv;
     CallbackIOSend CBIOSend;
 #ifndef NO_PSK
@@ -639,6 +668,7 @@ typedef struct Options {
     byte            sendAlertState;     /* nonblocking resume */ 
     byte            processReply;       /* nonblocking resume */
     byte            partialWrite;       /* only one msg per write call */
+    byte            quietShutdown;      /* don't send close notify */
 #ifndef NO_PSK
     byte            havePSK;            /* psk key set by user */
     psk_client_callback client_psk_cb;
@@ -712,6 +742,8 @@ struct SSL {
     Keys            keys;
     int             rfd;                /* read  file descriptor */
     int             wfd;                /* write file descriptor */
+    BIO*            biord;              /* socket bio read  to free/close */
+    BIO*            biowr;              /* socket bio write to free/close */
     void*           IOCB_ReadCtx;
     void*           IOCB_WriteCtx;
     RNG             rng;
