@@ -1694,6 +1694,369 @@ int CyaSSL_set_compression(SSL* ssl)
 #endif /* NO_FILESYSTEM */
 
 
+#if defined(OPENSSL_EXTRA) || defined(GOAHEAD_WS)
+
+
+    int SSLeay_add_ssl_algorithms(void)
+    {
+        OpenSSL_add_all_algorithms(); 
+        return SSL_SUCCESS;
+    }
+
+
+    long SSL_CTX_sess_set_cache_size(SSL_CTX* ctx, long sz)
+    {
+        /* cache size fixed at compile time in CyaSSL */
+        return 0;
+    }
+
+
+    void SSL_CTX_set_quiet_shutdown(SSL_CTX* ctx, int mode)
+    {
+        if (mode)
+            ctx->quietShutdown = 1;
+    }
+
+
+    int SSL_CTX_check_private_key(SSL_CTX* ctx)
+    {
+        /* TODO: check private against public for RSA match */
+        return SSL_SUCCESS;
+    }
+
+
+    void SSL_set_bio(SSL* ssl, BIO* rd, BIO* wr)
+    {
+        SSL_set_rfd(ssl, rd->fd);
+        SSL_set_wfd(ssl, wr->fd);
+
+        ssl->biord = rd;
+        ssl->biowr = wr;
+    }
+
+
+    void SSL_CTX_set_client_CA_list(SSL_CTX* ctx, STACK_OF(X509_NAME)* names)
+    {
+   
+    }
+
+
+    STACK_OF(X509_NAME)* SSL_load_client_CA_file(const char* fname)
+    {
+        return 0;
+    }
+
+
+    int SSL_CTX_set_default_verify_paths(SSL_CTX* ctx)
+    {
+        /* TODO:, not needed in goahead */
+        return SSL_NOT_IMPLEMENTED;
+    }
+
+
+    void SSL_set_accept_state(SSL* ssl)
+    {
+        ssl->options.side = SERVER_END;
+    }
+
+
+    void OpenSSL_add_all_algorithms(void)
+    {
+        InitCyaSSL(); 
+    }
+
+
+    int SSLeay_add_all_algorithms(void)
+    {
+        OpenSSL_add_all_algorithms(); 
+        return SSL_SUCCESS;
+    }
+
+    
+    void SSL_CTX_set_tmp_rsa_callback(SSL_CTX* ctx, RSA*(*f)(SSL*, int, int))
+    {
+        /* CyaSSL verifies all these internally */   
+    }
+
+
+    void SSL_set_shutdown(SSL* ssl, int opt)
+    {
+       
+    }
+
+
+    long SSL_CTX_set_options(SSL_CTX* ctx, long opt)
+    {
+        /* goahead calls with 0, do nothing */ 
+        return opt;
+    }
+
+
+    int SSL_set_rfd(SSL* ssl, int rfd)
+    {
+        ssl->rfd = rfd;      /* not used directly to allow IO callbacks */
+
+        ssl->IOCB_ReadCtx  = &ssl->rfd;
+
+        return SSL_SUCCESS;
+    }
+
+
+    int SSL_set_wfd(SSL* ssl, int wfd)
+    {
+        ssl->wfd = wfd;      /* not used directly to allow IO callbacks */
+
+        ssl->IOCB_WriteCtx  = &ssl->wfd;
+
+        return SSL_SUCCESS;
+    }
+
+
+    RSA* RSA_generate_key(int len, unsigned long bits, void(*f)(int,
+                                                        int, void*), void* data)
+    {
+        /* no tmp key needed, actual generation not supported */
+        return 0;
+    }
+
+
+    X509_NAME* X509_get_issuer_name(X509* cert)
+    {
+        return &cert->issuer;
+    }
+
+
+    X509_NAME* X509_get_subject_name(X509* cert)
+    {
+        return &cert->subject;
+    }
+
+
+    /* copy name into buffer, at most sz bytes, if buffer is null will
+       malloc buffer, call responsible for freeing                     */
+    char* X509_NAME_oneline(X509_NAME* name, char* buffer, int sz)
+    {
+        int copySz = min(sz, name->sz);
+        if (!name->sz) return buffer;
+
+        if (!buffer) {
+            buffer = (char*)XMALLOC(name->sz, 0);
+            if (!buffer) return buffer;
+            copySz = name->sz;
+        }
+
+        if (copySz == 0)
+            return buffer;
+
+        memcpy(buffer, name->name, copySz - 1);
+        buffer[copySz - 1] = 0;
+
+        return buffer;
+    }
+
+
+    X509* X509_STORE_CTX_get_current_cert(X509_STORE_CTX* ctx)
+    {
+        return 0;
+    }
+
+
+    int X509_STORE_CTX_get_error(X509_STORE_CTX* ctx)
+    {
+        return 0;
+    }
+
+
+    int X509_STORE_CTX_get_error_depth(X509_STORE_CTX* ctx)
+    {
+        return 0;
+    }
+
+
+    BIO_METHOD* BIO_f_buffer(void)
+    {
+        static BIO_METHOD meth;
+        meth.type = BIO_BUFFER;
+
+        return &meth;
+    }
+
+
+    long BIO_set_write_buffer_size(BIO* bio, long size)
+    {
+        /* CyaSSL has internal buffer, compatibility only */
+        return size; 
+    }
+
+
+    BIO_METHOD* BIO_f_ssl(void)
+    {
+        static BIO_METHOD meth;
+        meth.type = BIO_SSL;
+
+        return &meth;
+    }
+
+
+    BIO* BIO_new_socket(int sfd, int close)
+    {
+        BIO* bio = (BIO*) XMALLOC(sizeof(BIO), 0);
+        if (bio) { 
+            bio->type  = BIO_SOCKET;
+            bio->close = close;
+            bio->eof   = 0;
+            bio->ssl   = 0;
+            bio->fd    = sfd;
+            bio->prev  = 0;
+            bio->next  = 0;
+        }
+        return bio; 
+    }
+
+
+    int BIO_eof(BIO* b)
+    {
+        if (b->eof)
+            return 1;
+
+        return 0;        
+    }
+
+
+    long BIO_set_ssl(BIO* b, SSL* ssl, int close)
+    {
+        b->ssl   = ssl;
+        b->close = close;
+    /* add to ssl for bio free if SSL_free called before/instead of free_all? */
+
+        return 0;
+    }
+
+
+    BIO* BIO_new(BIO_METHOD* method)
+    {
+        BIO* bio = (BIO*) XMALLOC(sizeof(BIO), 0);
+        if (bio) {
+            bio->type  = method->type;
+            bio->close = 0;
+            bio->eof   = 0;
+            bio->ssl   = 0;
+            bio->fd    = 0;
+            bio->prev  = 0;
+            bio->next  = 0;
+        }
+        return bio;
+    }
+
+
+#ifdef _WIN32
+    #define CloseSocket(s) closesocket(s)
+#else
+    #define CloseSocket(s) close(s)
+#endif
+
+    int BIO_free(BIO* bio)
+    {
+        /* unchain?, doesn't matter in goahead since from free all */
+        if (bio) {
+            if (bio->close) {
+                if (bio->ssl)
+                    SSL_free(bio->ssl);
+                if (bio->fd)
+                    CloseSocket(bio->fd);
+            }
+            XFREE(bio, 0);
+        }
+        return 0;
+    }
+
+
+    int BIO_free_all(BIO* bio)
+    {
+        BIO* next = bio;
+
+        while ( (bio = next) ) {
+            next = bio->next;
+            BIO_free(bio);
+        }
+        return 0;
+    }
+
+
+    int BIO_read(BIO* bio, void* buf, int len)
+    {
+        int  ret;
+        SSL* ssl = 0;
+        BIO* front = bio;
+
+        /* already got eof, again is error */
+        if (front->eof)
+            return -1;
+
+        while(bio && ((ssl = bio->ssl) == 0) )
+            bio = bio->next;
+
+        if (ssl == 0) return -1;
+
+        ret = SSL_read(ssl, buf, len);
+        if (ret == 0)
+            front->eof = 1;
+        else if (ret < 0) {
+            int err = SSL_get_error(ssl, 0);
+            if ( !(err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) )
+                front->eof = 1;
+        }
+        return ret;
+    }
+
+
+    int BIO_write(BIO* bio, const void* data, int len)
+    {
+        int  ret;
+        SSL* ssl = 0;
+        BIO* front = bio;
+
+        /* already got eof, again is error */
+        if (front->eof)
+            return -1;
+
+        while(bio && ((ssl = bio->ssl) == 0) )
+            bio = bio->next;
+
+        if (ssl == 0) return -1;
+
+        ret = SSL_write(ssl, data, len);
+        if (ret == 0)
+            front->eof = 1;
+        else if (ret < 0) {
+            int err = SSL_get_error(ssl, 0);
+            if ( !(err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) )
+                front->eof = 1;
+        }
+
+        return ret;
+    }
+
+
+    BIO* BIO_push(BIO* top, BIO* append)
+    {
+        top->next    = append;
+        append->prev = top;
+
+        return top;
+    }
+
+
+    int BIO_flush(BIO* bio)
+    {
+        /* for CyaSSL no flushing needed */
+        return 1;
+    }
+
+
+#endif /* OPENSSL_EXTRA || GOAHEAD_WS */
+
+
 #ifdef OPENSSL_EXTRA
 
     unsigned long SSLeay(void)
@@ -1923,36 +2286,6 @@ int CyaSSL_set_compression(SSL* ssl)
     }
 
 
-    #ifndef NO_CYASSL_SERVER
-
-        void SSL_set_accept_state(SSL* ssl)
-        {
-            ssl->options.side = SERVER_END;
-        }
-
-    #endif /* NO_CYASSL_SERVER */
-
-
-    long SSL_CTX_set_options(SSL_CTX* ctx, long opt)
-    {
-        /* TDOD: */
-        return opt;
-    }
-
-
-    int SSL_CTX_check_private_key(SSL_CTX* ctx)
-    {
-        /* TODO: check private against public for RSA match */
-        return SSL_SUCCESS;
-    }
-
-
-    void SSL_set_shutdown(SSL* ssl, int opt)
-    {
-        /* TODO: */
-    }
-
-
     void ERR_free_strings(void)
     {
         /* handled internally */
@@ -2001,25 +2334,12 @@ int CyaSSL_set_compression(SSL* ssl)
     }
 
 
-    int SSL_CTX_set_default_verify_paths(SSL_CTX* ctx)
-    {
-        /* TODO: */
-        return SSL_NOT_IMPLEMENTED;
-    }
-
     int SSL_CTX_set_session_id_context(SSL_CTX* ctx,
                                        const unsigned char* sid_ctx,
                                        unsigned int sid_ctx_len)
     {
         /* No application specific context needed for cyaSSL */
         return SSL_SUCCESS;
-    }
-
-
-    long SSL_CTX_sess_set_cache_size(SSL_CTX* ctx, long sz)
-    {
-        /* TODO: maybe? */
-        return 0;
     }
 
 
@@ -2046,38 +2366,6 @@ int CyaSSL_set_compression(SSL* ssl)
     }
 
 
-    X509_NAME* X509_get_issuer_name(X509* cert)
-    {
-        return &cert->issuer;
-    }
-
-
-    X509_NAME* X509_get_subject_name(X509* cert)
-    {
-        return &cert->subject;
-    }
-
-    /* copy name into buffer, at most sz bytes, if buffer is null will
-       malloc buffer, call responsible for freeing                     */
-    char* X509_NAME_oneline(X509_NAME* name, char* buffer, int sz)
-    {
-        int copySz = min(sz, name->sz);
-        if (!name->sz) return buffer;
-
-        if (!buffer) {
-            buffer = (char*)XMALLOC(name->sz, 0);
-            if (!buffer) return buffer;
-            copySz = name->sz;
-        }
-
-        if (copySz == 0)
-            return buffer;
-
-        memcpy(buffer, name->name, copySz - 1);
-        buffer[copySz - 1] = 0;
-
-        return buffer;
-    }
 
     int SSL_set_ex_data(SSL* ssl, int idx, void* data)
     {
@@ -2088,26 +2376,6 @@ int CyaSSL_set_compression(SSL* ssl)
     int SSL_get_shutdown(const SSL* ssl)
     {
         return 0;
-    }
-
-
-    int SSL_set_rfd(SSL* ssl, int rfd)
-    {
-        ssl->rfd = rfd;      /* not used directly to allow IO callbacks */
-
-        ssl->IOCB_ReadCtx  = &ssl->rfd;
-
-        return SSL_SUCCESS;
-    }
-
-
-    int SSL_set_wfd(SSL* ssl, int wfd)
-    {
-        ssl->wfd = wfd;      /* not used directly to allow IO callbacks */
-
-        ssl->IOCB_WriteCtx  = &ssl->wfd;
-
-        return SSL_SUCCESS;
     }
 
 
@@ -2219,171 +2487,10 @@ int CyaSSL_set_compression(SSL* ssl)
     }
 
 
-    BIO_METHOD* BIO_f_buffer(void)
-    {
-        static BIO_METHOD meth;
-        meth.type = BIO_BUFFER;
-
-        return &meth;
-    }
-
-
-    long BIO_set_write_buffer_size(BIO* bio, long size)
-    {
-        /* CyaSSL has internal buffer, compatibility only */
-        return size; 
-    }
-
-
-    BIO_METHOD* BIO_f_ssl(void)
-    {
-        static BIO_METHOD meth;
-        meth.type = BIO_SSL;
-
-        return &meth;
-    }
-
-
-    BIO* BIO_new_socket(int sfd, int close)
-    {
-        BIO* bio = (BIO*) XMALLOC(sizeof(BIO), 0);
-        if (bio) { 
-            bio->type  = BIO_SOCKET;
-            bio->fd    = sfd;
-            bio->close = close;
-        }
-        return bio; 
-    }
-
-
-    void SSL_set_bio(SSL* ssl, BIO* rd, BIO* wr)
-    {
-        SSL_set_rfd(ssl, rd->fd);
-        SSL_set_wfd(ssl, wr->fd);
-
-        ssl->biord = rd;
-        ssl->biowr = wr;
-    }
-
-
-    int BIO_eof(BIO* b)
-    {
-        if (b->eof)
-            return 1;
-
-        return 0;        
-    }
-
-
-    long BIO_set_ssl(BIO* b, SSL* ssl, int close)
-    {
-        b->ssl   = ssl;
-        b->close = close;
-    /* add to ssl for bio free if SSL_free called before/instead of free_all? */
-
-        return 0;
-    }
-
-
-    BIO* BIO_new(BIO_METHOD* method)
-    {
-        BIO* bio = (BIO*) XMALLOC(sizeof(BIO), 0);
-        if (bio) {
-            bio->type  = method->type;
-            bio->close = 0;
-            bio->eof   = 0;
-            bio->ssl   = 0;
-            bio->fd    = 0;
-            bio->prev  = 0;
-            bio->next  = 0;
-        }
-        return bio;
-    }
-
-
-    int BIO_free(BIO* bio)
-    {
-        /* unchain? */
-        if (bio) {
-            if (bio->close) {
-                if (bio->ssl)
-                    SSL_free(bio->ssl);
-            }
-            XFREE(bio, 0);
-        }
-        return 0;
-    }
-
-
-    int BIO_free_all(BIO* bio)
-    {
-        BIO* next = bio;
-
-        while ( (bio = next) ) {
-            next = bio->next;
-            BIO_free(bio);
-        }
-        return 0;
-    }
-
-
-    int BIO_read(BIO* bio, void* buf, int len)
-    {
-        int  ret;
-        SSL* ssl = 0;
-        BIO* front = bio;
-
-        while(bio && ((ssl = bio->ssl) == 0) )
-            bio = bio->next;
-
-        if (ssl == 0) return -1;
-
-        ret = SSL_read(ssl, buf, len);
-        if (ret == 0)
-            front->eof = 1;
-
-        return ret;
-    }
-
-
-    int BIO_write(BIO* bio, const void* data, int len)
-    {
-        int  ret;
-        SSL* ssl = 0;
-        BIO* front = bio;
-
-        while(bio && ((ssl = bio->ssl) == 0) )
-            bio = bio->next;
-
-        if (ssl == 0) return -1;
-
-        ret = SSL_write(ssl, data, len);
-        if (ret == 0)
-            front->eof = 1;
-
-        return ret;
-    }
-
-
-    BIO* BIO_push(BIO* top, BIO* append)
-    {
-        top->next    = append;
-        append->prev = top;
-
-        return top;
-    }
-
 
     BIO* BIO_pop(BIO* top)
     {
         return 0;
-    }
-
-
-    int BIO_flush(BIO* bio)
-    {
-        /* for CyaSSL no flushing needed */
-        return 1;
     }
 
 
@@ -2411,33 +2518,6 @@ int CyaSSL_set_compression(SSL* ssl)
      
     }
 
-
-
-    void OpenSSL_add_all_algorithms(void)
-    {
-        InitCyaSSL(); 
-    }
-
-
-    int SSLeay_add_ssl_algorithms(void)
-    {
-        OpenSSL_add_all_algorithms(); 
-        return SSL_SUCCESS;
-    }
-
-
-    int SSLeay_add_all_algorithms(void)
-    {
-        OpenSSL_add_all_algorithms(); 
-        return SSL_SUCCESS;
-    }
-
-    
-    void SSL_CTX_set_quiet_shutdown(SSL_CTX* ctx, int mode)
-    {
-        if (mode)
-            ctx->quietShutdown = 1;
-    }
 
 
     void RAND_screen(void)
@@ -2534,24 +2614,6 @@ int CyaSSL_set_compression(SSL* ssl)
       
     }
 
-
-
-    X509* X509_STORE_CTX_get_current_cert(X509_STORE_CTX* ctx)
-    {
-        return 0;
-    }
-
-
-    int X509_STORE_CTX_get_error(X509_STORE_CTX* ctx)
-    {
-        return 0;
-    }
-
-
-    int X509_STORE_CTX_get_error_depth(X509_STORE_CTX* ctx)
-    {
-        return 0;
-    }
 
 
     const char* X509_verify_cert_error_string(long err)
@@ -2715,19 +2777,6 @@ int CyaSSL_set_compression(SSL* ssl)
 
 
 
-    STACK_OF(X509_NAME)* SSL_load_client_CA_file(const char* fname)
-    {
-        return 0;
-    }
-
-
-
-    void SSL_CTX_set_client_CA_list(SSL_CTX* ctx, STACK_OF(X509_NAME)* names)
-    {
-   
-    }
-
-
     void* X509_STORE_CTX_get_ex_data(X509_STORE_CTX* ctx, int idx)
     {
         return 0;
@@ -2813,19 +2862,6 @@ int CyaSSL_set_compression(SSL* ssl)
     void RSA_free(RSA* rsa)
     {
         
-    }
-
-
-    RSA* RSA_generate_key(int len, unsigned long bits, void(*f)(int,
-                                                        int, void*), void* data)
-    {
-        return 0;
-    }
-
-
-    void SSL_CTX_set_tmp_rsa_callback(SSL_CTX* ctx, RSA*(*f)(SSL*, int, int))
-    {
-       
     }
 
 

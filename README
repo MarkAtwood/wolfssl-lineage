@@ -12,17 +12,27 @@ before calling SSL_new();  Though it's not recommended.
 
 *** end Note ***
 
-CyaSSL Release 1.x.x (3/xx/2010)
+CyaSSL Release 1.4.4 (3/10/2010)
 
-The client may run out of tcp ephemeral ports, they will end up in the TIME_WAIT
+Release 1.4.4 for CyaSSL adds bug fixes and GoAhead WebServer support.
+
+For general build instructions see doc/Building_CyaSSL.pdf.
+
+To add support for GoAhead WebServer either --enable-opensslExtra or if you
+dont' want all the features of opensslExtra you can just define GOAHEAD_WS
+instead.  GOAHEAD_WS can be added to ./configure with CFLAGS=-DGOAHEAD_WS or
+you can define it yourself.
+
+When doing load testing with CyaSSL, on the echoserver example say, the client
+machine may run out of tcp ephemeral ports, they will end up in the TIME_WAIT
 queue, and can't be reused by default.  There are generally two ways to fix
 this.  1) Reduce the length sockets remain on the TIME_WAIT queue or 2) Allow
 items on the TIME_WAIT queue to be reused.
 
 
-To reduce the TIME_WAIT length in OS X to 1 second (1000 milliseconds)
+To reduce the TIME_WAIT length in OS X to 3 seconds (3000 milliseconds)
 
-sudo sysctl -w net.inet.tcp.msl=1000
+sudo sysctl -w net.inet.tcp.msl=3000
 
 In Linux
 
@@ -37,7 +47,6 @@ works but seems to remove sockets from  TIME_WAIT entirely?
 sudo sysctl -w net.ipv4.tcp_fin_timeout=1
 
 doen't control TIME_WAIT, it controls FIN_WAIT(2) contrary to some posts
-
 
 
 ******************** CyaSSL Release 1.4.0 (2/18/2010)

@@ -536,6 +536,9 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
 }
 
 
+void BIO_free(BIO*);  /* cyassl_int doesn't have */
+
+
 void FreeSSL(SSL* ssl)
 {
     XFREE(ssl->buffers.serverDH_Priv.buffer, ssl->heap);
@@ -544,9 +547,11 @@ void FreeSSL(SSL* ssl)
     XFREE(ssl->buffers.serverDH_P.buffer, ssl->heap);
     XFREE(ssl->buffers.domainName.buffer, ssl->heap);
     FreeRsaKey(&ssl->peerRsaKey);
+#if defined(OPENSSL_EXTRA) || defined(GOAHEAD_WS)
     BIO_free(ssl->biord);
     if (ssl->biord != ssl->biowr)        /* in case same as write */
         BIO_free(ssl->biowr);
+#endif
 #ifdef HAVE_LIBZ
     FreeStreams(ssl);
 #endif
