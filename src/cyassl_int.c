@@ -3457,6 +3457,15 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         memcpy(output + idx, ssl->arrays.serverRandom, RAN_LEN);
         idx += RAN_LEN;
 
+#ifdef SHOW_SECRETS
+        {
+            int j;
+            printf("server random: ");
+            for (j = 0; j < RAN_LEN; j++)
+                printf("%02x", ssl->arrays.serverRandom[j]);
+            printf("\n");
+        }
+#endif
             /* then session id */
         output[idx++] = ID_LEN;
         if (!ssl->options.resuming)
@@ -3497,6 +3506,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         if (ssl->specs.kea != psk_kea) return 0;
 
         #ifndef NO_PSK
+        {
             byte    *output;
             word32   length, idx = RECORD_HEADER_SZ + HANDSHAKE_HEADER_SZ;
             int      sendSz;
@@ -3542,6 +3552,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             ssl->buffers.outputBuffer.length += sendSz;
             ret = SendBuffered(ssl);
             ssl->options.serverState = SERVER_KEYEXCHANGE_COMPLETE;
+        }
         #endif /*NO_PSK */
 
         return ret;
@@ -3717,6 +3728,16 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         /* random */
         memcpy(ssl->arrays.clientRandom, input + i, RAN_LEN);
         i += RAN_LEN;
+
+#ifdef SHOW_SECRETS
+        {
+            int j;
+            printf("client random: ");
+            for (j = 0; j < RAN_LEN; j++)
+                printf("%02x", ssl->arrays.clientRandom[j]);
+            printf("\n");
+        }
+#endif
         /* session id */
         b = input[i++];
         if (b) {

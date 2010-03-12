@@ -25,6 +25,9 @@
 #include "cyassl_error.h"
 #include <stdlib.h>
 #include <string.h>
+#ifdef SHOW_SECRETS
+    #include <stdio.h>
+#endif
 
 
 #ifndef NO_TLS
@@ -468,6 +471,16 @@ int MakeMasterSecret(SSL* ssl)
 
     Md5 md5;
     Sha sha;
+
+#ifdef SHOW_SECRETS
+    {
+        int j;
+        printf("pre master secret: ");
+        for (j = 0; j < pmsSz; j++)
+            printf("%02x", ssl->arrays.preMasterSecret[j]);
+        printf("\n");
+    }
+#endif
 
 #ifndef NO_TLS
     if (ssl->options.tls) return MakeTlsMasterSecret(ssl);

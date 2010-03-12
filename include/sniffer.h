@@ -1,0 +1,48 @@
+/* sniffer.h
+ *
+ * Copyright (C) 2006-2010 Sawtooth Consulting Ltd.
+ *
+ * This file is part of CyaSSL.
+ *
+ * CyaSSL is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * CyaSSL is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
+ */
+
+
+
+#ifndef CYASSL_SNIFFER_H
+#define CYASSL_SNIFFER_H
+
+
+#ifdef __cplusplus
+    extern "C" {
+#endif
+
+
+
+int ssl_SetPrivateKey(const char* address, int port, const char* keyFile,
+                      const char* password, char* error);
+
+int ssl_DecodePacket(const unsigned char* packet, int length,
+                     unsigned char* data, char* error);
+
+int ssl_Trace(const char* traceFile, char* error);
+
+
+#ifdef __cplusplus
+    }  /* extern "C" */
+#endif
+
+#endif /* CyaSSL_SNIFFER_H */
+

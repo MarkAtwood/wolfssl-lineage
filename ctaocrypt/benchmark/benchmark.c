@@ -292,7 +292,6 @@ void bench_rsa()
 
     byte      message[] = "Everyone gets Friday off.";
     byte      cipher[512];  /* for up to 4096 bit */
-    byte      plain[512];   /* for up to 4096 bit */
     byte*     output;
     const int len = (int)strlen((char*)message);
     double    start, total, each, milliEach;
@@ -324,7 +323,7 @@ void bench_rsa()
     start = current_time();
 
     for (i = 0; i < times; i++)
-        RsaPrivateDecryptInline(cipher, bytes, &output, &key);
+        RsaPrivateDecryptInline(cipher, (word32)bytes, &output, &key);
 
     total = current_time() - start;
     each  = total / times;   /* per second   */

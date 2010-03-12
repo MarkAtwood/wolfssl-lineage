@@ -217,6 +217,7 @@ static INLINE void tcp_socket(SOCKET_T* sockfd, SOCKADDR_IN_T* addr,
     addr->sin6_addr = in6addr_loopback;
 #endif
 
+#ifndef _WIN32
 #ifdef SO_NOSIGPIPE
     {
         int       on = 1;
@@ -236,7 +237,7 @@ static INLINE void tcp_socket(SOCKET_T* sockfd, SOCKADDR_IN_T* addr,
             err_sys("setsockopt TCP_NODELAY failed\n");
     }
 #endif
-
+#endif  /* _WIN32 */
 }
 
 
