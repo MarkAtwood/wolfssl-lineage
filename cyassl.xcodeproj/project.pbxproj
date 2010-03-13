@@ -28,6 +28,8 @@
 		43809E5F0FB7AC5B0050922E /* md4.h in Headers */ = {isa = PBXBuildFile; fileRef = 43809E5E0FB7AC5B0050922E /* md4.h */; };
 		43962ADF0DE7ED48003C5E5B /* ssl.c in Sources */ = {isa = PBXBuildFile; fileRef = 43C6C2790DDF984100F2D488 /* ssl.c */; };
 		43AC92CA0EB154210049F588 /* cyassl_io.c in Sources */ = {isa = PBXBuildFile; fileRef = 43AC92C90EB154210049F588 /* cyassl_io.c */; };
+		43BF21B1114B06AA001D113A /* sniffer.h in Headers */ = {isa = PBXBuildFile; fileRef = 43BF21B0114B06AA001D113A /* sniffer.h */; };
+		43BF21B3114B06EE001D113A /* sniffer.c in Sources */ = {isa = PBXBuildFile; fileRef = 43BF21B2114B06EE001D113A /* sniffer.c */; };
 		43C6C27B0DDF984100F2D488 /* cyassl_int.c in Sources */ = {isa = PBXBuildFile; fileRef = 43C6C2770DDF984100F2D488 /* cyassl_int.c */; };
 		43C6C27C0DDF984100F2D488 /* keys.c in Sources */ = {isa = PBXBuildFile; fileRef = 43C6C2780DDF984100F2D488 /* keys.c */; };
 		43C6C27E0DDF984100F2D488 /* tls.c in Sources */ = {isa = PBXBuildFile; fileRef = 43C6C27A0DDF984100F2D488 /* tls.c */; };
@@ -152,6 +154,8 @@
 		43809E5C0FB7AC420050922E /* md4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = md4.c; path = ctaocrypt/src/md4.c; sourceTree = "<group>"; };
 		43809E5E0FB7AC5B0050922E /* md4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = md4.h; path = ctaocrypt/include/md4.h; sourceTree = "<group>"; };
 		43AC92C90EB154210049F588 /* cyassl_io.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = cyassl_io.c; path = src/cyassl_io.c; sourceTree = "<group>"; };
+		43BF21B0114B06AA001D113A /* sniffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = sniffer.h; path = include/sniffer.h; sourceTree = "<group>"; };
+		43BF21B2114B06EE001D113A /* sniffer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = sniffer.c; path = src/sniffer.c; sourceTree = "<group>"; };
 		43C6C2770DDF984100F2D488 /* cyassl_int.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = cyassl_int.c; path = src/cyassl_int.c; sourceTree = "<group>"; };
 		43C6C2780DDF984100F2D488 /* keys.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = keys.c; path = src/keys.c; sourceTree = "<group>"; };
 		43C6C2790DDF984100F2D488 /* ssl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = ssl.c; path = src/ssl.c; sourceTree = "<group>"; };
@@ -309,6 +313,7 @@
 		43CA25720EA3F9B20011ECA2 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				43BF21B2114B06EE001D113A /* sniffer.c */,
 				43809E5C0FB7AC420050922E /* md4.c */,
 				43D565660F1EC9CC00550C88 /* rabbit.c */,
 				43D565640F1EC9A600550C88 /* hc128.c */,
@@ -346,6 +351,7 @@
 		43CA25B90EA400A60011ECA2 /* headers */ = {
 			isa = PBXGroup;
 			children = (
+				43BF21B0114B06AA001D113A /* sniffer.h */,
 				43809E5E0FB7AC5B0050922E /* md4.h */,
 				43D565A50F29041C00550C88 /* hc128.h */,
 				43D565A30F29040000550C88 /* rabbit.h */,
@@ -395,6 +401,7 @@
 				43D565A40F29040000550C88 /* rabbit.h in Headers */,
 				43D565A60F29041C00550C88 /* hc128.h in Headers */,
 				43809E5F0FB7AC5B0050922E /* md4.h in Headers */,
+				43BF21B1114B06AA001D113A /* sniffer.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -656,6 +663,7 @@
 				43D565650F1EC9A600550C88 /* hc128.c in Sources */,
 				43D565670F1EC9CC00550C88 /* rabbit.c in Sources */,
 				43809E5D0FB7AC420050922E /* md4.c in Sources */,
+				43BF21B3114B06EE001D113A /* sniffer.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -710,6 +718,7 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					CYASSL_SNIFFER,
 					OPENSSL_EXTRA,
 					CYASSL_DTLS,
 					HAVE_CONFIG_H,
@@ -744,7 +753,7 @@
 			buildSettings = {
 				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					NO_FILESYSTEM,
+					CYASSL_SNIFFER,
 					CYASSL_CALLBACKS,
 					HAVE_CONFIG_H,
 				);

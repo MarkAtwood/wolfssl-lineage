@@ -26,6 +26,9 @@
 #include "cyassl_error.h"
 #include "sniffer.h"
 #include <string.h>
+#include <arpa/inet.h>
+
+
 
 
 #ifdef _MSC_VER
@@ -44,7 +47,20 @@ enum {
     TCP_HDR_SZ         = 20,  /* TCP header legnth, min */
     IPV4               = 4,   /* IP version 4 */
     TCP_PROTOCOL       = 6,   /* TCP Protocol id */
+    TRACE_MSG_SZ       = 80,  /* Trace Message buffer size */
 };
+
+
+static int TraceOn = 1;       /* TAO switch back to 0 when done testing */
+static FILE* TraceFile = 0;
+
+
+static INLINE void Trace(const char* msg)
+{
+    if (TraceOn)
+        //fprintf(TraceFile, "%s\n", msg);   /* TAO switch back when done */
+        fprintf(stderr, "%s\n", msg);
+}
 
 
 /* Sniffer Server holds info for each server/port monitored */
@@ -77,7 +93,7 @@ static SnifferServer  Server;
 static SnifferSession Session;
 
 /* add mutex for server list */
-static SnifferServer  ServerList[5];
+static SnifferServer* ServerList[5];
 static int RegisteredServers = 0;
 
 
@@ -151,7 +167,7 @@ static int IsServerRegistered(word32 addr)
 
     /* lock mutex */
     for (i = 0; i < RegisteredServers; i++) {
-        if (ServerList[i].server == addr) {
+        if (ServerList[i]->server == addr) {
             ret = 1;
             break;
         }
@@ -170,8 +186,8 @@ static int IsPortRegistered(word32 port)
 
     /* lock mutex */
     for (i = 0; i < RegisteredServers; i++) {
-        if (ServerList[i].port == port) {
-            ret = 1;
+        if (ServerList[i]->port == port) {
+            ret = 1; 
             break;
         }
     }
@@ -191,6 +207,7 @@ int ssl_SetPrivateKey(const char* serverAddress, int port, const char* keyFile,
     SnifferServer* sniffer = &Server;
 
     strncpy(sniffer->address, serverAddress, MAX_SERVER_ADDRESS);
+    sniffer->server = inet_addr(sniffer->address);
     sniffer->port = port;
     sniffer->ctx = SSL_CTX_new(SSLv23_server_method());
     if (!sniffer->ctx) {
@@ -207,6 +224,12 @@ int ssl_SetPrivateKey(const char* serverAddress, int port, const char* keyFile,
         /* set error to key file error */
         return -1;
     }
+    Trace("Added new Sniffer Server");
+    
+    /* TAO dynamically add test */
+    ServerList[0] = sniffer;
+    RegisteredServers++;
+    
     return 0;
 }
 
@@ -217,6 +240,7 @@ static int CheckIpHdr(IpHdr* iphdr, IpInfo* info, char* error)
 {
     int    version = IP_V(iphdr);
 
+    Trace("checking IP header");
     if (version != IPV4) {
         /* set error to wrong IP version */ 
         return -1;
@@ -229,6 +253,7 @@ static int CheckIpHdr(IpHdr* iphdr, IpInfo* info, char* error)
 
     if (!IsServerRegistered(iphdr->src) && !IsServerRegistered(iphdr->dst)) {
         /* set error to Server Not Registered */
+        Trace("Server address not registered");
         return -1;
     }
 
@@ -245,13 +270,15 @@ static int CheckIpHdr(IpHdr* iphdr, IpInfo* info, char* error)
 /* returns 0 on success, -1 on error */
 static int CheckTcpHdr(TcpHdr* tcphdr, TcpInfo* info, char* error)
 {
+    Trace("checking TCP header");
     info->srcPort   = ntohs(tcphdr->srcPort);
     info->dstPort   = ntohs(tcphdr->dstPort);
     info->length    = TCP_LEN(tcphdr);
     info->sequence  = ntohl(tcphdr->sequence);
 
-    if (!IsPortRegistered(info->srcPort) && !IsPortRegistered(info->srcPort)) {
+    if (!IsPortRegistered(info->srcPort) && !IsPortRegistered(info->dstPort)) {
         /* set error to Server Port Not Registered */
+        Trace("Server Port not registered");
         return -1;
     }
 
@@ -276,6 +303,65 @@ static int GetRecordHeader(const byte* input, RecordLayerHeader* rh, int* size)
 static int DoHandShake(const byte* input, int* sslBytes, IpInfo* ipInfo,
                        TcpInfo* tcpInfo, char* error)
 {
+    byte type;
+    int  size;
+    
+    if (*sslBytes < HANDSHAKE_HEADER_SZ) {
+        /* set error to short packet */
+        Trace("Incomplete HandShake Header");
+        return -1;
+    }
+    type = input[0];
+    size = (input[1] << 16) | (input[2] << 8) | input[3];
+    
+    input     += HANDSHAKE_HEADER_SZ;
+    *sslBytes -= HANDSHAKE_HEADER_SZ;
+    
+    printf("sslBytes = %d\n", *sslBytes);
+    printf("size = %d\n", size);
+    
+    if (*sslBytes < size) {
+        /* set error to short packet */
+        Trace("Incomplete HandShake data");
+        return -1;
+    }
+    
+    switch (type) {
+        case hello_verify_request:
+            Trace("Got hello verify request");
+            break;
+        case server_hello:
+            Trace("Got server hello");
+            break;
+        case certificate_request:
+            Trace("Got certificate request");
+            break;
+        case server_key_exchange:
+            Trace("Got server key exchange");
+            break;
+        case certificate:
+            Trace("Got certificate");
+            break;
+        case server_hello_done:
+            Trace("Got server hello done");
+            break;
+        case finished:
+            Trace("Got finished");
+            break;
+        case client_hello:
+            Trace("Got Client Hello");
+            break;
+        case client_key_exchange:
+            Trace("Got client key exchange");
+            break;
+        case certificate_verify:
+            Trace("Got certificate verify");
+            break;
+        default:
+            Trace("Got UNKOWN handshake type");
+            /* set error to unknown handshake type */
+            return -1;
+    }   
 
     return 0;
 }
@@ -293,7 +379,9 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
     int               rhSize;
     int               ret;
     RecordLayerHeader rh;
+    char              traceMsg[TRACE_MSG_SZ];
 
+    Trace("Got a packet to decode");
     if (length < IP_HDR_SZ) {
         /* set error to short packet */
         return -1;
@@ -314,6 +402,8 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
         return -1;
     }
     sslBytes = end - sslFrame;
+    snprintf(traceMsg, TRACE_MSG_SZ, "\nGot %d SSL Bytes\n", sslBytes);
+    Trace(traceMsg);
     if (sslBytes < RECORD_HEADER_SZ) {
         /* set error to short packet */
         return -1;
@@ -322,6 +412,7 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
         /* set error to bad record header */
         return -1;
     }
+    sslFrame += RECORD_HEADER_SZ;
     sslBytes -= RECORD_HEADER_SZ;
     if (rhSize > sslBytes) {
         /* set error to short packet */
@@ -330,13 +421,17 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
 
     switch ((enum ContentType)rh.type) {
         case handshake:
+            Trace("Got a handhskae message");
             ret = DoHandShake(sslFrame, &sslBytes, &ipInfo, &tcpInfo, error);
             break;
         case change_cipher_spec:
+            Trace("Got a change cipher spec mesaage");
             break;
         case application_data:
+            Trace("Got application data");
             break;
         case alert:
+            Trace("Got an alert message");
             break;
         default:
             /* set error to UNKNOWN_RECORD_TYPE */
@@ -351,7 +446,14 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
 /* returns 0 on success, -1 on error */
 int ssl_Trace(const char* traceFile, char* error)
 {
-
+    if (traceFile) {
+        TraceFile = fopen(traceFile, "a");
+        if (!TraceFile) {
+            /* set error to bad traceFile */
+            return -1;
+        }
+        TraceOn = 1;
+    }
     return 0;
 }
 
