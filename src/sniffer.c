@@ -75,17 +75,12 @@ typedef struct SnifferServer {
 /* Sniffer Session holds info for each client/server SSL/TLS session */
 typedef struct SnifferSession {
     SnifferServer* context;         /* server context */
+    SSL*           ssl;             /* ssl access */
     word32         server;          /* server address in network byte order */
     word32         client;          /* client address in network byte order */
     word16         srvPort;         /* server port */
     word16         cliPort;         /* client port */
-
-    byte           srvRandom[RAN_LEN];        /* server's hello random */
-    byte           cliRandom[RAN_LEN];        /* client's hello random */
-    byte           masterSecret[SECRET_LEN];  /* master secret */
-
-    Keys           keys;                      /* keys and assoc secrets */
-
+    byte           cipherOn;        /* indicates whether cipher is active */
 } SnifferSession;
 
 
@@ -209,7 +204,8 @@ int ssl_SetPrivateKey(const char* serverAddress, int port, const char* keyFile,
     strncpy(sniffer->address, serverAddress, MAX_SERVER_ADDRESS);
     sniffer->server = inet_addr(sniffer->address);
     sniffer->port = port;
-    sniffer->ctx = SSL_CTX_new(SSLv23_server_method());
+    /* start in client mode since SSL_new needs a cert for server */
+    sniffer->ctx = SSL_CTX_new(TLSv1_client_method());
     if (!sniffer->ctx) {
         /* set error to out of memory */
         return -1;
@@ -299,12 +295,166 @@ static int GetRecordHeader(const byte* input, RecordLayerHeader* rh, int* size)
 }
 
 
+/* Process Client Key Exchange, RSA only */
+static int ProcessClientKeyExchange(const byte* input, int* sslBytes,
+                                    SnifferSession* session, char* error)
+{
+    word32 idx = 0;
+    RsaKey key;
+    int    ret;
+    
+    InitRsaKey(&key, 0);
+   
+    ret = RsaPrivateKeyDecode(session->context->ctx->privateKey.buffer,
+                          &idx, &key, session->context->ctx->privateKey.length);
+    if (ret == 0) {
+        int length = RsaEncryptSize(&key);
+        
+        if (IsTLS(session->ssl)) 
+            input += 2;     /* tls pre length */
+        
+        ret = RsaPrivateDecrypt(input, length, 
+                        session->ssl->arrays.preMasterSecret, SECRET_LEN, &key);
+        
+        if (ret != SECRET_LEN) {
+            /* set error to RSA Private Decrypt error */
+            Trace("RSA Private Decrypt error");
+            FreeRsaKey(&key);
+            return -1;
+        }
+        session->ssl->arrays.preMasterSz = SECRET_LEN;
+        
+        #ifdef SHOW_SECRETS
+        {
+            int i;
+            printf("pre master secret: ");
+            for (i = 0; i < SECRET_LEN; i++)
+                printf("%02x", session->ssl->arrays.preMasterSecret[i]);
+            printf("\n");
+        }
+        #endif
+    }
+    else {
+        /* set error to private key decode error */
+        Trace("RSA Private Key Decode error");
+        FreeRsaKey(&key);
+        return -1;
+    }
+    
+    if (SetCipherSpecs(session->ssl) != 0) {
+        /* set error to bad set cipher spec */
+        Trace("Bad Set Cipher Spec");
+        return -1;
+    }
+    
+    MakeMasterSecret(session->ssl);
+#ifdef SHOW_SECRETS
+    {
+        int i;
+        printf("master secret: ");
+        for (i = 0; i < SECRET_LEN; i++)
+            printf("%02x", session->ssl->arrays.masterSecret[i]);
+        printf("\n");
+    }
+#endif   
+    
+    FreeRsaKey(&key);
+    return ret;
+}
+
+
+/* Process Server Hello */
+static int ProcessServerHello(const byte* input, int* sslBytes,
+                              SnifferSession* session, char* error)
+{
+    ProtocolVersion pv;
+    byte            b;
+    int             toRead = sizeof(ProtocolVersion) + RAN_LEN + ENUM_LEN;
+
+    /* make sure can read through session len */
+    if (toRead > *sslBytes) {
+        /* set error to short packet */
+        Trace("can't read through random on Server Hello");
+        return -1;
+    }
+    
+    memcpy(&pv, input, sizeof(ProtocolVersion));
+    input     += sizeof(ProtocolVersion);
+    *sslBytes -= sizeof(ProtocolVersion);
+           
+    session->ssl->version = pv;
+           
+    memcpy(session->ssl->arrays.serverRandom, input, RAN_LEN);
+    input    += RAN_LEN;
+    *sslBytes -= RAN_LEN;
+    
+    b = *input++;
+    *sslBytes -= 1;
+    
+    /* make sure can read through compression */
+    if ( (b + SUITE_LEN + ENUM_LEN) > *sslBytes) {
+        /* set error to short packet */
+        Trace("can't read through compression on Server Hello");
+        return -1;
+    }
+    input     += b;
+    *sslBytes -= b;
+    
+    (void)*input++;  /* eat first byte, always 0 */
+    session->ssl->options.cipherSuite = *input++;
+    *sslBytes -= SUITE_LEN;
+    
+#ifdef SHOW_SECRETS
+    {
+        int i;
+        printf("cipher suite = 0x%02x\n", session->ssl->options.cipherSuite);
+        printf("server random: ");
+        for (i = 0; i < RAN_LEN; i++)
+            printf("%02x", session->ssl->arrays.serverRandom[i]);
+        printf("\n");
+    }
+#endif   
+    return 0;
+}
+
+
+/* Process normal Client Hello */
+static int ProcessClientHello(const byte* input, int* sslBytes, 
+                              SnifferSession* session, char* error)
+{
+    /* make sure can read up to session len */
+    int toRead = sizeof(ProtocolVersion) + RAN_LEN + ENUM_LEN;
+    if (toRead > *sslBytes) {
+        /* set erorr to short packet */
+        Trace("can't read up to session len on Client Hello");
+        return -1;
+    }
+    
+    /* skip, get negotiated one from server hello */
+    input    += sizeof(ProtocolVersion);
+    memcpy(session->ssl->arrays.clientRandom, input, RAN_LEN);
+    
+#ifdef SHOW_SECRETS
+    {
+        int i;
+        printf("client random: ");
+        for (i = 0; i < RAN_LEN; i++)
+            printf("%02x", session->ssl->arrays.clientRandom[i]);
+        printf("\n");
+    }
+#endif
+    
+    return 0;
+}
+
+
 /* Process HandShake input */
 static int DoHandShake(const byte* input, int* sslBytes, IpInfo* ipInfo,
-                       TcpInfo* tcpInfo, char* error)
+                       TcpInfo* tcpInfo, SnifferSession* session, char* error)
 {
     byte type;
     int  size;
+    int  ret;
     
     if (*sslBytes < HANDSHAKE_HEADER_SZ) {
         /* set error to short packet */
@@ -332,6 +482,7 @@ static int DoHandShake(const byte* input, int* sslBytes, IpInfo* ipInfo,
             break;
         case server_hello:
             Trace("Got server hello");
+            ret = ProcessServerHello(input, sslBytes, session, error);
             break;
         case certificate_request:
             Trace("Got certificate request");
@@ -350,9 +501,11 @@ static int DoHandShake(const byte* input, int* sslBytes, IpInfo* ipInfo,
             break;
         case client_hello:
             Trace("Got Client Hello");
+            ret = ProcessClientHello(input, sslBytes, session, error);
             break;
         case client_key_exchange:
             Trace("Got client key exchange");
+            ret = ProcessClientKeyExchange(input, sslBytes, session, error);
             break;
         case certificate_verify:
             Trace("Got certificate verify");
@@ -379,6 +532,7 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
     int               rhSize;
     int               ret;
     RecordLayerHeader rh;
+    SnifferSession*   session = 0;
     char              traceMsg[TRACE_MSG_SZ];
 
     Trace("Got a packet to decode");
@@ -418,13 +572,31 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
         /* set error to short packet */
         return -1;
     }
+    
+    /* get sniffer sesison */
+    session = &Session;
+    session->context = &Server;
+    
+    /* init new session stuff */
+    if (!session->ssl) {
+        session->ssl = SSL_new(session->context->ctx);
+        if (session->ssl == NULL) {
+            /* set error to no new SSL */
+            Trace("Unable to get new SSL");
+            return -1;
+        }
+        /* put back into server mode */
+        session->ssl->options.side = SERVER_END;
+    }
 
     switch ((enum ContentType)rh.type) {
         case handshake:
             Trace("Got a handhskae message");
-            ret = DoHandShake(sslFrame, &sslBytes, &ipInfo, &tcpInfo, error);
+            ret = DoHandShake(sslFrame, &sslBytes, &ipInfo, &tcpInfo, session,
+                              error);
             break;
         case change_cipher_spec:
+            session->cipherOn = 1;
             Trace("Got a change cipher spec mesaage");
             break;
         case application_data:

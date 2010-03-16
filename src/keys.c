@@ -275,97 +275,98 @@ static int SetPrefix(byte* sha_input, int index)
 }
 
 
-static int SetKeys(SSL* ssl)
+static int SetKeys(Ciphers* encrypt, Ciphers* decrypt, Keys* keys,
+                   CipherSpecs* specs, byte side)
 {
 #ifdef BUILD_ARC4
-    word32 sz = ssl->specs.key_size;
-    if (ssl->specs.bulk_cipher_algorithm == rc4) {
-        if (ssl->options.side == CLIENT_END) {
-            Arc4SetKey(&ssl->encrypt.arc4, ssl->keys.client_write_key, sz);
-            Arc4SetKey(&ssl->decrypt.arc4, ssl->keys.server_write_key, sz);
+    word32 sz = specs->key_size;
+    if (specs->bulk_cipher_algorithm == rc4) {
+        if (side == CLIENT_END) {
+            Arc4SetKey(&encrypt->arc4, keys->client_write_key, sz);
+            Arc4SetKey(&decrypt->arc4, keys->server_write_key, sz);
         }
         else {
-            Arc4SetKey(&ssl->encrypt.arc4, ssl->keys.server_write_key, sz);
-            Arc4SetKey(&ssl->decrypt.arc4, ssl->keys.client_write_key, sz);
+            Arc4SetKey(&encrypt->arc4, keys->server_write_key, sz);
+            Arc4SetKey(&decrypt->arc4, keys->client_write_key, sz);
         }
     }
 #endif
     
 #ifdef BUILD_HC128
-    if (ssl->specs.bulk_cipher_algorithm == hc128) {
-        if (ssl->options.side == CLIENT_END) {
-            Hc128_SetKey(&ssl->encrypt.hc128, ssl->keys.client_write_key,
-                                              ssl->keys.client_write_IV);
-            Hc128_SetKey(&ssl->decrypt.hc128, ssl->keys.server_write_key,
-                                              ssl->keys.server_write_IV);
+    if (specs->bulk_cipher_algorithm == hc128) {
+        if (side == CLIENT_END) {
+            Hc128_SetKey(&encrypt->hc128, keys->client_write_key,
+                                          keys->client_write_IV);
+            Hc128_SetKey(&decrypt->hc128, keys->server_write_key,
+                                          keys->server_write_IV);
         }
         else {
-            Hc128_SetKey(&ssl->encrypt.hc128, ssl->keys.server_write_key,
-                                              ssl->keys.server_write_IV);
-            Hc128_SetKey(&ssl->decrypt.hc128, ssl->keys.client_write_key,
-                                              ssl->keys.client_write_IV);
+            Hc128_SetKey(&encrypt->hc128, keys->server_write_key,
+                                         keys->server_write_IV);
+            Hc128_SetKey(&decrypt->hc128, keys->client_write_key,
+                                         keys->client_write_IV);
         }
     }
 #endif
     
 #ifdef BUILD_RABBIT
-    if (ssl->specs.bulk_cipher_algorithm == rabbit) {
-        if (ssl->options.side == CLIENT_END) {
-            RabbitSetKey(&ssl->encrypt.rabbit, ssl->keys.client_write_key,
-                                               ssl->keys.client_write_IV);
-            RabbitSetKey(&ssl->decrypt.rabbit, ssl->keys.server_write_key,
-                                               ssl->keys.server_write_IV);
+    if (specs->bulk_cipher_algorithm == rabbit) {
+        if (side == CLIENT_END) {
+            RabbitSetKey(&encrypt->rabbit, keys->client_write_key,
+                                           keys->client_write_IV);
+            RabbitSetKey(&decrypt->rabbit, keys->server_write_key,
+                                           keys->server_write_IV);
         }
         else {
-            RabbitSetKey(&ssl->encrypt.rabbit, ssl->keys.server_write_key,
-                                               ssl->keys.server_write_IV);
-            RabbitSetKey(&ssl->decrypt.rabbit, ssl->keys.client_write_key,
-                                               ssl->keys.client_write_IV);
+            RabbitSetKey(&encrypt->rabbit, keys->server_write_key,
+                                           keys->server_write_IV);
+            RabbitSetKey(&decrypt->rabbit, keys->client_write_key,
+                                           keys->client_write_IV);
         }
     }
 #endif
     
 #ifdef BUILD_DES3
-    if (ssl->specs.bulk_cipher_algorithm == triple_des) {
-        if (ssl->options.side == CLIENT_END) {
-            Des3_SetKey(&ssl->encrypt.des3, ssl->keys.client_write_key,
-                        ssl->keys.client_write_IV, DES_ENCRYPTION);
-            Des3_SetKey(&ssl->decrypt.des3, ssl->keys.server_write_key,
-                        ssl->keys.server_write_IV, DES_DECRYPTION);
+    if (specs->bulk_cipher_algorithm == triple_des) {
+        if (side == CLIENT_END) {
+            Des3_SetKey(&encrypt->des3, keys->client_write_key,
+                        keys->client_write_IV, DES_ENCRYPTION);
+            Des3_SetKey(&decrypt->des3, keys->server_write_key,
+                        keys->server_write_IV, DES_DECRYPTION);
         }
         else {
-            Des3_SetKey(&ssl->encrypt.des3, ssl->keys.server_write_key,
-                        ssl->keys.server_write_IV, DES_ENCRYPTION);
-            Des3_SetKey(&ssl->decrypt.des3, ssl->keys.client_write_key,
-                ssl->keys.client_write_IV, DES_DECRYPTION);
+            Des3_SetKey(&encrypt->des3, keys->server_write_key,
+                        keys->server_write_IV, DES_ENCRYPTION);
+            Des3_SetKey(&decrypt->des3, keys->client_write_key,
+                keys->client_write_IV, DES_DECRYPTION);
         }
     }
 #endif
 
 #ifdef BUILD_AES
-    if (ssl->specs.bulk_cipher_algorithm == aes) {
-        if (ssl->options.side == CLIENT_END) {
-            AesSetKey(&ssl->encrypt.aes, ssl->keys.client_write_key,
-                      ssl->specs.key_size, ssl->keys.client_write_IV,
+    if (specs->bulk_cipher_algorithm == aes) {
+        if (side == CLIENT_END) {
+            AesSetKey(&encrypt->aes, keys->client_write_key,
+                      specs->key_size, keys->client_write_IV,
                       AES_ENCRYPTION);
-            AesSetKey(&ssl->decrypt.aes, ssl->keys.server_write_key,
-                      ssl->specs.key_size, ssl->keys.server_write_IV,
+            AesSetKey(&decrypt->aes, keys->server_write_key,
+                      specs->key_size, keys->server_write_IV,
                       AES_DECRYPTION);
         }
         else {
-            AesSetKey(&ssl->encrypt.aes, ssl->keys.server_write_key,
-                      ssl->specs.key_size, ssl->keys.server_write_IV,
+            AesSetKey(&encrypt->aes, keys->server_write_key,
+                      specs->key_size, keys->server_write_IV,
                       AES_ENCRYPTION);
-            AesSetKey(&ssl->decrypt.aes, ssl->keys.client_write_key,
-                      ssl->specs.key_size, ssl->keys.client_write_IV,
+            AesSetKey(&decrypt->aes, keys->client_write_key,
+                      specs->key_size, keys->client_write_IV,
                       AES_DECRYPTION);
         }
     }
 #endif
 
-    ssl->keys.sequence_number      = 0;
-    ssl->keys.peer_sequence_number = 0;
-    ssl->keys.encryptionOn         = 0;
+    keys->sequence_number      = 0;
+    keys->peer_sequence_number = 0;
+    keys->encryptionOn         = 0;
 
     return 0;
 }
@@ -392,7 +393,8 @@ int StoreKeys(SSL* ssl, const byte* keyData)
     i += sz;
     memcpy(ssl->keys.server_write_IV, &keyData[i], sz);
 
-    return SetKeys(ssl);
+    return SetKeys(&ssl->encrypt, &ssl->decrypt, &ssl->keys, &ssl->specs,
+                   ssl->options.side);
 }
 
 
@@ -516,8 +518,18 @@ int MakeMasterSecret(SSL* ssl)
         Md5Update(&md5, md5Input, idx);
         Md5Final(&md5, &ssl->arrays.masterSecret[i * MD5_DIGEST_SIZE]);
     }
-    DeriveKeys(ssl);
 
+#ifdef SHOW_SECRETS
+    {
+        int i;
+        printf("master secret: ");
+        for (i = 0; i < SECRET_LEN; i++)
+            printf("%02x", ssl->arrays.masterSecret[i]);
+        printf("\n");
+    }
+#endif
+
+    DeriveKeys(ssl);
     CleanPreMaster(ssl);
 
     return 0;

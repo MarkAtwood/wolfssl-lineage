@@ -90,6 +90,15 @@ int  DeriveTlsKeys(SSL* ssl);
 #endif /* min */
 
 
+int IsTLS(const SSL* ssl)
+{
+    if (ssl->version.major == SSLv3_MAJOR && ssl->version.minor >=TLSv1_MINOR)
+        return 1;
+
+    return 0;
+}
+
+
 int IsAtLeastTLSv1_2(const SSL* ssl)
 {
     if (ssl->version.major == SSLv3_MAJOR && ssl->version.minor >=TLSv1_2_MINOR)

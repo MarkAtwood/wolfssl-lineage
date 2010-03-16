@@ -654,7 +654,7 @@ typedef struct Options {
     byte            sendVerify;         /* false = 0, true = 1, sendBlank = 2 */
     byte            resuming;
     byte            tls;                /* using TLS ? */
-    byte            tls1_1;             /* using TLSv1.1 ? */
+    byte            tls1_1;             /* using TLSv1.1+ ? */
     byte            dtls;               /* using datagrams ? */
     byte            connReset;          /* has the peer reset */
     byte            isClosed;           /* if we consider conn closed */
@@ -901,6 +901,7 @@ void AddSession(SSL*);
 int  DeriveKeys(SSL* ssl);
 int  StoreKeys(SSL* ssl, const byte* keyData);
 
+int IsTLS(const SSL* ssl);
 int IsAtLeastTLSv1_2(const SSL* ssl);
 
 #ifndef NO_CYASSL_CLIENT

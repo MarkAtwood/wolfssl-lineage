@@ -217,6 +217,16 @@ int MakeTlsMasterSecret(SSL* ssl)
         master_label, MASTER_LABEL_SZ, 
         seed, SEED_LEN, IsAtLeastTLSv1_2(ssl));
 
+#ifdef SHOW_SECRETS
+    {
+        int i;
+        printf("master secret: ");
+        for (i = 0; i < SECRET_LEN; i++)
+            printf("%02x", ssl->arrays.masterSecret[i]);
+        printf("\n");
+    }
+#endif
+
     return DeriveTlsKeys(ssl);
 }
 
