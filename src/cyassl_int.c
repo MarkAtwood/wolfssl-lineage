@@ -1079,7 +1079,7 @@ static int DoCertificate(SSL* ssl, byte* input, word32* inOutIdx)
 }
 
 
-static int DoFinished(SSL* ssl, const byte* input, word32* inOutIdx)
+int DoFinished(SSL* ssl, const byte* input, word32* inOutIdx, int sniff)
 {
     byte   verifyMAC[SHA_DIGEST_SIZE];
     int    finishedSz = ssl->options.tls ? TLS_FINISHED_SZ : FINISHED_SZ;
@@ -1102,8 +1102,10 @@ static int DoFinished(SSL* ssl, const byte* input, word32* inOutIdx)
         if (ssl->hsInfoOn) AddPacketName("Finished", &ssl->handShakeInfo);
         if (ssl->toInfoOn) AddLateName("Finished", &ssl->timeoutInfo);
     #endif
-    if (memcmp(input + idx, &ssl->verifyHashes, finishedSz))
-        return VERIFY_FINISHED_ERROR;
+    if (sniff == NO_SNIFF) {
+        if (memcmp(input + idx, &ssl->verifyHashes, finishedSz))
+            return VERIFY_FINISHED_ERROR;
+    }
 
     ssl->hmac(ssl, verifyMAC, input + idx - headerSz, macSz,
          handshake, 1);
@@ -1206,7 +1208,7 @@ static int DoHandShakeMsg(SSL* ssl, byte* input, word32* inOutIdx,
 
     case finished:
         CYASSL_MSG("processing finished");
-        ret = DoFinished(ssl, input, inOutIdx);
+        ret = DoFinished(ssl, input, inOutIdx, NO_SNIFF);
         break;
 
 #ifndef NO_CYASSL_SERVER
@@ -1329,7 +1331,7 @@ static INLINE word32 GetSEQIncrement(SSL* ssl, int verify)
 }
 
 
-static int DoApplicationData(SSL* ssl, byte* input, word32* inOutIdx)
+int DoApplicationData(SSL* ssl, byte* input, word32* inOutIdx)
 {
     word32 msgSz   = ssl->keys.encryptSz;
     word32 pad     = 0, 

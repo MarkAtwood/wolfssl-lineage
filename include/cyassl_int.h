@@ -256,6 +256,9 @@ enum Misc {
     MAX_PSK_ID_LEN     = 128,  /* max psk identity/hint supported */
     MAX_PSK_KEY_LEN    =  64,  /* max psk key supported */
 
+    NO_SNIFF           =   0,  /* not sniffing */
+    SNIFF              =   1,  /* currently sniffing */
+
     NO_COPY            =   0,  /* should we copy static buffer for write */
     COPY               =   1   /* should we copy static buffer for write */
 };
@@ -351,6 +354,10 @@ struct SSL_METHOD {
 
 /* defautls to client */
 void InitSSL_Method(SSL_METHOD*, ProtocolVersion);
+
+/* for sniffer */
+int DoFinished(SSL* ssl, const byte* input, word32* inOutIdx, int sniff);
+int DoApplicationData(SSL* ssl, byte* input, word32* inOutIdx);
 
 
 /* CyaSSL buffer type */
