@@ -38,6 +38,12 @@ int ssl_DecodePacket(const unsigned char* packet, int length,
                      unsigned char* data, char* error);
 
 int ssl_Trace(const char* traceFile, char* error);
+        
+        
+void ssl_InitSniffer(void);
+        
+void ssl_FreeSniffer(void);
+        
 
 
 #ifdef __cplusplus

@@ -55,8 +55,7 @@ int CyaSSL_negotiate(SSL*);
 #ifndef NO_CYASSL_SERVER
     static int DoClientHello(SSL* ssl, const byte* input, word32*, word32,
                              word32);
-    static int DoCertificateVerify(SSL* ssl, byte*, word32*, word32);
-    static int ProcessOldClientHello(SSL*, const byte*, word32*, word32,word16);
+static int DoCertificateVerify(SSL* ssl, byte*, word32*, word32);
     static int DoClientKeyExchange(SSL* ssl, byte* input, word32*);
 #endif
 
@@ -77,7 +76,6 @@ static void BuildCertHashes(SSL* ssl, Hashes* hashes);
 
 
 void BuildTlsFinished(SSL* ssl, Hashes* hashes, const byte* sender);
-int  DeriveTlsKeys(SSL* ssl);
 
 
 #ifndef min
@@ -3592,8 +3590,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
 
     /* process alert, return level */
-    static int ProcessOldClientHello(SSL* ssl, const byte* input,
-                                     word32* inOutIdx, word32 inSz, word16 sz)
+    int ProcessOldClientHello(SSL* ssl, const byte* input, word32* inOutIdx,
+                              word32 inSz, word16 sz)
     {
         word32          idx = *inOutIdx;
         word16          sessionSz;

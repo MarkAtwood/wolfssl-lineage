@@ -451,6 +451,9 @@ void SetCallbackIORecv_Ctx(SSL_CTX*, CallbackIORecv);
 void SetCallbackIOSend_Ctx(SSL_CTX*, CallbackIOSend);
 void SetCallbackIOCtx(SSL* ssl, void *ctx);
 
+int DeriveTlsKeys(SSL* ssl);
+int ProcessOldClientHello(SSL* ssl, const byte* input, word32* inOutIdx,
+                          word32 inSz, word16 sz);
 
 /* All cipher suite related info */
 typedef struct CipherSpecs {
