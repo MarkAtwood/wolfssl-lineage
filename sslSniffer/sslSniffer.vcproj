@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="testsuite"
-	ProjectGUID="{611E8971-46E0-4D0A-B5A1-632C3B00CB80}"
-	RootNamespace="testsuite"
+	Name="sslSniffer"
+	ProjectGUID="{34FAE5A6-2B0F-4B55-86FE-0C43E4810F4D}"
+	RootNamespace="sslSniffer"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -20,7 +20,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="2"
 			CharacterSet="1"
 			>
 			<Tool
@@ -42,12 +42,13 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../ctaocrypt/include;../include"
-				PreprocessorDefinitions="NO_MAIN_DRIVER"
+				PreprocessorDefinitions="CYASSL_SNIFFER;SSL_SNIFFER_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -64,7 +65,7 @@
 				AdditionalDependencies="Ws2_32.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				SubSystem="2"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -93,7 +94,7 @@
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="2"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -117,7 +118,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="../ctaocrypt/include;../include"
-				PreprocessorDefinitions="NO_MAIN_DRIVER"
+				PreprocessorDefinitions="CYASSL_SNIFFER;SSL_SNIFFER_EXPORTS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -138,7 +139,7 @@
 				AdditionalDependencies="Ws2_32.lib"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
@@ -175,27 +176,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\examples\client\client.c"
-				>
-			</File>
-			<File
-				RelativePath="..\examples\echoclient\echoclient.c"
-				>
-			</File>
-			<File
-				RelativePath="..\examples\echoserver\echoserver.c"
-				>
-			</File>
-			<File
-				RelativePath="..\examples\server\server.c"
-				>
-			</File>
-			<File
-				RelativePath="..\ctaocrypt\test\test.c"
-				>
-			</File>
-			<File
-				RelativePath=".\testsuite.c"
+				RelativePath="..\src\sniffer.c"
 				>
 			</File>
 		</Filter>
@@ -204,6 +185,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\include\sniffer.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

@@ -25,19 +25,31 @@
 #define CYASSL_SNIFFER_H
 
 
+#ifdef _WIN32
+    #ifdef SSL_SNIFFER_EXPORTS
+        #define SSL_SNIFFER_API __declspec(dllexport)
+    #else
+        #define SSL_SNIFFER_API __declspec(dllimport)
+    #endif
+#else
+    #define SSL_SNIFFER_API
+#endif /* _WIN32 */
+
+
 #ifdef __cplusplus
     extern "C" {
 #endif
 
 
 
-int ssl_SetPrivateKey(const char* address, int port, const char* keyFile,
-                      const char* password, char* error);
+SSL_SNIFFER_API int ssl_SetPrivateKey(const char* address, int port,
+                                      const char* keyFile, const char* password,
+                                      char* error);
 
-int ssl_DecodePacket(const unsigned char* packet, int length,
-                     unsigned char* data, char* error);
+SSL_SNIFFER_API int ssl_DecodePacket(const unsigned char* packet, int length,
+                                     unsigned char* data, char* error);
 
-int ssl_Trace(const char* traceFile, char* error);
+SSL_SNIFFER_API int ssl_Trace(const char* traceFile, char* error);
         
         
 void ssl_InitSniffer(void);

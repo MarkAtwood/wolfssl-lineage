@@ -26,17 +26,15 @@
 #include "cyassl_error.h"
 #include "sniffer.h"
 #include <string.h>
-#include <arpa/inet.h>
+
+#ifndef _WIN32
+	#include <arpa/inet.h>
+#endif
 
 #include <assert.h>
 
 
 
-
-#ifdef _MSC_VER
-    /* 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy */
-    #pragma warning(disable: 4996)
-#endif
 
 
 /* Misc constants */
@@ -52,6 +50,42 @@ enum {
     TRACE_MSG_SZ       = 80,  /* Trace Message buffer size */
     HASH_SIZE          = 499, /* Session Hash Table Rows */
 };
+
+
+
+#ifdef _WIN32
+
+
+BOOL APIENTRY DllMain( HMODULE hModule,
+                       DWORD  ul_reason_for_call,
+                       LPVOID lpReserved
+                     )
+{
+	static int didInit = 0;
+
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH:
+		if (didInit == 0) {
+			ssl_InitSniffer();
+			didInit = 1;
+		}
+        break;
+    case DLL_THREAD_ATTACH:
+        break;
+    case DLL_THREAD_DETACH:
+        break;
+    case DLL_PROCESS_DETACH:
+		if (didInit) {
+			ssl_FreeSniffer();
+			didInit = 0;
+		}
+        break;
+    }
+    return TRUE;
+}
+
+#endif /* _WIN32 */
 
 
 static int TraceOn = 0;         /* Trace is off by default */
@@ -919,7 +953,11 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
         Trace("No Actual Data");
         return 0;
     }
-    snprintf(traceMsg, TRACE_MSG_SZ, "\nGot %d SSL Bytes\n", sslBytes);
+#ifdef _WIN32
+    _snprintf(traceMsg, TRACE_MSG_SZ, "\nGot %d SSL Bytes\n", sslBytes);
+#else
+	snprintf(traceMsg, TRACE_MSG_SZ, "\nGot %d SSL Bytes\n", sslBytes);
+#endif
     Trace(traceMsg);
     if (sslBytes < RECORD_HEADER_SZ) {
         /* set error to short packet */

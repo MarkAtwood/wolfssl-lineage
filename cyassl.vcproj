@@ -1,10 +1,12 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="cyassl"
-	ProjectGUID="{1D7E05A7-C120-40C4-81AB-33E3B819CFE8}"
+	ProjectGUID="{73973223-5EE8-41CA-8E88-1D60E89A237B}"
+	RootNamespace="cyassl"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
 		<Platform
@@ -16,9 +18,10 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(IntDir)"
-			IntermediateDirectory="Debug"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -38,14 +41,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="include;ctaocrypt\include;\zlib"
+				AdditionalIncludeDirectories="ctaocrypt/include;include"
 				PreprocessorDefinitions="OPENSSL_EXTRA"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -78,9 +80,11 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(IntDir)"
-			IntermediateDirectory="Release"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
+			CharacterSet="1"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -99,12 +103,14 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="include;ctaocrypt\include"
+				Optimization="2"
+				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="ctaocrypt/include;include"
 				PreprocessorDefinitions="OPENSSL_EXTRA"
 				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -140,12 +146,126 @@
 	</References>
 	<Files>
 		<Filter
+			Name="Source Files"
+			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
+			>
+			<File
+				RelativePath=".\ctaocrypt\src\aes.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\arc4.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\asm.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\asn.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\coding.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\cyassl_int.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\cyassl_io.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\des3.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\dh.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\dsa.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\hc128.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\hmac.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\integer.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\keys.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\md4.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\md5.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\misc.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\rabbit.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\random.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\rsa.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\sha.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\src\sha256.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\ssl.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\tls.c"
+				>
+			</File>
+		</Filter>
+		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\include\openssl\crypto.h"
+				RelativePath=".\ctaocrypt\include\aes.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\include\arc4.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\include\asn.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\include\coding.h"
 				>
 			</File>
 			<File
@@ -157,81 +277,79 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\openssl\des.h"
+				RelativePath=".\ctaocrypt\include\des3.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\openssl\err.h"
+				RelativePath=".\ctaocrypt\include\dh.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\openssl\evp.h"
+				RelativePath=".\ctaocrypt\include\dsa.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\openssl\hmac.h"
+				RelativePath=".\ctaocrypt\include\error.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\openssl\lhash.h"
+				RelativePath=".\ctaocrypt\include\hc128.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\openssl\md5.h"
+				RelativePath=".\ctaocrypt\include\hmac.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\openssl\opensslv.h"
+				RelativePath=".\ctaocrypt\include\integer.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\openssl\rand.h"
+				RelativePath=".\ctaocrypt\include\md4.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\openssl\rsa.h"
+				RelativePath=".\ctaocrypt\include\md5.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\openssl\sha.h"
+				RelativePath=".\ctaocrypt\include\misc.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\openssl\ssl.h"
+				RelativePath=".\ctaocrypt\include\rabbit.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\include\random.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\include\rsa.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\include\sha.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\include\sha256.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\include\tfm.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\include\types.h"
 				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
-		</Filter>
-		<Filter
-			Name="Source Files"
-			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
-			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
-			>
-			<File
-				RelativePath=".\src\cyassl_int.c"
-				>
-			</File>
-			<File
-				RelativePath=".\src\cyassl_io.c"
-				>
-			</File>
-			<File
-				RelativePath=".\src\keys.c"
-				>
-			</File>
-			<File
-				RelativePath=".\src\ssl.c"
-				>
-			</File>
-			<File
-				RelativePath=".\src\tls.c"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

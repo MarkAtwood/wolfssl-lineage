@@ -1,7 +1,9 @@
 SUBDIRS = src ctaocrypt examples testsuite
 EXTRA_DIST = cyassl.dsp cyassl.dsw certs/*.pem certs/*.der certs/*.txt \
     lib/dummy cyassl.sln cyassl.vcproj cyassl-iphone.xcodeproj/project.pbxproj \
-    doc/*.pdf
+    doc/*.pdf sslSniffer/sslSniffer.vcproj \
+    sslSniffer/sslSnifferTest/snifftest.c \
+    sslSniffer/sslSnifferTest/sslSniffTest.vcproj 
 
 basic:
 	cd src; make; cd ../testsuite; make; cd ../
