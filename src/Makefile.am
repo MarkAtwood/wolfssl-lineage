@@ -11,5 +11,5 @@ libcyassl_la_SOURCES = ../ctaocrypt/src/integer.c \
     ../ctaocrypt/src/rabbit.c 
 libcyassl_la_LDFLAGS = -no-undefined -version-info 0:0:0
 AM_CFLAGS = -Wall
-EXTRA_DIST = ../include/*.h ../include/openssl/*.h
+EXTRA_DIST = ../include/*.h ../include/openssl/*.h ../include/*.rc
 

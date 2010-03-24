@@ -90,7 +90,8 @@ SSL* SSL_new(SSL_CTX* ctx)
 void SSL_free(SSL* ssl)
 {
     CYASSL_ENTER("SSL_free");
-    FreeSSL(ssl);
+    if (ssl)
+        FreeSSL(ssl);
     CYASSL_LEAVE("SSL_free", 0);
 }
 

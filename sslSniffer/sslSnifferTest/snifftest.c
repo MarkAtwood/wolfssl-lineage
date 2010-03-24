@@ -24,7 +24,7 @@
 typedef unsigned char byte;
 
 enum {
-    ETHER_IF_FRAME_LEN = 14,   /* ethernet interface frame length */
+    ETHER_IF_FRAME_LEN = 14,   /* ethernet  interface frame length */
     LOCAL_IF_FRAME_LEN =  4,   /* localhost interface frame length  */
 };
 
@@ -86,6 +86,7 @@ int main(int argc, char** argv)
     signal(SIGINT, sig_handler);
 
 #ifndef _WIN32
+    /* windows dll handles init and free */
     ssl_InitSniffer();
 #endif
     ssl_Trace("./tracefile.txt", err);

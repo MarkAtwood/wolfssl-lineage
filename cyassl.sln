@@ -13,7 +13,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sslSniffer", "sslSniffer\ss
 		{73973223-5EE8-41CA-8E88-1D60E89A237B} = {73973223-5EE8-41CA-8E88-1D60E89A237B}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sslSniffTest", "sslSniffer\sslSniffTest\sslSniffTest.vcproj", "{8C89E16E-9C36-45EF-A491-F4EBD4A8D8F1}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sslSniffTest", "sslSniffer\sslSnifferTest\sslSniffTest.vcproj", "{8C89E16E-9C36-45EF-A491-F4EBD4A8D8F1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{34FAE5A6-2B0F-4B55-86FE-0C43E4810F4D} = {34FAE5A6-2B0F-4B55-86FE-0C43E4810F4D}
 	EndProjectSection
