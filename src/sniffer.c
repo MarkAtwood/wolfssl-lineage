@@ -52,6 +52,7 @@ enum {
     TRACE_MSG_SZ       = 80,  /* Trace Message buffer size */
     HASH_SIZE          = 499, /* Session Hash Table Rows */
     PSEUDO_HDR_SZ      = 12,  /* TCP Pseudo Header size in bytes */
+    FATAL_ERROR_STATE  =  1,  /* SnifferSession fatal error state */
 };
 
 
@@ -163,31 +164,34 @@ static const char* const msgTable[] =
     "Got an Alert msg",
     "Another msg to Process",
     "Removing Session From Table",
+    
+    /* 46 */
+    "Bad Key File",
+    "Wrong IP Version",
+    "Wrong Protocol type",
+    "Packet Short for header processing",
+    "Got Unknown Record Type",
+    
+    /* 51 */
+    "Can't Open Trace File",
 };
 
 
 /* *nix version uses table above */
-static INLINE void Trace(int idx)
+static void GetError(int idx, char* buffer)
 {
-    if (TraceOn) {
-        //fprintf(TraceFile, "%s\n", msgTable[idx - 1]);   /* TAO switch back */
-        fprintf(stderr, "%s\n", msgTable[idx - 1]);
-    }
+    strncpy(buffer, msgTable[idx - 1], MAX_ERROR_LEN);
 }
-
 
 
 #else /* _WIN32 */
 
 
 /* Windows version uses .rc table */
-static INLINE void Trace(int idx)
+static void GetError(int idx, char* buffer)
 {
-    if (TraceOn) {
-        char buffer[MAX_ERROR_LEN];
-        if (LoadStringA(dllModule, idx, buffer, sizeof(buffer)))
-            fprintf(TraceFile, "%s\n", buffer);
-    }
+    if (!LoadStringA(dllModule, idx, buffer, MAX_ERROR_LEN))
+        buffer[0] = 0;
 }
 
 
@@ -224,6 +228,7 @@ typedef struct SnifferSession {
     byte           cached;          /* have we cached this session yet */
     byte           clientHello;     /* processed client hello yet, for SSLv2 */
     byte           finCount;        /* get both FINs before removing */
+    byte           fatalError;      /* fatal error state */
     struct SnifferSession* next;    /* for hash table list */
 } SnifferSession;
 
@@ -318,25 +323,48 @@ static void InitSnifferServer(SnifferServer* sniffer)
 /* Initialize a Sniffer Session */
 static void InitSession(SnifferSession* session)
 {
-    session->context   = 0;
-    session->sslServer = 0;
-    session->sslClient = 0;
-    session->server    = 0;
-    session->client    = 0;
-    session->srvPort   = 0;
-    session->cliPort   = 0;
-    session->cliSeqStart = 0;
-    session->srvSeqStart = 0;
-    session->cliExpected = 0;
-    session->srvExpected = 0;
-    session->side      = 0;
+    session->context        = 0;
+    session->sslServer      = 0;
+    session->sslClient      = 0;
+    session->server         = 0;
+    session->client         = 0;
+    session->srvPort        = 0;
+    session->cliPort        = 0;
+    session->cliSeqStart    = 0;
+    session->srvSeqStart    = 0;
+    session->cliExpected    = 0;
+    session->srvExpected    = 0;
+    session->side           = 0;
     session->serverCipherOn = 0;
     session->clientCipherOn = 0;
-    session->resuming  = 0;
-    session->cached    = 0;
-    session->clientHello = 0;
-    session->finCount  = 0;
-    session->next      = 0;
+    session->resuming       = 0;
+    session->cached         = 0;
+    session->clientHello    = 0;
+    session->finCount       = 0;
+    session->fatalError     = 0;
+    session->next           = 0;
+}
+
+
+/* Use platform specific GetError to write to tracfile if tracing */ 
+static void Trace(int idx) 
+{
+    if (TraceOn) {
+        char buffer[MAX_ERROR_LEN];
+        GetError(idx, buffer);
+        fprintf(TraceFile, "%s\n", buffer);
+        fprintf(stderr,    "%s\n", buffer);  /* TAO remove when done */
+    }
+}
+
+
+/* Set user error string */
+static void SetError(int idx, char* error, SnifferSession* session, int fatal)
+{
+    GetError(idx, error);
+    Trace(idx);
+    if (session && fatal == FATAL_ERROR_STATE)
+        session->fatalError = 1;
 }
 
 
@@ -554,8 +582,7 @@ int ssl_SetPrivateKey(const char* serverAddress, int port, const char* keyFile,
 
     SnifferServer* sniffer = (SnifferServer*)malloc(sizeof(SnifferServer));
     if (sniffer == NULL) {
-        /* set error to out of memory */
-        Trace(MEMORY_STR);
+        SetError(MEMORY_STR, error, NULL, 0);
         return -1;
     }
     InitSnifferServer(sniffer);
@@ -566,8 +593,7 @@ int ssl_SetPrivateKey(const char* serverAddress, int port, const char* keyFile,
     /* start in client mode since SSL_new needs a cert for server */
     sniffer->ctx = SSL_CTX_new(SSLv3_client_method());
     if (!sniffer->ctx) {
-        /* set error to out of memory */
-        Trace(MEMORY_STR);
+        SetError(MEMORY_STR, error, NULL, 0);
         return -1;
     }
 
@@ -577,7 +603,7 @@ int ssl_SetPrivateKey(const char* serverAddress, int port, const char* keyFile,
     }
     ret = SSL_CTX_use_PrivateKey_file(sniffer->ctx, keyFile, SSL_FILETYPE_PEM);
     if (ret != SSL_SUCCESS) {
-        /* set error to key file error */
+        SetError(KEY_FILE_STR, error, NULL, 0);
         return -1;
     }
     Trace(NEW_SERVER_STR);
@@ -601,18 +627,17 @@ static int CheckIpHdr(IpHdr* iphdr, IpInfo* info, char* error)
 
     Trace(IP_CHECK_STR);
     if (version != IPV4) {
-        /* set error to wrong IP version */ 
+        SetError(BAD_IPVER_STR, error, NULL, 0); 
         return -1;
     }
 
     if (iphdr->protocol != TCP_PROTOCOL) { 
-        /* set error to wrong Protocol type */
+        SetError(BAD_PROTO_STR, error, NULL, 0);
         return -1;
     }
 
     if (!IsServerRegistered(iphdr->src) && !IsServerRegistered(iphdr->dst)) {
-        /* set error to Server Not Registered */
-        Trace(SERVER_NOT_REG_STR);
+        SetError(SERVER_NOT_REG_STR, error, NULL, 0);
         return -1;
     }
 
@@ -640,8 +665,7 @@ static int CheckTcpHdr(TcpHdr* tcphdr, TcpInfo* info, char* error)
     info->ack       = tcphdr->flags & TCP_ACK;
 
     if (!IsPortRegistered(info->srcPort) && !IsPortRegistered(info->dstPort)) {
-        /* set error to Server Port Not Registered */
-        Trace(SERVER_PORT_NOT_REG_STR);
+        SetError(SERVER_PORT_NOT_REG_STR, error, NULL, 0);
         return -1;
     }
 
@@ -684,8 +708,7 @@ static int ProcessClientKeyExchange(const byte* input, int* sslBytes,
                   session->sslServer->arrays.preMasterSecret, SECRET_LEN, &key);
         
         if (ret != SECRET_LEN) {
-            /* set error to RSA Private Decrypt error */
-            Trace(RSA_DECRYPT_STR);
+            SetError(RSA_DECRYPT_STR, error, session, FATAL_ERROR_STATE);
             FreeRsaKey(&key);
             return -1;
         }
@@ -708,21 +731,18 @@ static int ProcessClientKeyExchange(const byte* input, int* sslBytes,
         #endif
     }
     else {
-        /* set error to private key decode error */
-        Trace(RSA_DECODE_STR);
+        SetError(RSA_DECODE_STR, error, session, FATAL_ERROR_STATE);
         FreeRsaKey(&key);
         return -1;
     }
     
     if (SetCipherSpecs(session->sslServer) != 0) {
-        /* set error to bad set cipher spec */
-        Trace(BAD_CIPHER_SPEC_STR);
+        SetError(BAD_CIPHER_SPEC_STR, error, session, FATAL_ERROR_STATE);
         return -1;
     }
    
     if (SetCipherSpecs(session->sslClient) != 0) {
-        /* set error to bad set cipher spec */
-        Trace(BAD_CIPHER_SPEC_STR);
+        SetError(BAD_CIPHER_SPEC_STR, error, session, FATAL_ERROR_STATE);
         return -1;
     }
     
@@ -758,8 +778,7 @@ static int ProcessServerHello(const byte* input, int* sslBytes,
 
     /* make sure can read through session len */
     if (toRead > *sslBytes) {
-        /* set error to short packet */
-        Trace(SERVER_HELLO_INPUT_STR);
+        SetError(SERVER_HELLO_INPUT_STR, error, session, FATAL_ERROR_STATE);
         return -1;
     }
     
@@ -780,8 +799,7 @@ static int ProcessServerHello(const byte* input, int* sslBytes,
     
     /* make sure can read through compression */
     if ( (b + SUITE_LEN + ENUM_LEN) > *sslBytes) {
-        /* set error to short packet */
-        Trace(SERVER_HELLO_INPUT_STR);
+        SetError(SERVER_HELLO_INPUT_STR, error, session, FATAL_ERROR_STATE);
         return -1;
     }
     memcpy(session->sslServer->arrays.sessionID, input, ID_LEN);
@@ -800,8 +818,7 @@ static int ProcessServerHello(const byte* input, int* sslBytes,
         SSL_SESSION* resume = GetSession(session->sslServer,
                                        session->sslServer->arrays.masterSecret);
         if (resume == NULL) {
-            Trace(BAD_SESSION_RESUME_STR);
-            /* set error to bad session resumption */
+            SetError(BAD_SESSION_RESUME_STR, error, session, FATAL_ERROR_STATE);
             return -1;
         }
         /* make sure client has master secret too */
@@ -811,14 +828,12 @@ static int ProcessServerHello(const byte* input, int* sslBytes,
         
         Trace(SERVER_DID_RESUMPTION_STR);
         if (SetCipherSpecs(session->sslServer) != 0) {
-            /* set error to bad set cipher spec */
-            Trace(BAD_CIPHER_SPEC_STR);
+            SetError(BAD_CIPHER_SPEC_STR, error, session, FATAL_ERROR_STATE);
             return -1;
         }
         
         if (SetCipherSpecs(session->sslClient) != 0) {
-            /* set error to bad set cipher spec */
-            Trace(BAD_CIPHER_SPEC_STR);
+            SetError(BAD_CIPHER_SPEC_STR, error, session, FATAL_ERROR_STATE);
             return -1;
         }
         
@@ -873,8 +888,7 @@ static int ProcessClientHello(const byte* input, int* sslBytes,
     sessionLen = *input++;
     if (sessionLen) {
         if (ID_LEN > *sslBytes) {
-            /* set error to short packet */
-            Trace(CLIENT_HELLO_INPUT_STR);
+            SetError(CLIENT_HELLO_INPUT_STR, error, session, FATAL_ERROR_STATE);
             return -1;
         }
         Trace(CLIENT_RESUME_TRY_STR);
@@ -904,8 +918,7 @@ static int DoHandShake(const byte* input, int* sslBytes, IpInfo* ipInfo,
     int  ret = 0;
     
     if (*sslBytes < HANDSHAKE_HEADER_SZ) {
-        /* set error to short packet */
-        Trace(HANDSHAKE_INPUT_STR);
+        SetError(HANDSHAKE_INPUT_STR, error, session, FATAL_ERROR_STATE);
         return -1;
     }
     type = input[0];
@@ -915,8 +928,7 @@ static int DoHandShake(const byte* input, int* sslBytes, IpInfo* ipInfo,
     *sslBytes -= HANDSHAKE_HEADER_SZ;
     
     if (*sslBytes < size) {
-        /* set error to short packet */
-        Trace(HANDSHAKE_INPUT_STR);
+        SetError(HANDSHAKE_INPUT_STR, error, session, FATAL_ERROR_STATE);
         return -1;
     }
     
@@ -970,8 +982,7 @@ static int DoHandShake(const byte* input, int* sslBytes, IpInfo* ipInfo,
             Trace(GOT_CERT_VER_STR);
             break;
         default:
-            Trace(GOT_UNKNOWN_HANDSHAKE_STR);
-            /* set error to unknown handshake type */
+            SetError(GOT_UNKNOWN_HANDSHAKE_STR, error, session, 0);
             return -1;
     }   
 
@@ -1063,7 +1074,8 @@ static void RemoveSession(SnifferSession* session, IpInfo* ipInfo,
 
 
 /* Create a new Sniffer Session */
-static SnifferSession* CreateSession(IpInfo* ipInfo, TcpInfo* tcpInfo)
+static SnifferSession* CreateSession(IpInfo* ipInfo, TcpInfo* tcpInfo,
+                                     char* error)
 {
     SnifferSession* session = 0;
     int row;
@@ -1072,8 +1084,7 @@ static SnifferSession* CreateSession(IpInfo* ipInfo, TcpInfo* tcpInfo)
     /* create a new one */
     session = (SnifferSession*)malloc(sizeof(SnifferSession));
     if (session == NULL) {
-        /* set error to out of memory */
-        Trace(MEMORY_STR);
+        SetError(MEMORY_STR, error, NULL, 0);
         return 0;
     }
     InitSession(session);
@@ -1086,8 +1097,7 @@ static SnifferSession* CreateSession(IpInfo* ipInfo, TcpInfo* tcpInfo)
                 
     session->context = GetSnifferServer(ipInfo, tcpInfo);
     if (session->context == NULL) {
-        /* set error to no server registered */
-        Trace(SERVER_NOT_REG_STR);
+        SetError(SERVER_NOT_REG_STR, error, NULL, 0);
         free(session);
         return 0;
     }
@@ -1099,8 +1109,7 @@ static SnifferSession* CreateSession(IpInfo* ipInfo, TcpInfo* tcpInfo)
             SSL_free(session->sslClient);
             session->sslClient = 0;
         }
-        /* set error to no new SSL */
-        Trace(BAD_NEW_SSL_STR);
+        SetError(BAD_NEW_SSL_STR, error, session, FATAL_ERROR_STATE);
         free(session);
         return 0;
     }
@@ -1144,17 +1153,14 @@ static int DoOldHello(SnifferSession* session, const byte* sslFrame,
     *rhSize = ((b0 & 0x7f) << 8) | b1;
 
     if (*rhSize > *sslBytes) {
-        /* set error to short packet */
-        Trace(OLD_CLIENT_INPUT_STR);
+        SetError(OLD_CLIENT_INPUT_STR, error, session, FATAL_ERROR_STATE);
         return -1;
     }
 
     ret = ProcessOldClientHello(session->sslServer, input, &idx, *sslBytes,
                                 *rhSize);    
     if (ret < 0) {
-        /* set error to bad old client hello */
-        printf("old cleint hello ret = %d\n", ret);
-        Trace(BAD_OLD_CLIENT_STR);
+        SetError(BAD_OLD_CLIENT_STR, error, session, FATAL_ERROR_STATE);
         return -1;
     }
     
@@ -1238,14 +1244,14 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
 
     Trace(GOT_PACKET_STR);
     if (length < IP_HDR_SZ) {
-        /* set error to short packet */
+        SetError(PACKET_HDR_SHORT_STR, error, NULL, 0);
         return -1;
     }
     if (CheckIpHdr((IpHdr*)packet, &ipInfo, error) != 0)
         return -1;
 
     if (length < (ipInfo.length + TCP_HDR_SZ)) {
-        /* set error to short packet */
+        SetError(PACKET_HDR_SHORT_STR, error, NULL, 0);
         return -1;
     }
     if (CheckTcpHdr((TcpHdr*)(packet + ipInfo.length), &tcpInfo, error) != 0)
@@ -1253,21 +1259,21 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
 
     sslFrame = (byte*)(packet + ipInfo.length + tcpInfo.length);
     if (sslFrame > end) {
-        /* set error to short packet */
+        SetError(PACKET_HDR_SHORT_STR, error, NULL, 0);
         return -1;
     }
     sslBytes = end - sslFrame;
     
     /* create a new SnifferSession on client SYN */
     if (tcpInfo.syn && !tcpInfo.ack) {
-        session = CreateSession(&ipInfo, &tcpInfo);
+        session = CreateSession(&ipInfo, &tcpInfo, error);
         if (session == NULL) {
             session = GetSnifferSession(&ipInfo, &tcpInfo);
             /* already had exisiting, so OK */
             if (session)
                 return 0;
-            /* set error to out of memory */
-            Trace(MEMORY_STR);
+
+            SetError(MEMORY_STR, error, NULL, 0);
             return -1;
         }
         return 0;
@@ -1282,8 +1288,8 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
             /* don't worry about duplicate ACKs either */
             if (sslBytes == 0 && tcpInfo.ack)
                 return 0;
-            /* set error to bad session */
-            Trace(BAD_SESSION_STR);
+            
+            SetError(BAD_SESSION_STR, error, NULL, 0);
             return -1;
         }        
     }
@@ -1354,7 +1360,7 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
     }
         
     if (sslBytes < RECORD_HEADER_SZ) {
-        /* set error to short packet */
+        SetError(RECORD_INPUT_STR, error, NULL, 0);
         return -1;
     }
             
@@ -1368,15 +1374,13 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
     
 doMessage:
     if (GetRecordHeader(sslFrame, &rh, &rhSize) != 0) {
-        /* set error to bad record header */
-        Trace(BAD_RECORD_HDR_STR);
+        SetError(BAD_RECORD_HDR_STR, error, session, FATAL_ERROR_STATE);
         return -1;
     }
     sslFrame += RECORD_HEADER_SZ;
     sslBytes -= RECORD_HEADER_SZ;
     if (rhSize > sslBytes) {
-        /* set error to short packet */
-        Trace(RECORD_INPUT_STR);
+        SetError(RECORD_INPUT_STR, error, session, FATAL_ERROR_STATE);
         return -1;
     }
     tmp = sslFrame + rhSize;   /* may have more than one record to process */
@@ -1396,8 +1400,7 @@ doMessage:
             ret = DoHandShake(sslFrame, &sslBytes, &ipInfo, &tcpInfo, session,
                               error);
             if (ret != 0) {
-                /* set error to bad handshake process */
-                Trace(BAD_HANDSHAKE_STR);
+                SetError(BAD_HANDSHAKE_STR, error, session, FATAL_ERROR_STATE);
                 return -1;
             }
             break;
@@ -1431,8 +1434,8 @@ doMessage:
                     }
                 }
                 else {
-                    /* set error to bad app data */
-                    Trace(BAD_APP_DATA_STR);
+                    SetError(BAD_APP_DATA_STR, error, session,
+                             FATAL_ERROR_STATE);
                     return -1;
                 }
             }
@@ -1441,7 +1444,7 @@ doMessage:
             Trace(GOT_ALERT_STR);
             break;
         default:
-            /* set error to UNKNOWN_RECORD_TYPE */
+            SetError(GOT_UNKNOWN_RECORD_STR, error, session, FATAL_ERROR_STATE);
             return -1;
     }
     
@@ -1463,7 +1466,7 @@ int ssl_Trace(const char* traceFile, char* error)
     if (traceFile) {
         TraceFile = fopen(traceFile, "a");
         if (!TraceFile) {
-            /* set error to bad traceFile */
+            SetError(BAD_TRACE_FILE_STR, error, NULL, 0);
             return -1;
         }
         TraceOn = 1;
