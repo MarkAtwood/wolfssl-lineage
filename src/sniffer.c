@@ -174,6 +174,9 @@ static const char* const msgTable[] =
     
     /* 51 */
     "Can't Open Trace File",
+    "Session in Fatal Error State",
+    "Partial SSL record received",
+    "Buffer Error, malformed input",
 };
 
 
@@ -866,6 +869,9 @@ static int ProcessClientHello(const byte* input, int* sslBytes,
                               SnifferSession* session, char* error)
 {
     byte sessionLen;
+    
+    session->clientHello = 1;  /* don't process again */
+    
     /* make sure can read up to session len */
     int toRead = sizeof(ProtocolVersion) + RAN_LEN + ENUM_LEN;
     if (toRead > *sslBytes) {
@@ -904,7 +910,6 @@ static int ProcessClientHello(const byte* input, int* sslBytes,
     }
 #endif
     
-    session->clientHello = 1;
     return 0;
 }
 
@@ -1147,6 +1152,7 @@ static int DoOldHello(SnifferSession* session, const byte* sslFrame,
     int         ret;
 
     Trace(GOT_OLD_CLIENT_HELLO_STR);
+    session->clientHello = 1;    /* don't process again */
     b0 = *input++;
     b1 = *input++;
     *sslBytes -= 2;
@@ -1167,7 +1173,6 @@ static int DoOldHello(SnifferSession* session, const byte* sslFrame,
     Trace(OLD_CLIENT_OK_STR);
     memcpy(session->sslClient->arrays.clientRandom,
            session->sslServer->arrays.clientRandom, RAN_LEN);
-    session->clientHello = 1;
     
     *sslBytes -= *rhSize;
     return 0;
@@ -1341,7 +1346,7 @@ int CheckSequence(TcpInfo* tcpInfo, SnifferSession* session, int sslBytes)
         
         if (real < session->srvExpected) {
             printf("\t oops duplicate\n");
-            return 0;
+            return 1;
         }
         
         session->srvExpected += sslBytes;
@@ -1355,9 +1360,13 @@ int CheckSequence(TcpInfo* tcpInfo, SnifferSession* session, int sslBytes)
 
 /* Check Status before record processing */
 /* returns 0 on success (continue), -1 on error, 1 on success (end) */
-static int CheckPreRecord(IpInfo* ipInfo, TcpInfo* tcpInfo,const byte* sslFrame,
-                          SnifferSession* session, int* sslBytes, char* error)
+static int CheckPreRecord(IpInfo* ipInfo, TcpInfo* tcpInfo,
+                          const byte** sslFrame, SnifferSession* session,
+                          int* sslBytes, char* error)
 {
+    word32 length;
+    SSL*   ssl = (session->side == SERVER_END) ? session->sslServer :
+                                                 session->sslClient;
     /* remove SnifferSession on 2nd FIN or RST */
     if (tcpInfo->fin || tcpInfo->rst) {
         /* flag FIN and RST */
@@ -1372,19 +1381,31 @@ static int CheckPreRecord(IpInfo* ipInfo, TcpInfo* tcpInfo,const byte* sslFrame,
         }
     }
     
+    if (session->fatalError == FATAL_ERROR_STATE) {
+        SetError(FATAL_ERROR_STR, error, NULL, 0);
+        return -1;
+    }
+    
     if (*sslBytes == 0) {
         Trace(NO_DATA_STR);
         return 1;
     }
     
-    if (*sslBytes < RECORD_HEADER_SZ) {
-        SetError(RECORD_INPUT_STR, error, NULL, 0);
-        return -1;
+    /* if current partial data, add to end of partial */
+    if ( (length = ssl->buffers.inputBuffer.length) ) {
+        printf("have partial data of %d bytes, adding %d\n", length, *sslBytes);
+        
+        memcpy(&ssl->buffers.inputBuffer.buffer[length], *sslFrame, *sslBytes);
+        *sslBytes += ssl->buffers.inputBuffer.length;
+        ssl->buffers.inputBuffer.length = *sslBytes;
+        *sslFrame = ssl->buffers.inputBuffer.buffer;
+        
+        printf("now have total %d bytes\n", *sslBytes);
     }
     
-    if (session->clientHello == 0 && *sslFrame != handshake) {
+    if (session->clientHello == 0 && **sslFrame != handshake) {
         int rhSize;
-        int ret = DoOldHello(session, sslFrame, &rhSize, sslBytes, error);
+        int ret = DoOldHello(session, *sslFrame, &rhSize, sslBytes, error);
         if (ret < 0)
             return -1;  /* error already set */
         if (*sslBytes <= 0)
@@ -1405,27 +1426,40 @@ static int ProcessMessage(IpInfo* ipInfo, TcpInfo* tcpInfo,const byte* sslFrame,
     RecordLayerHeader rh;
     int               rhSize;
     int               ret;
-    
+    SSL*              ssl = (session->side == SERVER_END) ? session->sslServer :
+                                                            session->sslClient;
 doMessage:
     if (GetRecordHeader(sslFrame, &rh, &rhSize) != 0) {
         SetError(BAD_RECORD_HDR_STR, error, session, FATAL_ERROR_STATE);
         return -1;
     }
+    if (rhSize > (sslBytes - RECORD_HEADER_SZ)) {
+        /* don't enough input yet to process full SSL record, store partial */
+        Trace(PARTIAL_INPUT_STR);
+        
+        /* could already be in inputBuffer */
+        if (ssl->buffers.inputBuffer.length == 0) {
+            if (sslBytes > sizeof(ssl->buffers.inputBuffer.buffer)) {
+                SetError(BUFFER_ERROR_STR, error, session, FATAL_ERROR_STATE);
+                return -1;
+            }
+            printf("wrote %d sslbytes to input buffer, need %d\n", sslBytes, rhSize);
+            memcpy(ssl->buffers.inputBuffer.buffer, sslFrame, sslBytes);
+            ssl->buffers.inputBuffer.length = sslBytes;
+        }
+        return 0;
+    }
     sslFrame += RECORD_HEADER_SZ;
     sslBytes -= RECORD_HEADER_SZ;
-    if (rhSize > sslBytes) {
-        SetError(RECORD_INPUT_STR, error, session, FATAL_ERROR_STATE);
-        return -1;
-    }
     tmp = sslFrame + rhSize;   /* may have more than one record to process */
     
     /* decrypt if needed */
     if (session->side == SERVER_END && session->serverCipherOn)
         sslFrame = DecryptMessage(session->sslServer, sslFrame, rhSize,
-                                session->sslServer->buffers.inputBuffer.buffer);
+                                session->sslServer->buffers.outputBuffer.buffer);
     else if (session->side == CLIENT_END && session->clientCipherOn)
         sslFrame = DecryptMessage(session->sslClient, sslFrame, rhSize,
-                                session->sslClient->buffers.inputBuffer.buffer);
+                                session->sslClient->buffers.outputBuffer.buffer);
             
     switch ((enum ContentType)rh.type) {
         case handshake:
@@ -1447,14 +1481,8 @@ doMessage:
         case application_data:
             Trace(GOT_APP_DATA_STR);
             {
-                SSL*   ssl;
                 word32 inOutIdx = 0;
                     
-                /* TAO check for clear output before getting? */
-                if (session->side == SERVER_END)
-                    ssl = session->sslServer;
-                else
-                    ssl = session->sslClient;
                 ret = DoApplicationData(ssl, (byte*)sslFrame, &inOutIdx);
                 if (ret == 0) {
                     ret = ssl->buffers.clearOutputBuffer.length;
@@ -1462,6 +1490,7 @@ doMessage:
                         memcpy(data, ssl->buffers.clearOutputBuffer.buffer,ret);
                         ssl->buffers.clearOutputBuffer.length = 0;
                         assert(tmp >= end);
+                        ssl->buffers.inputBuffer.length = 0; /* TAO ?? */
                         return ret;
                     }
                 }
@@ -1484,7 +1513,10 @@ doMessage:
         sslFrame = tmp;
         sslBytes = end - tmp;
         goto doMessage;
-    }    
+    }
+    
+    /* clear used input */
+    ssl->buffers.inputBuffer.length = 0;
     
     return 0;
 }
@@ -1514,7 +1546,7 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
     if (ret == -1)     return -1;
     else if (ret == 1) return  0;   /* done for now */
     
-    ret = CheckPreRecord(&ipInfo, &tcpInfo, sslFrame, session, &sslBytes,error);
+    ret = CheckPreRecord(&ipInfo, &tcpInfo, &sslFrame, session,&sslBytes,error);
     if (ret == -1)     return -1;
     else if (ret == 1) return  0;   /* done for now */
 

@@ -62,5 +62,8 @@ STRINGTABLE
     50, "Got Unknown Record Type"
     
     51, "Can't Open Trace File"
+    52, "Session in Fatal Error State"
+    53, "Partial SSL record received"
+    54, "Buffer Error, malformed input"
 }
 
