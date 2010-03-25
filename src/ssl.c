@@ -1149,7 +1149,7 @@ SSL_SESSION* GetSession(SSL* ssl, byte* masterSecret)
     }
 
     UnLockMutex(&mutex);
-
+    
     return ret;
 }
 
