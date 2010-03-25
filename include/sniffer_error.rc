@@ -54,5 +54,13 @@ STRINGTABLE
     43, "Got an Alert msg"
     44, "Another msg to Process"
     45, "Removing Session From Table"
+
+    46, "Bad Key File"
+    47, "Wrong IP Version"
+    48, "Wrong Protocol type"
+    49, "Packet Short for header processing"
+    50, "Got Unknown Record Type"
+    
+    51, "Can't Open Trace File"
 }
 

@@ -1178,7 +1178,7 @@ static int DoOldHello(SnifferSession* session, const byte* sslFrame,
 /* return 0 for success, -1 on error */
 /* can be called from decode() with
    TcpChecksum(&ipInfo, &tcpInfo, sslBytes, packet + ipInfo.length);
-   could also add a 64bit version if type available
+   could also add a 64bit version if type available and using this
 */
 int TcpChecksum(IpInfo* ipInfo, TcpInfo* tcpInfo, int dataLen,
                 const byte* packet)
@@ -1223,108 +1223,118 @@ int TcpChecksum(IpInfo* ipInfo, TcpInfo* tcpInfo, int dataLen,
     checksum = (word16)~sum;
     /* checksum should now equal 0, since included already calcd checksum */
     /* field, but tcp checksum offloading could negate calculation */
-    return 0;
+    if (checksum == 0)
+        return 0;
+    return -1;
 }
 
 
-/* Passes in an IP/TCP packet for decoding (ethernet/localhost frame) removed */
-/* returns Number of bytes on success, 0 for no data yet, and -1 on error */
-int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
+/* Check IP and TCP headers, set payload */
+/* returns 0 on success, -1 on error */
+int CheckHeaders(IpInfo* ipInfo, TcpInfo* tcpInfo, const byte* packet,
+                 int length, const byte** sslFrame, int* sslBytes, char* error)
 {
-    TcpInfo           tcpInfo;
-    IpInfo            ipInfo;
-    const byte*       sslFrame;
-    const byte*       end = packet + length;
-    const byte*       tmp;
-    int               sslBytes;                /* ssl bytes unconsumed */
-    int               rhSize;
-    int               ret;
-    RecordLayerHeader rh;
-    SnifferSession*   session = 0;
-
     Trace(GOT_PACKET_STR);
     if (length < IP_HDR_SZ) {
         SetError(PACKET_HDR_SHORT_STR, error, NULL, 0);
         return -1;
     }
-    if (CheckIpHdr((IpHdr*)packet, &ipInfo, error) != 0)
+    if (CheckIpHdr((IpHdr*)packet, ipInfo, error) != 0)
         return -1;
-
-    if (length < (ipInfo.length + TCP_HDR_SZ)) {
-        SetError(PACKET_HDR_SHORT_STR, error, NULL, 0);
-        return -1;
-    }
-    if (CheckTcpHdr((TcpHdr*)(packet + ipInfo.length), &tcpInfo, error) != 0)
-        return -1;
-
-    sslFrame = (byte*)(packet + ipInfo.length + tcpInfo.length);
-    if (sslFrame > end) {
-        SetError(PACKET_HDR_SHORT_STR, error, NULL, 0);
-        return -1;
-    }
-    sslBytes = end - sslFrame;
     
-    /* create a new SnifferSession on client SYN */
-    if (tcpInfo.syn && !tcpInfo.ack) {
-        session = CreateSession(&ipInfo, &tcpInfo, error);
-        if (session == NULL) {
-            session = GetSnifferSession(&ipInfo, &tcpInfo);
-            /* already had exisiting, so OK */
-            if (session)
-                return 0;
+    if (length < (ipInfo->length + TCP_HDR_SZ)) {
+        SetError(PACKET_HDR_SHORT_STR, error, NULL, 0);
+        return -1;
+    }
+    if (CheckTcpHdr((TcpHdr*)(packet + ipInfo->length), tcpInfo, error) != 0)
+        return -1;
+    
+    *sslFrame = packet + ipInfo->length + tcpInfo->length;
+    if (*sslFrame > packet + length) {
+        SetError(PACKET_HDR_SHORT_STR, error, NULL, 0);
+        return -1;
+    }
+    *sslBytes = packet + length - *sslFrame;
+    
+    return 0;
+}
 
+
+/* Create or Find existing session */
+/* returns 0 on success (continue), -1 on error, 1 on success (end) */
+static int CheckSession(IpInfo* ipInfo, TcpInfo* tcpInfo, int sslBytes,
+                        SnifferSession** session, char* error)
+{
+    /* create a new SnifferSession on client SYN */
+    if (tcpInfo->syn && !tcpInfo->ack) {
+        *session = CreateSession(ipInfo, tcpInfo, error);
+        if (*session == NULL) {
+            *session = GetSnifferSession(ipInfo, tcpInfo);
+            /* already had exisiting, so OK */
+            if (*session)
+                return 1;
+            
             SetError(MEMORY_STR, error, NULL, 0);
             return -1;
         }
-        return 0;
+        return 1;
     }
     /* get existing sniffer session */
     else {
-        session = GetSnifferSession(&ipInfo, &tcpInfo);
-        if (!session) {
+        *session = GetSnifferSession(ipInfo, tcpInfo);
+        if (*session == NULL) {
             /* don't worry about extraneous RST or duplicate FINs */
-            if (tcpInfo.fin || tcpInfo.rst)
-                return 0;
+            if (tcpInfo->fin || tcpInfo->rst)
+                return 1;
             /* don't worry about duplicate ACKs either */
-            if (sslBytes == 0 && tcpInfo.ack)
-                return 0;
+            if (sslBytes == 0 && tcpInfo->ack)
+                return 1;
             
             SetError(BAD_SESSION_STR, error, NULL, 0);
             return -1;
         }        
     }
-    
+    return 0;
+}
+
+
+/* Check TCP Sequence status */
+/* returns 0 on success (continue), -1 on error, 1 on success (end) */
+int CheckSequence(TcpInfo* tcpInfo, SnifferSession* session, int sslBytes)
+{
     /* init SEQ from server to client */
-    if (tcpInfo.syn && tcpInfo.ack) {
-        session->srvSeqStart = tcpInfo.sequence;
+    if (tcpInfo->syn && tcpInfo->ack) {
+        session->srvSeqStart = tcpInfo->sequence;
         session->srvExpected = 1;
-        return 0;
+        return 1;
     }
     
+    /* adjust incoming server side */
     if (session->side == SERVER_END) {
-        word32 real = tcpInfo.sequence - session->cliSeqStart;
+        word32 real = tcpInfo->sequence - session->cliSeqStart;
         /* handle rollover of sequence */
-        if (tcpInfo.sequence < session->cliSeqStart)
-            real = 0xffffffffU - session->cliSeqStart + tcpInfo.sequence;
+        if (tcpInfo->sequence < session->cliSeqStart)
+            real = 0xffffffffU - session->cliSeqStart + tcpInfo->sequence;
         
         printf("\tserver expected = %u\n", session->cliExpected);
         printf("\tserver real     = %u\n", real);
         
         if (real < session->cliExpected) {
             printf("\t oops duplicate\n");
-            return 0;
+            return 1;
         }
         
         session->cliExpected += sslBytes;
-        if (tcpInfo.fin)
+        if (tcpInfo->fin)
             session->cliExpected += 1;
     }
     
+    /* adjust iincoming client side */
     if (session->side == CLIENT_END) {
-        word32 real = tcpInfo.sequence - session->srvSeqStart;
+        word32 real = tcpInfo->sequence - session->srvSeqStart;
         /* handle sequence rollover */
-        if (tcpInfo.sequence < session->srvSeqStart)
-            real = 0xffffffffU - session->srvSeqStart + tcpInfo.sequence;
+        if (tcpInfo->sequence < session->srvSeqStart)
+            real = 0xffffffffU - session->srvSeqStart + tcpInfo->sequence;
         
         printf("\tclient expected = %u\n", session->srvExpected);
         printf("\tclient real     = %u\n", real);
@@ -1335,42 +1345,66 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
         }
         
         session->srvExpected += sslBytes;
-        if (tcpInfo.fin)
+        if (tcpInfo->fin)
             session->srvExpected += 1;
     }
+    
+    return 0;
+}
 
+
+/* Check Status before record processing */
+/* returns 0 on success (continue), -1 on error, 1 on success (end) */
+static int CheckPreRecord(IpInfo* ipInfo, TcpInfo* tcpInfo,const byte* sslFrame,
+                          SnifferSession* session, int* sslBytes, char* error)
+{
     /* remove SnifferSession on 2nd FIN or RST */
-    if (tcpInfo.fin || tcpInfo.rst) {
-        SnifferSession* remove = GetSnifferSession(&ipInfo, &tcpInfo);
-        if (remove == NULL)
-            return 0;
+    if (tcpInfo->fin || tcpInfo->rst) {
         /* flag FIN and RST */
-        if (tcpInfo.fin)
-            remove->finCount += 1;
-        else if (tcpInfo.rst)
-            remove->finCount += 2;
+        if (tcpInfo->fin)
+            session->finCount += 1;
+        else if (tcpInfo->rst)
+            session->finCount += 2;
         
-        if (remove->finCount >= 2)
-            RemoveSession(remove, &ipInfo, &tcpInfo);
+        if (session->finCount >= 2) {
+            RemoveSession(session, ipInfo, tcpInfo);
+            return 1;
+        }
     }
     
-    if (sslBytes == 0) {
+    if (*sslBytes == 0) {
         Trace(NO_DATA_STR);
-        return 0;
+        return 1;
     }
-        
-    if (sslBytes < RECORD_HEADER_SZ) {
+    
+    if (*sslBytes < RECORD_HEADER_SZ) {
         SetError(RECORD_INPUT_STR, error, NULL, 0);
         return -1;
     }
-            
+    
     if (session->clientHello == 0 && *sslFrame != handshake) {
-        ret = DoOldHello(session, sslFrame, &rhSize, &sslBytes, error);
+        int rhSize;
+        int ret = DoOldHello(session, sslFrame, &rhSize, sslBytes, error);
         if (ret < 0)
             return -1;  /* error already set */
-        if (sslBytes <= 0)
-            return 0;
+        if (*sslBytes <= 0)
+            return 1;
     }
+    
+    return 0;
+}
+
+
+/* Process Message(s) from sslFrame */
+/* return Number of bytes on success, 0 for no data yet, and -1 on error */
+static int ProcessMessage(IpInfo* ipInfo, TcpInfo* tcpInfo,const byte* sslFrame,
+                          SnifferSession* session, int sslBytes, byte* data,
+                          const byte* end, char* error)
+{
+    const byte*       tmp;
+    RecordLayerHeader rh;
+    int               rhSize;
+    int               ret;
     
 doMessage:
     if (GetRecordHeader(sslFrame, &rh, &rhSize) != 0) {
@@ -1389,15 +1423,14 @@ doMessage:
     if (session->side == SERVER_END && session->serverCipherOn)
         sslFrame = DecryptMessage(session->sslServer, sslFrame, rhSize,
                                 session->sslServer->buffers.inputBuffer.buffer);
-    
     else if (session->side == CLIENT_END && session->clientCipherOn)
         sslFrame = DecryptMessage(session->sslClient, sslFrame, rhSize,
                                 session->sslClient->buffers.inputBuffer.buffer);
-    
+            
     switch ((enum ContentType)rh.type) {
         case handshake:
             Trace(GOT_HANDSHAKE_STR);
-            ret = DoHandShake(sslFrame, &sslBytes, &ipInfo, &tcpInfo, session,
+            ret = DoHandShake(sslFrame, &sslBytes, ipInfo, tcpInfo, session,
                               error);
             if (ret != 0) {
                 SetError(BAD_HANDSHAKE_STR, error, session, FATAL_ERROR_STATE);
@@ -1416,9 +1449,8 @@ doMessage:
             {
                 SSL*   ssl;
                 word32 inOutIdx = 0;
-                
+                    
                 /* TAO check for clear output before getting? */
-                
                 if (session->side == SERVER_END)
                     ssl = session->sslServer;
                 else
@@ -1434,8 +1466,7 @@ doMessage:
                     }
                 }
                 else {
-                    SetError(BAD_APP_DATA_STR, error, session,
-                             FATAL_ERROR_STATE);
+                    SetError(BAD_APP_DATA_STR, error,session,FATAL_ERROR_STATE);
                     return -1;
                 }
             }
@@ -1453,9 +1484,42 @@ doMessage:
         sslFrame = tmp;
         sslBytes = end - tmp;
         goto doMessage;
-    }
-
+    }    
+    
     return 0;
+}
+
+
+/* Passes in an IP/TCP packet for decoding (ethernet/localhost frame) removed */
+/* returns Number of bytes on success, 0 for no data yet, and -1 on error */
+int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
+{
+    TcpInfo           tcpInfo;
+    IpInfo            ipInfo;
+    const byte*       sslFrame;
+    const byte*       end = packet + length;
+    int               sslBytes;                /* ssl bytes unconsumed */
+    int               ret;
+    SnifferSession*   session = 0;
+
+    if (CheckHeaders(&ipInfo, &tcpInfo, packet, length, &sslFrame, &sslBytes,
+                     error) != 0)
+        return -1;
+    
+    ret = CheckSession(&ipInfo, &tcpInfo, sslBytes, &session, error);
+    if (ret == -1)     return -1;
+    else if (ret == 1) return  0;   /* done for now */
+    
+    ret = CheckSequence(&tcpInfo, session, sslBytes);
+    if (ret == -1)     return -1;
+    else if (ret == 1) return  0;   /* done for now */
+    
+    ret = CheckPreRecord(&ipInfo, &tcpInfo, sslFrame, session, &sslBytes,error);
+    if (ret == -1)     return -1;
+    else if (ret == 1) return  0;   /* done for now */
+
+    return ProcessMessage(&ipInfo, &tcpInfo, sslFrame, session, sslBytes, data,
+                          end, error);
 }
 
 
@@ -1471,6 +1535,9 @@ int ssl_Trace(const char* traceFile, char* error)
         }
         TraceOn = 1;
     }
+    else 
+        TraceOn = 0;
+
     return 0;
 }
 
