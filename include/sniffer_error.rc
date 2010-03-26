@@ -65,5 +65,9 @@ STRINGTABLE
     52, "Session in Fatal Error State"
     53, "Partial SSL record received"
     54, "Buffer Error, malformed input"
+    55, "Added to Partial Input"
+
+    56, "Received a Duplicate Packet"
+    57, "Received an Out of Order Packet"
 }
 

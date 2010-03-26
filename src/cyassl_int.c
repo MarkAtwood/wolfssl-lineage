@@ -3318,7 +3318,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
             ssl->buffers.outputBuffer.length += sendSz;
 
-            ret = SendBuffered(ssl);;
+            ret = SendBuffered(ssl);
         }
     
         if (ret == 0 || ret == WANT_WRITE) {
