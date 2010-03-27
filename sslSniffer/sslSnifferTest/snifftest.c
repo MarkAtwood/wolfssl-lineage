@@ -1,7 +1,7 @@
 /* snifftest.c */
 
 /* gcc command line
-   gcc snifftest.c -I../../include -L../../lib -lcyassl -lpcap
+   gcc snifftest.c -g -Wall -I../../include -L../../lib -lcyassl -lpcap
 */
 
 #ifdef _MSC_VER
@@ -13,6 +13,7 @@
 #include <stdio.h>         /* printf */
 #include <stdlib.h>        /* EXIT_SUCCESS */
 #include <signal.h>        /* signal */
+#include <string.h>        /* memcpy */
 
 #include "sniffer.h"
 
@@ -35,7 +36,8 @@ pcap_if_t *alldevs;
 static void sig_handler(const int sig) 
 {
     printf("SIGINT handled.\n");
-    pcap_close(pcap);
+    if (pcap)
+        pcap_close(pcap);
 	pcap_freealldevs(alldevs);
 #ifndef _WIN32
     ssl_FreeSniffer();
@@ -168,6 +170,11 @@ int main(int argc, char** argv)
         printf("SetPrivateKey ret = %d\n", ret);
 
     while (1) {
+        static int count = 0;
+        static byte save[65535];
+        static int  saveLen = 0;
+        static int  countSave = 0;
+
         struct pcap_pkthdr header;
         const unsigned char* packet = pcap_next(pcap, &header);
         if (packet) {
@@ -179,17 +186,39 @@ int main(int argc, char** argv)
 				if (loopback)
 					frame = LOCAL_IF_FRAME_LEN;
 				packet        += frame;
-				header.caplen -= frame;					
+				header.caplen -= frame;
+                count++;
+
+                if (header.caplen > 60 && (count % 5) == 0) {
+                    printf("\n\n taking away packet \n\n");
+                    countSave = count;
+                    saveLen   = header.caplen;
+                    memcpy(save, packet, saveLen);
+                    continue;
+                }
             }
             else
                 continue;
+
+
+            if (saveLen && ((countSave + 3) < count)) {
+                printf("\n\nputting back in out of order\n\n");
+                ret = ssl_DecodePacket(save, saveLen, data, err);
+                if (ret < 0)
+                    printf("ssl_Decode error string: %s\n", err);
+                if (ret > 0) {
+                    data[ret] = 0;
+				    printf("\t:%s\n", data);
+                }
+                saveLen = 0;
+            }
 
             ret = ssl_DecodePacket(packet, header.caplen, data, err);
             if (ret < 0)
                 printf("ssl_Decode error string: %s\n", err);
             if (ret > 0) {
                 data[ret] = 0;
-				printf("SSL App Data:%s\n", data);
+				printf("\t:%s\n", data);
             }
         }
     }

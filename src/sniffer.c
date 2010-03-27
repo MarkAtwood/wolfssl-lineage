@@ -280,8 +280,18 @@ static void FreeSnifferServer(SnifferServer* server)
 }
 
 
-/* remove PacketBuffer's resources/self */
-static void FreePacketBuffer(PacketBuffer* buffer)
+/* free PacketBuffer's resources/self */
+static void FreePacketBuffer(PacketBuffer* remove)
+{
+    if (remove) {
+        free(remove->data);
+        free(remove);
+    }
+}
+
+
+/* remove PacketBuffer List */
+static void FreePacketList(PacketBuffer* buffer)
 {
     if (buffer) {
         PacketBuffer* remove;
@@ -290,8 +300,7 @@ static void FreePacketBuffer(PacketBuffer* buffer)
         while (packet) {
             remove = packet;
             packet = packet->next;
-            free(remove->data);
-            free(remove);
+            FreePacketBuffer(remove);
         }
     }
 }
@@ -304,10 +313,10 @@ static void FreeSnifferSession(SnifferSession* session)
         SSL_free(session->sslClient);
         SSL_free(session->sslServer);
         
-        FreePacketBuffer(session->cliReassemblyList);
-        FreePacketBuffer(session->cliReadyList);
-        FreePacketBuffer(session->srvReassemblyList);
-        FreePacketBuffer(session->srvReadyList);
+        FreePacketList(session->cliReassemblyList);
+        FreePacketList(session->cliReadyList);
+        FreePacketList(session->srvReassemblyList);
+        FreePacketList(session->srvReadyList);
     }
     free(session);
 }
@@ -1365,6 +1374,7 @@ static void AddToReassembly(byte from, word32 relSeq, const byte* sslFrame,
         session->fatalError = 1;
         return;
     }
+    memcpy(data, sslFrame, sslBytes);
     
     add = (PacketBuffer*)malloc(sizeof(PacketBuffer));
     if (add == NULL) {
