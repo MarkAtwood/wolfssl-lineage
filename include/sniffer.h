@@ -43,8 +43,8 @@
 
 
 SSL_SNIFFER_API int ssl_SetPrivateKey(const char* address, int port,
-                                      const char* keyFile, const char* password,
-                                      char* error);
+                                      const char* keyFile, int keyType,
+                                      const char* password, char* error);
 
 SSL_SNIFFER_API int ssl_DecodePacket(const unsigned char* packet, int length,
                                      unsigned char* data, char* error);
@@ -55,7 +55,13 @@ SSL_SNIFFER_API int ssl_Trace(const char* traceFile, char* error);
 void ssl_InitSniffer(void);
         
 void ssl_FreeSniffer(void);
+
         
+/* ssl_SetPrivateKey keyTypes */
+enum {
+    FILETYPE_PEM = 1,
+    FILETYPE_DER = 2,
+};
 
 
 #ifdef __cplusplus

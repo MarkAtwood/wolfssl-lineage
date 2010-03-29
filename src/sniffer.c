@@ -27,6 +27,7 @@
 #include "sniffer.h"
 #include "sniffer_error.h"
 #include <string.h>
+#include <time.h>
 
 #ifndef _WIN32
 	#include <arpa/inet.h>
@@ -34,6 +35,12 @@
 
 #include <assert.h>
 
+
+#ifdef _WIN32
+    #define SNPRINTF _snprintf
+#else
+    #define SNPRINTF snprintf
+#endif
 
 
 /* Misc constants */
@@ -400,30 +407,6 @@ static void InitSession(SnifferSession* session)
 }
 
 
-/* Use platform specific GetError to write to tracfile if tracing */ 
-static void Trace(int idx) 
-{
-    if (TraceOn) {
-        char buffer[MAX_ERROR_LEN];
-        GetError(idx, buffer);
-        fprintf(TraceFile, "%s\n", buffer);
-#ifdef DEBUG_SNIFFER
-        fprintf(stderr,    "%s\n", buffer);
-#endif
-    }
-}
-
-
-/* Set user error string */
-static void SetError(int idx, char* error, SnifferSession* session, int fatal)
-{
-    GetError(idx, error);
-    Trace(idx);
-    if (session && fatal == FATAL_ERROR_STATE)
-        session->fatalError = 1;
-}
-
-
 /* IP Info from IP Header */
 typedef struct IpInfo {
     int    length;        /* length of this header */
@@ -509,6 +492,115 @@ typedef struct TcpHdr {
 #define TCP_SYN 0x02
 #define TCP_RST 0x04
 #define TCP_ACK 0x10
+
+
+
+
+
+/* Use platform specific GetError to write to tracfile if tracing */ 
+static void Trace(int idx) 
+{
+    if (TraceOn) {
+        char buffer[MAX_ERROR_LEN];
+        GetError(idx, buffer);
+        fprintf(TraceFile, "\t%s\n", buffer);
+#ifdef DEBUG_SNIFFER
+        fprintf(stderr,    "\t%s\n", buffer);
+#endif
+    }
+}
+
+
+/* Show TimeStamp for beginning of packet Trace */
+static void TraceHeader(void)
+{
+    if (TraceOn) {
+        time_t ticks = time(NULL);
+        fprintf(TraceFile, "\n%s", ctime(&ticks));
+    }
+}
+
+
+/* Show Set Server info for Trace */
+static void TraceSetServer(const char* server, int port, const char* keyFile)
+{
+    if (TraceOn) {
+        fprintf(TraceFile, "\tTrying to install a new Sniffer Server with\n");
+        fprintf(TraceFile, "\tserver: %s, port: %d, keyFile: %s\n", server,
+                port, keyFile);
+    }
+}
+
+
+/* Convert network byte order address into human readable */
+static char* IpToS(word32 addr, char* str)
+{
+    byte* p = (byte*)&addr;
+    
+    SNPRINTF(str, TRACE_MSG_SZ, "%d.%d.%d.%d", p[0], p[1], p[2], p[3]);
+    
+    return str;
+}
+
+
+/* Show destination and source address from Ip Hdr for packet Trace */
+static void TraceIP(IpHdr* iphdr)
+{
+    if (TraceOn) {
+        char src[TRACE_MSG_SZ];
+        char dst[TRACE_MSG_SZ];
+        fprintf(TraceFile, "\tdst:%s src:%s\n", IpToS(iphdr->dst, dst),
+                IpToS(iphdr->src, src));
+    }
+}
+
+
+/* Show destination and source port from Tcp Hdr for packet Trace */
+static void TraceTcp(TcpHdr* tcphdr)
+{
+    if (TraceOn) {
+        fprintf(TraceFile, "\tdstPort:%u srcPort:%u\n", ntohs(tcphdr->dstPort),
+                ntohs(tcphdr->srcPort));
+    }
+}
+
+
+/* Show sequence and payload length for Trace */
+static void TraceSequence(word32 seq, int len)
+{
+    if (TraceOn) {
+        fprintf(TraceFile, "\tSequence:%u, payload length:%d\n", seq, len);
+    }
+}
+
+
+/* Show server sequence startup from SYN */
+static void TraceServerSyn(word32 seq)
+{
+    if (TraceOn) {
+        fprintf(TraceFile, "\tServer SYN, Sequence Start:%u\n", seq);
+    }
+}
+
+
+/* Show  client sequence startup from SYN */
+static void TraceClientSyn(word32 seq)
+{
+    if (TraceOn) {
+        fprintf(TraceFile, "\tClient SYN, Sequence Start:%u\n", seq);
+    }
+}
+
+
+/* Set user error string */
+static void SetError(int idx, char* error, SnifferSession* session, int fatal)
+{
+    GetError(idx, error);
+    Trace(idx);
+    if (session && fatal == FATAL_ERROR_STATE)
+        session->fatalError = 1;
+}
+
 
 /* See if this IPV4 network order address has been registered */
 /* return 1 is true, 0 is false */
@@ -632,11 +724,17 @@ static SnifferSession* GetSnifferSession(IpInfo* ipInfo, TcpInfo* tcpInfo)
 /* Sets the private key for a specific server and port  */
 /* returns 0 on success, -1 on error */
 int ssl_SetPrivateKey(const char* serverAddress, int port, const char* keyFile,
-                      const char* password, char* error)
+                      int keyType, const char* password, char* error)
 {
-    int ret;
+    int            ret;
+    int            type = (keyType == FILETYPE_PEM) ? SSL_FILETYPE_PEM :
+                                                      SSL_FILETYPE_ASN1;
+    SnifferServer* sniffer;
+    
+    TraceHeader();
+    TraceSetServer(serverAddress, port, keyFile);
 
-    SnifferServer* sniffer = (SnifferServer*)malloc(sizeof(SnifferServer));
+    sniffer = (SnifferServer*)malloc(sizeof(SnifferServer));
     if (sniffer == NULL) {
         SetError(MEMORY_STR, error, NULL, 0);
         return -1;
@@ -646,10 +744,12 @@ int ssl_SetPrivateKey(const char* serverAddress, int port, const char* keyFile,
     strncpy(sniffer->address, serverAddress, MAX_SERVER_ADDRESS);
     sniffer->server = inet_addr(sniffer->address);
     sniffer->port = port;
+    
     /* start in client mode since SSL_new needs a cert for server */
     sniffer->ctx = SSL_CTX_new(SSLv3_client_method());
     if (!sniffer->ctx) {
         SetError(MEMORY_STR, error, NULL, 0);
+        FreeSnifferServer(sniffer);
         return -1;
     }
 
@@ -657,9 +757,10 @@ int ssl_SetPrivateKey(const char* serverAddress, int port, const char* keyFile,
         SSL_CTX_set_default_passwd_cb(sniffer->ctx, SetPassword);
         SSL_CTX_set_default_passwd_cb_userdata(sniffer->ctx, (void*)password);
     }
-    ret = SSL_CTX_use_PrivateKey_file(sniffer->ctx, keyFile, SSL_FILETYPE_PEM);
+    ret = SSL_CTX_use_PrivateKey_file(sniffer->ctx, keyFile, type);
     if (ret != SSL_SUCCESS) {
         SetError(KEY_FILE_STR, error, NULL, 0);
+        FreeSnifferServer(sniffer);
         return -1;
     }
     Trace(NEW_SERVER_STR);
@@ -681,6 +782,7 @@ static int CheckIpHdr(IpHdr* iphdr, IpInfo* info, char* error)
 {
     int    version = IP_V(iphdr);
 
+    TraceIP(iphdr);
     Trace(IP_CHECK_STR);
     if (version != IPV4) {
         SetError(BAD_IPVER_STR, error, NULL, 0); 
@@ -710,6 +812,7 @@ static int CheckIpHdr(IpHdr* iphdr, IpInfo* info, char* error)
 /* returns 0 on success, -1 on error */
 static int CheckTcpHdr(TcpHdr* tcphdr, TcpInfo* info, char* error)
 {
+    TraceTcp(tcphdr);
     Trace(TCP_CHECK_STR);
     info->srcPort   = ntohs(tcphdr->srcPort);
     info->dstPort   = ntohs(tcphdr->dstPort);
@@ -1294,6 +1397,7 @@ int TcpChecksum(IpInfo* ipInfo, TcpInfo* tcpInfo, int dataLen,
 int CheckHeaders(IpInfo* ipInfo, TcpInfo* tcpInfo, const byte* packet,
                  int length, const byte** sslFrame, int* sslBytes, char* error)
 {
+    TraceHeader();
     Trace(GOT_PACKET_STR);
     if (length < IP_HDR_SZ) {
         SetError(PACKET_HDR_SHORT_STR, error, NULL, 0);
@@ -1327,6 +1431,7 @@ static int CheckSession(IpInfo* ipInfo, TcpInfo* tcpInfo, int sslBytes,
 {
     /* create a new SnifferSession on client SYN */
     if (tcpInfo->syn && !tcpInfo->ack) {
+        TraceClientSyn(tcpInfo->sequence);
         *session = CreateSession(ipInfo, tcpInfo, error);
         if (*session == NULL) {
             *session = GetSnifferSession(ipInfo, tcpInfo);
@@ -1364,10 +1469,10 @@ static void AddToReassembly(byte from, word32 relSeq, const byte* sslFrame,
 {
     byte* data;
     PacketBuffer* add;
-    PacketBuffer* tmp;
     PacketBuffer** front = (from == CLIENT_END) ? &session->cliReassemblyList:
                                                   &session->srvReassemblyList;
-    PacketBuffer* prev = *front;
+    PacketBuffer* curr = *front;
+    PacketBuffer* prev = curr;
     
     data = (byte*)malloc(sslBytes);
     if (data == NULL) {
@@ -1389,25 +1494,22 @@ static void AddToReassembly(byte from, word32 relSeq, const byte* sslFrame,
     
     
     /* list is empty add to front */
-    if (!prev) {
+    if (!curr) {
         *front = add;
         return;
     }
     
     /* add to front if before current front */
-    if (add->begin < prev->begin) {
-        add->next = prev;
+    if (add->begin < curr->begin) {
+        add->next = curr;
         *front = add;
         return;
     }
     
-    while (prev && (add->begin > prev->begin)) {
-        tmp  = prev;
-        prev = prev->next;
+    while (curr && (add->begin > curr->begin)) {
+        prev = curr;
+        curr = curr->next;
     }
-    
-    if (!prev)
-        prev = tmp;
     
     /* make sure not an out of order duplicate */
     if (prev->begin == add->begin) {
@@ -1422,15 +1524,26 @@ static void AddToReassembly(byte from, word32 relSeq, const byte* sslFrame,
 
 /* Check TCP Sequence status */
 /* returns 0 on success (continue), -1 on error, 1 on success (end) */
-int CheckSequence(TcpInfo* tcpInfo, SnifferSession* session, int sslBytes,
-                  const byte* sslFrame)
+int CheckSequence(IpInfo* ipInfo, TcpInfo* tcpInfo, SnifferSession* session,
+                  int* sslBytes, const byte* sslFrame)
 {
+    int actualLen;
+    
     /* init SEQ from server to client */
     if (tcpInfo->syn && tcpInfo->ack) {
         session->srvSeqStart = tcpInfo->sequence;
         session->srvExpected = 1;
+        TraceServerSyn(tcpInfo->sequence);
         return 1;
     }
+    
+    /* adjust potential ethernet trailer */
+    actualLen = ipInfo->total - ipInfo->length - tcpInfo->length;
+    if (*sslBytes > actualLen) {
+        *sslBytes = actualLen;
+    }
+    
+    TraceSequence(tcpInfo->sequence, *sslBytes);
     
     /* adjust incoming server side */
     if (session->side == SERVER_END) {
@@ -1451,11 +1564,12 @@ int CheckSequence(TcpInfo* tcpInfo, SnifferSession* session, int sslBytes,
         else if (real > session->cliExpected) {
             Trace(OUT_OF_ORDER_STR);
             /* from client side */
-            AddToReassembly(CLIENT_END, real, sslFrame, sslBytes, session);
+            if (*sslBytes > 0)
+                AddToReassembly(CLIENT_END, real, sslFrame, *sslBytes, session);
             return 1;
         }
         
-        session->cliExpected += sslBytes;
+        session->cliExpected += *sslBytes;
         if (tcpInfo->fin)
             session->cliExpected += 1;
     }
@@ -1479,11 +1593,12 @@ int CheckSequence(TcpInfo* tcpInfo, SnifferSession* session, int sslBytes,
         else if (real > session->srvExpected) {
             Trace(OUT_OF_ORDER_STR);
             /* from server side */
-            AddToReassembly(SERVER_END, real, sslFrame, sslBytes, session);
+            if (*sslBytes > 0)
+                AddToReassembly(SERVER_END, real, sslFrame, *sslBytes, session);
             return 1;
         }
         
-        session->srvExpected += sslBytes;
+        session->srvExpected += *sslBytes;
         if (tcpInfo->fin)
             session->srvExpected += 1;
     }
@@ -1610,15 +1725,22 @@ static int ProcessMessage(IpInfo* ipInfo, TcpInfo* tcpInfo,const byte* sslFrame,
     int               rhSize;
     int               ret;
     int               decoded = 0;      /* bytes stored for user in data */
+    int               notEnough;        /* notEnough bytes yet flag */
     SSL*              ssl = (session->side == SERVER_END) ? session->sslServer :
                                                             session->sslClient;
 doMessage:
-    if (GetRecordHeader(sslFrame, &rh, &rhSize) != 0) {
-        SetError(BAD_RECORD_HDR_STR, error, session, FATAL_ERROR_STATE);
-        return -1;
+    notEnough = 0;
+    if (sslBytes >= RECORD_HEADER_SZ) {
+        if (GetRecordHeader(sslFrame, &rh, &rhSize) != 0) {
+            SetError(BAD_RECORD_HDR_STR, error, session, FATAL_ERROR_STATE);
+            return -1;
+        }
     }
-    if (rhSize > (sslBytes - RECORD_HEADER_SZ)) {
-        /* don't enough input yet to process full SSL record */
+    else
+        notEnough = 1;
+
+    if (notEnough || rhSize > (sslBytes - RECORD_HEADER_SZ)) {
+        /* don't have enough input yet to process full SSL record */
         Trace(PARTIAL_INPUT_STR);
         
         /* store partial if not there already, preRec could have added */
@@ -1730,7 +1852,7 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
     if (ret == -1)     return -1;
     else if (ret == 1) return  0;   /* done for now */
     
-    ret = CheckSequence(&tcpInfo, session, sslBytes, sslFrame);
+    ret = CheckSequence(&ipInfo, &tcpInfo, session, &sslBytes, sslFrame);
     if (ret == -1)     return -1;
     else if (ret == 1) return  0;   /* done for now */
     

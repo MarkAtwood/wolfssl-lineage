@@ -164,17 +164,19 @@ int main(int argc, char** argv)
     ret = pcap_setfilter(pcap, &fp);
     if (ret != 0) printf("pcap_setfilter failed %s\n", pcap_geterr(pcap));
 
-    ret = ssl_SetPrivateKey(server, port, "../../certs/server-key.pem", NULL,
-                            err);
+    ret = ssl_SetPrivateKey(server, port, "../../certs/server-key.pem",
+                            FILETYPE_PEM, NULL, err);
     if (ret != 0)
-        printf("SetPrivateKey ret = %d\n", ret);
+        err_sys(err);
 
     while (1) {
-        static int count = 0;
+#ifdef DROP_PACKETS
         static byte save[65535];
         static int  saveLen = 0;
         static int  countSave = 0;
+#endif
 
+        static int count = 0;
         struct pcap_pkthdr header;
         const unsigned char* packet = pcap_next(pcap, &header);
         if (packet) {
@@ -189,18 +191,21 @@ int main(int argc, char** argv)
 				header.caplen -= frame;
                 count++;
 
-                if (header.caplen > 60 && (count % 5) == 0) {
-                    printf("\n\n taking away packet \n\n");
+#ifdef DROP_PACKETS
+                if (header.caplen > 72 && saveLen == 0 && (count % 5) == 0) {
+                    printf("\n\n taking away packet\n\n");
                     countSave = count;
                     saveLen   = header.caplen;
                     memcpy(save, packet, saveLen);
                     continue;
                 }
+#endif
             }
             else
                 continue;
 
 
+#ifdef DROP_PACKETS
             if (saveLen && ((countSave + 3) < count)) {
                 printf("\n\nputting back in out of order\n\n");
                 ret = ssl_DecodePacket(save, saveLen, data, err);
@@ -212,6 +217,7 @@ int main(int argc, char** argv)
                 }
                 saveLen = 0;
             }
+#endif
 
             ret = ssl_DecodePacket(packet, header.caplen, data, err);
             if (ret < 0)
