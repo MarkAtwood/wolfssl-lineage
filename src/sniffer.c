@@ -1489,7 +1489,7 @@ static void AddToReassembly(byte from, word32 relSeq, const byte* sslFrame,
     }
     add->next = 0;
     add->begin = relSeq;
-    add->end   = relSeq + sslBytes;
+    add->end   = relSeq + sslBytes - 1;
     add->data  = data;
     
     
@@ -1688,7 +1688,7 @@ static int HaveMoreInput(SnifferSession* session, const byte** sslFrame,
     
     while (*front && ((*front)->begin == *expected) ) {
         word32 room = BUFFER16K_LEN - *length;
-        word32 packetLen = (*front)->end - (*front)->begin;
+        word32 packetLen = (*front)->end - (*front)->begin + 1;
         
         if (packetLen <= room) {
             PacketBuffer* remove = *front;
@@ -1703,6 +1703,8 @@ static int HaveMoreInput(SnifferSession* session, const byte** sslFrame,
             
             moreInput = 1;
         }
+        else
+            break;
     }
     if (moreInput) {
         *sslFrame = buffer;
