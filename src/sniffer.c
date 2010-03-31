@@ -919,6 +919,9 @@ static int ProcessClientKeyExchange(const byte* input, int* sslBytes,
         for (i = 0; i < SECRET_LEN; i++)
             printf("%02x", session->sslClient->arrays.masterSecret[i]);
         printf("\n");
+
+        printf("server suite = %d\n", session->sslServer->options.cipherSuite);
+        printf("client suite = %d\n", session->sslClient->options.cipherSuite);
     }
 #endif   
     
@@ -1463,69 +1466,132 @@ static int CheckSession(IpInfo* ipInfo, TcpInfo* tcpInfo, int sslBytes,
 }
 
 
-/* Add sslFrame to Reassembly List */
-static void AddToReassembly(byte from, word32 relSeq, const byte* sslFrame,
-                           int sslBytes, SnifferSession* session)
+#ifndef min
+
+static INLINE word32 min(word32 a, word32 b)
 {
-    byte* data;
-    PacketBuffer* add;
+    return a > b ? b : a;
+}
+
+#endif
+
+
+/* Create a Packet Buffer from *begin - end, adjust new *begin and bytesLeft */
+static PacketBuffer* CreateBuffer(word32* begin, word32 end, const byte* data,
+                                  int* bytesLeft)
+{
+    PacketBuffer* pb;
+    
+    int added = end - *begin + 1;
+    assert(*begin <= end);
+    
+    pb = (PacketBuffer*)malloc(sizeof(PacketBuffer));
+    if (pb == NULL) return NULL;
+    
+    pb->next  = 0;
+    pb->begin = *begin;
+    pb->end   = end;
+    pb->data = (byte*)malloc(added);
+    
+    if (pb->data == NULL) {
+        free(pb);
+        return NULL;
+    }
+    memcpy(pb->data, data, added);
+    
+    *bytesLeft -= added;
+    *begin      = pb->end + 1;
+    
+    return pb;
+}
+
+
+/* Add sslFrame to Reassembly List */
+/* returns 1 (end) on success, -1, on error */
+static int AddToReassembly(byte from, word32 seq, const byte* sslFrame,
+                           int sslBytes, SnifferSession* session, char* error)
+{
+    PacketBuffer*  add;
     PacketBuffer** front = (from == CLIENT_END) ? &session->cliReassemblyList:
                                                   &session->srvReassemblyList;
-    PacketBuffer* curr = *front;
-    PacketBuffer* prev = curr;
+    PacketBuffer*  curr = *front;
+    PacketBuffer*  prev = curr;
     
-    data = (byte*)malloc(sslBytes);
-    if (data == NULL) {
-        session->fatalError = 1;
-        return;
-    }
-    memcpy(data, sslFrame, sslBytes);
-    
-    add = (PacketBuffer*)malloc(sizeof(PacketBuffer));
-    if (add == NULL) {
-        free(data);
-        session->fatalError = 1;
-        return;
-    }
-    add->next = 0;
-    add->begin = relSeq;
-    add->end   = relSeq + sslBytes - 1;
-    add->data  = data;
-    
-    
-    /* list is empty add to front */
+    word32  startSeq = seq;
+    word32  added;
+    int     bytesLeft = sslBytes;  /* could be overlapping fragment */
+
+    /* if list is empty add full frame to front */
     if (!curr) {
+        add = CreateBuffer(&seq, seq + sslBytes - 1, sslFrame, &bytesLeft);
+        if (add == NULL) {
+            SetError(MEMORY_STR, error, session, FATAL_ERROR_STATE);
+            return -1;
+        }
         *front = add;
-        return;
+        return 1;
     }
     
-    /* add to front if before current front */
-    if (add->begin < curr->begin) {
+    /* add to front if before current front, up to next->begin */
+    if (seq < curr->begin) {
+        word32 end = seq + sslBytes - 1;
+        
+        if (end >= curr->begin)
+            end = curr->begin - 1;
+        
+        add = CreateBuffer(&seq, end, sslFrame, &bytesLeft);
+        if (add == NULL) {
+            SetError(MEMORY_STR, error, session, FATAL_ERROR_STATE);
+            return -1;
+        }
         add->next = curr;
         *front = add;
-        return;
     }
     
-    while (curr && (add->begin > curr->begin)) {
-        prev = curr;
-        curr = curr->next;
+    /* while we have bytes left, try to find a gap to fill */
+    while (bytesLeft > 0) {
+        /* get previous packet in list */
+        while (curr && (seq >= curr->begin)) {
+            prev = curr;
+            curr = curr->next;
+        }
+        
+        /* don't add  duplicate data */
+        if (prev->end >= seq) {
+            if ( (seq + bytesLeft - 1) <= prev->end)
+                return 1;
+            seq = prev->end + 1;
+            bytesLeft = startSeq + sslBytes - seq;
+        }
+        
+        if (!curr)
+            /* we're at the end */
+            added = bytesLeft;
+        else 
+            /* we're in between two frames */
+            added = min(bytesLeft, curr->begin - seq);
+        
+        /* data already there */
+        if (added == 0)
+            continue;
+        
+        add = CreateBuffer(&seq, seq + added - 1, &sslFrame[seq - startSeq],
+                           &bytesLeft);
+        if (add == NULL) {
+            SetError(MEMORY_STR, error, session, FATAL_ERROR_STATE);
+            return -1;
+        }
+        add->next  = prev->next;
+        prev->next = add;
     }
-    
-    /* make sure not an out of order duplicate */
-    if (prev->begin == add->begin) {
-        FreePacketBuffer(add);
-        return;
-    }
-    
-    add->next  = prev->next;
-    prev->next = add;
+    return 1;
 }
 
 
 /* Check TCP Sequence status */
 /* returns 0 on success (continue), -1 on error, 1 on success (end) */
 int CheckSequence(IpInfo* ipInfo, TcpInfo* tcpInfo, SnifferSession* session,
-                  int* sslBytes, const byte* sslFrame)
+                  int* sslBytes, const byte** sslFrame, char* error)
 {
     int actualLen;
     
@@ -1559,14 +1625,28 @@ int CheckSequence(IpInfo* ipInfo, TcpInfo* tcpInfo, SnifferSession* session,
         
         if (real < session->cliExpected) {
             Trace(DUPLICATE_STR);
-            return 1;
+            if (real + *sslBytes > session->cliExpected) {
+                int overlap = session->cliExpected - real;
+                
+                *sslFrame += overlap;
+                *sslBytes -= overlap;
+                
+                if (session->cliReassemblyList) {
+                    int newEnd = session->cliExpected + *sslBytes;
+                    
+                    if (newEnd > session->cliReassemblyList->begin)
+                        *sslBytes -= newEnd - session->cliReassemblyList->begin;
+                }
+            }
+            else
+                return 1;
         }
         else if (real > session->cliExpected) {
             Trace(OUT_OF_ORDER_STR);
             /* from client side */
             if (*sslBytes > 0)
-                AddToReassembly(CLIENT_END, real, sslFrame, *sslBytes, session);
-            return 1;
+                return AddToReassembly(CLIENT_END, real, *sslFrame, *sslBytes,
+                                      session, error);
         }
         
         session->cliExpected += *sslBytes;
@@ -1588,14 +1668,28 @@ int CheckSequence(IpInfo* ipInfo, TcpInfo* tcpInfo, SnifferSession* session,
         
         if (real < session->srvExpected) {
             Trace(DUPLICATE_STR);
-            return 1;
+            if (real + *sslBytes > session->srvExpected) {
+                int overlap = session->srvExpected - real;
+                
+                *sslFrame += overlap;
+                *sslBytes -= overlap;
+                
+                if (session->srvReassemblyList) {
+                    int newEnd = session->srvExpected + *sslBytes;
+                    
+                    if (newEnd > session->srvReassemblyList->begin)
+                        *sslBytes -= newEnd - session->srvReassemblyList->begin;
+                }
+            }
+            else
+                return 1;
         }
         else if (real > session->srvExpected) {
             Trace(OUT_OF_ORDER_STR);
             /* from server side */
             if (*sslBytes > 0)
-                AddToReassembly(SERVER_END, real, sslFrame, *sslBytes, session);
-            return 1;
+                return AddToReassembly(SERVER_END, real, *sslFrame, *sslBytes,
+                                       session, error);
         }
         
         session->srvExpected += *sslBytes;
@@ -1854,7 +1948,7 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
     if (ret == -1)     return -1;
     else if (ret == 1) return  0;   /* done for now */
     
-    ret = CheckSequence(&ipInfo, &tcpInfo, session, &sslBytes, sslFrame);
+    ret = CheckSequence(&ipInfo, &tcpInfo, session, &sslBytes, & sslFrame, error);
     if (ret == -1)     return -1;
     else if (ret == 1) return  0;   /* done for now */
     

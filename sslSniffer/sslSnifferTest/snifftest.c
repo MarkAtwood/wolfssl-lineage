@@ -193,7 +193,7 @@ int main(int argc, char** argv)
 
 #ifdef DROP_PACKETS
                 if (header.caplen > 72 && saveLen == 0 && (count % 5) == 0) {
-                    printf("\n\n taking away packet\n\n");
+                    printf("\n\n taking away packet of len\n\n");
                     countSave = count;
                     saveLen   = header.caplen;
                     memcpy(save, packet, saveLen);
