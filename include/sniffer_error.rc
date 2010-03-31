@@ -69,5 +69,8 @@ STRINGTABLE
 
     56, "Received a Duplicate Packet"
     57, "Received an Out of Order Packet"
+    58, "Received an Overlap Duplicate Packet"
+    59, "Received an Overlap Reassembly Begin Duplicate Packet"
+    60, "Received an Overlap Reassembly End Duplicate Packet"
 }
 

@@ -187,6 +187,9 @@ static const char* const msgTable[] =
     /* 56 */
     "Received a Duplicate Packet",
     "Received an Out of Order Packet",
+    "Received an Overlap Duplicate Packet",
+    "Received an Overlap Reassembly Begin Duplicate Packet",
+    "Received an Overlap Reassembly End Duplicate Packet",
 };
 
 
@@ -570,6 +573,16 @@ static void TraceSequence(word32 seq, int len)
 {
     if (TraceOn) {
         fprintf(TraceFile, "\tSequence:%u, payload length:%d\n", seq, len);
+    }
+}
+
+
+/* Show relative expected and relative received sequences */
+static void TraceRelativeSequence(word32 expected, word32 got)
+{
+    if (TraceOn) {
+        fprintf(TraceFile, "\tExpected sequence:%u, received sequence:%u\n",
+                expected, got);
     }
 }
 
@@ -1512,7 +1525,7 @@ static int AddToReassembly(byte from, word32 seq, const byte* sslFrame,
                            int sslBytes, SnifferSession* session, char* error)
 {
     PacketBuffer*  add;
-    PacketBuffer** front = (from == CLIENT_END) ? &session->cliReassemblyList:
+    PacketBuffer** front = (from == SERVER_END) ? &session->cliReassemblyList:
                                                   &session->srvReassemblyList;
     PacketBuffer*  curr = *front;
     PacketBuffer*  prev = curr;
@@ -1588,10 +1601,73 @@ static int AddToReassembly(byte from, word32 seq, const byte* sslFrame,
 }
 
 
+/* Adjust incoming sequence based on side */
+/* returns 0 on success (continue), -1 on error, 1 on success (end) */
+static int AdjustSequence(TcpInfo* tcpInfo, SnifferSession* session,
+                          int* sslBytes, const byte** sslFrame, char* error)
+{
+    
+    word32  seqStart = (session->side == SERVER_END) ? session->cliSeqStart :
+                                                       session->srvSeqStart;
+    word32  real     = tcpInfo->sequence - seqStart;
+    word32* expected = (session->side == SERVER_END) ? &session->cliExpected :
+                                                       &session->srvExpected;
+    PacketBuffer* reassemblyList = (session->side == SERVER_END) ?
+                        session->cliReassemblyList : session->srvReassemblyList;
+    
+    /* handle rollover of sequence */
+    if (tcpInfo->sequence < seqStart)
+        real = 0xffffffffU - seqStart + tcpInfo->sequence;
+        
+    TraceRelativeSequence(*expected, real);
+    
+    if (real < *expected) {
+        Trace(DUPLICATE_STR);
+        if (real + *sslBytes > *expected) {
+            int overlap = *expected - real;
+            Trace(OVERLAP_DUPLICATE_STR);
+                
+            *sslFrame += overlap;
+            *sslBytes -= overlap;
+                
+            if (reassemblyList) {
+                int newEnd = *expected + *sslBytes;
+                    
+                if (newEnd > reassemblyList->begin) {
+                    Trace(OVERLAP_REASSEMBLY_BEGIN_STR);
+                    *sslBytes -= newEnd - reassemblyList->begin;
+                }
+                if (newEnd > reassemblyList->end) {
+                    Trace(OVERLAP_REASSEMBLY_END_STR);
+                    AddToReassembly(session->side, reassemblyList->end + 1, 
+                                *sslFrame + reassemblyList->end - *expected + 1,
+                                 newEnd - reassemblyList->end, session, error);
+                }
+            }
+        }
+        else
+            return 1;
+    }
+    else if (real > *expected) {
+        Trace(OUT_OF_ORDER_STR);
+        if (*sslBytes > 0)
+            return AddToReassembly(session->side, real, *sslFrame, *sslBytes,
+                                   session, error);
+    }
+    /* got expected sequence */
+    *expected += *sslBytes;
+    if (tcpInfo->fin)
+        *expected += 1;
+    
+    return 0;
+}
+
+
 /* Check TCP Sequence status */
 /* returns 0 on success (continue), -1 on error, 1 on success (end) */
-int CheckSequence(IpInfo* ipInfo, TcpInfo* tcpInfo, SnifferSession* session,
-                  int* sslBytes, const byte** sslFrame, char* error)
+static int CheckSequence(IpInfo* ipInfo, TcpInfo* tcpInfo,
+                         SnifferSession* session, int* sslBytes,
+                         const byte** sslFrame, char* error)
 {
     int actualLen;
     
@@ -1611,93 +1687,7 @@ int CheckSequence(IpInfo* ipInfo, TcpInfo* tcpInfo, SnifferSession* session,
     
     TraceSequence(tcpInfo->sequence, *sslBytes);
     
-    /* adjust incoming server side */
-    if (session->side == SERVER_END) {
-        word32 real = tcpInfo->sequence - session->cliSeqStart;
-        /* handle rollover of sequence */
-        if (tcpInfo->sequence < session->cliSeqStart)
-            real = 0xffffffffU - session->cliSeqStart + tcpInfo->sequence;
-        
-#ifdef DEBUG_SNIFFER
-        printf("\tserver expected = %u\n", session->cliExpected);
-        printf("\tserver real     = %u\n", real);
-#endif
-        
-        if (real < session->cliExpected) {
-            Trace(DUPLICATE_STR);
-            if (real + *sslBytes > session->cliExpected) {
-                int overlap = session->cliExpected - real;
-                
-                *sslFrame += overlap;
-                *sslBytes -= overlap;
-                
-                if (session->cliReassemblyList) {
-                    int newEnd = session->cliExpected + *sslBytes;
-                    
-                    if (newEnd > session->cliReassemblyList->begin)
-                        *sslBytes -= newEnd - session->cliReassemblyList->begin;
-                }
-            }
-            else
-                return 1;
-        }
-        else if (real > session->cliExpected) {
-            Trace(OUT_OF_ORDER_STR);
-            /* from client side */
-            if (*sslBytes > 0)
-                return AddToReassembly(CLIENT_END, real, *sslFrame, *sslBytes,
-                                      session, error);
-        }
-        
-        session->cliExpected += *sslBytes;
-        if (tcpInfo->fin)
-            session->cliExpected += 1;
-    }
-    
-    /* adjust iincoming client side */
-    if (session->side == CLIENT_END) {
-        word32 real = tcpInfo->sequence - session->srvSeqStart;
-        /* handle sequence rollover */
-        if (tcpInfo->sequence < session->srvSeqStart)
-            real = 0xffffffffU - session->srvSeqStart + tcpInfo->sequence;
-        
-#ifdef DEBUG_SNIFFER
-        printf("\tclient expected = %u\n", session->srvExpected);
-        printf("\tclient real     = %u\n", real);
-#endif
-        
-        if (real < session->srvExpected) {
-            Trace(DUPLICATE_STR);
-            if (real + *sslBytes > session->srvExpected) {
-                int overlap = session->srvExpected - real;
-                
-                *sslFrame += overlap;
-                *sslBytes -= overlap;
-                
-                if (session->srvReassemblyList) {
-                    int newEnd = session->srvExpected + *sslBytes;
-                    
-                    if (newEnd > session->srvReassemblyList->begin)
-                        *sslBytes -= newEnd - session->srvReassemblyList->begin;
-                }
-            }
-            else
-                return 1;
-        }
-        else if (real > session->srvExpected) {
-            Trace(OUT_OF_ORDER_STR);
-            /* from server side */
-            if (*sslBytes > 0)
-                return AddToReassembly(SERVER_END, real, *sslFrame, *sslBytes,
-                                       session, error);
-        }
-        
-        session->srvExpected += *sslBytes;
-        if (tcpInfo->fin)
-            session->srvExpected += 1;
-    }
-    
-    return 0;
+    return AdjustSequence(tcpInfo, session, sslBytes, sslFrame, error);    
 }
 
 
