@@ -72,5 +72,7 @@ STRINGTABLE
     58, "Received an Overlap Duplicate Packet"
     59, "Received an Overlap Reassembly Begin Duplicate Packet"
     60, "Received an Overlap Reassembly End Duplicate Packet"
+    
+    61, "Missed the Client Hello Entirely"
 }
 

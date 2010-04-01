@@ -1,8 +1,11 @@
 /* snifftest.c */
 
 /* gcc command line
-   gcc snifftest.c -g -Wall -I../../include -L../../lib -lcyassl -lpcap
+   gcc snifftest.c -I../../include -L../../lib -lcyassl -lpcap
 */
+
+
+/* a basic test for CyaSSL Sniffing on server side */
 
 #ifdef _MSC_VER
 	/* builds on *nix too, for scanf device and port */
@@ -13,7 +16,6 @@
 #include <stdio.h>         /* printf */
 #include <stdlib.h>        /* EXIT_SUCCESS */
 #include <signal.h>        /* signal */
-#include <string.h>        /* memcpy */
 
 #include "sniffer.h"
 
@@ -25,7 +27,7 @@
 typedef unsigned char byte;
 
 enum {
-    ETHER_IF_FRAME_LEN = 14,   /* ethernet  interface frame length */
+    ETHER_IF_FRAME_LEN = 14,   /* ethernet interface frame length */
     LOCAL_IF_FRAME_LEN =  4,   /* localhost interface frame length  */
 };
 
@@ -88,7 +90,6 @@ int main(int argc, char** argv)
     signal(SIGINT, sig_handler);
 
 #ifndef _WIN32
-    /* windows dll handles init and free */
     ssl_InitSniffer();
 #endif
     ssl_Trace("./tracefile.txt", err);
@@ -170,13 +171,6 @@ int main(int argc, char** argv)
         err_sys(err);
 
     while (1) {
-#ifdef DROP_PACKETS
-        static byte save[65535];
-        static int  saveLen = 0;
-        static int  countSave = 0;
-#endif
-
-        static int count = 0;
         struct pcap_pkthdr header;
         const unsigned char* packet = pcap_next(pcap, &header);
         if (packet) {
@@ -188,43 +182,17 @@ int main(int argc, char** argv)
 				if (loopback)
 					frame = LOCAL_IF_FRAME_LEN;
 				packet        += frame;
-				header.caplen -= frame;
-                count++;
-
-#ifdef DROP_PACKETS
-                if (header.caplen > 72 && saveLen == 0 && (count % 5) == 0) {
-                    printf("\n\n taking away packet of len\n\n");
-                    countSave = count;
-                    saveLen   = header.caplen;
-                    memcpy(save, packet, saveLen);
-                    continue;
-                }
-#endif
+				header.caplen -= frame;					
             }
             else
                 continue;
 
-
-#ifdef DROP_PACKETS
-            if (saveLen && ((countSave + 3) < count)) {
-                printf("\n\nputting back in out of order\n\n");
-                ret = ssl_DecodePacket(save, saveLen, data, err);
-                if (ret < 0)
-                    printf("ssl_Decode error string: %s\n", err);
-                if (ret > 0) {
-                    data[ret] = 0;
-				    printf("\t:%s\n", data);
-                }
-                saveLen = 0;
-            }
-#endif
-
             ret = ssl_DecodePacket(packet, header.caplen, data, err);
             if (ret < 0)
-                printf("ssl_Decode error string: %s\n", err);
+                printf("ssl_Decode ret = %d\n", ret);
             if (ret > 0) {
                 data[ret] = 0;
-				printf("\t:%s\n", data);
+				printf("SSL App Data:%s\n", data);
             }
         }
     }

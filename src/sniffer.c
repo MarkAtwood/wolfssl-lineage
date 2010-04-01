@@ -190,6 +190,9 @@ static const char* const msgTable[] =
     "Received an Overlap Duplicate Packet",
     "Received an Overlap Reassembly Begin Duplicate Packet",
     "Received an Overlap Reassembly End Duplicate Packet",
+
+    /* 61 */
+    "Missed the Client Hello Entirely",
 };
 
 
@@ -233,6 +236,28 @@ typedef struct SnifferServer {
 } SnifferServer;
 
 
+/* Session Flags */
+typedef struct Flags {
+    byte           side;            /* which end is current packet headed */
+    byte           serverCipherOn;  /* indicates whether cipher is active */
+    byte           clientCipherOn;  /* indicates whether cipher is active */
+    byte           resuming;        /* did this session come from resumption */
+    byte           cached;          /* have we cached this session yet */
+    byte           clientHello;     /* processed client hello yet, for SSLv2 */
+    byte           finCount;        /* get both FINs before removing */
+    byte           fatalError;      /* fatal error state */    
+} Flags;
+
+
+/* Out of Order FIN caputre */
+typedef struct FinCaputre {
+    word32 cliFinSeq;               /* client relative sequence FIN  0 is no */
+    word32 srvFinSeq;               /* server relative sequence FIN, 0 is no */
+    byte   cliCounted;              /* did we count yet, detects duplicates */
+    byte   srvCounted;              /* did we count yet, detects duplicates */
+} FinCaputre;
+
+
 /* Sniffer Session holds info for each client/server SSL/TLS session */
 typedef struct SnifferSession {
     SnifferServer* context;         /* server context */
@@ -246,18 +271,10 @@ typedef struct SnifferSession {
     word32         srvSeqStart;     /* server start sequence */
     word32         cliExpected;     /* client expected sequence (relative) */
     word32         srvExpected;     /* server expected sequence (relative) */
-    byte           side;            /* which end is current packet headed */
-    byte           serverCipherOn;  /* indicates whether cipher is active */
-    byte           clientCipherOn;  /* indicates whether cipher is active */
-    byte           resuming;        /* did this session come from resumption */
-    byte           cached;          /* have we cached this session yet */
-    byte           clientHello;     /* processed client hello yet, for SSLv2 */
-    byte           finCount;        /* get both FINs before removing */
-    byte           fatalError;      /* fatal error state */
+    FinCaputre     finCaputre;      /* retain out of order FIN s */
+    Flags          flags;           /* session flags */
     PacketBuffer*  cliReassemblyList; /* client out of order packets */
-    PacketBuffer*  cliReadyList;    /* client in order packets ready */
     PacketBuffer*  srvReassemblyList; /* server out of order packets */
-    PacketBuffer*  srvReadyList;    /* server in order packets  */
     struct SnifferSession* next;    /* for hash table list */
 } SnifferSession;
 
@@ -324,9 +341,7 @@ static void FreeSnifferSession(SnifferSession* session)
         SSL_free(session->sslServer);
         
         FreePacketList(session->cliReassemblyList);
-        FreePacketList(session->cliReadyList);
         FreePacketList(session->srvReassemblyList);
-        FreePacketList(session->srvReadyList);
     }
     free(session);
 }
@@ -380,6 +395,30 @@ static void InitSnifferServer(SnifferServer* sniffer)
 }
 
 
+/* Initialize session flags */
+static void InitFlags(Flags* flags)
+{
+    flags->side           = 0;
+    flags->serverCipherOn = 0;
+    flags->clientCipherOn = 0;
+    flags->resuming       = 0;
+    flags->cached         = 0;
+    flags->clientHello    = 0;
+    flags->finCount       = 0;
+    flags->fatalError     = 0;
+}
+
+
+/* Initialize FIN Capture */
+static void InitFinCapture(FinCaputre* cap)
+{
+    cap->cliFinSeq  = 0;
+    cap->srvFinSeq  = 0;
+    cap->cliCounted = 0;
+    cap->srvCounted = 0;
+}
+
+
 /* Initialize a Sniffer Session */
 static void InitSession(SnifferSession* session)
 {
@@ -394,19 +433,12 @@ static void InitSession(SnifferSession* session)
     session->srvSeqStart    = 0;
     session->cliExpected    = 0;
     session->srvExpected    = 0;
-    session->side           = 0;
-    session->serverCipherOn = 0;
-    session->clientCipherOn = 0;
-    session->resuming       = 0;
-    session->cached         = 0;
-    session->clientHello    = 0;
-    session->finCount       = 0;
-    session->fatalError     = 0;
     session->cliReassemblyList = 0;
-    session->cliReadyList   = 0;
     session->srvReassemblyList = 0;
-    session->srvReadyList   = 0;
     session->next           = 0;
+    
+    InitFlags(&session->flags);
+    InitFinCapture(&session->finCaputre);
 }
 
 
@@ -611,7 +643,7 @@ static void SetError(int idx, char* error, SnifferSession* session, int fatal)
     GetError(idx, error);
     Trace(idx);
     if (session && fatal == FATAL_ERROR_STATE)
-        session->fatalError = 1;
+        session->flags.fatalError = 1;
 }
 
 
@@ -725,9 +757,9 @@ static SnifferSession* GetSnifferSession(IpInfo* ipInfo, TcpInfo* tcpInfo)
     if (session) {
         if (ipInfo->dst == session->context->server &&
             tcpInfo->dstPort == session->context->port)
-            session->side = SERVER_END;
+            session->flags.side = SERVER_END;
         else
-            session->side = CLIENT_END;
+            session->flags.side = CLIENT_END;
     }    
     
     return session;
@@ -950,6 +982,12 @@ static int ProcessServerHello(const byte* input, int* sslBytes,
     ProtocolVersion pv;
     byte            b;
     int             toRead = sizeof(ProtocolVersion) + RAN_LEN + ENUM_LEN;
+    
+    /* make sure we didn't miss ClientHello */
+    if (session->flags.clientHello == 0) {
+        SetError(MISSED_CLIENT_HELLO_STR, error, session, FATAL_ERROR_STATE);
+        return -1;
+    }
 
     /* make sure can read through session len */
     if (toRead > *sslBytes) {
@@ -999,7 +1037,7 @@ static int ProcessServerHello(const byte* input, int* sslBytes,
         /* make sure client has master secret too */
         memcpy(session->sslClient->arrays.masterSecret,
                session->sslServer->arrays.masterSecret, SECRET_LEN);
-        session->resuming = 1;
+        session->flags.resuming = 1;
         
         Trace(SERVER_DID_RESUMPTION_STR);
         if (SetCipherSpecs(session->sslServer) != 0) {
@@ -1043,12 +1081,11 @@ static int ProcessClientHello(const byte* input, int* sslBytes,
     byte sessionLen;
     int  toRead = sizeof(ProtocolVersion) + RAN_LEN + ENUM_LEN;
     
-    session->clientHello = 1;  /* don't process again */
+    session->flags.clientHello = 1;  /* don't process again */
     
     /* make sure can read up to session len */
     if (toRead > *sslBytes) {
-        /* set erorr to short packet */
-        Trace(CLIENT_HELLO_INPUT_STR);
+        SetError(CLIENT_HELLO_INPUT_STR, error, session, FATAL_ERROR_STATE);
         return -1;
     }
     
@@ -1135,15 +1172,15 @@ static int DoHandShake(const byte* input, int* sslBytes, IpInfo* ipInfo,
                 SSL*   ssl;
                 word32 inOutIdx = 0;
                 
-                if (session->side == SERVER_END)
+                if (session->flags.side == SERVER_END)
                     ssl = session->sslServer;
                 else
                     ssl = session->sslClient;
                 ret = DoFinished(ssl, input, &inOutIdx, SNIFF);
                 
-                if (ret == 0 && session->cached == 0) {
+                if (ret == 0 && session->flags.cached == 0) {
                     AddSession(session->sslServer);
-                    session->cached = 1;
+                    session->flags.cached = 1;
                 }
             }
             break;
@@ -1308,9 +1345,9 @@ static SnifferSession* CreateSession(IpInfo* ipInfo, TcpInfo* tcpInfo,
     /* determine headed side */
     if (ipInfo->dst == session->context->server &&
         tcpInfo->dstPort == session->context->port)
-        session->side = SERVER_END;
+        session->flags.side = SERVER_END;
     else
-        session->side = CLIENT_END;        
+        session->flags.side = CLIENT_END;        
     
     return session;
 }
@@ -1326,7 +1363,7 @@ static int DoOldHello(SnifferSession* session, const byte* sslFrame,
     int         ret;
 
     Trace(GOT_OLD_CLIENT_HELLO_STR);
-    session->clientHello = 1;    /* don't process again */
+    session->flags.clientHello = 1;    /* don't process again */
     b0 = *input++;
     b1 = *input++;
     *sslBytes -= 2;
@@ -1582,7 +1619,7 @@ static int AddToReassembly(byte from, word32 seq, const byte* sslFrame,
             added = bytesLeft;
         else 
             /* we're in between two frames */
-            added = min(bytesLeft, curr->begin - seq);
+            added = min((word32)bytesLeft, curr->begin - seq);
         
         /* data already there */
         if (added == 0)
@@ -1601,18 +1638,33 @@ static int AddToReassembly(byte from, word32 seq, const byte* sslFrame,
 }
 
 
+/* Add out of order FIN capture */
+/* returns 1 for success (end) */
+static int AddFinCapture(SnifferSession* session, word32 sequence)
+{
+    if (session->flags.side == SERVER_END) {
+        if (session->finCaputre.cliCounted == 0)
+            session->finCaputre.cliFinSeq = sequence;
+    }
+    else {
+        if (session->finCaputre.srvCounted == 0)
+            session->finCaputre.srvFinSeq = sequence;
+    }
+    return 1;
+}
+
+
 /* Adjust incoming sequence based on side */
 /* returns 0 on success (continue), -1 on error, 1 on success (end) */
 static int AdjustSequence(TcpInfo* tcpInfo, SnifferSession* session,
                           int* sslBytes, const byte** sslFrame, char* error)
 {
-    
-    word32  seqStart = (session->side == SERVER_END) ? session->cliSeqStart :
-                                                       session->srvSeqStart;
+    word32  seqStart = (session->flags.side == SERVER_END) ? 
+                                     session->cliSeqStart :session->srvSeqStart;
     word32  real     = tcpInfo->sequence - seqStart;
-    word32* expected = (session->side == SERVER_END) ? &session->cliExpected :
-                                                       &session->srvExpected;
-    PacketBuffer* reassemblyList = (session->side == SERVER_END) ?
+    word32* expected = (session->flags.side == SERVER_END) ?
+                                  &session->cliExpected : &session->srvExpected;
+    PacketBuffer* reassemblyList = (session->flags.side == SERVER_END) ?
                         session->cliReassemblyList : session->srvReassemblyList;
     
     /* handle rollover of sequence */
@@ -1631,7 +1683,7 @@ static int AdjustSequence(TcpInfo* tcpInfo, SnifferSession* session,
             *sslBytes -= overlap;
                 
             if (reassemblyList) {
-                int newEnd = *expected + *sslBytes;
+                word32 newEnd = *expected + *sslBytes;
                     
                 if (newEnd > reassemblyList->begin) {
                     Trace(OVERLAP_REASSEMBLY_BEGIN_STR);
@@ -1639,7 +1691,7 @@ static int AdjustSequence(TcpInfo* tcpInfo, SnifferSession* session,
                 }
                 if (newEnd > reassemblyList->end) {
                     Trace(OVERLAP_REASSEMBLY_END_STR);
-                    AddToReassembly(session->side, reassemblyList->end + 1, 
+                    AddToReassembly(session->flags.side, reassemblyList->end +1, 
                                 *sslFrame + reassemblyList->end - *expected + 1,
                                  newEnd - reassemblyList->end, session, error);
                 }
@@ -1651,8 +1703,10 @@ static int AdjustSequence(TcpInfo* tcpInfo, SnifferSession* session,
     else if (real > *expected) {
         Trace(OUT_OF_ORDER_STR);
         if (*sslBytes > 0)
-            return AddToReassembly(session->side, real, *sslFrame, *sslBytes,
-                                   session, error);
+            return AddToReassembly(session->flags.side, real, *sslFrame,
+                                   *sslBytes, session, error);
+        else if (tcpInfo->fin)
+            return AddFinCapture(session, real);
     }
     /* got expected sequence */
     *expected += *sslBytes;
@@ -1698,23 +1752,23 @@ static int CheckPreRecord(IpInfo* ipInfo, TcpInfo* tcpInfo,
                           int* sslBytes, char* error)
 {
     word32 length;
-    SSL*   ssl = (session->side == SERVER_END) ? session->sslServer :
-                                                 session->sslClient;
+    SSL*   ssl = (session->flags.side == SERVER_END) ? session->sslServer :
+                                                       session->sslClient;
     /* remove SnifferSession on 2nd FIN or RST */
     if (tcpInfo->fin || tcpInfo->rst) {
         /* flag FIN and RST */
         if (tcpInfo->fin)
-            session->finCount += 1;
+            session->flags.finCount += 1;
         else if (tcpInfo->rst)
-            session->finCount += 2;
+            session->flags.finCount += 2;
         
-        if (session->finCount >= 2) {
+        if (session->flags.finCount >= 2) {
             RemoveSession(session, ipInfo, tcpInfo);
             return 1;
         }
     }
     
-    if (session->fatalError == FATAL_ERROR_STATE) {
+    if (session->flags.fatalError == FATAL_ERROR_STATE) {
         SetError(FATAL_ERROR_STR, error, NULL, 0);
         return -1;
     }
@@ -1738,7 +1792,7 @@ static int CheckPreRecord(IpInfo* ipInfo, TcpInfo* tcpInfo,
         *sslFrame = ssl->buffers.inputBuffer.buffer;
     }
     
-    if (session->clientHello == 0 && **sslFrame != handshake) {
+    if (session->flags.clientHello == 0 && **sslFrame != handshake) {
         int rhSize;
         int ret = DoOldHello(session, *sslFrame, &rhSize, sslBytes, error);
         if (ret < 0)
@@ -1758,15 +1812,15 @@ static int HaveMoreInput(SnifferSession* session, const byte** sslFrame,
 {
     /* sequence and reassembly based on from, not to */
     int            moreInput = 0;
-    PacketBuffer** front = (session->side == SERVER_END) ?
+    PacketBuffer** front = (session->flags.side == SERVER_END) ?
                       &session->cliReassemblyList : &session->srvReassemblyList;
-    word32*        expected = (session->side == SERVER_END) ?
+    word32*        expected = (session->flags.side == SERVER_END) ?
                                   &session->cliExpected : &session->srvExpected;
     /* buffer is on receiving end */
-    word32*        length = (session->side == SERVER_END) ?
+    word32*        length = (session->flags.side == SERVER_END) ?
                                &session->sslServer->buffers.inputBuffer.length :
                                &session->sslClient->buffers.inputBuffer.length;
-    byte*          buffer = (session->side == SERVER_END) ?
+    byte*          buffer = (session->flags.side == SERVER_END) ?
                                 session->sslServer->buffers.inputBuffer.buffer :
                                 session->sslClient->buffers.inputBuffer.buffer;
     
@@ -1812,8 +1866,8 @@ static int ProcessMessage(IpInfo* ipInfo, TcpInfo* tcpInfo,const byte* sslFrame,
     int               ret;
     int               decoded = 0;      /* bytes stored for user in data */
     int               notEnough;        /* notEnough bytes yet flag */
-    SSL*              ssl = (session->side == SERVER_END) ? session->sslServer :
-                                                            session->sslClient;
+    SSL*              ssl = (session->flags.side == SERVER_END) ?
+                                        session->sslServer : session->sslClient;
 doMessage:
     notEnough = 0;
     if (sslBytes >= RECORD_HEADER_SZ) {
@@ -1847,10 +1901,10 @@ doMessage:
     tmp = sslFrame + rhSize;   /* may have more than one record to process */
     
     /* decrypt if needed */
-    if (session->side == SERVER_END && session->serverCipherOn)
+    if (session->flags.side == SERVER_END && session->flags.serverCipherOn)
         sslFrame = DecryptMessage(ssl, sslFrame, rhSize,
                                   ssl->buffers.outputBuffer.buffer);
-    else if (session->side == CLIENT_END && session->clientCipherOn)
+    else if (session->flags.side == CLIENT_END && session->flags.clientCipherOn)
         sslFrame = DecryptMessage(ssl, sslFrame, rhSize,
                                   ssl->buffers.outputBuffer.buffer);
             
@@ -1860,15 +1914,16 @@ doMessage:
             ret = DoHandShake(sslFrame, &sslBytes, ipInfo, tcpInfo, session,
                               error);
             if (ret != 0) {
-                SetError(BAD_HANDSHAKE_STR, error, session, FATAL_ERROR_STATE);
+                if (session->flags.fatalError == 0)
+                    SetError(BAD_HANDSHAKE_STR,error,session,FATAL_ERROR_STATE);
                 return -1;
             }
             break;
         case change_cipher_spec:
-            if (session->side == SERVER_END)
-                session->serverCipherOn = 1;
+            if (session->flags.side == SERVER_END)
+                session->flags.serverCipherOn = 1;
             else
-                session->clientCipherOn = 1;
+                session->flags.clientCipherOn = 1;
             Trace(GOT_CHANGE_CIPHER_STR);
             break;
         case application_data:
@@ -1918,6 +1973,32 @@ doMessage:
 }
 
 
+/* See if we need to process any pending FIN captures */
+static void CheckFinCapture(IpInfo* ipInfo, TcpInfo* tcpInfo, 
+                            SnifferSession* session)
+{
+    if (session->flags.side == SERVER_END) {
+        if (session->finCaputre.cliFinSeq && session->cliExpected) 
+            if (session->finCaputre.cliFinSeq >= session->cliExpected)
+                if (session->finCaputre.cliCounted == 0) {
+                    session->flags.finCount += 1;
+                    session->finCaputre.cliCounted = 1;
+                }
+    }
+    else {
+        if (session->finCaputre.srvFinSeq && session->srvExpected) 
+            if (session->finCaputre.srvFinSeq >= session->srvExpected)
+                if (session->finCaputre.srvCounted == 0) {
+                    session->flags.finCount += 1;
+                    session->finCaputre.srvCounted = 1;
+                }
+                
+    }
+    if (session->flags.finCount >= 2) 
+        RemoveSession(session, ipInfo, tcpInfo);
+}
+
+
 /* Passes in an IP/TCP packet for decoding (ethernet/localhost frame) removed */
 /* returns Number of bytes on success, 0 for no data yet, and -1 on error */
 int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
@@ -1946,8 +2027,10 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
     if (ret == -1)     return -1;
     else if (ret == 1) return  0;   /* done for now */
 
-    return ProcessMessage(&ipInfo, &tcpInfo, sslFrame, session, sslBytes, data,
-                          end, error);
+    ret = ProcessMessage(&ipInfo, &tcpInfo, sslFrame, session, sslBytes, data,
+                         end, error);
+    CheckFinCapture(&ipInfo, &tcpInfo, session);
+    return ret;
 }
 
 
