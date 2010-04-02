@@ -117,7 +117,7 @@ static const char* const msgTable[] =
     /* 6 */
     "SSL Sniffer Server Port Not Registered",
     "RSA Private Decrypt Error",
-    "RSA Private Decdoe Error",
+    "RSA Private Decode Error",
     "Set Cipher Spec Error",
     "Server Hello Input Malformed",
 
@@ -567,6 +567,17 @@ static void TraceSetServer(const char* server, int port, const char* keyFile)
 }
 
 
+/* Trace got packet number */
+static void TracePacket(void)
+{
+    if (TraceOn) {
+        static word32 packetNumber = 0;
+        fprintf(TraceFile, "\tGot a Packet to decode, packet %u\n",
+                ++packetNumber);
+    }
+}
+
+
 /* Convert network byte order address into human readable */
 static char* IpToS(word32 addr, char* str)
 {
@@ -633,6 +644,26 @@ static void TraceClientSyn(word32 seq)
 {
     if (TraceOn) {
         fprintf(TraceFile, "\tClient SYN, Sequence Start:%u\n", seq);
+    }
+}
+
+
+/* Show number of SSL data bytes decoded, could be 0 (ok) */
+static void TraceGotData(int bytes)
+{
+    if (TraceOn) {
+        fprintf(TraceFile, "\t%d bytes of SSL App data processed\n", bytes);
+    }
+}
+
+
+/* Show bytes added to old SSL App data */
+static void TraceAddedData(int newBytes, int existingBytes)
+{
+    if (TraceOn) {
+        fprintf(TraceFile,
+                "\t%d bytes added to %d exisiting bytes in User Buffer\n",
+                newBytes, existingBytes);
     }
 }
 
@@ -942,11 +973,13 @@ static int ProcessClientKeyExchange(const byte* input, int* sslBytes,
     
     if (SetCipherSpecs(session->sslServer) != 0) {
         SetError(BAD_CIPHER_SPEC_STR, error, session, FATAL_ERROR_STATE);
+        FreeRsaKey(&key);
         return -1;
     }
    
     if (SetCipherSpecs(session->sslClient) != 0) {
         SetError(BAD_CIPHER_SPEC_STR, error, session, FATAL_ERROR_STATE);
+        FreeRsaKey(&key);
         return -1;
     }
     
@@ -1451,7 +1484,7 @@ int CheckHeaders(IpInfo* ipInfo, TcpInfo* tcpInfo, const byte* packet,
                  int length, const byte** sslFrame, int* sslBytes, char* error)
 {
     TraceHeader();
-    Trace(GOT_PACKET_STR);
+    TracePacket();
     if (length < IP_HDR_SZ) {
         SetError(PACKET_HDR_SHORT_STR, error, NULL, 0);
         return -1;
@@ -1691,7 +1724,7 @@ static int AdjustSequence(TcpInfo* tcpInfo, SnifferSession* session,
                 }
                 if (newEnd > reassemblyList->end) {
                     Trace(OVERLAP_REASSEMBLY_END_STR);
-                    AddToReassembly(session->flags.side, reassemblyList->end +1, 
+                    AddToReassembly(session->flags.side, reassemblyList->end +1,
                                 *sslFrame + reassemblyList->end - *expected + 1,
                                  newEnd - reassemblyList->end, session, error);
                 }
@@ -1749,7 +1782,7 @@ static int CheckSequence(IpInfo* ipInfo, TcpInfo* tcpInfo,
 /* returns 0 on success (continue), -1 on error, 1 on success (end) */
 static int CheckPreRecord(IpInfo* ipInfo, TcpInfo* tcpInfo,
                           const byte** sslFrame, SnifferSession* session,
-                          int* sslBytes, char* error)
+                          int* sslBytes, const byte** end, char* error)
 {
     word32 length;
     SSL*   ssl = (session->flags.side == SERVER_END) ? session->sslServer :
@@ -1790,6 +1823,7 @@ static int CheckPreRecord(IpInfo* ipInfo, TcpInfo* tcpInfo,
         *sslBytes += length;
         ssl->buffers.inputBuffer.length = *sslBytes;
         *sslFrame = ssl->buffers.inputBuffer.buffer;
+        *end = *sslFrame + *sslBytes;
     }
     
     if (session->flags.clientHello == 0 && **sslFrame != handshake) {
@@ -1934,9 +1968,11 @@ doMessage:
                 ret = DoApplicationData(ssl, (byte*)sslFrame, &inOutIdx);
                 if (ret == 0) {
                     ret = ssl->buffers.clearOutputBuffer.length;
+                    TraceGotData(ret);
                     if (ret) {  /* may be blank message */
                         memcpy(&data[decoded],
                                ssl->buffers.clearOutputBuffer.buffer, ret);
+                        TraceAddedData(ret, decoded);
                         decoded += ret;
                         ssl->buffers.clearOutputBuffer.length = 0;
                     }
@@ -2019,11 +2055,12 @@ int ssl_DecodePacket(const byte* packet, int length, byte* data, char* error)
     if (ret == -1)     return -1;
     else if (ret == 1) return  0;   /* done for now */
     
-    ret = CheckSequence(&ipInfo, &tcpInfo, session, &sslBytes, & sslFrame, error);
+    ret = CheckSequence(&ipInfo, &tcpInfo, session, &sslBytes, &sslFrame,error);
     if (ret == -1)     return -1;
     else if (ret == 1) return  0;   /* done for now */
     
-    ret = CheckPreRecord(&ipInfo, &tcpInfo, &sslFrame, session,&sslBytes,error);
+    ret = CheckPreRecord(&ipInfo, &tcpInfo, &sslFrame, session, &sslBytes,
+                         &end, error);
     if (ret == -1)     return -1;
     else if (ret == 1) return  0;   /* done for now */
 

@@ -9,7 +9,7 @@ STRINGTABLE
 
     6, "SSL Sniffer Server Port Not Registered"
     7, "RSA Private Decrypt Error"
-    8, "RSA Private Decdoe Error"
+    8, "RSA Private Decode Error"
     9, "Set Cipher Spec Error"
     10, "Server Hello Input Malformed"
 

@@ -187,6 +187,7 @@ enum Misc {
     MAX_UDP_SIZE    = 1400,     /* don't exceed MTU */
     MAX_MSG_EXTRA   = 68,       /* max added to msg, mac + pad */
     MAX_COMP_EXTRA  = 1024,     /* max compression extra */
+    MAX_MTU         = 1500,     /* max expected MTU */
     MAX_DH_SZ       = 612,      /* 2240 p, pub, g + 2 byte size for each */
     MAX_STR_VERSION = 8,        /* string rep of protocol version */
 
@@ -375,7 +376,7 @@ typedef struct buffer {
        The length should not exceed 2^14.
 */
 #define BUFFER16K_LEN RECORD_HEADER_SZ + MAX_RECORD_SIZE + \
-                      MAX_COMP_EXTRA + MAX_MSG_EXTRA
+                      MAX_COMP_EXTRA + MAX_MTU + MAX_MSG_EXTRA
 typedef struct {
     word32 length;
     word32 idx;
