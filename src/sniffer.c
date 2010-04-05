@@ -1894,6 +1894,7 @@ static int ProcessMessage(IpInfo* ipInfo, TcpInfo* tcpInfo,const byte* sslFrame,
                           SnifferSession* session, int sslBytes, byte* data,
                           const byte* end, char* error)
 {
+    const byte*       sslBegin = sslFrame;
     const byte*       tmp;
     RecordLayerHeader rh;
     int               rhSize;
@@ -1917,8 +1918,8 @@ doMessage:
         /* don't have enough input yet to process full SSL record */
         Trace(PARTIAL_INPUT_STR);
         
-        /* store partial if not there already, preRec could have added */
-        if (ssl->buffers.inputBuffer.length == 0) {
+        /* store partial if not there already or we advanced */
+        if (ssl->buffers.inputBuffer.length == 0 || sslBegin != sslFrame) {
             if (sslBytes > sizeof(ssl->buffers.inputBuffer.buffer)) {
                 SetError(BUFFER_ERROR_STR, error, session, FATAL_ERROR_STATE);
                 return -1;
