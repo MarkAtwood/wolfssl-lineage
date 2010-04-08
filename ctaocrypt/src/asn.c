@@ -281,6 +281,45 @@ int GetInt(mp_int* mpi, const byte* input, word32* inOutIdx )
 }
 
 
+static int GetAlgoId(const byte* input, word32* inOutIdx, word32* oid)
+{
+    int    length;
+    word32 i = *inOutIdx;
+    byte   b;
+    *oid = 0;
+    
+    if (GetSequence(input, &i, &length) < 0)
+        return ASN_PARSE_E;
+    
+    b = input[i++];
+    if (b != ASN_OBJECT_ID) 
+        return ASN_OBJECT_ID_E;
+    
+    if (GetLength(input, &i, &length) < 0)
+        return ASN_PARSE_E;
+    
+    while(length--)
+        *oid += input[i++];
+    /* just sum it up for now */
+    
+    /* could have NULL tag and 0 terminator, but may not */
+    b = input[i++];
+    
+    if (b == ASN_TAG_NULL) {
+        b = input[i++];
+        if (b != 0) 
+            return ASN_EXPECT_0_E;
+    }
+    else
+    /* go back, didn't have it */
+        i--;
+    
+    *inOutIdx = i;
+    
+    return 0;
+}
+
+
 int RsaPrivateKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
                         word32 inSz)
 {
@@ -306,6 +345,39 @@ int RsaPrivateKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
         GetInt(&key->dP, input, inOutIdx) < 0 ||
         GetInt(&key->dQ, input, inOutIdx) < 0 ||
         GetInt(&key->u,  input, inOutIdx) < 0 )  return ASN_RSA_KEY_E;
+
+    return 0;
+}
+
+
+/* Remove PKCS8 header, move beginning of traditional to beginning of input */
+int ToTraditional(byte* input, word32 sz)
+{
+    word32 inOutIdx = 0, oid;
+    int    version, length;
+
+    if (GetSequence(input, &inOutIdx, &length) < 0)
+        return ASN_PARSE_E;
+
+    if ((word32)length > (sz - inOutIdx))
+        return ASN_INPUT_E;
+
+    if (GetMyVersion(input, &inOutIdx, &version) < 0)
+        return ASN_PARSE_E;
+    
+    if (GetAlgoId(input, &inOutIdx, &oid) < 0)
+        return ASN_PARSE_E;
+    
+    if (input[inOutIdx++] != ASN_OCTET_STRING)
+        return ASN_PARSE_E;
+    
+    if (GetLength(input, &inOutIdx, &length) < 0)
+        return ASN_PARSE_E;
+    
+    if ((word32)length > (sz - inOutIdx))
+        return ASN_INPUT_E;
+    
+    memmove(input, input + inOutIdx, length);
 
     return 0;
 }
@@ -536,42 +608,6 @@ static int GetCertHeader(DecodedCert* cert, word32 inSz)
 }
 
 
-static int GetAlgoId(DecodedCert* cert, word32* oid)
-{
-    int    length;
-    byte   b;
-    *oid = 0;
-
-    if (GetSequence(cert->source, &cert->srcIdx, &length) < 0)
-        return ASN_PARSE_E;
-    
-    b = cert->source[cert->srcIdx++];
-    if (b != ASN_OBJECT_ID) 
-        return ASN_OBJECT_ID_E;
-
-    if (GetLength(cert->source, &cert->srcIdx, &length) < 0)
-        return ASN_PARSE_E;
-    
-    while(length--)
-        *oid += cert->source[cert->srcIdx++];
-        /* just sum it up for now */
-
-    /* could have NULL tag and 0 terminator, but may not */
-    b = cert->source[cert->srcIdx++];
-
-    if (b == ASN_TAG_NULL) {
-        b = cert->source[cert->srcIdx++];
-        if (b != 0) 
-            return ASN_EXPECT_0_E;
-    }
-    else
-        /* go back, didn't have it */
-        cert->srcIdx--;
-
-    return 0;
-}
-
-
 static int StoreKey(DecodedCert* cert)
 {
     int    length;
@@ -601,7 +637,7 @@ static int GetKey(DecodedCert* cert)
     if (GetSequence(cert->source, &cert->srcIdx, &length) < 0)
         return ASN_PARSE_E;
     
-    if (GetAlgoId(cert, &cert->keyOID) < 0)
+    if (GetAlgoId(cert->source, &cert->srcIdx, &cert->keyOID) < 0)
         return ASN_PARSE_E;
 
     if (cert->keyOID == RSAk) {
@@ -929,7 +965,7 @@ static int DecodeToKey(DecodedCert* cert, word32 inSz, int verify)
     if ( (ret = GetCertHeader(cert, inSz)) < 0)
         return ret;
 
-    if ( (ret = GetAlgoId(cert, &cert->signatureOID)) < 0)
+    if ( (ret = GetAlgoId(cert->source, &cert->srcIdx,&cert->signatureOID)) < 0)
         return ret;
 
     if ( (ret = GetName(cert, ISSUER)) < 0)
@@ -1220,7 +1256,7 @@ int ParseCertRelative(DecodedCert* cert, word32 inSz, int type, int verify,
     if (cert->srcIdx != cert->sigIndex)
         cert->srcIdx =  cert->sigIndex;
 
-    if ((ret = GetAlgoId(cert, &confirmOID)) < 0)
+    if ((ret = GetAlgoId(cert->source, &cert->srcIdx, &confirmOID)) < 0)
         return ret;
 
     if ((ret = GetSignature(cert)) < 0)

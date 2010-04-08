@@ -48,7 +48,6 @@ int Base64Decode(const byte* in, word32 inLen, byte* out, word32* outLen)
 {
     word32 i = 0;
     word32 j = 0;
-    word32 e = 0;
     word32 plainSz = inLen - ((inLen + (PEM_LINE_SZ - 1)) / PEM_LINE_SZ );
 
     plainSz = (plainSz * 3 + 3) / 4;
@@ -89,7 +88,7 @@ int Base64Decode(const byte* in, word32 inLen, byte* out, word32* outLen)
             break;
         
         inLen -= 4;
-        if ((++e % 16) == 0) {
+        if (in[j] == ' ' || in[j] == '\r' || in[j] == '\n') {
             byte endLine = in[j++];
             inLen--;
             while (endLine == ' ') {   /* allow trailing whitespace */

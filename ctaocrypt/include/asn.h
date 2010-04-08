@@ -162,6 +162,7 @@ void    FreeSigners(Signer*, void*);
 
 int RsaPrivateKeyDecode(const byte* input, word32* inOutIdx, RsaKey*, word32);
 int RsaPublicKeyDecode(const byte* input, word32* inOutIdx, RsaKey*, word32);
+int ToTraditional(byte* buffer, word32 length);
 
 #ifndef NO_DH
 int DhKeyDecode(const byte* input, word32* inOutIdx, DhKey* key, word32);

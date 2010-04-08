@@ -54,4 +54,18 @@ a) openssl rsa <server-key.pem.bak -des >server-keyEnc.pem
 note location of des, pass = yassl123
 
 
+*** To make a public key from a private key ******
+
+
+openssl rsa -in 1024rsa.priv -pubout -out 1024rsa.pub
+
+
+**** To convert to pkcs8 *******
+
+openssl pkcs8 -nocrypt -topk8 -in server-key.pem -out server-keyPkcs8.pem
+
+
+**** To convert from pkcs8 to traditional ****
+
+openssl pkcs8 -nocrypt -in server-keyPkcs8.pem -out server-key.pem
 

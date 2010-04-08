@@ -343,6 +343,7 @@ static int PemToDer(const char* fileName, int type, buffer* der, void* heap,
     long   end      =  0;
     int    foundEnd =  0;
     int    ret      =  0;
+    int    pkcs8    =  0;
     word32 sz       =  0;
 
     char  line[80];
@@ -369,6 +370,21 @@ static int PemToDer(const char* fileName, int type, buffer* der, void* heap,
             begin = ftell(file);
             break;
         }
+    
+    /* may have pkcs8 */
+    if (begin == -1 && type == PRIVATEKEY_TYPE) {
+        strncpy(header, "-----BEGIN PRIVATE KEY-----", sizeof(header));
+        strncpy(footer, "-----END PRIVATE KEY-----", sizeof(header));
+        
+        fseek(file, 0, SEEK_SET);
+        
+        while(fgets(line, sizeof(line), file))
+            if (strncmp(header, line, strlen(header)) == 0) {
+                begin = ftell(file);
+                pkcs8 = 1;
+                break;
+            }
+    }
 
 #ifdef OPENSSL_EXTRA
 
@@ -444,6 +460,9 @@ static int PemToDer(const char* fileName, int type, buffer* der, void* heap,
 
     XFREE(tmp, heap);
     fclose(file);
+    
+    if (ret == 0 && pkcs8)
+        return ToTraditional(der->buffer, der->length);
 
     return ret;
 }
