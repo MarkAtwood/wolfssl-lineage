@@ -1,7 +1,7 @@
 /* snifftest.c */
 
 /* gcc command line
-   gcc snifftest.c -I../../include -L../../lib -lcyassl -lpcap
+   gcc snifftest.c -Wall -g -I../../include -L../../lib -lcyassl -lpcap
 */
 
 

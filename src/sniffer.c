@@ -58,6 +58,7 @@ enum {
     HASH_SIZE          = 499, /* Session Hash Table Rows */
     PSEUDO_HDR_SZ      = 12,  /* TCP Pseudo Header size in bytes */
     FATAL_ERROR_STATE  =  1,  /* SnifferSession fatal error state */
+    SNIFFER_TIMEOUT    = 900, /* Cache unclosed Sessions for 15 minutes */
 };
 
 
@@ -273,6 +274,7 @@ typedef struct SnifferSession {
     word32         srvExpected;     /* server expected sequence (relative) */
     FinCaputre     finCaputre;      /* retain out of order FIN s */
     Flags          flags;           /* session flags */
+    time_t         bornOn;          /* born on ticks */
     PacketBuffer*  cliReassemblyList; /* client out of order packets */
     PacketBuffer*  srvReassemblyList; /* server out of order packets */
     struct SnifferSession* next;    /* for hash table list */
@@ -284,9 +286,10 @@ static SnifferServer* ServerList = 0;
 static CyaSSL_Mutex ServerListMutex;
 
 
-/* Session Hash Table and mutex */
+/* Session Hash Table, mutex, and count */
 static SnifferSession* SessionTable[HASH_SIZE];
 static CyaSSL_Mutex SessionMutex;
+static int SessionCount = 0;
 
 
 /* Initialize overall Sniffer */
@@ -433,6 +436,7 @@ static void InitSession(SnifferSession* session)
     session->srvSeqStart    = 0;
     session->cliExpected    = 0;
     session->srvExpected    = 0;
+    session->bornOn         = 0;
     session->cliReassemblyList = 0;
     session->srvReassemblyList = 0;
     session->next           = 0;
@@ -639,11 +643,31 @@ static void TraceServerSyn(word32 seq)
 }
 
 
-/* Show  client sequence startup from SYN */
+/* Show client sequence startup from SYN */
 static void TraceClientSyn(word32 seq)
 {
     if (TraceOn) {
         fprintf(TraceFile, "\tClient SYN, Sequence Start:%u\n", seq);
+    }
+}
+
+
+/* Show client FIN capture */
+static void TraceClientFin(word32 finSeq, word32 relSeq)
+{
+    if (TraceOn) {
+        fprintf(TraceFile, "\tClient FIN capture:%u, current SEQ:%u\n",
+                finSeq, relSeq);
+    }
+}
+
+
+/* Show server FIN capture */
+static void TraceServerFin(word32 finSeq, word32 relSeq)
+{
+    if (TraceOn) {
+        fprintf(TraceFile, "\tServer FIN capture:%u, current SEQ:%u\n",
+                finSeq, relSeq);
     }
 }
 
@@ -664,6 +688,33 @@ static void TraceAddedData(int newBytes, int existingBytes)
         fprintf(TraceFile,
                 "\t%d bytes added to %d exisiting bytes in User Buffer\n",
                 newBytes, existingBytes);
+    }
+}
+
+
+/* Show Stale Session */
+static void TraceStaleSession(SnifferSession* session)
+{
+    if (TraceOn) {
+        fprintf(TraceFile, "\tFound a stale session\n");
+    }
+}
+
+
+/* Show Finding Stale Sessions */
+static void TraceFindingStale()
+{
+    if (TraceOn) {
+        fprintf(TraceFile, "\tTrying to find Stale Sessions\n");
+    }
+}
+
+
+/* Show Removed Session */
+static void TraceRemovedSession()
+{
+    if (TraceOn) {
+        fprintf(TraceFile, "\tRemoved it\n");
     }
 }
 
@@ -1287,18 +1338,25 @@ static const byte* DecryptMessage(SSL* ssl, const byte* input, word32 sz,
 }
 
 
-/* remove session from session table */
+/* remove session from table, use rowHint if no info (means we have a lock) */
 static void RemoveSession(SnifferSession* session, IpInfo* ipInfo,
-                        TcpInfo* tcpInfo)
+                        TcpInfo* tcpInfo, word32 rowHint)
 {
     SnifferSession* previous = 0;
     SnifferSession* current;
-    word32          row = SessionHash(ipInfo, tcpInfo);
+    word32          row = rowHint;
+    int             haveLock = 0;
+   
+    if (ipInfo && tcpInfo)
+        row = SessionHash(ipInfo, tcpInfo);
+    else
+        haveLock = 1;
     
     assert(row >= 0 && row <= HASH_SIZE);
     Trace(REMOVE_SESSION_STR);
     
-    LockMutex(&SessionMutex);
+    if (!haveLock)
+        LockMutex(&SessionMutex);
     
     current = SessionTable[row];
     
@@ -1309,16 +1367,35 @@ static void RemoveSession(SnifferSession* session, IpInfo* ipInfo,
             else
                 SessionTable[row] = current->next;
             FreeSnifferSession(session);
-            #ifdef DEBUG_SNIFFER
-                printf("\n found it \n");
-            #endif
+            TraceRemovedSession();
             break;
         }
         previous = current;
         current  = current->next;
     }
     
-    UnLockMutex(&SessionMutex);
+    if (!haveLock)
+        UnLockMutex(&SessionMutex);
+}
+
+
+/* Remove stale sessions from the Session Table, have a lock */
+static void RemoveStaleSessions()
+{
+    word32 i;
+    SnifferSession* session;
+    
+    for (i = 0; i < HASH_SIZE; i++) {
+        session = SessionTable[i];
+        while (session) {
+            SnifferSession* next = session->next; 
+            if (time(NULL) >= session->bornOn + SNIFFER_TIMEOUT) {
+                TraceStaleSession(session);
+                RemoveSession(session, NULL, NULL, i);
+            }
+            session = next;
+        }
+    }
 }
 
 
@@ -1343,6 +1420,7 @@ static SnifferSession* CreateSession(IpInfo* ipInfo, TcpInfo* tcpInfo,
     session->cliPort = tcpInfo->srcPort;
     session->cliSeqStart = tcpInfo->sequence;
     session->cliExpected = 1;  /* relative */
+    session->bornOn = time(NULL);
                 
     session->context = GetSnifferServer(ipInfo, tcpInfo);
     if (session->context == NULL) {
@@ -1372,6 +1450,13 @@ static SnifferSession* CreateSession(IpInfo* ipInfo, TcpInfo* tcpInfo,
         
     session->next = SessionTable[row];
     SessionTable[row] = session;
+    
+    SessionCount++;
+    
+    if ( (SessionCount % HASH_SIZE) == 0) {
+        TraceFindingStale();
+        RemoveStaleSessions();
+    }
         
     UnLockMutex(&SessionMutex);
         
@@ -1796,7 +1881,7 @@ static int CheckPreRecord(IpInfo* ipInfo, TcpInfo* tcpInfo,
             session->flags.finCount += 2;
         
         if (session->flags.finCount >= 2) {
-            RemoveSession(session, ipInfo, tcpInfo);
+            RemoveSession(session, ipInfo, tcpInfo, 0);
             return 1;
         }
     }
@@ -2014,25 +2099,26 @@ doMessage:
 static void CheckFinCapture(IpInfo* ipInfo, TcpInfo* tcpInfo, 
                             SnifferSession* session)
 {
-    if (session->flags.side == SERVER_END) {
-        if (session->finCaputre.cliFinSeq && session->cliExpected) 
-            if (session->finCaputre.cliFinSeq >= session->cliExpected)
-                if (session->finCaputre.cliCounted == 0) {
-                    session->flags.finCount += 1;
-                    session->finCaputre.cliCounted = 1;
-                }
+    if (session->finCaputre.cliFinSeq && session->finCaputre.cliFinSeq <= 
+                                         session->cliExpected) {
+        if (session->finCaputre.cliCounted == 0) {
+            session->flags.finCount += 1;
+            session->finCaputre.cliCounted = 1;
+            TraceClientFin(session->finCaputre.cliFinSeq, session->cliExpected);
+        }
     }
-    else {
-        if (session->finCaputre.srvFinSeq && session->srvExpected) 
-            if (session->finCaputre.srvFinSeq >= session->srvExpected)
-                if (session->finCaputre.srvCounted == 0) {
-                    session->flags.finCount += 1;
-                    session->finCaputre.srvCounted = 1;
-                }
+        
+    if (session->finCaputre.srvFinSeq && session->finCaputre.srvFinSeq <= 
+                                         session->srvExpected) {
+        if (session->finCaputre.srvCounted == 0) {
+            session->flags.finCount += 1;
+            session->finCaputre.srvCounted = 1;
+            TraceServerFin(session->finCaputre.srvFinSeq, session->srvExpected);
+        }
+    }
                 
-    }
     if (session->flags.finCount >= 2) 
-        RemoveSession(session, ipInfo, tcpInfo);
+        RemoveSession(session, ipInfo, tcpInfo, 0);
 }
 
 

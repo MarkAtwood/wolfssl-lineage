@@ -114,6 +114,8 @@
 		43CA25D00EA4010C0011ECA2 /* hmac.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 0; name = hmac.h; path = ctaocrypt/include/hmac.h; sourceTree = "<group>"; };
 		43CA25D10EA401550011ECA2 /* cyassl_callbacks.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = cyassl_callbacks.h; path = include/openssl/cyassl_callbacks.h; sourceTree = "<group>"; };
 		43CA25D20EA401550011ECA2 /* ssl.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = ssl.h; path = include/openssl/ssl.h; sourceTree = "<group>"; };
+		43CB530D116E9FD5000A264B /* iphone-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "iphone-Info.plist"; sourceTree = "<group>"; };
+		43CB5329116EA085000A264B /* test-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "test-Info.plist"; sourceTree = "<group>"; };
 		43D565640F1EC9A600550C88 /* hc128.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = hc128.c; path = ctaocrypt/src/hc128.c; sourceTree = "<group>"; };
 		43D565660F1EC9CC00550C88 /* rabbit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = rabbit.c; path = ctaocrypt/src/rabbit.c; sourceTree = "<group>"; };
 		43D565A30F29040000550C88 /* rabbit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = rabbit.h; path = ctaocrypt/include/rabbit.h; sourceTree = "<group>"; };
@@ -138,6 +140,8 @@
 				08FB7795FE84155DC02AAC07 /* Source */,
 				C6A0FF2B0290797F04C91782 /* Documentation */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
+				43CB530D116E9FD5000A264B /* iphone-Info.plist */,
+				43CB5329116EA085000A264B /* test-Info.plist */,
 			);
 			name = cyassl;
 			sourceTree = "<group>";
@@ -334,7 +338,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS = IPHONE;
 				INSTALL_PATH = /usr/local/lib;
 				PRODUCT_NAME = cyassl;
-				SDKROOT = iphonesimulator2.2;
+				SDKROOT = iphonesimulator3.1.2;
 				WARNING_CFLAGS = "-Wall";
 				ZERO_LINK = YES;
 			};
