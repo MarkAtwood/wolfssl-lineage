@@ -32,6 +32,7 @@
 
 /* in bytes */
 enum {
+    MD5             =  0,      /* hash type unique */
     MD5_BLOCK_SIZE  = 64,
     MD5_DIGEST_SIZE = 16,
     MD5_PAD_SIZE    = 56
