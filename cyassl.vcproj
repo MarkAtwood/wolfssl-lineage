@@ -219,6 +219,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ctaocrypt\src\pwdbased.c"
+				>
+			</File>
+			<File
 				RelativePath=".\ctaocrypt\src\rabbit.c"
 				>
 			</File>
@@ -314,6 +318,10 @@
 			</File>
 			<File
 				RelativePath=".\ctaocrypt\include\misc.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ctaocrypt\include\pwdbased.h"
 				>
 			</File>
 			<File

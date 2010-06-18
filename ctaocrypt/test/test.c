@@ -20,6 +20,7 @@
 #include "dsa.h"
 #include "hc128.h"
 #include "rabbit.h"
+#include "pwdbased.h"
 
 #ifdef _MSC_VER
     /* 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy */
@@ -64,6 +65,7 @@ int  rsa_test();
 int  dh_test();
 int  dsa_test();
 int  random_test();
+int  pwdbased_test();
 int  openssl_test();   /* test mini api */
 
 int PemToDer(const char* inName, const char* outName);
@@ -184,6 +186,13 @@ void ctaocrypt_test(void* args)
         err_sys("DSA      test failed!\n", ret);
     else
         printf( "DSA      test passed!\n");
+#endif
+    
+#ifndef NO_PWDBASED
+    if ( (ret = pwdbased_test()) ) 
+        err_sys("PWDBASED test failed!\n", ret);
+    else
+        printf( "PWDBASED test passed!\n");
 #endif
     
 #ifdef OPENSSL_EXTRA
@@ -1172,3 +1181,53 @@ int openssl_test()
 }
 
 #endif /* OPENSSL_EXTRA */
+
+
+#ifndef NO_PWDBASED
+
+int pbkdf2_test()
+{
+    char passwd[] = "password";
+    const byte salt[] = { 0x78, 0x57, 0x8E, 0x5a, 0x5d, 0x63, 0xcb, 0x06 };
+    int   iterations = 2048;
+    int   kLen = 24;
+
+    const byte verify[] = {
+        0xBF, 0xDE, 0x6B, 0xE9, 0x4D, 0xF7, 0xE1, 0x1D, 0xD4, 0x09, 0xBC, 0xE2,
+        0x0A, 0x02, 0x55, 0xEC, 0x32, 0x7C, 0xB9, 0x36, 0xFF, 0xE9, 0x36, 0x43
+
+    };
+
+    return 0;
+}
+
+
+int pbkdf1_test()
+{
+    char passwd[] = "password";
+    const byte salt[] = { 0x78, 0x57, 0x8E, 0x5a, 0x5d, 0x63, 0xcb, 0x06 };
+    int   iterations = 1000;
+    int   kLen = 16;
+    byte  derived[16];
+
+    const byte verify[] = {
+        0xDC, 0x19, 0x84, 0x7E, 0x05, 0xC6, 0x4D, 0x2F, 0xAF, 0x10, 0xEB, 0xFB,
+        0x4A, 0x3D, 0x2A, 0x20
+    };
+
+    PBKDF1(derived, (byte*)passwd, strlen(passwd), salt, 8, iterations, kLen,
+           SHA);
+
+    if (memcmp(derived, verify, sizeof(verify)) != 0)
+        return -101;
+
+    return 0;
+}
+
+
+int pwdbased_test()
+{
+   return pbkdf1_test(); 
+}
+
+#endif /* NO_PWDBASED */

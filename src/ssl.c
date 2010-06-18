@@ -344,6 +344,7 @@ static int PemToDer(const char* fileName, int type, buffer* der, void* heap,
     int    foundEnd =  0;
     int    ret      =  0;
     int    pkcs8    =  0;
+    /* int    pkcs8Enc =  0;     pkcs8 encrypted, not full support yet */
     word32 sz       =  0;
 
     char  line[80];
@@ -384,6 +385,25 @@ static int PemToDer(const char* fileName, int type, buffer* der, void* heap,
                 pkcs8 = 1;
                 break;
             }
+        
+        /* may be encrypted, not full support yet */
+        /*
+        if (begin == -1) {
+            strncpy(header, "-----BEGIN ENCRYPTED PRIVATE KEY-----",
+                    sizeof(header));
+            strncpy(footer, "-----END ENCRYPTED PRIVATE KEY-----",
+                    sizeof(header));
+            
+            fseek(file, 0, SEEK_SET);
+            
+            while(fgets(line, sizeof(line), file))
+                if (strncmp(header, line, strlen(header)) == 0) {
+                    begin = ftell(file);
+                    pkcs8Enc = 1;
+                    break;
+                }
+        }
+        */
     }
 
 #ifdef OPENSSL_EXTRA
@@ -463,6 +483,12 @@ static int PemToDer(const char* fileName, int type, buffer* der, void* heap,
     
     if (ret == 0 && pkcs8)
         return ToTraditional(der->buffer, der->length);
+   
+    /* not full support yet */
+    /*
+    if (ret == 0 && pkcs8Enc)
+        return ToTraditionalEnc(der->buffer, der->length);
+    */
 
     return ret;
 }
@@ -633,11 +659,15 @@ int SSL_CTX_use_certificate_chain_file(SSL_CTX* ctx, const char* file)
 
 void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback vc)
 {
-    if (mode & SSL_VERIFY_PEER)
+    if (mode & SSL_VERIFY_PEER) {
         ctx->verifyPeer = 1;
+        ctx->verifyNone = 0;  /* in case perviously set */
+    }
 
-    if (mode == SSL_VERIFY_NONE)
+    if (mode == SSL_VERIFY_NONE) {
         ctx->verifyNone = 1;
+        ctx->verifyPeer = 0;  /* in case previously set */
+    }
 
     if (mode & SSL_VERIFY_FAIL_IF_NO_PEER_CERT)
         ctx->failNoCert = 1;
@@ -2600,6 +2630,11 @@ int CyaSSL_set_compression(SSL* ssl)
         return 0;
     }
 
+
+    int CRYPTO_num_locks(void)
+    {
+        return 0;
+    }
 
 
     void CRYPTO_set_id_callback(unsigned long (*f)(void))

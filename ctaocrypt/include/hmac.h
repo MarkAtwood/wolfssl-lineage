@@ -38,15 +38,13 @@
 
 
 enum {
-    MD5     = 0,
-    SHA     = 1,
-    SHA256  = 2,
     IPAD    = 0x36,
     OPAD    = 0x5C,
 #ifndef NO_SHA256
     INNER_HASH_SIZE = SHA256_DIGEST_SIZE,
 #else
     INNER_HASH_SIZE = SHA_DIGEST_SIZE,
+    SHA256          = 2,                     /* hash type unique */
 #endif
     HMAC_BLOCK_SIZE = MD5_BLOCK_SIZE
 };

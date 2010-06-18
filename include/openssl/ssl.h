@@ -449,9 +449,9 @@ enum { /* ssl Constants */
     SSL_UNKNOWN         = -2,
     SSL_FATAL_ERROR     = -1,
 
-    SSL_FILETYPE_ASN1    = 10,
-    SSL_FILETYPE_PEM     = 11,
-    SSL_FILETYPE_DEFAULT = 10, /* ASN1 */
+    SSL_FILETYPE_ASN1    = 2,
+    SSL_FILETYPE_PEM     = 1,
+    SSL_FILETYPE_DEFAULT = 2, /* ASN1 */
 
     SSL_VERIFY_NONE                 = 0,
     SSL_VERIFY_PEER                 = 1,

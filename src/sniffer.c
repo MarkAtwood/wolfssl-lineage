@@ -1797,6 +1797,7 @@ static int AdjustSequence(TcpInfo* tcpInfo, SnifferSession* session,
             int overlap = *expected - real;
             Trace(OVERLAP_DUPLICATE_STR);
                 
+            /* adjust to expected, remove duplicate */
             *sslFrame += overlap;
             *sslBytes -= overlap;
                 
@@ -1805,10 +1806,15 @@ static int AdjustSequence(TcpInfo* tcpInfo, SnifferSession* session,
                     
                 if (newEnd > reassemblyList->begin) {
                     Trace(OVERLAP_REASSEMBLY_BEGIN_STR);
+                    
+                    /* remove bytes already on reassembly list */
                     *sslBytes -= newEnd - reassemblyList->begin;
                 }
                 if (newEnd > reassemblyList->end) {
                     Trace(OVERLAP_REASSEMBLY_END_STR);
+                    
+                    /* may be past reassembly list end (could have more on list)
+                       so try to add what's past the front->end */
                     AddToReassembly(session->flags.side, reassemblyList->end +1,
                                 *sslFrame + reassemblyList->end - *expected + 1,
                                  newEnd - reassemblyList->end, session, error);

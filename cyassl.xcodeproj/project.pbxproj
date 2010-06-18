@@ -52,6 +52,7 @@
 		43D565670F1EC9CC00550C88 /* rabbit.c in Sources */ = {isa = PBXBuildFile; fileRef = 43D565660F1EC9CC00550C88 /* rabbit.c */; };
 		43D565A40F29040000550C88 /* rabbit.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D565A30F29040000550C88 /* rabbit.h */; };
 		43D565A60F29041C00550C88 /* hc128.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D565A50F29041C00550C88 /* hc128.h */; };
+		43E4703C11765A30005C2620 /* pwdbased.c in Sources */ = {isa = PBXBuildFile; fileRef = 43E4703B11765A30005C2620 /* pwdbased.c */; };
 		43F5A2580E8C59BA00CD7F1A /* client.c in Sources */ = {isa = PBXBuildFile; fileRef = 43F5A2570E8C59BA00CD7F1A /* client.c */; };
 		43F5A25B0E8C59CB00CD7F1A /* libcyassl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D2AAC046055464E500DB518D /* libcyassl.a */; };
 /* End PBXBuildFile section */
@@ -153,6 +154,7 @@
 		4368F7990E9EABB80002A123 /* echoserver */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = echoserver; sourceTree = BUILT_PRODUCTS_DIR; };
 		43809E5C0FB7AC420050922E /* md4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = md4.c; path = ctaocrypt/src/md4.c; sourceTree = "<group>"; };
 		43809E5E0FB7AC5B0050922E /* md4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = md4.h; path = ctaocrypt/include/md4.h; sourceTree = "<group>"; };
+		4386C3A51174DCCC00D3A61A /* test.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = test.h; path = examples/test.h; sourceTree = "<group>"; };
 		43AC92C90EB154210049F588 /* cyassl_io.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = cyassl_io.c; path = src/cyassl_io.c; sourceTree = "<group>"; };
 		43BF21B0114B06AA001D113A /* sniffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = sniffer.h; path = include/sniffer.h; sourceTree = "<group>"; };
 		43BF21B2114B06EE001D113A /* sniffer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = sniffer.c; path = src/sniffer.c; sourceTree = "<group>"; };
@@ -177,7 +179,6 @@
 		43C6C2910DDF98D400F2D488 /* sha256.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = sha256.c; path = ctaocrypt/src/sha256.c; sourceTree = "<group>"; };
 		43CA25BA0EA400BE0011ECA2 /* cyassl_error.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = cyassl_error.h; path = include/cyassl_error.h; sourceTree = "<group>"; };
 		43CA25BB0EA400BE0011ECA2 /* cyassl_int.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = cyassl_int.h; path = include/cyassl_int.h; sourceTree = "<group>"; };
-		43CA25BC0EA400DC0011ECA2 /* test.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = test.h; path = examples/test.h; sourceTree = "<group>"; };
 		43CA25BD0EA4010C0011ECA2 /* aes.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = aes.h; path = ctaocrypt/include/aes.h; sourceTree = "<group>"; };
 		43CA25BE0EA4010C0011ECA2 /* arc4.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = arc4.h; path = ctaocrypt/include/arc4.h; sourceTree = "<group>"; };
 		43CA25BF0EA4010C0011ECA2 /* dh.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = dh.h; path = ctaocrypt/include/dh.h; sourceTree = "<group>"; };
@@ -204,6 +205,8 @@
 		43D565660F1EC9CC00550C88 /* rabbit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = rabbit.c; path = ctaocrypt/src/rabbit.c; sourceTree = "<group>"; };
 		43D565A30F29040000550C88 /* rabbit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = rabbit.h; path = ctaocrypt/include/rabbit.h; sourceTree = "<group>"; };
 		43D565A50F29041C00550C88 /* hc128.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = hc128.h; path = ctaocrypt/include/hc128.h; sourceTree = "<group>"; };
+		43E4703911765A14005C2620 /* pwdbased.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = pwdbased.h; path = ctaocrypt/include/pwdbased.h; sourceTree = "<group>"; };
+		43E4703B11765A30005C2620 /* pwdbased.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = pwdbased.c; path = ctaocrypt/src/pwdbased.c; sourceTree = "<group>"; };
 		43F5A24F0E8C599600CD7F1A /* client */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = client; sourceTree = BUILT_PRODUCTS_DIR; };
 		43F5A2570E8C59BA00CD7F1A /* client.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = client.c; path = examples/client/client.c; sourceTree = "<group>"; };
 		D2AAC046055464E500DB518D /* libcyassl.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libcyassl.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -313,6 +316,7 @@
 		43CA25720EA3F9B20011ECA2 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				43E4703B11765A30005C2620 /* pwdbased.c */,
 				43BF21B2114B06EE001D113A /* sniffer.c */,
 				43809E5C0FB7AC420050922E /* md4.c */,
 				43D565660F1EC9CC00550C88 /* rabbit.c */,
@@ -351,6 +355,7 @@
 		43CA25B90EA400A60011ECA2 /* headers */ = {
 			isa = PBXGroup;
 			children = (
+				43E4703911765A14005C2620 /* pwdbased.h */,
 				43BF21B0114B06AA001D113A /* sniffer.h */,
 				43809E5E0FB7AC5B0050922E /* md4.h */,
 				43D565A50F29041C00550C88 /* hc128.h */,
@@ -364,6 +369,7 @@
 				43CA25C10EA4010C0011ECA2 /* mpi_superclass.h */,
 				43CA25C20EA4010C0011ECA2 /* random.h */,
 				43CA25C30EA4010C0011ECA2 /* sha.h */,
+				4386C3A51174DCCC00D3A61A /* test.h */,
 				43CA25C40EA4010C0011ECA2 /* sha256.h */,
 				43CA25C50EA4010C0011ECA2 /* coding.h */,
 				43CA25C60EA4010C0011ECA2 /* des3.h */,
@@ -377,7 +383,6 @@
 				43CA25CE0EA4010C0011ECA2 /* types.h */,
 				43CA25CF0EA4010C0011ECA2 /* dsa.h */,
 				43CA25D00EA4010C0011ECA2 /* hmac.h */,
-				43CA25BC0EA400DC0011ECA2 /* test.h */,
 				43CA25BA0EA400BE0011ECA2 /* cyassl_error.h */,
 				43CA25BB0EA400BE0011ECA2 /* cyassl_int.h */,
 			);
@@ -664,6 +669,7 @@
 				43D565670F1EC9CC00550C88 /* rabbit.c in Sources */,
 				43809E5D0FB7AC420050922E /* md4.c in Sources */,
 				43BF21B3114B06EE001D113A /* sniffer.c in Sources */,
+				43E4703C11765A30005C2620 /* pwdbased.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

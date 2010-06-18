@@ -13,11 +13,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sslSniffer", "sslSniffer\ss
 		{73973223-5EE8-41CA-8E88-1D60E89A237B} = {73973223-5EE8-41CA-8E88-1D60E89A237B}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sslSniffTest", "sslSniffer\sslSnifferTest\sslSniffTest.vcproj", "{8C89E16E-9C36-45EF-A491-F4EBD4A8D8F1}"
-	ProjectSection(ProjectDependencies) = postProject
-		{34FAE5A6-2B0F-4B55-86FE-0C43E4810F4D} = {34FAE5A6-2B0F-4B55-86FE-0C43E4810F4D}
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "echoserver", "examples\echoserver\echoserver.vcproj", "{07D97C48-E08F-4E34-9F67-3064039FF2CB}"
 	ProjectSection(ProjectDependencies) = postProject
 		{73973223-5EE8-41CA-8E88-1D60E89A237B} = {73973223-5EE8-41CA-8E88-1D60E89A237B}
@@ -34,6 +29,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "client", "examples\client\c
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "server", "examples\server\server.vcproj", "{E9FB0BA5-BA46-4A59-A953-39C18CD1DCB1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{73973223-5EE8-41CA-8E88-1D60E89A237B} = {73973223-5EE8-41CA-8E88-1D60E89A237B}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "python_cyassl", "swig\python_cyassl.vcproj", "{47A3ABA9-EC54-4788-BC7E-370595B2011A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{73973223-5EE8-41CA-8E88-1D60E89A237B} = {73973223-5EE8-41CA-8E88-1D60E89A237B}
 	EndProjectSection
@@ -76,6 +76,10 @@ Global
 		{E9FB0BA5-BA46-4A59-A953-39C18CD1DCB1}.Debug|Win32.Build.0 = Debug|Win32
 		{E9FB0BA5-BA46-4A59-A953-39C18CD1DCB1}.Release|Win32.ActiveCfg = Release|Win32
 		{E9FB0BA5-BA46-4A59-A953-39C18CD1DCB1}.Release|Win32.Build.0 = Release|Win32
+		{47A3ABA9-EC54-4788-BC7E-370595B2011A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{47A3ABA9-EC54-4788-BC7E-370595B2011A}.Debug|Win32.Build.0 = Debug|Win32
+		{47A3ABA9-EC54-4788-BC7E-370595B2011A}.Release|Win32.ActiveCfg = Release|Win32
+		{47A3ABA9-EC54-4788-BC7E-370595B2011A}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -12,9 +12,10 @@ before calling SSL_new();  Though it's not recommended.
 
 *** end Note ***
 
-CyaSSL Release 1.4.4 (3/10/2010)
+CyaSSL Release 1.5.0 (5/11/2010)
 
-Release 1.4.4 for CyaSSL adds bug fixes and GoAhead WebServer support.
+Release 1.5.0 for CyaSSL adds bug fixes, GoAhead WebServer support, sniffer
+support, and initial swig interface support.
 
 For general build instructions see doc/Building_CyaSSL.pdf.
 
@@ -22,6 +23,15 @@ To add support for GoAhead WebServer either --enable-opensslExtra or if you
 dont' want all the features of opensslExtra you can just define GOAHEAD_WS
 instead.  GOAHEAD_WS can be added to ./configure with CFLAGS=-DGOAHEAD_WS or
 you can define it yourself.
+
+To look at the sniffer support please see the sniffertest app in
+sslSniffer/sslSnifferTest.  Build with --enable-sniffer on *nix or use the
+vcproj files on windows.  You'll need to have pcap installed on *nix and
+WinPcap on windows.
+
+A swig interface file is now located in the swig directory for using Python,
+Java, Perl, and others with CyaSSL.  This is initial support and experimental,
+please send questions or comments to support@yassl.com.
 
 When doing load testing with CyaSSL, on the echoserver example say, the client
 machine may run out of tcp ephemeral ports, they will end up in the TIME_WAIT

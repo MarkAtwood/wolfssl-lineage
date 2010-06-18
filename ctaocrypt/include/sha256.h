@@ -38,6 +38,7 @@
 
 /* in bytes */
 enum {
+    SHA256              =  2,   /* hash type unique */
     SHA256_BLOCK_SIZE   = 64,
     SHA256_DIGEST_SIZE  = 32,
     SHA256_PAD_SIZE     = 56

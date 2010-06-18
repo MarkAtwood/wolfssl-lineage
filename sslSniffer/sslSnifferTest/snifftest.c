@@ -1,11 +1,21 @@
 /* snifftest.c */
 
-/* gcc command line
-   gcc snifftest.c -Wall -g -I../../include -L../../lib -lcyassl -lpcap
-*/
+#ifdef _WIN32
+    #define CYASSL_SNIFFER
+#endif
 
+#ifndef CYASSL_SNIFFER
 
-/* a basic test for CyaSSL Sniffing on server side */
+/* blank build */
+#include <stdio.h>
+int main()
+{
+    printf("do ./configure --enable-sniffer to enable build support\n");
+    return 0;
+}
+
+#else
+/* do a full build */
 
 #ifdef _MSC_VER
 	/* builds on *nix too, for scanf device and port */
@@ -199,3 +209,5 @@ int main(int argc, char** argv)
 
     return 0;
 }
+
+#endif /* full build */
