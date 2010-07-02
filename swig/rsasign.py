@@ -19,7 +19,7 @@ if key == None:
 signOutput = cyassl.byteArray(128)   # 128 allows 1024 bit private key
 signStr    = cyassl.byteArray(25)    # input can't be larger then key size
                                      # 64 for 512 bit 128 for 1024 bit
-cyassl.FillSignStr(signStr)
+cyassl.FillSignStr(signStr, "Everybody gets Friday off", 25)
 
 # Do RSA Sign
 signedSize = cyassl.RsaSSL_Sign(signStr, 25, signOutput, 128, key, rng) 

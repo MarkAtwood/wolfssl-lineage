@@ -2497,12 +2497,6 @@ int CyaSSL_set_compression(SSL* ssl)
     }
 
 
-    SSL_METHOD* SSLv23_client_method(void)
-    {
-        return 0;
-    }
-
-
     SSL_METHOD* SSLv2_client_method(void)
     {
         return 0;

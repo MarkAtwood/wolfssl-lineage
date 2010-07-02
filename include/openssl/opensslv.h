@@ -5,7 +5,7 @@
 
 
 /* api version compatibility */
-#define OPENSSL_VERSION_NUMBER 0x0090700f
+#define OPENSSL_VERSION_NUMBER 0x0090410fL
 
 
 #endif /* header */

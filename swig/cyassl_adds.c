@@ -201,10 +201,8 @@ RsaKey* GetRsaPrivateKey(const char* keyFile)
 }
 
 
-void FillSignStr(unsigned char* str)
+void FillSignStr(unsigned char* dst, const char* src, int size)
 {
-    char data[] = "Everyone gets Friday off.";
-
-    memcpy(str, data, 25);
+    memcpy(dst, src, size);
 }
 

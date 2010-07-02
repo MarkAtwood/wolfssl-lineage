@@ -181,19 +181,34 @@ int SetCipherSpecs(SSL* ssl)
         break;
 #endif
 
-#ifdef BUILD_TLS_RSA_WITH_HC_128_CBC_SHA
-    case TLS_RSA_WITH_HC_128_CBC_SHA :
+#ifdef BUILD_TLS_RSA_WITH_HC_128_CBC_MD5
+    case TLS_RSA_WITH_HC_128_CBC_MD5 :
         ssl->specs.bulk_cipher_algorithm = hc128;
         ssl->specs.cipher_type           = stream;
-        ssl->specs.mac_algorithm         = sha_mac;
+        ssl->specs.mac_algorithm         = md5_mac;
         ssl->specs.kea                   = rsa_kea;
-        ssl->specs.hash_size             = SHA_DIGEST_SIZE;
-        ssl->specs.pad_size              = PAD_SHA;
+        ssl->specs.hash_size             = MD5_DIGEST_SIZE;
+        ssl->specs.pad_size              = PAD_MD5;
         ssl->specs.key_size              = HC_128_KEY_SIZE;
         ssl->specs.block_size            = 0;
         ssl->specs.iv_size               = HC_128_IV_SIZE;
 
         break;
+#endif
+            
+#ifdef BUILD_TLS_RSA_WITH_HC_128_CBC_SHA
+        case TLS_RSA_WITH_HC_128_CBC_SHA :
+            ssl->specs.bulk_cipher_algorithm = hc128;
+            ssl->specs.cipher_type           = stream;
+            ssl->specs.mac_algorithm         = sha_mac;
+            ssl->specs.kea                   = rsa_kea;
+            ssl->specs.hash_size             = SHA_DIGEST_SIZE;
+            ssl->specs.pad_size              = PAD_SHA;
+            ssl->specs.key_size              = HC_128_KEY_SIZE;
+            ssl->specs.block_size            = 0;
+            ssl->specs.iv_size               = HC_128_IV_SIZE;
+            
+            break;
 #endif
 
 #ifdef BUILD_TLS_RSA_WITH_RABBIT_CBC_SHA

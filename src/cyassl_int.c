@@ -391,6 +391,13 @@ void InitSuites(Suites* suites, ProtocolVersion pv, byte haveDH, byte havePSK)
     suites->suites[idx++] = SSL_RSA_WITH_3DES_EDE_CBC_SHA;
 #endif
 
+#ifdef BUILD_TLS_RSA_WITH_HC_128_CBC_MD5
+    if (tls) {
+        suites->suites[idx++] = 0; 
+        suites->suites[idx++] = TLS_RSA_WITH_HC_128_CBC_MD5;
+    }
+#endif
+    
 #ifdef BUILD_TLS_RSA_WITH_HC_128_CBC_SHA
     if (tls) {
         suites->suites[idx++] = 0; 
@@ -2575,6 +2582,10 @@ const char* const cipher_names[] =
     "PSK-AES256-CBC-SHA",
 #endif
 
+#ifdef BUILD_TLS_RSA_WITH_HC_128_CBC_MD5
+    "HC128-MD5",
+#endif
+    
 #ifdef BUILD_TLS_RSA_WITH_HC_128_CBC_SHA
     "HC128-SHA",
 #endif
@@ -2624,6 +2635,10 @@ int cipher_name_idx[] =
 
 #ifdef BUILD_TLS_PSK_WITH_AES_256_CBC_SHA
     TLS_PSK_WITH_AES_256_CBC_SHA,
+#endif
+
+#ifdef BUILD_TLS_RSA_WITH_HC_128_CBC_MD5
+    TLS_RSA_WITH_HC_128_CBC_MD5,    
 #endif
 
 #ifdef BUILD_TLS_RSA_WITH_HC_128_CBC_SHA

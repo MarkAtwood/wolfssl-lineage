@@ -99,6 +99,7 @@ typedef byte word24[3];
 #endif
 
 #if !defined(NO_HC128) && !defined(NO_TLS)
+    #define BUILD_TLS_RSA_WITH_HC_128_CBC_MD5
     #define BUILD_TLS_RSA_WITH_HC_128_CBC_SHA
 #endif
 
@@ -127,7 +128,8 @@ typedef byte word24[3];
     #define BUILD_AES
 #endif
 
-#if defined(BUILD_TLS_RSA_WITH_HC_128_CBC_SHA)
+#if defined(BUILD_TLS_RSA_WITH_HC_128_CBC_SHA) || \
+    defined(BUILD_TLS_RSA_WITH_HC_128_CBC_MD5)
     #define BUILD_HC128
 #endif
 
@@ -158,6 +160,7 @@ enum {
     SSL_RSA_WITH_3DES_EDE_CBC_SHA     = 0x0A,
 
     /* CyaSSL extension */
+    TLS_RSA_WITH_HC_128_CBC_MD5       = 0xFB,
     TLS_RSA_WITH_HC_128_CBC_SHA       = 0xFC,
     TLS_RSA_WITH_RABBIT_CBC_SHA       = 0xFD
 };

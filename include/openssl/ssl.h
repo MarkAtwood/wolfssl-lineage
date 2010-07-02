@@ -35,6 +35,9 @@
 #include "prefix_ssl.h"
 #endif
 
+#include <openssl/opensslv.h>   /* cURL compatibility */
+#define CYASSL_VERSION "1.5.2"
+
 #undef X509_NAME   /* wincrypt.h clash */
 
 #ifdef __cplusplus
@@ -66,8 +69,11 @@ typedef struct SSL_CIPHER     SSL_CIPHER;
 typedef struct X509_LOOKUP    X509_LOOKUP;
 typedef struct X509_LOOKUP_METHOD X509_LOOKUP_METHOD;
 typedef struct X509_CRL       X509_CRL;
+typedef struct X509_EXTENSION X509_EXTENSION;
 typedef struct ASN1_TIME      ASN1_TIME;
 typedef struct ASN1_INTEGER   ASN1_INTEGER;
+typedef struct ASN1_OBJECT    ASN1_OBJECT;
+typedef struct ASN1_STRING    ASN1_STRING;
 typedef struct CRYPTO_dynlock_value CRYPTO_dynlock_value;
 
 #define ASN1_UTCTIME ASN1_TIME
@@ -472,10 +478,10 @@ enum { /* ssl Constants */
     SSL_ERROR_ZERO_RETURN      =  6,
     SSL_ERROR_SSL              = 85,
 
-    SSL_SENT_SHUTDOWN     = 90,
-    SSL_RECEIVED_SHUTDOWN = 91,
-    SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER = 92,
-    SSL_OP_NO_SSLv2       = 93,
+    SSL_SENT_SHUTDOWN     = 1,
+    SSL_RECEIVED_SHUTDOWN = 2,
+    SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER = 4,
+    SSL_OP_NO_SSLv2       = 8,
 
     SSL_R_SSL_HANDSHAKE_FAILURE           = 101,
     SSL_R_TLSV1_ALERT_UNKNOWN_CA          = 102,

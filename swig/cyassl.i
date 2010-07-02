@@ -10,7 +10,7 @@
     int   CyaSSL_connect(SSL*, const char* server, int port);
     RNG*  GetRng(void);
     RsaKey* GetRsaPrivateKey(const char* file);
-    void    FillSignStr(unsigned char*);
+    void    FillSignStr(unsigned char*, const char*, int);
 %}
 
 
@@ -29,7 +29,7 @@ int         RsaSSL_Verify(const unsigned char* in, int inLen, unsigned char* out
 
 RNG* GetRng(void);
 RsaKey* GetRsaPrivateKey(const char* file);
-void    FillSignStr(unsigned char*);
+void    FillSignStr(unsigned char*, const char*, int);
 
 %include carrays.i
 %include cdata.i

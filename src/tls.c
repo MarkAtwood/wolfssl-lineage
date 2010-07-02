@@ -355,6 +355,17 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
         return method;
     }
 
+
+    /* TODO: add downgrade */
+    SSL_METHOD* SSLv23_client_method(void)
+    {
+        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
+        if (method)
+            InitSSL_Method(method, MakeTLSv1());
+        return method;
+    }
+
+
 #endif /* NO_CYASSL_CLIENT */
 
 
