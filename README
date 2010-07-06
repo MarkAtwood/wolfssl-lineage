@@ -12,9 +12,9 @@ before calling SSL_new();
 
 *** end Note ***
 
-yaSSL Release notes, version 2.x.x (3/x/2010)
+yaSSL Release notes, version 2.0.0 (7/6/2010)
 
-    This release of yaSSL contains bug fixes,
+    This release of yaSSL contains bug fixes, new testing certs,
     and a security patch for a potential heap overflow on forged application
     data processing.  Vulnerability discovered by Matthieu Bonetti from VUPEN
     Security http://www.vupen.com.
