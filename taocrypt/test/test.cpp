@@ -1296,6 +1296,7 @@ int pwdbased_test()
 }
 
 
+/*
 int pkcs12_test()
 {
     Source cert;
@@ -1328,4 +1329,5 @@ int pkcs12_test()
 
     return 0;
 }
+*/
 

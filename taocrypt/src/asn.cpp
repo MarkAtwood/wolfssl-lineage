@@ -1128,6 +1128,7 @@ word32 DecodeDSA_Signature(byte* decoded, const byte* encoded, word32 sz)
 }
 
 
+/*
 // Get Cert in PEM format from BEGIN to END
 int GetCert(Source& source)
 {
@@ -1179,12 +1180,10 @@ void PKCS12_Decoder::Decode()
 
 
     // Get MacData optional
-    /*
-    mac     digestInfo  like certdecoder::getdigest?
-    macsalt octet string
-    iter    integer
+    // mac     digestInfo  like certdecoder::getdigest?
+    // macsalt octet string
+    // iter    integer
     
-    */
 }
 
 
@@ -1204,6 +1203,7 @@ int GetPKCS_Cert(const char* password, Source& source)
 
     return 0;
 }
+*/
 
 
 
