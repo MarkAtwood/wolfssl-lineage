@@ -13,3 +13,6 @@ libcyassl_la_LDFLAGS = -no-undefined -version-info 0:0:0
 AM_CFLAGS = -Wall
 EXTRA_DIST = ../include/*.h ../include/openssl/*.h ../include/*.rc
 
+if BUILD_AESNI
+libcyassl_la_SOURCES += ../ctaocrypt/src/aes_asm.s
+endif

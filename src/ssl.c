@@ -108,6 +108,12 @@ int SSL_set_fd(SSL* ssl, int fd)
 }
 
 
+int SSL_get_fd(const SSL* ssl)
+{
+    return ssl->rfd;
+}
+
+
 int CyaSSL_negotiate(SSL* ssl)
 {
     int err;

@@ -383,7 +383,7 @@ typedef struct buffer {
 typedef struct {
     word32 length;
     word32 idx;
-    byte   buffer[BUFFER16K_LEN];
+    ALIGN16 byte buffer[BUFFER16K_LEN];
 } buffer16K;
 
 /* Cipher Suites holder */

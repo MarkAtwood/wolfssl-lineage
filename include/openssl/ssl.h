@@ -36,7 +36,7 @@
 #endif
 
 #include <openssl/opensslv.h>   /* cURL compatibility */
-#define CYASSL_VERSION "1.5.2"
+#define CYASSL_VERSION "1.5.4"
 
 #undef X509_NAME   /* wincrypt.h clash */
 
@@ -139,6 +139,7 @@ int SSL_CTX_use_certificate_chain_file(SSL_CTX *ctx, const char *file);
 SSL_CTX* SSL_CTX_new(SSL_METHOD*);
 SSL* SSL_new(SSL_CTX*);
 int  SSL_set_fd (SSL*, int);
+int  SSL_get_fd(const SSL*);
 int  SSL_connect(SSL*);                   /* please see note at top of README
                                              if you get an error from connect */
 int  SSL_write(SSL*, const void*, int);
