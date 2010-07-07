@@ -478,16 +478,12 @@ void Des3_CbcEncrypt(Des3* des, byte* out, const byte* in, word32 sz)
 void Des3_CbcDecrypt(Des3* des, byte* out, const byte* in, word32 sz)
 {
     word32 blocks = sz / DES_BLOCK_SIZE;
-    byte   hold[16];
 
     while (blocks--) {
         memcpy(des->tmp, in, DES_BLOCK_SIZE);
         Des3ProcessBlock(des, (byte*)des->tmp, out);
         xorbuf(out, (byte*)des->reg, DES_BLOCK_SIZE);
-
-        memcpy(hold, des->reg, DES_BLOCK_SIZE);
         memcpy(des->reg, des->tmp, DES_BLOCK_SIZE);
-        memcpy(des->tmp, hold, DES_BLOCK_SIZE);
 
         out += DES_BLOCK_SIZE;
         in  += DES_BLOCK_SIZE; 

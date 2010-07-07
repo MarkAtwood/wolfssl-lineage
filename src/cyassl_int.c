@@ -1260,6 +1260,16 @@ static INLINE void Encrypt(SSL* ssl, byte* out, const byte* input, word32 sz)
 
         #ifdef BUILD_AES
             case aes:
+#ifdef CYASSL_AESNI
+                if ((word)input % 16) {
+                    buffer16K buffer;
+                    memcpy(buffer.buffer, input, sz);
+                    AesCbcEncrypt(&ssl->encrypt.aes, buffer.buffer,
+                                  buffer.buffer, sz);
+                    memcpy(out, buffer.buffer, sz);
+                    break;
+                }
+#endif
                 AesCbcEncrypt(&ssl->encrypt.aes, out, input, sz);
                 break;
         #endif

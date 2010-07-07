@@ -710,6 +710,116 @@ static const word32 Td[5][256] = {
 #define GETBYTE(x, y) (word32)((byte)((x) >> (8 * (y))))
 
 
+#ifdef CYASSL_AESNI
+
+#define cpuid(func,ax,bx,cx,dx)\
+        __asm__ __volatile__ ("cpuid":\
+                       "=a" (ax), "=b" (bx), "=c" (cx), "=d" (dx) : "a" (func));
+
+static int Check_CPU_support_AES()
+{
+    unsigned int a,b,c,d;
+    cpuid(1,a,b,c,d);
+
+    if (c & 0x2000000)
+        return 1;
+
+    return 0;
+}
+
+static int checkAESNI = 0;
+static int haveAESNI  = 0;
+
+
+void AES_CBC_encrypt(const unsigned char* in, unsigned char* out,
+                     unsigned char* ivec, unsigned long length,
+                     const unsigned char* KS, int nr);
+
+
+void AES_CBC_decrypt(const unsigned char* in, unsigned char* out,
+                     unsigned char* ivec, unsigned long length,
+                     const unsigned char* KS, int nr);
+
+void AES_128_Key_Expansion(const unsigned char* userkey, 
+                           unsigned char* key_schedule);
+
+void AES_192_Key_Expansion(const unsigned char* userkey, 
+                           unsigned char* key_schedule);
+
+void AES_256_Key_Expansion(const unsigned char* userkey, 
+                           unsigned char* key_schedule);
+
+
+int AES_set_encrypt_key (const unsigned char *userKey, const int bits,
+                         Aes* aes)
+{ 
+    if (!userKey || !aes)
+        return -1;
+    
+    if (bits == 128) {
+       AES_128_Key_Expansion (userKey,(byte*)aes->key); aes->rounds = 10;
+       return 0;
+    }
+    else if (bits == 192) {
+       AES_192_Key_Expansion (userKey,(byte*)aes->key); aes->rounds = 12;
+       return 0;
+    }
+    else if (bits == 256) {
+       AES_256_Key_Expansion (userKey,(byte*)aes->key); aes->rounds = 14;
+       return 0;
+    }
+    return -1;
+}
+
+
+int AES_set_decrypt_key (const unsigned char* userKey, const int bits,
+                         Aes* aes)
+{
+    int nr;
+    Aes temp_key;
+    __m128i *Key_Schedule = (__m128i*)aes->key;
+    __m128i *Temp_Key_Schedule = (__m128i*)temp_key.key;
+    
+    if (!userKey || !aes)
+        return -1;
+
+    if (AES_set_encrypt_key(userKey,bits,&temp_key) == -1)
+        return -1;
+
+    nr = temp_key.rounds;
+    aes->rounds = nr;
+
+    Key_Schedule[nr] = Temp_Key_Schedule[0];
+    Key_Schedule[nr-1] = _mm_aesimc_si128(Temp_Key_Schedule[1]);
+    Key_Schedule[nr-2] = _mm_aesimc_si128(Temp_Key_Schedule[2]);
+    Key_Schedule[nr-3] = _mm_aesimc_si128(Temp_Key_Schedule[3]);
+    Key_Schedule[nr-4] = _mm_aesimc_si128(Temp_Key_Schedule[4]);
+    Key_Schedule[nr-5] = _mm_aesimc_si128(Temp_Key_Schedule[5]);
+    Key_Schedule[nr-6] = _mm_aesimc_si128(Temp_Key_Schedule[6]);
+    Key_Schedule[nr-7] = _mm_aesimc_si128(Temp_Key_Schedule[7]);
+    Key_Schedule[nr-8] = _mm_aesimc_si128(Temp_Key_Schedule[8]);
+    Key_Schedule[nr-9] = _mm_aesimc_si128(Temp_Key_Schedule[9]);
+    
+    if(nr>10) {
+        Key_Schedule[nr-10] = _mm_aesimc_si128(Temp_Key_Schedule[10]);
+        Key_Schedule[nr-11] = _mm_aesimc_si128(Temp_Key_Schedule[11]);
+    }
+
+    if(nr>12) {
+        Key_Schedule[nr-12] = _mm_aesimc_si128(Temp_Key_Schedule[12]);
+        Key_Schedule[nr-13] = _mm_aesimc_si128(Temp_Key_Schedule[13]);
+    }
+
+    Key_Schedule[0] = Temp_Key_Schedule[nr];
+    
+    return 0;
+}
+
+
+
+#endif /* CYASSL_AESNI */
+
+
 int AesSetKey(Aes* aes, const byte* userKey, word32 keylen, const byte* iv,
                int dir)
 {
@@ -718,6 +828,20 @@ int AesSetKey(Aes* aes, const byte* userKey, word32 keylen, const byte* iv,
 
     if (!((keylen == 16) || (keylen == 24) || (keylen == 32)))
         return -1;
+
+#ifdef CYASSL_AESNI
+    if (checkAESNI == 0) {
+        haveAESNI  = Check_CPU_support_AES();
+        checkAESNI = 1;
+    }
+    if (haveAESNI) {
+        memcpy(aes->reg, iv, AES_BLOCK_SIZE);
+        if (dir == AES_ENCRYPTION)
+            return AES_set_encrypt_key(userKey, keylen * 8, aes);
+        else
+            return AES_set_decrypt_key(userKey, keylen * 8, aes);
+    }
+#endif /* CYASSL_AESNI */
 
     aes->rounds = keylen/4 + 6;
 
@@ -1112,6 +1236,25 @@ void AesCbcEncrypt(Aes* aes, byte* out, const byte* in, word32 sz)
 {
     word32 blocks = sz / AES_BLOCK_SIZE;
 
+#ifdef CYASSL_AESNI
+    if (haveAESNI) {
+        #ifdef DEBUG_AESNI
+            printf("about to aes cbc encrypt\n");
+            printf("in  = %p\n", in);
+            printf("out = %p\n", out);
+            printf("aes->key = %p\n", aes->key);
+            printf("aes->reg = %p\n", aes->reg);
+            printf("aes->rounds = %d\n", aes->rounds);
+            printf("sz = %d\n", sz);
+        #endif
+        AES_CBC_encrypt(in, out, (byte*)aes->reg, sz, (byte*)aes->key,
+                        aes->rounds);
+        /* store iv for next call */
+        memcpy(aes->reg, out + sz - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
+        return;
+    }
+#endif
+
     while (blocks--) {
         xorbuf((byte*)aes->reg, in, AES_BLOCK_SIZE);
         AesEncrypt(aes, (byte*)aes->reg, (byte*)aes->reg);
@@ -1126,16 +1269,34 @@ void AesCbcEncrypt(Aes* aes, byte* out, const byte* in, word32 sz)
 void AesCbcDecrypt(Aes* aes, byte* out, const byte* in, word32 sz)
 {
     word32 blocks = sz / AES_BLOCK_SIZE;
-    byte   hold[16];
+
+#ifdef CYASSL_AESNI
+    if (haveAESNI) {
+        #ifdef DEBUG_AESNI
+            printf("about to aes cbc decrypt\n");
+            printf("in  = %p\n", in);
+            printf("out = %p\n", out);
+            printf("aes->key = %p\n", aes->key);
+            printf("aes->reg = %p\n", aes->reg);
+            printf("aes->rounds = %d\n", aes->rounds);
+            printf("sz = %d\n", sz);
+        #endif
+
+        /* if input and output same will overwirte input iv */
+        memcpy(aes->tmp, in + sz - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
+        AES_CBC_decrypt(in, out, (byte*)aes->reg, sz, (byte*)aes->key,
+                        aes->rounds);
+        /* store iv for next call */
+        memcpy(aes->reg, aes->tmp, AES_BLOCK_SIZE);
+        return;
+    }
+#endif
 
     while (blocks--) {
         memcpy(aes->tmp, in, AES_BLOCK_SIZE);
         AesDecrypt(aes, (byte*)aes->tmp, out);
         xorbuf(out, (byte*)aes->reg, AES_BLOCK_SIZE);
-
-        memcpy(hold, aes->reg, AES_BLOCK_SIZE);
         memcpy(aes->reg, aes->tmp, AES_BLOCK_SIZE);
-        memcpy(aes->tmp, hold, AES_BLOCK_SIZE);
 
         out += AES_BLOCK_SIZE;
         in  += AES_BLOCK_SIZE; 

@@ -27,6 +27,25 @@
 
 #include "types.h"
 
+#ifdef CYASSL_AESNI
+
+#include <wmmintrin.h>
+
+#if !defined (ALIGN16)
+    #if defined (__GNUC__)
+        #define ALIGN16 __attribute__ ( (aligned (16)))
+    #elif defined(_MSC_VER)
+        #define ALIGN16 __declspec (align (16))
+    #else
+        #define ALIGN16
+    #endif
+#endif
+
+#endif /* CYASSL_AESNI */
+
+#if !defined (ALIGN16)
+    #define ALIGN16
+#endif
 
 #ifdef __cplusplus
     extern "C" {
@@ -41,11 +60,11 @@ enum {
 
 
 typedef struct Aes {
-    word32 rounds;
-    word32 key[60];
+    ALIGN16 word32 key[60];
+    word32  rounds;
 
-    word32 reg[AES_BLOCK_SIZE / sizeof(word32)];        /* for CBC mode */
-    word32 tmp[AES_BLOCK_SIZE / sizeof(word32)];        /* same         */
+    ALIGN16 word32 reg[AES_BLOCK_SIZE / sizeof(word32)];      /* for CBC mode */
+    ALIGN16 word32 tmp[AES_BLOCK_SIZE / sizeof(word32)];      /* same         */
 } Aes;
 
 
