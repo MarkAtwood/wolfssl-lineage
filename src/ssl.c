@@ -3245,10 +3245,7 @@ int  CyaSSL_get_chain_cert_pem(X509_CHAIN* chain, int idx,
     int footerLen = sizeof(footer) - 1;
     int i;
 
-    if (!chain)
-        return -1;
-
-    if (!outLen)
+    if (!chain || !outLen || !buffer)
         return -1;
 
     /* don't even try if inLen too short */
