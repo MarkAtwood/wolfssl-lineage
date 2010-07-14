@@ -3192,6 +3192,8 @@ int CyaSSL_set_compression(SSL* ssl)
 
 #ifdef SESSION_CERTS
 
+
+/* Get peer's certificate chain */
 X509_CHAIN* CyaSSL_get_peer_chain(SSL* ssl)
 {
     if (ssl)
@@ -3201,6 +3203,7 @@ X509_CHAIN* CyaSSL_get_peer_chain(SSL* ssl)
 }
 
 
+/* Get peer's certificate chain total count */
 int CyaSSL_get_chain_count(X509_CHAIN* chain)
 {
     if (chain)
@@ -3210,6 +3213,7 @@ int CyaSSL_get_chain_count(X509_CHAIN* chain)
 }
 
 
+/* Get peer's ASN.1 DER ceritifcate at index (idx) length in bytes */
 int CyaSSL_get_chain_length(X509_CHAIN* chain, int idx)
 {
     if (chain)
@@ -3219,6 +3223,7 @@ int CyaSSL_get_chain_length(X509_CHAIN* chain, int idx)
 }
 
 
+/* Get peer's ASN.1 DER ceritifcate at index (idx) */
 byte* CyaSSL_get_chain_cert(X509_CHAIN* chain, int idx)
 {
     if (chain)
@@ -3226,6 +3231,51 @@ byte* CyaSSL_get_chain_cert(X509_CHAIN* chain, int idx)
 
     return 0;
 }
+
+
+/* Get peer's PEM ceritifcate at index (idx), output to buffer if inLen big
+   enough else return error (-1), output length is in *outLen */
+int  CyaSSL_get_chain_cert_pem(X509_CHAIN* chain, int idx,
+                               unsigned char* buffer, int inLen, int* outLen)
+{
+    const char header[] = "-----BEGIN CERTIFICATE-----\n";
+    const char footer[] = "-----END CERTIFICATE-----\n";
+
+    int headerLen = sizeof(header) - 1;
+    int footerLen = sizeof(footer) - 1;
+    int i;
+
+    if (!chain)
+        return -1;
+
+    if (!outLen)
+        return -1;
+
+    /* don't even try if inLen too short */
+    if (inLen < headerLen + footerLen + chain->certs[idx].length)
+        return -1;
+
+    /* header */
+    memcpy(buffer, header, headerLen);
+    i = headerLen;
+
+    /* body */
+    *outLen = inLen;  /* input to Base64Encode */
+    if (Base64Encode(chain->certs[idx].buffer, chain->certs[idx].length,
+                     buffer + i, outLen) < 0)
+        return -1;
+    i += *outLen;
+
+    /* footer */
+    if ( (i + footerLen) > inLen)
+        return -1;
+    memcpy(buffer + i, footer, footerLen);
+    *outLen += headerLen + footerLen; 
+
+    return 0;
+}
+
+
 
 #endif /* SESSION_CERTS */
 

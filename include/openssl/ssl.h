@@ -36,7 +36,7 @@
 #endif
 
 #include <openssl/opensslv.h>   /* cURL compatibility */
-#define CYASSL_VERSION "1.5.4b"
+#define CYASSL_VERSION "1.5.4c"
 
 #undef X509_NAME   /* wincrypt.h clash */
 
@@ -593,8 +593,10 @@ int CyaSSL_set_compression(SSL* ssl);  /* turn on CyaSSL data compression */
 
 X509_CHAIN* CyaSSL_get_peer_chain(SSL* ssl);   /* get CyaSSL peer X509_CHAIN */
 int  CyaSSL_get_chain_count(X509_CHAIN* chain);   /* peer chain count */
-int  CyaSSL_get_chain_length(X509_CHAIN*, int idx); /* index cert count */
+int  CyaSSL_get_chain_length(X509_CHAIN*, int idx); /* index cert length */
 unsigned char* CyaSSL_get_chain_cert(X509_CHAIN*, int idx);   /* index cert */
+int  CyaSSL_get_chain_cert_pem(X509_CHAIN*, int idx, unsigned char* buffer,
+                          int inLen, int* outLen); /* get index cert in PEM */
 
 #ifndef _WIN32
     #ifndef NO_WRITEV

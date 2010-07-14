@@ -109,7 +109,7 @@ int Base64Decode(const byte* in, word32 inLen, byte* out, word32* outLen)
 }
 
 
-#ifdef BUILD_CTAOCRYPT_EXTRA
+#if defined(OPENSSL_EXTRA) || defined (SESSION_CERTS)
 
 static
 const byte base64Encode[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
@@ -178,15 +178,10 @@ int Base64Encode(const byte* in, word32 inLen, byte* out, word32* outLen)
     out[i++] = '\n';
     if (i != outSz)
         return -1;
+    *outLen = outSz;
 
     return 0; 
 }
-
-
-#endif /* BUILD_CTAOCRYPT_EXTRA */
-
-
-#ifdef OPENSSL_EXTRA
 
 
 static

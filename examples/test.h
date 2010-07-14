@@ -180,9 +180,11 @@ static INLINE void showPeer(SSL* ssl)
         int i;
 
         for (i = 0; i < count; i++) {
-            printf("cert %d has length %d buffer %p\n", i,
-                    CyaSSL_get_chain_length(chain, i),
-                    CyaSSL_get_chain_cert(chain, i));
+            int length;
+            unsigned char buffer[3072];
+
+            CyaSSL_get_chain_cert_pem(chain,i,buffer, sizeof(buffer), &length);
+            printf("cert %d has length %d data = \n%s\n", i, length, buffer);
         }
     }
 #endif
