@@ -546,6 +546,10 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->IOCB_ReadCtx  = &ssl->rfd;   /* prevent invalid pointer acess if not */
     ssl->IOCB_WriteCtx = &ssl->wfd;   /* correctly set */
 
+#ifdef SESSION_CERTS
+    ssl->session.chain.count = 0;
+#endif
+
     return 0;
 }
 
@@ -1025,6 +1029,19 @@ static int DoCertificate(SSL* ssl, byte* input, word32* inOutIdx)
         i += certSz;
 
         listSz -= certSz + CERT_HEADER_SZ;
+
+#ifdef SESSION_CERTS
+        if (ssl->session.chain.count < MAX_CHAIN_DEPTH &&
+                                       myCert.length < MAX_X509_SIZE) {
+            ssl->session.chain.certs[ssl->session.chain.count].length =
+                 myCert.length;
+            memcpy(ssl->session.chain.certs[ssl->session.chain.count].buffer,
+                   myCert.buffer, myCert.length);
+            ssl->session.chain.count++;
+        } else {
+            /* TODO: log couldn't store full chain */
+        }
+#endif
 
         InitDecodedCert(&dCert, myCert.buffer, ssl->heap);
         ret = ParseCertRelative(&dCert, myCert.length, CERT_TYPE,

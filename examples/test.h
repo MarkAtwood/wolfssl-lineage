@@ -172,6 +172,21 @@ static INLINE void showPeer(SSL* ssl)
         printf("peer has no cert!\n");
 
 #endif
+
+#ifdef SESSION_CERTS
+    {
+        X509_CHAIN* chain = CyaSSL_get_peer_chain(ssl);
+        int         count = CyaSSL_get_chain_count(chain);
+        int i;
+
+        for (i = 0; i < count; i++) {
+            printf("cert %d has length %d buffer %p\n", i,
+                    CyaSSL_get_chain_length(chain, i),
+                    CyaSSL_get_chain_cert(chain, i));
+        }
+    }
+#endif
+
 }
 
 

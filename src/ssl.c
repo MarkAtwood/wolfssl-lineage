@@ -108,6 +108,12 @@ int SSL_set_fd(SSL* ssl, int fd)
 }
 
 
+int SSL_get_fd(const SSL* ssl)
+{
+    return ssl->rfd;
+}
+
+
 int CyaSSL_negotiate(SSL* ssl)
 {
     int err;
@@ -1238,6 +1244,12 @@ void AddSession(SSL* ssl)
 
     SessionCache[row].Sessions[idx].timeout = DEFAULT_TIMEOUT;
     SessionCache[row].Sessions[idx].bornOn  = LowResTimer();
+
+#ifdef SESSION_CERTS
+    SessionCache[row].Sessions[idx].chain.count = ssl->session.chain.count;
+    memcpy(SessionCache[row].Sessions[idx].chain.certs,
+           ssl->session.chain.certs, sizeof(x509_buffer) * MAX_CHAIN_DEPTH);
+#endif
 
     SessionCache[row].totalCount++;
     if (SessionCache[row].nextIdx == SESSIONS_PER_ROW)
@@ -3176,4 +3188,44 @@ int CyaSSL_set_compression(SSL* ssl)
 
 
 #endif /* OPENSSL_EXTRA */
+
+
+#ifdef SESSION_CERTS
+
+X509_CHAIN* CyaSSL_get_peer_chain(SSL* ssl)
+{
+    if (ssl)
+        return &ssl->session.chain;
+
+    return 0;
+}
+
+
+int CyaSSL_get_chain_count(X509_CHAIN* chain)
+{
+    if (chain)
+        return chain->count;
+
+    return 0;
+}
+
+
+int CyaSSL_get_chain_length(X509_CHAIN* chain, int idx)
+{
+    if (chain)
+        return chain->certs[idx].length;
+
+    return 0;
+}
+
+
+byte* CyaSSL_get_chain_cert(X509_CHAIN* chain, int idx)
+{
+    if (chain)
+        return chain->certs[idx].buffer;
+
+    return 0;
+}
+
+#endif /* SESSION_CERTS */
 

@@ -260,6 +260,9 @@ enum Misc {
     MAX_PSK_ID_LEN     = 128,  /* max psk identity/hint supported */
     MAX_PSK_KEY_LEN    =  64,  /* max psk key supported */
 
+    MAX_CHAIN_DEPTH    =   4,  /* max cert chain peer depth */
+    MAX_X509_SIZE      = 2048, /* max static x509 buffer size */
+
     NO_SNIFF           =   0,  /* not sniffing */
     SNIFF              =   1,  /* currently sniffing */
 
@@ -293,6 +296,7 @@ enum states {
     typedef struct SSL_SESSION SSL_SESSION;
     typedef struct SSL         SSL;
     typedef struct X509        X509;
+    typedef struct X509_CHAIN  X509_CHAIN;
     typedef struct BIO         BIO;
     typedef struct BIO_METHOD  BIO_METHOD;
 
@@ -585,6 +589,19 @@ typedef struct Hashes {
 } Hashes;
 
 
+/* Static x509 buffer */
+typedef struct x509_buffer {
+    int  length;                  /* actual size */
+    byte buffer[MAX_X509_SIZE];   /* max static cert size */
+} x509_buffer;
+
+
+/* CyaSSL X509_CHAIN, for no dynamic memory SESSION_CACHE */
+struct X509_CHAIN {
+    int         count;                    /* total number in chain */
+    x509_buffer certs[MAX_CHAIN_DEPTH];   /* only allow max depth 4 for now */
+};
+
 
 /* openSSL session type */
 struct SSL_SESSION {
@@ -592,6 +609,9 @@ struct SSL_SESSION {
     byte         masterSecret[SECRET_LEN];
     word32       bornOn;                        /* create time in seconds   */
     word32       timeout;                       /* timeout in seconds       */
+#ifdef SESSION_CERTS
+    X509_CHAIN   chain;                         /* peer cert chain, static  */
+#endif
 };
 
 

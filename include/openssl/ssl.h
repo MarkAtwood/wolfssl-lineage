@@ -36,7 +36,7 @@
 #endif
 
 #include <openssl/opensslv.h>   /* cURL compatibility */
-#define CYASSL_VERSION "1.5.4"
+#define CYASSL_VERSION "1.5.4b"
 
 #undef X509_NAME   /* wincrypt.h clash */
 
@@ -53,6 +53,7 @@ typedef struct SSL_CTX      SSL_CTX;
 
 typedef struct X509       X509;
 typedef struct X509_NAME  X509_NAME;
+typedef struct X509_CHAIN X509_CHAIN;
 
 
 /* redeclare guard */
@@ -139,6 +140,7 @@ int SSL_CTX_use_certificate_chain_file(SSL_CTX *ctx, const char *file);
 SSL_CTX* SSL_CTX_new(SSL_METHOD*);
 SSL* SSL_new(SSL_CTX*);
 int  SSL_set_fd (SSL*, int);
+int  SSL_get_fd(const SSL*);
 int  SSL_connect(SSL*);                   /* please see note at top of README
                                              if you get an error from connect */
 int  SSL_write(SSL*, const void*, int);
@@ -588,6 +590,11 @@ int  CyaSSL_Debugging_ON(void);   /* turn logging on, only if compiled in */
 void CyaSSL_Debugging_OFF(void);  /* turn logging off */
 
 int CyaSSL_set_compression(SSL* ssl);  /* turn on CyaSSL data compression */
+
+X509_CHAIN* CyaSSL_get_peer_chain(SSL* ssl);   /* get CyaSSL peer X509_CHAIN */
+int  CyaSSL_get_chain_count(X509_CHAIN* chain);   /* peer chain count */
+int  CyaSSL_get_chain_length(X509_CHAIN*, int idx); /* index cert count */
+unsigned char* CyaSSL_get_chain_cert(X509_CHAIN*, int idx);   /* index cert */
 
 #ifndef _WIN32
     #ifndef NO_WRITEV

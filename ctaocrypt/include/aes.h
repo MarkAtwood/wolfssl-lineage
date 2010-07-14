@@ -60,6 +60,7 @@ enum {
 
 
 typedef struct Aes {
+    /* AESNI needs key first, rounds 2nd, not sure why yet */
     ALIGN16 word32 key[60];
     word32  rounds;
 
