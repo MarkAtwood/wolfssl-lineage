@@ -294,6 +294,7 @@ enum states {
     typedef struct SSL_METHOD  SSL_METHOD;
     typedef struct SSL_CTX     SSL_CTX;
     typedef struct SSL_SESSION SSL_SESSION;
+    typedef struct SSL_CIPHER  SSL_CIPHER;
     typedef struct SSL         SSL;
     typedef struct X509        X509;
     typedef struct X509_CHAIN  X509_CHAIN;
@@ -419,6 +420,13 @@ int EmbedSend(char *buf, int sz, void *ctx);
 #ifdef CYASSL_DTLS
     int IsUDP(void*);
 #endif
+
+
+/* OpenSSL Cipher type just points back to SSL */
+struct SSL_CIPHER {
+    SSL* ssl;
+};
+
 
 /* OpenSSL context type */
 struct SSL_CTX {
@@ -768,7 +776,6 @@ struct SSL {
     int             error;
     ProtocolVersion version;            /* negotiated version */
     ProtocolVersion chVersion;          /* client hello version */
-    char            strVersion[MAX_STR_VERSION + 1];
     Suites          suites;
     Ciphers         encrypt;
     Ciphers         decrypt;
@@ -797,6 +804,7 @@ struct SSL {
     void*           heap;               /* for user overrides */
     RecordLayerHeader curRL;
     word16            curSize;
+    SSL_CIPHER      cipher;
 #ifdef HAVE_LIBZ
     z_stream        c_stream;           /* compression   stream */
     z_stream        d_stream;           /* decompression stream */

@@ -34,6 +34,7 @@
     #include "../ctaocrypt/include/random.h"
     #include "../ctaocrypt/include/des3.h"
     #include "../ctaocrypt/include/md4.h"
+    #include "../ctaocrypt/include/coding.h"
 #endif
 
 #include <stdlib.h>
@@ -2466,15 +2467,62 @@ int CyaSSL_set_compression(SSL* ssl)
     }
 
 
-    const char*  SSL_get_version(SSL* ssl)
+    const char* SSL_get_version(SSL* ssl)
     {
-        return ssl->strVersion;
+        if (ssl->version.major == 3) {
+            switch (ssl->version.minor) {
+                case 0 :
+                    return "SSLv3";
+                case 1 :
+                    return "TLSv1";
+                case 2 :
+                    return "TLSv1.1";
+                case 3 :
+                    return "TLSv1.2";
+            }
+        }
+        return "unknown";
     }
 
 
     SSL_CIPHER*  SSL_get_current_cipher(SSL* ssl)
     {
-        return 0;
+        return &ssl->cipher;
+    }
+
+
+    const char* SSL_CIPHER_get_name(const SSL_CIPHER* cipher)
+    {
+        if (cipher) {
+            switch (cipher->ssl->options.cipherSuite) {
+                case SSL_RSA_WITH_RC4_128_SHA :
+                    return "SSL_RSA_WITH_RC4_128_SHA";
+                case SSL_RSA_WITH_RC4_128_MD5 :
+                    return "SSL_RSA_WITH_RC4_128_MD5";
+                case SSL_RSA_WITH_3DES_EDE_CBC_SHA :
+                    return "SSL_RSA_WITH_3DES_EDE_CBC_SHA";
+                case TLS_RSA_WITH_AES_128_CBC_SHA :
+                    return "TLS_RSA_WITH_AES_128_CBC_SHA";
+                case TLS_RSA_WITH_AES_256_CBC_SHA :
+                    return "TLS_RSA_WITH_AES_256_CBC_SHA";
+                case TLS_PSK_WITH_AES_128_CBC_SHA :
+                    return "TLS_PSK_WITH_AES_128_CBC_SHA";
+                case TLS_PSK_WITH_AES_256_CBC_SHA :
+                    return "TLS_PSK_WITH_AES_256_CBC_SHA";
+                case TLS_DHE_RSA_WITH_AES_128_CBC_SHA :
+                    return "TLS_DHE_RSA_WITH_AES_128_CBC_SHA";
+                case TLS_DHE_RSA_WITH_AES_256_CBC_SHA :
+                    return "TLS_DHE_RSA_WITH_AES_256_CBC_SHA";
+                case TLS_RSA_WITH_HC_128_CBC_MD5 :
+                    return "TLS_RSA_WITH_HC_128_CBC_MD5";
+                case TLS_RSA_WITH_HC_128_CBC_SHA :
+                    return "TLS_RSA_WITH_HC_128_CBC_SHA";
+                case TLS_RSA_WITH_RABBIT_CBC_SHA :
+                    return "TLS_RSA_WITH_RABBIT_CBC_SHA";
+            }
+        }
+
+        return "NONE";
     }
 
 
@@ -3181,6 +3229,12 @@ int CyaSSL_set_compression(SSL* ssl)
     }
 
 
+    long SSL_SESSION_get_time(const SSL_SESSION* sess)
+    {
+        return sess->bornOn;
+    }
+
+
     int SSL_CTX_get_ex_new_index(long idx, void* arg, void* a, void* b, void* c)
     {
         return 0; 
@@ -3259,7 +3313,7 @@ int  CyaSSL_get_chain_cert_pem(X509_CHAIN* chain, int idx,
     /* body */
     *outLen = inLen;  /* input to Base64Encode */
     if (Base64Encode(chain->certs[idx].buffer, chain->certs[idx].length,
-                     buffer + i, outLen) < 0)
+                     buffer + i, (word32*)outLen) < 0)
         return -1;
     i += *outLen;
 

@@ -158,7 +158,8 @@ static INLINE void showPeer(SSL* ssl)
 {
 #ifdef OPENSSL_EXTRA
 
-    X509* peer = SSL_get_peer_certificate(ssl);
+    SSL_CIPHER* cipher;
+    X509*       peer = SSL_get_peer_certificate(ssl);
     if (peer) {
         char* issuer  = X509_NAME_oneline(X509_get_issuer_name(peer), 0, 0);
         char* subject = X509_NAME_oneline(X509_get_subject_name(peer), 0, 0);
@@ -170,7 +171,10 @@ static INLINE void showPeer(SSL* ssl)
     }
     else
         printf("peer has no cert!\n");
+    printf("SSL version is %s\n", SSL_get_version(ssl));
 
+    cipher = SSL_get_current_cipher(ssl);
+    printf("SSL cipher suite is %s\n", SSL_CIPHER_get_name(cipher));
 #endif
 
 #ifdef SESSION_CERTS

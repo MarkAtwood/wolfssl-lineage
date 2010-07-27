@@ -424,7 +424,6 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->ctx     = ctx; /* only for passing to calls, options could change */
     ssl->version = ctx->method->version;
     ssl->suites  = ctx->suites;
-    strncpy(ssl->strVersion, "NOT SET", MAX_STR_VERSION);  /* wait til negot */
 
 #ifdef HAVE_LIBZ
     ssl->didStreamInit = 0;
@@ -549,6 +548,8 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
 #ifdef SESSION_CERTS
     ssl->session.chain.count = 0;
 #endif
+
+    ssl->cipher.ssl = ssl;
 
     return 0;
 }
@@ -1039,7 +1040,7 @@ static int DoCertificate(SSL* ssl, byte* input, word32* inOutIdx)
                    myCert.buffer, myCert.length);
             ssl->session.chain.count++;
         } else {
-            /* TODO: log couldn't store full chain */
+            CYASSL_MSG("Couldn't store chain cert for session");
         }
 #endif
 

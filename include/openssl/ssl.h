@@ -36,7 +36,7 @@
 #endif
 
 #include <openssl/opensslv.h>   /* cURL compatibility */
-#define CYASSL_VERSION "1.5.4c"
+#define CYASSL_VERSION "1.5.4e"
 
 #undef X509_NAME   /* wincrypt.h clash */
 
@@ -197,6 +197,7 @@ void SSL_SESSION_free(SSL_SESSION* session);
 const char*  SSL_get_version(SSL*);
 SSL_CIPHER*  SSL_get_current_cipher(SSL*);
 char*        SSL_CIPHER_description(SSL_CIPHER*, char*, int);
+const char*  SSL_CIPHER_get_name(const SSL_CIPHER* cipher);
 SSL_SESSION* SSL_get1_session(SSL* ssl);  /* what's ref count */
 
 void X509_free(X509*);
@@ -475,6 +476,8 @@ enum { /* ssl Constants */
 
     SSL_ERROR_WANT_READ        =  2,
     SSL_ERROR_WANT_WRITE       =  3,
+    SSL_ERROR_WANT_CONNECT     =  7,
+    SSL_ERROR_WANT_ACCEPT      =  8,
     SSL_ERROR_SYSCALL          =  5,
     SSL_ERROR_WANT_X509_LOOKUP = 83,
     SSL_ERROR_ZERO_RETURN      =  6,
@@ -572,6 +575,7 @@ int          i2d_SSL_SESSION(SSL_SESSION*, unsigned char**);
 SSL_SESSION* d2i_SSL_SESSION(SSL_SESSION**,const unsigned char**, long);
 
 long SSL_SESSION_get_timeout(const SSL_SESSION*);
+long SSL_SESSION_get_time(const SSL_SESSION*);
 int  SSL_CTX_get_ex_new_index(long, void*, void*, void*, void*);
 
 /* extra ends */
