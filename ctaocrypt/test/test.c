@@ -28,10 +28,10 @@
 #endif
 
 #ifdef OPENSSL_EXTRA
-    #include "../../include/openssl/evp.h"
-    #include "../../include/openssl/rand.h"
-    #include "../../include/openssl/hmac.h"
-    #include "../../include/openssl/des.h"
+    #include "openssl/evp.h"
+    #include "openssl/rand.h"
+    #include "openssl/hmac.h"
+    #include "openssl/des.h"
 #endif
 
 

@@ -35,9 +35,6 @@
 #include "prefix_ssl.h"
 #endif
 
-#include <openssl/opensslv.h>   /* cURL compatibility */
-#define CYASSL_VERSION "1.5.4e"
-
 #undef X509_NAME   /* wincrypt.h clash */
 
 #ifdef __cplusplus

@@ -1,5 +1,4 @@
 /* rand.h for openSSL */
 
-#include "ssl.h"
-
+#include "openssl/ssl.h"
 

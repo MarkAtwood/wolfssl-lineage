@@ -618,7 +618,9 @@ struct SSL_SESSION {
     word32       bornOn;                        /* create time in seconds   */
     word32       timeout;                       /* timeout in seconds       */
 #ifdef SESSION_CERTS
-    X509_CHAIN   chain;                         /* peer cert chain, static  */
+    X509_CHAIN      chain;                      /* peer cert chain, static  */
+    ProtocolVersion version;
+    byte            cipherSuite;
 #endif
 };
 

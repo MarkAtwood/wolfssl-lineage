@@ -12,7 +12,19 @@ before calling SSL_new();  Though it's not recommended.
 
 *** end Note ***
 
-CyaSSL Release 1.5.4 (7/7/2010)
+CyaSSL Release 1.5.6 (7/28/2010)
+
+Release 1.5.6 for CyaSSL adds bug fixes, compatibility for our JSSE provider,
+and a fix for GCC builds on some systems.
+ 
+For general build instructions see doc/Building_CyaSSL.pdf.
+
+To add AES-NI support add this option to ./configure
+./configure --enable-aesni
+
+You'll need GCC 4.4.3 or later to make use of the assembly.
+
+**************  CyaSSL Release 1.5.4 (7/7/2010)
 
 Release 1.5.4 for CyaSSL adds bug fixes, support for AES-NI, SHA1 speed 
 improvements from loop unrolling, and support for the Mongoose Web Server.
