@@ -206,7 +206,8 @@ void client_test(void* args)
         tcp_connect(&sockfd, yasslIP, yasslPort);
     SSL_set_fd(sslResume, sockfd);
     SSL_set_session(sslResume, session);
-    
+   
+    showPeer(sslResume); 
     if (SSL_connect(sslResume) != SSL_SUCCESS) err_sys("SSL resume failed");
 
 #ifdef OPENSSL_EXTRA

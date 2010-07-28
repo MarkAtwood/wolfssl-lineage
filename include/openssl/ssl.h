@@ -36,7 +36,7 @@
 #endif
 
 #include <openssl/opensslv.h>   /* cURL compatibility */
-#define CYASSL_VERSION "1.5.4e"
+#define CYASSL_VERSION "1.5.4f"
 
 #undef X509_NAME   /* wincrypt.h clash */
 

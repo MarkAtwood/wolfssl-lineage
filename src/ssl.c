@@ -1219,6 +1219,11 @@ int SetSession(SSL* ssl, SSL_SESSION* session)
         ssl->session  = *session;
         ssl->options.resuming = 1;
 
+#ifdef SESSION_CERTS
+        ssl->version             = session->version;
+        ssl->options.cipherSuite = session->cipherSuite;
+#endif
+
         return SSL_SUCCESS;
     }
     return SSL_FAILURE;  /* session timed out */
@@ -1250,6 +1255,9 @@ void AddSession(SSL* ssl)
     SessionCache[row].Sessions[idx].chain.count = ssl->session.chain.count;
     memcpy(SessionCache[row].Sessions[idx].chain.certs,
            ssl->session.chain.certs, sizeof(x509_buffer) * MAX_CHAIN_DEPTH);
+
+    SessionCache[row].Sessions[idx].version     = ssl->version;
+    SessionCache[row].Sessions[idx].cipherSuite = ssl->options.cipherSuite;
 #endif
 
     SessionCache[row].totalCount++;

@@ -163,7 +163,7 @@ static INLINE void showPeer(SSL* ssl)
     if (peer) {
         char* issuer  = X509_NAME_oneline(X509_get_issuer_name(peer), 0, 0);
         char* subject = X509_NAME_oneline(X509_get_subject_name(peer), 0, 0);
-
+        
         printf("peer's cert info:\n issuer : %s\n subject: %s\n", issuer,
                                                                   subject);
         XFREE(subject, 0);
@@ -188,6 +188,7 @@ static INLINE void showPeer(SSL* ssl)
             unsigned char buffer[3072];
 
             CyaSSL_get_chain_cert_pem(chain,i,buffer, sizeof(buffer), &length);
+            buffer[length] = 0;
             printf("cert %d has length %d data = \n%s\n", i, length, buffer);
         }
     }
