@@ -35,9 +35,6 @@
 #include "prefix_ssl.h"
 #endif
 
-#include <openssl/opensslv.h>   /* cURL compatibility */
-#define CYASSL_VERSION "1.5.4f"
-
 #undef X509_NAME   /* wincrypt.h clash */
 
 #ifdef __cplusplus
@@ -601,6 +598,7 @@ int  CyaSSL_get_chain_length(X509_CHAIN*, int idx); /* index cert length */
 unsigned char* CyaSSL_get_chain_cert(X509_CHAIN*, int idx);   /* index cert */
 int  CyaSSL_get_chain_cert_pem(X509_CHAIN*, int idx, unsigned char* buffer,
                           int inLen, int* outLen); /* get index cert in PEM */
+const unsigned char* CyaSSL_get_sessionID(const SSL_SESSION* session);
 
 #ifndef _WIN32
     #ifndef NO_WRITEV

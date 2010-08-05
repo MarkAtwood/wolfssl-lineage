@@ -1,4 +1,4 @@
-INCLUDES = -I../include
+INCLUDES = -I../include -I../../include
 bin_PROGRAMS = test
 test_SOURCES = test.c
 test_LDFLAGS = -L../src

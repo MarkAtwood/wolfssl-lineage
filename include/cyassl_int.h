@@ -61,6 +61,12 @@
     #pragma warning(disable: 4996)
 #endif
 
+#ifdef NO_AES
+    #if !defined (ALIGN16)
+        #define ALIGN16
+    #endif
+#endif
+
 #ifdef __cplusplus
     extern "C" {
 #endif

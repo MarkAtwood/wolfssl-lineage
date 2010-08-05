@@ -1,6 +1,6 @@
 /* testsuite.c */
 
-#include "../include/openssl/ssl.h"
+#include "openssl/ssl.h"
 #include "../examples/test.h"
 #include "md5.h"
 

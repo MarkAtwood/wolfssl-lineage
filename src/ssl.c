@@ -3335,6 +3335,12 @@ int  CyaSSL_get_chain_cert_pem(X509_CHAIN* chain, int idx,
 }
 
 
+/* get session ID */
+const byte* CyaSSL_get_sessionID(const SSL_SESSION* session)
+{
+    return session->sessionID;
+}
+
 
 #endif /* SESSION_CERTS */
 
