@@ -33,7 +33,7 @@
 /* decode needed by CyaSSL */
 int Base64Decode(const byte* in, word32 inLen, byte* out, word32* outLen);
 
-#ifdef OPENSSL_EXTRA
+#if defined(OPENSSL_EXTRA) || defined(SESSION_CERTS) || defined(CYASSL_KEY_GEN)
     /* encode isn't */
     int Base64Encode(const byte* in, word32 inLen, byte* out, word32* outLen);
     int Base16Decode(const byte* in, word32 inLen, byte* out, word32* outLen);

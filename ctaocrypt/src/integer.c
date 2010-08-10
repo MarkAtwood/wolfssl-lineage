@@ -3590,6 +3590,692 @@ int fast_s_mp_mul_high_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
 }
 
 
+#ifdef CYASSL_KEY_GEN
+
+int mp_cnt_lsb(mp_int *a);
+
+/* c = a * a (mod b) */
+int mp_sqrmod (mp_int * a, mp_int * b, mp_int * c)
+{
+  int     res;
+  mp_int  t;
+
+  if ((res = mp_init (&t)) != MP_OKAY) {
+    return res;
+  }
+
+  if ((res = mp_sqr (a, &t)) != MP_OKAY) {
+    mp_clear (&t);
+    return res;
+  }
+  res = mp_mod (&t, b, c);
+  mp_clear (&t);
+  return res;
+}
+
+
+/* single digit addition */
+int mp_add_d (mp_int * a, mp_digit b, mp_int * c)
+{
+  int     res, ix, oldused;
+  mp_digit *tmpa, *tmpc, mu;
+
+  /* grow c as required */
+  if (c->alloc < a->used + 1) {
+     if ((res = mp_grow(c, a->used + 1)) != MP_OKAY) {
+        return res;
+     }
+  }
+
+  /* if a is negative and |a| >= b, call c = |a| - b */
+  if (a->sign == MP_NEG && (a->used > 1 || a->dp[0] >= b)) {
+     /* temporarily fix sign of a */
+     a->sign = MP_ZPOS;
+
+     /* c = |a| - b */
+     res = mp_sub_d(a, b, c);
+
+     /* fix sign  */
+     a->sign = c->sign = MP_NEG;
+
+     /* clamp */
+     mp_clamp(c);
+
+     return res;
+  }
+
+  /* old number of used digits in c */
+  oldused = c->used;
+
+  /* sign always positive */
+  c->sign = MP_ZPOS;
+
+  /* source alias */
+  tmpa    = a->dp;
+
+  /* destination alias */
+  tmpc    = c->dp;
+
+  /* if a is positive */
+  if (a->sign == MP_ZPOS) {
+     /* add digit, after this we're propagating
+      * the carry.
+      */
+     *tmpc   = *tmpa++ + b;
+     mu      = *tmpc >> DIGIT_BIT;
+     *tmpc++ &= MP_MASK;
+
+     /* now handle rest of the digits */
+     for (ix = 1; ix < a->used; ix++) {
+        *tmpc   = *tmpa++ + mu;
+        mu      = *tmpc >> DIGIT_BIT;
+        *tmpc++ &= MP_MASK;
+     }
+     /* set final carry */
+     ix++;
+     *tmpc++  = mu;
+
+     /* setup size */
+     c->used = a->used + 1;
+  } else {
+     /* a was negative and |a| < b */
+     c->used  = 1;
+
+     /* the result is a single digit */
+     if (a->used == 1) {
+        *tmpc++  =  b - a->dp[0];
+     } else {
+        *tmpc++  =  b;
+     }
+
+     /* setup count so the clearing of oldused
+      * can fall through correctly
+      */
+     ix       = 1;
+  }
+
+  /* now zero to oldused */
+  while (ix++ < oldused) {
+     *tmpc++ = 0;
+  }
+  mp_clamp(c);
+
+  return MP_OKAY;
+}
+
+
+/* single digit subtraction */
+int mp_sub_d (mp_int * a, mp_digit b, mp_int * c)
+{
+  mp_digit *tmpa, *tmpc, mu;
+  int       res, ix, oldused;
+
+  /* grow c as required */
+  if (c->alloc < a->used + 1) {
+     if ((res = mp_grow(c, a->used + 1)) != MP_OKAY) {
+        return res;
+     }
+  }
+
+  /* if a is negative just do an unsigned
+   * addition [with fudged signs]
+   */
+  if (a->sign == MP_NEG) {
+     a->sign = MP_ZPOS;
+     res     = mp_add_d(a, b, c);
+     a->sign = c->sign = MP_NEG;
+
+     /* clamp */
+     mp_clamp(c);
+
+     return res;
+  }
+
+  /* setup regs */
+  oldused = c->used;
+  tmpa    = a->dp;
+  tmpc    = c->dp;
+
+  /* if a <= b simply fix the single digit */
+  if ((a->used == 1 && a->dp[0] <= b) || a->used == 0) {
+     if (a->used == 1) {
+        *tmpc++ = b - *tmpa;
+     } else {
+        *tmpc++ = b;
+     }
+     ix      = 1;
+
+     /* negative/1digit */
+     c->sign = MP_NEG;
+     c->used = 1;
+  } else {
+     /* positive/size */
+     c->sign = MP_ZPOS;
+     c->used = a->used;
+
+     /* subtract first digit */
+     *tmpc    = *tmpa++ - b;
+     mu       = *tmpc >> (sizeof(mp_digit) * CHAR_BIT - 1);
+     *tmpc++ &= MP_MASK;
+
+     /* handle rest of the digits */
+     for (ix = 1; ix < a->used; ix++) {
+        *tmpc    = *tmpa++ - mu;
+        mu       = *tmpc >> (sizeof(mp_digit) * CHAR_BIT - 1);
+        *tmpc++ &= MP_MASK;
+     }
+  }
+
+  /* zero excess digits */
+  while (ix++ < oldused) {
+     *tmpc++ = 0;
+  }
+  mp_clamp(c);
+  return MP_OKAY;
+}
+
+
+static int s_is_power_of_two(mp_digit b, int *p)
+{
+   int x;
+
+   /* fast return if no power of two */
+   if ((b==0) || (b & (b-1))) {
+      return 0;
+   }
+
+   for (x = 0; x < DIGIT_BIT; x++) {
+      if (b == (((mp_digit)1)<<x)) {
+         *p = x;
+         return 1;
+      }
+   }
+   return 0;
+}
+
+/* single digit division (based on routine from MPI) */
+int mp_div_d (mp_int * a, mp_digit b, mp_int * c, mp_digit * d)
+{
+  mp_int  q;
+  mp_word w;
+  mp_digit t;
+  int     res, ix;
+
+  /* cannot divide by zero */
+  if (b == 0) {
+     return MP_VAL;
+  }
+
+  /* quick outs */
+  if (b == 1 || mp_iszero(a) == 1) {
+     if (d != NULL) {
+        *d = 0;
+     }
+     if (c != NULL) {
+        return mp_copy(a, c);
+     }
+     return MP_OKAY;
+  }
+
+  /* power of two ? */
+  if (s_is_power_of_two(b, &ix) == 1) {
+     if (d != NULL) {
+        *d = a->dp[0] & ((((mp_digit)1)<<ix) - 1);
+     }
+     if (c != NULL) {
+        return mp_div_2d(a, ix, c, NULL);
+     }
+     return MP_OKAY;
+  }
+
+#ifdef BN_MP_DIV_3_C
+  /* three? */
+  if (b == 3) {
+     return mp_div_3(a, c, d);
+  }
+#endif
+
+  /* no easy answer [c'est la vie].  Just division */
+  if ((res = mp_init_size(&q, a->used)) != MP_OKAY) {
+     return res;
+  }
+  
+  q.used = a->used;
+  q.sign = a->sign;
+  w = 0;
+  for (ix = a->used - 1; ix >= 0; ix--) {
+     w = (w << ((mp_word)DIGIT_BIT)) | ((mp_word)a->dp[ix]);
+     
+     if (w >= b) {
+        t = (mp_digit)(w / b);
+        w -= ((mp_word)t) * ((mp_word)b);
+      } else {
+        t = 0;
+      }
+      q.dp[ix] = (mp_digit)t;
+  }
+  
+  if (d != NULL) {
+     *d = (mp_digit)w;
+  }
+  
+  if (c != NULL) {
+     mp_clamp(&q);
+     mp_exch(&q, c);
+  }
+  mp_clear(&q);
+  
+  return res;
+}
+
+
+int mp_mod_d (mp_int * a, mp_digit b, mp_digit * c)
+{
+  return mp_div_d(a, b, NULL, c);
+}
+
+
+const mp_digit ltm_prime_tab[] = {
+  0x0002, 0x0003, 0x0005, 0x0007, 0x000B, 0x000D, 0x0011, 0x0013,
+  0x0017, 0x001D, 0x001F, 0x0025, 0x0029, 0x002B, 0x002F, 0x0035,
+  0x003B, 0x003D, 0x0043, 0x0047, 0x0049, 0x004F, 0x0053, 0x0059,
+  0x0061, 0x0065, 0x0067, 0x006B, 0x006D, 0x0071, 0x007F,
+#ifndef MP_8BIT
+  0x0083,
+  0x0089, 0x008B, 0x0095, 0x0097, 0x009D, 0x00A3, 0x00A7, 0x00AD,
+  0x00B3, 0x00B5, 0x00BF, 0x00C1, 0x00C5, 0x00C7, 0x00D3, 0x00DF,
+  0x00E3, 0x00E5, 0x00E9, 0x00EF, 0x00F1, 0x00FB, 0x0101, 0x0107,
+  0x010D, 0x010F, 0x0115, 0x0119, 0x011B, 0x0125, 0x0133, 0x0137,
+
+  0x0139, 0x013D, 0x014B, 0x0151, 0x015B, 0x015D, 0x0161, 0x0167,
+  0x016F, 0x0175, 0x017B, 0x017F, 0x0185, 0x018D, 0x0191, 0x0199,
+  0x01A3, 0x01A5, 0x01AF, 0x01B1, 0x01B7, 0x01BB, 0x01C1, 0x01C9,
+  0x01CD, 0x01CF, 0x01D3, 0x01DF, 0x01E7, 0x01EB, 0x01F3, 0x01F7,
+  0x01FD, 0x0209, 0x020B, 0x021D, 0x0223, 0x022D, 0x0233, 0x0239,
+  0x023B, 0x0241, 0x024B, 0x0251, 0x0257, 0x0259, 0x025F, 0x0265,
+  0x0269, 0x026B, 0x0277, 0x0281, 0x0283, 0x0287, 0x028D, 0x0293,
+  0x0295, 0x02A1, 0x02A5, 0x02AB, 0x02B3, 0x02BD, 0x02C5, 0x02CF,
+
+  0x02D7, 0x02DD, 0x02E3, 0x02E7, 0x02EF, 0x02F5, 0x02F9, 0x0301,
+  0x0305, 0x0313, 0x031D, 0x0329, 0x032B, 0x0335, 0x0337, 0x033B,
+  0x033D, 0x0347, 0x0355, 0x0359, 0x035B, 0x035F, 0x036D, 0x0371,
+  0x0373, 0x0377, 0x038B, 0x038F, 0x0397, 0x03A1, 0x03A9, 0x03AD,
+  0x03B3, 0x03B9, 0x03C7, 0x03CB, 0x03D1, 0x03D7, 0x03DF, 0x03E5,
+  0x03F1, 0x03F5, 0x03FB, 0x03FD, 0x0407, 0x0409, 0x040F, 0x0419,
+  0x041B, 0x0425, 0x0427, 0x042D, 0x043F, 0x0443, 0x0445, 0x0449,
+  0x044F, 0x0455, 0x045D, 0x0463, 0x0469, 0x047F, 0x0481, 0x048B,
+
+  0x0493, 0x049D, 0x04A3, 0x04A9, 0x04B1, 0x04BD, 0x04C1, 0x04C7,
+  0x04CD, 0x04CF, 0x04D5, 0x04E1, 0x04EB, 0x04FD, 0x04FF, 0x0503,
+  0x0509, 0x050B, 0x0511, 0x0515, 0x0517, 0x051B, 0x0527, 0x0529,
+  0x052F, 0x0551, 0x0557, 0x055D, 0x0565, 0x0577, 0x0581, 0x058F,
+  0x0593, 0x0595, 0x0599, 0x059F, 0x05A7, 0x05AB, 0x05AD, 0x05B3,
+  0x05BF, 0x05C9, 0x05CB, 0x05CF, 0x05D1, 0x05D5, 0x05DB, 0x05E7,
+  0x05F3, 0x05FB, 0x0607, 0x060D, 0x0611, 0x0617, 0x061F, 0x0623,
+  0x062B, 0x062F, 0x063D, 0x0641, 0x0647, 0x0649, 0x064D, 0x0653
+#endif
+};
+
+
+/* Miller-Rabin test of "a" to the base of "b" as described in 
+ * HAC pp. 139 Algorithm 4.24
+ *
+ * Sets result to 0 if definitely composite or 1 if probably prime.
+ * Randomly the chance of error is no more than 1/4 and often 
+ * very much lower.
+ */
+int mp_prime_miller_rabin (mp_int * a, mp_int * b, int *result)
+{
+  mp_int  n1, y, r;
+  int     s, j, err;
+
+  /* default */
+  *result = MP_NO;
+
+  /* ensure b > 1 */
+  if (mp_cmp_d(b, 1) != MP_GT) {
+     return MP_VAL;
+  }     
+
+  /* get n1 = a - 1 */
+  if ((err = mp_init_copy (&n1, a)) != MP_OKAY) {
+    return err;
+  }
+  if ((err = mp_sub_d (&n1, 1, &n1)) != MP_OKAY) {
+    goto LBL_N1;
+  }
+
+  /* set 2**s * r = n1 */
+  if ((err = mp_init_copy (&r, &n1)) != MP_OKAY) {
+    goto LBL_N1;
+  }
+
+  /* count the number of least significant bits
+   * which are zero
+   */
+  s = mp_cnt_lsb(&r);
+
+  /* now divide n - 1 by 2**s */
+  if ((err = mp_div_2d (&r, s, &r, NULL)) != MP_OKAY) {
+    goto LBL_R;
+  }
+
+  /* compute y = b**r mod a */
+  if ((err = mp_init (&y)) != MP_OKAY) {
+    goto LBL_R;
+  }
+  if ((err = mp_exptmod (b, &r, a, &y)) != MP_OKAY) {
+    goto LBL_Y;
+  }
+
+  /* if y != 1 and y != n1 do */
+  if (mp_cmp_d (&y, 1) != MP_EQ && mp_cmp (&y, &n1) != MP_EQ) {
+    j = 1;
+    /* while j <= s-1 and y != n1 */
+    while ((j <= (s - 1)) && mp_cmp (&y, &n1) != MP_EQ) {
+      if ((err = mp_sqrmod (&y, a, &y)) != MP_OKAY) {
+         goto LBL_Y;
+      }
+
+      /* if y == 1 then composite */
+      if (mp_cmp_d (&y, 1) == MP_EQ) {
+         goto LBL_Y;
+      }
+
+      ++j;
+    }
+
+    /* if y != n1 then composite */
+    if (mp_cmp (&y, &n1) != MP_EQ) {
+      goto LBL_Y;
+    }
+  }
+
+  /* probably prime now */
+  *result = MP_YES;
+LBL_Y:mp_clear (&y);
+LBL_R:mp_clear (&r);
+LBL_N1:mp_clear (&n1);
+  return err;
+}
+
+
+/* determines if an integers is divisible by one 
+ * of the first PRIME_SIZE primes or not
+ *
+ * sets result to 0 if not, 1 if yes
+ */
+int mp_prime_is_divisible (mp_int * a, int *result)
+{
+  int     err, ix;
+  mp_digit res;
+
+  /* default to not */
+  *result = MP_NO;
+
+  for (ix = 0; ix < PRIME_SIZE; ix++) {
+    /* what is a mod LBL_prime_tab[ix] */
+    if ((err = mp_mod_d (a, ltm_prime_tab[ix], &res)) != MP_OKAY) {
+      return err;
+    }
+
+    /* is the residue zero? */
+    if (res == 0) {
+      *result = MP_YES;
+      return MP_OKAY;
+    }
+  }
+
+  return MP_OKAY;
+}
+
+
+/*
+ * Sets result to 1 if probably prime, 0 otherwise
+ */
+int mp_prime_is_prime (mp_int * a, int t, int *result)
+{
+  mp_int  b;
+  int     ix, err, res;
+
+  /* default to no */
+  *result = MP_NO;
+
+  /* valid value of t? */
+  if (t <= 0 || t > PRIME_SIZE) {
+    return MP_VAL;
+  }
+
+  /* is the input equal to one of the primes in the table? */
+  for (ix = 0; ix < PRIME_SIZE; ix++) {
+      if (mp_cmp_d(a, ltm_prime_tab[ix]) == MP_EQ) {
+         *result = 1;
+         return MP_OKAY;
+      }
+  }
+
+  /* first perform trial division */
+  if ((err = mp_prime_is_divisible (a, &res)) != MP_OKAY) {
+    return err;
+  }
+
+  /* return if it was trivially divisible */
+  if (res == MP_YES) {
+    return MP_OKAY;
+  }
+
+  /* now perform the miller-rabin rounds */
+  if ((err = mp_init (&b)) != MP_OKAY) {
+    return err;
+  }
+
+  for (ix = 0; ix < t; ix++) {
+    /* set the prime */
+    mp_set (&b, ltm_prime_tab[ix]);
+
+    if ((err = mp_prime_miller_rabin (a, &b, &res)) != MP_OKAY) {
+      goto LBL_B;
+    }
+
+    if (res == MP_NO) {
+      goto LBL_B;
+    }
+  }
+
+  /* passed the test */
+  *result = MP_YES;
+LBL_B:mp_clear (&b);
+  return err;
+}
+
+
+/* computes least common multiple as |a*b|/(a, b) */
+int mp_lcm (mp_int * a, mp_int * b, mp_int * c)
+{
+  int     res;
+  mp_int  t1, t2;
+
+
+  if ((res = mp_init_multi (&t1, &t2, NULL, NULL, NULL, NULL)) != MP_OKAY) {
+    return res;
+  }
+
+  /* t1 = get the GCD of the two inputs */
+  if ((res = mp_gcd (a, b, &t1)) != MP_OKAY) {
+    goto LBL_T;
+  }
+
+  /* divide the smallest by the GCD */
+  if (mp_cmp_mag(a, b) == MP_LT) {
+     /* store quotient in t2 such that t2 * b is the LCM */
+     if ((res = mp_div(a, &t1, &t2, NULL)) != MP_OKAY) {
+        goto LBL_T;
+     }
+     res = mp_mul(b, &t2, c);
+  } else {
+     /* store quotient in t2 such that t2 * a is the LCM */
+     if ((res = mp_div(b, &t1, &t2, NULL)) != MP_OKAY) {
+        goto LBL_T;
+     }
+     res = mp_mul(a, &t2, c);
+  }
+
+  /* fix the sign to positive */
+  c->sign = MP_ZPOS;
+
+LBL_T:
+  mp_clear(&t1);
+  mp_clear(&t2);
+  return res;
+}
+
+
+static const int lnz[16] = { 
+   4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0
+};
+
+/* Counts the number of lsbs which are zero before the first zero bit */
+int mp_cnt_lsb(mp_int *a)
+{
+    int x;
+    mp_digit q, qq;
+
+    /* easy out */
+    if (mp_iszero(a) == 1) {
+        return 0;
+    }
+
+    /* scan lower digits until non-zero */
+    for (x = 0; x < a->used && a->dp[x] == 0; x++);
+    q = a->dp[x];
+    x *= DIGIT_BIT;
+
+    /* now scan this digit until a 1 is found */
+    if ((q & 1) == 0) {
+        do {
+            qq  = q & 15;
+            x  += lnz[qq];
+            q >>= 4;
+        } while (qq == 0);
+    }
+    return x;
+}
+
+
+/* Greatest Common Divisor using the binary method */
+int mp_gcd (mp_int * a, mp_int * b, mp_int * c)
+{
+    mp_int  u, v;
+    int     k, u_lsb, v_lsb, res;
+
+    /* either zero than gcd is the largest */
+    if (mp_iszero (a) == MP_YES) {
+        return mp_abs (b, c);
+    }
+    if (mp_iszero (b) == MP_YES) {
+        return mp_abs (a, c);
+    }
+
+    /* get copies of a and b we can modify */
+    if ((res = mp_init_copy (&u, a)) != MP_OKAY) {
+        return res;
+    }
+
+    if ((res = mp_init_copy (&v, b)) != MP_OKAY) {
+        goto LBL_U;
+    }
+
+    /* must be positive for the remainder of the algorithm */
+    u.sign = v.sign = MP_ZPOS;
+
+    /* B1.  Find the common power of two for u and v */
+    u_lsb = mp_cnt_lsb(&u);
+    v_lsb = mp_cnt_lsb(&v);
+    k     = MIN(u_lsb, v_lsb);
+
+    if (k > 0) {
+        /* divide the power of two out */
+        if ((res = mp_div_2d(&u, k, &u, NULL)) != MP_OKAY) {
+            goto LBL_V;
+        }
+
+        if ((res = mp_div_2d(&v, k, &v, NULL)) != MP_OKAY) {
+            goto LBL_V;
+        }
+    }
+
+    /* divide any remaining factors of two out */
+    if (u_lsb != k) {
+        if ((res = mp_div_2d(&u, u_lsb - k, &u, NULL)) != MP_OKAY) {
+            goto LBL_V;
+        }
+    }
+
+    if (v_lsb != k) {
+        if ((res = mp_div_2d(&v, v_lsb - k, &v, NULL)) != MP_OKAY) {
+            goto LBL_V;
+        }
+    }
+
+    while (mp_iszero(&v) == 0) {
+        /* make sure v is the largest */
+        if (mp_cmp_mag(&u, &v) == MP_GT) {
+            /* swap u and v to make sure v is >= u */
+            mp_exch(&u, &v);
+        }
+     
+        /* subtract smallest from largest */
+        if ((res = s_mp_sub(&v, &u, &v)) != MP_OKAY) {
+            goto LBL_V;
+        }
+     
+        /* Divide out all factors of two */
+        if ((res = mp_div_2d(&v, mp_cnt_lsb(&v), &v, NULL)) != MP_OKAY) {
+            goto LBL_V;
+        } 
+    } 
+
+    /* multiply by 2**k which we divided out at the beginning */
+    if ((res = mp_mul_2d (&u, k, c)) != MP_OKAY) {
+        goto LBL_V;
+    }
+    c->sign = MP_ZPOS;
+    res = MP_OKAY;
+LBL_V:mp_clear (&u);
+LBL_U:mp_clear (&v);
+    return res;
+}
+
+
+/* set a 32-bit const */
+int mp_set_int (mp_int * a, unsigned long b)
+{
+  int     x, res;
+
+  mp_zero (a);
+  
+  /* set four bits at a time */
+  for (x = 0; x < 8; x++) {
+    /* shift the number up four bits */
+    if ((res = mp_mul_2d (a, 4, a)) != MP_OKAY) {
+      return res;
+    }
+
+    /* OR in the top four bits of the source */
+    a->dp[0] |= (b >> 28) & 15;
+
+    /* shift the source up to the next four bits */
+    b <<= 4;
+
+    /* ensure that digits are not clamped off */
+    a->used += 1;
+  }
+  mp_clamp (a);
+  return MP_OKAY;
+}
+
+
+#endif /* CYASSL_KEY_GEN */
 
 #endif /* USE_FAST_MATH */
 

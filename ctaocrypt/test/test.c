@@ -948,6 +948,49 @@ int rsa_test()
     fclose(file2);
     fclose(file);
 
+#ifdef CYASSL_KEY_GEN
+    {
+        RsaKey genKey;
+        InitRsaKey(&genKey, 0);
+
+        printf("trying key gen\n");
+
+        ret = MakeRsaKey(&genKey, 1024, 65537, &rng);
+
+        printf("\nret = %d\n", ret);
+
+        byte   der[4096];
+        word32 derSz = 0;
+        ret = RsaKeyToDer(&genKey, der, sizeof(der), &derSz);
+        printf("key to der ret = %d\n", ret);
+        printf("derSz = %d\n", derSz);
+
+        FILE* keyFile = fopen("./test.key", "wb");
+        if (!keyFile) printf("bad open on key file\n");
+        ret = fwrite(der, derSz, 1, keyFile);
+        printf("wrote %d bytes to file\n", ret);
+        fclose(keyFile);
+
+        byte   pem[4096];
+        word32 pemSz = 0;
+        ret = RsaKeyDerToPem(der, derSz, pem, sizeof(pem), &pemSz);
+        printf("der to pem ret = %d\n", ret);
+        printf("pem size = %d\n", pemSz);
+
+        FILE* pemFile = fopen("./test.pem", "wb");
+        if (!pemFile) printf("bad open on key file\n");
+        ret = fwrite(pem, pemSz, 1, pemFile);
+        printf("wrote %d bytes to pem file\n", ret);
+        fclose(pemFile);
+
+        RsaKey derIn;
+        InitRsaKey(&derIn, 0);
+        idx = 0;
+        ret = RsaPrivateKeyDecode(der, &idx, &derIn, derSz);
+        printf("der in ret = %d\n", ret);
+    }
+#endif
+
     return 0;
 }
 

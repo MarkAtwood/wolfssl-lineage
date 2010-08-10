@@ -25,6 +25,11 @@
 #include "random.h"
 #include "error.h"
 
+#define SHOW_GEN
+#ifdef SHOW_GEN
+    #include <stdio.h>
+#endif
+
 
 enum {
     RSA_PUBLIC_ENCRYPT  = 0,
@@ -34,6 +39,9 @@ enum {
 
     RSA_BLOCK_TYPE_1 = 1,
     RSA_BLOCK_TYPE_2 = 2,
+
+    RSA_MIN_SIZE = 512,
+    RSA_MAX_SIZE = 4096,
 
     RSA_MIN_PAD_SZ   = 11      /* seperator + 0 + pad value + 8 pads */
 };
@@ -348,4 +356,179 @@ int RsaEncryptSize(RsaKey* key)
 {
     return mp_unsigned_bin_size(&key->n);
 }
+
+
+#ifdef CYASSL_KEY_GEN
+
+static const int USE_BBS = 1;
+
+static int rand_prime(mp_int* N, int len, RNG* rng, void* heap)
+{
+    int   err, res, type;
+    byte* buf;
+
+    if (N == NULL || rng == NULL)
+       return -1; 
+
+    /* get type */
+    if (len < 0) {
+        type = USE_BBS;
+        len = -len;
+    } else {
+        type = 0;
+    }
+
+    /* allow sizes between 2 and 512 bytes for a prime size */
+    if (len < 2 || len > 512) { 
+        return -1;
+    }
+   
+    /* allocate buffer to work with */
+    buf = XCALLOC(1, len, heap);
+    if (buf == NULL) {
+        return -1;
+    }
+
+    do {
+#ifdef SHOW_GEN
+        printf(".");
+        fflush(stdout);
+#endif
+        /* generate value */
+        RNG_GenerateBlock(rng, buf, len);
+
+        /* munge bits */
+        buf[0]     |= 0x80 | 0x40;
+        buf[len-1] |= 0x01 | ((type & USE_BBS) ? 0x02 : 0x00);
+ 
+        /* load value */
+        if ((err = mp_read_unsigned_bin(N, buf, len)) != MP_OKAY) {
+            XFREE(buf, heap);
+            return err;
+        }
+
+        /* test */
+        if ((err = mp_prime_is_prime(N, 8, &res)) != MP_OKAY) {
+            XFREE(buf, heap);
+            return err;
+        }
+    } while (res == MP_NO);
+
+#ifdef LTC_CLEAN_STACK
+    memset(buf, 0, len);
+#endif
+
+    XFREE(buf, heap);
+    return 0;
+}
+
+
+/* Make an RSA key for size bits, with e specified, 65537 is a good e */
+int MakeRsaKey(RsaKey* key, int size, long e, RNG* rng)
+{
+    mp_int p, q, tmp1, tmp2, tmp3;
+    int    err;
+
+    if (key == NULL || rng == NULL)
+        return -1;
+
+    if (size < RSA_MIN_SIZE || size > RSA_MAX_SIZE)
+        return -1;
+
+    if (e < 3 || (e & 1) == 0)
+        return -1;
+
+    if ((err = mp_init_multi(&p, &q, &tmp1, &tmp2, &tmp3, NULL)) != MP_OKAY)
+        return err;
+
+    err = mp_set_int(&tmp3, e);
+
+    /* make p */
+    if (err == MP_OKAY) {
+        do {
+            err = rand_prime(&p, size/16, rng, key->heap); /* size in bytes/2 */
+
+            if (err == MP_OKAY)
+                err = mp_sub_d(&p, 1, &tmp1);  /* tmp1 = p-1 */
+
+            if (err == MP_OKAY)
+                err = mp_gcd(&tmp1, &tmp3, &tmp2);  /* tmp2 = gcd(p-1, e) */
+        } while (err == MP_OKAY && mp_cmp_d(&tmp2, 1) != 0);  /* e divdes p-1 */
+    }
+
+    /* make q */
+    if (err == MP_OKAY) {
+        do {
+            err = rand_prime(&q, size/16, rng, key->heap); /* size in bytes/2 */
+
+            if (err == MP_OKAY)
+                err = mp_sub_d(&q, 1, &tmp1);  /* tmp1 = q-1 */
+
+            if (err == MP_OKAY)
+                err = mp_gcd(&tmp1, &tmp3, &tmp2);  /* tmp2 = gcd(q-1, e) */
+        } while (err == MP_OKAY && mp_cmp_d(&tmp2, 1) != 0);  /* e divdes q-1 */
+    }
+
+    if (err == MP_OKAY)
+        err = mp_init_multi(&key->n, &key->e, &key->d, &key->p, &key->q, NULL);
+
+    if (err == MP_OKAY)
+        err = mp_init_multi(&key->dP, &key->dP, &key->u, NULL, NULL, NULL);
+
+    if (err == MP_OKAY)
+        err = mp_sub_d(&p, 1, &tmp2);  /* tmp2 = p-1 */
+
+    if (err == MP_OKAY)
+        err = mp_lcm(&tmp1, &tmp2, &tmp1);  /* tmp1 = lcm(p-1, q-1),last loop */
+
+    /* make key */
+    if (err == MP_OKAY)
+        err = mp_set_int(&key->e, e);  /* key->e = e */
+
+    if (err == MP_OKAY)                /* key->d = 1/e mod lcm(p-1, q-1) */
+        err = mp_invmod(&key->e, &tmp1, &key->d);
+
+    if (err == MP_OKAY)
+        err = mp_mul(&p, &q, &key->n);  /* key->n = pq */
+
+    if (err == MP_OKAY)
+        err = mp_sub_d(&p, 1, &tmp1);
+
+    if (err == MP_OKAY)
+        err = mp_sub_d(&q, 1, &tmp2);
+
+    if (err == MP_OKAY)
+        err = mp_mod(&key->d, &tmp1, &key->dP);
+
+    if (err == MP_OKAY)
+        err = mp_mod(&key->d, &tmp2, &key->dQ);
+
+    if (err == MP_OKAY)
+        err = mp_invmod(&q, &p, &key->u);
+
+    if (err == MP_OKAY)
+        err = mp_copy(&p, &key->p);
+
+    if (err == MP_OKAY)
+        err = mp_copy(&q, &key->q);
+
+    if (err == MP_OKAY)
+        key->type = RSA_PRIVATE; 
+
+    mp_clear(&tmp3); 
+    mp_clear(&tmp2); 
+    mp_clear(&tmp1); 
+    mp_clear(&q); 
+    mp_clear(&p);
+
+    if (err != MP_OKAY) {
+        FreeRsaKey(key);        
+        return err;
+    }
+
+    return 0;
+}
+
+
+#endif /* CYASLS_KEY_GEN */
 

@@ -305,6 +305,14 @@ int  mp_reduce_2k_setup(mp_int *a, mp_digit *d);
 int mp_init_multi(mp_int* a, mp_int* b, mp_int* c, mp_int* d, mp_int* e,
                   mp_int* f);
 
+#ifdef CYASSL_KEY_GEN
+    int mp_prime_is_prime (mp_int * a, int t, int *result);
+    int mp_set_int (mp_int * a, unsigned long b);
+    int mp_gcd (mp_int * a, mp_int * b, mp_int * c);
+    int mp_lcm (mp_int * a, mp_int * b, mp_int * c);
+    int mp_sub_d (mp_int * a, mp_digit b, mp_int * c);
+#endif
+
 
 #ifdef __cplusplus
    }

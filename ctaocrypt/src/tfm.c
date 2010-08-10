@@ -1895,3 +1895,387 @@ int mp_read_unsigned_bin (mp_int * a, const unsigned char *b, int c)
 }
 
 
+#ifdef CYASSL_KEY_GEN
+
+void fp_gcd(fp_int *a, fp_int *b, fp_int *c);
+void fp_lcm(fp_int *a, fp_int *b, fp_int *c);
+void fp_sub_d(fp_int *a, fp_digit b, fp_int *c);
+int fp_isprime(fp_int *a);
+
+/* fast math wrappers */
+int mp_set_int(fp_int *a, fp_digit b)
+{
+    fp_set(a, b);
+    return MP_OKAY;
+}
+
+
+int mp_gcd(fp_int *a, fp_int *b, fp_int *c)
+{
+    fp_gcd(a, b, c);
+    return MP_OKAY;
+}
+
+
+int mp_lcm(fp_int *a, fp_int *b, fp_int *c)
+{
+    fp_lcm(a, b, c);
+    return MP_OKAY;
+}
+
+
+int mp_copy(fp_int* a, fp_int* b)
+{
+    fp_copy(a, b);
+    return MP_OKAY;
+}
+
+
+int mp_sub_d(fp_int *a, fp_digit b, fp_int *c)
+{
+    fp_sub_d(a, b, c);
+    return MP_OKAY;
+}
+
+
+int mp_prime_is_prime(mp_int* a, int t, int* result)
+{
+    *result = fp_isprime(a);
+    return MP_OKAY;
+}
+
+
+
+/* c = a * a (mod b) */
+int fp_sqrmod(fp_int *a, fp_int *b, fp_int *c)
+{
+  fp_int tmp;
+  fp_zero(&tmp);
+  fp_sqr(a, &tmp);
+  return fp_mod(&tmp, b, c);
+}
+
+
+/* c = a - b */
+void fp_sub_d(fp_int *a, fp_digit b, fp_int *c)
+{
+   fp_int tmp;
+   fp_set(&tmp, b);
+   fp_sub(a, &tmp, c);
+}
+
+
+static int s_is_power_of_two(fp_digit b, int *p)
+{
+   int x;
+
+   /* fast return if no power of two */
+   if ((b==0) || (b & (b-1))) {
+      return 0;
+   }
+
+   for (x = 0; x < DIGIT_BIT; x++) {
+      if (b == (((fp_digit)1)<<x)) {
+         *p = x;
+         return 1;
+      }
+   }
+   return 0;
+}
+
+/* a/b => cb + d == a */
+int fp_div_d(fp_int *a, fp_digit b, fp_int *c, fp_digit *d)
+{
+  fp_int   q;
+  fp_word  w;
+  fp_digit t;
+  int      ix;
+
+  /* cannot divide by zero */
+  if (b == 0) {
+     return FP_VAL;
+  }
+
+  /* quick outs */
+  if (b == 1 || fp_iszero(a) == 1) {
+     if (d != NULL) {
+        *d = 0;
+     }
+     if (c != NULL) {
+        fp_copy(a, c);
+     }
+     return FP_OKAY;
+  }
+
+  /* power of two ? */
+  if (s_is_power_of_two(b, &ix) == 1) {
+     if (d != NULL) {
+        *d = a->dp[0] & ((((fp_digit)1)<<ix) - 1);
+     }
+     if (c != NULL) {
+        fp_div_2d(a, ix, c, NULL);
+     }
+     return FP_OKAY;
+  }
+
+  /* no easy answer [c'est la vie].  Just division */
+  fp_init(&q);
+  
+  q.used = a->used;
+  q.sign = a->sign;
+  w = 0;
+  for (ix = a->used - 1; ix >= 0; ix--) {
+     w = (w << ((fp_word)DIGIT_BIT)) | ((fp_word)a->dp[ix]);
+     
+     if (w >= b) {
+        t = (fp_digit)(w / b);
+        w -= ((fp_word)t) * ((fp_word)b);
+      } else {
+        t = 0;
+      }
+      q.dp[ix] = (fp_digit)t;
+  }
+  
+  if (d != NULL) {
+     *d = (fp_digit)w;
+  }
+  
+  if (c != NULL) {
+     fp_clamp(&q);
+     fp_copy(&q, c);
+  }
+ 
+  return FP_OKAY;
+}
+
+
+/* c = a mod b, 0 <= c < b  */
+int fp_mod_d(fp_int *a, fp_digit b, fp_digit *c)
+{
+   return fp_div_d(a, b, NULL, c);
+}
+
+
+/* Miller-Rabin test of "a" to the base of "b" as described in 
+ * HAC pp. 139 Algorithm 4.24
+ *
+ * Sets result to 0 if definitely composite or 1 if probably prime.
+ * Randomly the chance of error is no more than 1/4 and often 
+ * very much lower.
+ */
+void fp_prime_miller_rabin (fp_int * a, fp_int * b, int *result)
+{
+  fp_int  n1, y, r;
+  int     s, j;
+
+  /* default */
+  *result = FP_NO;
+
+  /* ensure b > 1 */
+  if (fp_cmp_d(b, 1) != FP_GT) {
+     return;
+  }     
+
+  /* get n1 = a - 1 */
+  fp_init_copy(&n1, a);
+  fp_sub_d(&n1, 1, &n1);
+
+  /* set 2**s * r = n1 */
+  fp_init_copy(&r, &n1);
+
+  /* count the number of least significant bits
+   * which are zero
+   */
+  s = fp_cnt_lsb(&r);
+
+  /* now divide n - 1 by 2**s */
+  fp_div_2d (&r, s, &r, NULL);
+
+  /* compute y = b**r mod a */
+  fp_init(&y);
+  fp_exptmod(b, &r, a, &y);
+
+  /* if y != 1 and y != n1 do */
+  if (fp_cmp_d (&y, 1) != FP_EQ && fp_cmp (&y, &n1) != FP_EQ) {
+    j = 1;
+    /* while j <= s-1 and y != n1 */
+    while ((j <= (s - 1)) && fp_cmp (&y, &n1) != FP_EQ) {
+      fp_sqrmod (&y, a, &y);
+
+      /* if y == 1 then composite */
+      if (fp_cmp_d (&y, 1) == FP_EQ) {
+         return;
+      }
+      ++j;
+    }
+
+    /* if y != n1 then composite */
+    if (fp_cmp (&y, &n1) != FP_EQ) {
+       return;
+    }
+  }
+
+  /* probably prime now */
+  *result = FP_YES;
+}
+
+
+/* a few primes */
+static const fp_digit primes[256] = {
+  0x0002, 0x0003, 0x0005, 0x0007, 0x000B, 0x000D, 0x0011, 0x0013,
+  0x0017, 0x001D, 0x001F, 0x0025, 0x0029, 0x002B, 0x002F, 0x0035,
+  0x003B, 0x003D, 0x0043, 0x0047, 0x0049, 0x004F, 0x0053, 0x0059,
+  0x0061, 0x0065, 0x0067, 0x006B, 0x006D, 0x0071, 0x007F, 0x0083,
+  0x0089, 0x008B, 0x0095, 0x0097, 0x009D, 0x00A3, 0x00A7, 0x00AD,
+  0x00B3, 0x00B5, 0x00BF, 0x00C1, 0x00C5, 0x00C7, 0x00D3, 0x00DF,
+  0x00E3, 0x00E5, 0x00E9, 0x00EF, 0x00F1, 0x00FB, 0x0101, 0x0107,
+  0x010D, 0x010F, 0x0115, 0x0119, 0x011B, 0x0125, 0x0133, 0x0137,
+
+  0x0139, 0x013D, 0x014B, 0x0151, 0x015B, 0x015D, 0x0161, 0x0167,
+  0x016F, 0x0175, 0x017B, 0x017F, 0x0185, 0x018D, 0x0191, 0x0199,
+  0x01A3, 0x01A5, 0x01AF, 0x01B1, 0x01B7, 0x01BB, 0x01C1, 0x01C9,
+  0x01CD, 0x01CF, 0x01D3, 0x01DF, 0x01E7, 0x01EB, 0x01F3, 0x01F7,
+  0x01FD, 0x0209, 0x020B, 0x021D, 0x0223, 0x022D, 0x0233, 0x0239,
+  0x023B, 0x0241, 0x024B, 0x0251, 0x0257, 0x0259, 0x025F, 0x0265,
+  0x0269, 0x026B, 0x0277, 0x0281, 0x0283, 0x0287, 0x028D, 0x0293,
+  0x0295, 0x02A1, 0x02A5, 0x02AB, 0x02B3, 0x02BD, 0x02C5, 0x02CF,
+
+  0x02D7, 0x02DD, 0x02E3, 0x02E7, 0x02EF, 0x02F5, 0x02F9, 0x0301,
+  0x0305, 0x0313, 0x031D, 0x0329, 0x032B, 0x0335, 0x0337, 0x033B,
+  0x033D, 0x0347, 0x0355, 0x0359, 0x035B, 0x035F, 0x036D, 0x0371,
+  0x0373, 0x0377, 0x038B, 0x038F, 0x0397, 0x03A1, 0x03A9, 0x03AD,
+  0x03B3, 0x03B9, 0x03C7, 0x03CB, 0x03D1, 0x03D7, 0x03DF, 0x03E5,
+  0x03F1, 0x03F5, 0x03FB, 0x03FD, 0x0407, 0x0409, 0x040F, 0x0419,
+  0x041B, 0x0425, 0x0427, 0x042D, 0x043F, 0x0443, 0x0445, 0x0449,
+  0x044F, 0x0455, 0x045D, 0x0463, 0x0469, 0x047F, 0x0481, 0x048B,
+
+  0x0493, 0x049D, 0x04A3, 0x04A9, 0x04B1, 0x04BD, 0x04C1, 0x04C7,
+  0x04CD, 0x04CF, 0x04D5, 0x04E1, 0x04EB, 0x04FD, 0x04FF, 0x0503,
+  0x0509, 0x050B, 0x0511, 0x0515, 0x0517, 0x051B, 0x0527, 0x0529,
+  0x052F, 0x0551, 0x0557, 0x055D, 0x0565, 0x0577, 0x0581, 0x058F,
+  0x0593, 0x0595, 0x0599, 0x059F, 0x05A7, 0x05AB, 0x05AD, 0x05B3,
+  0x05BF, 0x05C9, 0x05CB, 0x05CF, 0x05D1, 0x05D5, 0x05DB, 0x05E7,
+  0x05F3, 0x05FB, 0x0607, 0x060D, 0x0611, 0x0617, 0x061F, 0x0623,
+  0x062B, 0x062F, 0x063D, 0x0641, 0x0647, 0x0649, 0x064D, 0x0653
+};
+
+int fp_isprime(fp_int *a)
+{
+   fp_int   b;
+   fp_digit d;
+   int      r, res;
+
+   /* do trial division */
+   for (r = 0; r < 256; r++) {
+       fp_mod_d(a, primes[r], &d);
+       if (d == 0) {
+          return FP_NO;
+       }
+   }
+
+   /* now do 8 miller rabins */
+   fp_init(&b);
+   for (r = 0; r < 8; r++) {
+       fp_set(&b, primes[r]);
+       fp_prime_miller_rabin(a, &b, &res);
+       if (res == FP_NO) {
+          return FP_NO;
+       }
+   }
+   return FP_YES;
+}
+
+
+/* c = [a, b] */
+void fp_lcm(fp_int *a, fp_int *b, fp_int *c)
+{
+   fp_int  t1, t2;
+
+   fp_init(&t1);
+   fp_init(&t2);
+   fp_gcd(a, b, &t1);
+   if (fp_cmp_mag(a, b) == FP_GT) {
+      fp_div(a, &t1, &t2, NULL);
+      fp_mul(b, &t2, c);
+   } else {
+      fp_div(b, &t1, &t2, NULL);
+      fp_mul(a, &t2, c);
+   }   
+}
+
+
+static const int lnz[16] = {
+   4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0
+};
+
+/* Counts the number of lsbs which are zero before the first zero bit */
+int fp_cnt_lsb(fp_int *a)
+{
+   int x;
+   fp_digit q, qq;
+
+   /* easy out */
+   if (fp_iszero(a) == 1) {
+      return 0;
+   }
+
+   /* scan lower digits until non-zero */
+   for (x = 0; x < a->used && a->dp[x] == 0; x++);
+   q = a->dp[x];
+   x *= DIGIT_BIT;
+
+   /* now scan this digit until a 1 is found */
+   if ((q & 1) == 0) {
+      do {
+         qq  = q & 15;
+         x  += lnz[qq];
+         q >>= 4;
+      } while (qq == 0);
+   }
+   return x;
+}
+
+
+/* c = (a, b) */
+void fp_gcd(fp_int *a, fp_int *b, fp_int *c)
+{
+   fp_int u, v, r;
+
+   /* either zero than gcd is the largest */
+   if (fp_iszero (a) == 1 && fp_iszero (b) == 0) {
+     fp_abs (b, c);
+     return;
+   }
+   if (fp_iszero (a) == 0 && fp_iszero (b) == 1) {
+     fp_abs (a, c);
+     return;
+   }
+
+   /* optimized.  At this point if a == 0 then
+    * b must equal zero too
+    */
+   if (fp_iszero (a) == 1) {
+     fp_zero(c);
+     return;
+   }
+
+   /* sort inputs */
+   if (fp_cmp_mag(a, b) != FP_LT) {
+      fp_init_copy(&u, a);
+      fp_init_copy(&v, b);
+   } else {
+      fp_init_copy(&u, b);
+      fp_init_copy(&v, a);
+   }
+ 
+   fp_zero(&r);
+   while (fp_iszero(&v) == FP_NO) {
+      fp_mod(&u, &v, &r);
+      fp_copy(&v, &u);
+      fp_copy(&r, &v);
+   }
+   fp_copy(&u, c);
+}
+
+
+#endif /* CYASSL_KEY_GEN */

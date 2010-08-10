@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(cyassl,1.5.6)
+AM_INIT_AUTOMAKE(cyassl,1.5.6b)
 AM_CONFIG_HEADER(ctaocrypt/include/config.h)
 
 

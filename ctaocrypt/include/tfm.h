@@ -610,6 +610,8 @@ void fp_sqr_comba64(fp_int *A, fp_int *B);
     #define MP_EQ   FP_EQ   /* equal to     */
     #define MP_GT   FP_GT   /* greater than */
     #define MP_OKAY FP_OKAY /* ok result    */
+    #define MP_NO   FP_NO   /* yes/no result */
+    #define MP_YES  FP_YES  /* yes/no result */
 
 /* Prototypes */
 int  mp_init (mp_int * a);
@@ -631,6 +633,15 @@ int  mp_cmp_d(mp_int *a, mp_digit b);
 int  mp_unsigned_bin_size(mp_int * a);
 int  mp_read_unsigned_bin (mp_int * a, const unsigned char *b, int c);
 int  mp_to_unsigned_bin (mp_int * a, unsigned char *b);
+
+#ifdef CYASSL_KEY_GEN
+int  mp_set_int(fp_int *a, fp_digit b);
+int  mp_gcd(fp_int *a, fp_int *b, fp_int *c);
+int  mp_lcm(fp_int *a, fp_int *b, fp_int *c);
+int  mp_copy(fp_int* a, fp_int* b);
+int  mp_sub_d(fp_int *a, fp_digit b, fp_int *c);
+int  mp_prime_is_prime(mp_int* a, int t, int* result);
+#endif /* CYASSL_KEY_GEN */
 
 #ifdef __cplusplus
    }

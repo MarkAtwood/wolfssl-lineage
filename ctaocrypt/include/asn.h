@@ -67,13 +67,16 @@ enum DN_Tags {
 enum Misc_ASN { 
     ASN_NAME_MAX        = 256,    
     SHA_SIZE            =  20,
+    RSA_INTS            =   8,     /* RSA ints in private key */
     MIN_DATE_SIZE       =  13,
     MAX_DATE_SIZE       =  15,
     MAX_ENCODED_SIG_SZ  = 512,
     MAX_SIG_SZ          = 256,
     MAX_ALGO_SZ         =  16,
     MAX_SEQ_SZ          =   5,     /* enum(seq | con) + length(4) */  
+    MAX_VERSION_SZ      =   3,     /* enum + id + version(byte) */  
     MAX_ENCODED_DIG_SZ  =  25,     /* sha + enum(bit or octet) + legnth(4) */
+    MAX_RSA_INT_SZ      = 517,     /* RSA raw sz 4096 for bits + tag + len(4) */
     MAX_LENGTH_SZ       =   4 
 };
 
@@ -172,6 +175,12 @@ int DhSetKey(DhKey* key, const byte* p, word32 pSz, const byte* g, word32 gSz);
 #ifndef NO_DSA
 int DsaPublicKeyDecode(const byte* input, word32* inOutIdx, DsaKey*, word32);
 int DsaPrivateKeyDecode(const byte* input, word32* inOutIdx, DsaKey*, word32);
+#endif
+
+#ifdef CYASSL_KEY_GEN
+int RsaKeyToDer(RsaKey*, byte* output, word32 inLen, word32* outLen);
+int RsaKeyDerToPem(const byte* der, word32 derSz, byte* output, word32 inLen,
+                   word32* outLen);
 #endif
 
 

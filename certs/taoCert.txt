@@ -21,6 +21,8 @@ same as self signed, use ca prefix instead of client
 
 1) openssl req -newkey rsa:512 -md5 -days 1000 -nodes -keyout server-key.pem > server-req.pem
 
+* note if using exisitng key do: -new -key keyName
+
 2) copy ca-key.pem ca-cert.srl   (why ????)
 
 3) openssl x509 -req -in server-req.pem -days 1000 -md5 -CA ca-cert.pem -CAkey ca-key.pem -set_serial 01 > server-cert.pem

@@ -25,6 +25,7 @@
     #include "dc_rtc_api.h"   /* to get current time */
 #endif
 #include "asn.h"
+#include "coding.h"
 #include "sha.h"
 #include "md5.h"
 #include "error.h"
@@ -1484,7 +1485,144 @@ void CTaoCryptErrorString(int error, char* buffer)
 
     }
 
-#endif
+#endif /* NO_ERROR_STRINGS */
 
 }
 
+
+
+#ifdef CYASSL_KEY_GEN
+
+
+static int SetMyVersion(word32 version, byte* output)
+{
+    int i = 0;
+
+    output[i++] = ASN_INTEGER;
+    output[i++] = 0x01;
+    output[i++] = version;
+
+    return i;
+}
+
+
+static mp_int* GetRsaInt(RsaKey* key, int index)
+{
+    if (index == 0)
+        return &key->n;
+    if (index == 1)
+        return &key->e;
+    if (index == 2)
+        return &key->d;
+    if (index == 3)
+        return &key->p;
+    if (index == 4)
+        return &key->q;
+    if (index == 5)
+        return &key->dP;
+    if (index == 6)
+        return &key->dQ;
+    if (index == 7)
+        return &key->u;
+
+    return NULL;
+}
+
+
+int RsaKeyDerToPem(const byte* der, word32 derSz, byte* output, word32 inLen,
+                   word32* outLen)
+{
+    const char header[] = "-----BEGIN RSA PRIVATE KEY-----\n";
+    const char footer[] = "-----END RSA PRIVATE KEY-----\n";
+
+    int headerLen = sizeof(header) - 1;
+    int footerLen = sizeof(footer) - 1;
+    int i;
+
+    if (!der || !outLen || !output)
+        return -1;
+
+    /* don't even try if inLen too short */
+    if (inLen < headerLen + footerLen + derSz)
+        return -1;
+
+    /* header */
+    memcpy(output, header, headerLen);
+    i = headerLen;
+
+    /* body */
+    *outLen = inLen;  /* input to Base64Encode */
+    if (Base64Encode(der, derSz, output + i, (word32*)outLen) < 0)
+        return -1;
+    i += *outLen;
+
+    /* footer */
+    if ( (i + footerLen) > inLen)
+        return -1;
+    memcpy(output + i, footer, footerLen);
+    *outLen += headerLen + footerLen; 
+
+    return 0;
+}
+
+
+int RsaKeyToDer(RsaKey* key, byte* output, word32 inLen, word32* outLen)
+{
+    word32 seqSz, verSz, rawLen, intTotalLen = 0;
+    word32 sizes[RSA_INTS];
+    int    i, j;
+
+    byte seq[MAX_SEQ_SZ];
+    byte ver[MAX_VERSION_SZ];
+    byte tmps[RSA_INTS][MAX_RSA_INT_SZ];
+
+    if (!key || !output || !outLen)
+        return -1;
+
+    if (key->type != RSA_PRIVATE)
+        return -1;
+
+    /* write all big ints from key to DER tmps */
+    for (i = 0; i < RSA_INTS; i++) {
+        mp_int* keyInt = GetRsaInt(key, i);
+        rawLen = mp_unsigned_bin_size(keyInt);
+
+        tmps[i][0] = ASN_INTEGER;
+        sizes[i] = SetLength(rawLen, tmps[i] + 1) + 1;  /* int tag */
+
+        if ( (sizes[i] + rawLen) < sizeof(tmps[i])) {
+            int err = mp_to_unsigned_bin(keyInt, tmps[i] + sizes[i]);
+            if (err == MP_OKAY) {
+                sizes[i] += rawLen;
+                intTotalLen += sizes[i];
+            }
+            else
+                return err;
+        }
+        else
+            return -1;
+    }
+
+    /* make headers */
+    verSz = SetMyVersion(0, ver);
+    seqSz = SetSequence(verSz + intTotalLen, seq);
+
+    *outLen = seqSz + verSz + intTotalLen;
+    if (*outLen > inLen)
+        return -1;
+
+    /* write to output */
+    memcpy(output, seq, seqSz);
+    j = seqSz;
+    memcpy(output + j, ver, verSz);
+    j += verSz;
+
+    for (i = 0; i < RSA_INTS; i++) {
+        memcpy(output + j, tmps[i], sizes[i]);
+        j += sizes[i];
+    }
+
+    return 0;
+}
+
+#endif /* CYASLS_KEY_GEN */
