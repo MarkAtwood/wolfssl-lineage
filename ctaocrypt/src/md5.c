@@ -209,6 +209,7 @@ void Md5Final(Md5* md5, byte* hash)
     #ifdef BIG_ENDIAN_ORDER
         ByteReverseBytes(local, local, MD5_BLOCK_SIZE);
     #endif
+    /* ! length ordering dependent on digest endian type ! */
     memcpy(&local[MD5_PAD_SIZE], &md5->loLen, sizeof(word32));
     memcpy(&local[MD5_PAD_SIZE + sizeof(word32)], &md5->hiLen, sizeof(word32));
 

@@ -25,7 +25,6 @@
 #include "random.h"
 #include "error.h"
 
-#define SHOW_GEN
 #ifdef SHOW_GEN
     #include <stdio.h>
 #endif

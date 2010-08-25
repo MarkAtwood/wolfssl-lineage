@@ -60,13 +60,16 @@ typedef unsigned int   word32;
 #if defined(_MSC_VER) || defined(__BCPLUSPLUS__)
     #define WORD64_AVAILABLE
     #define WORD64_IS_DISTINCT_TYPE
+    #define W64LIT(x) x##ui64
     typedef unsigned __int64 word64;
 #elif SIZEOF_LONG == 8
     #define WORD64_AVAILABLE
+    #define W64LIT(x) x##LL
     typedef unsigned long word64;
 #elif SIZEOF_LONG_LONG == 8 
     #define WORD64_AVAILABLE
     #define WORD64_IS_DISTINCT_TYPE
+    #define W64LIT(x) x##LL
     typedef unsigned long long word64;
 #else
     #define MP_16BIT   /* for mp_int, mp_word needs to be twice as big as
@@ -83,6 +86,7 @@ typedef unsigned int   word32;
     typedef word16 hword;
     typedef word32 word;
     #ifdef WORD64_AVAILABLE
+        #define CTAOCRYPT_SLOW_WORD64
         typedef word64 dword;
     #endif
 #endif
@@ -96,6 +100,7 @@ enum {
 
 
 /* use inlining if compiler allows */
+#ifndef INLINE
 #ifndef NO_INLINE
     #ifdef _MSC_VER
         #define INLINE __inline
@@ -108,6 +113,7 @@ enum {
     #endif
 #else
     #define INLINE 
+#endif
 #endif
 
 

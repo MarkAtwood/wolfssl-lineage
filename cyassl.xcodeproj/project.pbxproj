@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		430B6D591224615300CA08FC /* ripemd.c in Sources */ = {isa = PBXBuildFile; fileRef = 430B6D581224615300CA08FC /* ripemd.c */; };
+		430B6DB31224900000CA08FC /* sha512.c in Sources */ = {isa = PBXBuildFile; fileRef = 430B6DB21224900000CA08FC /* sha512.c */; };
 		4368F6E20E9EA0E10002A123 /* testsuite.c in Sources */ = {isa = PBXBuildFile; fileRef = 4368F6E10E9EA0E10002A123 /* testsuite.c */; };
 		4368F6E30E9EA0F10002A123 /* client.c in Sources */ = {isa = PBXBuildFile; fileRef = 43F5A2570E8C59BA00CD7F1A /* client.c */; };
 		4368F6E50E9EA1140002A123 /* test.c in Sources */ = {isa = PBXBuildFile; fileRef = 4368F6E40E9EA1140002A123 /* test.c */; };
@@ -140,6 +142,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		430B6D581224615300CA08FC /* ripemd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ripemd.c; path = ctaocrypt/src/ripemd.c; sourceTree = "<group>"; };
+		430B6DB21224900000CA08FC /* sha512.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sha512.c; path = ctaocrypt/src/sha512.c; sourceTree = "<group>"; };
 		4368F6DC0E9EA08C0002A123 /* testsuite */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = testsuite; sourceTree = BUILT_PRODUCTS_DIR; };
 		4368F6E10E9EA0E10002A123 /* testsuite.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = testsuite.c; path = testsuite/testsuite.c; sourceTree = "<group>"; };
 		4368F6E40E9EA1140002A123 /* test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = test.c; path = ctaocrypt/test/test.c; sourceTree = "<group>"; };
@@ -316,6 +320,8 @@
 		43CA25720EA3F9B20011ECA2 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				430B6DB21224900000CA08FC /* sha512.c */,
+				430B6D581224615300CA08FC /* ripemd.c */,
 				43E4703B11765A30005C2620 /* pwdbased.c */,
 				43BF21B2114B06EE001D113A /* sniffer.c */,
 				43809E5C0FB7AC420050922E /* md4.c */,
@@ -670,6 +676,8 @@
 				43809E5D0FB7AC420050922E /* md4.c in Sources */,
 				43BF21B3114B06EE001D113A /* sniffer.c in Sources */,
 				43E4703C11765A30005C2620 /* pwdbased.c in Sources */,
+				430B6D591224615300CA08FC /* ripemd.c in Sources */,
+				430B6DB31224900000CA08FC /* sha512.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -724,10 +732,10 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					CYASSL_SNIFFER,
-					OPENSSL_EXTRA,
-					CYASSL_DTLS,
+					CYASSL_SHA512,
 					HAVE_CONFIG_H,
+					CYASSL_RIPEMD,
+					OPENSSL_EXTRA,
 				);
 				INSTALL_PATH = /usr/local/lib;
 				ONLY_ACTIVE_ARCH = NO;
@@ -744,9 +752,10 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					USE_FAST_MATH,
-					OPENSSL_EXTRA,
+					CYASSL_SHA512,
 					HAVE_CONFIG_H,
+					CYASSL_RIPEMD,
+					OPENSSL_EXTRA,
 				);
 				INSTALL_PATH = /usr/local/lib;
 				PRODUCT_NAME = cyassl;
@@ -841,8 +850,10 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					CYASSL_CALLBACKS,
+					CYASSL_SHA512,
 					HAVE_CONFIG_H,
+					CYASSL_RIPEMD,
+					OPENSSL_EXTRA,
 				);
 				INSTALL_PATH = /usr/local/bin;
 				PREBINDING = NO;
@@ -858,6 +869,12 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_MODEL_TUNING = G5;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					CYASSL_SHA512,
+					HAVE_CONFIG_H,
+					CYASSL_RIPEMD,
+					OPENSSL_EXTRA,
+				);
 				INSTALL_PATH = /usr/local/bin;
 				PREBINDING = NO;
 				PRODUCT_NAME = test;

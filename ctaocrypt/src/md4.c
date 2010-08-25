@@ -199,6 +199,7 @@ void Md4Final(Md4* md4, byte* hash)
     #ifdef BIG_ENDIAN_ORDER
         ByteReverseBytes(local, local, MD4_BLOCK_SIZE);
     #endif
+    /* ! length ordering dependent on digest endian type ! */
     memcpy(&local[MD4_PAD_SIZE], &md4->loLen, sizeof(word32));
     memcpy(&local[MD4_PAD_SIZE + sizeof(word32)], &md4->hiLen, sizeof(word32));
 

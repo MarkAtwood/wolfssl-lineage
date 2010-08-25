@@ -9,6 +9,7 @@
 #include "md4.h"
 #include "sha.h"
 #include "sha256.h"
+#include "sha512.h"
 #include "arc4.h"
 #include "random.h"
 #include "coding.h"
@@ -21,6 +22,7 @@
 #include "hc128.h"
 #include "rabbit.h"
 #include "pwdbased.h"
+#include "ripemd.h"
 
 #ifdef _MSC_VER
     /* 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy */
@@ -54,6 +56,7 @@ int  md5_test();
 int  md4_test();
 int  sha_test();
 int  sha256_test();
+int  sha512_test();
 int  hmac_test();
 int  arc4_test();
 int  hc128_test();
@@ -66,6 +69,7 @@ int  dh_test();
 int  dsa_test();
 int  random_test();
 int  pwdbased_test();
+int  ripemd_test();
 int  openssl_test();   /* test mini api */
 
 int PemToDer(const char* inName, const char* outName);
@@ -115,6 +119,20 @@ void ctaocrypt_test(void* args)
         err_sys("SHA-256  test failed!\n", ret);
     else
         printf( "SHA-256  test passed!\n");
+#endif
+
+#ifdef CYASSL_SHA512
+    if ( (ret = sha512_test()) ) 
+        err_sys("SHA-512  test failed!\n", ret);
+    else
+        printf( "SHA-512  test passed!\n");
+#endif
+
+#ifdef CYASSL_RIPEMD
+    if ( (ret = ripemd_test()) ) 
+        err_sys("RIPEMD   test failed!\n", ret);
+    else
+        printf( "RIPEMD   test passed!\n");
 #endif
 
 #ifndef NO_HMAC
@@ -417,6 +435,62 @@ int sha_test()
 }
 
 
+#ifdef CYASSL_RIPEMD
+int ripemd_test()
+{
+    RipeMd  ripemd;
+    byte hash[RIPEMD_DIGEST_SIZE];
+
+    testVector a, b, c, d;
+    testVector test_ripemd[4];
+    int times = sizeof(test_ripemd) / sizeof(struct testVector), i;
+
+    a.input  = "abc";
+    a.output = "\x8e\xb2\x08\xf7\xe0\x5d\x98\x7a\x9b\x04\x4a\x8e\x98\xc6"
+               "\xb0\x87\xf1\x5a\x0b\xfc";
+    a.inLen  = strlen(a.input);
+    a.outLen = strlen(a.output);
+
+    b.input  = "message digest";
+    b.output = "\x5d\x06\x89\xef\x49\xd2\xfa\xe5\x72\xb8\x81\xb1\x23\xa8"
+               "\x5f\xfa\x21\x59\x5f\x36";
+    b.inLen  = strlen(b.input);
+    b.outLen = strlen(b.output);
+
+    c.input  = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"; 
+    c.output = "\x12\xa0\x53\x38\x4a\x9c\x0c\x88\xe4\x05\xa0\x6c\x27\xdc"
+               "\xf4\x9a\xda\x62\xeb\x2b";
+    c.inLen  = strlen(c.input);
+    c.outLen = strlen(c.output);
+
+    d.input  = "12345678901234567890123456789012345678901234567890123456"
+               "789012345678901234567890";
+    d.output = "\x9b\x75\x2e\x45\x57\x3d\x4b\x39\xf4\xdb\xd3\x32\x3c\xab"
+               "\x82\xbf\x63\x32\x6b\xfb"; 
+    d.inLen  = strlen(d.input);
+    d.outLen = strlen(d.output);
+
+    test_ripemd[0] = a;
+    test_ripemd[1] = b;
+    test_ripemd[2] = c;
+    test_ripemd[3] = d;
+
+    InitRipeMd(&ripemd);
+
+    for (i = 0; i < times; ++i) {
+        RipeMdUpdate(&ripemd, (byte*)test_ripemd[i].input,
+                     (word32)test_ripemd[i].inLen);
+        RipeMdFinal(&ripemd, hash);
+
+        if (memcmp(hash, test_ripemd[i].output, RIPEMD_DIGEST_SIZE) != 0)
+            return -10 - i;
+    }
+
+    return 0;
+}
+#endif /* CYASSL_RIPEMD */
+
+
 #ifndef NO_SHA256
 int sha256_test()
 {
@@ -451,6 +525,53 @@ int sha256_test()
         Sha256Final(&sha, hash);
 
         if (memcmp(hash, test_sha[i].output, SHA256_DIGEST_SIZE) != 0)
+            return -10 - i;
+    }
+
+    return 0;
+}
+#endif
+
+
+#ifdef CYASSL_SHA512
+int sha512_test()
+{
+    Sha512 sha;
+    byte   hash[SHA512_DIGEST_SIZE];
+
+    testVector a, b;
+    testVector test_sha[2];
+    int times = sizeof(test_sha) / sizeof(struct testVector), i;
+
+    a.input  = "abc";
+    a.output = "\xdd\xaf\x35\xa1\x93\x61\x7a\xba\xcc\x41\x73\x49\xae\x20\x41"
+               "\x31\x12\xe6\xfa\x4e\x89\xa9\x7e\xa2\x0a\x9e\xee\xe6\x4b\x55"
+               "\xd3\x9a\x21\x92\x99\x2a\x27\x4f\xc1\xa8\x36\xba\x3c\x23\xa3"
+               "\xfe\xeb\xbd\x45\x4d\x44\x23\x64\x3c\xe8\x0e\x2a\x9a\xc9\x4f"
+               "\xa5\x4c\xa4\x9f";
+    a.inLen  = strlen(a.input);
+    a.outLen = strlen(a.output);
+
+    b.input  = "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhi"
+               "jklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu";
+    b.output = "\x8e\x95\x9b\x75\xda\xe3\x13\xda\x8c\xf4\xf7\x28\x14\xfc\x14"
+               "\x3f\x8f\x77\x79\xc6\xeb\x9f\x7f\xa1\x72\x99\xae\xad\xb6\x88"
+               "\x90\x18\x50\x1d\x28\x9e\x49\x00\xf7\xe4\x33\x1b\x99\xde\xc4"
+               "\xb5\x43\x3a\xc7\xd3\x29\xee\xb6\xdd\x26\x54\x5e\x96\xe5\x5b"
+               "\x87\x4b\xe9\x09"; 
+    b.inLen  = strlen(b.input);
+    b.outLen = strlen(b.output);
+
+    test_sha[0] = a;
+    test_sha[1] = b;
+
+    InitSha512(&sha);
+
+    for (i = 0; i < times; ++i) {
+        Sha512Update(&sha, (byte*)test_sha[i].input,(word32)test_sha[i].inLen);
+        Sha512Final(&sha, hash);
+
+        if (memcmp(hash, test_sha[i].output, SHA512_DIGEST_SIZE) != 0)
             return -10 - i;
     }
 

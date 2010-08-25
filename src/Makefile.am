@@ -16,3 +16,11 @@ EXTRA_DIST = ../include/*.h ../include/openssl/*.h ../include/*.rc
 if BUILD_AESNI
 libcyassl_la_SOURCES += ../ctaocrypt/src/aes_asm.s
 endif
+
+if BUILD_RIPEMD
+libcyassl_la_SOURCES += ../ctaocrypt/src/ripemd.c
+endif
+
+if BUILD_SHA512
+libcyassl_la_SOURCES += ../ctaocrypt/src/sha512.c
+endif

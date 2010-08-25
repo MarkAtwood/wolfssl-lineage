@@ -185,6 +185,7 @@ void ShaFinal(Sha* sha, byte* hash)
     #ifdef LITTLE_ENDIAN_ORDER
         ByteReverseBytes(local, local, SHA_BLOCK_SIZE);
     #endif
+    /* ! length ordering dependent on digest endian type ! */
     memcpy(&local[SHA_PAD_SIZE], &sha->hiLen, sizeof(word32));
     memcpy(&local[SHA_PAD_SIZE + sizeof(word32)], &sha->loLen, sizeof(word32));
 

@@ -189,6 +189,7 @@ void Sha256Final(Sha256* sha256, byte* hash)
     #ifdef LITTLE_ENDIAN_ORDER
         ByteReverseBytes(local, local, SHA256_BLOCK_SIZE);
     #endif
+    /* ! length ordering dependent on digest endian type ! */
     memcpy(&local[SHA256_PAD_SIZE], &sha256->hiLen, sizeof(word32));
     memcpy(&local[SHA256_PAD_SIZE + sizeof(word32)], &sha256->loLen,
             sizeof(word32));
