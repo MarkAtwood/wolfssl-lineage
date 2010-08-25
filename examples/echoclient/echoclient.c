@@ -76,6 +76,11 @@ void echoclient_test(void* args)
             break;
         }
 
+        if (strncmp(send, "break", 4) == 0) {
+            fputs("sending server session close: break!\n", fout);
+            break;
+        }
+
         if (SSL_read(ssl, reply, sizeof(reply)) > 0) 
             fputs(reply, fout);
     }
@@ -85,9 +90,10 @@ void echoclient_test(void* args)
     sendSz = (int)strlen(send);
     /* try to tell server done */
     SSL_write(ssl, send, sendSz);
+#else
+    SSL_shutdown(ssl);
 #endif
 
-    SSL_shutdown(ssl);
     SSL_free(ssl);
     SSL_CTX_free(ctx);
 

@@ -151,7 +151,9 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
             if (SSL_write(ssl, command, echoSz) != echoSz)
                 err_sys("SSL_write failed");
         }
+#ifndef CYASSL_DTLS
         SSL_shutdown(ssl);
+#endif
         SSL_free(ssl);
         CloseSocket(clientfd);
 #ifdef CYASSL_DTLS

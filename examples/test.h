@@ -250,7 +250,7 @@ static INLINE void tcp_socket(SOCKET_T* sockfd, SOCKADDR_IN_T* addr,
     }
 #endif
 
-#ifdef TCP_NODELAY
+#if defined(TCP_NODELAY) && !defined(CYASSL_DTLS)
     {
         int       on = 1;
         socklen_t len = sizeof(on);
