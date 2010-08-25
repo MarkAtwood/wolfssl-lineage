@@ -44,9 +44,9 @@ enum {
 
 /* Sha512 digest */
 typedef struct Sha512 {
-    word64  buffLen;   /* in bytes          */
-    word64  loLen;     /* length in bytes   */
-    word64  hiLen;     /* length in bytes   */
+    word32  buffLen;   /* in bytes          */
+    word32  loLen;     /* length in bytes   */
+    word32  hiLen;     /* length in bytes   */
     word64  digest[SHA512_DIGEST_SIZE / sizeof(word64)];
     word64  buffer[SHA512_BLOCK_SIZE  / sizeof(word64)];
 } Sha512;

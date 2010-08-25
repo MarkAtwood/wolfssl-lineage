@@ -59,7 +59,6 @@ typedef unsigned int   word32;
 
 #if defined(_MSC_VER) || defined(__BCPLUSPLUS__)
     #define WORD64_AVAILABLE
-    #define WORD64_IS_DISTINCT_TYPE
     #define W64LIT(x) x##ui64
     typedef unsigned __int64 word64;
 #elif SIZEOF_LONG == 8
@@ -68,7 +67,6 @@ typedef unsigned int   word32;
     typedef unsigned long word64;
 #elif SIZEOF_LONG_LONG == 8 
     #define WORD64_AVAILABLE
-    #define WORD64_IS_DISTINCT_TYPE
     #define W64LIT(x) x##LL
     typedef unsigned long long word64;
 #else
@@ -80,14 +78,11 @@ typedef unsigned int   word32;
 /* These platforms have 64-bit CPU registers.  */
 #if (defined(__alpha__) || defined(__ia64__) || defined(_ARCH_PPC64) || \
      defined(__mips64)  || defined(__x86_64__)) 
-    typedef word32 hword;
     typedef word64 word;
 #else
-    typedef word16 hword;
     typedef word32 word;
     #ifdef WORD64_AVAILABLE
         #define CTAOCRYPT_SLOW_WORD64
-        typedef word64 dword;
     #endif
 #endif
 

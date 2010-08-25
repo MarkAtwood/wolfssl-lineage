@@ -12,8 +12,10 @@
 #include "md5.h"
 #include "sha.h"
 #include "sha256.h"
+#include "sha512.h"
 #include "rsa.h"
 #include "asn.h"
+#include "ripemd.h"
 
 #include "dh.h"
 
@@ -32,6 +34,8 @@ void bench_aes(int);
 void bench_md5();
 void bench_sha();
 void bench_sha256();
+void bench_sha512();
+void bench_ripemd();
 
 void bench_rsa();
 void bench_dh();
@@ -63,6 +67,12 @@ int main(int argc, char** argv)
     bench_sha();
 #ifndef NO_SHA256
     bench_sha256();
+#endif
+#ifdef CYASSL_SHA512
+    bench_sha512();
+#endif
+#ifdef CYASSL_RIPEMD
+    bench_ripemd();
 #endif
 
     printf("\n");
@@ -276,6 +286,54 @@ void bench_sha256()
     persec = 1 / total * megs;
 
     printf("SHA-256  %d megs took %5.3f seconds, %6.2f MB/s\n", megs, total,
+                                                             persec);
+}
+#endif
+
+#ifdef CYASSL_SHA512
+void bench_sha512()
+{
+    Sha512 hash;
+    byte   digest[SHA512_DIGEST_SIZE];
+    double start, total, persec;
+    int    i;
+        
+    InitSha512(&hash);
+    start = current_time();
+    
+    for(i = 0; i < megs; i++)
+        Sha512Update(&hash, plain, sizeof(plain));
+   
+    Sha512Final(&hash, digest);
+
+    total = current_time() - start;
+    persec = 1 / total * megs;
+
+    printf("SHA-512  %d megs took %5.3f seconds, %6.2f MB/s\n", megs, total,
+                                                             persec);
+}
+#endif
+
+#ifdef CYASSL_RIPEMD
+void bench_ripemd()
+{
+    RipeMd hash;
+    byte   digest[RIPEMD_DIGEST_SIZE];
+    double start, total, persec;
+    int    i;
+        
+    InitRipeMd(&hash);
+    start = current_time();
+    
+    for(i = 0; i < megs; i++)
+        RipeMdUpdate(&hash, plain, sizeof(plain));
+   
+    RipeMdFinal(&hash, digest);
+
+    total = current_time() - start;
+    persec = 1 / total * megs;
+
+    printf("RIPEMD   %d megs took %5.3f seconds, %6.2f MB/s\n", megs, total,
                                                              persec);
 }
 #endif

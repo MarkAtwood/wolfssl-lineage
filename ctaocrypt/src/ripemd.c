@@ -82,8 +82,7 @@ void InitRipeMd(RipeMd* ripemd)
 
 static void Transform(RipeMd* ripemd)
 {
-    unsigned long a1, b1, c1, d1, e1, a2, b2, c2, d2, e2;
-    //word32 a1, b1, c1, d1, e1, a2, b2, c2, d2, e2;
+    word32 a1, b1, c1, d1, e1, a2, b2, c2, d2, e2;
     a1 = a2 = ripemd->digest[0];
     b1 = b2 = ripemd->digest[1];
     c1 = c2 = ripemd->digest[2];
