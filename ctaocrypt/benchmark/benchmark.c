@@ -38,6 +38,7 @@ void bench_sha512();
 void bench_ripemd();
 
 void bench_rsa();
+void bench_rsaKeyGen();
 void bench_dh();
 
 double current_time();
@@ -81,6 +82,10 @@ int main(int argc, char** argv)
 
 #ifndef NO_DH
     bench_dh();
+#endif
+
+#ifdef CYASSL_KEY_GEN
+    bench_rsaKeyGen();
 #endif
 
     return 0;
@@ -362,6 +367,7 @@ void bench_rsa()
         return;
     }
 
+    InitRng(&rng);
     bytes = fread(tmp, 1, sizeof(tmp), file);
     InitRsaKey(&key, 0);
     bytes = RsaPrivateKeyDecode(tmp, &idx, &key, (word32)bytes);
@@ -451,6 +457,47 @@ void bench_dh()
     FreeDhKey(&key);
 }
 #endif
+
+#ifdef CYASSL_KEY_GEN
+void bench_rsaKeyGen()
+{
+    RsaKey genKey;
+    double start, total, each, milliEach;
+    int    i;
+    const int genTimes = 5;
+  
+    /* 1024 bit */ 
+    start = current_time();
+
+    for(i = 0; i < genTimes; i++) {
+        InitRsaKey(&genKey, 0); 
+        MakeRsaKey(&genKey, 1024, 65537, &rng);
+        FreeRsaKey(&genKey);
+    }
+
+    total = current_time() - start;
+    each  = total / genTimes;  /* per second  */
+    milliEach = each * 1000;   /* millisconds */
+    printf("\n");
+    printf("RSA 1024 key generation  %6.2f milliseconds, avg over %d" 
+           " iterations\n", milliEach, genTimes);
+
+    /* 2048 bit */
+    start = current_time();
+
+    for(i = 0; i < genTimes; i++) {
+        InitRsaKey(&genKey, 0); 
+        MakeRsaKey(&genKey, 2048, 65537, &rng);
+        FreeRsaKey(&genKey);
+    }
+
+    total = current_time() - start;
+    each  = total / genTimes;  /* per second  */
+    milliEach = each * 1000;   /* millisconds */
+    printf("RSA 2048 key generation  %6.2f milliseconds, avg over %d" 
+           " iterations\n", milliEach, genTimes);
+}
+#endif /* CYASSL_KEY_GEN */
 
 
 #ifdef _WIN32
