@@ -1557,7 +1557,7 @@ int RsaKeyDerToPem(const byte* der, word32 derSz, byte* output, word32 inLen,
     i += *outLen;
 
     /* footer */
-    if ( (i + footerLen) > inLen)
+    if ( (i + footerLen) > (int)inLen)
         return -1;
     memcpy(output + i, footer, footerLen);
     *outLen += headerLen + footerLen; 

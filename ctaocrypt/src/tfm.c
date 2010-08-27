@@ -1900,7 +1900,8 @@ int mp_read_unsigned_bin (mp_int * a, const unsigned char *b, int c)
 void fp_gcd(fp_int *a, fp_int *b, fp_int *c);
 void fp_lcm(fp_int *a, fp_int *b, fp_int *c);
 void fp_sub_d(fp_int *a, fp_digit b, fp_int *c);
-int fp_isprime(fp_int *a);
+int  fp_isprime(fp_int *a);
+int  fp_cnt_lsb(fp_int *a);
 
 /* fast math wrappers */
 int mp_set_int(fp_int *a, fp_digit b)

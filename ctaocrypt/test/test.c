@@ -1071,44 +1071,45 @@ int rsa_test()
 
 #ifdef CYASSL_KEY_GEN
     {
-        RsaKey genKey;
-        InitRsaKey(&genKey, 0);
-
-        printf("trying key gen\n");
-
-        ret = MakeRsaKey(&genKey, 1024, 65537, &rng);
-
-        printf("\nret = %d\n", ret);
-
         byte   der[4096];
+        byte   pem[4096];
         word32 derSz = 0;
-        ret = RsaKeyToDer(&genKey, der, sizeof(der), &derSz);
-        printf("key to der ret = %d\n", ret);
-        printf("derSz = %d\n", derSz);
+        word32 pemSz = 0;
+        RsaKey derIn;
+        RsaKey genKey;
+        FILE* keyFile;
+        FILE* pemFile;
 
-        FILE* keyFile = fopen("./test.key", "wb");
-        if (!keyFile) printf("bad open on key file\n");
+        InitRsaKey(&genKey, 0);
+        ret = MakeRsaKey(&genKey, 1024, 65537, &rng);
+        if (ret != 0)
+            return -301;
+
+        ret = RsaKeyToDer(&genKey, der, sizeof(der), &derSz);
+        if (ret < 0)
+            return -302;
+
+        keyFile = fopen("./test.key", "wb");
+        if (!keyFile)
+            return -303;
         ret = fwrite(der, derSz, 1, keyFile);
-        printf("wrote %d bytes to file\n", ret);
         fclose(keyFile);
 
-        byte   pem[4096];
-        word32 pemSz = 0;
         ret = RsaKeyDerToPem(der, derSz, pem, sizeof(pem), &pemSz);
-        printf("der to pem ret = %d\n", ret);
-        printf("pem size = %d\n", pemSz);
+        if (ret < 0)
+            return -304;
 
-        FILE* pemFile = fopen("./test.pem", "wb");
-        if (!pemFile) printf("bad open on key file\n");
+        pemFile = fopen("./test.pem", "wb");
+        if (!pemFile) 
+            return -305;
         ret = fwrite(pem, pemSz, 1, pemFile);
-        printf("wrote %d bytes to pem file\n", ret);
         fclose(pemFile);
 
-        RsaKey derIn;
         InitRsaKey(&derIn, 0);
         idx = 0;
         ret = RsaPrivateKeyDecode(der, &idx, &derIn, derSz);
-        printf("der in ret = %d\n", ret);
+        if (ret != 0)
+            return -306;
     }
 #endif
 

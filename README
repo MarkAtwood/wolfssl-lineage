@@ -12,7 +12,30 @@ before calling SSL_new();  Though it's not recommended.
 
 *** end Note ***
 
-CyaSSL Release 1.5.6 (7/28/2010)
+CyaSSL Release 1.6.0 (8/27/2010)
+
+Release 1.6.0 for CyaSSL adds bug fixes, RIPEMD-160, SHA-512, and RSA key
+generation.
+ 
+For general build instructions see doc/Building_CyaSSL.pdf.
+
+To add RIPEMD-160 support add this option to ./configure
+./configure --enable-ripemd
+
+To add SHA-512 support add this option to ./configure
+./configure --enable-sha512
+
+To add RSA key generation support add this option to ./configure
+./configure --enable-keygen
+
+Please see ctaocrypt/test/test.c for examples and usage.
+
+For Windows, RIPEMD-160 and SHA-512 are enabled by default but key generation is
+off by defautl.  To turn key generation on add the define CYASSL_KEY_GEN to
+CyaSSL.
+
+
+*************   CyaSSL Release 1.5.6 (7/28/2010)
 
 Release 1.5.6 for CyaSSL adds bug fixes, compatibility for our JSSE provider,
 and a fix for GCC builds on some systems.
