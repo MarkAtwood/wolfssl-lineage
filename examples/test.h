@@ -147,11 +147,15 @@ static INLINE void err_sys(const char* msg)
 }
 
 
+#ifdef OPENSSL_EXTRA
+
 static int PasswordCallBack(char* passwd, int sz, int rw, void* userdata)
 {
     strncpy(passwd, "yassl123", sz);
     return 8;
 }
+
+#endif
 
 
 static INLINE void showPeer(SSL* ssl)
