@@ -69,16 +69,28 @@ enum Misc_ASN {
     SHA_SIZE            =  20,
     RSA_INTS            =   8,     /* RSA ints in private key */
     MIN_DATE_SIZE       =  13,
-    MAX_DATE_SIZE       =  15,
+    MAX_DATE_SIZE       =  32,
+    ASN_GEN_TIME_SZ     =  15,     /* 7 numbers * 2 + Zulu tag */
     MAX_ENCODED_SIG_SZ  = 512,
     MAX_SIG_SZ          = 256,
-    MAX_ALGO_SZ         =  16,
+    MAX_ALGO_SZ         =  20,
     MAX_SEQ_SZ          =   5,     /* enum(seq | con) + length(4) */  
-    MAX_VERSION_SZ      =   3,     /* enum + id + version(byte) */  
+    MAX_SET_SZ          =   5,     /* enum(set | con) + length(4) */  
+    MAX_VERSION_SZ      =   5,     /* enum + id + version(byte) + (header(2))*/
     MAX_ENCODED_DIG_SZ  =  25,     /* sha + enum(bit or octet) + legnth(4) */
     MAX_RSA_INT_SZ      = 517,     /* RSA raw sz 4096 for bits + tag + len(4) */
+    MAX_RSA_E_SZ        =  16,     /* Max RSA public e size */
+    MAX_RSA_PUBLIC_SZ   = MAX_RSA_INT_SZ + MAX_ALGO_SZ + MAX_SEQ_SZ * 2,
     MAX_LENGTH_SZ       =   4 
 };
+
+
+enum Oid_Types {
+    hashType = 0,
+    sigType  = 1,
+    keyType  = 2
+};
+
 
 enum Sig_Sum  {
     SHAwDSA = 517,
@@ -182,6 +194,54 @@ int RsaKeyToDer(RsaKey*, byte* output, word32 inLen, word32* outLen);
 int RsaKeyDerToPem(const byte* der, word32 derSz, byte* output, word32 inLen,
                    word32* outLen);
 #endif
+
+
+#ifdef CYASSL_CERT_GEN
+
+enum cert_enums {
+    SERIAL_SIZE  =  8,
+    NAME_SIZE    = 64,
+    NAME_ENTRIES =  7,
+    JOINT_LEN    =  2,
+};
+
+
+typedef struct CertName {
+    char country[NAME_SIZE];
+    char state[NAME_SIZE];
+    char locality[NAME_SIZE];
+    char org[NAME_SIZE];
+    char unit[NAME_SIZE];
+    char commonName[NAME_SIZE];
+    char email[NAME_SIZE];
+} CertName;
+
+
+/* for user to fill for certificate generation */
+typedef struct Cert {
+    int      version;                   /* x509 version  */
+    byte     serial[SERIAL_SIZE];       /* serial number */
+    int      sigType;                   /* signature algo type */
+    CertName issuer;                    /* issuer info */
+    int      daysValid;                 /* validity days */
+    int      selfSigned;                /* self signed flag */
+    CertName subject;                   /* subject info */
+} Cert;
+
+
+/* Initialize and Set Certficate defaults:
+   version    = 3 (0x2)
+   serial     = 0 (Will be randomly generated)
+   sigType    = MD5_WITH_RSA
+   issuer     = blank
+   daysValid  = 500
+   selfSigned = 1 (true) use subject as issuer
+   subject    = blank
+*/
+void InitCert(Cert*);
+int  MakeCert(Cert*, byte*, word32, RsaKey*, RNG*);
+
+#endif /* CYASSL_CERT_GEN */
 
 
 #ifdef __cplusplus

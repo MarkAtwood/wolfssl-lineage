@@ -58,6 +58,7 @@ enum {
     RSA_WRONG_TYPE_E   = -130,  /* RSA wrong block type for RSA function */
     RSA_BUFFER_E       = -131,  /* RSA buffer error, output too small or 
                                    input too large */
+    BUFFER_E           = -132,  /* output buffer too small or input too large */
 
     ASN_PARSE_E        = -140,  /* ASN parsing error, invalid input */
     ASN_VERSION_E      = -141,  /* ASN version error, invalid number */

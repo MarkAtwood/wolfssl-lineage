@@ -1064,7 +1064,6 @@ int rsa_test()
     if (ret != 0) return -48;
 
     FreeDecodedCert(&cert);
-    FreeRsaKey(&key);
 
     fclose(file2);
     fclose(file);
@@ -1111,7 +1110,48 @@ int rsa_test()
         if (ret != 0)
             return -306;
     }
-#endif
+#endif /* CYASSL_KEY_GEN */
+
+
+#ifdef CYASSL_CERT_GEN
+    {
+        Cert        myCert;
+        byte        derCert[4096];
+        DecodedCert decode;
+        FILE*       derFile;
+        int         certSz;
+
+        InitCert(&myCert);
+
+        strncpy(myCert.subject.country, "US", NAME_SIZE);
+        strncpy(myCert.subject.state, "OR", NAME_SIZE);
+        strncpy(myCert.subject.locality, "Portland", NAME_SIZE);
+        strncpy(myCert.subject.org, "yaSSL", NAME_SIZE);
+        strncpy(myCert.subject.unit, "Development", NAME_SIZE);
+        strncpy(myCert.subject.commonName, "www.yassl.com", NAME_SIZE);
+        strncpy(myCert.subject.email, "info@yassl.com", NAME_SIZE);
+
+        certSz = MakeCert(&myCert, derCert, sizeof(derCert), &key, &rng); 
+        if (certSz < 0)
+            return -401;
+
+        InitDecodedCert(&decode, derCert, 0);
+        ret = ParseCert(&decode, certSz, CERT_TYPE, NO_VERIFY, 0);
+        if (ret != 0)
+            return -402;
+
+        derFile = fopen("./test.der", "wb");
+        if (!derFile)
+            return -403;
+        ret = fwrite(derCert, certSz, 1, derFile);
+        fclose(derFile);
+
+        FreeDecodedCert(&decode);
+
+    }
+#endif /* CYASSL_CERT_GEN */
+
+    FreeRsaKey(&key);
 
     return 0;
 }
