@@ -13,7 +13,20 @@ before calling SSL_new();  Though it's not recommended.
 
 *** end Note ***
 
-CyaSSL Release 1.6.0 (8/27/2010)
+CyaSSL Release 1.6.5 (9/9/2010)
+
+Release 1.6.5 for CyaSSL adds bug fixes and x509 v3 self signed certificate
+generation.
+ 
+For general build instructions see doc/Building_CyaSSL.pdf.
+
+To enable certificate generation support add this option to ./configure
+./configure --enable-certgen
+
+An example is included in ctaocrypt/test/test.c and documentation is provided
+in doc/CyaSSL_Extensions_Reference.pdf item 11.
+
+********************** CyaSSL Release 1.6.0 (8/27/2010)
 
 Release 1.6.0 for CyaSSL adds bug fixes, RIPEMD-160, SHA-512, and RSA key
 generation.

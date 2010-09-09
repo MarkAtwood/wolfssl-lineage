@@ -190,19 +190,23 @@ int DsaPrivateKeyDecode(const byte* input, word32* inOutIdx, DsaKey*, word32);
 #endif
 
 #ifdef CYASSL_KEY_GEN
-int RsaKeyToDer(RsaKey*, byte* output, word32 inLen, word32* outLen);
-int RsaKeyDerToPem(const byte* der, word32 derSz, byte* output, word32 inLen,
-                   word32* outLen);
+int RsaKeyToDer(RsaKey*, byte* output, word32 inLen);
 #endif
 
+
+#if defined(CYASSL_KEY_GEN) || defined(CYASSL_CERT_GEN)
+int DerToPem(const byte* der, word32 derSz, byte* output, word32 outputSz,
+             int type);
+#endif
 
 #ifdef CYASSL_CERT_GEN
 
 enum cert_enums {
-    SERIAL_SIZE  =  8,
-    NAME_SIZE    = 64,
-    NAME_ENTRIES =  7,
-    JOINT_LEN    =  2,
+    SERIAL_SIZE     =  8,
+    NAME_SIZE       = 64,
+    NAME_ENTRIES    =  7,
+    JOINT_LEN       =  2,
+    EMAIL_JOINT_LEN =  9,
 };
 
 
@@ -239,7 +243,7 @@ typedef struct Cert {
    subject    = blank
 */
 void InitCert(Cert*);
-int  MakeCert(Cert*, byte*, word32, RsaKey*, RNG*);
+int  MakeCert(Cert*, byte* derBuffer, word32 derSz, RsaKey*, RNG*);
 
 #endif /* CYASSL_CERT_GEN */
 

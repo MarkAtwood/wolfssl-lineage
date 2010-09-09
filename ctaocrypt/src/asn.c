@@ -646,11 +646,11 @@ static int GetKey(DecodedCert* cert)
         if (b != ASN_BIT_STRING)
             return ASN_BITSTR_E;
 
-        b = cert->source[cert->srcIdx++];  /* length, future */
+        if (GetLength(cert->source, &cert->srcIdx, &length) < 0)
+            return ASN_PARSE_E;
         b = cert->source[cert->srcIdx++];
-        
-        while (b != 0)
-            b = cert->source[cert->srcIdx++];
+        if (b != 0x00)
+            return ASN_EXPECT_0_E;
     }
     else if (cert->keyOID == DSAk )
         ;   /* do nothing */
@@ -1449,6 +1449,26 @@ void CTaoCryptErrorString(int error, char* buffer)
         strncpy(buffer, "Buffer error, output too small or input too big", max);
         break; 
 
+    case ALGO_ID_E :
+        strncpy(buffer, "Setting Cert AlogID error", max);
+        break; 
+
+    case PUBLIC_KEY_E :
+        strncpy(buffer, "Setting Cert Public Key error", max);
+        break; 
+
+    case DATE_E :
+        strncpy(buffer, "Setting Cert Date validity error", max);
+        break; 
+
+    case SUBJECT_E :
+        strncpy(buffer, "Setting Cert Subject name error", max);
+        break; 
+
+    case ISSUER_E :
+        strncpy(buffer, "Setting Cert Issuer name error", max);
+        break; 
+
     case ASN_PARSE_E :
         strncpy(buffer, "ASN parsing error, invalid input", max);
         break;
@@ -1552,6 +1572,55 @@ static int SetMyVersion(word32 version, byte* output, int header)
     return i;
 }
 
+
+int DerToPem(const byte* der, word32 derSz, byte* output, word32 outSz,
+             int type)
+{
+    char header[80];
+    char footer[80];
+
+    int headerLen;
+    int footerLen;
+    int i;
+    int outLen;   /* return length or error */
+
+    if (type == CERT_TYPE) {
+        strncpy(header, "-----BEGIN CERTIFICATE-----\n", sizeof(header));
+        strncpy(footer, "-----END CERTIFICATE-----\n", sizeof(footer));
+    } else {
+        strncpy(header, "-----BEGIN RSA PRIVATE KEY-----\n", sizeof(header));
+        strncpy(footer, "-----END RSA PRIVATE KEY-----\n", sizeof(footer));
+    }
+
+    headerLen = strlen(header);
+    footerLen = strlen(footer);
+
+    if (!der || !output)
+        return -1;
+
+    /* don't even try if outSz too short */
+    if (outSz < headerLen + footerLen + derSz)
+        return -1;
+
+    /* header */
+    memcpy(output, header, headerLen);
+    i = headerLen;
+
+    /* body */
+    outLen = outSz;  /* input to Base64Encode */
+    if (Base64Encode(der, derSz, output + i, (word32*)&outLen) < 0)
+        return -1;
+    i += outLen;
+
+    /* footer */
+    if ( (i + footerLen) > (int)outSz)
+        return -1;
+    memcpy(output + i, footer, footerLen);
+
+    return outLen + headerLen + footerLen;
+}
+
+
 #endif /* CYASSL_KEY_GEN || CYASSL_CERT_GEN */
 
 
@@ -1581,54 +1650,19 @@ static mp_int* GetRsaInt(RsaKey* key, int index)
 }
 
 
-int RsaKeyDerToPem(const byte* der, word32 derSz, byte* output, word32 inLen,
-                   word32* outLen)
-{
-    const char header[] = "-----BEGIN RSA PRIVATE KEY-----\n";
-    const char footer[] = "-----END RSA PRIVATE KEY-----\n";
-
-    int headerLen = sizeof(header) - 1;
-    int footerLen = sizeof(footer) - 1;
-    int i;
-
-    if (!der || !outLen || !output)
-        return -1;
-
-    /* don't even try if inLen too short */
-    if (inLen < headerLen + footerLen + derSz)
-        return -1;
-
-    /* header */
-    memcpy(output, header, headerLen);
-    i = headerLen;
-
-    /* body */
-    *outLen = inLen;  /* input to Base64Encode */
-    if (Base64Encode(der, derSz, output + i, (word32*)outLen) < 0)
-        return -1;
-    i += *outLen;
-
-    /* footer */
-    if ( (i + footerLen) > (int)inLen)
-        return -1;
-    memcpy(output + i, footer, footerLen);
-    *outLen += headerLen + footerLen; 
-
-    return 0;
-}
-
-
-int RsaKeyToDer(RsaKey* key, byte* output, word32 inLen, word32* outLen)
+/* Convert RsaKey key to DER format, write to output (inLen), return bytes
+   written */
+int RsaKeyToDer(RsaKey* key, byte* output, word32 inLen)
 {
     word32 seqSz, verSz, rawLen, intTotalLen = 0;
     word32 sizes[RSA_INTS];
-    int    i, j;
+    int    i, j, outLen;
 
     byte seq[MAX_SEQ_SZ];
     byte ver[MAX_VERSION_SZ];
     byte tmps[RSA_INTS][MAX_RSA_INT_SZ];
 
-    if (!key || !output || !outLen)
+    if (!key || !output)
         return -1;
 
     if (key->type != RSA_PRIVATE)
@@ -1659,8 +1693,8 @@ int RsaKeyToDer(RsaKey* key, byte* output, word32 inLen, word32* outLen)
     verSz = SetMyVersion(0, ver, FALSE);
     seqSz = SetSequence(verSz + intTotalLen, seq);
 
-    *outLen = seqSz + verSz + intTotalLen;
-    if (*outLen > inLen)
+    outLen = seqSz + verSz + intTotalLen;
+    if (outLen > (int)inLen)
         return -1;
 
     /* write to output */
@@ -1674,7 +1708,7 @@ int RsaKeyToDer(RsaKey* key, byte* output, word32 inLen, word32* outLen)
         j += sizes[i];
     }
 
-    return 0;
+    return outLen;
 }
 
 #endif /* CYASSL_KEY_GEN */
@@ -1945,25 +1979,25 @@ typedef struct EncodedName {
 static const char* GetOneName(CertName* name, int index)
 {
     switch (index) {
-    case 1:
+    case 0:
        return name->country;
        break;
-    case 2:
+    case 1:
        return name->state;
        break;
-    case 3:
+    case 2:
        return name->locality;
        break;
-    case 4:
+    case 3:
        return name->org;
        break;
-    case 5:
+    case 4:
        return name->unit;
        break;
-    case 6:
+    case 5:
        return name->commonName;
        break;
-    case 7:
+    case 6:
        return name->email;
        break;
     default:
@@ -1978,25 +2012,25 @@ static const char* GetOneName(CertName* name, int index)
 static byte GetNameId(int index)
 {
     switch (index) {
-    case 1:
+    case 0:
        return ASN_COUNTRY_NAME;
        break;
-    case 2:
+    case 1:
        return ASN_STATE_NAME;
        break;
-    case 3:
+    case 2:
        return ASN_LOCALITY_NAME;
        break;
-    case 4:
+    case 3:
        return ASN_ORG_NAME;
        break;
-    case 5:
+    case 4:
        return ASN_ORGUNIT_NAME;
        break;
-    case 6:
+    case 5:
        return ASN_COMMON_NAME;
        break;
-    case 7:
+    case 6:
        /* email uses different id type */
        return 0;
        break;
@@ -2014,8 +2048,7 @@ static int SetName(byte* output, CertName* name)
     int         totalBytes = 0, i, idx;
     EncodedName names[NAME_ENTRIES];
 
-    /* TODO reomve -1 when add email */
-    for (i = 0; i < NAME_ENTRIES - 1; i++) {
+    for (i = 0; i < NAME_ENTRIES; i++) {
         const char* nameStr = GetOneName(name, i);
         if (nameStr) {
             /* bottom up */
@@ -2024,16 +2057,24 @@ static int SetName(byte* output, CertName* name)
             byte sequence[MAX_SEQ_SZ];
             byte set[MAX_SET_SZ];
 
+            int email = i == (NAME_ENTRIES - 1) ? 1 : 0;
             int strLen  = strlen(nameStr);
             int thisLen = strLen;
             int firstSz, secondSz, seqSz, setSz;
 
             secondSz = SetLength(strLen, secondLen);
             thisLen += secondSz;
-            thisLen++;                                 /* str type */
-            thisLen++;                                 /* id  type */
-            thisLen += JOINT_LEN;    
-            firstSz = SetLength(JOINT_LEN + 1, firstLen);
+            if (email) {
+                thisLen += EMAIL_JOINT_LEN;
+                thisLen ++;                               /* id type */
+                firstSz  = SetLength(EMAIL_JOINT_LEN, firstLen);
+            }
+            else {
+                thisLen++;                                 /* str type */
+                thisLen++;                                 /* id  type */
+                thisLen += JOINT_LEN;    
+                firstSz = SetLength(JOINT_LEN + 1, firstLen);
+            }
             thisLen += firstSz;
             thisLen++;                                /* object id */
 
@@ -2058,13 +2099,22 @@ static int SetName(byte* output, CertName* name)
             /* first length */
             memcpy(names[i].encoded + idx, firstLen, firstSz);
             idx += firstSz;
-            /* joint id */
-            names[i].encoded[idx++] = 0x55;
-            names[i].encoded[idx++] = 0x04;
-            /* id type */
-            names[i].encoded[idx++] = GetNameId(i);
-            /* str type */
-            names[i].encoded[idx++] = 0x13;
+            if (email) {
+                const byte EMAIL_OID[] = { 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d,
+                                           0x01, 0x09, 0x01, 0x16 };
+                /* email joint id */
+                memcpy(names[i].encoded + idx, EMAIL_OID, sizeof(EMAIL_OID));
+                idx += sizeof(EMAIL_OID);
+            }
+            else {
+                /* joint id */
+                names[i].encoded[idx++] = 0x55;
+                names[i].encoded[idx++] = 0x04;
+                /* id type */
+                names[i].encoded[idx++] = GetNameId(i);
+                /* str type */
+                names[i].encoded[idx++] = 0x13;
+            }
             /* second length */
             memcpy(names[i].encoded + idx, secondLen, secondSz);
             idx += secondSz;
@@ -2086,8 +2136,7 @@ static int SetName(byte* output, CertName* name)
     if (totalBytes > ASN_NAME_MAX)
         return BUFFER_E;
 
-    /* TODO reomve -1 when add email */
-    for (i = 0; i < NAME_ENTRIES - 1; i++) {
+    for (i = 0; i < NAME_ENTRIES; i++) {
         if (names[i].used) {
             memcpy(output + idx, names[i].encoded, names[i].totalLen);
             idx += names[i].totalLen;
@@ -2111,28 +2160,28 @@ static int EncodeCert(Cert* cert, DerCert* der, RsaKey* key, RNG* rng)
     /* signature algo */
     der->sigAlgoSz = SetAlgoID(cert->sigType, der->sigAlgo, sigType);
     if (der->sigAlgoSz == 0)
-        return -1;
+        return ALGO_ID_E;
 
     /* public key */
     der->publicKeySz = SetPublicKey(der->publicKey, key);
     if (der->publicKeySz == 0)
-        return -2;
+        return PUBLIC_KEY_E;
 
     /* date validity */
     der->validitySz = SetValidity(der->validity, cert->daysValid);
     if (der->validitySz == 0)
-        return -3;
+        return DATE_E;
 
     /* subject name */
     der->subjectSz = SetName(der->subject, &cert->subject);
     if (der->subjectSz == 0)
-        return -4;
+        return SUBJECT_E;
 
     /* issuer name */
     der->issuerSz = SetName(der->issuer, cert->selfSigned ?
              &cert->subject : &cert->issuer);
     if (der->issuerSz == 0)
-        return -5;
+        return ISSUER_E;
 
     der->total = der->versionSz + der->serialSz + der->sigAlgoSz +
         der->publicKeySz + der->validitySz + der->subjectSz + der->issuerSz;
@@ -2179,7 +2228,7 @@ static int MakeSignature(const byte* buffer, int sz, byte* sig, int sigSz,
                          RsaKey* key, RNG* rng)
 {
     byte    digest[SHA_DIGEST_SIZE];     /* max size */
-    byte    encSig[MAX_ENCODED_DIG_SZ];
+    byte    encSig[MAX_ENCODED_DIG_SZ + MAX_ALGO_SZ + MAX_SEQ_SZ];
     int     encSigSz, digestSz, hashType;
     Md5     md5;                         /* md5 for now */
 
@@ -2234,7 +2283,7 @@ int MakeCert(Cert* cert, byte* buffer, word32 buffSz, RsaKey* key, RNG* rng)
     if (ret != 0)
         return ret;
 
-    if (der.total + MAX_SEQ_SZ * 2 > buffSz)
+    if (der.total + MAX_SEQ_SZ * 2 > (int)buffSz)
         return BUFFER_E;
 
     bodySz = WriteCertBody(&der, buffer);
@@ -2242,7 +2291,7 @@ int MakeCert(Cert* cert, byte* buffer, word32 buffSz, RsaKey* key, RNG* rng)
     if (sigSz < 0)
         return sigSz; 
 
-    if (der.total + MAX_SEQ_SZ * 2 + sigSz > buffSz)
+    if (der.total + MAX_SEQ_SZ * 2 + sigSz > (int)buffSz)
         return BUFFER_E; 
 
     return AddSignature(buffer, bodySz, sig, sigSz);
