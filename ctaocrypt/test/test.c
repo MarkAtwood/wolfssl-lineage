@@ -1088,17 +1088,17 @@ int rsa_test()
         if (ret < 0)
             return -302;
 
-        keyFile = fopen("./test.key", "wb");
+        keyFile = fopen("./ker.der", "wb");
         if (!keyFile)
             return -303;
         ret = fwrite(der, derSz, 1, keyFile);
         fclose(keyFile);
 
-        ret = RsaKeyDerToPem(der, derSz, pem, sizeof(pem), &pemSz);
-        if (ret < 0)
+        pemSz = DerToPem(der, derSz, pem, sizeof(pem), PRIVATEKEY_TYPE);
+        if (pemSz < 0)
             return -304;
 
-        pemFile = fopen("./test.pem", "wb");
+        pemFile = fopen("./key.pem", "wb");
         if (!pemFile) 
             return -305;
         ret = fwrite(pem, pemSz, 1, pemFile);
@@ -1117,9 +1117,12 @@ int rsa_test()
     {
         Cert        myCert;
         byte        derCert[4096];
+        byte        pem[4096];
         DecodedCert decode;
         FILE*       derFile;
+        FILE*       pemFile;
         int         certSz;
+        int         pemSz;
 
         InitCert(&myCert);
 
@@ -1140,11 +1143,21 @@ int rsa_test()
         if (ret != 0)
             return -402;
 
-        derFile = fopen("./test.der", "wb");
+        derFile = fopen("./cert.der", "wb");
         if (!derFile)
             return -403;
         ret = fwrite(derCert, certSz, 1, derFile);
         fclose(derFile);
+
+        pemSz = DerToPem(derCert, certSz, pem, sizeof(pem), CERT_TYPE);
+        if (pemSz < 0)
+            return -404;
+
+        pemFile = fopen("./cert.pem", "wb");
+        if (!pemFile)
+            return -405;
+        ret = fwrite(pem, pemSz, 1, pemFile);
+        fclose(pemFile);
 
         FreeDecodedCert(&decode);
 

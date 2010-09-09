@@ -59,6 +59,11 @@ enum {
     RSA_BUFFER_E       = -131,  /* RSA buffer error, output too small or 
                                    input too large */
     BUFFER_E           = -132,  /* output buffer too small or input too large */
+    ALGO_ID_E          = -133,  /* setting algo id error */
+    PUBLIC_KEY_E       = -134,  /* setting public key error */
+    DATE_E             = -135,  /* setting date validity error */
+    SUBJECT_E          = -136,  /* setting subject name error */
+    ISSUER_E           = -137,  /* setting issuer  name error */
 
     ASN_PARSE_E        = -140,  /* ASN parsing error, invalid input */
     ASN_VERSION_E      = -141,  /* ASN version error, invalid number */
