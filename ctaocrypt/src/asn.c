@@ -1650,17 +1650,19 @@ static mp_int* GetRsaInt(RsaKey* key, int index)
 }
 
 
-int RsaKeyToDer(RsaKey* key, byte* output, word32 inLen, word32* outLen)
+/* Convert RsaKey key to DER format, write to output (inLen), return bytes
+   written */
+int RsaKeyToDer(RsaKey* key, byte* output, word32 inLen)
 {
     word32 seqSz, verSz, rawLen, intTotalLen = 0;
     word32 sizes[RSA_INTS];
-    int    i, j;
+    int    i, j, outLen;
 
     byte seq[MAX_SEQ_SZ];
     byte ver[MAX_VERSION_SZ];
     byte tmps[RSA_INTS][MAX_RSA_INT_SZ];
 
-    if (!key || !output || !outLen)
+    if (!key || !output)
         return -1;
 
     if (key->type != RSA_PRIVATE)
@@ -1691,8 +1693,8 @@ int RsaKeyToDer(RsaKey* key, byte* output, word32 inLen, word32* outLen)
     verSz = SetMyVersion(0, ver, FALSE);
     seqSz = SetSequence(verSz + intTotalLen, seq);
 
-    *outLen = seqSz + verSz + intTotalLen;
-    if (*outLen > inLen)
+    outLen = seqSz + verSz + intTotalLen;
+    if (outLen > inLen)
         return -1;
 
     /* write to output */
@@ -1706,7 +1708,7 @@ int RsaKeyToDer(RsaKey* key, byte* output, word32 inLen, word32* outLen)
         j += sizes[i];
     }
 
-    return 0;
+    return outLen;
 }
 
 #endif /* CYASSL_KEY_GEN */

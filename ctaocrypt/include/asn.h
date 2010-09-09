@@ -190,7 +190,7 @@ int DsaPrivateKeyDecode(const byte* input, word32* inOutIdx, DsaKey*, word32);
 #endif
 
 #ifdef CYASSL_KEY_GEN
-int RsaKeyToDer(RsaKey*, byte* output, word32 inLen, word32* outLen);
+int RsaKeyToDer(RsaKey*, byte* output, word32 inLen);
 #endif
 
 

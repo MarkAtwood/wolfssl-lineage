@@ -1084,8 +1084,8 @@ int rsa_test()
         if (ret != 0)
             return -301;
 
-        ret = RsaKeyToDer(&genKey, der, sizeof(der), &derSz);
-        if (ret < 0)
+        derSz = RsaKeyToDer(&genKey, der, sizeof(der));
+        if (derSz < 0)
             return -302;
 
         keyFile = fopen("./ker.der", "wb");
