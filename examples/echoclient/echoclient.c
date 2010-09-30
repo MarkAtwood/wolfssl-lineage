@@ -61,7 +61,7 @@ void echoclient_test(void* args)
     ssl = SSL_new(ctx);
 
     SSL_set_fd(ssl, sockfd);
-#if defined(_WIN32) && defined(CYASSL_DTLS) && defined(NO_MAIN_DRIVER)
+#if defined(USE_WINDOWS_API) && defined(CYASSL_DTLS) && defined(NO_MAIN_DRIVER)
     /* let echoserver bind first, TODO: add Windows signal like pthreads does */
     Sleep(100);
 #endif

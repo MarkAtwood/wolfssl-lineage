@@ -1694,7 +1694,7 @@ int RsaKeyToDer(RsaKey* key, byte* output, word32 inLen)
     seqSz = SetSequence(verSz + intTotalLen, seq);
 
     outLen = seqSz + verSz + intTotalLen;
-    if (outLen > inLen)
+    if (outLen > (int)inLen)
         return -1;
 
     /* write to output */

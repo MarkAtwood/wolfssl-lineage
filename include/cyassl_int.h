@@ -39,7 +39,7 @@
     #include <signal.h>
 #endif
 
-#ifdef _WIN32
+#ifdef USE_WINDOWS_API 
     #include <windows.h>
 #elif THREADX
     #ifndef SINGLE_THREADED
@@ -72,7 +72,7 @@
 #endif
 
 
-#ifdef _WIN32
+#ifdef USE_WINDOWS_API 
     typedef unsigned int SOCKET_T;
 #else
     typedef int SOCKET_T;
@@ -992,7 +992,7 @@ word32  LowResTimer(void);
 
 #else /* SINGLE_THREADED */
 
-    #ifdef _WIN32
+    #ifdef USE_WINDOWS_API 
         typedef CRITICAL_SECTION CyaSSL_Mutex;
 
         #define InitMutex(m)     InitializeCriticalSection(m)
@@ -1016,9 +1016,20 @@ word32  LowResTimer(void);
         #define LockMutex(m)     tx_mutex_get(m, TX_WAIT_FOREVER)
         #define UnLockMutex(m)   tx_mutex_put(m)
 
+    #elif deinfed(MICRIUM)
+        #include "os.h"
+        #include "net_secure_cfg.h"
+        
+        typedef OS_MUTEX CyaSSL_Mutex;
+
+        #define InitMutex(m)     OSSecure_MutexCreate(m)
+        #define FreeMutex(m)     OSSecure_FreeMutex(m)
+        #define LockMutex(m)     OSSecure_LockMutex(m)
+        #define UnLockMutex(m)   OSSecure_UnLockMutex(m)
+
     #else
         #error Need a mutex type in multithreaded mode
-    #endif /* _WIN32 */
+    #endif /* USE_WINDOWS_API */
 
 #endif /* SINGLE_THREADED */
 

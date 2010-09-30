@@ -1109,6 +1109,9 @@ int rsa_test()
         ret = RsaPrivateKeyDecode(der, &idx, &derIn, derSz);
         if (ret != 0)
             return -306;
+
+        FreeRsaKey(&derIn);
+        FreeRsaKey(&genKey);
     }
 #endif /* CYASSL_KEY_GEN */
 

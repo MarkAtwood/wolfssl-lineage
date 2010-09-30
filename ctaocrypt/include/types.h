@@ -23,6 +23,8 @@
 #ifndef CTAO_CRYPT_TYPES_H
 #define CTAO_CRYPT_TYPES_H
 
+#include "os_settings.h"
+
 #ifdef HAVE_CONFIG_H
     #include "config.h"
 #endif
@@ -123,6 +125,12 @@ enum {
         /* GCC does peephole optimizations which should result in using rotate
            instructions  */
 	#define FAST_ROTATE
+#endif
+
+
+/* Micrium will use Visual Studio for compilation but not the Win32 API */
+#if defined(_WIN32) && !defined(MICRIUM)
+    #define USE_WINDOWS_API
 #endif
 
 

@@ -30,7 +30,7 @@
 #include <string.h> 
 
 
-#if defined(_WIN32)
+#if defined(USE_WINDOWS_API)
     #define _WIN32_WINNT 0x0400
     #include <windows.h>
     #include <wincrypt.h>
@@ -41,7 +41,7 @@
     #else
         /* include headers that may be needed to get good seed */
     #endif
-#endif /* _WIN32 */
+#endif /* USE_WINDOWS_API */
 
 
 
@@ -79,7 +79,7 @@ byte RNG_GenerateByte(RNG* rng)
 }
 
 
-#if defined(_WIN32)
+#if defined(USE_WINDOWS_API)
 
 
 int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
@@ -123,7 +123,7 @@ int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
 #error "you need to write an os specific GenerateSeed() here"
 
 
-#else /* !_WIN32 && !THREADX && !NO_DEV_RANDOM */
+#else /* !USE_WINDOWS_API && !THREADX && !NO_DEV_RANDOM */
 
 
 /* may block */
@@ -157,5 +157,5 @@ int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
     return 0;
 }
 
-#endif /* _WIN32 */
+#endif /* USE_WINDOWS_API */
 

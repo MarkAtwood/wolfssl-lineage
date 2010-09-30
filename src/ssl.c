@@ -38,7 +38,7 @@
 #endif
 
 #include <stdlib.h>
-#ifndef _WIN32
+#ifndef USE_WINDOWS_API 
     #include <errno.h>
 #endif
 
@@ -137,7 +137,7 @@ int SSL_write(SSL* ssl, const void* buffer, int sz)
 
     CYASSL_ENTER("SSL_write()");
 
-#ifndef _WIN32
+#ifndef USE_WINDOWS_API 
     errno = 0;
 #endif
 
@@ -158,7 +158,7 @@ int SSL_read(SSL* ssl, void* buffer, int sz)
 
     CYASSL_ENTER("SSL_read()");
 
-#ifndef _WIN32
+#ifndef USE_WINDOWS_API 
         errno = 0;
 #endif
 
@@ -661,6 +661,19 @@ int SSL_CTX_use_certificate_chain_file(SSL_CTX* ctx, const char* file)
    return SSL_FAILURE;
 }
 
+
+#ifdef OPENSSL_EXTRA
+
+    int SSL_CTX_use_RSAPrivateKey_file(SSL_CTX* ctx, const char* file, int type)
+    {
+        if (ProcessFile(ctx, file, type, PRIVATEKEY_TYPE) == SSL_SUCCESS)
+            return SSL_SUCCESS;
+
+        return SSL_FAILURE;
+    }
+
+#endif /* OPENSSL_EXTRA */
+
 #endif /* NO_FILESYSTEM */
 
 
@@ -766,7 +779,7 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
         CYASSL_ENTER("SSL_connect()");
 
-        #ifndef _WIN32
+        #ifndef USE_WINDOWS_API 
             errno = 0;
         #endif
 
@@ -972,7 +985,7 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
     {
         CYASSL_ENTER("SSL_accept()");
 
-        #ifndef _WIN32
+        #ifndef USE_WINDOWS_API 
             errno = 0;
         #endif
 
@@ -1357,7 +1370,7 @@ int CyaSSL_set_compression(SSL* ssl)
 }
 
 
-#ifndef _WIN32
+#ifndef USE_WINDOWS_API 
     #ifndef NO_WRITEV
 
         /* simulate writev semantics, doesn't actually do block at a time though
@@ -2020,7 +2033,7 @@ int CyaSSL_set_compression(SSL* ssl)
     }
 
 
-#ifdef _WIN32
+#ifdef USE_WINDOWS_API 
     #define CloseSocket(s) closesocket(s)
 #else
     #define CloseSocket(s) close(s)
@@ -2921,15 +2934,6 @@ int CyaSSL_set_compression(SSL* ssl)
     void SSL_CTX_set_default_passwd_cb(SSL_CTX* ctx, pem_password_cb cb)
     {
         ctx->passwd_cb = cb;
-    }
-
-
-    int SSL_CTX_use_RSAPrivateKey_file(SSL_CTX* ctx, const char* file, int type)
-    {
-        if (ProcessFile(ctx, file, type, PRIVATEKEY_TYPE) == SSL_SUCCESS)
-            return SSL_SUCCESS;
-
-        return SSL_FAILURE;
     }
 
 

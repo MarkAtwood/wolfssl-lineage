@@ -29,7 +29,7 @@
                 printf("... client would read block\n");
             else
                 printf("... client would write block\n");
-            #ifdef _WIN32
+            #ifdef USE_WINDOWS_API 
                 Sleep(100);
             #else
                 sleep(1);
@@ -194,7 +194,7 @@ void client_test(void* args)
 
 #ifdef TEST_RESUME
     #ifdef CYASSL_DTLS
-        #ifdef _WIN32
+        #ifdef USE_WINDOWS_API 
             Sleep(500);
         #else
             sleep(1);

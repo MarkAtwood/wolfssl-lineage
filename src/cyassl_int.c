@@ -291,8 +291,14 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->userdata    = 0;
 #endif /* OPENSSL_EXTRA */
 
+#ifndef CYASSL_USER_IO
     ctx->CBIORecv = EmbedReceive;
     ctx->CBIOSend = EmbedSend;
+#else
+    /* user will set */
+    ctx->CBIORecv = NULL;
+    ctx->CBIOSend = NULL;
+#endif
     ctx->partialWrite = 0;
 
     ctx->caList = 0;
@@ -605,7 +611,7 @@ ProtocolVersion MakeDTLSv1(void)
 
 
 
-#ifdef _WIN32
+#ifdef USE_WINDOWS_API 
 
     timer_d Timer(void)
     {
@@ -640,7 +646,7 @@ ProtocolVersion MakeDTLSv1(void)
     }
 
 
-#else /* !_WIN32 && !THREADX */
+#else /* !USE_WINDOWS_API && !THREADX */
 
     #include <time.h>
 
@@ -650,7 +656,7 @@ ProtocolVersion MakeDTLSv1(void)
     }
 
 
-#endif /* _WIN32 */
+#endif /* USE_WINDOWS_API */
 
 
 /* add output to md5 and sha handshake hashes, exclude record header */
@@ -2247,11 +2253,10 @@ int SendData(SSL* ssl, const void* buffer, int sz)
 
         if ( (ret = SendBuffered(ssl)) < 0) {
             CYASSL_ERROR(ret);
-            if (ret == WANT_WRITE) {
-                /* store for next call */
-                ssl->buffers.plainSz  = len;
-                ssl->buffers.prevSent = sent;
-            }
+            /* store for next call if WANT_WRITE or user embedSend() that
+               doesn't present like WANT_WRITE */
+            ssl->buffers.plainSz  = len;
+            ssl->buffers.prevSent = sent;
             if (ret == SOCKET_ERROR_E && ssl->options.connReset)
                 return 0;  /* peer reset */
             return ssl->error = ret;

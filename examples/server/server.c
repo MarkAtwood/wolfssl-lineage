@@ -21,7 +21,7 @@
         while (ret != SSL_SUCCESS && (error == SSL_ERROR_WANT_READ ||
                                       error == SSL_ERROR_WANT_WRITE)) {
             printf("... server would block\n");
-            #ifdef _WIN32
+            #ifdef USE_WINDOWS_API 
                 Sleep(1000);
             #else
                 sleep(1);

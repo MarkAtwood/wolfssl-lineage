@@ -30,6 +30,12 @@
 #include "cyassl_error.h"
 #include "asn.h"
 
+/* if user writes own I/O callbacks they can define CYASSL_USER_IO to remove
+   automatic setting of defualt I/O functions EmbedSend() and EmbedReceive()
+   but they'll still nedd SetCallback xxx() at end of file 
+*/
+#ifndef CYASSL_USER_IO
+
 #ifdef HAVE_LIBZ
     #include "zlib.h"
 #endif
@@ -37,7 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef _WIN32
+#ifndef USE_WINDOWS_API 
     #include <sys/types.h>
     #include <errno.h>
     #include <unistd.h>
@@ -52,13 +58,13 @@
     #ifdef THREADX
         #include <socket.h>
     #endif
-#endif /* _WIN32 */
+#endif /* USE_WINDOWS_API */
 
 #ifdef __sun
     #include <sys/filio.h>
 #endif
 
-#ifdef _WIN32
+#ifdef USE_WINDOWS_API 
     /* no epipe yet */
     #ifndef WSAEPIPE
         #define WSAEPIPE       -12345
@@ -74,7 +80,7 @@
     #define SOCKET_ECONNRESET  ECONNRESET
     #define SOCKET_EINTR       EINTR
     #define SOCKET_EPIPE       EPIPE
-#endif /* _WIN32 */
+#endif /* USE_WINDOWS_API */
 
 
 #ifdef DEVKITPRO
@@ -91,7 +97,7 @@
 
 static INLINE int LastError(void)
 {
-#ifdef _WIN32
+#ifdef USE_WINDOWS_API 
     return WSAGetLastError();
 #else
     return errno;
@@ -172,20 +178,25 @@ int EmbedSend(char *buf, int sz, void *ctx)
     return sent;
 }
 
+
+#endif /* CYASSL_USER_IO */
+
 void SetCallbackIORecv_Ctx(SSL_CTX *ctx, CallbackIORecv CBIORecv) {
     ctx->CBIORecv = CBIORecv;
 }
+
 
 void SetCallbackIOSend_Ctx(SSL_CTX *ctx, CallbackIOSend CBIOSend) {
     ctx->CBIOSend = CBIOSend;
 }
 
+
 void SetCallbackIO_ReadCtx(SSL* ssl, void *rctx) {
 	ssl->IOCB_ReadCtx = rctx;
 }
 
+
 void SetCallbackIO_WriteCtx(SSL* ssl, void *wctx) {
 	ssl->IOCB_WriteCtx = wctx;
 }
-
 

@@ -9,7 +9,7 @@
 #include <ctype.h>
 #include "types.h"
 
-#ifdef _WIN32
+#ifdef USE_WINDOWS_API 
     #include <winsock2.h>
     #include <process.h>
     #ifdef TEST_IPV6            /* don't require newer SDK for IPV4 */
@@ -36,7 +36,7 @@
         #include <netdb.h>
     #endif
     #define SOCKET_T unsigned int
-#endif /* _WIN32 */
+#endif /* USE_WINDOWS_API */
 
 #ifdef _MSC_VER
     /* disable conversion warning */
@@ -44,7 +44,7 @@
     #pragma warning(disable:4244 4996)
 #endif
 
-#if defined(__MACH__) || defined(_WIN32)
+#if defined(__MACH__) || defined(USE_WINDOWS_API)
     #ifndef _SOCKLEN_T
         typedef int socklen_t;
     #endif
@@ -59,7 +59,7 @@
 #endif
 
 
-#ifdef _WIN32
+#ifdef USE_WINDOWS_API 
     #define CloseSocket(s) closesocket(s)
     #define StartTCP() { WSADATA wsd; WSAStartup(0x0002, &wsd); }
 #else
@@ -243,7 +243,7 @@ static INLINE void tcp_socket(SOCKET_T* sockfd, SOCKADDR_IN_T* addr,
     addr->sin6_addr = in6addr_loopback;
 #endif
 
-#ifndef _WIN32
+#ifndef USE_WINDOWS_API 
 #ifdef SO_NOSIGPIPE
     {
         int       on = 1;
@@ -263,7 +263,7 @@ static INLINE void tcp_socket(SOCKET_T* sockfd, SOCKADDR_IN_T* addr,
             err_sys("setsockopt TCP_NODELAY failed\n");
     }
 #endif
-#endif  /* _WIN32 */
+#endif  /* USE_WINDOWS_API */
 }
 
 
@@ -289,7 +289,7 @@ static INLINE void tcp_listen(SOCKET_T* sockfd)
     tcp_socket(sockfd, &addr, yasslIP, yasslPort);
 #endif
 
-#ifndef _WIN32
+#ifndef USE_WINDOWS_API 
     {
         int       on  = 1;
         socklen_t len = sizeof(on);
@@ -333,7 +333,7 @@ static INLINE void udp_accept(SOCKET_T* sockfd, int* clientfd, func_args* args)
     tcp_socket(sockfd, &addr, yasslIP, yasslPort);
 
 
-#ifndef _WIN32
+#ifndef USE_WINDOWS_API 
     {
         int       on  = 1;
         socklen_t len = sizeof(on);
@@ -391,7 +391,7 @@ static INLINE void tcp_accept(SOCKET_T* sockfd, int* clientfd, func_args* args)
 static INLINE void tcp_set_nonblocking(SOCKET_T* sockfd)
 {
 #ifdef NON_BLOCKING
-    #ifdef _WIN32
+    #ifdef USE_WINDOWS_API 
         unsigned long blocking = 1;
         int ret = ioctlsocket(*sockfd, FIONBIO, &blocking);
     #else
@@ -443,7 +443,7 @@ static INLINE unsigned int my_psk_server_cb(SSL* ssl, const char* identity,
 #endif /* NO_PSK */
 
 
-#ifdef _WIN32
+#ifdef USE_WINDOWS_API 
 
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
@@ -477,7 +477,7 @@ static INLINE unsigned int my_psk_server_cb(SSL* ssl, const char* identity,
         return (double)tv.tv_sec + (double)tv.tv_usec / 1000000;
     }
 
-#endif /* _WIN32 */
+#endif /* USE_WINDOWS_API */
 
 
 
