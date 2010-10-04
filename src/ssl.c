@@ -117,12 +117,17 @@ int SSL_get_fd(const SSL* ssl)
 
 int CyaSSL_negotiate(SSL* ssl)
 {
-    int err;
+    int err = -1;
 
+#ifndef NO_CYASSL_SERVER
     if (ssl->options.side == SERVER_END)
         err = SSL_accept(ssl);
-    else
+#endif
+
+#ifndef NO_CYASSL_CLIENT
+    if (ssl->options.side == CLIENT_END)
         err = SSL_connect(ssl);
+#endif
 
     if (err == SSL_SUCCESS)
         return 0;

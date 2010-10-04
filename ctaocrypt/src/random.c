@@ -118,6 +118,24 @@ int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
 }
 
 
+#elif MICRIUM
+
+/* just for testing, wirte a real one ! */
+int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
+{
+    OS_TICK ticks;
+    OS_ERR  err;
+    int     i;
+
+    for (i = 0; i < sz; i += sizeof(ticks)) {
+        ticks = NetSecure_OS_TimeGet(&err);
+        memcpy(output, &ticks, sizeof(ticks));
+        output += sizeof(ticks);
+    }
+
+    return 0;
+}
+
 #elif NO_DEV_RANDOM
 
 #error "you need to write an os specific GenerateSeed() here"

@@ -919,6 +919,17 @@ enum AlertDescription {
 };
 
 
+/* I/O Callback default errors */
+enum IOerrors {
+    IO_ERR_GENERAL    = -1,     /* general unexpected err, not in below group */
+    IO_ERR_WANT_READ  = -2,     /* need to call read  again */
+    IO_ERR_WANT_WRITE = -2,     /* need to call write again */
+    IO_ERR_CONN_RST   = -3,     /* connection reset */
+    IO_ERR_ISR        = -4,     /* interrupt */
+    IO_ERR_CONN_CLOSE = -5      /* connection closed or epipe */
+};
+
+
 enum AlertLevel { 
     alert_warning = 1, 
     alert_fatal = 2
@@ -1017,15 +1028,12 @@ word32  LowResTimer(void);
         #define UnLockMutex(m)   tx_mutex_put(m)
 
     #elif deinfed(MICRIUM)
-        #include "os.h"
-        #include "net_secure_cfg.h"
-        
         typedef OS_MUTEX CyaSSL_Mutex;
 
-        #define InitMutex(m)     OSSecure_MutexCreate(m)
-        #define FreeMutex(m)     OSSecure_FreeMutex(m)
-        #define LockMutex(m)     OSSecure_LockMutex(m)
-        #define UnLockMutex(m)   OSSecure_UnLockMutex(m)
+        #define InitMutex(m)     NetSecure_OS_MutexCreate(m)
+        #define FreeMutex(m)     NetSecure_OS_FreeMutex(m)
+        #define LockMutex(m)     NetSecure_OS_LockMutex(m)
+        #define UnLockMutex(m)   NetSecure_OS_UnLockMutex(m)
 
     #else
         #error Need a mutex type in multithreaded mode

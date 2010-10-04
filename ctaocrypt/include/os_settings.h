@@ -19,8 +19,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-/* Place OS specific preprocessor flags or defines here, will be included into
-   every file because type.h includes it */
+/* Place OS specific preprocessor flags, defines, includes here, will be
+   included into every file because types.h includes it */
 
 #ifndef CTAO_CRYPT_OS_SETTINGS_H
 #define CTAO_CRYPT_OS_SETTINGS_H
@@ -29,11 +29,20 @@
     extern "C" {
 #endif
 
+
 /* Uncomment next line if using ThreadX */
 /* #define THREADX */
 
 /* Uncomment next line if using Micrium ucOS */
 /* #define MICRIUM */
+
+#ifdef MICRIUM
+    #include "net_secure_cfg.h"
+    #include "net_secure_os.h"
+    /* uncomment next line once file exists that contains enabled/disabled
+       flags to turn on/off CyaSSL settings based on Micrium setup */
+    /* #include "cyassl_micrium.h" */
+#endif /* MICRIUM */
 
 /* Place any other flags or defines here */
 

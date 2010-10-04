@@ -646,6 +646,17 @@ ProtocolVersion MakeDTLSv1(void)
     }
 
 
+#elif MICRIUM
+
+    word32 LowResTimer(void)
+    {
+        OS_TICK clk;
+        OS_ERR  err;
+
+        clk = NetSecure_OS_TimeGet(&err);
+        return (word32)clk;
+    }
+
 #else /* !USE_WINDOWS_API && !THREADX */
 
     #include <time.h>
@@ -766,17 +777,17 @@ retry:
     recvd = ssl->ctx->CBIORecv((char *)buf, (int)sz, ssl->IOCB_ReadCtx);
     if (recvd < 0)
         switch (recvd) {
-            case -1:            /* general/unknown error */
+            case IO_ERR_GENERAL:        /* general/unknown error */
                 return -1;
 
-            case -2:            /* want read, would block */
+            case IO_ERR_WANT_READ:      /* want read, would block */
                 return WANT_READ;
 
-            case -3:            /* connection reset */
+            case IO_ERR_CONN_RST:       /* connection reset */
                 ssl->options.connReset = 1;
                 return -1;
 
-            case -4:            /* interrupt */
+            case IO_ERR_ISR:            /* interrupt */
                 /* see if we got our timeout */
                 #ifdef CYASSL_CALLBACKS
                     if (ssl->toInfoOn) {
@@ -792,7 +803,7 @@ retry:
                 #endif
                 goto retry;
 
-            case -5:            /* peer closed connection */
+            case IO_ERR_CONN_CLOSE:     /* peer closed connection */
                 ssl->options.isClosed = 1;
                 return -1;
         }
@@ -810,14 +821,14 @@ int SendBuffered(SSL* ssl)
         if (sent < 0) {
             switch (sent) {
 
-                case -2:        /* would block */
+                case IO_ERR_WANT_WRITE:        /* would block */
                     return WANT_WRITE;
 
-                case -3:        /* connection reset */
+                case IO_ERR_CONN_RST:          /* connection reset */
                     ssl->options.connReset = 1;
                     break;
 
-                case -4:        /* interrupt */
+                case IO_ERR_ISR:               /* interrupt */
                     /* see if we got our timeout */
                     #ifdef CYASSL_CALLBACKS
                         if (ssl->toInfoOn) {
@@ -833,7 +844,7 @@ int SendBuffered(SSL* ssl)
                     #endif
                     continue;
 
-                case -5:        /* epipe / conn closed, same as reset */
+                case IO_ERR_CONN_CLOSE: /* epipe / conn closed, same as reset */
                     ssl->options.connReset = 1;
                     break;
             }

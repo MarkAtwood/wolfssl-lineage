@@ -105,12 +105,7 @@ static INLINE int LastError(void)
 }
 
 /* The receive embedded callback
- *  return : nb bytes read
- *           -1 : other errors (unexpected)
- *           -2 : WANT_READ
- *           -3 : Connexion reset
- *           -4 : interrupt
- *           -5 : connexion close
+ *  return : nb bytes read, or error
  */
 int EmbedReceive(char *buf, int sz, void *ctx)
 {
@@ -124,30 +119,25 @@ int EmbedReceive(char *buf, int sz, void *ctx)
         err = LastError();
         if (err == SOCKET_EWOULDBLOCK ||
             err == SOCKET_EAGAIN)
-            return -2;
+            return IO_ERR_WANT_READ;
 
         else if (err == SOCKET_ECONNRESET)
-            return -3;
+            return IO_ERR_CONN_RST;
 
         else if (err == SOCKET_EINTR)
-            return -4;
+            return IO_ERR_ISR;
 
         else
-            return -1;
+            return IO_ERR_GENERAL;
     }
     else if (recvd == 0)
-        return -5;
+        return IO_ERR_CONN_CLOSE;
 
     return recvd;
 }
 
 /* The send embedded callback
- *  return : nb bytes sended
- *           -1 : other errors (unexpected)
- *           -2 : want write
- *           -3 : connexion reset
- *           -4 : interrupt
- *           -5 : pipe error / connection closed
+ *  return : nb bytes sent, or error
  */
 int EmbedSend(char *buf, int sz, void *ctx)
 {
@@ -160,19 +150,19 @@ int EmbedSend(char *buf, int sz, void *ctx)
     if (sent == -1) {
         if (LastError() == SOCKET_EWOULDBLOCK || 
             LastError() == SOCKET_EAGAIN)
-            return -2;
+            return IO_ERR_WANT_WRITE;
 
         else if (LastError() == SOCKET_ECONNRESET)
-            return -3;
+            return IO_ERR_CONN_RST;
 
         else if (LastError() == SOCKET_EINTR)
-            return -4;
+            return IO_ERR_ISR;
 
         else if (LastError() == SOCKET_EPIPE)
-            return -5;
+            return IO_ERR_CONN_CLOSE;
 
         else
-            return -1;
+            return IO_ERR_GENERAL;
     }
  
     return sent;
