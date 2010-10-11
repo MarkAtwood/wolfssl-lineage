@@ -41,10 +41,12 @@
 
 #ifdef USE_WINDOWS_API 
     #include <windows.h>
-#elif THREADX
+#elif defined(THREADX)
     #ifndef SINGLE_THREADED
         #include "tx_api.h"
     #endif
+#elif defined(MICRIUM)
+    /* do nothing, just don't pick Unix */
 #else
     #include <unistd.h>
     #ifndef SINGLE_THREADED
@@ -419,9 +421,11 @@ int  SetCipherList(SSL_CTX* ctx, const char* list);
 typedef int (*CallbackIORecv)(char *buf, int sz, void *ctx);
 typedef int (*CallbackIOSend)(char *buf, int sz, void *ctx);
 
-/* default IO callbacks */
-int EmbedReceive(char *buf, int sz, void *ctx);
-int EmbedSend(char *buf, int sz, void *ctx);
+#ifndef CYASSL_USER_IO
+    /* default IO callbacks */
+    int EmbedReceive(char *buf, int sz, void *ctx);
+    int EmbedSend(char *buf, int sz, void *ctx);
+#endif
 
 #ifdef CYASSL_DTLS
     int IsUDP(void*);
@@ -1027,7 +1031,7 @@ word32  LowResTimer(void);
         #define LockMutex(m)     tx_mutex_get(m, TX_WAIT_FOREVER)
         #define UnLockMutex(m)   tx_mutex_put(m)
 
-    #elif deinfed(MICRIUM)
+    #elif defined(MICRIUM)
         typedef OS_MUTEX CyaSSL_Mutex;
 
         #define InitMutex(m)     NetSecure_OS_MutexCreate(m)

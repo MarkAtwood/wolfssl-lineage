@@ -37,11 +37,31 @@
 /* #define MICRIUM */
 
 #ifdef MICRIUM
+
     #include "net_secure_cfg.h"
     #include "net_secure_os.h"
-    /* uncomment next line once file exists that contains enabled/disabled
-       flags to turn on/off CyaSSL settings based on Micrium setup */
-    /* #include "cyassl_micrium.h" */
+
+    #if (NET_SECURE_CFG_DEBUG_EN == DEF_ENABLED)
+        #define DEBUG_CYASSL
+    #else
+        #undef  DEBUG_CYASSL
+    #endif
+
+    #if (NET_SECURE_CFG_FS_EN == DEF_DISABLED)
+        #define NO_FILESYSTEM
+    #else
+        #undef  NO_FILESYSTEM
+    #endif
+
+    #if (NET_SECURE_CFG_OPENSSL_EXTRA_EN == DEF_ENABLED)
+        #define OPENSSL_EXTRA
+    #else
+        #undef  OPENSSL_EXTRA
+    #endif
+
+    #define NO_WRITEV
+    #define CYASSL_USER_IO
+
 #endif /* MICRIUM */
 
 /* Place any other flags or defines here */

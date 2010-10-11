@@ -561,7 +561,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
 }
 
 
-void BIO_free(BIO*);  /* cyassl_int doesn't have */
+int BIO_free(BIO*);  /* cyassl_int doesn't have */
 
 
 void FreeSSL(SSL* ssl)
@@ -636,7 +636,7 @@ ProtocolVersion MakeDTLSv1(void)
     }
 
 
-#elif THREADX
+#elif defined(THREADX)
 
     #include "rtptime.h"
 
@@ -646,7 +646,7 @@ ProtocolVersion MakeDTLSv1(void)
     }
 
 
-#elif MICRIUM
+#elif defined(MICRIUM)
 
     word32 LowResTimer(void)
     {
@@ -3289,6 +3289,10 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             word32  privSz;
             DhKey   key;
 
+            if (serverP.buffer == 0 || serverG.buffer == 0 ||
+                                       serverPub.buffer == 0)
+                return NO_PEER_KEY;
+
             InitDhKey(&key);
             ret = DhSetKey(&key, serverP.buffer, serverP.length,
                            serverG.buffer, serverG.length);
@@ -4157,6 +4161,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         if (logging)
 #ifdef THREADX
             dc_log_printf("%s\n", msg);
+#elif defined(MICRIUM)
+            NET_SECURE_TRACE_DBG(("%s\n\r", msg));
 #else
             fprintf(stderr, "%s\n", msg);
 #endif

@@ -97,7 +97,7 @@ int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
 }
 
 
-#elif THREADX
+#elif defined(THREADX)
 
 #include "rtprand.h"   /* rtp_rand () */
 #include "rtptime.h"   /* rtp_get_system_msec() */
@@ -118,7 +118,7 @@ int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
 }
 
 
-#elif MICRIUM
+#elif defined(MICRIUM)
 
 /* just for testing, wirte a real one ! */
 int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
@@ -136,12 +136,12 @@ int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
     return 0;
 }
 
-#elif NO_DEV_RANDOM
+#elif defined(NO_DEV_RANDOM)
 
 #error "you need to write an os specific GenerateSeed() here"
 
 
-#else /* !USE_WINDOWS_API && !THREADX && !NO_DEV_RANDOM */
+#else /* !USE_WINDOWS_API && !THREADX && !MICRIUM && !NO_DEV_RANDOM */
 
 
 /* may block */

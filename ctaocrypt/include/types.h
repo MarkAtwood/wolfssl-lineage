@@ -101,9 +101,9 @@ enum {
 #ifndef NO_INLINE
     #ifdef _MSC_VER
         #define INLINE __inline
-    #elif __GNUC__
+    #elif defined(__GNUC__)
         #define INLINE inline
-    #elif THREADX
+    #elif defined(THREADX)
         #define INLINE _Inline
     #else
         #define INLINE 
