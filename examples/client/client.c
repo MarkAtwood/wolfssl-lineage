@@ -89,8 +89,12 @@ void client_test(void* args)
     SSL_CTX_set_default_passwd_cb(ctx, PasswordCallBack);
 #endif
 
+#ifndef NO_FILESYSTEM
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
         err_sys("can't load ca file");
+#else
+    load_buffer(ctx, caCert, CYASSL_CA);
+#endif
 
     if (argc == 3) {
         /*  ./client server securePort  */
@@ -101,6 +105,7 @@ void client_test(void* args)
     else if (argc == 1) {
         /* ./client          // plain mode */
         /* for client cert authentication if server requests */
+#ifndef NO_FILESYSTEM
         if (SSL_CTX_use_certificate_file(ctx, cliCert, SSL_FILETYPE_PEM)
                 != SSL_SUCCESS)
             err_sys("can't load client cert file");
@@ -108,6 +113,10 @@ void client_test(void* args)
         if (SSL_CTX_use_PrivateKey_file(ctx, cliKey, SSL_FILETYPE_PEM)
                 != SSL_SUCCESS)
             err_sys("can't load client key file");
+#else
+        load_buffer(ctx, cliCert, CYASSL_CERT);
+        load_buffer(ctx, cliKey, CYASSL_KEY);
+#endif
 
         tcp_connect(&sockfd, yasslIP, yasslPort);
     }
@@ -263,26 +272,6 @@ void client_test(void* args)
     }
 
 #endif /* NO_MAIN_DRIVER */
-
-
-#ifdef NO_FILESYSTEM
-
-    void test_buffer(SSL_CTX* ctx)
-    {
-        /* test buffer load */
-        long  sz = 0;
-        byte  buff[4096];
-        FILE* file = fopen(caCert, "rb");
-        fseek(file, 0, SEEK_END);
-        sz = ftell(file);
-        rewind(file);
-        fread(buff, sizeof(buff), 1, file);
-   
-        if (CyaSSL_CTX_load_verify_buffer(ctx, buff, sz) != SSL_SUCCESS)
-            err_sys("can't load buffer ca file");
-    }
-
-#endif /* NO_FILESYSTEM */
 
 
 

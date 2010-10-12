@@ -73,9 +73,8 @@ THREAD_RETURN CYASSL_API server_test(void* args)
 
     SSL_CTX_set_verify(ctx,SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,0);
 
-    if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
-        err_sys("can't load ca file");
 
+#ifndef NO_FILESYSTEM
     /* for client auth */
     if (SSL_CTX_load_verify_locations(ctx, cliCert, 0) != SSL_SUCCESS)
         err_sys("can't load ca file");
@@ -87,6 +86,11 @@ THREAD_RETURN CYASSL_API server_test(void* args)
     if (SSL_CTX_use_PrivateKey_file(ctx, svrKey, SSL_FILETYPE_PEM)
             != SSL_SUCCESS)
         err_sys("can't load server key file");
+#else
+    load_buffer(ctx, cliCert, CYASSL_CA);
+    load_buffer(ctx, svrCert, CYASSL_CERT);
+    load_buffer(ctx, svrKey,  CYASSL_KEY);
+#endif
 
     ssl = SSL_new(ctx);
     tcp_accept(&sockfd, &clientfd, (func_args*)args);

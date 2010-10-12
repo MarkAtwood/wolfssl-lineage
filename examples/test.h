@@ -108,7 +108,6 @@
     static const char* cliKey  = "../certs/client-key.pem";
 #endif
 
-
 typedef struct tcp_ready {
     int ready;              /* predicate */
 #ifdef _POSIX_THREADS
@@ -480,7 +479,45 @@ static INLINE unsigned int my_psk_server_cb(SSL* ssl, const char* identity,
 #endif /* USE_WINDOWS_API */
 
 
+#ifdef NO_FILESYSTEM
 
+    enum {
+        CYASSL_CA   = 1,
+        CYASSL_CERT = 2,
+        CYASSL_KEY  = 3
+    };
+
+    static INLINE void load_buffer(SSL_CTX* ctx, const char* fname, int type)
+    {
+        /* test buffer load */
+        long  sz = 0;
+        byte  buff[4096];
+        FILE* file = fopen(fname, "rb");
+
+        if (!file)
+            err_sys("can't open file for buffer load");
+        fseek(file, 0, SEEK_END);
+        sz = ftell(file);
+        rewind(file);
+        fread(buff, sizeof(buff), 1, file);
+  
+        if (type == CYASSL_CA) {
+            if (CyaSSL_CTX_load_verify_buffer(ctx, buff, sz) != SSL_SUCCESS)
+                err_sys("can't load buffer ca file");
+        }
+        else if (type == CYASSL_CERT) {
+            if (CyaSSL_CTX_use_certificate_buffer(ctx, buff, sz,
+                        SSL_FILETYPE_PEM) != SSL_SUCCESS)
+                err_sys("can't load buffer cert file");
+        }
+        else if (type == CYASSL_KEY) {
+            if (CyaSSL_CTX_use_PrivateKey_buffer(ctx, buff, sz,
+                        SSL_FILETYPE_PEM) != SSL_SUCCESS)
+                err_sys("can't load buffer key file");
+        }
+    }
+
+#endif /* NO_FILESYSTEM */
 
 
 #endif /* CyaSSL_TEST_H */

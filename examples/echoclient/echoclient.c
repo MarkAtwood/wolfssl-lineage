@@ -52,8 +52,12 @@ void echoclient_test(void* args)
 #endif
     ctx    = SSL_CTX_new(method);
 
+#ifndef NO_FILESYSTEM
     if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
         err_sys("can't load ca file");
+#else
+    load_buffer(ctx, caCert, CYASSL_CA);
+#endif
 
 #ifdef OPENSSL_EXTRA
     SSL_CTX_set_default_passwd_cb(ctx, PasswordCallBack);

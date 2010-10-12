@@ -65,9 +65,7 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
     SSL_CTX_set_default_passwd_cb(ctx, PasswordCallBack);
 #endif
 
-    if (SSL_CTX_load_verify_locations(ctx, caCert, 0) != SSL_SUCCESS)
-        err_sys("can't load ca file");
-
+#ifndef NO_FILESYSTEM
     if (SSL_CTX_use_certificate_file(ctx, svrCert, SSL_FILETYPE_PEM)
             != SSL_SUCCESS)
         err_sys("can't load server cert file");
@@ -75,6 +73,10 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
     if (SSL_CTX_use_PrivateKey_file(ctx, svrKey, SSL_FILETYPE_PEM)
             != SSL_SUCCESS)
         err_sys("can't load server key file");
+#else
+    load_buffer(ctx, svrCert, CYASSL_CERT);
+    load_buffer(ctx, svrKey,  CYASSL_KEY);
+#endif
 
     SignalReady(args);
 
