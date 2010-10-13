@@ -23,7 +23,7 @@
 #include "openssl/ssl.h"
 #include "cyassl_int.h"
 #include "cyassl_error.h"
-#include "hmac.h"
+#include "../ctaocrypt/include/hmac.h"
 
 #include <string.h>
 

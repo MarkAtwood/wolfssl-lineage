@@ -27,12 +27,12 @@
 
 #include "types.h"
 #include "random.h"
-#include "md5.h"
 #include "des3.h"
-#include "aes.h"
 #include "hc128.h"
 #include "rabbit.h"
 #include "asn.h"
+#include "../ctaocrypt/include/md5.h"
+#include "../ctaocrypt/include/aes.h"
 
 #ifdef CYASSL_CALLBACKS
     #include "openssl/cyassl_callbacks.h"
