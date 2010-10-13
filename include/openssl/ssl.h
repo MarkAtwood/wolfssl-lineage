@@ -603,7 +603,7 @@ const unsigned char* CyaSSL_get_sessionID(const SSL_SESSION* session);
 #ifndef _WIN32
     #ifndef NO_WRITEV
         #include <sys/uio.h>
-        /* allow writv style writing */
+        /* allow writev style writing */
         int CyaSSL_writev(SSL* ssl, const struct iovec* iov, int iovcnt);
     #endif
 #endif
@@ -616,6 +616,17 @@ int CyaSSL_CTX_use_PrivateKey_buffer(SSL_CTX*, const unsigned char*, long, int);
 int CyaSSL_CTX_use_certificate_chain_buffer(SSL_CTX*,const unsigned char*,long);
 
 #endif /* NO_FILESYSTEM */
+
+
+/* I/O callbacks */
+typedef int (*CallbackIORecv)(char *buf, int sz, void *ctx);
+typedef int (*CallbackIOSend)(char *buf, int sz, void *ctx);
+
+void CyaSSL_SetIORecv(SSL_CTX*, CallbackIORecv);
+void CyaSSL_SetIOSend(SSL_CTX*, CallbackIOSend);
+
+void CyaSSL_SetIOReadCtx(SSL* ssl, void *ctx);
+void CyaSSL_SetIOWriteCtx(SSL* ssl, void *ctx);
 
 
 #ifdef CYASSL_CALLBACKS

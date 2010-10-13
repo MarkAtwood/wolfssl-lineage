@@ -171,22 +171,26 @@ int EmbedSend(char *buf, int sz, void *ctx)
 
 #endif /* CYASSL_USER_IO */
 
-void SetCallbackIORecv_Ctx(SSL_CTX *ctx, CallbackIORecv CBIORecv) {
+void CyaSSL_SetIORecv(SSL_CTX *ctx, CallbackIORecv CBIORecv)
+{
     ctx->CBIORecv = CBIORecv;
 }
 
 
-void SetCallbackIOSend_Ctx(SSL_CTX *ctx, CallbackIOSend CBIOSend) {
+void CyaSSL_SetIOSend(SSL_CTX *ctx, CallbackIOSend CBIOSend)
+{
     ctx->CBIOSend = CBIOSend;
 }
 
 
-void SetCallbackIO_ReadCtx(SSL* ssl, void *rctx) {
+void CyaSSL_SetIOReadCtx(SSL* ssl, void *rctx)
+{
 	ssl->IOCB_ReadCtx = rctx;
 }
 
 
-void SetCallbackIO_WriteCtx(SSL* ssl, void *wctx) {
+void CyaSSL_SetIOWriteCtx(SSL* ssl, void *wctx)
+{
 	ssl->IOCB_WriteCtx = wctx;
 }
 

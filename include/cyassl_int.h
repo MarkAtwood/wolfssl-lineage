@@ -313,6 +313,8 @@ enum states {
     typedef struct X509_NAME   X509_NAME;
 
     typedef int (*pem_password_cb)(char*, int, int, void*);
+    typedef int (*CallbackIORecv)(char *buf, int sz, void *ctx);
+    typedef int (*CallbackIOSend)(char *buf, int sz, void *ctx);
 #endif /* SSL_TYPES_DEFINED */
 
 
@@ -417,9 +419,6 @@ int  SetCipherList(SSL_CTX* ctx, const char* list);
                           unsigned char*, unsigned int);
 #endif /* PSK_TYPES_DEFINED */
 
-/* I/O callbacks */
-typedef int (*CallbackIORecv)(char *buf, int sz, void *ctx);
-typedef int (*CallbackIOSend)(char *buf, int sz, void *ctx);
 
 #ifndef CYASSL_USER_IO
     /* default IO callbacks */
@@ -472,10 +471,6 @@ struct SSL_CTX {
 
 void InitSSL_Ctx(SSL_CTX*, SSL_METHOD*);
 void FreeSSL_Ctx(SSL_CTX*);
-
-void SetCallbackIORecv_Ctx(SSL_CTX*, CallbackIORecv);
-void SetCallbackIOSend_Ctx(SSL_CTX*, CallbackIOSend);
-void SetCallbackIOCtx(SSL* ssl, void *ctx);
 
 int DeriveTlsKeys(SSL* ssl);
 int ProcessOldClientHello(SSL* ssl, const byte* input, word32* inOutIdx,
