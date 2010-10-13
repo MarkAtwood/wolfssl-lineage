@@ -1740,7 +1740,14 @@ int CyaSSL_set_compression(SSL* ssl)
 
     void SSL_set_accept_state(SSL* ssl)
     {
+        byte havePSK = 0;
+
         ssl->options.side = SERVER_END;
+        /* reset suites in case user switched */
+#ifndef NO_PSK
+        havePSK = ssl->options.havePSK;
+#endif
+        InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, havePSK);
     }
 
 
