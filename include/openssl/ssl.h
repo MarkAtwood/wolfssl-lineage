@@ -31,8 +31,10 @@
 
 #include <stdio.h>   /* ERR_print fp */
 
+#include "os_settings.h"   /* for users not using preprocessor flags */
+
 #ifdef YASSL_PREFIX
-#include "prefix_ssl.h"
+    #include "prefix_ssl.h"
 #endif
 
 #undef X509_NAME   /* wincrypt.h clash */

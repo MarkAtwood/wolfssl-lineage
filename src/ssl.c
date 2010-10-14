@@ -573,7 +573,9 @@ static int AddCA(SSL_CTX* ctx, buffer der)
     #define XREWIND    rewind
     #define XFREAD     fread
     #define XFCLOSE    fclose
+    #define XSEEK_END  SEEK_END
 #else
+    #include <fs.h>
     #define XFILE      FS_FILE
     #define XFOPEN     fs_fopen 
     #define XFSEEK     fs_fseek
@@ -581,6 +583,7 @@ static int AddCA(SSL_CTX* ctx, buffer der)
     #define XREWIND    fs_rewind
     #define XFREAD     fs_fread
     #define XFCLOSE    fs_fclose
+    #define XSEEK_END  FS_SEEK_END
 #endif
 
 static int ProcessFile(SSL_CTX* ctx, const char* fname, int format, int type)
@@ -588,10 +591,10 @@ static int ProcessFile(SSL_CTX* ctx, const char* fname, int format, int type)
     byte   buffer[4096];
     int    ret;
     long   sz = 0;
-    XFILE* file = fopen(fname, "rb"); 
+    XFILE* file = XFOPEN(fname, "rb"); 
 
     if (!file) return SSL_BAD_FILE;
-    XFSEEK(file, 0, SEEK_END);
+    XFSEEK(file, 0, XSEEK_END);
     sz = XFTELL(file);
     XREWIND(file);
 
