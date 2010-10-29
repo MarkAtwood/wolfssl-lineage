@@ -314,17 +314,24 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
 }
 
 
-void FreeSSL_Ctx(SSL_CTX* ctx)
+/* In case contexts are held in array and don't want to free actual ctx */
+void SSL_CtxResourceFree(SSL_CTX* ctx)
 {
     XFREE(ctx->privateKey.buffer, ctx->heap);
     XFREE(ctx->certificate.buffer, ctx->heap);
     XFREE(ctx->method, ctx->heap);
 
     FreeSigners(ctx->caList, ctx->heap);
-    
+}
+
+
+void FreeSSL_Ctx(SSL_CTX* ctx)
+{
+    SSL_CtxResourceFree(ctx);
     XFREE(ctx, ctx->heap);
 }
 
+    
 
 void InitSuites(Suites* suites, ProtocolVersion pv, byte haveDH, byte havePSK)
 {
@@ -439,8 +446,14 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->buffers.key.buffer           = 0;
     ssl->buffers.inputBuffer.length   = 0;
     ssl->buffers.inputBuffer.idx      = 0;
+    ssl->buffers.inputBuffer.buffer = ssl->buffers.inputBuffer.staticBuffer;
+    ssl->buffers.inputBuffer.bufferSize  = STATIC_BUFFER_LEN;
+    ssl->buffers.inputBuffer.dynamicFlag = 0;
     ssl->buffers.outputBuffer.length  = 0;
     ssl->buffers.outputBuffer.idx     = 0;
+    ssl->buffers.outputBuffer.buffer = ssl->buffers.outputBuffer.staticBuffer;
+    ssl->buffers.outputBuffer.bufferSize  = STATIC_BUFFER_LEN;
+    ssl->buffers.outputBuffer.dynamicFlag = 0;
     ssl->buffers.domainName.buffer    = 0;
     ssl->buffers.serverDH_P.buffer    = 0;
     ssl->buffers.serverDH_G.buffer    = 0;
@@ -468,6 +481,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->options.sentNotify   = 0;
     ssl->options.usingCompression = 0;
     ssl->options.haveDH    = ctx->haveDH;
+    ssl->options.havePeerCert = 0; 
     ssl->options.usingPSK_cipher = 0;
     ssl->options.sendAlertState = 0;
 #ifndef NO_PSK
@@ -514,8 +528,10 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->buffers.key = ctx->privateKey;
     ssl->caList = ctx->caList;
 
+#ifdef OPENSSL_EXTRA
     ssl->peerCert.issuer.sz    = 0;
     ssl->peerCert.subject.sz   = 0;
+#endif
     
     /* make sure server has cert and key unless using PSK */
     if (ssl->options.side == SERVER_END && !havePSK)
@@ -564,7 +580,8 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
 int BIO_free(BIO*);  /* cyassl_int doesn't have */
 
 
-void FreeSSL(SSL* ssl)
+/* In case holding SSL object in array and don't want to free actual ssl */
+void SSL_ResourceFree(SSL* ssl)
 {
     XFREE(ssl->buffers.serverDH_Priv.buffer, ssl->heap);
     XFREE(ssl->buffers.serverDH_Pub.buffer, ssl->heap);
@@ -572,6 +589,10 @@ void FreeSSL(SSL* ssl)
     XFREE(ssl->buffers.serverDH_P.buffer, ssl->heap);
     XFREE(ssl->buffers.domainName.buffer, ssl->heap);
     FreeRsaKey(&ssl->peerRsaKey);
+    if (ssl->buffers.inputBuffer.dynamicFlag)
+        ShrinkInputBuffer(ssl, FORCED_FREE);
+    if (ssl->buffers.outputBuffer.dynamicFlag)
+        ShrinkOutputBuffer(ssl);
 #if defined(OPENSSL_EXTRA) || defined(GOAHEAD_WS)
     BIO_free(ssl->biord);
     if (ssl->biord != ssl->biowr)        /* in case same as write */
@@ -580,7 +601,12 @@ void FreeSSL(SSL* ssl)
 #ifdef HAVE_LIBZ
     FreeStreams(ssl);
 #endif
+}
 
+
+void FreeSSL(SSL* ssl)
+{
+    SSL_ResourceFree(ssl);
     XFREE(ssl, ssl->heap);
 }
 
@@ -811,6 +837,43 @@ retry:
     return recvd;
 }
 
+
+/* Switch dynamic output buffer back to static, buffer is assumed clear */
+void ShrinkOutputBuffer(SSL* ssl)
+{
+    CYASSL_MSG("Shrinking output buffer\n");
+    XFREE(ssl->buffers.outputBuffer.buffer, ssl->heap);
+    ssl->buffers.outputBuffer.buffer = ssl->buffers.outputBuffer.staticBuffer;
+    ssl->buffers.outputBuffer.bufferSize  = STATIC_BUFFER_LEN;
+    ssl->buffers.outputBuffer.dynamicFlag = 0;
+}
+
+
+/* Switch dynamic input buffer back to static, keep any remaining input */
+/* forced free means cleaning up */
+void ShrinkInputBuffer(SSL* ssl, int forcedFree)
+{
+    int usedLength = ssl->buffers.inputBuffer.length -
+                     ssl->buffers.inputBuffer.idx;
+    if (!forcedFree && usedLength > STATIC_BUFFER_LEN)
+        return;
+
+    CYASSL_MSG("Shrinking input buffer\n");
+
+    if (!forcedFree && usedLength)
+        memcpy(ssl->buffers.inputBuffer.staticBuffer,
+               ssl->buffers.inputBuffer.buffer + ssl->buffers.inputBuffer.idx,
+               usedLength);
+
+    XFREE(ssl->buffers.inputBuffer.buffer, ssl->heap);
+    ssl->buffers.inputBuffer.buffer = ssl->buffers.inputBuffer.staticBuffer;
+    ssl->buffers.inputBuffer.bufferSize  = STATIC_BUFFER_LEN;
+    ssl->buffers.inputBuffer.dynamicFlag = 0;
+    ssl->buffers.inputBuffer.idx = 0;
+    ssl->buffers.inputBuffer.length = usedLength;
+}
+
+
 int SendBuffered(SSL* ssl)
 {
     while (ssl->buffers.outputBuffer.length > 0) {
@@ -857,16 +920,75 @@ int SendBuffered(SSL* ssl)
     }
       
     ssl->buffers.outputBuffer.idx = 0;
+
+    if (ssl->buffers.outputBuffer.dynamicFlag)
+        ShrinkOutputBuffer(ssl);
+
     return 0;
 }
+
+
+/* Grow the output buffer, should only be to send cert, should be blank */
+static INLINE int GrowOutputBuffer(SSL* ssl, int size)
+{
+    byte* tmp = XMALLOC(size + ssl->buffers.outputBuffer.length, ssl->heap);
+    CYASSL_MSG("growing output buffer\n");
+   
+    if (!tmp) return -1;
+
+    if (ssl->buffers.outputBuffer.length)
+        memcpy(tmp, ssl->buffers.outputBuffer.buffer,
+               ssl->buffers.outputBuffer.length);
+
+    if (ssl->buffers.outputBuffer.dynamicFlag)
+        XFREE(ssl->buffers.outputBuffer.buffer, ssl->heap);
+
+    ssl->buffers.outputBuffer.dynamicFlag = 1;
+    ssl->buffers.outputBuffer.buffer = tmp;
+    ssl->buffers.outputBuffer.bufferSize = size +
+                                           ssl->buffers.outputBuffer.length; 
+    return 0;
+}
+
+
+/* Grow the input buffer, should only be to read cert or big app data */
+static INLINE int GrowInputBuffer(SSL* ssl, int size, int usedLength)
+{
+    byte* tmp = XMALLOC(size + usedLength, ssl->heap);
+    CYASSL_MSG("growing input buffer\n");
+   
+    if (!tmp) return -1;
+
+    if (usedLength)
+        memcpy(tmp, ssl->buffers.inputBuffer.buffer +
+                    ssl->buffers.inputBuffer.idx, usedLength);
+
+    if (ssl->buffers.inputBuffer.dynamicFlag)
+        XFREE(ssl->buffers.inputBuffer.buffer, ssl->heap);
+
+    ssl->buffers.inputBuffer.dynamicFlag = 1;
+    ssl->buffers.inputBuffer.buffer = tmp;
+    ssl->buffers.inputBuffer.bufferSize = size + usedLength;
+    ssl->buffers.inputBuffer.idx    = 0;
+    ssl->buffers.inputBuffer.length = usedLength;
+
+    return 0;
+}
+
 
 /* check avalaible size into outbut buffer */
 static INLINE int CheckAvalaibleSize(SSL *ssl, int size)
 {
-    if (BUFFER16K_LEN - ssl->buffers.outputBuffer.length < (word32)size) {
+    if ((word32)size > ssl->buffers.outputBuffer.bufferSize)
+        if (GrowOutputBuffer(ssl, size) < 0)
+            return MEMORY_E;
+
+    if (ssl->buffers.outputBuffer.bufferSize - ssl->buffers.outputBuffer.length
+                                             < (word32)size) {
         if (SendBuffered(ssl) == SOCKET_ERROR_E)
             return SOCKET_ERROR_E;
-        if (BUFFER16K_LEN - ssl->buffers.outputBuffer.length < (word32)size) 
+        if (ssl->buffers.outputBuffer.bufferSize -
+                                ssl->buffers.outputBuffer.length < (word32)size)
             return WANT_WRITE;
     }
     return 0;
@@ -906,7 +1028,7 @@ static int GetRecordHeader(SSL* ssl, const byte* input, word32* inOutIdx,
     }
 
     /* record layer length check */
-    if (*size > (MAX_RECORD_SIZE + MAX_COMP_EXTRA + MAX_MSG_EXTRA))
+    if (*size > (MAX_RECORD_SIZE + COMP_EXTRA + MAX_MSG_EXTRA))
         return LENGTH_ERROR;
 
     /* verify record type here as well */
@@ -1073,12 +1195,15 @@ static int DoCertificate(SSL* ssl, byte* input, word32* inOutIdx)
         /* first one has peer's key */
         firstTime = 0;
 
+        ssl->options.havePeerCert = 1;
         /* set X509 format */
+#ifdef OPENSSL_EXTRA
         ssl->peerCert.issuer.sz    = (int)strlen(dCert.issuer) + 1;
         strncpy(ssl->peerCert.issuer.name, dCert.issuer, ASN_NAME_MAX);
         ssl->peerCert.subject.sz   = (int)strlen(dCert.subject) + 1;
         strncpy(ssl->peerCert.subject.name, dCert.subject, ASN_NAME_MAX);
-            
+#endif    
+
         if (!ssl->options.verifyNone && ssl->buffers.domainName.buffer)
             if (strncmp((char*)ssl->buffers.domainName.buffer,
                         dCert.subjectCN,
@@ -1297,11 +1422,10 @@ static INLINE void Encrypt(SSL* ssl, byte* out, const byte* input, word32 sz)
             case aes:
 #ifdef CYASSL_AESNI
                 if ((word)input % 16) {
-                    buffer16K buffer;
-                    memcpy(buffer.buffer, input, sz);
-                    AesCbcEncrypt(&ssl->encrypt.aes, buffer.buffer,
-                                  buffer.buffer, sz);
-                    memcpy(out, buffer.buffer, sz);
+                    byte buffer[MAX_RECORD_SIZE + COMP_EXTRA + MAX_MSG_EXTRA];
+                    memcpy(buffer, input, sz);
+                    AesCbcEncrypt(&ssl->encrypt.aes, buffer, buffer, sz);
+                    memcpy(out, buffer, sz);
                     break;
                 }
 #endif
@@ -1508,7 +1632,7 @@ static int GetInputData(SSL *ssl, size_t size)
     
     /* check max input length */
     usedLength = ssl->buffers.inputBuffer.length - ssl->buffers.inputBuffer.idx;
-    maxLength  = BUFFER16K_LEN - usedLength;
+    maxLength  = ssl->buffers.inputBuffer.bufferSize - usedLength;
     inSz       = (int)(size - usedLength);      /* from last partial read */
 
 #ifdef CYASSL_DTLS
@@ -1516,9 +1640,13 @@ static int GetInputData(SSL *ssl, size_t size)
         inSz = 1500;       /* read ahead up to MTU */
 #endif
     
-    if (inSz > maxLength || inSz <= 0) {
-        return BUFFER_ERROR;
+    if (inSz > maxLength) {
+        if (GrowInputBuffer(ssl, size, usedLength) < 0)
+            return MEMORY_E;
     }
+           
+    if (inSz <= 0)
+        return BUFFER_ERROR;
     
     /* Put buffer data at start if not there */
     if (usedLength > 0 && ssl->buffers.inputBuffer.idx != 0)
@@ -2222,7 +2350,7 @@ int SendData(SSL* ssl, const void* buffer, int sz)
     }
 
     for (;;) {
-        int   len = min(sz - sent, MAX_RECORD_SIZE);
+        int   len = min(sz - sent, RECORD_SIZE);
         byte* out;
         byte* sendBuffer = (byte*)buffer + sent;  /* may switch on comp */
         int   buffSz = len;                       /* may switch on comp */
@@ -2240,8 +2368,8 @@ int SendData(SSL* ssl, const void* buffer, int sz)
 #endif
 
         /* check for avalaible size */
-        if ((ret = CheckAvalaibleSize(ssl, len + MAX_COMP_EXTRA +
-                        MAX_MSG_EXTRA)) != 0)
+        if ((ret = CheckAvalaibleSize(ssl, len + COMP_EXTRA +
+                                      MAX_MSG_EXTRA)) != 0)
             return ret;
 
         /* get ouput buffer */
@@ -2320,7 +2448,10 @@ int ReceiveData(SSL* ssl, byte* output, int sz)
     memcpy(output, ssl->buffers.clearOutputBuffer.buffer, size);
     ssl->buffers.clearOutputBuffer.length -= size;
     ssl->buffers.clearOutputBuffer.buffer += size;
-    
+   
+    if (ssl->buffers.inputBuffer.dynamicFlag)
+       ShrinkInputBuffer(ssl, NO_FORCED_FREE);
+
     CYASSL_LEAVE("ReceiveData()", size);
     return size;
 }
@@ -4038,7 +4169,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         byte*  out;
 
         if (ssl->options.verifyPeer && ssl->options.failNoCert)
-            if (!ssl->peerCert.issuer.sz) {
+            if (!ssl->options.havePeerCert) {
                 CYASSL_MSG("client didn't present peer cert");
                 return NO_PEER_CERT;
             }

@@ -167,7 +167,7 @@ int SSL_read(SSL* ssl, void* buffer, int sz)
         errno = 0;
 #endif
 
-    ret = ReceiveData(ssl, (byte*)buffer, min(sz, MAX_RECORD_SIZE));
+    ret = ReceiveData(ssl, (byte*)buffer, min(sz, RECORD_SIZE));
 
     CYASSL_LEAVE("SSL_read()", ret);
 
@@ -934,6 +934,8 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
             CYASSL_MSG("connect state: SECOND_REPLY_DONE");
 
         case SECOND_REPLY_DONE:
+            if (ssl->buffers.inputBuffer.dynamicFlag)
+                ShrinkInputBuffer(ssl, NO_FORCED_FREE);
             CYASSL_LEAVE("SSL_connect()", SSL_SUCCESS);
             return SSL_SUCCESS;
 
@@ -1132,6 +1134,8 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
             CYASSL_MSG("accept state ACCEPT_THIRD_REPLY_DONE");
 
         case ACCEPT_THIRD_REPLY_DONE :
+            if (ssl->buffers.inputBuffer.dynamicFlag)
+                ShrinkInputBuffer(ssl, NO_FORCED_FREE);
             CYASSL_LEAVE("SSL_accept()", SSL_SUCCESS);
             return SSL_SUCCESS;
 
@@ -1369,7 +1373,7 @@ int CyaSSL_set_compression(SSL* ssl)
            because of SSL_write behavior and because front adds may be small */
         int CyaSSL_writev(SSL* ssl, const struct iovec* iov, int iovcnt)
         {
-            byte  tmp[MAX_RECORD_SIZE];
+            byte  tmp[RECORD_SIZE];
             byte* buffer    = tmp;
             int   send      = 0;
             int   newBuffer = 0;

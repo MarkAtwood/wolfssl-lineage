@@ -965,7 +965,7 @@ static int GetRecordHeader(const byte* input, RecordLayerHeader* rh, int* size)
     memcpy(rh, input, RECORD_HEADER_SZ);
     *size = (rh->length[0] << 8) | rh->length[1];
 
-    if (*size > (MAX_RECORD_SIZE + MAX_COMP_EXTRA + MAX_MSG_EXTRA))
+    if (*size > (RECORD_SIZE + COMP_EXTRA + MAX_MSG_EXTRA))
         return LENGTH_ERROR;
 
     return 0;
@@ -1950,7 +1950,7 @@ static int HaveMoreInput(SnifferSession* session, const byte** sslFrame,
                                 session->sslClient->buffers.inputBuffer.buffer;
     
     while (*front && ((*front)->begin == *expected) ) {
-        word32 room = BUFFER16K_LEN - *length;
+        word32 room = STATIC_BUFFER_LEN - *length;
         word32 packetLen = (*front)->end - (*front)->begin + 1;
         
         if (packetLen <= room) {

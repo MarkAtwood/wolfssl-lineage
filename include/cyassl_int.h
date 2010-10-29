@@ -385,6 +385,31 @@ typedef struct buffer {
     byte*  buffer;
 } buffer;
 
+
+enum {
+    FORCED_FREE = 1,
+    NO_FORCED_FREE = 0
+};
+
+#ifdef HAVE_LIBZ
+    #define COMP_EXTRA MAX_COMP_EXTRA
+#else
+    #define COMP_EXTRA 0
+#endif
+
+#ifdef CYASSL_SNIFFER
+    #define MTU_EXTRA MAX_MTU
+#else
+    #define MTU_EXTRA 0
+#endif
+
+#if defined(LARGE_STATIC_BUFFERS) || defined(CYASSL_SNIFFER)
+    #define RECORD_SIZE MAX_RECORD_SIZE
+#else
+    #define RECORD_SIZE 1024
+#endif
+
+
 /* CyaSSL input buffer
 
    RFC 2246:
@@ -393,13 +418,17 @@ typedef struct buffer {
        The length (in bytes) of the following TLSPlaintext.fragment.
        The length should not exceed 2^14.
 */
-#define BUFFER16K_LEN RECORD_HEADER_SZ + MAX_RECORD_SIZE + \
-                      MAX_COMP_EXTRA + MAX_MTU + MAX_MSG_EXTRA
+#define STATIC_BUFFER_LEN RECORD_HEADER_SZ + RECORD_SIZE + COMP_EXTRA + \
+        MTU_EXTRA + MAX_MSG_EXTRA
+
 typedef struct {
-    word32 length;
-    word32 idx;
-    ALIGN16 byte buffer[BUFFER16K_LEN];
-} buffer16K;
+    word32 length;       /* total buffer length used */
+    word32 idx;          /* idx to part of length already consumed */
+    byte*  buffer;       /* place holder for static or dynamic buffer */
+    ALIGN16 byte staticBuffer[STATIC_BUFFER_LEN];
+    word32 bufferSize;   /* current buffer size */
+    byte   dynamicFlag;  /* dynamic memory currently in use */
+} bufferStatic;
 
 /* Cipher Suites holder */
 typedef struct Suites {
@@ -471,6 +500,7 @@ struct SSL_CTX {
 
 void InitSSL_Ctx(SSL_CTX*, SSL_METHOD*);
 void FreeSSL_Ctx(SSL_CTX*);
+void SSL_CtxResourceFree(SSL_CTX*);
 
 int DeriveTlsKeys(SSL* ssl);
 int ProcessOldClientHello(SSL* ssl, const byte* input, word32* inOutIdx,
@@ -678,8 +708,8 @@ typedef struct Buffers {
     buffer          serverDH_G;
     buffer          serverDH_Pub;
     buffer          serverDH_Priv;
-    buffer16K       inputBuffer;
-    buffer16K       outputBuffer;
+    bufferStatic    inputBuffer;
+    bufferStatic    outputBuffer;
     buffer          clearOutputBuffer;
     int             prevSent;              /* previous plain text bytes sent
                                               when got WANT_READ            */
@@ -713,6 +743,7 @@ typedef struct Options {
     byte            acceptState;        /* nonblocking resume */
     byte            usingCompression;   /* are we using compression */
     byte            haveDH;             /* server DH parms set by user */
+    byte            havePeerCert;       /* do we have peer's cert */
     byte            usingPSK_cipher;    /* whether we're using psk as cipher */
     byte            sendAlertState;     /* nonblocking resume */ 
     byte            processReply;       /* nonblocking resume */
@@ -804,7 +835,6 @@ struct SSL {
     Options         options;
     Arrays          arrays;
     SSL_SESSION     session;
-    X509            peerCert;           /* X509 peer cert */
     RsaKey          peerRsaKey;
     byte            peerRsaKeyPresent;
     hmacfp          hmac;
@@ -823,11 +853,15 @@ struct SSL {
     byte            hsInfoOn;           /* track handshake info        */
     byte            toInfoOn;           /* track timeout   info        */
 #endif
+#ifdef OPENSSL_EXTRA
+    X509            peerCert;           /* X509 peer cert */
+#endif
 };
 
 
 int  InitSSL(SSL*, SSL_CTX*);
 void FreeSSL(SSL*);
+void SSL_ResourceFree(SSL*);
 
 
 enum {
@@ -963,6 +997,9 @@ int  StoreKeys(SSL* ssl, const byte* keyData);
 
 int IsTLS(const SSL* ssl);
 int IsAtLeastTLSv1_2(const SSL* ssl);
+
+void ShrinkInputBuffer(SSL* ssl, int forcedFree);
+void ShrinkOutputBuffer(SSL* ssl);
 
 #ifndef NO_CYASSL_CLIENT
     int SendClientHello(SSL*);
