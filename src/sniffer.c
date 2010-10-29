@@ -963,7 +963,7 @@ static int CheckTcpHdr(TcpHdr* tcphdr, TcpInfo* info, char* error)
 static int GetRecordHeader(const byte* input, RecordLayerHeader* rh, int* size)
 {
     memcpy(rh, input, RECORD_HEADER_SZ);
-    *size = ntohs(*((word16*)rh->length));
+    *size = (rh->length[0] << 8) | rh->length[1];
 
     if (*size > (MAX_RECORD_SIZE + MAX_COMP_EXTRA + MAX_MSG_EXTRA))
         return LENGTH_ERROR;
