@@ -519,6 +519,36 @@ static INLINE unsigned int my_psk_server_cb(SSL* ssl, const char* identity,
 
 #endif /* NO_FILESYSTEM */
 
+#ifdef VERIFY_CALLBACK
+
+static int myVerify(int preverify, X509_STORE_CTX* store)
+{
+    char buffer[80];
+
+    printf("In verification callback, error = %d, %s\n", store->error,
+                                        ERR_error_string(store->error, buffer));
+#ifdef OPENSSL_EXTRA
+    X509* peer = store->current_cert;
+    if (peer) {
+        char* issuer  = X509_NAME_oneline(X509_get_issuer_name(peer), 0, 0);
+        char* subject = X509_NAME_oneline(X509_get_subject_name(peer), 0, 0);
+        
+        printf("peer's cert info:\n issuer : %s\n subject: %s\n", issuer,
+                                                                  subject);
+        XFREE(subject, 0);
+        XFREE(issuer, 0);
+    }
+    else
+        printf("peer has no cert!\n");
+#endif
+    printf("Subject's domain name is %s\n", store->domain);
+
+    printf("Allowing to continue anyway (shouldn't do this, EVER!!!)\n");
+    return 1;
+}
+
+#endif /* VERIFY_CALLBACK */
+
 
 #endif /* CyaSSL_TEST_H */
 

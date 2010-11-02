@@ -167,7 +167,7 @@ int SSL_read(SSL* ssl, void* buffer, int sz)
         errno = 0;
 #endif
 
-    ret = ReceiveData(ssl, (byte*)buffer, min(sz, RECORD_SIZE));
+    ret = ReceiveData(ssl, (byte*)buffer, min(sz, OUTPUT_RECORD_SIZE));
 
     CYASSL_LEAVE("SSL_read()", ret);
 
@@ -338,10 +338,7 @@ static int AddCA(SSL_CTX* ctx, buffer der)
 
     static SessionRow SessionCache[SESSION_ROWS];
 
-    /* quiet compiler */
-    #ifndef SINGLE_THREADED
-        static CyaSSL_Mutex mutex;   /* SessionCache mutex */
-    #endif
+    static CyaSSL_Mutex mutex;   /* SessionCache mutex */
 
 #endif /* NO_SESSION_CACHE */
 
@@ -603,7 +600,7 @@ static int ProcessFile(SSL_CTX* ctx, const char* fname, int format, int type)
         return SSL_BAD_FILE;
     }
 
-    if (XFREAD(buffer, sizeof(buffer), 1, file) < 0) {
+    if ( (ret = XFREAD(buffer, sizeof(buffer), 1, file)) < 0) {
         XFCLOSE(file);
         return SSL_BAD_FILE;
     }
@@ -683,6 +680,8 @@ void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback vc)
 
     if (mode & SSL_VERIFY_FAIL_IF_NO_PEER_CERT)
         ctx->failNoCert = 1;
+
+    ctx->verifyCallback = vc;
 }
 
 
@@ -711,8 +710,10 @@ void SSL_load_error_strings(void)   /* compatibility only */
 
 int SSL_library_init(void)
 {
-    InitCyaSSL();
-    return SSL_SUCCESS;
+    if (InitCyaSSL() == 0)
+        return SSL_SUCCESS;
+    else
+        return -1;
 }
 
 
@@ -1148,15 +1149,21 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 #endif /* NO_CYASSL_SERVER */
 
 
-void InitCyaSSL(void)
+int InitCyaSSL(void)
 {
-    InitMutex(&mutex);
+    if (InitMutex(&mutex) == 0)
+        return 0;
+    else
+        return -1;
 }
 
 
-void FreeCyaSSL()
+int FreeCyaSSL(void)
 {
-    FreeMutex(&mutex);
+    if (FreeMutex(&mutex) == 0)
+        return 0;
+    else
+        return -1;
 }
 
 
@@ -1189,7 +1196,8 @@ SSL_SESSION* GetSession(SSL* ssl, byte* masterSecret)
 
     row = HashSession(id) % SESSION_ROWS;
 
-    LockMutex(&mutex);
+    if (LockMutex(&mutex) != 0)
+        return 0;
    
     if (SessionCache[row].totalCount >= SESSIONS_PER_ROW)
         idx = SESSIONS_PER_ROW - 1;
@@ -1239,16 +1247,17 @@ int SetSession(SSL* ssl, SSL_SESSION* session)
 }
 
 
-void AddSession(SSL* ssl)
+int AddSession(SSL* ssl)
 {
     word32 row, idx;
 
     if (ssl->options.sessionCacheOff)
-        return;
+        return 0;
 
     row = HashSession(ssl->arrays.sessionID) % SESSION_ROWS;
 
-    LockMutex(&mutex);
+    if (LockMutex(&mutex) != 0)
+        return -1;
 
     idx = SessionCache[row].nextIdx++;
 
@@ -1273,7 +1282,10 @@ void AddSession(SSL* ssl)
     if (SessionCache[row].nextIdx == SESSIONS_PER_ROW)
         SessionCache[row].nextIdx = 0;
 
-    UnLockMutex(&mutex);        
+    if (UnLockMutex(&mutex) != 0)
+        return -1;
+
+    return 0;
 }
 
 
@@ -1373,7 +1385,7 @@ int CyaSSL_set_compression(SSL* ssl)
            because of SSL_write behavior and because front adds may be small */
         int CyaSSL_writev(SSL* ssl, const struct iovec* iov, int iovcnt)
         {
-            byte  tmp[RECORD_SIZE];
+            byte  tmp[OUTPUT_RECORD_SIZE];
             byte* buffer    = tmp;
             int   send      = 0;
             int   newBuffer = 0;
@@ -2504,6 +2516,8 @@ int CyaSSL_set_compression(SSL* ssl)
     }
 
 
+#ifndef NO_MD4
+
     void MD4_Init(MD4_CTX* md4)
     {
         /* make sure we have a big enough buffer */
@@ -2525,6 +2539,7 @@ int CyaSSL_set_compression(SSL* ssl)
         Md4Final((Md4*)md4, digest); 
     }
 
+#endif /* NO_MD4 */
 
 
     BIO* BIO_pop(BIO* top)

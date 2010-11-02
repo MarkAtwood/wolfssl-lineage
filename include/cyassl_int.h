@@ -312,9 +312,18 @@ enum states {
     #undef X509_NAME
     typedef struct X509_NAME   X509_NAME;
 
+    typedef struct X509_STORE_CTX {
+        int   error;
+        int   error_depth;
+        X509* current_cert;          /* stunnel dereference */
+        char* domain;                /* subject CN domain name */
+    } X509_STORE_CTX;
+
+
     typedef int (*pem_password_cb)(char*, int, int, void*);
     typedef int (*CallbackIORecv)(char *buf, int sz, void *ctx);
     typedef int (*CallbackIOSend)(char *buf, int sz, void *ctx);
+    typedef int (*VerifyCallback)(int, X509_STORE_CTX*);
 #endif /* SSL_TYPES_DEFINED */
 
 
@@ -391,24 +400,38 @@ enum {
     NO_FORCED_FREE = 0
 };
 
+
+/* only use compression extra if using compression */
 #ifdef HAVE_LIBZ
     #define COMP_EXTRA MAX_COMP_EXTRA
 #else
     #define COMP_EXTRA 0
 #endif
 
+/* only the sniffer needs space in the buffer for an extra MTU record */
 #ifdef CYASSL_SNIFFER
     #define MTU_EXTRA MAX_MTU
 #else
     #define MTU_EXTRA 0
 #endif
 
+/* give user option to use 16K static buffers, sniffer needs them too */
 #if defined(LARGE_STATIC_BUFFERS) || defined(CYASSL_SNIFFER)
     #define RECORD_SIZE MAX_RECORD_SIZE
 #else
-    #define RECORD_SIZE 1024
+    #define RECORD_SIZE 128
 #endif
 
+
+/* user option to turn off 16K output option */
+/* if using small static buffers (default) and SSL_write tries to write data
+   larger record then we have, dynamically get it, unless user says only
+   write in static buffer chuncks  */
+#ifndef STATIC_CHUNKS_ONLY
+    #define OUTPUT_RECORD_SIZE MAX_RECORD_SIZE
+#else
+    #define OUTPUT_RECORD_SIZE RECORD_SIZE
+#endif
 
 /* CyaSSL input buffer
 
@@ -485,6 +508,7 @@ struct SSL_CTX {
     byte        quietShutdown;    /* don't send close notify */
     CallbackIORecv CBIORecv;
     CallbackIOSend CBIOSend;
+    VerifyCallback verifyCallback;      /* cert verification callback */
 #ifndef NO_PSK
     byte        havePSK;          /* psk key set by user */
     psk_client_callback client_psk_cb;  /* client callback */
@@ -991,7 +1015,7 @@ int ProcessReply(SSL*);
 int SetCipherSpecs(SSL*);
 int MakeMasterSecret(SSL*);
 
-void AddSession(SSL*);
+int  AddSession(SSL*);
 int  DeriveKeys(SSL* ssl);
 int  StoreKeys(SSL* ssl, const byte* keyData);
 
@@ -1031,51 +1055,24 @@ word32  LowResTimer(void);
 
 #ifdef SINGLE_THREADED
     typedef int CyaSSL_Mutex;
-
-    #define InitMutex(m)
-    #define FreeMutex(m)
-    #define LockMutex(m)
-    #define UnLockMutex(m)
-
-#else /* SINGLE_THREADED */
-
+#else /* MULTI_THREADED */
     #ifdef USE_WINDOWS_API 
         typedef CRITICAL_SECTION CyaSSL_Mutex;
-
-        #define InitMutex(m)     InitializeCriticalSection(m)
-        #define FreeMutex(m)     DeleteCriticalSection(m)
-        #define LockMutex(m)     EnterCriticalSection(m)
-        #define UnLockMutex(m)   LeaveCriticalSection(m)
-
     #elif defined(_POSIX_THREADS)
         typedef pthread_mutex_t CyaSSL_Mutex;
-
-        #define InitMutex(m)     pthread_mutex_init(m, 0)
-        #define FreeMutex(m)     pthread_mutex_destroy(m)
-        #define LockMutex(m)     pthread_mutex_lock(m) 
-        #define UnLockMutex(m)   pthread_mutex_unlock(m)
-
     #elif defined(THREADX)
         typedef TX_MUTEX CyaSSL_Mutex;
-
-        #define InitMutex(m)     tx_mutex_create(m,"CyaSSL Mutex",TX_NO_INHERIT)
-        #define FreeMutex(m)     tx_mutex_delete(m)
-        #define LockMutex(m)     tx_mutex_get(m, TX_WAIT_FOREVER)
-        #define UnLockMutex(m)   tx_mutex_put(m)
-
     #elif defined(MICRIUM)
         typedef OS_MUTEX CyaSSL_Mutex;
-
-        #define InitMutex(m)     NetSecure_OS_MutexCreate(m)
-        #define FreeMutex(m)     NetSecure_OS_FreeMutex(m)
-        #define LockMutex(m)     NetSecure_OS_LockMutex(m)
-        #define UnLockMutex(m)   NetSecure_OS_UnLockMutex(m)
-
     #else
         #error Need a mutex type in multithreaded mode
     #endif /* USE_WINDOWS_API */
-
 #endif /* SINGLE_THREADED */
+
+int InitMutex(CyaSSL_Mutex*);
+int FreeMutex(CyaSSL_Mutex*);
+int LockMutex(CyaSSL_Mutex*);
+int UnLockMutex(CyaSSL_Mutex*);
 
 
 #ifdef DEBUG_CYASSL

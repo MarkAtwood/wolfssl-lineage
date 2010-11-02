@@ -88,8 +88,15 @@ void echoclient_test(void* args)
             break;
         }
 
-        if (SSL_read(ssl, reply, sizeof(reply)) > 0) 
-            fputs(reply, fout);
+        while (sendSz) {
+            int got;
+            if ( (got = SSL_read(ssl, reply, sizeof(reply))) > 0) {
+                fputs(reply, fout);
+                sendSz -= got;
+            }
+            else
+                break;
+        }
     }
 
 #ifdef CYASSL_DTLS

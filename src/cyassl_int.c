@@ -299,7 +299,8 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->CBIORecv = NULL;
     ctx->CBIOSend = NULL;
 #endif
-    ctx->partialWrite = 0;
+    ctx->partialWrite   = 0;
+    ctx->verifyCallback = 0;
 
     ctx->caList = 0;
     /* remove DH later if server didn't set, add psk later  */
@@ -1146,6 +1147,7 @@ static int DoCertificate(SSL* ssl, byte* input, word32* inOutIdx)
     word32 listSz, i = *inOutIdx;
     int    ret = 0;
     int    firstTime = 1;  /* peer's is at front */
+    char   domain[ASN_NAME_MAX];
 
     #ifdef CYASSL_CALLBACKS
         if (ssl->hsInfoOn) AddPacketName("Certificate", &ssl->handShakeInfo);
@@ -1187,9 +1189,18 @@ static int DoCertificate(SSL* ssl, byte* input, word32* inOutIdx)
         ret = ParseCertRelative(&dCert, myCert.length, CERT_TYPE,
                                 !ssl->options.verifyNone, ssl->caList);
 
-        if (!firstTime || ret != 0) {
+        if (!firstTime) {
             FreeDecodedCert(&dCert);
             continue;
+        }
+
+        /* get rest of peer info in case user wants to continue */
+        if (ret != 0) {
+            if (!(ret == ASN_BEFORE_DATE_E || ret == ASN_AFTER_DATE_E ||
+                                              ret == ASN_SIG_CONFIRM_E)) {
+                FreeDecodedCert(&dCert);
+                continue;
+            }
         }
         
         /* first one has peer's key */
@@ -1204,13 +1215,14 @@ static int DoCertificate(SSL* ssl, byte* input, word32* inOutIdx)
         strncpy(ssl->peerCert.subject.name, dCert.subject, ASN_NAME_MAX);
 #endif    
 
+        memcpy(domain, dCert.subjectCN, dCert.subjectCNLen);
+        domain[dCert.subjectCNLen] = '\0';
+
         if (!ssl->options.verifyNone && ssl->buffers.domainName.buffer)
             if (strncmp((char*)ssl->buffers.domainName.buffer,
                         dCert.subjectCN,
                         ssl->buffers.domainName.length - 1)) {
-                ret = DOMAIN_NAME_MISMATCH;
-                FreeDecodedCert(&dCert);
-                continue;
+                ret = DOMAIN_NAME_MISMATCH;   /* try to get peer key still */
             }
 
         /* decode peer key */
@@ -1233,8 +1245,27 @@ static int DoCertificate(SSL* ssl, byte* input, word32* inOutIdx)
             int why = bad_certificate;
             if (ret == ASN_AFTER_DATE_E || ret == ASN_BEFORE_DATE_E)
                 why = certificate_expired;
-            SendAlert(ssl, alert_fatal, why);   /* try to send */
-            ssl->options.isClosed = 1;
+            if (ssl->ctx->verifyCallback) {
+                int            ok;
+                X509_STORE_CTX store;
+
+                store.error = ret;
+                store.error_depth = 1;
+                store.domain = domain;
+                printf("store domain = %s\n", store.domain);
+#ifdef OPENSSL_EXTRA
+                store.current_cert = &ssl->peerCert;
+#else
+                store.current_cert = NULL;
+#endif
+                ok = ssl->ctx->verifyCallback(0, &store);
+                if (ok)
+                    ret = 0;
+            }
+            if (ret != 0) {
+                SendAlert(ssl, alert_fatal, why);   /* try to send */
+                ssl->options.isClosed = 1;
+            }
         }
         ssl->error = ret;
     }
@@ -2350,7 +2381,7 @@ int SendData(SSL* ssl, const void* buffer, int sz)
     }
 
     for (;;) {
-        int   len = min(sz - sent, RECORD_SIZE);
+        int   len = min(sz - sent, OUTPUT_RECORD_SIZE);
         byte* out;
         byte* sendBuffer = (byte*)buffer + sent;  /* may switch on comp */
         int   buffSz = len;                       /* may switch on comp */
@@ -4263,6 +4294,176 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
 #endif /* NO_CYASSL_SERVER */
 
+
+#ifdef SINGLE_THREADED
+
+int InitMutex(CyaSSL_Mutex* m)
+{
+    return 0;
+}
+
+
+int FreeMutex(CyaSSL_Mutex* m)
+{
+    return 0;
+}
+
+
+int LockMutex(CyaSSL_Mutex* m)
+{
+    return 0;
+}
+
+
+int UnLockMutex(CyaSSL_Mutex* m)
+{
+    return 0;
+}
+
+#else /* MULTI_THREAD */
+
+    #ifdef USE_WINDOWS_API
+
+        int InitMutex(CyaSSL_Mutex* m)
+        {
+            InitializeCriticalSection(m);
+            return 0;
+        }
+
+
+        int FreeMutex(CyaSSL_Mutex* m)
+        {
+            DeleteCriticalSection(m);
+            return 0;
+        }
+
+
+        int LockMutex(CyaSSL_Mutex* m)
+        {
+            EnterCriticalSection(m);
+            return 0;
+        }
+
+
+        int UnLockMutex(CyaSSL_Mutex* m)
+        {
+            LeaveCriticalSection(m);
+            return 0;
+        }
+
+    #elif defined(_POSIX_THREADS)
+
+        int InitMutex(CyaSSL_Mutex* m)
+        {
+            if (pthread_mutex_init(m, 0) == 0)
+                return 0;
+            else
+                return -1;
+        }
+
+
+        int FreeMutex(CyaSSL_Mutex* m)
+        {
+            if (pthread_mutex_destroy(m) == 0)
+                return 0;
+            else
+                return -1;
+        }
+
+
+        int LockMutex(CyaSSL_Mutex* m)
+        {
+            if (pthread_mutex_lock(m) == 0)
+                return 0;
+            else
+                return -1;
+        }
+
+
+        int UnLockMutex(CyaSSL_Mutex* m)
+        {
+            if (pthread_mutex_unlock(m) == 0)
+                return 0;
+            else
+                return -1;
+        }
+
+    #elif defined(THREADX)
+
+        int InitMutex(CyaSSL_Mutex* m)
+        {
+            if (tx_mutex_create(m, "CyaSSL Mutex", TX_NO_INHERIT) == 0)
+                return 0;
+            else
+                return -1;
+        }
+
+
+        int FreeMutex(CyaSSL_Mutex* m)
+        {
+            if (tx_mutex_delete(m) == 0)
+                return 0;
+            else
+                return -1;
+        }
+
+
+        int LockMutex(CyaSSL_Mutex* m)
+        {
+            if (tx_mutex_get(m, TX_WAIT_FOREVER) == 0)
+                return 0;
+            else
+                return -1;
+        }
+
+
+        int UnLockMutex(CyaSSL_Mutex* m)
+        {
+            if (tx_mutex_put(m) == 0)
+                return 0;
+            else
+                return -1;
+        }
+
+    #elif defined(MICRIUM)
+
+        int InitMutex(CyaSSL_Mutex* m)
+        {
+            if (NetSecure_OS_MutexCreate(m) == 0)
+                return 0;
+            else
+                return -1;
+        }
+
+
+        int FreeMutex(CyaSSL_Mutex* m)
+        {
+            if (NetSecure_OS_FreeMutex(m) == 0)
+                return 0;
+            else
+                return -1;
+        }
+
+
+        int LockMutex(CyaSSL_Mutex* m)
+        {
+            if (NetSecure_OS_LockMutex(m) == 0)
+                return 0;
+            else
+                return -1;
+        }
+
+
+        int UnLockMutex(CyaSSL_Mutex* m)
+        {
+            if (NetSecure_OS_UnLockMutex(m) == 0)
+                return 0;
+            else
+                return -1;
+        }
+
+    #endif /* USE_WINDOWS_API */
+#endif /* SINGLE_THREADED */
 
 
 #ifdef DEBUG_CYASSL

@@ -106,10 +106,13 @@ typedef struct X509_OBJECT {
 } X509_OBJECT;
 
 
+/* in cyassl_int.h too, change there !! */
 typedef struct X509_STORE_CTX {
     int   error;
     int   error_depth;
     X509* current_cert;          /* stunnel dereference */
+    char* domain;                /* subject CN domain name */
+    /* in cyassl_int.h too, change there !! */
 } X509_STORE_CTX;
 
 
@@ -586,8 +589,8 @@ int  SSL_CTX_get_ex_new_index(long, void*, void*, void*, void*);
    date check and signature check */
 int CyaSSL_check_domain_name(SSL* ssl, const char* dn);
 
-void InitCyaSSL(void);   /* need to call once to load library (session cache) */
-void FreeCyaSSL(void);   /* call when done to free session cache mutex        */
+int InitCyaSSL(void);   /* need to call once to load library (session cache) */
+int FreeCyaSSL(void);   /* call when done to free session cache mutex        */
 
 int  CyaSSL_Debugging_ON(void);   /* turn logging on, only if compiled in */
 void CyaSSL_Debugging_OFF(void);  /* turn logging off */

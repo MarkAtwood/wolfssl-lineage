@@ -966,6 +966,7 @@ static int GetValidity(DecodedCert* cert, int verify)
 
 static int DecodeToKey(DecodedCert* cert, word32 inSz, int verify)
 {
+    int badDate = 0;
     int ret;
 
     if ( (ret = GetCertHeader(cert, inSz)) < 0)
@@ -978,13 +979,16 @@ static int DecodeToKey(DecodedCert* cert, word32 inSz, int verify)
         return ret;
 
     if ( (ret = GetValidity(cert, verify)) < 0)
-        return ret;
+        badDate = ret;
 
     if ( (ret = GetName(cert, SUBJECT)) < 0)
         return ret;
 
     if ( (ret = GetKey(cert)) < 0)
         return ret;
+
+    if (badDate != 0)
+        return badDate;
 
     return ret;
 }
@@ -1290,10 +1294,15 @@ int ParseCertRelative(DecodedCert* cert, word32 inSz, int type, int verify,
 {
     word32 confirmOID;
     int    ret;
+    int    badDate = 0;
     int    confirm = 0;
 
-    if ((ret = DecodeToKey(cert, inSz, verify)) < 0)
-        return ret;
+    if ((ret = DecodeToKey(cert, inSz, verify)) < 0) {
+        if (ret == ASN_BEFORE_DATE_E || ret == ASN_AFTER_DATE_E)
+            badDate = ret;
+        else
+            return ret;
+    }
 
     if (cert->srcIdx != cert->sigIndex)
         cert->srcIdx =  cert->sigIndex;
@@ -1325,6 +1334,8 @@ int ParseCertRelative(DecodedCert* cert, word32 inSz, int type, int verify,
         if (!confirm)
             return ASN_SIG_CONFIRM_E;
     }
+    if (badDate != 0)
+        return badDate;
 
     return 0;
 }

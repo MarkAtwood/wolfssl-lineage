@@ -96,6 +96,10 @@ void client_test(void* args)
     load_buffer(ctx, caCert, CYASSL_CA);
 #endif
 
+#ifdef VERIFY_CALLBACK
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, myVerify);
+#endif
+
     if (argc == 3) {
         /*  ./client server securePort  */
         SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, 0);  /* TODO: add ca cert */
@@ -152,7 +156,8 @@ void client_test(void* args)
 
     ssl = SSL_new(ctx);
     SSL_set_fd(ssl, sockfd);
-
+    //CyaSSL_check_domain_name(ssl, "www.yassl.com");
+    CyaSSL_check_domain_name(ssl, "www.fake.com");
 #ifdef NON_BLOCKING
     tcp_set_nonblocking(&sockfd);
     NonBlockingSSL_Connect(ssl);
