@@ -950,16 +950,20 @@ static int GetDate(DecodedCert* cert, int dateType)
 static int GetValidity(DecodedCert* cert, int verify)
 {
     int length;
+    int badDate = 0;
 
     if (GetSequence(cert->source, &cert->srcIdx, &length) < 0)
         return ASN_PARSE_E;
 
     if (GetDate(cert, BEFORE) < 0 && verify)
-        return ASN_BEFORE_DATE_E;
+        badDate = ASN_BEFORE_DATE_E;           /* continue parsing */
     
     if (GetDate(cert, AFTER) < 0 && verify)
         return ASN_AFTER_DATE_E;
-    
+   
+    if (badDate != 0)
+        return badDate;
+
     return 0;
 }
 
