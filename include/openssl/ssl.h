@@ -138,7 +138,7 @@ int SSL_CTX_load_verify_locations(SSL_CTX*, const char*, const char*);
 int SSL_CTX_use_certificate_chain_file(SSL_CTX *ctx, const char *file);
 
 #ifdef CYASSL_DER_LOAD
-    int CyaSSL_CTX_load_verify_locations(SSL_CTX*,const char*,const char*, int);
+    int CyaSSL_CTX_load_verify_locations(SSL_CTX*, const char*, int);
 #endif
 
 #endif /* NO_FILESYSTEM */

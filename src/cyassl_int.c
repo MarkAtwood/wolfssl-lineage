@@ -679,7 +679,9 @@ ProtocolVersion MakeDTLSv1(void)
     {
         NET_SECURE_OS_TICK  clk;
 
-        clk = NetSecure_OS_TimeGet();
+        #if (NET_SECURE_MGR_CFG_EN == DEF_ENABLED)
+            clk = NetSecure_OS_TimeGet();
+        #endif
         return (word32)clk;
     }
 
@@ -964,7 +966,7 @@ static INLINE int GrowOutputBuffer(SSL* ssl, int size)
 static INLINE int GrowInputBuffer(SSL* ssl, int size, int usedLength)
 {
     byte* tmp = (byte*) XMALLOC(size + usedLength, ssl->heap,
-                                DYNAMIC_TYPE_IN_BIFFER);
+                                DYNAMIC_TYPE_IN_BUFFER);
     CYASSL_MSG("growing input buffer\n");
    
     if (!tmp) return -1;
@@ -4441,37 +4443,54 @@ int UnLockMutex(CyaSSL_Mutex* m)
 
         int InitMutex(CyaSSL_Mutex* m)
         {
-            if (NetSecure_OS_MutexCreate(m) == 0)
+            #if (NET_SECURE_MGR_CFG_EN == DEF_ENABLED)
+                if (NetSecure_OS_MutexCreate(m) == 0)
+                    return 0;
+                else
+                    return -1;
+            #else
                 return 0;
-            else
-                return -1;
+            #endif
         }
 
 
         int FreeMutex(CyaSSL_Mutex* m)
         {
-            if (NetSecure_OS_FreeMutex(m) == 0)
+            #if (NET_SECURE_MGR_CFG_EN == DEF_ENABLED)
+                if (NetSecure_OS_FreeMutex(m) == 0)
+                    return 0;
+                else
+                    return -1;
+            #else
                 return 0;
-            else
-                return -1;
+            #endif
         }
 
 
         int LockMutex(CyaSSL_Mutex* m)
         {
-            if (NetSecure_OS_LockMutex(m) == 0)
+            #if (NET_SECURE_MGR_CFG_EN == DEF_ENABLED)
+                if (NetSecure_OS_LockMutex(m) == 0)
+                    return 0;
+                else
+                    return -1;
+            #else
                 return 0;
-            else
-                return -1;
+            #endif
         }
 
 
         int UnLockMutex(CyaSSL_Mutex* m)
         {
-            if (NetSecure_OS_UnLockMutex(m) == 0)
+            #if (NET_SECURE_MGR_CFG_EN == DEF_ENABLED)
+                if (NetSecure_OS_UnLockMutex(m) == 0)
+                    return 0;
+                else
+                    return -1;
+            #else
                 return 0;
-            else
-                return -1;
+            #endif
+
         }
 
     #endif /* USE_WINDOWS_API */
@@ -4506,7 +4525,9 @@ int UnLockMutex(CyaSSL_Mutex* m)
 #ifdef THREADX
             dc_log_printf("%s\n", msg);
 #elif defined(MICRIUM)
-            NetSecure_TraceOut((CPU_CHAR *)msg); 
+        #if (NET_SECURE_MGR_CFG_EN == DEF_ENABLED)
+            NetSecure_TraceOut((CPU_CHAR *)msg);
+        #endif
 #else
             fprintf(stderr, "%s\n", msg);
 #endif

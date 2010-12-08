@@ -651,10 +651,10 @@ int SSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file,
 
 #ifdef CYASSL_DER_LOAD
 
-/* Add type parameter to allow DER load of CA files */
-int CyaSSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file, int type)
+/* Add format parameter to allow DER load of CA files */
+int CyaSSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file, int format)
 {
-    if (ProcessFile(ctx, file, type, CA_TYPE) == SSL_SUCCESS)
+    if (ProcessFile(ctx, file, format, CA_TYPE) == SSL_SUCCESS)
         return SSL_SUCCESS;
 
     return SSL_FAILURE;
@@ -662,18 +662,18 @@ int CyaSSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file, int type)
 
 #endif /* CYASSL_DER_LOAD */
 
-int SSL_CTX_use_certificate_file(SSL_CTX* ctx, const char* file, int type)
+int SSL_CTX_use_certificate_file(SSL_CTX* ctx, const char* file, int format)
 {
-    if (ProcessFile(ctx, file, type, CERT_TYPE) == SSL_SUCCESS)
+    if (ProcessFile(ctx, file, format, CERT_TYPE) == SSL_SUCCESS)
         return SSL_SUCCESS;
 
     return SSL_FAILURE;
 }
 
 
-int SSL_CTX_use_PrivateKey_file(SSL_CTX* ctx, const char* file, int type)
+int SSL_CTX_use_PrivateKey_file(SSL_CTX* ctx, const char* file, int format)
 {
-    if (ProcessFile(ctx, file, type, PRIVATEKEY_TYPE) == SSL_SUCCESS)
+    if (ProcessFile(ctx, file, format, PRIVATEKEY_TYPE) == SSL_SUCCESS)
         return SSL_SUCCESS;
 
     return SSL_FAILURE;
@@ -692,9 +692,9 @@ int SSL_CTX_use_certificate_chain_file(SSL_CTX* ctx, const char* file)
 
 #ifdef OPENSSL_EXTRA
 
-    int SSL_CTX_use_RSAPrivateKey_file(SSL_CTX* ctx, const char* file, int type)
+    int SSL_CTX_use_RSAPrivateKey_file(SSL_CTX* ctx,const char* file,int format)
     {
-        if (ProcessFile(ctx, file, type, PRIVATEKEY_TYPE) == SSL_SUCCESS)
+        if (ProcessFile(ctx, file, format, PRIVATEKEY_TYPE) == SSL_SUCCESS)
             return SSL_SUCCESS;
 
         return SSL_FAILURE;
@@ -1712,23 +1712,23 @@ int CyaSSL_set_compression(SSL* ssl)
 
     /* CyaSSL extension allows DER files to be loaded from buffers as well */
     int CyaSSL_CTX_load_verify_buffer(SSL_CTX* ctx, const unsigned char* buffer,
-                                      long sz, int type)
+                                      long sz, int format)
     {
-        return ProcessBuffer(ctx, buffer, sz, type, CA_TYPE);
+        return ProcessBuffer(ctx, buffer, sz, format, CA_TYPE);
     }
 
 
     int CyaSSL_CTX_use_certificate_buffer(SSL_CTX* ctx,
-                                 const unsigned char* buffer, long sz, int type)
+                                 const unsigned char* buffer,long sz,int format)
     {
-        return ProcessBuffer(ctx, buffer, sz, type, CERT_TYPE);
+        return ProcessBuffer(ctx, buffer, sz, format, CERT_TYPE);
     }
 
 
     int CyaSSL_CTX_use_PrivateKey_buffer(SSL_CTX* ctx,
-                                 const unsigned char* buffer, long sz, int type)
+                                 const unsigned char* buffer,long sz,int format)
     {
-        return ProcessBuffer(ctx, buffer, sz, type, PRIVATEKEY_TYPE);
+        return ProcessBuffer(ctx, buffer, sz, format, PRIVATEKEY_TYPE);
     }
 
 

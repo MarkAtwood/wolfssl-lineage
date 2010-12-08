@@ -1311,7 +1311,7 @@ int ParseCert(DecodedCert* cert, word32 inSz, int type, int verify,
 
     if (cert->subjectCNLen > 0) {
         ptr = (char*) XMALLOC(cert->subjectCNLen + 1, cert->heap,
-                              DYNAMIC_TYPE_ISSUER_CN);
+                              DYNAMIC_TYPE_SUBJECT_CN);
         if (ptr == NULL)
             return MEMORY_E;
         XMEMCPY(ptr, cert->subjectCN, cert->subjectCNLen);

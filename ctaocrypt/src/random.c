@@ -119,10 +119,11 @@ int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
 
 #elif defined(MICRIUM)
 
-/* just for testing, wirte a real one ! */
 int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
 {
-    NetSecure_InitSeed(output, sz);
+    #if (NET_SECURE_MGR_CFG_EN == DEF_ENABLED)
+        NetSecure_InitSeed(output, sz);
+    #endif
     return 0;
 }
 

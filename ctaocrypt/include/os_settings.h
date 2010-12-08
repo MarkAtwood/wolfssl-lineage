@@ -83,19 +83,21 @@
     #define XMEMSET(pmem, data_val, size) \
                     ((void)Mem_Set((void *)(pmem), (CPU_INT08U) (data_val), \
                     (CPU_SIZE_T)(size)))
-    #define XMEMCPY(pdest, psrc, size) ((void)Mem_Copy((void *)pdest, \
-                     (void *)psrc, (CPU_SIZE_T)(size)))
+    #define XMEMCPY(pdest, psrc, size) ((void)Mem_Copy((void *)(pdest), \
+                     (void *)(psrc), (CPU_SIZE_T)(size)))
     #define XMEMCMP(pmem_1, pmem_2, size) \
                    (((CPU_BOOLEAN)Mem_Cmp((void *)(pmem_1), (void *)(pmem_2), \
                      (CPU_SIZE_T)(size))) ? DEF_NO : DEF_YES)
 
-    #define MICRIUM_MALLOC
-    #define XMALLOC(s, h, type) (((type) <= DYNAMIC_TYPE_SIGNER) ? \
-                          ((void *)NetSecure_Malloc((CPU_INT08U)(type), \
-                           (CPU_SIZE_T)(s))) : malloc(s))
-    #define XFREE(p, h, type)   (((type) <= DYNAMIC_TYPE_SIGNER) ? \
+    #if (NET_SECURE_MGR_CFG_EN == DEF_ENABLED)
+        #define MICRIUM_MALLOC
+        #define XMALLOC(s, h, type) (((type) <= DYNAMIC_TYPE_SIGNER) ? \
+                                 ((void *)NetSecure_Malloc((CPU_INT08U)(type), \
+                                 (CPU_SIZE_T)(s))) : malloc(s))
+        #define XFREE(p, h, type)   (((type) <= DYNAMIC_TYPE_SIGNER) ? \
                           (NetSecure_Free((CPU_INT08U)(type), (p))) : free((p)))
-    #define XREALLOC(p, n, h, t) realloc((p), (n))
+        #define XREALLOC(p, n, h, t) realloc((p), (n))
+    #endif
 
     #if (NET_SECURE_MGR_CFG_FS_EN == DEF_ENABLED)
         #undef  NO_FILESYSTEM
