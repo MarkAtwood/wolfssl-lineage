@@ -48,9 +48,12 @@
 #elif defined(MICRIUM)
     /* do nothing, just don't pick Unix */
 #else
-    #include <unistd.h>
     #ifndef SINGLE_THREADED
+        #define CYASSL_PTHREADS
         #include <pthread.h>
+    #endif
+    #if defined(OPENSSL_EXTRA) || defined(GOAHEAD_WS)
+        #include <unistd.h>      /* for close of BIO */
     #endif
 #endif
 
@@ -204,6 +207,7 @@ enum Misc {
 
     PAD_MD5        = 48,       /* pad length for finished */
     PAD_SHA        = 40,       /* pad length for finished */
+    PEM_LINE_LEN   = 80,       /* PEM line max + fudge */
     LENGTH_SZ      =  2,       /* length field for HMAC, data only */
     VERSION_SZ     =  2,       /* length of proctocol version */
     SEQ_SZ         =  8,       /* 64 bit sequence number  */
@@ -270,6 +274,8 @@ enum Misc {
 
     MAX_CHAIN_DEPTH    =   4,  /* max cert chain peer depth */
     MAX_X509_SIZE      = 2048, /* max static x509 buffer size */
+    FILE_BUFFER_SIZE   = 1024, /* default static file buffer size for input,
+                                  will use dynamic buffer if not big enough */
 
     NO_SNIFF           =   0,  /* not sniffing */
     SNIFF              =   1,  /* currently sniffing */
@@ -736,9 +742,9 @@ typedef struct Buffers {
     bufferStatic    outputBuffer;
     buffer          clearOutputBuffer;
     int             prevSent;              /* previous plain text bytes sent
-                                              when got WANT_READ            */
+                                              when got WANT_WRITE            */
     int             plainSz;               /* plain text bytes in buffer to send
-                                              when got WANT_READ            */
+                                              when got WANT_WRITE            */
 } Buffers;
 
 
@@ -1058,7 +1064,7 @@ word32  LowResTimer(void);
 #else /* MULTI_THREADED */
     #ifdef USE_WINDOWS_API 
         typedef CRITICAL_SECTION CyaSSL_Mutex;
-    #elif defined(_POSIX_THREADS)
+    #elif defined(CYASSL_PTHREADS)
         typedef pthread_mutex_t CyaSSL_Mutex;
     #elif defined(THREADX)
         typedef TX_MUTEX CyaSSL_Mutex;

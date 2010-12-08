@@ -27,7 +27,6 @@
 
 #include "random.h"
 #include "error.h"
-#include <string.h> 
 
 
 #if defined(USE_WINDOWS_API)
@@ -65,7 +64,7 @@ int InitRng(RNG* rng)
 /* place a generated block in output */
 void RNG_GenerateBlock(RNG* rng, byte* output, word32 sz)
 {
-    memset(output, 0, sz);
+    XMEMSET(output, 0, sz);
     Arc4Process(&rng->cipher, output, output, sz);
 }
 
@@ -123,16 +122,7 @@ int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
 /* just for testing, wirte a real one ! */
 int GenerateSeed(OS_Seed* os, byte* output, word32 sz)
 {
-    OS_TICK ticks;
-    OS_ERR  err;
-    int     i;
-
-    for (i = 0; i < sz; i += sizeof(ticks)) {
-        ticks = NetSecure_OS_TimeGet(&err);
-        memcpy(output, &ticks, sizeof(ticks));
-        output += sizeof(ticks);
-    }
-
+    NetSecure_InitSeed(output, sz);
     return 0;
 }
 

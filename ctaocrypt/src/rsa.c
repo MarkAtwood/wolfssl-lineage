@@ -88,7 +88,7 @@ static void RsaPad(const byte* input, word32 inputLen, byte* pkcsBlock,
 
     if (padValue == RSA_BLOCK_TYPE_1)
         /* pad with 0xff bytes */
-        memset(&pkcsBlock[1], 0xFF, pkcsBlockLen - inputLen - 2);
+        XMEMSET(&pkcsBlock[1], 0xFF, pkcsBlockLen - inputLen - 2);
     else {
         /* pad with non-zero random bytes */
         word32 padLen = pkcsBlockLen - inputLen - 1, i;
@@ -100,7 +100,7 @@ static void RsaPad(const byte* input, word32 inputLen, byte* pkcsBlock,
     }
 
     pkcsBlock[pkcsBlockLen-inputLen-1] = 0;     /* separator */
-    memcpy(pkcsBlock+pkcsBlockLen-inputLen, input, inputLen);
+    XMEMCPY(pkcsBlock+pkcsBlockLen-inputLen, input, inputLen);
 }
 
 
@@ -274,15 +274,15 @@ int RsaPrivateDecrypt(const byte* in, word32 inLen, byte* out, word32 outLen,
     if ( !(tmp = (byte*)XMALLOC(inLen, key->heap)) )
         return MEMORY_E;
 
-    memcpy(tmp, in, inLen);
+    XMEMCPY(tmp, in, inLen);
 
     if ((ret = plainLen = RsaPrivateDecryptInline(tmp, inLen, &pad, key))
             < 0) {
         XFREE(tmp, key->heap);
         return ret;
     }
-    memcpy(out, pad, plainLen);
-    memset(tmp, 0x00, inLen); 
+    XMEMCPY(out, pad, plainLen);
+    XMEMSET(tmp, 0x00, inLen); 
 
     XFREE(tmp, key->heap);
     return plainLen;
@@ -314,7 +314,7 @@ int RsaSSL_Verify(const byte* in, word32 inLen, byte* out, word32 outLen,
     if ( !(tmp = (byte*)XMALLOC(inLen, key->heap)) )
         return MEMORY_E;
 
-    memcpy(tmp, in, inLen);
+    XMEMCPY(tmp, in, inLen);
 
     if ((ret = plainLen = RsaSSL_VerifyInline(tmp, inLen, &pad, key))
             < 0) {
@@ -322,8 +322,8 @@ int RsaSSL_Verify(const byte* in, word32 inLen, byte* out, word32 outLen,
         return ret;
     }
   
-    memcpy(out, pad, plainLen);
-    memset(tmp, 0x00, inLen); 
+    XMEMCPY(out, pad, plainLen);
+    XMEMSET(tmp, 0x00, inLen); 
 
     XFREE(tmp, key->heap);
     return plainLen;
@@ -414,7 +414,7 @@ static int rand_prime(mp_int* N, int len, RNG* rng, void* heap)
     } while (res == MP_NO);
 
 #ifdef LTC_CLEAN_STACK
-    memset(buf, 0, len);
+    XMEMSET(buf, 0, len);
 #endif
 
     XFREE(buf, heap);

@@ -31,7 +31,6 @@
 #else
 
 #include "integer.h"
-#include <stdlib.h>
 
 
 /* handle up to 6 inits */

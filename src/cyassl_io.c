@@ -25,10 +25,7 @@
     #include <winsock2.h>
 #endif
 
-
 #include "cyassl_int.h"
-#include "cyassl_error.h"
-#include "asn.h"
 
 /* if user writes own I/O callbacks they can define CYASSL_USER_IO to remove
    automatic setting of defualt I/O functions EmbedSend() and EmbedReceive()
@@ -39,9 +36,6 @@
 #ifdef HAVE_LIBZ
     #include "zlib.h"
 #endif
-
-#include <stdlib.h>
-#include <string.h>
 
 #ifndef USE_WINDOWS_API 
     #include <sys/types.h>

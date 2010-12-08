@@ -25,7 +25,6 @@
 #include "cyassl_error.h"
 #include "../ctaocrypt/include/hmac.h"
 
-#include <string.h>
 
 
 #ifndef NO_TLS
@@ -82,9 +81,9 @@ void p_hash(byte* result, word32 resLen, const byte* secret, word32 secLen,
         HmacFinal(&hmac, current);
 
         if ( (i == lastTime) && lastLen)
-            memcpy(&result[idx], current, lastLen);
+            XMEMCPY(&result[idx], current, lastLen);
         else {
-            memcpy(&result[idx], current, len);
+            XMEMCPY(&result[idx], current, len);
             idx += len;
             HmacUpdate(&hmac, previous, len);
             HmacFinal(&hmac, previous);
@@ -114,11 +113,11 @@ static void PRF(byte* digest, word32 digLen, const byte* secret, word32 secLen,
     if (digLen > MAX_PRF_DIG)
         return;
     
-    memcpy(md5_half, secret, half);
-    memcpy(sha_half, secret + half - secLen % 2, half);
+    XMEMCPY(md5_half, secret, half);
+    XMEMCPY(sha_half, secret + half - secLen % 2, half);
 
-    memcpy(labelSeed, label, labLen);
-    memcpy(labelSeed + labLen, seed, seedLen);
+    XMEMCPY(labelSeed, label, labLen);
+    XMEMCPY(labelSeed + labLen, seed, seedLen);
 
     if (useSha256) {
         p_hash(digest, digLen, secret, secLen, labelSeed, labLen + seedLen,
@@ -142,7 +141,7 @@ void BuildTlsFinished(SSL* ssl, Hashes* hashes, const byte* sender)
     Md5Final(&ssl->hashMd5, handshake_hash);
     ShaFinal(&ssl->hashSha, &handshake_hash[MD5_DIGEST_SIZE]);
    
-    if ( strncmp((const char*)sender, (const char*)client, SIZEOF_SENDER) == 0)
+    if ( XSTRNCMP((const char*)sender, (const char*)client, SIZEOF_SENDER) == 0)
         side = tls_client;
     else
         side = tls_server;
@@ -195,8 +194,8 @@ int DeriveTlsKeys(SSL* ssl)
     byte         seed[SEED_LEN];
     byte         key_data[MAX_PRF_DIG];
 
-    memcpy(seed, ssl->arrays.serverRandom, RAN_LEN);
-    memcpy(&seed[RAN_LEN], ssl->arrays.clientRandom, RAN_LEN);
+    XMEMCPY(seed, ssl->arrays.serverRandom, RAN_LEN);
+    XMEMCPY(&seed[RAN_LEN], ssl->arrays.clientRandom, RAN_LEN);
 
     PRF(key_data, length, ssl->arrays.masterSecret, SECRET_LEN, key_label,
         KEY_LABEL_SZ, seed, SEED_LEN, IsAtLeastTLSv1_2(ssl));
@@ -209,8 +208,8 @@ int MakeTlsMasterSecret(SSL* ssl)
 {
     byte seed[SEED_LEN];
     
-    memcpy(seed, ssl->arrays.clientRandom, RAN_LEN);
-    memcpy(&seed[RAN_LEN], ssl->arrays.serverRandom, RAN_LEN);
+    XMEMCPY(seed, ssl->arrays.clientRandom, RAN_LEN);
+    XMEMCPY(&seed[RAN_LEN], ssl->arrays.serverRandom, RAN_LEN);
 
     PRF(ssl->arrays.masterSecret, SECRET_LEN,
         ssl->arrays.preMasterSecret, ssl->arrays.preMasterSz,
@@ -320,7 +319,7 @@ void TLS_hmac(SSL* ssl, byte* digest, const byte* buffer, word32 sz,
     inner[0] = content;                                           /* type */
     inner[ENUM_LEN] = ssl->version.major;
     inner[ENUM_LEN + ENUM_LEN] = ssl->version.minor;              /* version */
-    memcpy(&inner[ENUM_LEN + VERSION_SZ], length, LENGTH_SZ);     /* length */
+    XMEMCPY(&inner[ENUM_LEN + VERSION_SZ], length, LENGTH_SZ);     /* length */
     HmacUpdate(&hmac, inner, sizeof(inner));
     HmacUpdate(&hmac, buffer, sz);                                /* content */
     HmacFinal(&hmac, digest);

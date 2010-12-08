@@ -29,10 +29,6 @@
     #include "config.h"
 #endif
 
-#ifdef XMALLOC_USER
-    #include <stdlib.h>   /* for size_t */
-#endif
-
 #ifdef __cplusplus
     extern "C" {
 #endif
@@ -46,18 +42,11 @@
     #define LITTLE_ENDIAN_ORDER
 #endif
 
-#ifdef IPHONE
-    #define SIZEOF_LONG_LONG 8
+#ifndef CYASSL_TYPES
+    typedef unsigned char  byte;
+    typedef unsigned short word16;
+    typedef unsigned int   word32;
 #endif
-
-#ifdef THREADX
-    #define SIZEOF_LONG_LONG 8
-#endif
-
-
-typedef unsigned char  byte;
-typedef unsigned short word16;
-typedef unsigned int   word32;
 
 #if defined(_MSC_VER) || defined(__BCPLUSPLUS__)
     #define WORD64_AVAILABLE
@@ -72,8 +61,8 @@ typedef unsigned int   word32;
     #define W64LIT(x) x##LL
     typedef unsigned long long word64;
 #else
-    #define MP_16BIT   /* for mp_int, mp_word needs to be twice as big as
-                          mp_digit, no 64 bit type so make mp_digit 16 bit */
+    #define MP_16BIT  /* for mp_int, mp_word needs to be twice as big as
+                         mp_digit, no 64 bit type so make mp_digit 16 bit */
 #endif
 
 
@@ -136,21 +125,57 @@ enum {
 
 /* idea to add global alloc override by Moisés Guimarães  */
 /* default to libc stuff */
-/* XCALLOC not used by CyaSSL or either math lib */
 /* XREALLOC is used once in mormal math lib, not in fast math lib */
 /* XFREE on some embeded systems doesn't like free(0) so test  */
-#ifndef XMALLOC_USER
-    #define XMALLOC(s, h)     malloc(s)
-    #define XFREE(p, h)       if (p) free(p)
-    #define XREALLOC(p, n, h) realloc(p, n)
-    #define XCALLOC(n, s, h)  calloc(n, s)
-#else
-    /* prototypes for our heap functions */
-    extern void *XMALLOC(size_t n, void* heap);
-    extern void *XREALLOC(void *p, size_t n, void* heap);
-    extern void *XCALLOC(size_t n, size_t s, void* heap);
-    extern void XFREE(void *p, void* heap);
+#ifdef XMALLOC_USER
+    /* prototypes for user heap override functions */
+    #include <stddef.h>  /* for size_t */
+    extern void *XMALLOC(size_t n, void* hint);
+    extern void *XREALLOC(void *p, size_t n, void* hint);
+    extern void XFREE(void *p, void* hint);
+#elif !defined(MICRIUM_MALLOC)
+    /* defaults to C runtime if user doesn't override and not Micrium */
+    #include <stdlib.h>
+    #define XMALLOC(s, h)     malloc((s))
+    #define XFREE(p, h)       {void* xp = (p); if((xp)) free((xp));}
+    #define XREALLOC(p, n, h) realloc((p), (n))
 #endif
+
+#ifndef STRING_USER
+    #include <string.h>
+    #define XMEMCPY(d,s,l)    memcpy((d),(s),(l))
+    #define XMEMSET(b,c,l)    memset((b),(c),(l))
+    #define XMEMCMP(s1,s2,n)  memcpy((s1),(s2),(n))
+
+    #define XSTRLEN(s1)       strlen((s1))
+    #define XSTRNCPY(s1,s2,n) strncpy((s1),(s2),(n))
+    /* strstr and strncmp only used by CyaSSL proper, not required for
+       CTaoCrypt only */
+    #define XSTRSTR(s1,s2)    strstr((s1),(s2))
+    #define XSTRNCMP(s1,s2,n) strncmp((s1),(s2),(n))
+#endif
+
+
+/* memory allocation types for user hints */
+enum {
+    DYNAMIC_TYPE_CA         = 1,
+    DYNAMIC_TYPE_CRT        = 2,
+    DYNAMIC_TYPE_KEY        = 3,
+    DYNAMIC_TYPE_FILE       = 4,
+    DYNAMIC_TYPE_ISSUER_CN  = 5,
+    DYNAMIC_TYPE_SUBJECT_CN = 6,
+    DYNAMIC_TYPE_PUBLIC_KEY = 7,
+    DYNAMIC_TYPE_SIGNATURE  = 8,
+    DYNAMIC_TYPE_SIGNER     = 9,
+    DYNAMIC_TYPE_NONE       = 10
+};
+
+
+/* memory hint information for user memory handling */
+typedef struct memoryHint {
+	void*    heapHint;       /* points to SSL_CTX by default */
+	int      type;           /* allocation type */
+} memoryHint;
 
 
 #ifdef __cplusplus

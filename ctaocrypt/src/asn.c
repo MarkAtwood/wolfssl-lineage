@@ -29,10 +29,9 @@
 #include "sha.h"
 #include "md5.h"
 #include "error.h"
-#include <time.h> 
 
 #ifdef _MSC_VER
-    /* 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy */
+    /* 4996 warning to use MS extensions e.g., strcpy_s instead of XSTRNCPY */
     #pragma warning(disable: 4996)
 #endif
 
@@ -51,6 +50,24 @@ enum {
     BEFORE  = 0,
     AFTER   = 1
 };
+
+
+#ifdef THREADX
+    #define USER_TIME
+    #define XTIME(tl)  (0)
+    #define XGMTIME(c) my_gmtime((c))
+#endif
+
+#ifndef USER_TIME
+    #include <time.h> 
+    #define XTIME(tl)  time((tl))
+    #define XGMTIME(c) gmtime((c))
+#else
+    /* user time, and gmtime compatible functions, there is a gmtime 
+       implementation here that WINCE uses, so really just need some ticks
+       since the EPOCH 
+    */
+#endif /* USER_TIME */
 
 
 #ifdef _WIN32_WCE
@@ -72,7 +89,7 @@ time_t time(time_t* timer)
     GetSystemTime(&sysTime);
     SystemTimeToFileTime(&sysTime, &fTime);
     
-    memcpy(&intTime, &fTime, sizeof(FILETIME));
+    XMEMCPY(&intTime, &fTime, sizeof(FILETIME));
     /* subtract EPOCH */
     intTime.QuadPart -= 0x19db1ded53e8000;
     /* to secs */
@@ -558,25 +575,34 @@ void InitDecodedCert(DecodedCert* cert, byte* source, void* heap)
     cert->publicKey       = 0;
     cert->pubKeyStored    = 0;
     cert->signature       = 0;
-    cert->signatureStored = 0;
-    cert->issuerCN        = 0;
-    cert->issuerCNLen     = 0;
     cert->subjectCN       = 0;
     cert->subjectCNLen    = 0;
     cert->source          = source;  /* don't own */
     cert->srcIdx          = 0;
     cert->heap            = heap;
+#ifdef CYASSL_CERT_GEN
+    cert->subjectSN       = 0;
+    cert->subjectSNLen    = 0;
+    cert->subjectC        = 0;
+    cert->subjectCLen     = 0;
+    cert->subjectL        = 0;
+    cert->subjectLLen     = 0;
+    cert->subjectST       = 0;
+    cert->subjectSTLen    = 0;
+    cert->subjectO        = 0;
+    cert->subjectOLen     = 0;
+    cert->subjectOU       = 0;
+    cert->subjectOULen    = 0;
+    cert->subjectEmail    = 0;
+    cert->subjectEmailLen = 0;
+#endif /* CYASSL_CERT_GEN */
 }
 
 
 void FreeDecodedCert(DecodedCert* cert)
 {
-    if (cert->subjectCNLen == 0)
+    if (cert->subjectCNLen == 0)  /* 0 means no longer pointer to raw, we own */
         XFREE(cert->subjectCN, cert->heap);
-    if (cert->issuerCNLen == 0)
-        XFREE(cert->issuerCN, cert->heap);
-    if (cert->signatureStored)
-        XFREE(cert->signature, cert->heap);
     if (cert->pubKeyStored == 1)
         XFREE(cert->publicKey, cert->heap);
 }
@@ -695,7 +721,7 @@ static int GetName(DecodedCert* cert, int nameType)
         if (GetLength(cert->source, &cert->srcIdx, &oidSz) < 0)
             return ASN_PARSE_E;
 
-        memcpy(joint, &cert->source[cert->srcIdx], sizeof(joint));
+        XMEMCPY(joint, &cert->source[cert->srcIdx], sizeof(joint));
 
         /* v1 name types */
         if (joint[0] == 0x55 && joint[1] == 0x04) {
@@ -717,51 +743,84 @@ static int GetName(DecodedCert* cert, int nameType)
                 return ASN_PARSE_E;         /* pre fix header too "/CN=" */
 
             if (id == ASN_COMMON_NAME) {
-                if (nameType == ISSUER) {
-                    cert->issuerCN = (char *)&cert->source[cert->srcIdx];
-                    cert->issuerCNLen = strLen;
-                } else {
+                if (nameType == SUBJECT) {
                     cert->subjectCN = (char *)&cert->source[cert->srcIdx];
                     cert->subjectCNLen = strLen;
                 }
 
-                memcpy(&full[idx], "/CN=", 4);
+                XMEMCPY(&full[idx], "/CN=", 4);
                 idx += 4;
                 copy = TRUE;
             }
             else if (id == ASN_SUR_NAME) {
-                memcpy(&full[idx], "/SN=", 4);
+                XMEMCPY(&full[idx], "/SN=", 4);
                 idx += 4;
                 copy = TRUE;
+#ifdef CYASSL_CERT_GEN
+                if (nameType == SUBJECT) {
+                    cert->subjectSN = (char*)&cert->source[cert->srcIdx];
+                    cert->subjectSNLen = strLen;
+                }
+#endif /* CYASSL_CERT_GEN */
             }
             else if (id == ASN_COUNTRY_NAME) {
-                memcpy(&full[idx], "/C=", 3);
+                XMEMCPY(&full[idx], "/C=", 3);
                 idx += 3;
                 copy = TRUE;
+#ifdef CYASSL_CERT_GEN
+                if (nameType == SUBJECT) {
+                    cert->subjectC = (char*)&cert->source[cert->srcIdx];
+                    cert->subjectCLen = strLen;
+                }
+#endif /* CYASSL_CERT_GEN */
             }
             else if (id == ASN_LOCALITY_NAME) {
-                memcpy(&full[idx], "/L=", 3);
+                XMEMCPY(&full[idx], "/L=", 3);
                 idx += 3;
                 copy = TRUE;
+#ifdef CYASSL_CERT_GEN
+                if (nameType == SUBJECT) {
+                    cert->subjectL = (char*)&cert->source[cert->srcIdx];
+                    cert->subjectLLen = strLen;
+                }
+#endif /* CYASSL_CERT_GEN */
             }
             else if (id == ASN_STATE_NAME) {
-                memcpy(&full[idx], "/ST=", 4);
+                XMEMCPY(&full[idx], "/ST=", 4);
                 idx += 4;
                 copy = TRUE;
+#ifdef CYASSL_CERT_GEN
+                if (nameType == SUBJECT) {
+                    cert->subjectST = (char*)&cert->source[cert->srcIdx];
+                    cert->subjectSTLen = strLen;
+                }
+#endif /* CYASSL_CERT_GEN */
             }
             else if (id == ASN_ORG_NAME) {
-                memcpy(&full[idx], "/O=", 3);
+                XMEMCPY(&full[idx], "/O=", 3);
                 idx += 3;
                 copy = TRUE;
+#ifdef CYASSL_CERT_GEN
+                if (nameType == SUBJECT) {
+                    cert->subjectO = (char*)&cert->source[cert->srcIdx];
+                    cert->subjectOLen = strLen;
+                }
+#endif /* CYASSL_CERT_GEN */
             }
             else if (id == ASN_ORGUNIT_NAME) {
-                memcpy(&full[idx], "/OU=", 4);
+                XMEMCPY(&full[idx], "/OU=", 4);
                 idx += 4;
                 copy = TRUE;
+#ifdef CYASSL_CERT_GEN
+                if (nameType == SUBJECT) {
+                    cert->subjectOU = (char*)&cert->source[cert->srcIdx];
+                    cert->subjectOULen = strLen;
+                }
+#endif /* CYASSL_CERT_GEN */
             }
 
             if (copy) {
-                memcpy(&full[idx], &cert->source[cert->srcIdx], strLen);
+                XMEMCPY(&full[idx], &cert->source[cert->srcIdx], strLen);
                 idx += strLen;
             }
 
@@ -787,10 +846,17 @@ static int GetName(DecodedCert* cert, int nameType)
             if (email) {
                 if (14 > (ASN_NAME_MAX - idx))
                     return ASN_PARSE_E; 
-                memcpy(&full[idx], "/emailAddress=", 14);
+                XMEMCPY(&full[idx], "/emailAddress=", 14);
                 idx += 14;
 
-                memcpy(&full[idx], &cert->source[cert->srcIdx], adv);
+#ifdef CYASSL_CERT_GEN
+                if (nameType == SUBJECT) {
+                    cert->subjectEmail = (char*)&cert->source[cert->srcIdx];
+                    cert->subjectEmailLen = adv;
+                }
+#endif /* CYASSL_CERT_GEN */
+
+                XMEMCPY(&full[idx], &cert->source[cert->srcIdx], adv);
                 idx += adv;
             }
 
@@ -872,12 +938,8 @@ static int ValidateDate(const byte* date, byte format, int dateType)
     struct tm* localTime;
     int    i = 0;
 
-#ifdef THREADX
-    ltime = 0;              /* not used by THREADX my_gmtime, time(0) hangs */
-#else
-    ltime = time(0);
-#endif
-    memset(&certTime, 0, sizeof(certTime));
+    ltime = XTIME(0);
+    XMEMSET(&certTime, 0, sizeof(certTime));
 
     if (format == ASN_UTC_TIME) {
         if (btoi(date[0]) >= 5)
@@ -900,11 +962,7 @@ static int ValidateDate(const byte* date, byte format, int dateType)
     if (date[i] != 'Z')     /* only Zulu supported for this profile */
         return 0;
 
-#ifdef THREADX
-    localTime = my_gmtime(&ltime);
-#else
-    localTime = gmtime(&ltime);
-#endif
+    localTime = XGMTIME(&ltime);
 
     if (dateType == BEFORE) {
         if (DateLessThan(localTime, &certTime))
@@ -933,7 +991,7 @@ static int GetDate(DecodedCert* cert, int dateType)
     if (length > MAX_DATE_SIZE || length < MIN_DATE_SIZE)
         return ASN_DATE_SZ_E;
 
-    memcpy(date, &cert->source[cert->srcIdx], length);
+    XMEMCPY(date, &cert->source[cert->srcIdx], length);
     cert->srcIdx += length;
 
     if (!ValidateDate(date, b, dateType)) {
@@ -1027,7 +1085,7 @@ static word32 SetDigest(const byte* digest, word32 digSz, byte* output)
 {
     output[0] = ASN_OCTET_STRING;
     output[1] = digSz;
-    memcpy(&output[2], digest, digSz);
+    XMEMCPY(&output[2], digest, digSz);
 
     return digSz + 2;
 } 
@@ -1147,9 +1205,9 @@ static word32 SetAlgoID(int algoOID, byte* output, int type)
     seqSz = SetSequence(idSz + algoSz + 1, seqArray);
     seqArray[seqSz++] = ASN_OBJECT_ID;
 
-    memcpy(output, seqArray, seqSz);
-    memcpy(output + seqSz, ID_Length, idSz);
-    memcpy(output + seqSz + idSz, algoName, algoSz);
+    XMEMCPY(output, seqArray, seqSz);
+    XMEMCPY(output + seqSz, ID_Length, idSz);
+    XMEMCPY(output + seqSz + idSz, algoName, algoSz);
 
     return seqSz + idSz + algoSz;
 
@@ -1167,9 +1225,9 @@ word32 EncodeSignature(byte* out, const byte* digest, word32 digSz, int hashOID)
     algoSz   = SetAlgoID(hashOID, algoArray, hashType);
     seqSz    = SetSequence(encDigSz + algoSz, seqArray);
 
-    memcpy(out, seqArray, seqSz);
-    memcpy(out + seqSz, algoArray, algoSz);
-    memcpy(out + seqSz + algoSz, digArray, encDigSz);
+    XMEMCPY(out, seqArray, seqSz);
+    XMEMCPY(out + seqSz, algoArray, algoSz);
+    XMEMCPY(out + seqSz + algoSz, digArray, encDigSz);
 
     return encDigSz + algoSz + seqSz;
 }
@@ -1218,7 +1276,7 @@ static int ConfirmSignature(DecodedCert* cert, const byte* key, word32 keySz)
             ret = 0; /* ASN_KEY_DECODE_E; */
 
         else {
-            memcpy(plain, cert->signature, cert->sigLength);
+            XMEMCPY(plain, cert->signature, cert->sigLength);
             if ( (verifySz = RsaSSL_VerifyInline(plain, cert->sigLength, &out,
                                            &pubKey)) < 0)
                 ret = 0; /* ASN_VERIFY_E; */
@@ -1251,21 +1309,11 @@ int ParseCert(DecodedCert* cert, word32 inSz, int type, int verify,
     if (ret < 0)
         return ret;
 
-    if (cert->issuerCNLen > 0) {
-        ptr = (char*) XMALLOC(cert->issuerCNLen + 1, cert->heap);
-        if (ptr == NULL)
-            return MEMORY_E;
-        memcpy(ptr, cert->issuerCN, cert->issuerCNLen);
-        ptr[cert->issuerCNLen] = '\0';
-        cert->issuerCN = ptr;
-        cert->issuerCNLen = 0;
-    }
-
     if (cert->subjectCNLen > 0) {
         ptr = (char*) XMALLOC(cert->subjectCNLen + 1, cert->heap);
         if (ptr == NULL)
             return MEMORY_E;
-        memcpy(ptr, cert->subjectCN, cert->subjectCNLen);
+        XMEMCPY(ptr, cert->subjectCN, cert->subjectCNLen);
         ptr[cert->subjectCNLen] = '\0';
         cert->subjectCN = ptr;
         cert->subjectCNLen = 0;
@@ -1275,18 +1323,9 @@ int ParseCert(DecodedCert* cert, word32 inSz, int type, int verify,
         ptr = (char*) XMALLOC(cert->pubKeySize, cert->heap);
         if (ptr == NULL)
             return MEMORY_E;
-        memcpy(ptr, cert->publicKey, cert->pubKeySize);
+        XMEMCPY(ptr, cert->publicKey, cert->pubKeySize);
         cert->publicKey = (byte *)ptr;
         cert->pubKeyStored = 1;
-    }
-
-    if (cert->sigLength > 0) {
-        ptr = (char*) XMALLOC(cert->sigLength, cert->heap);
-        if (ptr == NULL)
-            return MEMORY_E;
-        memcpy(ptr, cert->signature, cert->sigLength);
-        cert->signature = (byte *)ptr;
-        cert->signatureStored = 1;
     }
 
     return ret;
@@ -1377,191 +1416,191 @@ void CTaoCryptErrorString(int error, char* buffer)
 
 #ifdef NO_ERROR_STRINGS
 
-    strncpy(buffer, "no support for error strings built in", max);
+    XSTRNCPY(buffer, "no support for error strings built in", max);
 
 #else
 
     switch (error) {
 
     case OPEN_RAN_E :        
-        strncpy(buffer, "opening random device error", max);
+        XSTRNCPY(buffer, "opening random device error", max);
         break;
 
     case READ_RAN_E :
-        strncpy(buffer, "reading random device error", max);
+        XSTRNCPY(buffer, "reading random device error", max);
         break;
 
     case WINCRYPT_E :
-        strncpy(buffer, "windows crypt init error", max);
+        XSTRNCPY(buffer, "windows crypt init error", max);
         break;
 
     case CRYPTGEN_E : 
-        strncpy(buffer, "windows crypt generation error", max);
+        XSTRNCPY(buffer, "windows crypt generation error", max);
         break;
 
     case RAN_BLOCK_E : 
-        strncpy(buffer, "random device read would block error", max);
+        XSTRNCPY(buffer, "random device read would block error", max);
         break;
 
     case MP_INIT_E :
-        strncpy(buffer, "mp_init error state", max);
+        XSTRNCPY(buffer, "mp_init error state", max);
         break;
 
     case MP_READ_E :
-        strncpy(buffer, "mp_read error state", max);
+        XSTRNCPY(buffer, "mp_read error state", max);
         break;
 
     case MP_EXPTMOD_E :
-        strncpy(buffer, "mp_exptmod error state", max);
+        XSTRNCPY(buffer, "mp_exptmod error state", max);
         break;
 
     case MP_TO_E :
-        strncpy(buffer, "mp_to_xxx error state, can't convert", max);
+        XSTRNCPY(buffer, "mp_to_xxx error state, can't convert", max);
         break;
 
     case MP_SUB_E :
-        strncpy(buffer, "mp_sub error state, can't subtract", max);
+        XSTRNCPY(buffer, "mp_sub error state, can't subtract", max);
         break;
 
     case MP_ADD_E :
-        strncpy(buffer, "mp_add error state, can't add", max);
+        XSTRNCPY(buffer, "mp_add error state, can't add", max);
         break;
 
     case MP_MUL_E :
-        strncpy(buffer, "mp_mul error state, can't multiply", max);
+        XSTRNCPY(buffer, "mp_mul error state, can't multiply", max);
         break;
 
     case MP_MULMOD_E :
-        strncpy(buffer, "mp_mulmod error state, can't multiply mod", max);
+        XSTRNCPY(buffer, "mp_mulmod error state, can't multiply mod", max);
         break;
 
     case MP_MOD_E :
-        strncpy(buffer, "mp_mod error state, can't mod", max);
+        XSTRNCPY(buffer, "mp_mod error state, can't mod", max);
         break;
 
     case MP_INVMOD_E :
-        strncpy(buffer, "mp_invmod error state, can't inv mod", max);
+        XSTRNCPY(buffer, "mp_invmod error state, can't inv mod", max);
         break; 
         
     case MP_CMP_E :
-        strncpy(buffer, "mp_cmp error state", max);
+        XSTRNCPY(buffer, "mp_cmp error state", max);
         break; 
         
     case MEMORY_E :
-        strncpy(buffer, "out of memory error", max);
+        XSTRNCPY(buffer, "out of memory error", max);
         break;
 
     case RSA_WRONG_TYPE_E :
-        strncpy(buffer, "RSA wrong block type for RSA function", max);
+        XSTRNCPY(buffer, "RSA wrong block type for RSA function", max);
         break; 
 
     case RSA_BUFFER_E :
-        strncpy(buffer, "RSA buffer error, output too small or input too big",
+        XSTRNCPY(buffer, "RSA buffer error, output too small or input too big",
                 max);
         break; 
 
     case BUFFER_E :
-        strncpy(buffer, "Buffer error, output too small or input too big", max);
+        XSTRNCPY(buffer, "Buffer error, output too small or input too big", max);
         break; 
 
     case ALGO_ID_E :
-        strncpy(buffer, "Setting Cert AlogID error", max);
+        XSTRNCPY(buffer, "Setting Cert AlogID error", max);
         break; 
 
     case PUBLIC_KEY_E :
-        strncpy(buffer, "Setting Cert Public Key error", max);
+        XSTRNCPY(buffer, "Setting Cert Public Key error", max);
         break; 
 
     case DATE_E :
-        strncpy(buffer, "Setting Cert Date validity error", max);
+        XSTRNCPY(buffer, "Setting Cert Date validity error", max);
         break; 
 
     case SUBJECT_E :
-        strncpy(buffer, "Setting Cert Subject name error", max);
+        XSTRNCPY(buffer, "Setting Cert Subject name error", max);
         break; 
 
     case ISSUER_E :
-        strncpy(buffer, "Setting Cert Issuer name error", max);
+        XSTRNCPY(buffer, "Setting Cert Issuer name error", max);
         break; 
 
     case ASN_PARSE_E :
-        strncpy(buffer, "ASN parsing error, invalid input", max);
+        XSTRNCPY(buffer, "ASN parsing error, invalid input", max);
         break;
 
     case ASN_VERSION_E :
-        strncpy(buffer, "ASN version error, invalid number", max);
+        XSTRNCPY(buffer, "ASN version error, invalid number", max);
         break;
 
     case ASN_GETINT_E :
-        strncpy(buffer, "ASN get big int error, invalid data", max);
+        XSTRNCPY(buffer, "ASN get big int error, invalid data", max);
         break;
 
     case ASN_RSA_KEY_E :
-        strncpy(buffer, "ASN key init error, invalid input", max);
+        XSTRNCPY(buffer, "ASN key init error, invalid input", max);
         break;
 
     case ASN_OBJECT_ID_E :
-        strncpy(buffer, "ASN object id error, invalid id", max);
+        XSTRNCPY(buffer, "ASN object id error, invalid id", max);
         break;
 
     case ASN_TAG_NULL_E :
-        strncpy(buffer, "ASN tag error, not null", max);
+        XSTRNCPY(buffer, "ASN tag error, not null", max);
         break;
 
     case ASN_EXPECT_0_E :
-        strncpy(buffer, "ASN expect error, not zero", max);
+        XSTRNCPY(buffer, "ASN expect error, not zero", max);
         break;
 
     case ASN_BITSTR_E :
-        strncpy(buffer, "ASN bit string error, wrong id", max);
+        XSTRNCPY(buffer, "ASN bit string error, wrong id", max);
         break;
 
     case ASN_UNKNOWN_OID_E :
-        strncpy(buffer, "ASN oid error, unknown sum id", max);
+        XSTRNCPY(buffer, "ASN oid error, unknown sum id", max);
         break;
 
     case ASN_DATE_SZ_E :
-        strncpy(buffer, "ASN date error, bad size", max);
+        XSTRNCPY(buffer, "ASN date error, bad size", max);
         break;
 
     case ASN_BEFORE_DATE_E :
-        strncpy(buffer, "ASN date error, current date before", max);
+        XSTRNCPY(buffer, "ASN date error, current date before", max);
         break;
 
     case ASN_AFTER_DATE_E :
-        strncpy(buffer, "ASN date error, current date after", max);
+        XSTRNCPY(buffer, "ASN date error, current date after", max);
         break;
 
     case ASN_SIG_OID_E :
-        strncpy(buffer, "ASN signature error, mismatched oid", max);
+        XSTRNCPY(buffer, "ASN signature error, mismatched oid", max);
         break;
 
     case ASN_TIME_E :
-        strncpy(buffer, "ASN time error, unkown time type", max);
+        XSTRNCPY(buffer, "ASN time error, unkown time type", max);
         break;
 
     case ASN_INPUT_E :
-        strncpy(buffer, "ASN input error, not enough data", max);
+        XSTRNCPY(buffer, "ASN input error, not enough data", max);
         break;
 
     case ASN_SIG_CONFIRM_E :
-        strncpy(buffer, "ASN sig error, confirm failure", max);
+        XSTRNCPY(buffer, "ASN sig error, confirm failure", max);
         break;
 
     case ASN_SIG_HASH_E :
-        strncpy(buffer, "ASN sig error, unsupported hash type", max);
+        XSTRNCPY(buffer, "ASN sig error, unsupported hash type", max);
         break;
 
     case ASN_SIG_KEY_E :
-        strncpy(buffer, "ASN sig error, unsupported key type", max);
+        XSTRNCPY(buffer, "ASN sig error, unsupported key type", max);
         break;
 
     case ASN_DH_KEY_E :
-        strncpy(buffer, "ASN key init error, invalid input", max);
+        XSTRNCPY(buffer, "ASN key init error, invalid input", max);
         break;
 
     default:
-        strncpy(buffer, "unknown error number", max);
+        XSTRNCPY(buffer, "unknown error number", max);
 
     }
 
@@ -1600,15 +1639,15 @@ int DerToPem(const byte* der, word32 derSz, byte* output, word32 outSz,
     int outLen;   /* return length or error */
 
     if (type == CERT_TYPE) {
-        strncpy(header, "-----BEGIN CERTIFICATE-----\n", sizeof(header));
-        strncpy(footer, "-----END CERTIFICATE-----\n", sizeof(footer));
+        XSTRNCPY(header, "-----BEGIN CERTIFICATE-----\n", sizeof(header));
+        XSTRNCPY(footer, "-----END CERTIFICATE-----\n", sizeof(footer));
     } else {
-        strncpy(header, "-----BEGIN RSA PRIVATE KEY-----\n", sizeof(header));
-        strncpy(footer, "-----END RSA PRIVATE KEY-----\n", sizeof(footer));
+        XSTRNCPY(header, "-----BEGIN RSA PRIVATE KEY-----\n", sizeof(header));
+        XSTRNCPY(footer, "-----END RSA PRIVATE KEY-----\n", sizeof(footer));
     }
 
-    headerLen = strlen(header);
-    footerLen = strlen(footer);
+    headerLen = XSTRLEN(header);
+    footerLen = XSTRLEN(footer);
 
     if (!der || !output)
         return -1;
@@ -1618,7 +1657,7 @@ int DerToPem(const byte* der, word32 derSz, byte* output, word32 outSz,
         return -1;
 
     /* header */
-    memcpy(output, header, headerLen);
+    XMEMCPY(output, header, headerLen);
     i = headerLen;
 
     /* body */
@@ -1630,7 +1669,7 @@ int DerToPem(const byte* der, word32 derSz, byte* output, word32 outSz,
     /* footer */
     if ( (i + footerLen) > (int)outSz)
         return -1;
-    memcpy(output + i, footer, footerLen);
+    XMEMCPY(output + i, footer, footerLen);
 
     return outLen + headerLen + footerLen;
 }
@@ -1713,13 +1752,13 @@ int RsaKeyToDer(RsaKey* key, byte* output, word32 inLen)
         return -1;
 
     /* write to output */
-    memcpy(output, seq, seqSz);
+    XMEMCPY(output, seq, seqSz);
     j = seqSz;
-    memcpy(output + j, ver, verSz);
+    XMEMCPY(output + j, ver, verSz);
     j += verSz;
 
     for (i = 0; i < RSA_INTS; i++) {
-        memcpy(output + j, tmps[i], sizes[i]);
+        XMEMCPY(output + j, tmps[i], sizes[i]);
         j += sizes[i];
     }
 
@@ -1746,7 +1785,7 @@ void InitCert(Cert* cert)
     cert->sigType    = MD5wRSA;
     cert->daysValid  = 500;
     cert->selfSigned = 1;
-    memset(cert->serial, 0, SERIAL_SIZE);
+    XMEMSET(cert->serial, 0, SERIAL_SIZE);
 
     cert->issuer.country[0] = '\0';
     cert->issuer.state[0] = '\0';
@@ -1803,7 +1842,7 @@ static int SetSerial(const byte* serial, byte* output)
 
     output[length++] = ASN_INTEGER;
     length += SetLength(SERIAL_SIZE, &output[length]);
-    memcpy(&output[length], serial, SERIAL_SIZE);
+    XMEMCPY(&output[length], serial, SERIAL_SIZE);
 
     return length + SERIAL_SIZE;
 }
@@ -1865,21 +1904,21 @@ static int SetPublicKey(byte* output, RsaKey* key)
     idx = SetSequence(nSz + eSz + seqSz + lenSz + 1 + algoSz, output);
         /* 1 is for ASN_BIT_STRING */
     /* algo */
-    memcpy(output + idx, algo, algoSz);
+    XMEMCPY(output + idx, algo, algoSz);
     idx += algoSz;
     /* bit string */
     output[idx++] = ASN_BIT_STRING;
     /* length */
-    memcpy(output + idx, len, lenSz);
+    XMEMCPY(output + idx, len, lenSz);
     idx += lenSz;
     /* seq */
-    memcpy(output + idx, seq, seqSz);
+    XMEMCPY(output + idx, seq, seqSz);
     idx += seqSz;
     /* n */
-    memcpy(output + idx, n, nSz);
+    XMEMCPY(output + idx, n, nSz);
     idx += nSz;
     /* e */
-    memcpy(output + idx, e, eSz);
+    XMEMCPY(output + idx, e, eSz);
     idx += eSz;
 
     return idx;
@@ -1935,13 +1974,8 @@ static int SetValidity(byte* output, int daysValid)
     struct tm* now;
     struct tm  local;
 
-#ifdef THREADX
-    ticks = 0;         /* not used by THREADX my_gmtime, time(0) hangs */
-    now   = my_gmtime(&ticks);
-#else
-    ticks = time(0);
-    now   = gmtime(&ticks);
-#endif 
+    ticks = XTIME(0);
+    now   = XGMTIME(&ticks);
 
     /* before now */
     local = *now;
@@ -1973,8 +2007,8 @@ static int SetValidity(byte* output, int daysValid)
 
     /* headers and output */
     seqSz = SetSequence(beforeSz + afterSz, output);
-    memcpy(output + seqSz, before, beforeSz);
-    memcpy(output + seqSz + beforeSz, after, afterSz);
+    XMEMCPY(output + seqSz, before, beforeSz);
+    XMEMCPY(output + seqSz + beforeSz, after, afterSz);
 
     return seqSz + beforeSz + afterSz;
 }
@@ -2073,7 +2107,7 @@ static int SetName(byte* output, CertName* name)
             byte set[MAX_SET_SZ];
 
             int email = i == (NAME_ENTRIES - 1) ? 1 : 0;
-            int strLen  = strlen(nameStr);
+            int strLen  = XSTRLEN(nameStr);
             int thisLen = strLen;
             int firstSz, secondSz, seqSz, setSz;
 
@@ -2104,21 +2138,21 @@ static int SetName(byte* output, CertName* name)
             /* store it */
             idx = 0;
             /* set */
-            memcpy(names[i].encoded, set, setSz);
+            XMEMCPY(names[i].encoded, set, setSz);
             idx += setSz;
             /* seq */
-            memcpy(names[i].encoded + idx, sequence, seqSz);
+            XMEMCPY(names[i].encoded + idx, sequence, seqSz);
             idx += seqSz;
             /* asn object id */
             names[i].encoded[idx++] = ASN_OBJECT_ID;
             /* first length */
-            memcpy(names[i].encoded + idx, firstLen, firstSz);
+            XMEMCPY(names[i].encoded + idx, firstLen, firstSz);
             idx += firstSz;
             if (email) {
                 const byte EMAIL_OID[] = { 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d,
                                            0x01, 0x09, 0x01, 0x16 };
                 /* email joint id */
-                memcpy(names[i].encoded + idx, EMAIL_OID, sizeof(EMAIL_OID));
+                XMEMCPY(names[i].encoded + idx, EMAIL_OID, sizeof(EMAIL_OID));
                 idx += sizeof(EMAIL_OID);
             }
             else {
@@ -2131,10 +2165,10 @@ static int SetName(byte* output, CertName* name)
                 names[i].encoded[idx++] = 0x13;
             }
             /* second length */
-            memcpy(names[i].encoded + idx, secondLen, secondSz);
+            XMEMCPY(names[i].encoded + idx, secondLen, secondSz);
             idx += secondSz;
             /* str value */
-            memcpy(names[i].encoded + idx, nameStr, strLen);
+            XMEMCPY(names[i].encoded + idx, nameStr, strLen);
             idx += strLen;
 
             totalBytes += idx;
@@ -2153,7 +2187,7 @@ static int SetName(byte* output, CertName* name)
 
     for (i = 0; i < NAME_ENTRIES; i++) {
         if (names[i].used) {
-            memcpy(output + idx, names[i].encoded, names[i].totalLen);
+            XMEMCPY(output + idx, names[i].encoded, names[i].totalLen);
             idx += names[i].totalLen;
         }
     }
@@ -2213,25 +2247,25 @@ static int WriteCertBody(DerCert* der, byte* buffer)
     /* signed part header */
     idx = SetSequence(der->total, buffer);
     /* version */
-    memcpy(buffer + idx, der->version, der->versionSz);
+    XMEMCPY(buffer + idx, der->version, der->versionSz);
     idx += der->versionSz;
     /* serial */
-    memcpy(buffer + idx, der->serial, der->serialSz);
+    XMEMCPY(buffer + idx, der->serial, der->serialSz);
     idx += der->serialSz;
     /* sig algo */
-    memcpy(buffer + idx, der->sigAlgo, der->sigAlgoSz);
+    XMEMCPY(buffer + idx, der->sigAlgo, der->sigAlgoSz);
     idx += der->sigAlgoSz;
     /* issuer */
-    memcpy(buffer + idx, der->issuer, der->issuerSz);
+    XMEMCPY(buffer + idx, der->issuer, der->issuerSz);
     idx += der->issuerSz;
     /* validity */
-    memcpy(buffer + idx, der->validity, der->validitySz);
+    XMEMCPY(buffer + idx, der->validity, der->validitySz);
     idx += der->validitySz;
     /* subject */
-    memcpy(buffer + idx, der->subject, der->subjectSz);
+    XMEMCPY(buffer + idx, der->subject, der->subjectSz);
     idx += der->subjectSz;
     /* public key */
-    memcpy(buffer + idx, der->publicKey, der->publicKeySz);
+    XMEMCPY(buffer + idx, der->publicKey, der->publicKeySz);
     idx += der->publicKeySz;
 
     return idx;
@@ -2274,13 +2308,13 @@ static int AddSignature(byte* buffer, int bodySz, const byte* sig, int sigSz)
     idx += SetLength(sigSz + 1, buffer + idx);
     buffer[idx++] = 0;   /* trailing 0 */
     /* signature */
-    memcpy(buffer + idx, sig, sigSz);
+    XMEMCPY(buffer + idx, sig, sigSz);
     idx += sigSz;
 
     /* make room for overall header */
     seqSz = SetSequence(idx, seq);
     memmove(buffer + seqSz, buffer, idx);
-    memcpy(buffer, seq, seqSz);
+    XMEMCPY(buffer, seq, seqSz);
 
     return idx + seqSz;
 }

@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(cyassl,1.6.8b)
+AM_INIT_AUTOMAKE(cyassl,1.7.0)
 AM_CONFIG_HEADER(ctaocrypt/include/config.h)
 
 
@@ -25,6 +25,7 @@ AC_C_BIGENDIAN
 AC_CHECK_SIZEOF(long, 4)
 AC_CHECK_SIZEOF(long long, 8)
 
+AC_CHECK_HEADERS(errno.h)
 
 OPTIMIZE_CFLAGS="-Os -fomit-frame-pointer"
 OPTIMIZE_FAST_CFLAGS="-O3 -fomit-frame-pointer"

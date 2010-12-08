@@ -613,14 +613,14 @@ const unsigned char* CyaSSL_get_sessionID(const SSL_SESSION* session);
     #endif
 #endif
 
-#ifdef NO_FILESYSTEM
+#if defined(NO_FILESYSTEM) || defined(MICRIUM)
 
 int CyaSSL_CTX_load_verify_buffer(SSL_CTX*, const unsigned char*, long);
 int CyaSSL_CTX_use_certificate_buffer(SSL_CTX*, const unsigned char*, long,int);
 int CyaSSL_CTX_use_PrivateKey_buffer(SSL_CTX*, const unsigned char*, long, int);
 int CyaSSL_CTX_use_certificate_chain_buffer(SSL_CTX*,const unsigned char*,long);
 
-#endif /* NO_FILESYSTEM */
+#endif /* NO_FILESYSTEM || MICRIUM */
 
 
 /* I/O callbacks */

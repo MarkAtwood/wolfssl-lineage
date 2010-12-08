@@ -136,10 +136,7 @@ typedef struct DecodedCert {
     word32  keyOID;                  /* sum of key algo  object id       */
     byte    subjectHash[SHA_SIZE];   /* hash of all Names                */
     byte    issuerHash[SHA_SIZE];    /* hash of all Names                */
-    byte*   signature;
-    int     signatureStored;
-    char*   issuerCN;                /* CommonName                       */
-    int     issuerCNLen;
+    byte*   signature;               /* not owned, points into raw cert  */
     char*   subjectCN;               /* CommonName                       */
     int     subjectCNLen;
     char    issuer[ASN_NAME_MAX];    /* full name including common name  */
@@ -148,6 +145,23 @@ typedef struct DecodedCert {
     byte*   source;                  /* byte buffer holder cert, NOT owner */
     word32  srcIdx;                  /* current offset into buffer       */
     void*   heap;                    /* for user memory overrides        */
+#ifdef CYASSL_CERT_GEN
+    /* easy access to sujbect info for other sign */
+    char*   subjectSN;
+    int     subjectSNLen;
+    char*   subjectC;
+    int     subjectCLen;
+    char*   subjectL;
+    int     subjectLLen;
+    char*   subjectST;
+    int     subjectSTLen;
+    char*   subjectO;
+    int     subjectOLen;
+    char*   subjectOU;
+    int     subjectOULen;
+    char*   subjectEmail;
+    int     subjectEmailLen;
+#endif /* CYASSL_CERT_GEN */
 } DecodedCert;
 
 
