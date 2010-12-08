@@ -271,20 +271,20 @@ int RsaPrivateDecrypt(const byte* in, word32 inLen, byte* out, word32 outLen,
     byte*  tmp;
     byte*  pad = 0;
 
-    if ( !(tmp = (byte*)XMALLOC(inLen, key->heap)) )
+    if ( !(tmp = (byte*)XMALLOC(inLen, key->heap, DYNAMIC_TYPE_RSA)) )
         return MEMORY_E;
 
     XMEMCPY(tmp, in, inLen);
 
     if ((ret = plainLen = RsaPrivateDecryptInline(tmp, inLen, &pad, key))
             < 0) {
-        XFREE(tmp, key->heap);
+        XFREE(tmp, key->heap, DYNAMIC_TYPE_RSA);
         return ret;
     }
     XMEMCPY(out, pad, plainLen);
     XMEMSET(tmp, 0x00, inLen); 
 
-    XFREE(tmp, key->heap);
+    XFREE(tmp, key->heap, DYNAMIC_TYPE_RSA);
     return plainLen;
 }
 
@@ -311,21 +311,21 @@ int RsaSSL_Verify(const byte* in, word32 inLen, byte* out, word32 outLen,
     byte*  tmp;
     byte*  pad = 0;
 
-    if ( !(tmp = (byte*)XMALLOC(inLen, key->heap)) )
+    if ( !(tmp = (byte*)XMALLOC(inLen, key->heap, DYNAMIC_TYPE_RSA)) )
         return MEMORY_E;
 
     XMEMCPY(tmp, in, inLen);
 
     if ((ret = plainLen = RsaSSL_VerifyInline(tmp, inLen, &pad, key))
             < 0) {
-        XFREE(tmp, key->heap);
+        XFREE(tmp, key->heap, DYNAMIC_TYPE_RSA);
         return ret;
     }
   
     XMEMCPY(out, pad, plainLen);
     XMEMSET(tmp, 0x00, inLen); 
 
-    XFREE(tmp, key->heap);
+    XFREE(tmp, key->heap, DYNAMIC_TYPE_RSA);
     return plainLen;
 }
 
@@ -402,13 +402,13 @@ static int rand_prime(mp_int* N, int len, RNG* rng, void* heap)
  
         /* load value */
         if ((err = mp_read_unsigned_bin(N, buf, len)) != MP_OKAY) {
-            XFREE(buf, heap);
+            XFREE(buf, heap, DYNAMIC_TYPE_RSA);
             return err;
         }
 
         /* test */
         if ((err = mp_prime_is_prime(N, 8, &res)) != MP_OKAY) {
-            XFREE(buf, heap);
+            XFREE(buf, heap, DYNAMIC_TYPE_RSA);
             return err;
         }
     } while (res == MP_NO);
@@ -417,7 +417,7 @@ static int rand_prime(mp_int* N, int len, RNG* rng, void* heap)
     XMEMSET(buf, 0, len);
 #endif
 
-    XFREE(buf, heap);
+    XFREE(buf, heap, DYNAMIC_TYPE_RSA);
     return 0;
 }
 

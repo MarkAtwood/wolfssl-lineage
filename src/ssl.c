@@ -58,7 +58,7 @@
 
 SSL_CTX* SSL_CTX_new(SSL_METHOD* method)
 {
-    SSL_CTX* ctx = (SSL_CTX*) XMALLOC(sizeof(SSL_CTX), 0);
+    SSL_CTX* ctx = (SSL_CTX*) XMALLOC(sizeof(SSL_CTX), 0, DYNAMIC_TYPE_CTX);
     if (ctx)
         InitSSL_Ctx(ctx, method);
 
@@ -76,7 +76,7 @@ void SSL_CTX_free(SSL_CTX* ctx)
 SSL* SSL_new(SSL_CTX* ctx)
 {
 
-    SSL* ssl = (SSL*) XMALLOC(sizeof(SSL), ctx->heap);
+    SSL* ssl = (SSL*) XMALLOC(sizeof(SSL), ctx->heap, DYNAMIC_TYPE_SSL);
     if (ssl)
         if (InitSSL(ssl, ctx) < 0) {
             FreeSSL(ssl);
@@ -299,7 +299,7 @@ static int AddCA(SSL_CTX* ctx, buffer der)
     }
 
     FreeDecodedCert(&cert);
-    XFREE(der.buffer, ctx->heap);
+    XFREE(der.buffer, ctx->heap, DYNAMIC_TYPE_CA);
 
     if (ret == 0) return SSL_SUCCESS;
     return ret;
@@ -351,13 +351,17 @@ static int AddCA(SSL_CTX* ctx, buffer der)
         char* footerEnd;
         long  neededSz;
         int   pkcs8 = 0;
+        int   dynamicType;
 
         if (type == CERT_TYPE || type == CA_TYPE)  {
             XSTRNCPY(header, "-----BEGIN CERTIFICATE-----", sizeof(header));
             XSTRNCPY(footer, "-----END CERTIFICATE-----", sizeof(footer));
+            dynamicType = (type == CA_TYPE) ? DYNAMIC_TYPE_CA :
+                                              DYNAMIC_TYPE_CERT;
         } else {
             XSTRNCPY(header, "-----BEGIN RSA PRIVATE KEY-----", sizeof(header));
             XSTRNCPY(footer, "-----END RSA PRIVATE KEY-----", sizeof(footer));
+            dynamicType = DYNAMIC_TYPE_KEY;
         }
 
         /* find header */
@@ -437,7 +441,7 @@ static int AddCA(SSL_CTX* ctx, buffer der)
         /* set up der buffer */
         neededSz = (long)(footerEnd - headerEnd);
         if (neededSz > sz || neededSz < 0) return SSL_BAD_FILE;
-        der->buffer = (byte*) XMALLOC(neededSz, heap);
+        der->buffer = (byte*) XMALLOC(neededSz, heap, dynamicType);
         if (!der->buffer) return MEMORY_ERROR;
         der->length = neededSz;
 
@@ -462,6 +466,7 @@ static int AddCA(SSL_CTX* ctx, buffer der)
     {
         EncryptedInfo info;
         buffer        der;
+        int           dynamicType;
 
         info.set   = 0;
         der.buffer = 0;
@@ -469,14 +474,21 @@ static int AddCA(SSL_CTX* ctx, buffer der)
         if (format != SSL_FILETYPE_ASN1 && format != SSL_FILETYPE_PEM)
             return SSL_BAD_FILETYPE;
 
+        if (type == CA_TYPE)
+            dynamicType = DYNAMIC_TYPE_CA;
+        else if (type == CERT_TYPE)
+            dynamicType = DYNAMIC_TYPE_CERT;
+        else
+            dynamicType = DYNAMIC_TYPE_KEY;
+
         if (format == SSL_FILETYPE_PEM) {
             if (PemToDer(buff, sz, type, &der, ctx->heap, &info) < 0) {
-                XFREE(der.buffer, ctx->heap);
+                XFREE(der.buffer, ctx->heap, dynamicType);
                 return SSL_BAD_FILE;
             }
         }
         else {  /* ASN1 (DER) */
-            der.buffer = (byte*) XMALLOC(sz, ctx->heap);
+            der.buffer = (byte*) XMALLOC(sz, ctx->heap, dynamicType);
             if (!der.buffer) return MEMORY_ERROR;
             XMEMCPY(der.buffer, buff, sz);
             der.length = sz;
@@ -535,12 +547,18 @@ static int AddCA(SSL_CTX* ctx, buffer der)
 
         if (type == CA_TYPE)
             return AddCA(ctx, der);     /* takes der over */
-        else if (type == CERT_TYPE)
+        else if (type == CERT_TYPE) {
+            if (ctx->certificate.buffer)
+                XFREE(ctx->certificate.buffer, ctx->heap, dynamicType);
             ctx->certificate = der;     /* takes der over */
-        else if (type == PRIVATEKEY_TYPE)
+        }
+        else if (type == PRIVATEKEY_TYPE) {
+            if (ctx->privateKey.buffer)
+                XFREE(ctx->privateKey.buffer, ctx->heap, dynamicType);
             ctx->privateKey = der;      /* takes der over */
+        }
         else {
-            XFREE(der.buffer, ctx->heap);
+            XFREE(der.buffer, ctx->heap, dynamicType);
             return SSL_BAD_CERTTYPE;
         }
 
@@ -600,7 +618,7 @@ static int ProcessFile(SSL_CTX* ctx, const char* fname, int format, int type)
     XREWIND(file);
 
     if (sz > sizeof(staticBuffer)) {
-        buffer = (byte*) XMALLOC(sz, 0);
+        buffer = (byte*) XMALLOC(sz, ctx->heap, DYNAMIC_TYPE_FILE);
         if (buffer == NULL) {
             XFCLOSE(file);
             return SSL_BAD_FILE;
@@ -614,7 +632,7 @@ static int ProcessFile(SSL_CTX* ctx, const char* fname, int format, int type)
         ret = ProcessBuffer(ctx, buffer, sz, format, type);
 
     XFCLOSE(file);
-    if (dynamic) XFREE(buffer, 0);
+    if (dynamic) XFREE(buffer, ctx->heap, DYNAMIC_TYPE_FILE);
 
     return ret;
 }
@@ -630,6 +648,19 @@ int SSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file,
     return SSL_FAILURE;
 }
 
+
+#ifdef CYASSL_DER_LOAD
+
+/* Add type parameter to allow DER load of CA files */
+int CyaSSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file, int type)
+{
+    if (ProcessFile(ctx, file, type, CA_TYPE) == SSL_SUCCESS)
+        return SSL_SUCCESS;
+
+    return SSL_FAILURE;
+}
+
+#endif /* CYASSL_DER_LOAD */
 
 int SSL_CTX_use_certificate_file(SSL_CTX* ctx, const char* file, int type)
 {
@@ -756,7 +787,8 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
     SSL_METHOD* SSLv3_client_method(void)
     {
-        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
+        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0,
+                                                   DYNAMIC_TYPE_METHOD);
         if (method)
             InitSSL_Method(method, MakeSSLv3());
         return method;
@@ -765,7 +797,8 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
     #ifdef CYASSL_DTLS
         SSL_METHOD* DTLSv1_client_method(void)
         {
-            SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
+            SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0,
+                                                       DYNAMIC_TYPE_METHOD);
             if (method)
                 InitSSL_Method(method, MakeDTLSv1());
             return method;
@@ -962,7 +995,8 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
     SSL_METHOD* SSLv3_server_method(void)
     {
-        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
+        SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0,
+                                                   DYNAMIC_TYPE_METHOD);
         if (method) {
             InitSSL_Method(method, MakeSSLv3());
             method->side = SERVER_END;
@@ -974,7 +1008,8 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
     #ifdef CYASSL_DTLS
         SSL_METHOD* DTLSv1_server_method(void)
         {
-            SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0);
+            SSL_METHOD* method = (SSL_METHOD*) XMALLOC(sizeof(SSL_METHOD), 0,
+                                                       DYNAMIC_TYPE_METHOD);
             if (method) {
                 InitSSL_Method(method, MakeDTLSv1());
                 method->side = SERVER_END;
@@ -1354,11 +1389,11 @@ int AddSession(SSL* ssl)
 int CyaSSL_check_domain_name(SSL* ssl, const char* dn)
 {
     if (ssl->buffers.domainName.buffer)
-        XFREE(ssl->buffers.domainName.buffer, ssl->heap);
+        XFREE(ssl->buffers.domainName.buffer, ssl->heap, DYNAMIC_TYPE_DOMAIN);
 
     ssl->buffers.domainName.length = (word32)XSTRLEN(dn) + 1;
-    ssl->buffers.domainName.buffer =
-                     (byte*) XMALLOC(ssl->buffers.domainName.length, ssl->heap);
+    ssl->buffers.domainName.buffer = (byte*) XMALLOC(
+                ssl->buffers.domainName.length, ssl->heap, DYNAMIC_TYPE_DOMAIN);
 
     if (ssl->buffers.domainName.buffer) {
         XSTRNCPY((char*)ssl->buffers.domainName.buffer, dn,
@@ -1405,7 +1440,8 @@ int CyaSSL_set_compression(SSL* ssl)
                 send += iov[i].iov_len;
 
             if (send > sizeof(tmp)) {
-                byte* tmp2 = (byte*) XMALLOC(send, ssl->heap);
+                byte* tmp2 = (byte*) XMALLOC(send, ssl->heap,
+                                             DYNAMIC_TYPE_WRITEV);
                 if (!tmp2)
                     return MEMORY_ERROR;
                 buffer = tmp2;
@@ -1419,7 +1455,7 @@ int CyaSSL_set_compression(SSL* ssl)
 
             ret = SSL_write(ssl, buffer, send);
 
-            if (newBuffer) XFREE(buffer, ssl->heap);
+            if (newBuffer) XFREE(buffer, ssl->heap, DYNAMIC_TYPE_WRITEV);
 
             return ret;
         }
@@ -1674,10 +1710,11 @@ int CyaSSL_set_compression(SSL* ssl)
 
 #if defined(NO_FILESYSTEM) || defined(MICRIUM)
 
+    /* CyaSSL extension allows DER files to be loaded from buffers as well */
     int CyaSSL_CTX_load_verify_buffer(SSL_CTX* ctx, const unsigned char* buffer,
-                                      long sz)
+                                      long sz, int type)
     {
-        return ProcessBuffer(ctx, buffer, sz, SSL_FILETYPE_PEM, CA_TYPE);
+        return ProcessBuffer(ctx, buffer, sz, type, CA_TYPE);
     }
 
 
@@ -1858,7 +1895,7 @@ int CyaSSL_set_compression(SSL* ssl)
         if (!name->sz) return buffer;
 
         if (!buffer) {
-            buffer = (char*)XMALLOC(name->sz, 0);
+            buffer = (char*)XMALLOC(name->sz, 0, DYNAMIC_TYPE_OPENSSL);
             if (!buffer) return buffer;
             copySz = name->sz;
         }
@@ -1918,7 +1955,7 @@ int CyaSSL_set_compression(SSL* ssl)
 
     BIO* BIO_new_socket(int sfd, int close)
     {
-        BIO* bio = (BIO*) XMALLOC(sizeof(BIO), 0);
+        BIO* bio = (BIO*) XMALLOC(sizeof(BIO), 0, DYNAMIC_TYPE_OPENSSL);
         if (bio) { 
             bio->type  = BIO_SOCKET;
             bio->close = close;
@@ -1953,7 +1990,7 @@ int CyaSSL_set_compression(SSL* ssl)
 
     BIO* BIO_new(BIO_METHOD* method)
     {
-        BIO* bio = (BIO*) XMALLOC(sizeof(BIO), 0);
+        BIO* bio = (BIO*) XMALLOC(sizeof(BIO), 0, DYNAMIC_TYPE_OPENSSL);
         if (bio) {
             bio->type  = method->type;
             bio->close = 0;
@@ -1983,7 +2020,7 @@ int CyaSSL_set_compression(SSL* ssl)
                 if (bio->fd)
                     CloseSocket(bio->fd);
             }
-            XFREE(bio, 0);
+            XFREE(bio, 0, DYNAMIC_TYPE_OPENSSL);
         }
         return 0;
     }

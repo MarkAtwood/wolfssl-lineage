@@ -77,7 +77,8 @@ int mp_init (mp_int * a)
   int i;
 
   /* allocate memory required and clear it */
-  a->dp = OPT_CAST(mp_digit) XMALLOC (sizeof (mp_digit) * MP_PREC, 0);
+  a->dp = OPT_CAST(mp_digit) XMALLOC (sizeof (mp_digit) * MP_PREC, 0,
+                                      DYNAMIC_TYPE_BIGINT);
   if (a->dp == NULL) {
     return MP_MEM;
   }
@@ -111,7 +112,7 @@ mp_clear (mp_int * a)
     }
 
     /* free ram */
-    XFREE(a->dp, 0);
+    XFREE(a->dp, 0, DYNAMIC_TYPE_BIGINT);
 
     /* reset members to make debugging easier */
     a->dp    = NULL;
@@ -2685,7 +2686,8 @@ int mp_init_size (mp_int * a, int size)
   size += (MP_PREC * 2) - (size % MP_PREC);	
   
   /* alloc mem */
-  a->dp = OPT_CAST(mp_digit) XMALLOC (sizeof (mp_digit) * size, 0);
+  a->dp = OPT_CAST(mp_digit) XMALLOC (sizeof (mp_digit) * size, 0,
+                                      DYNAMIC_TYPE_BIGINT);
   if (a->dp == NULL) {
     return MP_MEM;
   }

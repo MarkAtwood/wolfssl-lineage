@@ -169,8 +169,8 @@ static INLINE void showPeer(SSL* ssl)
         
         printf("peer's cert info:\n issuer : %s\n subject: %s\n", issuer,
                                                                   subject);
-        XFREE(subject, 0);
-        XFREE(issuer, 0);
+        XFREE(subject, 0, DYNAMIC_TYPE_OPENSSL);
+        XFREE(issuer,  0, DYNAMIC_TYPE_OPENSSL);
     }
     else
         printf("peer has no cert!\n");
@@ -502,7 +502,8 @@ static INLINE unsigned int my_psk_server_cb(SSL* ssl, const char* identity,
         fread(buff, sizeof(buff), 1, file);
   
         if (type == CYASSL_CA) {
-            if (CyaSSL_CTX_load_verify_buffer(ctx, buff, sz) != SSL_SUCCESS)
+            if (CyaSSL_CTX_load_verify_buffer(ctx, buff, sz, SSL_FILETYPE_PEM)
+                                              != SSL_SUCCESS)
                 err_sys("can't load buffer ca file");
         }
         else if (type == CYASSL_CERT) {
@@ -535,8 +536,8 @@ static int myVerify(int preverify, X509_STORE_CTX* store)
         
         printf("peer's cert info:\n issuer : %s\n subject: %s\n", issuer,
                                                                   subject);
-        XFREE(subject, 0);
-        XFREE(issuer, 0);
+        XFREE(subject, 0, DYNAMIC_TYPE_OPENSSL);
+        XFREE(issuer,  0, DYNAMIC_TYPE_OPENSSL);
     }
     else
         printf("peer has no cert!\n");

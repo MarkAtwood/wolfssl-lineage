@@ -602,9 +602,9 @@ void InitDecodedCert(DecodedCert* cert, byte* source, void* heap)
 void FreeDecodedCert(DecodedCert* cert)
 {
     if (cert->subjectCNLen == 0)  /* 0 means no longer pointer to raw, we own */
-        XFREE(cert->subjectCN, cert->heap);
+        XFREE(cert->subjectCN, cert->heap, DYNAMIC_TYPE_SUBJECT_CN);
     if (cert->pubKeyStored == 1)
-        XFREE(cert->publicKey, cert->heap);
+        XFREE(cert->publicKey, cert->heap, DYNAMIC_TYPE_PUBLIC_KEY);
 }
 
 
@@ -1310,7 +1310,8 @@ int ParseCert(DecodedCert* cert, word32 inSz, int type, int verify,
         return ret;
 
     if (cert->subjectCNLen > 0) {
-        ptr = (char*) XMALLOC(cert->subjectCNLen + 1, cert->heap);
+        ptr = (char*) XMALLOC(cert->subjectCNLen + 1, cert->heap,
+                              DYNAMIC_TYPE_ISSUER_CN);
         if (ptr == NULL)
             return MEMORY_E;
         XMEMCPY(ptr, cert->subjectCN, cert->subjectCNLen);
@@ -1320,7 +1321,8 @@ int ParseCert(DecodedCert* cert, word32 inSz, int type, int verify,
     }
 
     if (cert->pubKeySize > 0) {
-        ptr = (char*) XMALLOC(cert->pubKeySize, cert->heap);
+        ptr = (char*) XMALLOC(cert->pubKeySize, cert->heap,
+                              DYNAMIC_TYPE_PUBLIC_KEY);
         if (ptr == NULL)
             return MEMORY_E;
         XMEMCPY(ptr, cert->publicKey, cert->pubKeySize);
@@ -1386,7 +1388,8 @@ int ParseCertRelative(DecodedCert* cert, word32 inSz, int type, int verify,
 
 Signer* MakeSigner(void* heap)
 {
-    Signer* signer = (Signer*) XMALLOC(sizeof(Signer), heap);
+    Signer* signer = (Signer*) XMALLOC(sizeof(Signer), heap,
+                                       DYNAMIC_TYPE_SIGNER);
     if (signer) {
         signer->name      = 0;
         signer->publicKey = 0;
@@ -1403,9 +1406,9 @@ void FreeSigners(Signer* signer, void* heap)
 
     while( (signer = next) ) {
         next = signer->next;
-        XFREE(signer->name, heap);
-        XFREE(signer->publicKey, heap);
-        XFREE(signer, heap);
+        XFREE(signer->name, heap, DYNAMIC_TYPE_SUBJECT_CN);
+        XFREE(signer->publicKey, heap, DYNAMIC_TYPE_PUBLIC_KEY);
+        XFREE(signer, heap, DYNAMIC_TYPE_SIGNER);
     }
 }
 

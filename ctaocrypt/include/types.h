@@ -130,15 +130,15 @@ enum {
 #ifdef XMALLOC_USER
     /* prototypes for user heap override functions */
     #include <stddef.h>  /* for size_t */
-    extern void *XMALLOC(size_t n, void* hint);
-    extern void *XREALLOC(void *p, size_t n, void* hint);
-    extern void XFREE(void *p, void* hint);
+    extern void *XMALLOC(size_t n, void* heap, int type);
+    extern void *XREALLOC(void *p, size_t n, void* heap, int type);
+    extern void XFREE(void *p, void* heap, int type);
 #elif !defined(MICRIUM_MALLOC)
     /* defaults to C runtime if user doesn't override and not Micrium */
     #include <stdlib.h>
-    #define XMALLOC(s, h)     malloc((s))
-    #define XFREE(p, h)       {void* xp = (p); if((xp)) free((xp));}
-    #define XREALLOC(p, n, h) realloc((p), (n))
+    #define XMALLOC(s, h, t)     malloc((s))
+    #define XFREE(p, h, t)       {void* xp = (p); if((xp)) free((xp));}
+    #define XREALLOC(p, n, h, t) realloc((p), (n))
 #endif
 
 #ifndef STRING_USER
@@ -159,7 +159,7 @@ enum {
 /* memory allocation types for user hints */
 enum {
     DYNAMIC_TYPE_CA         = 1,
-    DYNAMIC_TYPE_CRT        = 2,
+    DYNAMIC_TYPE_CERT       = 2,
     DYNAMIC_TYPE_KEY        = 3,
     DYNAMIC_TYPE_FILE       = 4,
     DYNAMIC_TYPE_ISSUER_CN  = 5,
@@ -167,15 +167,20 @@ enum {
     DYNAMIC_TYPE_PUBLIC_KEY = 7,
     DYNAMIC_TYPE_SIGNATURE  = 8,
     DYNAMIC_TYPE_SIGNER     = 9,
-    DYNAMIC_TYPE_NONE       = 10
+    DYNAMIC_TYPE_NONE       = 10,
+    DYNAMIC_TYPE_BIGINT     = 11,
+    DYNAMIC_TYPE_RSA        = 12,
+    DYNAMIC_TYPE_METHOD     = 13,
+    DYNAMIC_TYPE_OUT_BUFFER = 14,
+    DYNAMIC_TYPE_IN_BUFFER  = 15,
+    DYNAMIC_TYPE_INFO       = 16,
+    DYNAMIC_TYPE_DH         = 17,
+    DYNAMIC_TYPE_DOMAIN     = 18,
+    DYNAMIC_TYPE_SSL        = 19,
+    DYNAMIC_TYPE_CTX        = 20,
+    DYNAMIC_TYPE_WRITEV     = 21,
+    DYNAMIC_TYPE_OPENSSL    = 22
 };
-
-
-/* memory hint information for user memory handling */
-typedef struct memoryHint {
-	void*    heapHint;       /* points to SSL_CTX by default */
-	int      type;           /* allocation type */
-} memoryHint;
 
 
 #ifdef __cplusplus

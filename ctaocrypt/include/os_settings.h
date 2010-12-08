@@ -90,12 +90,12 @@
                      (CPU_SIZE_T)(size))) ? DEF_NO : DEF_YES)
 
     #define MICRIUM_MALLOC
-    #define XMALLOC(s, h) ((h.type <= DYNAMIC_TYPE_SIGNER) ? \
-                          ((void *)NetSecure_Malloc((CPU_INT08U)(h.type), \
+    #define XMALLOC(s, h, type) (((type) <= DYNAMIC_TYPE_SIGNER) ? \
+                          ((void *)NetSecure_Malloc((CPU_INT08U)(type), \
                            (CPU_SIZE_T)(s))) : malloc(s))
-    #define XFREE(p, h)   ((h.type <= DYNAMIC_TYPE_SIGNER) ? \
-                          (NetSecure_Free((CPU_INT08U)h.type, (p))) : free((p)))
-    #define XREALLOC(p, n, h) realloc((p), (n))
+    #define XFREE(p, h, type)   (((type) <= DYNAMIC_TYPE_SIGNER) ? \
+                          (NetSecure_Free((CPU_INT08U)(type), (p))) : free((p)))
+    #define XREALLOC(p, n, h, t) realloc((p), (n))
 
     #if (NET_SECURE_MGR_CFG_FS_EN == DEF_ENABLED)
         #undef  NO_FILESYSTEM
@@ -182,6 +182,7 @@
     #define  NO_DEV_RANDOM
     #define  CYASSL_USER_IO
     #define  LARGE_STATIC_BUFFERS
+    #define  CYASSL_DER_LOAD
     #undef   CYASSL_DTLS
 
 #endif /* MICRIUM */

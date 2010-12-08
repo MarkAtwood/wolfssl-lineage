@@ -172,13 +172,13 @@ static INLINE void ato32(const byte* c, word32* u32)
     /* alloc user allocs to work with zlib */
     void* myAlloc(void* opaque, unsigned int item, unsigned int size)
     {
-        return XMALLOC(item * size, opaque);
+        return XMALLOC(item * size, opaque, DYNAMIC_TYPE_LIBZ);
     }
 
 
     void myFree(void* opaque, void* memory)
     {
-        XFREE(memory, opaque);
+        XFREE(memory, opaque, DYNAMIC_TYPE_LIBZ);
     }
 
 
@@ -318,9 +318,9 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
 /* In case contexts are held in array and don't want to free actual ctx */
 void SSL_CtxResourceFree(SSL_CTX* ctx)
 {
-    XFREE(ctx->privateKey.buffer, ctx->heap);
-    XFREE(ctx->certificate.buffer, ctx->heap);
-    XFREE(ctx->method, ctx->heap);
+    XFREE(ctx->privateKey.buffer, ctx->heap, DYNAMIC_TYPE_KEY);
+    XFREE(ctx->certificate.buffer, ctx->heap, DYNAMIC_TYPE_CERT);
+    XFREE(ctx->method, ctx->heap, DYNAMIC_TYPE_METHOD);
 
     FreeSigners(ctx->caList, ctx->heap);
 }
@@ -329,7 +329,7 @@ void SSL_CtxResourceFree(SSL_CTX* ctx)
 void FreeSSL_Ctx(SSL_CTX* ctx)
 {
     SSL_CtxResourceFree(ctx);
-    XFREE(ctx, ctx->heap);
+    XFREE(ctx, ctx->heap, DYNAMIC_TYPE_CTX);
 }
 
     
@@ -584,11 +584,11 @@ int BIO_free(BIO*);  /* cyassl_int doesn't have */
 /* In case holding SSL object in array and don't want to free actual ssl */
 void SSL_ResourceFree(SSL* ssl)
 {
-    XFREE(ssl->buffers.serverDH_Priv.buffer, ssl->heap);
-    XFREE(ssl->buffers.serverDH_Pub.buffer, ssl->heap);
-    XFREE(ssl->buffers.serverDH_G.buffer, ssl->heap);
-    XFREE(ssl->buffers.serverDH_P.buffer, ssl->heap);
-    XFREE(ssl->buffers.domainName.buffer, ssl->heap);
+    XFREE(ssl->buffers.serverDH_Priv.buffer, ssl->heap, DYNAMIC_TYPE_DH);
+    XFREE(ssl->buffers.serverDH_Pub.buffer, ssl->heap, DYNAMIC_TYPE_DH);
+    XFREE(ssl->buffers.serverDH_G.buffer, ssl->heap, DYNAMIC_TYPE_DH);
+    XFREE(ssl->buffers.serverDH_P.buffer, ssl->heap, DYNAMIC_TYPE_DH);
+    XFREE(ssl->buffers.domainName.buffer, ssl->heap, DYNAMIC_TYPE_DOMAIN);
     FreeRsaKey(&ssl->peerRsaKey);
     if (ssl->buffers.inputBuffer.dynamicFlag)
         ShrinkInputBuffer(ssl, FORCED_FREE);
@@ -608,7 +608,7 @@ void SSL_ResourceFree(SSL* ssl)
 void FreeSSL(SSL* ssl)
 {
     SSL_ResourceFree(ssl);
-    XFREE(ssl, ssl->heap);
+    XFREE(ssl, ssl->heap, DYNAMIC_TYPE_SSL);
 }
 
 
@@ -850,7 +850,7 @@ retry:
 void ShrinkOutputBuffer(SSL* ssl)
 {
     CYASSL_MSG("Shrinking output buffer\n");
-    XFREE(ssl->buffers.outputBuffer.buffer, ssl->heap);
+    XFREE(ssl->buffers.outputBuffer.buffer, ssl->heap, DYNAMIC_TYPE_OUT_BUFFER);
     ssl->buffers.outputBuffer.buffer = ssl->buffers.outputBuffer.staticBuffer;
     ssl->buffers.outputBuffer.bufferSize  = STATIC_BUFFER_LEN;
     ssl->buffers.outputBuffer.dynamicFlag = 0;
@@ -873,7 +873,7 @@ void ShrinkInputBuffer(SSL* ssl, int forcedFree)
                ssl->buffers.inputBuffer.buffer + ssl->buffers.inputBuffer.idx,
                usedLength);
 
-    XFREE(ssl->buffers.inputBuffer.buffer, ssl->heap);
+    XFREE(ssl->buffers.inputBuffer.buffer, ssl->heap, DYNAMIC_TYPE_IN_BUFFER);
     ssl->buffers.inputBuffer.buffer = ssl->buffers.inputBuffer.staticBuffer;
     ssl->buffers.inputBuffer.bufferSize  = STATIC_BUFFER_LEN;
     ssl->buffers.inputBuffer.dynamicFlag = 0;
@@ -940,7 +940,7 @@ int SendBuffered(SSL* ssl)
 static INLINE int GrowOutputBuffer(SSL* ssl, int size)
 {
     byte* tmp = (byte*) XMALLOC(size + ssl->buffers.outputBuffer.length,
-                                ssl->heap);
+                                ssl->heap, DYNAMIC_TYPE_OUT_BUFFER);
     CYASSL_MSG("growing output buffer\n");
    
     if (!tmp) return -1;
@@ -950,8 +950,8 @@ static INLINE int GrowOutputBuffer(SSL* ssl, int size)
                ssl->buffers.outputBuffer.length);
 
     if (ssl->buffers.outputBuffer.dynamicFlag)
-        XFREE(ssl->buffers.outputBuffer.buffer, ssl->heap);
-
+        XFREE(ssl->buffers.outputBuffer.buffer, ssl->heap,
+              DYNAMIC_TYPE_OUT_BUFFER);
     ssl->buffers.outputBuffer.dynamicFlag = 1;
     ssl->buffers.outputBuffer.buffer = tmp;
     ssl->buffers.outputBuffer.bufferSize = size +
@@ -963,7 +963,8 @@ static INLINE int GrowOutputBuffer(SSL* ssl, int size)
 /* Grow the input buffer, should only be to read cert or big app data */
 static INLINE int GrowInputBuffer(SSL* ssl, int size, int usedLength)
 {
-    byte* tmp = (byte*) XMALLOC(size + usedLength, ssl->heap);
+    byte* tmp = (byte*) XMALLOC(size + usedLength, ssl->heap,
+                                DYNAMIC_TYPE_IN_BIFFER);
     CYASSL_MSG("growing input buffer\n");
    
     if (!tmp) return -1;
@@ -973,7 +974,7 @@ static INLINE int GrowInputBuffer(SSL* ssl, int size, int usedLength)
                     ssl->buffers.inputBuffer.idx, usedLength);
 
     if (ssl->buffers.inputBuffer.dynamicFlag)
-        XFREE(ssl->buffers.inputBuffer.buffer, ssl->heap);
+        XFREE(ssl->buffers.inputBuffer.buffer,ssl->heap,DYNAMIC_TYPE_IN_BUFFER);
 
     ssl->buffers.inputBuffer.dynamicFlag = 1;
     ssl->buffers.inputBuffer.buffer = tmp;
@@ -2990,7 +2991,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         int i;
         for (i = 0; i < MAX_PACKETS_HANDSHAKE; i++)
             if (info->packets[i].bufferValue) {
-                XFREE(info->packets[i].bufferValue, heap);
+                XFREE(info->packets[i].bufferValue, heap, DYNAMIC_TYPE_INFO);
                 info->packets[i].bufferValue = 0;
             }
 
@@ -3014,8 +3015,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             if (sz < MAX_VALUE_SZ)
                 XMEMCPY(info->packets[info->numberPackets].value, data, sz);
             else {
-                info->packets[info->numberPackets].bufferValue = XMALLOC(sz,
-                                                                         heap);
+                info->packets[info->numberPackets].bufferValue =
+                           XMALLOC(sz, heap, DYNAMIC_TYPE_INFO);
                 if (!info->packets[info->numberPackets].bufferValue)
                     /* let next alloc catch, just don't fill, not fatal here  */
                     info->packets[info->numberPackets].valueSz = 0;
@@ -3321,7 +3322,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         *inOutIdx += LENGTH_SZ;
         messageTotal += length;
 
-        ssl->buffers.serverDH_P.buffer = (byte*) XMALLOC(length, ssl->heap);
+        ssl->buffers.serverDH_P.buffer = (byte*) XMALLOC(length, ssl->heap,
+                                                         DYNAMIC_TYPE_DH);
         if (ssl->buffers.serverDH_P.buffer)
             ssl->buffers.serverDH_P.length = length;
         else
@@ -3334,7 +3336,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         *inOutIdx += LENGTH_SZ;
         messageTotal += length;
 
-        ssl->buffers.serverDH_G.buffer = (byte*) XMALLOC(length, ssl->heap);
+        ssl->buffers.serverDH_G.buffer = (byte*) XMALLOC(length, ssl->heap,
+                                                         DYNAMIC_TYPE_DH);
         if (ssl->buffers.serverDH_G.buffer)
             ssl->buffers.serverDH_G.length = length;
         else
@@ -3347,7 +3350,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         *inOutIdx += LENGTH_SZ;
         messageTotal += length;
 
-        ssl->buffers.serverDH_Pub.buffer = (byte*) XMALLOC(length, ssl->heap);
+        ssl->buffers.serverDH_Pub.buffer = (byte*) XMALLOC(length, ssl->heap,
+                                                           DYNAMIC_TYPE_DH);
         if (ssl->buffers.serverDH_Pub.buffer)
             ssl->buffers.serverDH_Pub.length = length;
         else

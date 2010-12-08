@@ -137,6 +137,10 @@ int SSL_CTX_use_PrivateKey_file(SSL_CTX*, const char*, int);
 int SSL_CTX_load_verify_locations(SSL_CTX*, const char*, const char*);
 int SSL_CTX_use_certificate_chain_file(SSL_CTX *ctx, const char *file);
 
+#ifdef CYASSL_DER_LOAD
+    int CyaSSL_CTX_load_verify_locations(SSL_CTX*,const char*,const char*, int);
+#endif
+
 #endif /* NO_FILESYSTEM */
 
 SSL_CTX* SSL_CTX_new(SSL_METHOD*);
@@ -615,7 +619,7 @@ const unsigned char* CyaSSL_get_sessionID(const SSL_SESSION* session);
 
 #if defined(NO_FILESYSTEM) || defined(MICRIUM)
 
-int CyaSSL_CTX_load_verify_buffer(SSL_CTX*, const unsigned char*, long);
+int CyaSSL_CTX_load_verify_buffer(SSL_CTX*, const unsigned char*, long, int);
 int CyaSSL_CTX_use_certificate_buffer(SSL_CTX*, const unsigned char*, long,int);
 int CyaSSL_CTX_use_PrivateKey_buffer(SSL_CTX*, const unsigned char*, long, int);
 int CyaSSL_CTX_use_certificate_chain_buffer(SSL_CTX*,const unsigned char*,long);
