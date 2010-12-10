@@ -55,7 +55,7 @@ int CyaSSL_negotiate(SSL*);
 #ifndef NO_CYASSL_SERVER
     static int DoClientHello(SSL* ssl, const byte* input, word32*, word32,
                              word32);
-static int DoCertificateVerify(SSL* ssl, byte*, word32*, word32);
+    static int DoCertificateVerify(SSL* ssl, byte*, word32*, word32);
     static int DoClientKeyExchange(SSL* ssl, byte* input, word32*);
 #endif
 

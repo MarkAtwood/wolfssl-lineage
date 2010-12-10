@@ -277,7 +277,7 @@ static int AddCA(SSL_CTX* ctx, buffer der)
     Signer*     signer = 0;
 
     InitDecodedCert(&cert, der.buffer, ctx->heap);
-    ret = ParseCert(&cert, der.length, CA_TYPE, NO_VERIFY, 0);
+    ret = ParseCert(&cert, der.length, CA_TYPE, ctx->verifyPeer, 0);
 
     if (ret == 0) {
         /* take over signer parts */

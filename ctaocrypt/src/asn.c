@@ -53,21 +53,34 @@ enum {
 
 
 #ifdef THREADX
-    #define USER_TIME
+    /* uses parital <time.h> structures */
     #define XTIME(tl)  (0)
     #define XGMTIME(c) my_gmtime((c))
-#endif
-
-#ifndef USER_TIME
-    #include <time.h> 
-    #define XTIME(tl)  time((tl))
-    #define XGMTIME(c) gmtime((c))
-#else
+    #define XVALIDATE_DATE(d, f, t) ValidateDate((d), (f), (t))
+#elif defined(MICRIUM)
+    #include <clk.h>
+    #if (NET_SECURE_MGR_CFG_EN == DEF_ENABLED)
+        #define XVALIDATE_DATE(d, f, t) NetSecure_ValidDate((d), (f), (t))
+    #else
+        #define XVALIDATE_DATE(d, f, t) (0)
+    #endif
+    #define NO_TIME_H
+    /* since Micrium not defining XTIME or XGMTIME, CERT_GEN not available */
+#elif defined(USER_TIME)
+    /* no <time.h> strucutres used */
+    #define NO_TIME_H
     /* user time, and gmtime compatible functions, there is a gmtime 
        implementation here that WINCE uses, so really just need some ticks
        since the EPOCH 
     */
-#endif /* USER_TIME */
+#else
+    /* default */
+    /* uses complete <time.h> facility */
+    #include <time.h> 
+    #define XTIME(tl)  time((tl))
+    #define XGMTIME(c) gmtime((c))
+    #define XVALIDATE_DATE(d, f, t) ValidateDate((d), (f), (t))
+#endif
 
 
 #ifdef _WIN32_WCE
@@ -178,6 +191,96 @@ struct tm* my_gmtime(const time_t* timer)       /* has a gmtime() but hangs */
 #endif /* THREADX */
 
 
+static INLINE word32 btoi(byte b)
+{
+    return b - 0x30;
+}
+
+
+/* two byte date/time, add to value */
+static INLINE void GetTime(int* value, const byte* date, int* idx)
+{
+    int i = *idx;
+
+    *value += btoi(date[i++]) * 10;
+    *value += btoi(date[i++]);
+
+    *idx = i;
+}
+
+
+#if defined(MICRIUM)
+
+static int NetSecure_ValidDate(CPU_INT08U *date, CPU_INT08U format,
+                               CPU_INT08U dateType)
+{
+    CLK_DATE_TIME   cert_date_time;
+    CLK_TS_SEC      cert_ts_sec;
+    CLK_TS_SEC      local_ts_sec;
+    CPU_INT32S      i;
+    CPU_INT32S      val;
+
+    local_ts_sec = Clk_GetTS();
+    XMEMSET(&cert_date_time, 0, sizeof(cert_date_time));
+
+    i = 0;
+    if (format == ASN_UTC_TIME) {
+        if (btoi(date[0]) >= 5)
+            cert_date_time.Yr = 1900;
+        else
+            cert_date_time.Yr = 2000;
+    }
+    else  { /* format == GENERALIZED_TIME */
+        cert_date_time.Yr += btoi(date[i++]) * 1000;
+        cert_date_time.Yr += btoi(date[i++]) * 100;
+    }
+
+    val = cert_date_time.Yr;
+    GetTime(&val,   date, &i);
+    cert_date_time.Yr =    (CLK_YR)val;
+
+    val = 0;
+    GetTime(&val, date, &i);   
+    cert_date_time.Month = (CLK_MONTH)val;
+  
+    val = 0;
+    GetTime(&val, date, &i);  
+    cert_date_time.Day =   (CLK_DAY)val;
+
+    val = 0;
+    GetTime(&val, date, &i);  
+    cert_date_time.Hr =    (CLK_HR)val;
+    
+    val = 0;
+    GetTime(&val, date, &i);  
+    cert_date_time.Min =   (CLK_MIN)val;
+    
+    val = 0;
+    GetTime(&val, date, &i);  
+    cert_date_time.Sec =   (CLK_SEC)val;
+
+    if (date[i] != 'Z')     /* only Zulu supported for this profile */
+        return 0;
+
+    cert_date_time.DayOfWk = 1;
+    cert_date_time.DayOfYr = 1;
+    Clk_DateTimeToTS(&cert_ts_sec, &cert_date_time);
+
+
+    if (dateType == BEFORE) {
+        if (local_ts_sec < cert_ts_sec)  /* If cert creation date after
+                                             current date...  */
+            return (DEF_FAIL);           /* ... report an error. */
+   } else {
+        if (local_ts_sec > cert_ts_sec)  /* If cert expiration date before
+                                           current date...  */
+            return (DEF_FAIL);           /* ... report an error. */
+   }
+
+    return (DEF_OK);
+}
+
+#endif /* MICRIUM */
 
 
 int GetLength(const byte* input, word32* inOutIdx, int* len)
@@ -874,6 +977,8 @@ static int GetName(DecodedCert* cert, int nameType)
 }
 
 
+#ifndef NO_TIME_H
+
 /* to the second */
 static int DateGreaterThan(const struct tm* a, const struct tm* b)
 {
@@ -912,24 +1017,6 @@ static INLINE int DateLessThan(const struct tm* a, const struct tm* b)
 
 
 /* like atoi but only use first byte */
-static INLINE word32 btoi(byte b)
-{
-    return b - 0x30;
-}
-
-
-/* two byte date/time, add to value */
-static INLINE void GetTime(int* value, const byte* date, int* idx)
-{
-    int i = *idx;
-
-    *value += btoi(date[i++]) * 10;
-    *value += btoi(date[i++]);
-
-    *idx = i;
-}
-
-
 /* Make sure before and after dates are valid */
 static int ValidateDate(const byte* date, byte format, int dateType)
 {
@@ -975,6 +1062,8 @@ static int ValidateDate(const byte* date, byte format, int dateType)
     return 1;
 }
 
+#endif /* NO_TIME_H */
+
 
 static int GetDate(DecodedCert* cert, int dateType)
 {
@@ -994,7 +1083,7 @@ static int GetDate(DecodedCert* cert, int dateType)
     XMEMCPY(date, &cert->source[cert->srcIdx], length);
     cert->srcIdx += length;
 
-    if (!ValidateDate(date, b, dateType)) {
+    if (!XVALIDATE_DATE(date, b, dateType)) {
         if (dateType == BEFORE)
             return ASN_BEFORE_DATE_E;
         else
