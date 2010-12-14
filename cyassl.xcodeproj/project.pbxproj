@@ -54,6 +54,7 @@
 		43D565670F1EC9CC00550C88 /* rabbit.c in Sources */ = {isa = PBXBuildFile; fileRef = 43D565660F1EC9CC00550C88 /* rabbit.c */; };
 		43D565A40F29040000550C88 /* rabbit.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D565A30F29040000550C88 /* rabbit.h */; };
 		43D565A60F29041C00550C88 /* hc128.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D565A50F29041C00550C88 /* hc128.h */; };
+		43E0103A12B71C230098917A /* libntru_encrypt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 43E0103912B71C230098917A /* libntru_encrypt.a */; };
 		43E4703C11765A30005C2620 /* pwdbased.c in Sources */ = {isa = PBXBuildFile; fileRef = 43E4703B11765A30005C2620 /* pwdbased.c */; };
 		43F5A2580E8C59BA00CD7F1A /* client.c in Sources */ = {isa = PBXBuildFile; fileRef = 43F5A2570E8C59BA00CD7F1A /* client.c */; };
 		43F5A25B0E8C59CB00CD7F1A /* libcyassl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D2AAC046055464E500DB518D /* libcyassl.a */; };
@@ -209,6 +210,7 @@
 		43D565660F1EC9CC00550C88 /* rabbit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = rabbit.c; path = ctaocrypt/src/rabbit.c; sourceTree = "<group>"; };
 		43D565A30F29040000550C88 /* rabbit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = rabbit.h; path = ctaocrypt/include/rabbit.h; sourceTree = "<group>"; };
 		43D565A50F29041C00550C88 /* hc128.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = hc128.h; path = ctaocrypt/include/hc128.h; sourceTree = "<group>"; };
+		43E0103912B71C230098917A /* libntru_encrypt.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libntru_encrypt.a; path = /Users/toddouska/cyassl/NTRU_algorithm/libntru_encrypt.a; sourceTree = "<absolute>"; };
 		43E4703911765A14005C2620 /* pwdbased.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = pwdbased.h; path = ctaocrypt/include/pwdbased.h; sourceTree = "<group>"; };
 		43E4703B11765A30005C2620 /* pwdbased.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = pwdbased.c; path = ctaocrypt/src/pwdbased.c; sourceTree = "<group>"; };
 		43F5A24F0E8C599600CD7F1A /* client */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = client; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -230,6 +232,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4368F7350E9EA9240002A123 /* libcyassl.a in Frameworks */,
+				43E0103A12B71C230098917A /* libntru_encrypt.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -289,6 +292,7 @@
 				08FB7795FE84155DC02AAC07 /* Source */,
 				C6A0FF2B0290797F04C91782 /* Documentation */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
+				43E0103912B71C230098917A /* libntru_encrypt.a */,
 			);
 			name = cyassl;
 			sourceTree = "<group>";
@@ -732,6 +736,7 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					HAVE_NTRU,
 					CYASSL_CERT_GEN,
 					CYASSL_SHA512,
 					HAVE_CONFIG_H,
@@ -742,6 +747,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = cyassl;
 				SDKROOT = "";
+				USER_HEADER_SEARCH_PATHS = "NTRU_algorithm/cryptolib include ctaocrypt/include";
 				WARNING_CFLAGS = "-Wall";
 				ZERO_LINK = YES;
 			};
@@ -753,6 +759,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					HAVE_NTRU,
 					CYASSL_CERT_GEN,
 					CYASSL_SHA512,
 					HAVE_CONFIG_H,
@@ -761,6 +768,7 @@
 				);
 				INSTALL_PATH = /usr/local/lib;
 				PRODUCT_NAME = cyassl;
+				USER_HEADER_SEARCH_PATHS = "NTRU_algorithm/cryptolib include ctaocrypt/include";
 				WARNING_CFLAGS = "-Wall";
 			};
 			name = Release;
@@ -854,6 +862,7 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					HAVE_NTRU,
 					CYASSL_CERT_GEN,
 					CYASSL_SHA512,
 					HAVE_CONFIG_H,
@@ -861,8 +870,13 @@
 					OPENSSL_EXTRA,
 				);
 				INSTALL_PATH = /usr/local/bin;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/NTRU_algorithm\"",
+				);
 				PREBINDING = NO;
 				PRODUCT_NAME = test;
+				USER_HEADER_SEARCH_PATHS = "NTRU_algorithm/cryptolib include ctaocrypt/include";
 			};
 			name = Debug;
 		};
@@ -875,6 +889,7 @@
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					HAVE_NTRU,
 					CYASSL_CERT_GEN,
 					CYASSL_SHA512,
 					HAVE_CONFIG_H,
@@ -882,8 +897,13 @@
 					OPENSSL_EXTRA,
 				);
 				INSTALL_PATH = /usr/local/bin;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/NTRU_algorithm\"",
+				);
 				PREBINDING = NO;
 				PRODUCT_NAME = test;
+				USER_HEADER_SEARCH_PATHS = "NTRU_algorithm/cryptolib include ctaocrypt/include";
 				ZERO_LINK = NO;
 			};
 			name = Release;

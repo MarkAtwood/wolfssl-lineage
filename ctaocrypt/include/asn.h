@@ -79,8 +79,11 @@ enum Misc_ASN {
     MAX_VERSION_SZ      =   5,     /* enum + id + version(byte) + (header(2))*/
     MAX_ENCODED_DIG_SZ  =  25,     /* sha + enum(bit or octet) + legnth(4) */
     MAX_RSA_INT_SZ      = 517,     /* RSA raw sz 4096 for bits + tag + len(4) */
+    MAX_NTRU_KEY_SZ     = 610,     /* NTRU 112 bit public key */
+    MAX_NTRU_ENC_SZ     = 628,     /* NTRU 112 bit DER public encoding */
     MAX_RSA_E_SZ        =  16,     /* Max RSA public e size */
-    MAX_RSA_PUBLIC_SZ   = MAX_RSA_INT_SZ + MAX_ALGO_SZ + MAX_SEQ_SZ * 2,
+    MAX_PUBLIC_KEY_SZ   = MAX_NTRU_ENC_SZ + MAX_ALGO_SZ + MAX_SEQ_SZ * 2, 
+                                   /* use bigger NTRU size */
     MAX_LENGTH_SZ       =   4 
 };
 
@@ -106,8 +109,9 @@ enum Hash_Sum  {
 };
 
 enum Key_Sum {
-    DSAk = 515,
-    RSAk = 645
+    DSAk  = 515,
+    RSAk  = 645,
+    NTRUk = 364
 };
 
 
@@ -221,6 +225,8 @@ enum cert_enums {
     NAME_ENTRIES    =  8,
     JOINT_LEN       =  2,
     EMAIL_JOINT_LEN =  9,
+    RSA_KEY         = 10,
+    NTRU_KEY        = 11
 };
 
 
@@ -247,6 +253,7 @@ typedef struct Cert {
     CertName subject;                   /* subject info */
     /* internal use only */
     int      bodySz;                    /* pre sign total size */
+    int      keyType;                   /* public key type of subject */
 } Cert;
 
 
@@ -258,12 +265,18 @@ typedef struct Cert {
    daysValid  = 500
    selfSigned = 1 (true) use subject as issuer
    subject    = blank
+   keyType    = RSA_KEY (default)
 */
 void InitCert(Cert*);
 int  MakeCert(Cert*, byte* derBuffer, word32 derSz, RsaKey*, RNG*);
 int  SignCert(Cert*, byte* derBuffer, word32 derSz, RsaKey*, RNG*);
 int  MakeSelfCert(Cert*, byte* derBuffer, word32 derSz, RsaKey*, RNG*);
 int  SetIssuer(Cert*, const char*);
+#ifdef HAVE_NTRU
+int  MakeNtruCert(Cert*, byte* derBuffer, word32 derSz, const byte* ntruKey,
+                  word16 keySz, RNG*);
+#endif
+
 
 #endif /* CYASSL_CERT_GEN */
 

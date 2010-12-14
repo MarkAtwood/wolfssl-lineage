@@ -296,6 +296,26 @@ then
 fi
 
 
+# NTRU
+ntruHome=`pwd`/NTRU_algorithm
+ntruInclude=$ntruHome/cryptolib
+ntruLib=$ntruHome
+AC_ARG_ENABLE(ntru,
+    [  --enable-ntru           Enable NTRU (default: disabled)],
+    [ ENABLED_NTRU=$enableval ],
+    [ ENABLED_NTRU=no ]
+    )
+
+if test "$ENABLED_NTRU" = "yes"
+then
+    CFLAGS="$CFLAGS -DHAVE_NTRU -I$ntruInclude"
+    LDFLAGS="$LDFLAGS -L$ntruLib"
+    LIBS="$LIBS -lntru_encrypt"
+fi
+
+AM_CONDITIONAL([BUILD_NTRU], [test "x$ENABLED_NTRU" = "xyes"])
+
+
 # LIBZ
 trylibzdir=""
 AC_ARG_WITH(libz,

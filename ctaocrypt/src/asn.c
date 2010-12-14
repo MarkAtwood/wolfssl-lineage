@@ -30,6 +30,11 @@
 #include "md5.h"
 #include "error.h"
 
+#ifdef HAVE_NTRU
+    #include "crypto_ntru.h"
+#endif
+
+
 #ifdef _MSC_VER
     /* 4996 warning to use MS extensions e.g., strcpy_s instead of XSTRNCPY */
     #pragma warning(disable: 4996)
@@ -743,6 +748,9 @@ static int StoreKey(DecodedCert* cert)
     int    length;
     word32 read = cert->srcIdx;
 
+    if (cert->keyOID == NTRUk)
+        return 0;                /* already stored */
+
     if (GetSequence(cert->source, &cert->srcIdx, &length) < 0)
         return ASN_PARSE_E;
    
@@ -763,6 +771,7 @@ static int StoreKey(DecodedCert* cert)
 static int GetKey(DecodedCert* cert)
 {
     int length;
+    int tmpIdx = cert->srcIdx;
 
     if (GetSequence(cert->source, &cert->srcIdx, &length) < 0)
         return ASN_PARSE_E;
@@ -783,6 +792,40 @@ static int GetKey(DecodedCert* cert)
     }
     else if (cert->keyOID == DSAk )
         ;   /* do nothing */
+#ifdef HAVE_NTRU
+    else if (cert->keyOID == NTRUk ) {
+        const byte* key = &cert->source[tmpIdx];
+        byte*       next = (byte*)key;
+        word16      keyLen;
+        byte        keyBlob[MAX_NTRU_KEY_SZ];
+
+        word32 rc = crypto_ntru_encrypt_subjectPublicKeyInfo2PublicKey(key,
+                            &keyLen, NULL, &next);
+
+        if (rc != NTRU_OK)
+            return ASN_NTRU_KEY_E;
+        if (keyLen > sizeof(keyBlob))
+            return ASN_NTRU_KEY_E;
+
+        rc = crypto_ntru_encrypt_subjectPublicKeyInfo2PublicKey(key, &keyLen,
+                                                                keyBlob, &next);
+        if (rc != NTRU_OK)
+            return ASN_NTRU_KEY_E;
+
+        if ( (next - key) < 0)
+            return ASN_NTRU_KEY_E;
+
+        cert->srcIdx = tmpIdx + (next - key);
+
+        cert->publicKey = (byte*) XMALLOC(keyLen, cert->heap,
+                                          DYNAMIC_TYPE_PUBLIC_KEY);
+        if (cert->publicKey == NULL)
+            return MEMORY_E;
+        memcpy(cert->publicKey, keyBlob, keyLen);
+        cert->pubKeyStored = 1;
+        cert->pubKeySize   = keyLen;
+    }
+#endif
     else
         return ASN_UNKNOWN_OID_E;
     
@@ -1409,7 +1452,7 @@ int ParseCert(DecodedCert* cert, word32 inSz, int type, int verify,
         cert->subjectCNLen = 0;
     }
 
-    if (cert->pubKeySize > 0) {
+    if (cert->keyOID == RSAk && cert->pubKeySize > 0) {
         ptr = (char*) XMALLOC(cert->pubKeySize, cert->heap,
                               DYNAMIC_TYPE_PUBLIC_KEY);
         if (ptr == NULL)
@@ -1691,6 +1734,10 @@ void CTaoCryptErrorString(int error, char* buffer)
         XSTRNCPY(buffer, "ASN key init error, invalid input", max);
         break;
 
+    case ASN_NTRU_KEY_E :
+        XSTRNCPY(buffer, "ASN NTRU key decode error, invalid input", max);
+        break;
+
     default:
         XSTRNCPY(buffer, "unknown error number", max);
 
@@ -1877,6 +1924,8 @@ void InitCert(Cert* cert)
     cert->sigType    = MD5wRSA;
     cert->daysValid  = 500;
     cert->selfSigned = 1;
+    cert->bodySz     = 0;
+    cert->keyType    = RSA_KEY;
     XMEMSET(cert->serial, 0, SERIAL_SIZE);
 
     cert->issuer.country[0] = '\0';
@@ -1908,7 +1957,7 @@ typedef struct DerCert {
     byte issuer[ASN_NAME_MAX];         /* issuer  encoded */
     byte subject[ASN_NAME_MAX];        /* subject encoded */
     byte validity[MAX_DATE_SIZE*2 + MAX_SEQ_SZ*2];  /* before and after dates */
-    byte publicKey[MAX_RSA_PUBLIC_SZ]; /* rsa public key encoded */
+    byte publicKey[MAX_PUBLIC_KEY_SZ]; /* rsa / ntru public key encoded */
     int  sizeSz;                       /* encoded size length */
     int  versionSz;                    /* encoded version length */
     int  serialSz;                     /* encoded serial length */
@@ -2301,7 +2350,8 @@ static int SetName(byte* output, CertName* name)
 
 
 /* encode info from cert into DER enocder format */
-static int EncodeCert(Cert* cert, DerCert* der, RsaKey* key, RNG* rng)
+static int EncodeCert(Cert* cert, DerCert* der, RsaKey* rsaKey, RNG* rng,
+                      const byte* ntruKey, word16 ntruSz)
 {
     /* version */
     der->versionSz = SetMyVersion(cert->version, der->version, TRUE);
@@ -2317,9 +2367,31 @@ static int EncodeCert(Cert* cert, DerCert* der, RsaKey* key, RNG* rng)
         return ALGO_ID_E;
 
     /* public key */
-    der->publicKeySz = SetPublicKey(der->publicKey, key);
-    if (der->publicKeySz == 0)
-        return PUBLIC_KEY_E;
+    if (cert->keyType == RSA_KEY) {
+        der->publicKeySz = SetPublicKey(der->publicKey, rsaKey);
+        if (der->publicKeySz == 0)
+            return PUBLIC_KEY_E;
+    }
+    else {
+#ifdef HAVE_NTRU
+        word32 rc;
+        word16 encodedSz;
+
+        rc  = crypto_ntru_encrypt_publicKey2SubjectPublicKeyInfo( ntruSz,
+                                              ntruKey, &encodedSz, NULL);
+        if (rc != NTRU_OK)
+            return PUBLIC_KEY_E;
+        if (encodedSz > MAX_PUBLIC_KEY_SZ)
+            return PUBLIC_KEY_E;
+
+        rc  = crypto_ntru_encrypt_publicKey2SubjectPublicKeyInfo( ntruSz,
+                              ntruKey, &encodedSz, der->publicKey);
+        if (rc != NTRU_OK)
+            return PUBLIC_KEY_E;
+
+        der->publicKeySz = encodedSz;
+#endif
+    }
 
     /* date validity */
     der->validitySz = SetValidity(der->validity, cert->daysValid);
@@ -2425,20 +2497,41 @@ static int AddSignature(byte* buffer, int bodySz, const byte* sig, int sigSz)
 }
 
 
-/* Make an x509 Certificate v3 RSA from cert input, write to buffer */
-int MakeCert(Cert* cert, byte* buffer, word32 buffSz, RsaKey* key, RNG* rng)
+/* Make an x509 Certificate v3 any key type from cert input, write to buffer */
+static int MakeAnyCert(Cert* cert, byte* derBuffer, word32 derSz,
+                   RsaKey* rsaKey, RNG* rng, const byte* ntruKey, word16 ntruSz)
 {
     DerCert der;
+    int     ret;
 
-    int ret = EncodeCert(cert, &der, key, rng);
+    cert->keyType = rsaKey ? RSA_KEY : NTRU_KEY;
+    ret = EncodeCert(cert, &der, rsaKey, rng, ntruKey, ntruSz);
     if (ret != 0)
         return ret;
 
-    if (der.total + MAX_SEQ_SZ * 2 > (int)buffSz)
+    if (der.total + MAX_SEQ_SZ * 2 > (int)derSz)
         return BUFFER_E;
 
-    return cert->bodySz = WriteCertBody(&der, buffer);
+    return cert->bodySz = WriteCertBody(&der, derBuffer);
 }
+
+
+/* Make an x509 Certificate v3 RSA from cert input, write to buffer */
+int MakeCert(Cert* cert, byte* derBuffer, word32 derSz, RsaKey* rsaKey,RNG* rng)
+{
+    return MakeAnyCert(cert, derBuffer, derSz, rsaKey, rng, NULL, 0);
+}
+
+
+#ifdef HAVE_NTRU
+
+int  MakeNtruCert(Cert* cert, byte* derBuffer, word32 derSz,
+                  const byte* ntruKey, word16 keySz, RNG* rng)
+{
+    return MakeAnyCert(cert, derBuffer, derSz, NULL, rng, ntruKey, keySz);
+}
+
+#endif /* HAVE_NTRU */
 
 
 int SignCert(Cert* cert, byte* buffer, word32 buffSz, RsaKey* key, RNG* rng)
@@ -2544,6 +2637,8 @@ int SetIssuer(Cert* cert, const char* issuerCertFile)
         strncpy(cert->issuer.email, decoded.subjectEmail, NAME_SIZE);
         cert->issuer.email[sz] = 0;
     }
+
+    FreeDecodedCert(&decoded);
 
     return 0;
 }
