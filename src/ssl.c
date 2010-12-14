@@ -662,6 +662,62 @@ int CyaSSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file, int format)
 
 #endif /* CYASSL_DER_LOAD */
 
+
+#ifdef CYASSL_CERT_GEN
+
+/* load pem cert from file into der buffer, return der size or error */
+int CyaSSL_PemCertToDer(const char* fileName, unsigned char* derBuf, int derSz) 
+{
+    byte   staticBuffer[FILE_BUFFER_SIZE];
+    byte*  fileBuf = staticBuffer;
+    int    dynamic = 0;
+    int    ret;
+    long   sz = 0;
+    XFILE* file = XFOPEN(fileName, "rb"); 
+    EncryptedInfo info;
+    buffer        converted;
+
+    converted.buffer = 0;
+
+    if (!file) return SSL_BAD_FILE;
+    XFSEEK(file, 0, XSEEK_END);
+    sz = XFTELL(file);
+    XREWIND(file);
+
+    if (sz > sizeof(staticBuffer)) {
+        fileBuf = (byte*) XMALLOC(sz, 0, DYNAMIC_TYPE_FILE);
+        if (fileBuf == NULL) {
+            XFCLOSE(file);
+            return SSL_BAD_FILE;
+        }
+        dynamic = 1;
+    }
+
+    if ( (ret = XFREAD(fileBuf, sz, 1, file)) < 0)
+        ret = SSL_BAD_FILE;
+    else
+        ret = PemToDer(fileBuf, sz, CA_TYPE, &converted, 0, &info);
+
+    if (ret == 0) {
+        if (converted.length < derSz) {
+            memcpy(derBuf, converted.buffer, converted.length);
+            ret = converted.length;
+        }
+        else
+            ret = BUFFER_E;
+    }       
+
+    XFREE(converted.buffer, 0, DYNAMIC_TYPE_CA); 
+    if (dynamic)
+        XFREE(fileBuf, 0, DYNAMIC_TYPE_FILE); 
+    XFCLOSE(file);
+
+    return ret;
+}
+
+#endif /* CYASSL_CERT_GEN */
+
+
 int SSL_CTX_use_certificate_file(SSL_CTX* ctx, const char* file, int format)
 {
     if (ProcessFile(ctx, file, format, CERT_TYPE) == SSL_SUCCESS)

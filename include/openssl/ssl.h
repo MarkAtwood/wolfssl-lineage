@@ -141,6 +141,8 @@ int SSL_CTX_use_certificate_chain_file(SSL_CTX *ctx, const char *file);
     int CyaSSL_CTX_load_verify_locations(SSL_CTX*, const char*, int);
 #endif
 
+int CyaSSL_PemCertToDer(const char*, unsigned char*, int);
+
 #endif /* NO_FILESYSTEM */
 
 SSL_CTX* SSL_CTX_new(SSL_METHOD*);

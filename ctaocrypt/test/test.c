@@ -1006,9 +1006,15 @@ int random_test()
 #ifndef NO_MAIN_DRIVER
     static const char* clientKey  = "../../certs/client-key.der";
     static const char* clientCert = "../../certs/client-cert.der";
+    #ifdef CYASSL_CERT_GEN
+        static const char* caKeyFile = "../../certs/ca-key.der";
+    #endif
 #else
     static const char* clientKey  = "../certs/client-key.der";
     static const char* clientCert = "../certs/client-cert.der";
+    #ifdef CYASSL_CERT_GEN
+        static const char* caKeyFile = "../certs/ca-key.der";
+    #endif
 #endif
 
 
@@ -1117,6 +1123,7 @@ int rsa_test()
 
 
 #ifdef CYASSL_CERT_GEN
+    /* self signed */
     {
         Cert        myCert;
         byte        derCert[4096];
@@ -1137,7 +1144,7 @@ int rsa_test()
         strncpy(myCert.subject.commonName, "www.yassl.com", NAME_SIZE);
         strncpy(myCert.subject.email, "info@yassl.com", NAME_SIZE);
 
-        certSz = MakeCert(&myCert, derCert, sizeof(derCert), &key, &rng); 
+        certSz = MakeSelfCert(&myCert, derCert, sizeof(derCert), &key, &rng); 
         if (certSz < 0)
             return -401;
 
@@ -1159,6 +1166,79 @@ int rsa_test()
         pemFile = fopen("./cert.pem", "wb");
         if (!pemFile)
             return -405;
+        ret = fwrite(pem, pemSz, 1, pemFile);
+        fclose(pemFile);
+
+        FreeDecodedCert(&decode);
+
+    }
+    /* CA style */
+    {
+        RsaKey      caKey;
+        Cert        myCert;
+        byte        derCert[4096];
+        byte        pem[4096];
+        DecodedCert decode;
+        FILE*       derFile;
+        FILE*       pemFile;
+        int         certSz;
+        int         pemSz;
+        byte        tmp[1024];
+        size_t      bytes;
+        word32      idx = 0;
+
+        FILE*  file = fopen(caKeyFile, "rb");
+
+        if (!file)
+            return -412;
+
+        bytes = fread(tmp, 1, 1024, file);
+  
+        InitRsaKey(&caKey, 0);  
+        ret = RsaPrivateKeyDecode(tmp, &idx, &caKey, (word32)bytes);
+        if (ret != 0) return -413;
+
+        InitCert(&myCert);
+
+        strncpy(myCert.subject.country, "US", NAME_SIZE);
+        strncpy(myCert.subject.state, "OR", NAME_SIZE);
+        strncpy(myCert.subject.locality, "Portland", NAME_SIZE);
+        strncpy(myCert.subject.org, "yaSSL", NAME_SIZE);
+        strncpy(myCert.subject.unit, "Development", NAME_SIZE);
+        strncpy(myCert.subject.commonName, "www.yassl.com", NAME_SIZE);
+        strncpy(myCert.subject.email, "info@yassl.com", NAME_SIZE);
+
+        ret = SetIssuer(&myCert, "../../certs/ca-cert.pem");
+        if (ret < 0)
+            return -406;
+
+        certSz = MakeCert(&myCert, derCert, sizeof(derCert), &key, &rng); 
+        if (certSz < 0)
+            return -407;
+
+        certSz = SignCert(&myCert, derCert, sizeof(derCert), &caKey, &rng);
+        if (certSz < 0)
+            return -408;
+
+
+        InitDecodedCert(&decode, derCert, 0);
+        ret = ParseCert(&decode, certSz, CERT_TYPE, NO_VERIFY, 0);
+        if (ret != 0)
+            return -409;
+
+        derFile = fopen("./othercert.der", "wb");
+        if (!derFile)
+            return -410;
+        ret = fwrite(derCert, certSz, 1, derFile);
+        fclose(derFile);
+
+        pemSz = DerToPem(derCert, certSz, pem, sizeof(pem), CERT_TYPE);
+        if (pemSz < 0)
+            return -411;
+
+        pemFile = fopen("./othercert.pem", "wb");
+        if (!pemFile)
+            return -412;
         ret = fwrite(pem, pemSz, 1, pemFile);
         fclose(pemFile);
 

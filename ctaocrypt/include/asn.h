@@ -218,7 +218,7 @@ int DerToPem(const byte* der, word32 derSz, byte* output, word32 outputSz,
 enum cert_enums {
     SERIAL_SIZE     =  8,
     NAME_SIZE       = 64,
-    NAME_ENTRIES    =  7,
+    NAME_ENTRIES    =  8,
     JOINT_LEN       =  2,
     EMAIL_JOINT_LEN =  9,
 };
@@ -228,10 +228,11 @@ typedef struct CertName {
     char country[NAME_SIZE];
     char state[NAME_SIZE];
     char locality[NAME_SIZE];
+    char sur[NAME_SIZE];
     char org[NAME_SIZE];
     char unit[NAME_SIZE];
     char commonName[NAME_SIZE];
-    char email[NAME_SIZE];
+    char email[NAME_SIZE];  /* !!!! email has to be last !!!! */
 } CertName;
 
 
@@ -244,6 +245,8 @@ typedef struct Cert {
     int      daysValid;                 /* validity days */
     int      selfSigned;                /* self signed flag */
     CertName subject;                   /* subject info */
+    /* internal use only */
+    int      bodySz;                    /* pre sign total size */
 } Cert;
 
 
@@ -258,6 +261,9 @@ typedef struct Cert {
 */
 void InitCert(Cert*);
 int  MakeCert(Cert*, byte* derBuffer, word32 derSz, RsaKey*, RNG*);
+int  SignCert(Cert*, byte* derBuffer, word32 derSz, RsaKey*, RNG*);
+int  MakeSelfCert(Cert*, byte* derBuffer, word32 derSz, RsaKey*, RNG*);
+int  SetIssuer(Cert*, const char*);
 
 #endif /* CYASSL_CERT_GEN */
 

@@ -1882,6 +1882,7 @@ void InitCert(Cert* cert)
     cert->issuer.country[0] = '\0';
     cert->issuer.state[0] = '\0';
     cert->issuer.locality[0] = '\0';
+    cert->issuer.sur[0] = '\0';
     cert->issuer.org[0] = '\0';
     cert->issuer.unit[0] = '\0';
     cert->issuer.commonName[0] = '\0';
@@ -1890,6 +1891,7 @@ void InitCert(Cert* cert)
     cert->subject.country[0] = '\0';
     cert->subject.state[0] = '\0';
     cert->subject.locality[0] = '\0';
+    cert->subject.sur[0] = '\0';
     cert->subject.org[0] = '\0';
     cert->subject.unit[0] = '\0';
     cert->subject.commonName[0] = '\0';
@@ -2130,15 +2132,18 @@ static const char* GetOneName(CertName* name, int index)
        return name->locality;
        break;
     case 3:
-       return name->org;
+       return name->sur;
        break;
     case 4:
-       return name->unit;
+       return name->org;
        break;
     case 5:
-       return name->commonName;
+       return name->unit;
        break;
     case 6:
+       return name->commonName;
+       break;
+    case 7:
        return name->email;
        break;
     default:
@@ -2163,15 +2168,18 @@ static byte GetNameId(int index)
        return ASN_LOCALITY_NAME;
        break;
     case 3:
-       return ASN_ORG_NAME;
+       return ASN_SUR_NAME;
        break;
     case 4:
-       return ASN_ORGUNIT_NAME;
+       return ASN_ORG_NAME;
        break;
     case 5:
-       return ASN_COMMON_NAME;
+       return ASN_ORGUNIT_NAME;
        break;
     case 6:
+       return ASN_COMMON_NAME;
+       break;
+    case 7:
        /* email uses different id type */
        return 0;
        break;
@@ -2202,6 +2210,11 @@ static int SetName(byte* output, CertName* name)
             int strLen  = XSTRLEN(nameStr);
             int thisLen = strLen;
             int firstSz, secondSz, seqSz, setSz;
+
+            if (strLen == 0) { /* no user data for this item */
+                names[i].used = 0;
+                continue;
+            }
 
             secondSz = SetLength(strLen, secondLen);
             thisLen += secondSz;
@@ -2412,13 +2425,10 @@ static int AddSignature(byte* buffer, int bodySz, const byte* sig, int sigSz)
 }
 
 
-/* Make an x509 Self-Signed Certificate v3 from cert input, write to buffer
-   sign with RSA key */
+/* Make an x509 Certificate v3 RSA from cert input, write to buffer */
 int MakeCert(Cert* cert, byte* buffer, word32 buffSz, RsaKey* key, RNG* rng)
 {
     DerCert der;
-    byte    sig[MAX_ENCODED_SIG_SZ];
-    int     bodySz, sigSz;
 
     int ret = EncodeCert(cert, &der, key, rng);
     if (ret != 0)
@@ -2427,15 +2437,116 @@ int MakeCert(Cert* cert, byte* buffer, word32 buffSz, RsaKey* key, RNG* rng)
     if (der.total + MAX_SEQ_SZ * 2 > (int)buffSz)
         return BUFFER_E;
 
-    bodySz = WriteCertBody(&der, buffer);
+    return cert->bodySz = WriteCertBody(&der, buffer);
+}
+
+
+int SignCert(Cert* cert, byte* buffer, word32 buffSz, RsaKey* key, RNG* rng)
+{
+    byte    sig[MAX_ENCODED_SIG_SZ];
+    int     sigSz;
+    int     bodySz = cert->bodySz;
+
+    if (bodySz < 0)
+        return bodySz;
+
     sigSz  = MakeSignature(buffer, bodySz, sig, sizeof(sig), key, rng);
     if (sigSz < 0)
         return sigSz; 
 
-    if (der.total + MAX_SEQ_SZ * 2 + sigSz > (int)buffSz)
+    if (bodySz + MAX_SEQ_SZ * 2 + sigSz > (int)buffSz)
         return BUFFER_E; 
 
     return AddSignature(buffer, bodySz, sig, sigSz);
 }
 
+
+int MakeSelfCert(Cert* cert, byte* buffer, word32 buffSz, RsaKey* key, RNG* rng)
+{
+    int ret = MakeCert(cert, buffer, buffSz, key, rng);
+
+    if (ret < 0)
+        return ret;
+
+    return SignCert(cert, buffer, buffSz, key, rng);
+}
+
+
+/* forward from CyaSSL */
+int CyaSSL_PemCertToDer(const char* fileName, unsigned char* derBuf, int derSz);
+
+#ifndef NO_FILESYSTEM
+
+int SetIssuer(Cert* cert, const char* issuerCertFile)
+{
+    DecodedCert decoded;
+    byte        der[8192];
+    int         derSz = CyaSSL_PemCertToDer(issuerCertFile, der, sizeof(der));
+    int         ret;
+    int         sz;
+
+    if (derSz < 0)
+        return derSz;
+
+    cert->selfSigned = 0;
+
+    InitDecodedCert(&decoded, der, 0);
+    ret = ParseCertRelative(&decoded, derSz, CA_TYPE, NO_VERIFY, 0);
+
+    if (ret < 0)
+        return ret;
+
+    if (decoded.subjectCN) {
+        sz = (decoded.subjectCNLen < NAME_SIZE) ? decoded.subjectCNLen :
+                                                  NAME_SIZE - 1;
+        strncpy(cert->issuer.commonName, decoded.subjectCN, NAME_SIZE);
+        cert->issuer.commonName[sz] = 0;
+    }
+    if (decoded.subjectC) {
+        sz = (decoded.subjectCLen < NAME_SIZE) ? decoded.subjectCLen :
+                                                 NAME_SIZE - 1;
+        strncpy(cert->issuer.country, decoded.subjectC, NAME_SIZE);
+        cert->issuer.country[sz] = 0;
+    }
+    if (decoded.subjectST) {
+        sz = (decoded.subjectSTLen < NAME_SIZE) ? decoded.subjectSTLen :
+                                                  NAME_SIZE - 1;
+        strncpy(cert->issuer.state, decoded.subjectST, NAME_SIZE);
+        cert->issuer.state[sz] = 0;
+    }
+    if (decoded.subjectL) {
+        sz = (decoded.subjectLLen < NAME_SIZE) ? decoded.subjectLLen :
+                                                 NAME_SIZE - 1;
+        strncpy(cert->issuer.locality, decoded.subjectL, NAME_SIZE);
+        cert->issuer.locality[sz] = 0;
+    }
+    if (decoded.subjectO) {
+        sz = (decoded.subjectOLen < NAME_SIZE) ? decoded.subjectOLen :
+                                                 NAME_SIZE - 1;
+        strncpy(cert->issuer.org, decoded.subjectO, NAME_SIZE);
+        cert->issuer.org[sz] = 0;
+    }
+    if (decoded.subjectOU) {
+        sz = (decoded.subjectOULen < NAME_SIZE) ? decoded.subjectOULen :
+                                                  NAME_SIZE - 1;
+        strncpy(cert->issuer.unit, decoded.subjectOU, NAME_SIZE);
+        cert->issuer.unit[sz] = 0;
+    }
+    if (decoded.subjectSN) {
+        sz = (decoded.subjectSNLen < NAME_SIZE) ? decoded.subjectSNLen :
+                                                  NAME_SIZE - 1;
+        strncpy(cert->issuer.sur, decoded.subjectSN, NAME_SIZE);
+        cert->issuer.sur[sz] = 0;
+    }
+    if (decoded.subjectEmail) {
+        sz = (decoded.subjectEmailLen < NAME_SIZE) ? decoded.subjectEmailLen :
+                                                     NAME_SIZE - 1;
+        strncpy(cert->issuer.email, decoded.subjectEmail, NAME_SIZE);
+        cert->issuer.email[sz] = 0;
+    }
+
+    return 0;
+}
+
+#endif /* NO_FILESYSTEM */
 #endif /* CYASSL_CERT_GEN */

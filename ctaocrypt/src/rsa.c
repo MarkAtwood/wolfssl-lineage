@@ -82,6 +82,8 @@ void FreeRsaKey(RsaKey* key)
 static void RsaPad(const byte* input, word32 inputLen, byte* pkcsBlock,
                    word32 pkcsBlockLen, byte padValue, RNG* rng)
 {
+    if (inputLen == 0) return;
+
     pkcsBlock[0] = 0x0;       /* set first byte to zero and advance */
     pkcsBlock++; pkcsBlockLen--;
     pkcsBlock[0] = padValue;  /* insert padValue */
