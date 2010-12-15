@@ -94,10 +94,16 @@ typedef byte word24[3];
 #ifndef NO_RC4
     #define BUILD_SSL_RSA_WITH_RC4_128_SHA
     #define BUILD_SSL_RSA_WITH_RC4_128_MD5
+    #if !defined(NO_TLS) && defined(HAVE_NTRU)
+        #define BUILD_TLS_NTRU_RSA_WITH_RC4_128_SHA
+    #endif
 #endif
 
 #ifndef NO_DES3
     #define BUILD_SSL_RSA_WITH_3DES_EDE_CBC_SHA
+    #if !defined(NO_TLS) && defined(HAVE_NTRU)
+        #define BUILD_TLS_NTRU_RSA_WITH_3DES_EDE_CBC_SHA
+    #endif
 #endif
 
 #if !defined(NO_AES) && !defined(NO_TLS)
@@ -106,6 +112,10 @@ typedef byte word24[3];
     #if !defined (NO_PSK)
         #define BUILD_TLS_PSK_WITH_AES_128_CBC_SHA
         #define BUILD_TLS_PSK_WITH_AES_256_CBC_SHA
+    #endif
+    #if defined(HAVE_NTRU)
+        #define BUILD_TLS_NTRU_RSA_WITH_AES_128_CBC_SHA
+        #define BUILD_TLS_NTRU_RSA_WITH_AES_256_CBC_SHA
     #endif
 #endif
 
@@ -148,7 +158,6 @@ typedef byte word24[3];
     #define BUILD_RABBIT
 #endif
 
-
 #ifdef NO_DES3
     #define DES_BLOCK_SIZE 8
 #endif
@@ -170,10 +179,16 @@ enum {
     SSL_RSA_WITH_RC4_128_MD5          = 0x04,
     SSL_RSA_WITH_3DES_EDE_CBC_SHA     = 0x0A,
 
-    /* CyaSSL extension */
+    /* CyaSSL extension - eSTRAM */
     TLS_RSA_WITH_HC_128_CBC_MD5       = 0xFB,
     TLS_RSA_WITH_HC_128_CBC_SHA       = 0xFC,
-    TLS_RSA_WITH_RABBIT_CBC_SHA       = 0xFD
+    TLS_RSA_WITH_RABBIT_CBC_SHA       = 0xFD,
+
+    /* CyaSSL extension - NTRU */
+    TLS_NTRU_RSA_WITH_RC4_128_SHA      = 0x65,
+    TLS_NTRU_RSA_WITH_3DES_EDE_CBC_SHA = 0x66,
+    TLS_NTRU_RSA_WITH_AES_128_CBC_SHA  = 0x67,
+    TLS_NTRU_RSA_WITH_AES_256_CBC_SHA  = 0x68
 };
 
 
@@ -277,6 +292,8 @@ enum Misc {
     FILE_BUFFER_SIZE   = 1024, /* default static file buffer size for input,
                                   will use dynamic buffer if not big enough */
 
+    MAX_NTRU_PUB_KEY_SZ = 1024, /* NTRU max for now */
+    MAX_NTRU_ENCRYPT_SZ = 1024, /* NTRU max for now */
     NO_SNIFF           =   0,  /* not sniffing */
     SNIFF              =   1,  /* currently sniffing */
 
@@ -467,7 +484,7 @@ typedef struct Suites {
 } Suites;
 
 
-void InitSuites(Suites*, ProtocolVersion, byte, byte);
+void InitSuites(Suites*, ProtocolVersion, byte, byte, byte);
 int  SetCipherList(SSL_CTX* ctx, const char* list);
 
 #ifndef PSK_TYPES_DEFINED
@@ -510,13 +527,14 @@ struct SSL_CTX {
     byte        sessionCacheFlushOff;
     byte        sendVerify;       /* for client side */
     byte        haveDH;           /* server DH parms set by user */
+    byte        haveNTRU;         /* server private NTRU key loaded */
     byte        partialWrite;     /* only one msg per write call */
     byte        quietShutdown;    /* don't send close notify */
     CallbackIORecv CBIORecv;
     CallbackIOSend CBIOSend;
     VerifyCallback verifyCallback;      /* cert verification callback */
 #ifndef NO_PSK
-    byte        havePSK;          /* psk key set by user */
+    byte        havePSK;                /* psk key set by user */
     psk_client_callback client_psk_cb;  /* client callback */
     psk_server_callback server_psk_cb;  /* server callback */
     char        server_hint[MAX_PSK_ID_LEN];
@@ -583,7 +601,8 @@ enum KeyExchangeAlgorithm {
     rsa_kea, 
     diffie_hellman_kea, 
     fortezza_kea,
-    psk_kea 
+    psk_kea,
+    ntru_kea
 };
 
 
@@ -773,6 +792,7 @@ typedef struct Options {
     byte            acceptState;        /* nonblocking resume */
     byte            usingCompression;   /* are we using compression */
     byte            haveDH;             /* server DH parms set by user */
+    byte            haveNTRU;           /* server NTRU private key loaded */
     byte            havePeerCert;       /* do we have peer's cert */
     byte            usingPSK_cipher;    /* whether we're using psk as cipher */
     byte            sendAlertState;     /* nonblocking resume */ 
@@ -867,6 +887,11 @@ struct SSL {
     SSL_SESSION     session;
     RsaKey          peerRsaKey;
     byte            peerRsaKeyPresent;
+#ifdef HAVE_NTRU
+    word16          peerNtruKeyLen;
+    byte            peerNtruKey[MAX_NTRU_PUB_KEY_SZ];
+    byte            peerNtruKeyPresent;
+#endif
     hmacfp          hmac;
     void*           heap;               /* for user overrides */
     RecordLayerHeader curRL;

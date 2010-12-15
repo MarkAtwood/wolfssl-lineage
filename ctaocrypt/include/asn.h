@@ -175,6 +175,7 @@ typedef struct Signer Signer;
 struct Signer {
     byte*   publicKey;
     word32  pubKeySize;
+    word32  keyOID;                  /* key type */
     char*   name;                    /* common name */
     byte    hash[SHA_DIGEST_SIZE];   /* sha hash of names in certificate */
     Signer* next;

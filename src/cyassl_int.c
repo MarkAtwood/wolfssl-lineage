@@ -29,6 +29,10 @@
     #include "zlib.h"
 #endif
 
+#ifdef HAVE_NTRU
+    #include "crypto_ntru.h"
+#endif
+
 #if defined(DEBUG_CYASSL) || defined(SHOW_SECRETS)
     #include <stdio.h>
 #endif
@@ -105,6 +109,39 @@ int IsAtLeastTLSv1_2(const SSL* ssl)
     return 0;
 }
 
+
+#ifdef HAVE_NTRU
+
+static byte GetEntropy(ENTROPY_CMD cmd, byte* out)
+{
+    /* TODO: add locking? */
+    static RNG rng;
+
+    if (cmd == INIT) {
+        int ret = InitRng(&rng);
+        if (ret == 0)
+            return 1;
+        else
+            return 0;
+    }
+
+    if (out == NULL)
+        return 0;
+
+    if (cmd == GET_BYTE_OF_ENTROPY) {
+        RNG_GenerateBlock(&rng, out, 1);
+        return 1;
+    }
+
+    if (cmd == GET_NUM_BYTES_PER_BYTE_OF_ENTROPY) {
+        *out = 1;
+        return 1;
+    }
+
+    return 0;
+}
+
+#endif /* HAVE_NTRU */
 
 static INLINE void c32to24(word32 in, word24 out)
 {
@@ -278,6 +315,7 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->certificate.buffer = 0;
     ctx->privateKey.buffer  = 0;
     ctx->haveDH             = 0;
+    ctx->haveNTRU           = 0;    /* start off */
     ctx->heap               = ctx;  /* defaults to self */
 #ifndef NO_PSK
     ctx->havePSK            = 0;
@@ -303,8 +341,13 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->verifyCallback = 0;
 
     ctx->caList = 0;
-    /* remove DH later if server didn't set, add psk later  */
-    InitSuites(&ctx->suites, method->version, TRUE, FALSE);  
+#ifdef HAVE_NTRU
+    if (method->side == CLIENT_END)
+        ctx->haveNTRU = 1;           /* always on cliet side */
+                                     /* server can turn on by loading key */
+#endif
+    /* remove DH later if server didn't set, add psk later */
+    InitSuites(&ctx->suites, method->version, TRUE, FALSE, ctx->haveNTRU);  
     ctx->verifyPeer = 0;
     ctx->verifyNone = 0;
     ctx->failNoCert = 0;
@@ -312,6 +355,7 @@ void InitSSL_Ctx(SSL_CTX* ctx, SSL_METHOD* method)
     ctx->sessionCacheFlushOff = 0;  /* initially on */
     ctx->sendVerify = 0;
     ctx->quietShutdown = 0;
+
 }
 
 
@@ -334,7 +378,8 @@ void FreeSSL_Ctx(SSL_CTX* ctx)
 
     
 
-void InitSuites(Suites* suites, ProtocolVersion pv, byte haveDH, byte havePSK)
+void InitSuites(Suites* suites, ProtocolVersion pv, byte haveDH, byte havePSK,
+                byte haveNTRU)
 {
     word32 idx = 0;
     int    tls = pv.major == 3 && pv.minor >= 1;
@@ -347,6 +392,34 @@ void InitSuites(Suites* suites, ProtocolVersion pv, byte haveDH, byte havePSK)
 #endif
 
     suites->setSuites = 0;  /* user hasn't set yet */
+
+#ifdef BUILD_TLS_NTRU_RSA_WITH_AES_256_CBC_SHA
+    if (tls && haveNTRU) {
+        suites->suites[idx++] = 0; 
+        suites->suites[idx++] = TLS_NTRU_RSA_WITH_AES_256_CBC_SHA;
+    }
+#endif
+
+#ifdef BUILD_TLS_NTRU_RSA_WITH_AES_128_CBC_SHA
+    if (tls && haveNTRU) {
+        suites->suites[idx++] = 0; 
+        suites->suites[idx++] = TLS_NTRU_RSA_WITH_AES_128_CBC_SHA;
+    }
+#endif
+
+#ifdef BUILD_TLS_NTRU_RSA_WITH_RC4_128_SHA
+    if (tls && haveNTRU) {
+        suites->suites[idx++] = 0; 
+        suites->suites[idx++] = TLS_NTRU_RSA_WITH_RC4_128_SHA;
+    }
+#endif
+
+#ifdef BUILD_TLS_NTRU_RSA_WITH_3DES_EDE_CBC_SHA
+    if (tls && haveNTRU) {
+        suites->suites[idx++] = 0; 
+        suites->suites[idx++] = TLS_NTRU_RSA_WITH_3DES_EDE_CBC_SHA;
+    }
+#endif
 
 #ifdef BUILD_TLS_DHE_RSA_WITH_AES_256_CBC_SHA
     if (tls && haveDH) {
@@ -482,6 +555,7 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->options.sentNotify   = 0;
     ssl->options.usingCompression = 0;
     ssl->options.haveDH    = ctx->haveDH;
+    ssl->options.haveNTRU  = ctx->haveNTRU;
     ssl->options.havePeerCert = 0; 
     ssl->options.usingPSK_cipher = 0;
     ssl->options.sendAlertState = 0;
@@ -552,12 +626,14 @@ int InitSSL(SSL* ssl, SSL_CTX* ctx)
     ssl->toInfoOn = 0;
 #endif
 
-    /* make sure server has DH parms, and add PSK if there */
+    /* make sure server has DH parms, and add PSK if there, add NTRU too */
     if (!ssl->ctx->suites.setSuites) {    /* trust user override */
         if (ssl->options.side == SERVER_END) 
-            InitSuites(&ssl->suites, ssl->version,ssl->options.haveDH, havePSK);
+            InitSuites(&ssl->suites, ssl->version,ssl->options.haveDH, havePSK,
+                       ssl->options.haveNTRU);
         else 
-            InitSuites(&ssl->suites, ssl->version, TRUE, havePSK);
+            InitSuites(&ssl->suites, ssl->version, TRUE, havePSK,
+                       ssl->options.haveNTRU);
     }
 
     ssl->rfd = -1;   /* set to invalid descriptor */
@@ -1237,13 +1313,27 @@ static int DoCertificate(SSL* ssl, byte* input, word32* inOutIdx)
             }
 
         /* decode peer key */
-        if (RsaPublicKeyDecode(dCert.publicKey, &idx,
+        if (dCert.keyOID == RSAk) {
+            if (RsaPublicKeyDecode(dCert.publicKey, &idx,
                                &ssl->peerRsaKey, dCert.pubKeySize) != 0) {
-            ret = PEER_KEY_ERROR;
-            FreeDecodedCert(&dCert);
-            continue;
+                ret = PEER_KEY_ERROR;
+                FreeDecodedCert(&dCert);
+                continue;
+            }
+            ssl->peerRsaKeyPresent = 1;
         }
-        ssl->peerRsaKeyPresent = 1;
+#ifdef HAVE_NTRU
+        else if (dCert.keyOID == NTRUk) {
+            if (dCert.pubKeySize > sizeof(ssl->peerNtruKey)) {
+                ret = PEER_KEY_ERROR;
+                FreeDecodedCert(&dCert);
+                continue;
+            }
+            XMEMCPY(ssl->peerNtruKey, dCert.publicKey, dCert.pubKeySize);
+            ssl->peerNtruKeyLen = (word16)dCert.pubKeySize;
+            ssl->peerNtruKeyPresent = 1;
+        }
+#endif
 
         FreeDecodedCert(&dCert);
     }
@@ -2711,6 +2801,22 @@ void SetErrorString(int error, char* buffer)
         XSTRNCPY(buffer, "psk key callback error", max);
         break;
 
+    case NTRU_KEY_ERROR:
+        XSTRNCPY(buffer, "NTRU key error", max);
+        break;
+
+    case NTRU_DRBG_ERROR:
+        XSTRNCPY(buffer, "NTRU drbg error", max);
+        break;
+
+    case NTRU_ENCRYPT_ERROR:
+        XSTRNCPY(buffer, "NTRU encrypt error", max);
+        break;
+
+    case NTRU_DECRYPT_ERROR:
+        XSTRNCPY(buffer, "NTRU decrypt error", max);
+        break;
+
     case ZLIB_INIT_ERROR:
         XSTRNCPY(buffer, "zlib init error", max);
         break;
@@ -2810,6 +2916,22 @@ const char* const cipher_names[] =
 #ifdef BUILD_TLS_RSA_WITH_RABBIT_CBC_SHA
     "RABBIT-SHA",
 #endif
+
+#ifdef BUILD_TLS_NTRU_RSA_WITH_RC4_128_SHA
+    "NTRU-RC4-SHA",
+#endif
+
+#ifdef BUILD_TLS_NTRU_RSA_WITH_3DES_EDE_CBC_SHA
+    "NTRU-DES-CBC3-SHA",
+#endif
+
+#ifdef BUILD_TLS_NTRU_RSA_WITH_AES_128_CBC_SHA
+    "NTRU-AES128-SHA",
+#endif
+
+#ifdef BUILD_TLS_NTRU_RSA_WITH_AES_256_CBC_SHA
+    "NTRU-AES256-SHA",
+#endif
 };
 
 
@@ -2864,6 +2986,22 @@ int cipher_name_idx[] =
 
 #ifdef BUILD_TLS_RSA_WITH_RABBIT_CBC_SHA
     TLS_RSA_WITH_RABBIT_CBC_SHA,    
+#endif
+
+#ifdef BUILD_TLS_NTRU_RSA_WITH_RC4_128_SHA
+    TLS_NTRU_RSA_WITH_RC4_128_SHA,
+#endif
+
+#ifdef BUILD_TLS_NTRU_RSA_WITH_3DES_EDE_CBC_SHA
+    TLS_NTRU_RSA_WITH_3DES_EDE_CBC_SHA,
+#endif
+
+#ifdef BUILD_TLS_NTRU_RSA_WITH_AES_128_CBC_SHA
+    TLS_NTRU_RSA_WITH_AES_128_CBC_SHA,    
+#endif
+
+#ifdef BUILD_TLS_NTRU_RSA_WITH_AES_256_CBC_SHA
+    TLS_NTRU_RSA_WITH_AES_256_CBC_SHA,    
 #endif
 };
 
@@ -3434,7 +3572,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
     int SendClientKeyExchange(SSL* ssl)
     {
-        byte   encSecret[ENCRYPT_LEN];
+        byte   encSecret[MAX_NTRU_ENCRYPT_SZ];
         word32 encSz = 0;
         word32 idx = 0;
         int    ret = 0;
@@ -3507,6 +3645,38 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             XMEMCPY(pms, ssl->arrays.psk_key, ssl->arrays.psk_keySz);
             ssl->arrays.preMasterSz = ssl->arrays.psk_keySz * 2 + 4;
         #endif /* NO_PSK */
+        #ifdef HAVE_NTRU
+        } else if (ssl->specs.kea == ntru_kea) {
+            word32 rc;
+            word16 cipherLen = sizeof(encSecret);
+            DRBG_HANDLE drbg;
+            static uint8_t const cyasslStr[] = {
+                'C', 'y', 'a', 'S', 'S', 'L', ' ', 'N', 'T', 'R', 'U'
+            };
+
+            RNG_GenerateBlock(&ssl->rng, ssl->arrays.preMasterSecret,
+                              SECRET_LEN);
+            ssl->arrays.preMasterSz = SECRET_LEN;
+
+            if (ssl->peerNtruKeyPresent == 0)
+                return NO_PEER_KEY;
+
+            rc = crypto_drbg_instantiate(112, cyasslStr, sizeof(cyasslStr),
+                                        GetEntropy, &drbg);
+            if (rc != DRBG_OK)
+                return NTRU_DRBG_ERROR; 
+
+            rc = crypto_ntru_encrypt(drbg, ssl->peerNtruKeyLen,ssl->peerNtruKey,
+                                     ssl->arrays.preMasterSz,
+                                     ssl->arrays.preMasterSecret,
+                                     &cipherLen, encSecret);
+            crypto_drbg_uninstantiate(drbg);
+            if (rc != NTRU_OK)
+                return NTRU_ENCRYPT_ERROR;
+
+            encSz = cipherLen;
+            ret = 0;
+        #endif /* HAVE_NTRU */
         } else
             return -1; /* unsupported kea */
 
@@ -3865,7 +4035,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             ssl->options.tls    = 0;
             ssl->options.tls1_1 = 0;
             ssl->version.minor  = 0;
-            InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, FALSE);
+            InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, FALSE,
+                       ssl->options.haveNTRU);
         }
 
         /* suite size */
@@ -3971,7 +4142,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             ssl->options.tls    = 0;
             ssl->options.tls1_1 = 0;
             ssl->version.minor  = 0;
-            InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, FALSE);
+            InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, FALSE,
+                       ssl->options.haveNTRU);
         }
         /* random */
         XMEMCPY(ssl->arrays.clientRandom, input + i, RAN_LEN);
@@ -4295,6 +4467,33 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
             ret = MakeMasterSecret(ssl);
 #endif /* NO_PSK */
+#ifdef HAVE_NTRU
+        } else if (ssl->specs.kea == ntru_kea) {
+            word32 rc;
+            word16 cipherLen;
+            word16 plainLen = sizeof(ssl->arrays.preMasterSecret);
+            byte*  tmp;
+
+            if (!ssl->buffers.key.buffer)
+                return NO_PRIVATE_KEY;
+
+            ato16(&input[*inOutIdx], &cipherLen);
+            *inOutIdx += LENGTH_SZ;
+            if (cipherLen > MAX_NTRU_ENCRYPT_SZ)
+                return NTRU_KEY_ERROR;
+
+            tmp = input + *inOutIdx;
+            rc = crypto_ntru_decrypt((word16)ssl->buffers.key.length,
+                        ssl->buffers.key.buffer, cipherLen, tmp, &plainLen,
+                        ssl->arrays.preMasterSecret);
+
+            if (rc != NTRU_OK || plainLen != SECRET_LEN)
+                return NTRU_DECRYPT_ERROR;
+            *inOutIdx += cipherLen;
+
+            ssl->arrays.preMasterSz = plainLen;
+            ret = MakeMasterSecret(ssl);
+#endif /* HAVE_NTRU */
         }
 
         if (ret == 0) {

@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		430B6D591224615300CA08FC /* ripemd.c in Sources */ = {isa = PBXBuildFile; fileRef = 430B6D581224615300CA08FC /* ripemd.c */; };
 		430B6DB31224900000CA08FC /* sha512.c in Sources */ = {isa = PBXBuildFile; fileRef = 430B6DB21224900000CA08FC /* sha512.c */; };
+		43549BBB12B8316100A011EF /* libntru_encrypt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 43E0103912B71C230098917A /* libntru_encrypt.a */; };
+		43549BCB12B8318F00A011EF /* libntru_encrypt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 43E0103912B71C230098917A /* libntru_encrypt.a */; };
 		4368F6E20E9EA0E10002A123 /* testsuite.c in Sources */ = {isa = PBXBuildFile; fileRef = 4368F6E10E9EA0E10002A123 /* testsuite.c */; };
 		4368F6E30E9EA0F10002A123 /* client.c in Sources */ = {isa = PBXBuildFile; fileRef = 43F5A2570E8C59BA00CD7F1A /* client.c */; };
 		4368F6E50E9EA1140002A123 /* test.c in Sources */ = {isa = PBXBuildFile; fileRef = 4368F6E40E9EA1140002A123 /* test.c */; };
@@ -265,6 +267,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4368F79F0E9EABC50002A123 /* libcyassl.a in Frameworks */,
+				43549BBB12B8316100A011EF /* libntru_encrypt.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -273,6 +276,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				43F5A25B0E8C59CB00CD7F1A /* libcyassl.a in Frameworks */,
+				43549BCB12B8318F00A011EF /* libntru_encrypt.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1022,10 +1026,15 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					HAVE_NTRU,
 					CYASSL_CALLBACKS,
 					HAVE_CONFIG_H,
 				);
 				INSTALL_PATH = /usr/local/bin;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/NTRU_algorithm\"",
+				);
 				OTHER_LDFLAGS = "-lz";
 				PREBINDING = NO;
 				PRODUCT_NAME = echoserver;
@@ -1041,6 +1050,10 @@
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_MODEL_TUNING = G5;
 				INSTALL_PATH = /usr/local/bin;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/NTRU_algorithm\"",
+				);
 				OTHER_LDFLAGS = "-lz";
 				PREBINDING = NO;
 				PRODUCT_NAME = echoserver;
@@ -1059,10 +1072,15 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					HAVE_NTRU,
 					OPENSSL_EXTRA,
 					HAVE_CONFIG_H,
 				);
 				INSTALL_PATH = /usr/local/bin;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/NTRU_algorithm\"",
+				);
 				OTHER_LDFLAGS = "-lz";
 				PREBINDING = NO;
 				PRODUCT_NAME = client;
@@ -1080,6 +1098,10 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PREPROCESSOR_DEFINITIONS = HAVE_CONFIG_H;
 				INSTALL_PATH = /usr/local/bin;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/NTRU_algorithm\"",
+				);
 				OTHER_LDFLAGS = "-lz";
 				PREBINDING = NO;
 				PRODUCT_NAME = client;

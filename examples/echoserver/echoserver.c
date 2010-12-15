@@ -66,13 +66,24 @@ THREAD_RETURN CYASSL_API echoserver_test(void* args)
 #endif
 
 #ifndef NO_FILESYSTEM
-    if (SSL_CTX_use_certificate_file(ctx, svrCert, SSL_FILETYPE_PEM)
-            != SSL_SUCCESS)
-        err_sys("can't load server cert file");
+    #ifndef HAVE_NTRU
+        if (SSL_CTX_use_certificate_file(ctx, svrCert, SSL_FILETYPE_PEM)
+                != SSL_SUCCESS)
+            err_sys("can't load server cert file");
 
-    if (SSL_CTX_use_PrivateKey_file(ctx, svrKey, SSL_FILETYPE_PEM)
-            != SSL_SUCCESS)
-        err_sys("can't load server key file");
+        if (SSL_CTX_use_PrivateKey_file(ctx, svrKey, SSL_FILETYPE_PEM)
+                != SSL_SUCCESS)
+            err_sys("can't load server key file");
+    #else
+        if (SSL_CTX_use_certificate_file(ctx, ntruCert, SSL_FILETYPE_PEM)
+                != SSL_SUCCESS)
+            err_sys("can't load ntru cert file");
+
+        if (CyaSSL_CTX_use_NTRUPrivateKey_file(ctx, ntruKey)
+                != SSL_SUCCESS)
+            err_sys("can't load ntru key file");
+
+    #endif /* NTRU */
 #else
     load_buffer(ctx, svrCert, CYASSL_CERT);
     load_buffer(ctx, svrKey,  CYASSL_KEY);

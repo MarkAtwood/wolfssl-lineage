@@ -1290,6 +1290,8 @@ int rsa_test()
         DecodedCert decode;
         FILE*       derFile;
         FILE*       pemFile;
+        FILE*       caFile;
+        FILE*       ntruPrivFile;
         int         certSz;
         int         pemSz;
         byte        tmp[1024];
@@ -1300,12 +1302,6 @@ int rsa_test()
         word16 public_key_len;           /* no. of octets in public key */
         byte   private_key[607];         /* sized for EES401EP2 */
         word16 private_key_len;          /* no. of octets in private key */
-        byte   encoded_public_key[591];  /* sized for EES401EP2 */
-        word16 encoded_public_key_len;   /* # of octets in encoded public key*/
-        byte   ciphertext[552];          /* sized fof EES401EP2 */
-        word16 ciphertext_len;           /* no. of octets in ciphertext */
-        byte   plaintext[16];            /* size of AES-128 key */
-        word16 plaintext_len;
         DRBG_HANDLE drbg;
         static uint8_t const pers_str[] = {
                 'C', 'y', 'a', 'S', 'S', 'L', ' ', 't', 'e', 's', 't'
@@ -1316,7 +1312,7 @@ int rsa_test()
             return -450;
 
         rc = crypto_ntru_encrypt_keygen(drbg, NTRU_EES401EP2, &public_key_len,
-                                                 NULL, &private_key_len, NULL);
+                                        NULL, &private_key_len, NULL);
         if (rc != NTRU_OK)
             return -451;
 
@@ -1325,12 +1321,13 @@ int rsa_test()
         if (rc != NTRU_OK)
             return -452;
 
-        FILE*  file = fopen(caKeyFile, "rb");
+        caFile = fopen(caKeyFile, "rb");
 
-        if (!file)
+        if (!caFile)
             return -453;
 
-        bytes = fread(tmp, 1, 1024, file);
+        bytes = fread(tmp, 1, 1024, caFile);
+        fclose(caFile);
   
         InitRsaKey(&caKey, 0);  
         ret = RsaPrivateKeyDecode(tmp, &idx, &caKey, (word32)bytes);
@@ -1365,7 +1362,7 @@ int rsa_test()
         if (ret != 0)
             return -458;
 
-        derFile = fopen("./ntrucert.der", "wb");
+        derFile = fopen("./ntru-cert.der", "wb");
         if (!derFile)
             return -459;
         ret = fwrite(derCert, certSz, 1, derFile);
@@ -1375,11 +1372,19 @@ int rsa_test()
         if (pemSz < 0)
             return -460;
 
-        pemFile = fopen("./ntrucert.pem", "wb");
+        pemFile = fopen("./ntru-cert.pem", "wb");
         if (!pemFile)
             return -461;
         ret = fwrite(pem, pemSz, 1, pemFile);
         fclose(pemFile);
+
+        ntruPrivFile = fopen("./ntru-key.raw", "wb");
+        if (!ntruPrivFile)
+            return -462;
+        ret = fwrite(private_key, private_key_len, 1, ntruPrivFile);
+        fclose(ntruPrivFile);
+
+
 
         FreeDecodedCert(&decode);
     }

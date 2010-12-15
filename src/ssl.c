@@ -285,6 +285,7 @@ static int AddCA(SSL_CTX* ctx, buffer der)
         if (!signer)
             ret = MEMORY_ERROR;
         else {
+            signer->keyOID     = cert.keyOID;
             signer->publicKey  = cert.publicKey;
             signer->pubKeySize = cert.pubKeySize;
             signer->name = cert.subjectCN;
@@ -465,13 +466,14 @@ static int AddCA(SSL_CTX* ctx, buffer der)
                              long sz, int format, int type)
     {
         EncryptedInfo info;
-        buffer        der;
+        buffer        der;        /* holds DER or RAW (for NTRU */
         int           dynamicType;
 
         info.set   = 0;
         der.buffer = 0;
 
-        if (format != SSL_FILETYPE_ASN1 && format != SSL_FILETYPE_PEM)
+        if (format != SSL_FILETYPE_ASN1 && format != SSL_FILETYPE_PEM 
+                                        && format != SSL_FILETYPE_RAW)
             return SSL_BAD_FILETYPE;
 
         if (type == CA_TYPE)
@@ -487,7 +489,7 @@ static int AddCA(SSL_CTX* ctx, buffer der)
                 return SSL_BAD_FILE;
             }
         }
-        else {  /* ASN1 (DER) */
+        else {  /* ASN1 (DER) or RAW (NTRU) */
             der.buffer = (byte*) XMALLOC(sz, ctx->heap, dynamicType);
             if (!der.buffer) return MEMORY_ERROR;
             XMEMCPY(der.buffer, buff, sz);
@@ -562,8 +564,8 @@ static int AddCA(SSL_CTX* ctx, buffer der)
             return SSL_BAD_CERTTYPE;
         }
 
-        if (type == PRIVATEKEY_TYPE) {
-            /* make sure key can be used */
+        if (type == PRIVATEKEY_TYPE && format != SSL_FILETYPE_RAW) {
+            /* make sure RSA key can be used */
             RsaKey key;
             word32 idx = 0;
         
@@ -744,6 +746,23 @@ int SSL_CTX_use_certificate_chain_file(SSL_CTX* ctx, const char* file)
 
    return SSL_FAILURE;
 }
+
+
+#ifdef HAVE_NTRU
+
+int CyaSSL_CTX_use_NTRUPrivateKey_file(SSL_CTX* ctx, const char* file)
+{
+    if (ProcessFile(ctx, file, SSL_FILETYPE_RAW, PRIVATEKEY_TYPE)
+                         == SSL_SUCCESS) {
+        ctx->haveNTRU = 1;
+        return SSL_SUCCESS;
+    }
+
+    return SSL_FAILURE;
+}
+
+#endif /* HAVE_NTRU */
+
 
 
 #ifdef OPENSSL_EXTRA
@@ -1710,7 +1729,7 @@ int CyaSSL_set_compression(SSL* ssl)
         ssl->options.havePSK = 1;
         ssl->options.client_psk_cb = cb;
 
-        InitSuites(&ssl->suites, ssl->version, TRUE, TRUE);
+        InitSuites(&ssl->suites, ssl->version,TRUE,TRUE, ssl->options.haveNTRU);
     }
 
 
@@ -1726,7 +1745,8 @@ int CyaSSL_set_compression(SSL* ssl)
         ssl->options.havePSK = 1;
         ssl->options.server_psk_cb = cb;
 
-        InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, TRUE);
+        InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, TRUE,
+                   ssl->options.haveNTRU);
     }
 
 
@@ -1867,7 +1887,8 @@ int CyaSSL_set_compression(SSL* ssl)
 #ifndef NO_PSK
         havePSK = ssl->options.havePSK;
 #endif
-        InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, havePSK);
+        InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, havePSK,
+                   ssl->options.haveNTRU);
     }
 
 
@@ -2567,6 +2588,14 @@ int CyaSSL_set_compression(SSL* ssl)
                     return "TLS_RSA_WITH_HC_128_CBC_SHA";
                 case TLS_RSA_WITH_RABBIT_CBC_SHA :
                     return "TLS_RSA_WITH_RABBIT_CBC_SHA";
+                case TLS_NTRU_RSA_WITH_RC4_128_SHA :
+                    return "TLS_NTRU_RSA_WITH_RC4_128_SHA";
+                case TLS_NTRU_RSA_WITH_3DES_EDE_CBC_SHA :
+                    return "TLS_NTRU_RSA_WITH_3DES_EDE_CBC_SHA";
+                case TLS_NTRU_RSA_WITH_AES_128_CBC_SHA :
+                    return "TLS_NTRU_RSA_WITH_AES_128_CBC_SHA";
+                case TLS_NTRU_RSA_WITH_AES_256_CBC_SHA :
+                    return "TLS_NTRU_RSA_WITH_AES_256_CBC_SHA";
             }
         }
 

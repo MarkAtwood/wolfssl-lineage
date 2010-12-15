@@ -136,9 +136,15 @@ int SSL_CTX_use_certificate_file(SSL_CTX*, const char*, int);
 int SSL_CTX_use_PrivateKey_file(SSL_CTX*, const char*, int);
 int SSL_CTX_load_verify_locations(SSL_CTX*, const char*, const char*);
 int SSL_CTX_use_certificate_chain_file(SSL_CTX *ctx, const char *file);
+int SSL_CTX_use_RSAPrivateKey_file(SSL_CTX*, const char*, int);
 
 #ifdef CYASSL_DER_LOAD
     int CyaSSL_CTX_load_verify_locations(SSL_CTX*, const char*, int);
+#endif
+
+#ifdef HAVE_NTRU
+    int CyaSSL_CTX_use_NTRUPrivateKey_file(SSL_CTX*, const char*); /* load NTRU 
+                                                             private key blob */
 #endif
 
 int CyaSSL_PemCertToDer(const char*, unsigned char*, int);
@@ -319,7 +325,6 @@ void* SSL_get_ex_data(const SSL*, int);
 
 void SSL_CTX_set_default_passwd_cb_userdata(SSL_CTX*, void* userdata);
 void SSL_CTX_set_default_passwd_cb(SSL_CTX*, pem_password_cb);
-int  SSL_CTX_use_RSAPrivateKey_file(SSL_CTX*, const char*, int);
 
 
 long SSL_CTX_set_timeout(SSL_CTX*, long);
@@ -469,6 +474,7 @@ enum { /* ssl Constants */
     SSL_FILETYPE_ASN1    = 2,
     SSL_FILETYPE_PEM     = 1,
     SSL_FILETYPE_DEFAULT = 2, /* ASN1 */
+    SSL_FILETYPE_RAW     = 3, /* NTRU raw key blob */
 
     SSL_VERIFY_NONE                 = 0,
     SSL_VERIFY_PEER                 = 1,
@@ -603,6 +609,8 @@ void CyaSSL_Debugging_OFF(void);  /* turn logging off */
 
 int CyaSSL_set_compression(SSL* ssl);  /* turn on CyaSSL data compression */
 
+int CyaSSL_CTX_use_NTRUPrivateKey_file(SSL_CTX*, const char*); /* load NTRU
+                                                             private key blob */
 X509_CHAIN* CyaSSL_get_peer_chain(SSL* ssl);   /* get CyaSSL peer X509_CHAIN */
 int  CyaSSL_get_chain_count(X509_CHAIN* chain);   /* peer chain count */
 int  CyaSSL_get_chain_length(X509_CHAIN*, int idx); /* index cert length */

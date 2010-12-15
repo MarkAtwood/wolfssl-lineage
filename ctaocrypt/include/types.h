@@ -145,7 +145,7 @@ enum {
     #include <string.h>
     #define XMEMCPY(d,s,l)    memcpy((d),(s),(l))
     #define XMEMSET(b,c,l)    memset((b),(c),(l))
-    #define XMEMCMP(s1,s2,n)  memcpy((s1),(s2),(n))
+    #define XMEMCMP(s1,s2,n)  memcmp((s1),(s2),(n))
 
     #define XSTRLEN(s1)       strlen((s1))
     #define XSTRNCPY(s1,s2,n) strncpy((s1),(s2),(n))

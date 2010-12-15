@@ -1366,7 +1366,8 @@ word32 EncodeSignature(byte* out, const byte* digest, word32 digSz, int hashOID)
                            
 
 /* return true (1) for Confirmation */
-static int ConfirmSignature(DecodedCert* cert, const byte* key, word32 keySz)
+static int ConfirmSignature(DecodedCert* cert, const byte* key, word32 keySz,
+                            word32 keyOID)
 {
     byte digest[SHA_DIGEST_SIZE]; /* max size */
     int  hashType, digestSz, ret;
@@ -1392,7 +1393,7 @@ static int ConfirmSignature(DecodedCert* cert, const byte* key, word32 keySz)
     else
         return 0; /* ASN_SIG_HASH_E; */
 
-    if (cert->keyOID == RSAk) {
+    if (keyOID == RSAk) {
         RsaKey pubKey;
         byte   encodedSig[MAX_ENCODED_SIG_SZ];
         byte   plain[MAX_ENCODED_SIG_SZ];
@@ -1499,7 +1500,7 @@ int ParseCertRelative(DecodedCert* cert, word32 inSz, int type, int verify,
                        == 0) {
                 /* other confirm */
                 if (!ConfirmSignature(cert, signers->publicKey,
-                                      signers->pubKeySize))
+                                      signers->pubKeySize, signers->keyOID))
                     return ASN_SIG_CONFIRM_E;
                 else {
                     confirm = 1;
