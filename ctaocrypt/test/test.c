@@ -1011,13 +1011,15 @@ int random_test()
     static const char* clientKey  = "../../certs/client-key.der";
     static const char* clientCert = "../../certs/client-cert.der";
     #ifdef CYASSL_CERT_GEN
-        static const char* caKeyFile = "../../certs/ca-key.der";
+        static const char* caKeyFile  = "../../certs/ca-key.der";
+        static const char* caCertFile = "../../certs/ca-cert.pem";
     #endif
 #else
     static const char* clientKey  = "../certs/client-key.der";
     static const char* clientCert = "../certs/client-cert.der";
     #ifdef CYASSL_CERT_GEN
-        static const char* caKeyFile = "../certs/ca-key.der";
+        static const char* caKeyFile  = "../certs/ca-key.der";
+        static const char* caCertFile = "../certs/ca-cert.pem";
     #endif
 #endif
 
@@ -1244,7 +1246,7 @@ int rsa_test()
         strncpy(myCert.subject.commonName, "www.yassl.com", NAME_SIZE);
         strncpy(myCert.subject.email, "info@yassl.com", NAME_SIZE);
 
-        ret = SetIssuer(&myCert, "../../certs/ca-cert.pem");
+        ret = SetIssuer(&myCert, caCertFile);
         if (ret < 0)
             return -406;
 
@@ -1318,6 +1320,8 @@ int rsa_test()
 
         rc = crypto_ntru_encrypt_keygen(drbg, NTRU_EES401EP2, &public_key_len,
                                      public_key, &private_key_len, private_key);
+        crypto_drbg_uninstantiate(drbg);
+
         if (rc != NTRU_OK)
             return -452;
 
@@ -1326,7 +1330,7 @@ int rsa_test()
         if (!caFile)
             return -453;
 
-        bytes = fread(tmp, 1, 1024, caFile);
+        bytes = fread(tmp, 1, sizeof(tmp), caFile);
         fclose(caFile);
   
         InitRsaKey(&caKey, 0);  
@@ -1343,7 +1347,7 @@ int rsa_test()
         strncpy(myCert.subject.commonName, "www.yassl.com", NAME_SIZE);
         strncpy(myCert.subject.email, "info@yassl.com", NAME_SIZE);
 
-        ret = SetIssuer(&myCert, "../../certs/ca-cert.pem");
+        ret = SetIssuer(&myCert, caCertFile);
         if (ret < 0)
             return -455;
 

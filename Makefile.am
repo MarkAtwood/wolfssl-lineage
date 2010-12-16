@@ -1,6 +1,6 @@
 SUBDIRS = src ctaocrypt examples testsuite sslSniffer
 EXTRA_DIST = certs/*.pem certs/*.der certs/*.txt certs/*.raw \
-    lib/dummy cyassl.sln cyassl.vcproj cyassl-iphone.xcodeproj/project.pbxproj \
+    lib/dummy *.sln *.vcproj cyassl-iphone.xcodeproj/project.pbxproj \
     doc/*.pdf swig/README swig/*.i swig/cyassl_adds.c swig/*.sh swig/runme.* \
     swig/python_cyassl.vcproj swig/rsasign.py
 

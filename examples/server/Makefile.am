@@ -5,4 +5,4 @@ server_CFLAGS = -Wall
 server_LDFLAGS      = -L../../src
 server_LDADD        = ../../src/libcyassl.la -lm
 server_DEPENDENCIES = ../../src/libcyassl.la
-EXTRA_DIST = server.dsp server.sln server.vcproj
+EXTRA_DIST = server.dsp server.sln *.vcproj

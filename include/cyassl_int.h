@@ -292,8 +292,9 @@ enum Misc {
     FILE_BUFFER_SIZE   = 1024, /* default static file buffer size for input,
                                   will use dynamic buffer if not big enough */
 
-    MAX_NTRU_PUB_KEY_SZ = 1024, /* NTRU max for now */
-    MAX_NTRU_ENCRYPT_SZ = 1024, /* NTRU max for now */
+    MAX_NTRU_PUB_KEY_SZ = 1027, /* NTRU max for now */
+    MAX_NTRU_ENCRYPT_SZ = 1027, /* NTRU max for now */
+    MAX_NTRU_BITS       =  256, /* max symmetric bit strength */
     NO_SNIFF           =   0,  /* not sniffing */
     SNIFF              =   1,  /* currently sniffing */
 

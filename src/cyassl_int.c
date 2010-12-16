@@ -765,8 +765,10 @@ ProtocolVersion MakeDTLSv1(void)
 
     word32 LowResTimer(void)
     {
+        /*
         write your own clock tick function if don't want time(0)
         needs second accuracy but doesn't have to correlated to EPOCH
+        */
     }
 
 #else /* !USE_WINDOWS_API && !THREADX && !MICRIUM && !USER_TICKS */
@@ -3661,8 +3663,8 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
             if (ssl->peerNtruKeyPresent == 0)
                 return NO_PEER_KEY;
 
-            rc = crypto_drbg_instantiate(112, cyasslStr, sizeof(cyasslStr),
-                                        GetEntropy, &drbg);
+            rc = crypto_drbg_instantiate(MAX_NTRU_BITS, cyasslStr,
+                                          sizeof(cyasslStr), GetEntropy, &drbg);
             if (rc != DRBG_OK)
                 return NTRU_DRBG_ERROR; 
 
