@@ -771,7 +771,9 @@ static int StoreKey(DecodedCert* cert)
 static int GetKey(DecodedCert* cert)
 {
     int length;
+#ifdef HAVE_NTRU
     int tmpIdx = cert->srcIdx;
+#endif
 
     if (GetSequence(cert->source, &cert->srcIdx, &length) < 0)
         return ASN_PARSE_E;

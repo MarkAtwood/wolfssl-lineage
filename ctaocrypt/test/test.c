@@ -1058,7 +1058,7 @@ static byte GetEntropy(ENTROPY_CMD cmd, byte* out)
 
 int rsa_test()
 {
-    byte   tmp[1024], tmp2[2048];
+    byte   tmp[2048], tmp2[2048];
     size_t bytes, bytes2;
     RsaKey key;
     RNG    rng;
@@ -1066,8 +1066,8 @@ int rsa_test()
     int    ret;
     byte   in[] = "Everyone gets Friday off.";
     word32 inLen = (word32)strlen((char*)in);
-    byte   out[64];
-    byte   plain[64];
+    byte   out[256];
+    byte   plain[256];
     DecodedCert cert;
 
     FILE*  file = fopen(clientKey, "rb"), * file2;
@@ -1075,7 +1075,7 @@ int rsa_test()
     if (!file)
         return -40;
 
-    bytes = fread(tmp, 1, 1024, file);
+    bytes = fread(tmp, 1, sizeof(tmp), file);
   
     InitRsaKey(&key, 0);  
     ret = RsaPrivateKeyDecode(tmp, &idx, &key, (word32)bytes);
@@ -1086,13 +1086,13 @@ int rsa_test()
 
     ret = RsaPublicEncrypt(in, inLen, out, sizeof(out), &key, &rng);  
 
-    ret = RsaPrivateDecrypt(out, 64, plain, sizeof(plain), &key);
+    ret = RsaPrivateDecrypt(out, ret, plain, sizeof(plain), &key);
 
     if (memcmp(plain, in, inLen)) return -45;
 
     ret = RsaSSL_Sign(in, inLen, out, sizeof(out), &key, &rng);
     memset(plain, 0, sizeof(plain));
-    ret = RsaSSL_Verify(out, 64, plain, sizeof(plain), &key);
+    ret = RsaSSL_Verify(out, ret, plain, sizeof(plain), &key);
 
     if (memcmp(plain, in, ret)) return -46;
 
@@ -1100,7 +1100,7 @@ int rsa_test()
     if (!file2)
         return -47;
 
-    bytes2 = fread(tmp2, 1, 2048, file2);
+    bytes2 = fread(tmp2, 1, sizeof(tmp2), file2);
 
     InitDecodedCert(&cert, (byte*)&tmp2, 0);
 
@@ -1221,7 +1221,7 @@ int rsa_test()
         FILE*       pemFile;
         int         certSz;
         int         pemSz;
-        byte        tmp[1024];
+        byte        tmp[2048];
         size_t      bytes;
         word32      idx = 0;
 
@@ -1230,7 +1230,7 @@ int rsa_test()
         if (!file)
             return -412;
 
-        bytes = fread(tmp, 1, 1024, file);
+        bytes = fread(tmp, 1, sizeof(tmp), file);
   
         InitRsaKey(&caKey, 0);  
         ret = RsaPrivateKeyDecode(tmp, &idx, &caKey, (word32)bytes);
@@ -1296,7 +1296,7 @@ int rsa_test()
         FILE*       ntruPrivFile;
         int         certSz;
         int         pemSz;
-        byte        tmp[1024];
+        byte        tmp[2048];
         size_t      bytes;
         word32      idx = 0;
 
@@ -1429,7 +1429,7 @@ int dh_test()
     if (!file)
         return -50;
 
-    bytes = (word32) fread(tmp, 1, 1024, file);
+    bytes = (word32) fread(tmp, 1, sizeof(tmp), file);
 
     InitDhKey(&key);  
     InitDhKey(&key2);  
