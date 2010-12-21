@@ -20,7 +20,7 @@
  */
 
 
-#include "md5.h"
+#include "ctc_md5.h"
 #ifdef NO_INLINE
     #include "misc.h"
 #else

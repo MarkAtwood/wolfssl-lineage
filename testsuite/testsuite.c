@@ -2,7 +2,7 @@
 
 #include "openssl/ssl.h"
 #include "../examples/test.h"
-#include "md5.h"
+#include "ctc_md5.h"
 
 #ifdef SINGLE_THREADED
     #error testsuite needs threads to run, please run ctaocrypt/test, \

@@ -21,7 +21,7 @@
 
 
 
-#include "rsa.h"
+#include "ctc_rsa.h"
 #include "random.h"
 #include "error.h"
 

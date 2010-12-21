@@ -21,7 +21,7 @@
 
 #ifndef NO_AES
 
-#include "aes.h"
+#include "ctc_aes.h"
 #ifdef NO_INLINE
     #include "misc.h"
 #else

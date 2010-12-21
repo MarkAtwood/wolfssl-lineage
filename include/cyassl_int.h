@@ -31,11 +31,11 @@
 #include "hc128.h"
 #include "rabbit.h"
 #include "asn.h"
-#include "../ctaocrypt/include/md5.h"
-#include "../ctaocrypt/include/aes.h"
+#include "ctc_md5.h"
+#include "ctc_aes.h"
 
 #ifdef CYASSL_CALLBACKS
-    #include "openssl/cyassl_callbacks.h"
+    #include "cyassl_callbacks.h"
     #include <signal.h>
 #endif
 

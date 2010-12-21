@@ -22,7 +22,7 @@
 
 #ifndef NO_HMAC
 
-#include "hmac.h"
+#include "ctc_hmac.h"
 
 
 

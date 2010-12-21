@@ -30,6 +30,8 @@
  */
 
 
+#ifdef USE_FAST_MATH
+
 #include "tfm.h"
 #include "asm.c"  /* will define asm MACROS or C ones */
 
@@ -2280,3 +2282,4 @@ void fp_gcd(fp_int *a, fp_int *b, fp_int *c)
 
 
 #endif /* CYASSL_KEY_GEN */
+#endif /* USE_FAST_MATH */

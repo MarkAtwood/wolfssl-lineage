@@ -1,4 +1,4 @@
-/* pwdbased.h
+/* ctc_ripemd.h
  *
  * Copyright (C) 2006-2010 Sawtooth Consulting Ltd.
  *
@@ -20,28 +20,46 @@
  */
 
 
-#ifndef NO_PWDBASED
+#ifdef CYASSL_RIPEMD
 
-#ifndef CTAO_CRYPT_PWDBASED_H
-#define CTAO_CRYPT_PWDBASED_H
+#ifndef CTAO_CRYPT_RIPEMD_H
+#define CTAO_CRYPT_RIPEME_H
 
 #include "types.h"
-#include "ctc_md5.h"       /* for hash type */
-#include "ctc_sha.h"
 
 #ifdef __cplusplus
     extern "C" {
 #endif
 
 
-int PBKDF1(byte* output, const byte* passwd, int pLen, const byte* salt,
-           int sLen, int iterations, int kLen, int hashType);
 
+/* in bytes */
+enum {
+    RIPEMD             =  3,    /* hash type unique */
+    RIPEMD_BLOCK_SIZE  = 64,
+    RIPEMD_DIGEST_SIZE = 20,
+    RIPEMD_PAD_SIZE    = 56
+};
+
+
+/* RipeMd 160 digest */
+typedef struct RipeMd {
+    word32  buffLen;   /* in bytes          */
+    word32  loLen;     /* length in bytes   */
+    word32  hiLen;     /* length in bytes   */
+    word32  digest[RIPEMD_DIGEST_SIZE / sizeof(word32)];
+    word32  buffer[RIPEMD_BLOCK_SIZE  / sizeof(word32)];
+} RipeMd;
+
+
+void InitRipeMd(RipeMd*);
+void RipeMdUpdate(RipeMd*, const byte*, word32);
+void RipeMdFinal(RipeMd*, byte*);
 
 
 #ifdef __cplusplus
     } /* extern "C" */
 #endif
 
-#endif /* CTAO_CRYPT_PWDBASED_H */
-#endif /* NO_PWDBASED */
+#endif /* CTAO_CRYPT_RIPEMD_H */
+#endif /* CYASSL_RIPEMD */

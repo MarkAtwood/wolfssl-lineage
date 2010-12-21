@@ -22,7 +22,7 @@
 
 #ifndef NO_MD4
 
-#include "md4.h"
+#include "ctc_md4.h"
 #ifdef NO_INLINE
     #include "misc.h"
 #else

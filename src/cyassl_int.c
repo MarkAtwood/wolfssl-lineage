@@ -883,7 +883,7 @@ static void AddHeaders(byte* output, word32 length, byte type, SSL* ssl)
 }
 
 
-static word32 Receive(SSL* ssl, byte* buf, word32 sz, int flags)
+static int Receive(SSL* ssl, byte* buf, word32 sz, int flags)
 {
     int recvd;
 
@@ -1401,7 +1401,7 @@ int DoFinished(SSL* ssl, const byte* input, word32* inOutIdx, int sniff)
         if (ssl->toInfoOn) AddLateName("Finished", &ssl->timeoutInfo);
     #endif
     if (sniff == NO_SNIFF) {
-        if (memcmp(input + idx, &ssl->verifyHashes, finishedSz))
+        if (XMEMCMP(input + idx, &ssl->verifyHashes, finishedSz))
             return VERIFY_FINISHED_ERROR;
     }
 
@@ -1419,7 +1419,7 @@ int DoFinished(SSL* ssl, const byte* input, word32* inOutIdx, int sniff)
     idx += padSz;
 
     /* verify mac */
-    if (memcmp(mac, verifyMAC, ssl->specs.hash_size))
+    if (XMEMCMP(mac, verifyMAC, ssl->specs.hash_size))
         return VERIFY_MAC_ERROR;
 
     if (ssl->options.side == CLIENT_END) {
@@ -1700,12 +1700,12 @@ int DoApplicationData(SSL* ssl, byte* input, word32* inOutIdx)
 
 #ifdef HAVE_LIBZ
     if (ssl->options.usingCompression)
-        memmove(rawData, decomp, dataSz);
+        XMEMMOVE(rawData, decomp, dataSz);
 #endif
 
     /* verify */
     if (dataSz) {
-        if (memcmp(mac, verify, digestSz))
+        if (XMEMCMP(mac, verify, digestSz))
             return VERIFY_MAC_ERROR;
     }
     else 
@@ -1748,7 +1748,7 @@ static int DoAlert(SSL* ssl, byte* input, word32* inOutIdx, int* type)
         *inOutIdx += (ssl->specs.hash_size + padSz);
 
         /* verify */
-        if (memcmp(mac, verify, ssl->specs.hash_size))
+        if (XMEMCMP(mac, verify, ssl->specs.hash_size))
             return VERIFY_MAC_ERROR;
     }
 
@@ -1783,7 +1783,7 @@ static int GetInputData(SSL *ssl, size_t size)
     
     /* Put buffer data at start if not there */
     if (usedLength > 0 && ssl->buffers.inputBuffer.idx != 0)
-        memmove(ssl->buffers.inputBuffer.buffer,
+        XMEMMOVE(ssl->buffers.inputBuffer.buffer,
                 ssl->buffers.inputBuffer.buffer + ssl->buffers.inputBuffer.idx,
                 usedLength);
     
@@ -3360,7 +3360,7 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
         *inOutIdx = i;
 
         if (ssl->options.resuming) {
-            if (memcmp(ssl->arrays.sessionID, ssl->session.sessionID, ID_LEN)
+            if (XMEMCMP(ssl->arrays.sessionID, ssl->session.sessionID, ID_LEN)
                                                                         == 0) {
                 if (SetCipherSpecs(ssl) == 0) {
                     XMEMCPY(ssl->arrays.masterSecret, ssl->session.masterSecret,
@@ -3554,11 +3554,11 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
                 sigSz = EncodeSignature(encodedSig, digest, digestSz, hashType);
 
-                if (sigSz != ret || memcmp(out, encodedSig, sigSz) != 0)
+                if (sigSz != ret || XMEMCMP(out, encodedSig, sigSz) != 0)
                     return VERIFY_SIGN_ERROR;
             }
             else { 
-                if (ret != sizeof(hash) || memcmp(out, hash, sizeof(hash)))
+                if (ret != sizeof(hash) || XMEMCMP(out, hash, sizeof(hash)))
                     return VERIFY_SIGN_ERROR;
             }
         }
@@ -4293,11 +4293,11 @@ int SetCipherList(SSL_CTX* ctx, const char* list)
 
                 sigSz = EncodeSignature(encodedSig, digest, digestSz, hashType);
 
-                if (outLen == sigSz && memcmp(out, encodedSig, sigSz) == 0)
+                if (outLen == sigSz && XMEMCMP(out, encodedSig, sigSz) == 0)
                     ret = 0;
             }
             else {
-                if (outLen == sizeof(ssl->certHashes) && memcmp(out,
+                if (outLen == sizeof(ssl->certHashes) && XMEMCMP(out,
                              ssl->certHashes.md5, sizeof(ssl->certHashes)) == 0)
                     ret = 0;
             }

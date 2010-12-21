@@ -143,6 +143,8 @@ then
     CFLAGS="$CFLAGS -DUSE_FAST_MATH"
 fi
 
+AM_CONDITIONAL([BUILD_FASTMATH], [test "x$ENABLED_FASTMATH" = "xyes"])
+
 
 # big cache
 AC_ARG_ENABLE(bigcache,
@@ -284,6 +286,8 @@ if test "$ENABLED_HC128" = "no"
 then
     CFLAGS="$CFLAGS -DNO_HC128"
 fi
+
+AM_CONDITIONAL([BUILD_HC128], [test "x$ENABLED_HC128" = "xyes"])
 
 
 # PSK 

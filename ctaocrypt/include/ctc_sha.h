@@ -1,6 +1,6 @@
-/* pwdbased.h
+/* ctc_sha.h
  *
- * Copyright (C) 2006-2010 Sawtooth Consulting Ltd.
+ * Copyright (C) 2006-2009 Sawtooth Consulting Ltd.
  *
  * This file is part of CyaSSL.
  *
@@ -20,28 +20,44 @@
  */
 
 
-#ifndef NO_PWDBASED
-
-#ifndef CTAO_CRYPT_PWDBASED_H
-#define CTAO_CRYPT_PWDBASED_H
+#ifndef CTAO_CRYPT_SHA_H
+#define CTAO_CRYPT_SHA_H
 
 #include "types.h"
-#include "ctc_md5.h"       /* for hash type */
-#include "ctc_sha.h"
 
 #ifdef __cplusplus
     extern "C" {
 #endif
 
 
-int PBKDF1(byte* output, const byte* passwd, int pLen, const byte* salt,
-           int sLen, int iterations, int kLen, int hashType);
 
+/* in bytes */
+enum {
+    SHA              =  1,    /* hash type unique */
+    SHA_BLOCK_SIZE   = 64,
+    SHA_DIGEST_SIZE  = 20,
+    SHA_PAD_SIZE     = 56
+};
+
+
+/* Sha digest */
+typedef struct Sha {
+    word32  buffLen;   /* in bytes          */
+    word32  loLen;     /* length in bytes   */
+    word32  hiLen;     /* length in bytes   */
+    word32  digest[SHA_DIGEST_SIZE / sizeof(word32)];
+    word32  buffer[SHA_BLOCK_SIZE  / sizeof(word32)];
+} Sha;
+
+
+void InitSha(Sha*);
+void ShaUpdate(Sha*, const byte*, word32);
+void ShaFinal(Sha*, byte*);
 
 
 #ifdef __cplusplus
     } /* extern "C" */
 #endif
 
-#endif /* CTAO_CRYPT_PWDBASED_H */
-#endif /* NO_PWDBASED */
+#endif /* CTAO_CRYPT_SHA_H */
+

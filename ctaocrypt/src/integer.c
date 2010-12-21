@@ -25,10 +25,7 @@
  */
 
 
-/* optionally use fast math instead */
-#ifdef USE_FAST_MATH
-    #include "tfm.c"
-#else
+#ifndef USE_FAST_MATH
 
 #include "integer.h"
 

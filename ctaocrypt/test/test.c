@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "md5.h"
-#include "md4.h"
-#include "sha.h"
+#include "ctc_md5.h"
+#include "ctc_md4.h"
+#include "ctc_sha.h"
 #include "sha256.h"
 #include "sha512.h"
 #include "arc4.h"
@@ -15,14 +15,14 @@
 #include "coding.h"
 #include "asn.h"
 #include "des3.h"
-#include "aes.h"
-#include "hmac.h"
-#include "dh.h"
-#include "dsa.h"
+#include "ctc_aes.h"
+#include "ctc_hmac.h"
+#include "ctc_dh.h"
+#include "ctc_dsa.h"
 #include "hc128.h"
 #include "rabbit.h"
 #include "pwdbased.h"
-#include "ripemd.h"
+#include "ctc_ripemd.h"
 
 #ifdef _MSC_VER
     /* 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy */
@@ -30,10 +30,10 @@
 #endif
 
 #ifdef OPENSSL_EXTRA
-    #include "openssl/evp.h"
-    #include "openssl/rand.h"
-    #include "openssl/hmac.h"
-    #include "openssl/des.h"
+    #include "evp.h"
+    #include "rand.h"
+    #include "hmac.h"
+    #include "des.h"
 #endif
 
 #ifdef HAVE_NTRU

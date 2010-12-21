@@ -29,9 +29,11 @@
 #ifndef CYASSL_OPENSSL_H_
 #define CYASSL_OPENSSL_H_
 
-#include <stdio.h>   /* ERR_print fp */
-
 #include "os_settings.h"   /* for users not using preprocessor flags */
+
+#ifndef NO_FILESYTEM
+    #include <stdio.h>   /* ERR_print fp */
+#endif
 
 #ifdef YASSL_PREFIX
     #include "prefix_ssl.h"
@@ -452,10 +454,11 @@ enum {
 
 /* extras end */
 
+#ifndef NO_FILESYSTEM
 /* CyaSSL extension, provide last error from SSL_get_error
    since not using thread storage error queue */
 void  ERR_print_errors_fp(FILE*, int err);
-
+#endif
 
 enum { /* ssl Constants */
     SSL_ERROR_NONE      =  0,   /* for most functions */

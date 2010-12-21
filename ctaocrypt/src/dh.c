@@ -21,7 +21,7 @@
 
 #ifndef NO_DH
 
-#include "dh.h"
+#include "ctc_dh.h"
 #include "error.h"
 
 #ifndef USER_MATH_LIB

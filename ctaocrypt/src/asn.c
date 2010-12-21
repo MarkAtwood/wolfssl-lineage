@@ -26,8 +26,8 @@
 #endif
 #include "asn.h"
 #include "coding.h"
-#include "sha.h"
-#include "md5.h"
+#include "ctc_sha.h"
+#include "ctc_md5.h"
 #include "error.h"
 
 #ifdef HAVE_NTRU
@@ -503,7 +503,7 @@ int ToTraditional(byte* input, word32 sz)
     if ((word32)length > (sz - inOutIdx))
         return ASN_INPUT_E;
     
-    memmove(input, input + inOutIdx, length);
+    XMEMMOVE(input, input + inOutIdx, length);
 
     return 0;
 }
@@ -1418,7 +1418,7 @@ static int ConfirmSignature(DecodedCert* cert, const byte* key, word32 keySz,
             else {
                 /* make sure we're right justified */
                 sigSz = EncodeSignature(encodedSig, digest, digestSz, hashType);
-                if (sigSz != verifySz || memcmp(out, encodedSig, sigSz) != 0)
+                if (sigSz != verifySz || XMEMCMP(out, encodedSig, sigSz) != 0)
                     ret = 0; /* ASN_VERIFY_MATCH_E; */
                 else
                     ret = 1; /* match */
@@ -1429,8 +1429,6 @@ static int ConfirmSignature(DecodedCert* cert, const byte* key, word32 keySz,
     }
     else
         return 0; /* ASN_SIG_KEY_E; */
-
-    return 0;  /* not confirmed */
 }
 
 
@@ -1498,7 +1496,7 @@ int ParseCertRelative(DecodedCert* cert, word32 inSz, int type, int verify,
 
     if (verify && type != CA_TYPE) {
         while (signers) {
-            if (memcmp(cert->issuerHash, signers->hash, SHA_DIGEST_SIZE)
+            if (XMEMCMP(cert->issuerHash, signers->hash, SHA_DIGEST_SIZE)
                        == 0) {
                 /* other confirm */
                 if (!ConfirmSignature(cert, signers->publicKey,
@@ -2493,7 +2491,7 @@ static int AddSignature(byte* buffer, int bodySz, const byte* sig, int sigSz)
 
     /* make room for overall header */
     seqSz = SetSequence(idx, seq);
-    memmove(buffer + seqSz, buffer, idx);
+    XMEMMOVE(buffer + seqSz, buffer, idx);
     XMEMCPY(buffer, seq, seqSz);
 
     return idx + seqSz;

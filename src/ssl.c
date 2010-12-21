@@ -20,21 +20,23 @@
  */
 
 
-#include "openssl/ssl.h"
+#include "ssl.h"
 #include "cyassl_int.h"
 #include "cyassl_error.h"
 #include "coding.h"
 
 #ifdef OPENSSL_EXTRA
-    #include "openssl/evp.h"
-    #include "openssl/hmac.h"
-    #include "openssl/crypto.h"
-    #include "openssl/des.h"
-    #include "../ctaocrypt/include/hmac.h"
-    #include "../ctaocrypt/include/random.h"
-    #include "../ctaocrypt/include/des3.h"
-    #include "../ctaocrypt/include/md4.h"
-    #include "../ctaocrypt/include/coding.h"
+    /* openssl headers begin */
+    #include "evp.h"
+    #include "hmac.h"
+    #include "crypto.h"
+    #include "des.h"
+    /* openssl headers end, cyassl internal headers next */
+    #include "ctc_hmac.h"
+    #include "random.h"
+    #include "des3.h"
+    #include "ctc_md4.h"
+    #include "coding.h"
 #endif
 
 #ifdef HAVE_ERRNO_H 
@@ -254,6 +256,8 @@ void ERR_error_string_n(unsigned long e, char* buf, size_t len)
 }
 
 
+#ifndef NO_FILESYSTEM
+
 void ERR_print_errors_fp(FILE* fp, int err)
 {
     char buffer[MAX_ERROR_SZ + 1];
@@ -261,6 +265,8 @@ void ERR_print_errors_fp(FILE* fp, int err)
     SetErrorString(err, buffer);
     fprintf(fp, "%s", buffer);
 }
+
+#endif
 
 
 int SSL_pending(SSL* ssl)
@@ -1329,7 +1335,7 @@ SSL_SESSION* GetSession(SSL* ssl, byte* masterSecret)
             break;                      /* would be word32(-1) and seg fault */
         
         current = &SessionCache[row].Sessions[idx];
-        if (memcmp(current->sessionID, id, ID_LEN) == 0) {
+        if (XMEMCMP(current->sessionID, id, ID_LEN) == 0) {
             if (LowResTimer() < (current->bornOn + current->timeout)) {
                 ret = current;
                 if (masterSecret)

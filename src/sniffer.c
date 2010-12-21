@@ -21,7 +21,7 @@
 
 #ifdef CYASSL_SNIFFER
 
-#include "openssl/ssl.h"
+#include "ssl.h"
 #include "cyassl_int.h"
 #include "cyassl_error.h"
 #include "sniffer.h"
@@ -1108,7 +1108,7 @@ static int ProcessServerHello(const byte* input, int* sslBytes,
     session->sslClient->options.cipherSuite = b;
     *sslBytes -= SUITE_LEN;
     
-    if (memcmp(session->sslServer->arrays.sessionID,
+    if (XMEMCMP(session->sslServer->arrays.sessionID,
                session->sslClient->arrays.sessionID, ID_LEN) == 0) {
         /* resuming */
         SSL_SESSION* resume = GetSession(session->sslServer,

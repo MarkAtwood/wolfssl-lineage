@@ -24,10 +24,10 @@
 #define CTAO_CRYPT_ASN_H
 
 #include "types.h"
-#include "rsa.h"
-#include "dh.h"
-#include "dsa.h"
-#include "sha.h"
+#include "ctc_rsa.h"
+#include "ctc_dh.h"
+#include "ctc_dsa.h"
+#include "ctc_sha.h"
 
 
 #ifdef __cplusplus

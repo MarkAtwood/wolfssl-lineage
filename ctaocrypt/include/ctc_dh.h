@@ -1,6 +1,6 @@
-/* pwdbased.h
+/* ctc_dh.h
  *
- * Copyright (C) 2006-2010 Sawtooth Consulting Ltd.
+ * Copyright (C) 2006-2009 Sawtooth Consulting Ltd.
  *
  * This file is part of CyaSSL.
  *
@@ -19,29 +19,41 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
+#ifndef NO_DH
 
-#ifndef NO_PWDBASED
-
-#ifndef CTAO_CRYPT_PWDBASED_H
-#define CTAO_CRYPT_PWDBASED_H
+#ifndef CTAO_CRYPT_DH_H
+#define CTAO_CRYPT_DH_H
 
 #include "types.h"
-#include "ctc_md5.h"       /* for hash type */
-#include "ctc_sha.h"
+#include "integer.h"
+#include "random.h"
 
 #ifdef __cplusplus
     extern "C" {
 #endif
 
 
-int PBKDF1(byte* output, const byte* passwd, int pLen, const byte* salt,
-           int sLen, int iterations, int kLen, int hashType);
 
+/* Diffie-Hellman Key */
+typedef struct DhKey {
+    mp_int p, g;                            /* group parameters  */
+} DhKey;
+
+
+void InitDhKey(DhKey* key);
+void FreeDhKey(DhKey* key);
+
+int DhGenerateKeyPair(DhKey* key, RNG* rng, byte* priv, word32* privSz,
+                      byte* pub, word32* pubSz);
+int DhAgree(DhKey* key, byte* agree, word32* agreeSz, const byte* priv,
+            word32 privSz, const byte* otherPub, word32 pubSz);
 
 
 #ifdef __cplusplus
     } /* extern "C" */
 #endif
 
-#endif /* CTAO_CRYPT_PWDBASED_H */
-#endif /* NO_PWDBASED */
+#endif /* CTAO_CRYPT_DH_H */
+
+#endif /* NO_DH */
+

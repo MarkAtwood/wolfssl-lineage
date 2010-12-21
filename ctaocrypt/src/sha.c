@@ -20,7 +20,7 @@
  */
 
 
-#include "sha.h"
+#include "ctc_sha.h"
 #ifdef NO_INLINE
     #include "misc.h"
 #else

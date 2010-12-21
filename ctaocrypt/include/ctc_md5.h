@@ -1,6 +1,6 @@
-/* pwdbased.h
+/* ctc_md5.h
  *
- * Copyright (C) 2006-2010 Sawtooth Consulting Ltd.
+ * Copyright (C) 2006-2009 Sawtooth Consulting Ltd.
  *
  * This file is part of CyaSSL.
  *
@@ -20,28 +20,43 @@
  */
 
 
-#ifndef NO_PWDBASED
-
-#ifndef CTAO_CRYPT_PWDBASED_H
-#define CTAO_CRYPT_PWDBASED_H
+#ifndef CTAO_CRYPT_MD5_H
+#define CTAO_CRYPT_MD5_H
 
 #include "types.h"
-#include "ctc_md5.h"       /* for hash type */
-#include "ctc_sha.h"
 
 #ifdef __cplusplus
     extern "C" {
 #endif
 
 
-int PBKDF1(byte* output, const byte* passwd, int pLen, const byte* salt,
-           int sLen, int iterations, int kLen, int hashType);
+/* in bytes */
+enum {
+    MD5             =  0,      /* hash type unique */
+    MD5_BLOCK_SIZE  = 64,
+    MD5_DIGEST_SIZE = 16,
+    MD5_PAD_SIZE    = 56
+};
 
+
+/* MD5 digest */
+typedef struct Md5 {
+    word32  buffLen;   /* in bytes          */
+    word32  loLen;     /* length in bytes   */
+    word32  hiLen;     /* length in bytes   */
+    word32  digest[MD5_DIGEST_SIZE / sizeof(word32)];
+    word32  buffer[MD5_BLOCK_SIZE  / sizeof(word32)];
+} Md5;
+
+
+void InitMd5(Md5*);
+void Md5Update(Md5*, const byte*, word32);
+void Md5Final(Md5*, byte*);
 
 
 #ifdef __cplusplus
     } /* extern "C" */
 #endif
 
-#endif /* CTAO_CRYPT_PWDBASED_H */
-#endif /* NO_PWDBASED */
+#endif /* CTAO_CRYPT_MD5_H */
+
