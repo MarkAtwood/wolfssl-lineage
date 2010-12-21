@@ -10,7 +10,6 @@ libcyassl_la_SOURCES = \
     ../ctaocrypt/src/dsa.c ../ctaocrypt/src/arc4.c ../ctaocrypt/src/rabbit.c \
     ../ctaocrypt/src/pwdbased.c
 libcyassl_la_LDFLAGS = -no-undefined -version-info 0:0:0
-AM_CFLAGS = -Wall
 EXTRA_DIST = ../include/*.h ../include/openssl/*.h ../include/*.rc
 
 if BUILD_AESNI
@@ -26,7 +25,7 @@ libcyassl_la_SOURCES += ../ctaocrypt/src/sha512.c
 endif
 
 if BUILD_SNIFFER
-libcyassl_la_SOURCES += ../ctaocrypt/src/sniffer.c
+libcyassl_la_SOURCES += sniffer.c
 endif
 
 if BUILD_HC128

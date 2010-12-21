@@ -1,7 +1,7 @@
 /* testsuite.c */
 
-#include "openssl/ssl.h"
-#include "../examples/test.h"
+#include "ssl.h"
+#include "cyassl_test.h"
 #include "ctc_md5.h"
 
 #ifdef SINGLE_THREADED

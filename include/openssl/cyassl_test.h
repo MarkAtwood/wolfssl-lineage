@@ -1,4 +1,4 @@
-/* test.h */
+/* cyassl_test.h */
 
 #ifndef CyaSSL_TEST_H
 #define CyaSSL_TEST_H

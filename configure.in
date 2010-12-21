@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(cyassl,1.7.7)
+AM_INIT_AUTOMAKE(cyassl,1.8.0)
 AM_CONFIG_HEADER(ctaocrypt/include/config.h)
 
 
@@ -13,6 +13,7 @@ sinclude(acx_pthread.m4)
 CFLAGS="$CFLAGS $C_EXTRA_FLAGS"    
 
 AC_PROG_CC
+AC_PROG_CC_C_O
 AM_PROG_AS
 AC_PROG_INSTALL
 AC_LIBTOOL_WIN32_DLL
@@ -365,6 +366,7 @@ AC_ARG_WITH(libz,
 # OPTIMIZE FLAGS
 if test "$GCC" = "yes"
 then
+    CFLAGS="$CFLAGS -Wall -Wno-unused"
     if test "$ENABLED_DEBUG" = "no"
     then
         if test "$ENABLED_FASTMATH" = "yes"

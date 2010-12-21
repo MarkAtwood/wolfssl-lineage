@@ -1,6 +1,6 @@
 /* client.c */
-#include "openssl/ssl.h"
-#include "../test.h"
+#include "ssl.h"
+#include "cyassl_test.h"
 
 
 /*
