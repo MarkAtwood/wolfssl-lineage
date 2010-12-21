@@ -22,7 +22,7 @@
 
 #ifdef CYASSL_RIPEMD
 
-#include "ripemd.h"
+#include "ctc_ripemd.h"
 #ifdef NO_INLINE
     #include "misc.h"
 #else

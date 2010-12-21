@@ -29,7 +29,6 @@
 		4368F79F0E9EABC50002A123 /* libcyassl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D2AAC046055464E500DB518D /* libcyassl.a */; };
 		4368F7A00E9EABF50002A123 /* echoserver.c in Sources */ = {isa = PBXBuildFile; fileRef = 4368F6EA0E9EA14A0002A123 /* echoserver.c */; };
 		43809E5D0FB7AC420050922E /* md4.c in Sources */ = {isa = PBXBuildFile; fileRef = 43809E5C0FB7AC420050922E /* md4.c */; };
-		43809E5F0FB7AC5B0050922E /* md4.h in Headers */ = {isa = PBXBuildFile; fileRef = 43809E5E0FB7AC5B0050922E /* md4.h */; };
 		43962ADF0DE7ED48003C5E5B /* ssl.c in Sources */ = {isa = PBXBuildFile; fileRef = 43C6C2790DDF984100F2D488 /* ssl.c */; };
 		43AC92CA0EB154210049F588 /* cyassl_io.c in Sources */ = {isa = PBXBuildFile; fileRef = 43AC92C90EB154210049F588 /* cyassl_io.c */; };
 		43BF21B1114B06AA001D113A /* sniffer.h in Headers */ = {isa = PBXBuildFile; fileRef = 43BF21B0114B06AA001D113A /* sniffer.h */; };
@@ -56,6 +55,15 @@
 		43D565670F1EC9CC00550C88 /* rabbit.c in Sources */ = {isa = PBXBuildFile; fileRef = 43D565660F1EC9CC00550C88 /* rabbit.c */; };
 		43D565A40F29040000550C88 /* rabbit.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D565A30F29040000550C88 /* rabbit.h */; };
 		43D565A60F29041C00550C88 /* hc128.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D565A50F29041C00550C88 /* hc128.h */; };
+		43D8E67312C14BF700F2AA8B /* ctc_hmac.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D8E66A12C14BF700F2AA8B /* ctc_hmac.h */; };
+		43D8E67412C14BF700F2AA8B /* ctc_sha.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D8E66B12C14BF700F2AA8B /* ctc_sha.h */; };
+		43D8E67512C14BF700F2AA8B /* ctc_rsa.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D8E66C12C14BF700F2AA8B /* ctc_rsa.h */; };
+		43D8E67612C14BF700F2AA8B /* ctc_ripemd.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D8E66D12C14BF700F2AA8B /* ctc_ripemd.h */; };
+		43D8E67712C14BF700F2AA8B /* ctc_md5.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D8E66E12C14BF700F2AA8B /* ctc_md5.h */; };
+		43D8E67812C14BF700F2AA8B /* ctc_md4.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D8E66F12C14BF700F2AA8B /* ctc_md4.h */; };
+		43D8E67912C14BF700F2AA8B /* ctc_dsa.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D8E67012C14BF700F2AA8B /* ctc_dsa.h */; };
+		43D8E67A12C14BF700F2AA8B /* ctc_dh.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D8E67112C14BF700F2AA8B /* ctc_dh.h */; };
+		43D8E67B12C14BF700F2AA8B /* ctc_aes.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D8E67212C14BF700F2AA8B /* ctc_aes.h */; };
 		43E0103A12B71C230098917A /* libntru_encrypt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 43E0103912B71C230098917A /* libntru_encrypt.a */; };
 		43E4703C11765A30005C2620 /* pwdbased.c in Sources */ = {isa = PBXBuildFile; fileRef = 43E4703B11765A30005C2620 /* pwdbased.c */; };
 		43F5A2580E8C59BA00CD7F1A /* client.c in Sources */ = {isa = PBXBuildFile; fileRef = 43F5A2570E8C59BA00CD7F1A /* client.c */; };
@@ -160,7 +168,6 @@
 		4368F7650E9EAB090002A123 /* echoclient */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = echoclient; sourceTree = BUILT_PRODUCTS_DIR; };
 		4368F7990E9EABB80002A123 /* echoserver */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = echoserver; sourceTree = BUILT_PRODUCTS_DIR; };
 		43809E5C0FB7AC420050922E /* md4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = md4.c; path = ctaocrypt/src/md4.c; sourceTree = "<group>"; };
-		43809E5E0FB7AC5B0050922E /* md4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = md4.h; path = ctaocrypt/include/md4.h; sourceTree = "<group>"; };
 		4386C3A51174DCCC00D3A61A /* test.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = test.h; path = examples/test.h; sourceTree = "<group>"; };
 		43AC92C90EB154210049F588 /* cyassl_io.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = cyassl_io.c; path = src/cyassl_io.c; sourceTree = "<group>"; };
 		43BF21B0114B06AA001D113A /* sniffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = sniffer.h; path = include/sniffer.h; sourceTree = "<group>"; };
@@ -186,13 +193,9 @@
 		43C6C2910DDF98D400F2D488 /* sha256.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = sha256.c; path = ctaocrypt/src/sha256.c; sourceTree = "<group>"; };
 		43CA25BA0EA400BE0011ECA2 /* cyassl_error.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = cyassl_error.h; path = include/cyassl_error.h; sourceTree = "<group>"; };
 		43CA25BB0EA400BE0011ECA2 /* cyassl_int.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = cyassl_int.h; path = include/cyassl_int.h; sourceTree = "<group>"; };
-		43CA25BD0EA4010C0011ECA2 /* aes.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = aes.h; path = ctaocrypt/include/aes.h; sourceTree = "<group>"; };
 		43CA25BE0EA4010C0011ECA2 /* arc4.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = arc4.h; path = ctaocrypt/include/arc4.h; sourceTree = "<group>"; };
-		43CA25BF0EA4010C0011ECA2 /* dh.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = dh.h; path = ctaocrypt/include/dh.h; sourceTree = "<group>"; };
-		43CA25C00EA4010C0011ECA2 /* md5.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = md5.h; path = ctaocrypt/include/md5.h; sourceTree = "<group>"; };
 		43CA25C10EA4010C0011ECA2 /* mpi_superclass.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 0; name = mpi_superclass.h; path = ctaocrypt/include/mpi_superclass.h; sourceTree = "<group>"; };
 		43CA25C20EA4010C0011ECA2 /* random.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = random.h; path = ctaocrypt/include/random.h; sourceTree = "<group>"; };
-		43CA25C30EA4010C0011ECA2 /* sha.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = sha.h; path = ctaocrypt/include/sha.h; sourceTree = "<group>"; };
 		43CA25C40EA4010C0011ECA2 /* sha256.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 0; name = sha256.h; path = ctaocrypt/include/sha256.h; sourceTree = "<group>"; };
 		43CA25C50EA4010C0011ECA2 /* coding.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = coding.h; path = ctaocrypt/include/coding.h; sourceTree = "<group>"; };
 		43CA25C60EA4010C0011ECA2 /* des3.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = des3.h; path = ctaocrypt/include/des3.h; sourceTree = "<group>"; };
@@ -201,17 +204,23 @@
 		43CA25C90EA4010C0011ECA2 /* integer.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = integer.h; path = ctaocrypt/include/integer.h; sourceTree = "<group>"; };
 		43CA25CA0EA4010C0011ECA2 /* tfm.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 0; name = tfm.h; path = ctaocrypt/include/tfm.h; sourceTree = "<group>"; };
 		43CA25CB0EA4010C0011ECA2 /* asn.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = asn.h; path = ctaocrypt/include/asn.h; sourceTree = "<group>"; };
-		43CA25CC0EA4010C0011ECA2 /* rsa.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = rsa.h; path = ctaocrypt/include/rsa.h; sourceTree = "<group>"; };
 		43CA25CD0EA4010C0011ECA2 /* mpi_class.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 0; name = mpi_class.h; path = ctaocrypt/include/mpi_class.h; sourceTree = "<group>"; };
 		43CA25CE0EA4010C0011ECA2 /* types.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = types.h; path = ctaocrypt/include/types.h; sourceTree = "<group>"; };
-		43CA25CF0EA4010C0011ECA2 /* dsa.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = dsa.h; path = ctaocrypt/include/dsa.h; sourceTree = "<group>"; };
-		43CA25D00EA4010C0011ECA2 /* hmac.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 0; name = hmac.h; path = ctaocrypt/include/hmac.h; sourceTree = "<group>"; };
 		43CA25D10EA401550011ECA2 /* cyassl_callbacks.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = cyassl_callbacks.h; path = include/openssl/cyassl_callbacks.h; sourceTree = "<group>"; };
 		43CA25D20EA401550011ECA2 /* ssl.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; lineEnding = 2; name = ssl.h; path = include/openssl/ssl.h; sourceTree = "<group>"; };
 		43D565640F1EC9A600550C88 /* hc128.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = hc128.c; path = ctaocrypt/src/hc128.c; sourceTree = "<group>"; };
 		43D565660F1EC9CC00550C88 /* rabbit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = rabbit.c; path = ctaocrypt/src/rabbit.c; sourceTree = "<group>"; };
 		43D565A30F29040000550C88 /* rabbit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = rabbit.h; path = ctaocrypt/include/rabbit.h; sourceTree = "<group>"; };
 		43D565A50F29041C00550C88 /* hc128.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = hc128.h; path = ctaocrypt/include/hc128.h; sourceTree = "<group>"; };
+		43D8E66A12C14BF700F2AA8B /* ctc_hmac.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = ctc_hmac.h; path = ctaocrypt/include/ctc_hmac.h; sourceTree = "<group>"; };
+		43D8E66B12C14BF700F2AA8B /* ctc_sha.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = ctc_sha.h; path = ctaocrypt/include/ctc_sha.h; sourceTree = "<group>"; };
+		43D8E66C12C14BF700F2AA8B /* ctc_rsa.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = ctc_rsa.h; path = ctaocrypt/include/ctc_rsa.h; sourceTree = "<group>"; };
+		43D8E66D12C14BF700F2AA8B /* ctc_ripemd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = ctc_ripemd.h; path = ctaocrypt/include/ctc_ripemd.h; sourceTree = "<group>"; };
+		43D8E66E12C14BF700F2AA8B /* ctc_md5.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = ctc_md5.h; path = ctaocrypt/include/ctc_md5.h; sourceTree = "<group>"; };
+		43D8E66F12C14BF700F2AA8B /* ctc_md4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = ctc_md4.h; path = ctaocrypt/include/ctc_md4.h; sourceTree = "<group>"; };
+		43D8E67012C14BF700F2AA8B /* ctc_dsa.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = ctc_dsa.h; path = ctaocrypt/include/ctc_dsa.h; sourceTree = "<group>"; };
+		43D8E67112C14BF700F2AA8B /* ctc_dh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = ctc_dh.h; path = ctaocrypt/include/ctc_dh.h; sourceTree = "<group>"; };
+		43D8E67212C14BF700F2AA8B /* ctc_aes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = ctc_aes.h; path = ctaocrypt/include/ctc_aes.h; sourceTree = "<group>"; };
 		43E0103912B71C230098917A /* libntru_encrypt.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libntru_encrypt.a; path = /Users/toddouska/cyassl/NTRU_algorithm/libntru_encrypt.a; sourceTree = "<absolute>"; };
 		43E4703911765A14005C2620 /* pwdbased.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 2; name = pwdbased.h; path = ctaocrypt/include/pwdbased.h; sourceTree = "<group>"; };
 		43E4703B11765A30005C2620 /* pwdbased.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 2; name = pwdbased.c; path = ctaocrypt/src/pwdbased.c; sourceTree = "<group>"; };
@@ -369,20 +378,24 @@
 		43CA25B90EA400A60011ECA2 /* headers */ = {
 			isa = PBXGroup;
 			children = (
+				43D8E66A12C14BF700F2AA8B /* ctc_hmac.h */,
+				43D8E66B12C14BF700F2AA8B /* ctc_sha.h */,
+				43D8E66C12C14BF700F2AA8B /* ctc_rsa.h */,
+				43D8E66D12C14BF700F2AA8B /* ctc_ripemd.h */,
+				43D8E66E12C14BF700F2AA8B /* ctc_md5.h */,
+				43D8E66F12C14BF700F2AA8B /* ctc_md4.h */,
+				43D8E67012C14BF700F2AA8B /* ctc_dsa.h */,
+				43D8E67112C14BF700F2AA8B /* ctc_dh.h */,
+				43D8E67212C14BF700F2AA8B /* ctc_aes.h */,
 				43E4703911765A14005C2620 /* pwdbased.h */,
 				43BF21B0114B06AA001D113A /* sniffer.h */,
-				43809E5E0FB7AC5B0050922E /* md4.h */,
 				43D565A50F29041C00550C88 /* hc128.h */,
 				43D565A30F29040000550C88 /* rabbit.h */,
 				43CA25D10EA401550011ECA2 /* cyassl_callbacks.h */,
 				43CA25D20EA401550011ECA2 /* ssl.h */,
-				43CA25BD0EA4010C0011ECA2 /* aes.h */,
 				43CA25BE0EA4010C0011ECA2 /* arc4.h */,
-				43CA25BF0EA4010C0011ECA2 /* dh.h */,
-				43CA25C00EA4010C0011ECA2 /* md5.h */,
 				43CA25C10EA4010C0011ECA2 /* mpi_superclass.h */,
 				43CA25C20EA4010C0011ECA2 /* random.h */,
-				43CA25C30EA4010C0011ECA2 /* sha.h */,
 				4386C3A51174DCCC00D3A61A /* test.h */,
 				43CA25C40EA4010C0011ECA2 /* sha256.h */,
 				43CA25C50EA4010C0011ECA2 /* coding.h */,
@@ -392,11 +405,8 @@
 				43CA25C90EA4010C0011ECA2 /* integer.h */,
 				43CA25CA0EA4010C0011ECA2 /* tfm.h */,
 				43CA25CB0EA4010C0011ECA2 /* asn.h */,
-				43CA25CC0EA4010C0011ECA2 /* rsa.h */,
 				43CA25CD0EA4010C0011ECA2 /* mpi_class.h */,
 				43CA25CE0EA4010C0011ECA2 /* types.h */,
-				43CA25CF0EA4010C0011ECA2 /* dsa.h */,
-				43CA25D00EA4010C0011ECA2 /* hmac.h */,
 				43CA25BA0EA400BE0011ECA2 /* cyassl_error.h */,
 				43CA25BB0EA400BE0011ECA2 /* cyassl_int.h */,
 			);
@@ -419,8 +429,16 @@
 			files = (
 				43D565A40F29040000550C88 /* rabbit.h in Headers */,
 				43D565A60F29041C00550C88 /* hc128.h in Headers */,
-				43809E5F0FB7AC5B0050922E /* md4.h in Headers */,
 				43BF21B1114B06AA001D113A /* sniffer.h in Headers */,
+				43D8E67312C14BF700F2AA8B /* ctc_hmac.h in Headers */,
+				43D8E67412C14BF700F2AA8B /* ctc_sha.h in Headers */,
+				43D8E67512C14BF700F2AA8B /* ctc_rsa.h in Headers */,
+				43D8E67612C14BF700F2AA8B /* ctc_ripemd.h in Headers */,
+				43D8E67712C14BF700F2AA8B /* ctc_md5.h in Headers */,
+				43D8E67812C14BF700F2AA8B /* ctc_md4.h in Headers */,
+				43D8E67912C14BF700F2AA8B /* ctc_dsa.h in Headers */,
+				43D8E67A12C14BF700F2AA8B /* ctc_dh.h in Headers */,
+				43D8E67B12C14BF700F2AA8B /* ctc_aes.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -751,7 +769,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = cyassl;
 				SDKROOT = "";
-				USER_HEADER_SEARCH_PATHS = "NTRU_algorithm/cryptolib include ctaocrypt/include";
+				USER_HEADER_SEARCH_PATHS = "include/openssl NTRU_algorithm/cryptolib include ctaocrypt/include";
 				WARNING_CFLAGS = "-Wall";
 				ZERO_LINK = YES;
 			};
@@ -772,7 +790,7 @@
 				);
 				INSTALL_PATH = /usr/local/lib;
 				PRODUCT_NAME = cyassl;
-				USER_HEADER_SEARCH_PATHS = "NTRU_algorithm/cryptolib include ctaocrypt/include";
+				USER_HEADER_SEARCH_PATHS = "include/openssl NTRU_algorithm/cryptolib include ctaocrypt/include";
 				WARNING_CFLAGS = "-Wall";
 			};
 			name = Release;
@@ -791,7 +809,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				PREBINDING = NO;
 				SDKROOT = "";
-				USER_HEADER_SEARCH_PATHS = "include ctaocrypt/include";
+				USER_HEADER_SEARCH_PATHS = "include/openssl include ctaocrypt/include";
 			};
 			name = Debug;
 		};
@@ -805,7 +823,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				PREBINDING = NO;
 				SDKROOT = macosx10.5;
-				USER_HEADER_SEARCH_PATHS = "include ctaocrypt/include";
+				USER_HEADER_SEARCH_PATHS = "include/openssl include ctaocrypt/include";
 			};
 			name = Release;
 		};
@@ -829,7 +847,7 @@
 				PREBINDING = NO;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_NAME = testsuite;
-				USER_HEADER_SEARCH_PATHS = "include ctaocrypt/include";
+				USER_HEADER_SEARCH_PATHS = "include/openssl include ctaocrypt/include";
 			};
 			name = Debug;
 		};
@@ -851,7 +869,7 @@
 				OTHER_LDFLAGS = "-lz";
 				PREBINDING = NO;
 				PRODUCT_NAME = testsuite;
-				USER_HEADER_SEARCH_PATHS = "include ctaocrypt/include";
+				USER_HEADER_SEARCH_PATHS = "include/openssl include ctaocrypt/include";
 				ZERO_LINK = NO;
 			};
 			name = Release;
@@ -880,7 +898,7 @@
 				);
 				PREBINDING = NO;
 				PRODUCT_NAME = test;
-				USER_HEADER_SEARCH_PATHS = "NTRU_algorithm/cryptolib include ctaocrypt/include";
+				USER_HEADER_SEARCH_PATHS = "include/openssl NTRU_algorithm/cryptolib include ctaocrypt/include";
 			};
 			name = Debug;
 		};
@@ -907,7 +925,7 @@
 				);
 				PREBINDING = NO;
 				PRODUCT_NAME = test;
-				USER_HEADER_SEARCH_PATHS = "NTRU_algorithm/cryptolib include ctaocrypt/include";
+				USER_HEADER_SEARCH_PATHS = "include/openssl NTRU_algorithm/cryptolib include ctaocrypt/include";
 				ZERO_LINK = NO;
 			};
 			name = Release;
