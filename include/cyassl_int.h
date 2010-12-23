@@ -449,7 +449,7 @@ enum {
 
 /* user option to turn off 16K output option */
 /* if using small static buffers (default) and SSL_write tries to write data
-   larger record then we have, dynamically get it, unless user says only
+   larger than the record we have, dynamically get it, unless user says only
    write in static buffer chuncks  */
 #ifndef STATIC_CHUNKS_ONLY
     #define OUTPUT_RECORD_SIZE MAX_RECORD_SIZE
