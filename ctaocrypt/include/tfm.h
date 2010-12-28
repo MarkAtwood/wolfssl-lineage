@@ -347,7 +347,7 @@ typedef struct {
 void fp_set(fp_int *a, fp_digit b);
 
 /* copy from a to b */
-#define fp_copy(a, b)  (void)(((a) != (b)) && XMEMCPY((b), (a), sizeof(fp_int)))
+#define fp_copy(a, b)  (void)(((a) != (b)) ? (XMEMCPY((b), (a), sizeof(fp_int))) : (void)0)
 #define fp_init_copy(a, b) fp_copy(b, a)
 
 /* clamp digits */
