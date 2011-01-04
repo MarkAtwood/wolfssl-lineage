@@ -348,6 +348,13 @@ enum states {
     typedef int (*CallbackIORecv)(char *buf, int sz, void *ctx);
     typedef int (*CallbackIOSend)(char *buf, int sz, void *ctx);
     typedef int (*VerifyCallback)(int, X509_STORE_CTX*);
+
+    /* make sure external "C" linkage for C++ programs with callbacks */
+    void CyaSSL_SetIORecv(SSL_CTX*, CallbackIORecv);
+    void CyaSSL_SetIOSend(SSL_CTX*, CallbackIOSend);
+
+    void CyaSSL_SetIOReadCtx(SSL* ssl, void *ctx);
+    void CyaSSL_SetIOWriteCtx(SSL* ssl, void *ctx);
 #endif /* SSL_TYPES_DEFINED */
 
 

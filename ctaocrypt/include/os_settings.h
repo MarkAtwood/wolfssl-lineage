@@ -38,6 +38,9 @@
 /* Uncomment next line if using Micrium ucOS */
 /* #define MICRIUM */
 
+/* Uncomment next line if using Mbed */
+/* #define MBED */
+
 
 #ifdef IPHONE
     #define SIZEOF_LONG_LONG 8
@@ -46,6 +49,17 @@
 #ifdef THREADX 
     #define SIZEOF_LONG_LONG 8
 #endif
+
+#ifdef MBED
+    #define SINGLE_THREADED
+    #define CYASSL_USER_IO
+    #define NO_WRITEV
+    #define NO_DEV_RANDOM
+    #define NO_SHA512
+    #define NO_DH
+    #define NO_DSA
+    #define NO_HC128
+#endif /* MBED */
 
 
 #ifdef MICRIUM
