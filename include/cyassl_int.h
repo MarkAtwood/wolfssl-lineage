@@ -450,7 +450,11 @@ enum {
 #if defined(LARGE_STATIC_BUFFERS) || defined(CYASSL_SNIFFER)
     #define RECORD_SIZE MAX_RECORD_SIZE
 #else
-    #define RECORD_SIZE 128
+    #ifdef CYASSL_DTLS
+        #define RECORD_SIZE 1500
+    #else
+        #define RECORD_SIZE 128 
+    #endif
 #endif
 
 
