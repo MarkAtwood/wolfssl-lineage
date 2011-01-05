@@ -48,14 +48,6 @@ enum {
 };
 #endif
 
-enum {
-    ISSUER  = 0,
-    SUBJECT = 1,
-
-    BEFORE  = 0,
-    AFTER   = 1
-};
-
 
 #ifdef THREADX
     /* uses parital <time.h> structures */
@@ -63,9 +55,8 @@ enum {
     #define XGMTIME(c) my_gmtime((c))
     #define XVALIDATE_DATE(d, f, t) ValidateDate((d), (f), (t))
 #elif defined(MICRIUM)
-    #include <clk.h>
     #if (NET_SECURE_MGR_CFG_EN == DEF_ENABLED)
-        #define XVALIDATE_DATE(d, f, t) NetSecure_ValidDate((d), (f), (t))
+        #define XVALIDATE_DATE(d,f,t) NetSecure_ValidateDateHandler((d),(f),(t))
     #else
         #define XVALIDATE_DATE(d, f, t) (0)
     #endif
@@ -216,73 +207,58 @@ static INLINE void GetTime(int* value, const byte* date, int* idx)
 
 #if defined(MICRIUM)
 
-static int NetSecure_ValidDate(CPU_INT08U *date, CPU_INT08U format,
-                               CPU_INT08U dateType)
+CPU_INT32S NetSecure_ValidateDateHandler(CPU_INT08U *date, CPU_INT08U format,
+                                         CPU_INT08U dateType)
 {
-    CLK_DATE_TIME   cert_date_time;
-    CLK_TS_SEC      cert_ts_sec;
-    CLK_TS_SEC      local_ts_sec;
-    CPU_INT32S      i;
-    CPU_INT32S      val;
+    CPU_BOOLEAN  rtn_code;
+    CPU_INT32S   i;
+    CPU_INT32S   val;    
+    CPU_INT16U   year;
+    CPU_INT08U   month;
+    CPU_INT16U   day;
+    CPU_INT08U   hour;
+    CPU_INT08U   min;
+    CPU_INT08U   sec;
 
-    local_ts_sec = Clk_GetTS();
-    XMEMSET(&cert_date_time, 0, sizeof(cert_date_time));
+    i    = 0;
+    year = 0u;
 
-    i = 0;
     if (format == ASN_UTC_TIME) {
         if (btoi(date[0]) >= 5)
-            cert_date_time.Yr = 1900;
+            year = 1900;
         else
-            cert_date_time.Yr = 2000;
+            year = 2000;
     }
     else  { /* format == GENERALIZED_TIME */
-        cert_date_time.Yr += btoi(date[i++]) * 1000;
-        cert_date_time.Yr += btoi(date[i++]) * 100;
-    }
+        year += btoi(date[i++]) * 1000;
+        year += btoi(date[i++]) * 100;
+    }    
 
-    val = cert_date_time.Yr;
-    GetTime(&val,   date, &i);
-    cert_date_time.Yr =    (CLK_YR)val;
+    val = year;
+    GetTime(&val, date, &i);
+    year = (CPU_INT16U)val;
 
     val = 0;
     GetTime(&val, date, &i);   
-    cert_date_time.Month = (CLK_MONTH)val;
-  
-    val = 0;
-    GetTime(&val, date, &i);  
-    cert_date_time.Day =   (CLK_DAY)val;
+    month = (CPU_INT08U)val;   
 
     val = 0;
     GetTime(&val, date, &i);  
-    cert_date_time.Hr =    (CLK_HR)val;
-    
+    day = (CPU_INT16U)val;
+
     val = 0;
     GetTime(&val, date, &i);  
-    cert_date_time.Min =   (CLK_MIN)val;
-    
+    hour = (CPU_INT08U)val;
+
     val = 0;
     GetTime(&val, date, &i);  
-    cert_date_time.Sec =   (CLK_SEC)val;
+    min = (CPU_INT08U)val;
 
-    if (date[i] != 'Z')     /* only Zulu supported for this profile */
-        return 0;
+    val = 0;
+    GetTime(&val, date, &i);  
+    sec = (CPU_INT08U)val;
 
-    cert_date_time.DayOfWk = 1;
-    cert_date_time.DayOfYr = 1;
-    Clk_DateTimeToTS(&cert_ts_sec, &cert_date_time);
-
-
-    if (dateType == BEFORE) {
-        if (local_ts_sec < cert_ts_sec)  /* If cert creation date after
-                                             current date...  */
-            return (DEF_FAIL);           /* ... report an error. */
-   } else {
-        if (local_ts_sec > cert_ts_sec)  /* If cert expiration date before
-                                           current date...  */
-            return (DEF_FAIL);           /* ... report an error. */
-   }
-
-    return (DEF_OK);
+    return NetSecure_ValidateDate(year, month, day, hour, min, sec, dateType); 
 }
 
 #endif /* MICRIUM */

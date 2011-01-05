@@ -34,6 +34,15 @@
     extern "C" {
 #endif
 
+
+enum {
+    ISSUER  = 0,
+    SUBJECT = 1,
+
+    BEFORE  = 0,
+    AFTER   = 1
+};
+
 /* ASN Tags   */
 enum ASN_Tags {        
     ASN_INTEGER           = 0x02,
