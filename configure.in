@@ -1,6 +1,6 @@
 AC_INIT
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(cyassl,1.8.0)
+AM_INIT_AUTOMAKE(cyassl,1.8.8)
 AM_CONFIG_HEADER(ctaocrypt/include/config.h)
 
 
@@ -302,6 +302,21 @@ if test "$ENABLED_PSK" = "no"
 then
     CFLAGS="$CFLAGS -DNO_PSK"
 fi
+
+
+# ECC 
+AC_ARG_ENABLE(ecc,
+    [  --enable-ecc            Enable ECC (default: disabled)],
+    [ ENABLED_ECC=$enableval ],
+    [ ENABLED_ECC=no ]
+    )
+
+if test "$ENABLED_ECC" = "yes"
+then
+    CFLAGS="$CFLAGS -DHAVE_ECC"
+fi
+
+AM_CONDITIONAL([BUILD_ECC], [test "x$ENABLED_ECC" = "xyes"])
 
 
 # NTRU

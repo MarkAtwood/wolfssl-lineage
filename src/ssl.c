@@ -1,6 +1,6 @@
 /* ssl.c
  *
- * Copyright (C) 2006-2009 Sawtooth Consulting Ltd.
+ * Copyright (C) 2006-2011 Sawtooth Consulting Ltd.
  *
  * This file is part of CyaSSL.
  *
@@ -350,7 +350,7 @@ static int AddCA(SSL_CTX* ctx, buffer der)
 
 
     static int PemToDer(const unsigned char* buff, long sz, int type,
-                        buffer* der, void* heap, EncryptedInfo* info)
+                      buffer* der, void* heap, EncryptedInfo* info, int* eccKey)
     {
         char  header[PEM_LINE_LEN];
         char  footer[PEM_LINE_LEN];
@@ -384,6 +384,14 @@ static int AddCA(SSL_CTX* ctx, buffer der)
             else
                 maybe encrypted "-----BEGIN ENCRYPTED PRIVATE KEY-----"
             */
+        }
+        if (!headerEnd && type == PRIVATEKEY_TYPE) {  /* may be ecc */
+            XSTRNCPY(header, "-----BEGIN EC PRIVATE KEY-----", sizeof(header));
+            XSTRNCPY(footer, "-----END EC PRIVATE KEY-----", sizeof(footer));
+        
+            headerEnd = XSTRSTR((char*)buff, header);
+            if (headerEnd)
+                *eccKey = 1;
         }
         if (!headerEnd)
             return SSL_BAD_FILE;
@@ -472,8 +480,9 @@ static int AddCA(SSL_CTX* ctx, buffer der)
                              long sz, int format, int type)
     {
         EncryptedInfo info;
-        buffer        der;        /* holds DER or RAW (for NTRU */
+        buffer        der;        /* holds DER or RAW (for NTRU) */
         int           dynamicType;
+        int           eccKey = 0;
 
         info.set   = 0;
         der.buffer = 0;
@@ -490,7 +499,7 @@ static int AddCA(SSL_CTX* ctx, buffer der)
             dynamicType = DYNAMIC_TYPE_KEY;
 
         if (format == SSL_FILETYPE_PEM) {
-            if (PemToDer(buff, sz, type, &der, ctx->heap, &info) < 0) {
+            if (PemToDer(buff, sz, type, &der, ctx->heap, &info, &eccKey) < 0) {
                 XFREE(der.buffer, ctx->heap, dynamicType);
                 return SSL_BAD_FILE;
             }
@@ -571,17 +580,40 @@ static int AddCA(SSL_CTX* ctx, buffer der)
         }
 
         if (type == PRIVATEKEY_TYPE && format != SSL_FILETYPE_RAW) {
-            /* make sure RSA key can be used */
-            RsaKey key;
-            word32 idx = 0;
+            if (!eccKey) { 
+                /* make sure RSA key can be used */
+                RsaKey key;
+                word32 idx = 0;
         
-            InitRsaKey(&key, 0);
-            if (RsaPrivateKeyDecode(der.buffer, &idx, &key, der.length) != 0) {
+                InitRsaKey(&key, 0);
+                if (RsaPrivateKeyDecode(der.buffer,&idx,&key,der.length) != 0) {
+#ifdef HAVE_ECC  
+                    /* could have DER ECC, no easy way to tell */
+                    if (format == SSL_FILETYPE_ASN1)
+                        eccKey = 1;  /* try it out */
+#endif
+                    if (!eccKey) {
+                        FreeRsaKey(&key);
+                        return SSL_BAD_FILE;
+                    }
+                }
                 FreeRsaKey(&key);
-                return SSL_BAD_FILE;
             }
-        
-            FreeRsaKey(&key);
+#ifdef HAVE_ECC  
+            if (eccKey ) {
+                /* make sure ECC key can be used */
+                word32  idx = 0;
+                ecc_key key;
+
+                ecc_init(&key);
+                if (EccPrivateKeyDecode(der.buffer,&idx,&key,der.length) != 0) {
+                    ecc_free(&key);
+                    return SSL_BAD_FILE;
+                }
+                ecc_free(&key);
+                ctx->haveECDSA = 1;
+            }
+#endif /* HAVE_ECC */
         }
 
         return SSL_SUCCESS;
@@ -680,6 +712,7 @@ int CyaSSL_PemCertToDer(const char* fileName, unsigned char* derBuf, int derSz)
     byte*  fileBuf = staticBuffer;
     int    dynamic = 0;
     int    ret;
+    int    ecc = 0;
     long   sz = 0;
     XFILE* file = XFOPEN(fileName, "rb"); 
     EncryptedInfo info;
@@ -704,7 +737,7 @@ int CyaSSL_PemCertToDer(const char* fileName, unsigned char* derBuf, int derSz)
     if ( (ret = XFREAD(fileBuf, sz, 1, file)) < 0)
         ret = SSL_BAD_FILE;
     else
-        ret = PemToDer(fileBuf, sz, CA_TYPE, &converted, 0, &info);
+        ret = PemToDer(fileBuf, sz, CA_TYPE, &converted, 0, &info, &ecc);
 
     if (ret == 0) {
         if (converted.length < derSz) {
@@ -1275,19 +1308,27 @@ int SSL_CTX_set_cipher_list(SSL_CTX* ctx, const char* list)
 
 int InitCyaSSL(void)
 {
+#ifndef NO_SESSION_CACHE
     if (InitMutex(&mutex) == 0)
         return 0;
     else
         return -1;
+#else
+    return 0;
+#endif
 }
 
 
 int FreeCyaSSL(void)
 {
+#ifndef NO_SESSION_CACHE
     if (FreeMutex(&mutex) == 0)
         return 0;
     else
         return -1;
+#else
+    return 0;
+#endif
 }
 
 
@@ -1361,8 +1402,9 @@ int SetSession(SSL* ssl, SSL_SESSION* session)
         ssl->options.resuming = 1;
 
 #ifdef SESSION_CERTS
-        ssl->version             = session->version;
-        ssl->options.cipherSuite = session->cipherSuite;
+        ssl->version              = session->version;
+        ssl->options.cipherSuite0 = session->cipherSuite0;
+        ssl->options.cipherSuite  = session->cipherSuite;
 #endif
 
         return SSL_SUCCESS;
@@ -1398,8 +1440,9 @@ int AddSession(SSL* ssl)
     XMEMCPY(SessionCache[row].Sessions[idx].chain.certs,
            ssl->session.chain.certs, sizeof(x509_buffer) * MAX_CHAIN_DEPTH);
 
-    SessionCache[row].Sessions[idx].version     = ssl->version;
-    SessionCache[row].Sessions[idx].cipherSuite = ssl->options.cipherSuite;
+    SessionCache[row].Sessions[idx].version      = ssl->version;
+    SessionCache[row].Sessions[idx].cipherSuite0 = ssl->options.cipherSuite0;
+    SessionCache[row].Sessions[idx].cipherSuite  = ssl->options.cipherSuite;
 #endif
 
     SessionCache[row].totalCount++;
@@ -1735,7 +1778,8 @@ int CyaSSL_set_compression(SSL* ssl)
         ssl->options.havePSK = 1;
         ssl->options.client_psk_cb = cb;
 
-        InitSuites(&ssl->suites, ssl->version,TRUE,TRUE, ssl->options.haveNTRU);
+        InitSuites(&ssl->suites, ssl->version,TRUE,TRUE, ssl->options.haveNTRU,
+                   ssl->options.haveECDSA, ssl->ctx->method->side);
     }
 
 
@@ -1752,7 +1796,8 @@ int CyaSSL_set_compression(SSL* ssl)
         ssl->options.server_psk_cb = cb;
 
         InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, TRUE,
-                   ssl->options.haveNTRU);
+                   ssl->options.haveNTRU, ssl->options.haveECDSA,
+                   ssl->ctx->method->side);
     }
 
 
@@ -1894,7 +1939,8 @@ int CyaSSL_set_compression(SSL* ssl)
         havePSK = ssl->options.havePSK;
 #endif
         InitSuites(&ssl->suites, ssl->version, ssl->options.haveDH, havePSK,
-                   ssl->options.haveNTRU);
+                   ssl->options.haveNTRU, ssl->options.haveECDSA,
+                   ssl->ctx->method->side);
     }
 
 
@@ -2569,6 +2615,28 @@ int CyaSSL_set_compression(SSL* ssl)
     const char* SSL_CIPHER_get_name(const SSL_CIPHER* cipher)
     {
         if (cipher) {
+            if (cipher->ssl->options.cipherSuite0 == ECC_BYTE) {
+            /* ECC suites */
+            switch (cipher->ssl->options.cipherSuite) {
+                case TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA :
+                    return "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA";
+                case TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA :
+                    return "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA";
+                case TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA :
+                    return "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA";
+                case TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA :
+                    return "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA";
+                case TLS_ECDHE_RSA_WITH_RC4_128_SHA :
+                    return "TLS_ECDHE_RSA_WITH_RC4_128_SHA";
+                case TLS_ECDHE_ECDSA_WITH_RC4_128_SHA :
+                    return "TLS_ECDHE_ECDSA_WITH_RC4_128_SHA";
+                case TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA :
+                    return "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA";
+                case TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA :
+                    return "TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA";
+            }
+            } else {
+            /* normal suites */
             switch (cipher->ssl->options.cipherSuite) {
                 case SSL_RSA_WITH_RC4_128_SHA :
                     return "SSL_RSA_WITH_RC4_128_SHA";
@@ -2603,6 +2671,7 @@ int CyaSSL_set_compression(SSL* ssl)
                 case TLS_NTRU_RSA_WITH_AES_256_CBC_SHA :
                     return "TLS_NTRU_RSA_WITH_AES_256_CBC_SHA";
             }
+            }  /* normal / ECC */
         }
 
         return "NONE";

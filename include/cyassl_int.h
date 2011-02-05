@@ -1,6 +1,6 @@
 /* cyassl_int.h
  *
- * Copyright (C) 2006-2009 Sawtooth Consulting Ltd.
+ * Copyright (C) 2006-2011 Sawtooth Consulting Ltd.
  *
  * This file is part of CyaSSL.
  *
@@ -33,6 +33,9 @@
 #include "asn.h"
 #include "ctc_md5.h"
 #include "ctc_aes.h"
+#ifdef HAVE_ECC
+    #include "ctc_ecc.h"
+#endif
 
 #ifdef CYASSL_CALLBACKS
     #include "cyassl_callbacks.h"
@@ -133,6 +136,22 @@ typedef byte word24[3];
     #define BUILD_TLS_DHE_RSA_WITH_AES_256_CBC_SHA
 #endif
 
+#if defined(HAVE_ECC) && !defined(NO_TLS)
+    #if !defined(NO_AES)
+        #define BUILD_TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA
+        #define BUILD_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA
+        #define BUILD_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA
+        #define BUILD_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA
+    #endif
+    #if !defined(NO_RC4)
+        #define BUILD_TLS_ECDHE_RSA_WITH_RC4_128_SHA
+        #define BUILD_TLS_ECDHE_ECDSA_WITH_RC4_128_SHA
+    #endif
+    #if !defined(NO_DES3)
+        #define BUILD_TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA
+        #define BUILD_TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA
+    #endif
+#endif
 
 
 #if defined(BUILD_SSL_RSA_WITH_RC4_128_SHA) || \
@@ -179,7 +198,17 @@ enum {
     SSL_RSA_WITH_RC4_128_MD5          = 0x04,
     SSL_RSA_WITH_3DES_EDE_CBC_SHA     = 0x0A,
 
-    /* CyaSSL extension - eSTRAM */
+    /* ECC suites, first byte is 0xC0 (ECC_BYTE) */
+    TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA    = 0x14,
+    TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA    = 0x13,
+    TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA  = 0x0A,
+    TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA  = 0x09,
+    TLS_ECDHE_RSA_WITH_RC4_128_SHA        = 0x11,
+    TLS_ECDHE_ECDSA_WITH_RC4_128_SHA      = 0x07,
+    TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA   = 0x12,
+    TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA = 0x08,
+
+    /* CyaSSL extension - eSTREAM */
     TLS_RSA_WITH_HC_128_CBC_MD5       = 0xFB,
     TLS_RSA_WITH_HC_128_CBC_SHA       = 0xFC,
     TLS_RSA_WITH_RABBIT_CBC_SHA       = 0xFD,
@@ -195,6 +224,8 @@ enum {
 enum Misc {
     SERVER_END = 0,
     CLIENT_END,
+
+    ECC_BYTE =  0xC0,           /* ECC first cipher suite byte */
 
     SEND_CERT       = 1,
     SEND_BLANK_CERT = 2,
@@ -231,7 +262,7 @@ enum Misc {
     REQUEST_HEADER =  2,       /* always use 2 bytes      */
     VERIFY_HEADER  =  2,       /* always use 2 bytes      */
 
-    MAX_SUITE_SZ = 128,         /* only 64 suites for now! */
+    MAX_SUITE_SZ = 200,        /* 100 suites for now! */
     RAN_LEN      = 32,         /* random length           */
     SEED_LEN     = RAN_LEN * 2, /* tls prf seed length    */
     ID_LEN       = 32,         /* session id length       */
@@ -239,6 +270,7 @@ enum Misc {
     SUITE_LEN    =  2,         /* cipher suite sz length  */
     ENUM_LEN     =  1,         /* always a byte           */
     COMP_LEN     =  1,         /* compression length      */
+    CURVE_LEN    =  2,         /* ecc named curve length  */
     
     HANDSHAKE_HEADER_SZ = 4,   /* type + length(3)        */
     RECORD_HEADER_SZ    = 5,   /* type + version + len(2) */
@@ -277,6 +309,9 @@ enum Misc {
     RABBIT_IV_SIZE      =  8,  /* 64 bits for iv          */
 
     EVP_SALT_SIZE       =  8,  /* evp salt size 64 bits   */
+
+    ECDHE_SIZE          = 32,  /* ECHDE server size defaults to 256 bit */
+    MAX_EXPORT_ECC_SZ   = 256, /* Export ANS X9.62 max future size */
 
     MAX_HELLO_SZ       = 128,  /* max client or server hello */
     MAX_CERT_VERIFY_SZ = 1024, /* max   */
@@ -496,7 +531,7 @@ typedef struct Suites {
 } Suites;
 
 
-void InitSuites(Suites*, ProtocolVersion, byte, byte, byte);
+void InitSuites(Suites*, ProtocolVersion, byte, byte, byte, byte, int);
 int  SetCipherList(SSL_CTX* ctx, const char* list);
 
 #ifndef PSK_TYPES_DEFINED
@@ -539,7 +574,8 @@ struct SSL_CTX {
     byte        sessionCacheFlushOff;
     byte        sendVerify;       /* for client side */
     byte        haveDH;           /* server DH parms set by user */
-    byte        haveNTRU;         /* server private NTRU key loaded */
+    byte        haveNTRU;         /* server private NTRU  key loaded */
+    byte        haveECDSA;        /* server private ECDSA key loaded */
     byte        partialWrite;     /* only one msg per write call */
     byte        quietShutdown;    /* don't send close notify */
     CallbackIORecv CBIORecv;
@@ -614,7 +650,8 @@ enum KeyExchangeAlgorithm {
     diffie_hellman_kea, 
     fortezza_kea,
     psk_kea,
-    ntru_kea
+    ntru_kea,
+    ecc_diffie_hellman_kea
 };
 
 
@@ -622,7 +659,26 @@ enum KeyExchangeAlgorithm {
 enum SignatureAlgorithm {
     anonymous_sa_algo = 0,
     rsa_sa_algo,
-    dsa_sa_algo
+    dsa_sa_algo,
+    ecc_dsa_sa_algo
+};
+
+
+/* Supprted ECC Curve Types */
+enum EccCurves {
+    named_curve = 3
+};
+
+
+/* Supprted ECC Named Curves */
+enum EccNamedCurves {
+    secp256r1 = 0x17,         /* default, OpenSSL also calls it prime256v1 */
+    secp384r1 = 0x18,
+    secp521r1 = 0x19,
+
+    secp160r1 = 0x10,
+    secp192r1 = 0x13,        /*           Openssl also call it prime192v1 */
+    secp224r1 = 0x15
 };
 
 
@@ -716,7 +772,8 @@ struct SSL_SESSION {
 #ifdef SESSION_CERTS
     X509_CHAIN      chain;                      /* peer cert chain, static  */
     ProtocolVersion version;
-    byte            cipherSuite;
+    byte            cipherSuite0;               /* first byte, normally 0 */
+    byte            cipherSuite;                /* 2nd byte, actual suite */
 #endif
 };
 
@@ -782,7 +839,8 @@ typedef struct Buffers {
 typedef struct Options {
     byte            sessionCacheOff;
     byte            sessionCacheFlushOff;
-    byte            cipherSuite;
+    byte            cipherSuite0;           /* first byte, normally 0 */
+    byte            cipherSuite;            /* second byte, actual suite */
     byte            serverState;
     byte            clientState;
     byte            handShakeState;
@@ -804,7 +862,8 @@ typedef struct Options {
     byte            acceptState;        /* nonblocking resume */
     byte            usingCompression;   /* are we using compression */
     byte            haveDH;             /* server DH parms set by user */
-    byte            haveNTRU;           /* server NTRU private key loaded */
+    byte            haveNTRU;           /* server NTRU  private key loaded */
+    byte            haveECDSA;          /* server ECDSA private key loaded */
     byte            havePeerCert;       /* do we have peer's cert */
     byte            usingPSK_cipher;    /* whether we're using psk as cipher */
     byte            sendAlertState;     /* nonblocking resume */ 
@@ -903,6 +962,16 @@ struct SSL {
     word16          peerNtruKeyLen;
     byte            peerNtruKey[MAX_NTRU_PUB_KEY_SZ];
     byte            peerNtruKeyPresent;
+#endif
+#ifdef HAVE_ECC
+    ecc_key         peerEccKey;              /* peer's  ECDHE key */
+    byte            peerEccKeyPresent;
+    ecc_key         peerEccDsaKey;           /* peer's  ECDSA key */
+    byte            peerEccDsaKeyPresent;
+    ecc_key         eccTempKey;              /* private ECDHE key */
+    byte            eccTempKeyPresent;
+    ecc_key         eccDsaKey;               /* private ECDSA key */
+    byte            eccDsaKeyPresent;
 #endif
     hmacfp          hmac;
     void*           heap;               /* for user overrides */
