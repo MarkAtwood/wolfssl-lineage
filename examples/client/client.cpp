@@ -18,15 +18,20 @@ void ClientError(SSL_CTX* ctx, SSL* ssl, SOCKET_T& sockfd, const char* msg)
     void NonBlockingSSL_Connect(SSL* ssl, SSL_CTX* ctx, SOCKET_T& sockfd)
     {
         int ret = SSL_connect(ssl);
-        while (ret =! SSL_SUCCESS && (SSL_get_error(ssl, 0) ==
-                                     SSL_ERROR_WANT_READ)) {
-            printf("... client would block\n");
+        int err = SSL_get_error(ssl, 0);
+        while (ret != SSL_SUCCESS && (err == SSL_ERROR_WANT_READ ||
+                                      err == SSL_ERROR_WANT_WRITE)) {
+            if (err == SSL_ERROR_WANT_READ)
+                printf("... client would read block\n");
+            else
+                printf("... client would write block\n");
             #ifdef _WIN32
                 Sleep(1000);
             #else
                 sleep(1);
             #endif
             ret = SSL_connect(ssl);
+            err = SSL_get_error(ssl, 0);
         }
         if (ret != SSL_SUCCESS)
             ClientError(ctx, ssl, sockfd, "SSL_connect failed");

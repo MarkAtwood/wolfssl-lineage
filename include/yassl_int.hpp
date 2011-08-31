@@ -541,10 +541,13 @@ class Buffers {
 public: 
     typedef STL::list<input_buffer*>  inputList;
     typedef STL::list<output_buffer*> outputList;
+    int prevSent;     // previous plain text bytes sent when got WANT_WRITE
+    int plainSz;      // plain text bytes in buffer to send when got WANT_WRITE 
 private:
-    inputList     dataList_;             // list of users app data / handshake
-    outputList    handShakeList_;        // buffered handshake msgs
-    input_buffer* rawInput_;             // buffered raw input yet to process
+    inputList      dataList_;             // list of users app data / handshake
+    outputList     handShakeList_;        // buffered handshake msgs
+    input_buffer*  rawInput_;             // buffered raw input yet to process
+    output_buffer* output_;               // WANT_WRITE buffered output 
 public:
     Buffers();
     ~Buffers();
@@ -555,8 +558,10 @@ public:
     inputList&  useData();
     outputList& useHandShake();
 
-    void          SetRawInput(input_buffer*);  // takes ownership
-    input_buffer* TakeRawInput();              // takes ownership 
+    void           SetRawInput(input_buffer*);  // takes ownership
+    input_buffer*  TakeRawInput();              // takes ownership 
+    void           SetOutput(output_buffer*);   // takes ownership
+    output_buffer* TakeOutput();                // takes ownership 
 private:
     Buffers(const Buffers&);             // hide copy
     Buffers& operator=(const Buffers&);  // and assign   
@@ -661,6 +666,7 @@ public:
     void deriveKeys();
     void deriveTLSKeys();
     void Send(const byte*, uint);
+    void SendWriteBuffered();
 
     uint bufferedData();
     uint get_SEQIncrement(bool);

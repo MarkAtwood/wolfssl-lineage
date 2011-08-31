@@ -934,12 +934,22 @@ void sendFinished(SSL& ssl, ConnectionEnd side, BufferOutput buffer)
 // send data
 int sendData(SSL& ssl, const void* buffer, int sz)
 {
+    int sent = 0;
+
     if (ssl.GetError() == YasslError(SSL_ERROR_WANT_READ))
         ssl.SetError(no_error);
 
+    if (ssl.GetError() == YasslError(SSL_ERROR_WANT_WRITE)) {
+        ssl.SetError(no_error);
+        ssl.SendWriteBuffered();
+        if (!ssl.GetError()) {
+            // advance sent to prvevious sent + plain size just sent
+            sent = ssl.useBuffers().prevSent + ssl.useBuffers().plainSz;
+        }
+    }
+
     ssl.verfiyHandShakeComplete();
     if (ssl.GetError()) return -1;
-    int sent = 0;
 
     for (;;) {
         int len = min(sz - sent, MAX_RECORD_SIZE);
@@ -947,6 +957,8 @@ int sendData(SSL& ssl, const void* buffer, int sz)
         input_buffer tmp;
 
         Data data;
+
+        if (sent == sz) break;
 
         if (ssl.CompressionOn()) {
             if (Compress(static_cast<const opaque*>(buffer) + sent, len,
@@ -962,9 +974,14 @@ int sendData(SSL& ssl, const void* buffer, int sz)
         buildMessage(ssl, out, data);
         ssl.Send(out.get_buffer(), out.get_size());
 
-        if (ssl.GetError()) return -1;
+        if (ssl.GetError()) {
+            if (ssl.GetError() == YasslError(SSL_ERROR_WANT_WRITE)) {
+                ssl.useBuffers().plainSz  = len;
+                ssl.useBuffers().prevSent = sent;
+            }
+            return -1;
+        }
         sent += len;
-        if (sent == sz) break;
     }
     ssl.useLog().ShowData(sent, true);
     return sent;

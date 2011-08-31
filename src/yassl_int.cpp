@@ -1136,8 +1136,28 @@ void SSL::flushBuffer()
 
 void SSL::Send(const byte* buffer, uint sz)
 {
-    if (socket_.send(buffer, sz) != sz)
-        SetError(send_error);
+    unsigned int sent = 0;
+
+    if (socket_.send(buffer, sz, sent) != sz) {
+        if (socket_.WouldBlock()) {
+            buffers_.SetOutput(NEW_YS output_buffer(sz - sent, buffer + sent,
+                                                    sz - sent));
+            SetError(YasslError(SSL_ERROR_WANT_WRITE));
+        }
+        else
+            SetError(send_error);
+    }
+}
+
+
+void SSL::SendWriteBuffered()
+{
+    output_buffer* out = buffers_.TakeOutput();
+
+    if (out) {
+        mySTL::auto_ptr<output_buffer> tmp(out);
+        Send(out->get_buffer(), out->get_size());
+    }
 }
 
 
@@ -2238,7 +2258,7 @@ Hashes& sslHashes::use_certVerify()
 }
 
 
-Buffers::Buffers() : rawInput_(0)
+Buffers::Buffers() : prevSent(0), plainSz(0), rawInput_(0), output_(0)
 {}
 
 
@@ -2249,6 +2269,13 @@ Buffers::~Buffers()
     STL::for_each(dataList_.begin(), dataList_.end(),
                   del_ptr_zero()) ;
     ysDelete(rawInput_);
+    ysDelete(output_);
+}
+
+
+void Buffers::SetOutput(output_buffer* ob)
+{
+    output_ = ob;
 }
 
 
@@ -2262,6 +2289,15 @@ input_buffer* Buffers::TakeRawInput()
 {
     input_buffer* ret = rawInput_;
     rawInput_ = 0;
+
+    return ret;
+}
+
+
+output_buffer* Buffers::TakeOutput()
+{
+    output_buffer* ret = output_;
+    output_ = 0;
 
     return ret;
 }

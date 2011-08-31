@@ -372,9 +372,56 @@ void RSA_Public_Decoder::Decode(RSA_PublicKey& key)
     ReadHeader();
     if (source_.GetError().What()) return;
 
+    ReadHeaderOpenSSL();   // may or may not be
+    if (source_.GetError().What()) return;
+
     // public key
     key.SetModulus(GetInteger(Integer().Ref()));
     key.SetPublicExponent(GetInteger(Integer().Ref()));
+}
+
+
+// Read OpenSSL format public header
+void RSA_Public_Decoder::ReadHeaderOpenSSL()
+{
+    byte b = source_.next();  // peek
+    source_.prev();
+
+    if (b != INTEGER) { // have OpenSSL public format
+        GetSequence();
+        b = source_.next();
+        if (b != OBJECT_IDENTIFIER) {
+            source_.SetError(OBJECT_ID_E);
+            return;
+        }
+
+        word32 len = GetLength(source_);
+        source_.advance(len);
+
+        b = source_.next();
+        if (b == TAG_NULL) {   // could have NULL tag and 0 terminator, may not 
+            b = source_.next();
+            if (b != 0) {
+                source_.SetError(EXPECT_0_E);
+                return; 
+            }
+        }
+        else
+            source_.prev();   // put back
+
+        b = source_.next();
+        if (b != BIT_STRING) {   
+            source_.SetError(BIT_STR_E);
+            return; 
+        }
+
+        len = GetLength(source_); 
+        b = source_.next();
+        if (b != 0)           // could have 0
+            source_.prev();   // put back
+        
+        GetSequence();
+    }
 }
 
 

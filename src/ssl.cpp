@@ -258,6 +258,15 @@ int SSL_connect(SSL* ssl)
     if (ssl->GetError() == YasslError(SSL_ERROR_WANT_READ))
         ssl->SetError(no_error);
 
+    if (ssl->GetError() == YasslError(SSL_ERROR_WANT_WRITE)) {
+    
+        ssl->SetError(no_error);
+        ssl->SendWriteBuffered();
+        if (!ssl->GetError())
+            ssl->useStates().UseConnect() =
+                             ConnectState(ssl->getStates().GetConnect() + 1);
+    }
+
     ClientState neededState;
 
     switch (ssl->getStates().GetConnect()) {
@@ -340,6 +349,15 @@ int SSL_accept(SSL* ssl)
 {
     if (ssl->GetError() == YasslError(SSL_ERROR_WANT_READ))
         ssl->SetError(no_error);
+
+    if (ssl->GetError() == YasslError(SSL_ERROR_WANT_WRITE)) {
+    
+        ssl->SetError(no_error);
+        ssl->SendWriteBuffered();
+        if (!ssl->GetError())
+            ssl->useStates().UseAccept() =
+                             AcceptState(ssl->getStates().GetAccept() + 1);
+    }
 
     switch (ssl->getStates().GetAccept()) {
 

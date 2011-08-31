@@ -156,6 +156,10 @@ void SetErrorString(YasslError error, char* buffer)
         strncpy(buffer, "the read operation would block", max);
         break;
 
+    case SSL_ERROR_WANT_WRITE :
+        strncpy(buffer, "the write operation would block", max);
+        break;
+
     case CERTFICATE_ERROR :
         strncpy(buffer, "Unable to verify certificate", max);
         break;

@@ -80,7 +80,8 @@ public:
     uint     get_ready() const;
     socket_t get_fd()    const;
 
-    uint send(const byte* buf, unsigned int len, int flags = 0) const;
+    uint send(const byte* buf, unsigned int len, unsigned int& sent,
+              int flags = 0);
     uint receive(byte* buf, unsigned int len, int flags = 0);
 
     bool wait();
