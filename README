@@ -12,6 +12,16 @@ before calling SSL_new();
 
 *** end Note ***
 
+yaSSL Release notes, version 2.1.2 (9/2/2011)
+
+    This release of yaSSL contains bug fixes, better non-blocking support with
+    SSL_write, and OpenSSL RSA public key format support.
+
+See normal  build instructions below under 1.0.6.
+See libcurl build instructions below under 1.3.0 and note in 1.5.8.
+
+
+*****************yaSSL Release notes, version 1.9.9 (1/26/2010)
 yaSSL Release notes, version 2.0.0 (7/6/2010)
 
     This release of yaSSL contains bug fixes, new testing certs,

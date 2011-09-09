@@ -67,8 +67,9 @@ void SetErrorString(YasslError error, char* buffer)
 {
     using namespace TaoCrypt;
     const int max = MAX_ERROR_SZ;  // shorthand
+    int localError = error;        // errors from a few enums 
 
-    switch (error) {
+    switch (localError) {
 
         // yaSSL proper errors
     case range_error :

@@ -2398,7 +2398,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=yassl
- VERSION=2.1.1
+ VERSION=2.1.4
 
 
 cat >>confdefs.h <<_ACEOF
