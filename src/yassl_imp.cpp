@@ -1,28 +1,20 @@
-/* yassl_imp.cpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 /*  yaSSL source implements all SSL.v3 secification structures.
  */
@@ -891,21 +883,19 @@ void Alert::Process(input_buffer& input, SSL& ssl)
         else
             hmac(ssl, verify, data, aSz, alert, true);
 
-        // read mac and fill
+        // read mac and skip fill
         int    digestSz = ssl.getCrypto().get_digest().get_digestSize();
         opaque mac[SHA_LEN];
         input.read(mac, digestSz);
 
         if (ssl.getSecurity().get_parms().cipher_type_ == block) {
             int    ivExtra = 0;
-            opaque fill;
 
             if (ssl.isTLSv1_1())
                 ivExtra = ssl.getCrypto().get_cipher().get_blockSize();
             int padSz = ssl.getSecurity().get_parms().encrypt_size_ - ivExtra -
                         aSz - digestSz;
-            for (int i = 0; i < padSz; i++) 
-                fill = input[AUTO];
+            input.set_current(input.get_current() + padSz);
         }
 
         // verify
@@ -986,17 +976,17 @@ output_buffer& operator<<(output_buffer& output, const Data& data)
 void Data::Process(input_buffer& input, SSL& ssl)
 {
     int msgSz = ssl.getSecurity().get_parms().encrypt_size_;
-    int pad   = 0, padByte = 0;
+    int pad   = 0, padSz = 0;
     int ivExtra = 0;
 
     if (ssl.getSecurity().get_parms().cipher_type_ == block) {
         if (ssl.isTLSv1_1())  // IV
             ivExtra = ssl.getCrypto().get_cipher().get_blockSize();
         pad = *(input.get_buffer() + input.get_current() + msgSz -ivExtra - 1);
-        padByte = 1;
+        padSz = 1;
     }
     int digestSz = ssl.getCrypto().get_digest().get_digestSize();
-    int dataSz = msgSz - ivExtra - digestSz - pad - padByte;   
+    int dataSz = msgSz - ivExtra - digestSz - pad - padSz;
     opaque verify[SHA_LEN];
 
     if (dataSz < 0) {
@@ -1030,14 +1020,10 @@ void Data::Process(input_buffer& input, SSL& ssl)
             hmac(ssl, verify, rawData, dataSz, application_data, true);
     }
 
-    // read mac and fill
+    // read mac and skip fill
     opaque mac[SHA_LEN];
-    opaque fill;
     input.read(mac, digestSz);
-    for (int i = 0; i < pad; i++) 
-        fill = input[AUTO];
-    if (padByte)
-        fill = input[AUTO];    
+    input.set_current(input.get_current() + pad + padSz);
 
     // verify
     if (dataSz) {
@@ -2084,11 +2070,9 @@ void Finished::Process(input_buffer& input, SSL& ssl)
         if (ssl.isTLSv1_1())
             ivExtra = ssl.getCrypto().get_cipher().get_blockSize();
 
-    opaque fill;
     int    padSz = ssl.getSecurity().get_parms().encrypt_size_ - ivExtra -
                      HANDSHAKE_HEADER - finishedSz - digestSz;
-    for (int i = 0; i < padSz; i++) 
-        fill = input[AUTO];
+    input.set_current(input.get_current() + padSz);
 
     // verify mac
     if (memcmp(mac, verifyMAC, digestSz)) {

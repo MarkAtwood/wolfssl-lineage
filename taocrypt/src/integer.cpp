@@ -1,28 +1,20 @@
-/* integer.cpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 
 
@@ -288,12 +280,7 @@ DWord() {}
     word GetHighHalfAsBorrow() const {return 0-halfs_.high;}
 
 private:
-    union
-    {
-    #ifdef TAOCRYPT_NATIVE_DWORD_AVAILABLE
-        dword whole_;
-    #endif
-        struct
+    struct dword_struct
         {
         #ifdef LITTLE_ENDIAN_ORDER
             word low;
@@ -302,7 +289,14 @@ private:
             word high;
             word low;
         #endif
-        } halfs_;
+    };
+
+    union
+    {
+    #ifdef TAOCRYPT_NATIVE_DWORD_AVAILABLE
+        dword whole_;
+    #endif
+        struct dword_struct halfs_;
     };
 };
 
@@ -1205,20 +1199,24 @@ public:
     #define AS1(x) #x ";"
     #define AS2(x, y) #x ", " #y ";"
     #define AddPrologue \
+        word res; \
         __asm__ __volatile__ \
         ( \
             "push %%ebx;"	/* save this manually, in case of -fPIC */ \
-            "mov %2, %%ebx;" \
+            "mov %3, %%ebx;" \
             ".intel_syntax noprefix;" \
             "push ebp;"
     #define AddEpilogue \
             "pop ebp;" \
             ".att_syntax prefix;" \
             "pop %%ebx;" \
-                    : \
+            "mov %%eax, %0;" \
+                    : "=g" (res) \
                     : "c" (C), "d" (A), "m" (B), "S" (N) \
                     : "%edi", "memory", "cc" \
-        );
+        ); \
+        return res;
+
     #define MulPrologue \
         __asm__ __volatile__ \
         ( \
