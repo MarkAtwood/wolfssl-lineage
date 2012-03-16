@@ -1,15 +1,20 @@
-SUBDIRS = taocrypt src examples testsuite
-EXTRA_DIST = yassl.dsp yassl.dsw certs/*.pem certs/*.d* certs/*.txt doc/*.html \
-	doc/*.png doc/*.gif doc/*.css stunnel/stunnel.* stunnel/*.txt \
-    stunnel/src/*.c lib/dummy FLOSS-EXCEPTIONS yassl.vcproj yassl.sln *.m4
+# Copyright (C) 2005, 2006 MySQL AB
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; version 2 of the License.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+SUBDIRS = taocrypt src testsuite
+EXTRA_DIST = yassl.dsp yassl.dsw CMakeLists.txt
 
-lib-only:
-	cd taocrypt/src; make; cd ../../src; make; cd ../
-
-openssl-links:
-	cd lib; ln -s ../taocrypt/src/.libs/libtaocrypt.a libcrypto.a; \
-    ln -s ../src/.libs/libyassl.a libssl.a; cd ../
-
-install:
-
+# Don't update the files from bitkeeper
+%::SCCS/s.%

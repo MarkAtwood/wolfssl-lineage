@@ -1,28 +1,20 @@
-/* file.hpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (C) 2000, 2012, Oracle and/or its affiliates. All rights reserved.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 /* file.hpp provies File Sources and Sinks
 */
@@ -47,25 +39,32 @@ public:
     explicit Source(word32 sz = 0) : buffer_(sz), current_(0) {}
     Source(const byte* b, word32 sz) : buffer_(b, sz), current_(0) {}
 
+    word32 remaining()         { if (GetError().What()) return 0;
+                                 else return buffer_.size() - current_; } 
     word32 size() const        { return buffer_.size(); }
     void   grow(word32 sz)     { buffer_.CleanGrow(sz); }
+
+    bool IsLeft(word32 sz) { if (remaining() >= sz) return true;
+                             else { SetError(CONTENT_E); return false; } }
    
     const byte*  get_buffer()  const { return buffer_.get_buffer(); }
     const byte*  get_current() const { return &buffer_[current_]; }
     word32       get_index()   const { return current_; }
-    void         set_index(word32 i) { current_ = i; }
+    void         set_index(word32 i) { if (i < size()) current_ = i; }
 
     byte operator[] (word32 i) { current_ = i; return next(); }
-    byte next() { return buffer_[current_++]; }
-    byte prev() { return buffer_[--current_]; }
+    byte next() { if (IsLeft(1)) return buffer_[current_++]; else return 0; }
+    byte prev() { if (current_)  return buffer_[--current_]; else return 0; }
 
     void add(const byte* data, word32 len)
     {
-        memcpy(buffer_.get_buffer() + current_, data, len);
-        current_ += len;
+        if (IsLeft(len)) {
+            memcpy(buffer_.get_buffer() + current_, data, len);
+            current_ += len;
+        }
     }
 
-    void advance(word32 i) { current_ += i; }
+    void advance(word32 i) { if (IsLeft(i)) current_ += i; }
     void reset(ByteBlock&);
 
     Error  GetError()              { return error_; }
