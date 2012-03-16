@@ -2589,11 +2589,14 @@ void Integer::Decode(Source& source)
     }
 
     word32 length = GetLength(source);
+    if (length == 0 || source.GetError().What()) return;
 
     if ( (b = source.next()) == 0x00)
         length--;
     else
         source.prev();
+
+    if (source.IsLeft(length) == false) return;
  
     unsigned int words = (length + WORD_SIZE - 1) / WORD_SIZE;
     words = RoundupSize(words);
