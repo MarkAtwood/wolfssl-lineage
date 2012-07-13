@@ -161,6 +161,8 @@ word32 GetLength(Source& source)
     else
         length = b;
 
+    if (source.IsLeft(length) == false) return 0;
+
     return length;
 }
 
