@@ -1168,6 +1168,8 @@ void sendCertificateVerify(SSL& ssl, BufferOutput buffer)
 {
     if (ssl.GetError()) return;
 
+    if(ssl.getCrypto().get_certManager().sendBlankCert()) return;
+
     CertificateVerify  verify;
     verify.Build(ssl);
     RecordLayerHeader  rlHeader;

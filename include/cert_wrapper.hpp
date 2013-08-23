@@ -96,6 +96,7 @@ class CertManager {
     bool verifyNone_;                   // no error if verify fails
     bool failNoCert_;
     bool sendVerify_;
+    bool sendBlankCert_;
     VerifyCallback verifyCallback_;     // user verify callback
 public:
     CertManager();
@@ -122,11 +123,13 @@ public:
     bool verifyNone() const;
     bool failNoCert() const;
     bool sendVerify() const;
+    bool sendBlankCert() const;
 
     void setVerifyPeer();
     void setVerifyNone();
     void setFailNoCert();
     void setSendVerify();
+    void setSendBlankCert();
     void setPeerX509(X509*);
     void setVerifyCallback(VerifyCallback);
 private:

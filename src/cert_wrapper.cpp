@@ -99,7 +99,7 @@ opaque* x509::use_buffer()
 //CertManager
 CertManager::CertManager()
     : peerX509_(0), verifyPeer_(false), verifyNone_(false), failNoCert_(false),
-      sendVerify_(false), verifyCallback_(0)
+      sendVerify_(false), sendBlankCert_(false), verifyCallback_(0)
 {}
 
 
@@ -139,6 +139,12 @@ bool CertManager::sendVerify() const
 }
 
 
+bool CertManager::sendBlankCert() const
+{
+    return sendBlankCert_;
+}
+
+
 void CertManager::setVerifyPeer()
 {
     verifyPeer_ = true;
@@ -160,6 +166,12 @@ void CertManager::setFailNoCert()
 void CertManager::setSendVerify()
 {
     sendVerify_ = true;
+}
+
+
+void CertManager::setSendBlankCert()
+{
+    sendBlankCert_ = true;
 }
 
 
