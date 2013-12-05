@@ -1,28 +1,21 @@
-  /* asn.cpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (c) 2005, 2012, Oracle and/or its affiliates. All rights reserved.
+   Use is subject to license terms.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 /* asn.cpp implements ASN1 BER, PublicKey, and x509v3 decoding 
 */
@@ -768,7 +761,7 @@ void CertDecoder::GetName(NameType nt)
     while (source_.get_index() < length) {
         GetSet();
         if (source_.GetError().What() == SET_E) {
-            source_.SetError(NO_ERROR_E);  // extensions may only have sequence 
+            source_.SetError(NO_ERROR_E);  // extensions may only have sequence
             source_.prev();
         }
         GetSequence();
@@ -839,8 +832,10 @@ void CertDecoder::GetName(NameType nt)
             if (source_.IsLeft(length) == false) return;
 
             if (email) {
-                if (!(ptr = AddTag(ptr, buf_end, "/emailAddress=", 14, length)))
-                    return; 
+                if (!(ptr = AddTag(ptr, buf_end, "/emailAddress=", 14, length))) {
+                    source_.SetError(CONTENT_E);
+                    return;
+                }
             }
 
             source_.advance(length);
@@ -977,26 +972,12 @@ bool CertDecoder::ConfirmSignature(Source& pub)
         hasher.reset(NEW_TC SHA);
         ht = SHAh;
     }
-    else if (signatureOID_ == SHA256wRSA || signatureOID_ == SHA256wDSA) {
-        hasher.reset(NEW_TC SHA256);
-        ht = SHA256h;
-    }
-#ifdef WORD64_AVAILABLE
-    else if (signatureOID_ == SHA384wRSA) {
-        hasher.reset(NEW_TC SHA384);
-        ht = SHA384h;
-    }
-    else if (signatureOID_ == SHA512wRSA) {
-        hasher.reset(NEW_TC SHA512);
-        ht = SHA512h;
-    }
-#endif
     else {
         source_.SetError(UNKOWN_SIG_E);
         return false;
     }
 
-    byte digest[MAX_SHA2_DIGEST_SIZE];      // largest size
+    byte digest[SHA::DIGEST_SIZE];      // largest size
 
     hasher->Update(source_.get_buffer() + certBegin_, sigIndex_ - certBegin_);
     hasher->Final(digest);
@@ -1069,12 +1050,6 @@ word32 DER_Encoder::SetAlgoID(HashType aOID, byte* output)
                                       0x02, 0x05, 0x05, 0x00  };
     static const byte md2AlgoID[] = { 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d,
                                       0x02, 0x02, 0x05, 0x00};
-    static const byte sha256AlgoID[] = { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03,
-                                         0x04, 0x02, 0x01, 0x05, 0x00 };
-    static const byte sha384AlgoID[] = { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03,
-                                         0x04, 0x02, 0x02, 0x05, 0x00 };
-    static const byte sha512AlgoID[] = { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03,
-                                         0x04, 0x02, 0x03, 0x05, 0x00 };
 
     int algoSz = 0;
     const byte* algoName = 0;
@@ -1083,21 +1058,6 @@ word32 DER_Encoder::SetAlgoID(HashType aOID, byte* output)
     case SHAh:
         algoSz = sizeof(shaAlgoID);
         algoName = shaAlgoID;
-        break;
-
-    case SHA256h:
-        algoSz = sizeof(sha256AlgoID);
-        algoName = sha256AlgoID;
-        break;
-
-    case SHA384h:
-        algoSz = sizeof(sha384AlgoID);
-        algoName = sha384AlgoID;
-        break;
-
-    case SHA512h:
-        algoSz = sizeof(sha512AlgoID);
-        algoName = sha512AlgoID;
         break;
 
     case MD2h:
