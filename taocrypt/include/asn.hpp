@@ -1,28 +1,20 @@
-/* asn.hpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (c) 2005, 2012, Oracle and/or its affiliates. All rights reserved.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 /* asn.hpp provides ASN1 BER, PublicKey, and x509v3 decoding 
 */
@@ -119,7 +111,7 @@ enum Constants
     MAX_LENGTH_SZ =  5,    
     MAX_SEQ_SZ    =  5,    // enum(seq|con) + length(4)
     MAX_ALGO_SIZE =  9,
-    MAX_DIGEST_SZ = 69,    // SHA512 + enum(Bit or Octet) + length(4)
+    MAX_DIGEST_SZ = 25,    // SHA + enum(Bit or Octet) + length(4)
     DSA_SIG_SZ    = 40,
     ASN_NAME_MAX  = 512    // max total of all included names
 };
@@ -265,11 +257,8 @@ typedef STL::list<Signer*> SignerList;
 
 
 enum ContentType { HUH = 651 };
-enum SigType  { SHAwDSA = 517, MD2wRSA = 646, MD5wRSA = 648, SHAwRSA = 649,
-                SHA256wRSA = 655, SHA384wRSA = 656, SHA512wRSA = 657,
-                SHA256wDSA = 416 };
-enum HashType { MD2h = 646, MD5h = 649, SHAh = 88, SHA256h = 414, SHA384h = 415,
-                SHA512h = 416 };
+enum SigType  { SHAwDSA = 517, MD2wRSA = 646, MD5wRSA = 648, SHAwRSA =649};
+enum HashType { MD2h = 646, MD5h = 649, SHAh = 88 };
 enum KeyType  { DSAk = 515, RSAk = 645 };     // sums of algo OID
 
 
