@@ -194,9 +194,9 @@ public:
 
     ~Block() { allocator_.deallocate(buffer_, sz_); }
 private:
+    A      allocator_;
     word32 sz_;     // size in Ts
     T*     buffer_;
-    A      allocator_;
 };
 
 
