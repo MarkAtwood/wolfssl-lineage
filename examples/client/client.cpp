@@ -69,8 +69,10 @@ void client_test(void* args)
     NonBlockingSSL_Connect(ssl, ctx, sockfd);
 #else
     // if you get an error here see note at top of README
-    if (SSL_connect(ssl) != SSL_SUCCESS)   
+    if (SSL_connect(ssl) != SSL_SUCCESS) {
+        printf("connect err = %d\n", SSL_get_error(ssl, 0));
         ClientError(ctx, ssl, sockfd, "SSL_connect failed");
+    }
 #endif
     showPeer(ssl);
 

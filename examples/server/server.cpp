@@ -69,8 +69,10 @@ THREAD_RETURN YASSL_API server_test(void* args)
 #ifdef NON_BLOCKING
     NonBlockingSSL_Accept(ssl, ctx, clientfd);
 #else
-    if (SSL_accept(ssl) != SSL_SUCCESS)
+    if (SSL_accept(ssl) != SSL_SUCCESS) {
+        printf("accept err = %d\n", SSL_get_error(ssl, 0));
         ServerError(ctx, ssl, clientfd, "SSL_accept failed");
+    }
 #endif
      
     showPeer(ssl);
