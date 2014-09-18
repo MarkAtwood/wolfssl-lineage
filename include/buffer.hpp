@@ -55,7 +55,11 @@ const uint AUTO = 0xFEEDBEEF;
 
 
 struct NoCheck {
-    void check(uint, uint);
+    int check(uint, uint);
+};
+
+struct Check {
+    int check(uint, uint);
 };
 
 /* input_buffer operates like a smart c style array with a checking option, 
@@ -67,11 +71,13 @@ struct NoCheck {
  * write to the buffer bulk wise and have the correct size
  */
 
-class input_buffer : public NoCheck {
+class input_buffer : public Check {
     uint   size_;                // number of elements in buffer
     uint   current_;             // current offset position in buffer
     byte*  buffer_;              // storage for buffer
     byte*  end_;                 // end of storage marker
+    int    error_;               // error number
+    byte   zero_;                // for returning const reference to zero byte
 public:
     input_buffer();
 
@@ -100,6 +106,10 @@ public:
 
     uint get_remaining() const;
 
+    int  get_error()     const;
+
+    void set_error();
+
     void set_current(uint i);
 
     // read only access through [], advance current
@@ -110,7 +120,7 @@ public:
     bool eof();
 
     // peek ahead
-    byte peek() const;
+    byte peek();
 
     // write function, should use at/near construction
     void assign(const byte* t, uint s);
