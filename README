@@ -12,6 +12,8 @@ before calling SSL_new();
 
 *** end Note ***
 
+yaSSL Release notes, version 2.3.6 (11/xx/2014)
+
 yaSSL Release notes, version 2.3.5 (9/29/2014)
 
     This release of yaSSL fixes an RSA Padding check vulnerability reported by
