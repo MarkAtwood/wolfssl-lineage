@@ -55,7 +55,6 @@ void client_test(void* args)
 #ifdef NON_BLOCKING
     tcp_set_nonblocking(sockfd);
 #endif
-
     SSL_METHOD* method = TLSv1_client_method();
     SSL_CTX*    ctx = SSL_CTX_new(method);
 
