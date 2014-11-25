@@ -51,6 +51,9 @@ THREAD_RETURN YASSL_API server_test(void* args)
     char**   argv     = 0;
 
     set_args(argc, argv, *static_cast<func_args*>(args));
+#ifdef SERVER_READY_FILE
+    set_file_ready("server_ready", *static_cast<func_args*>(args));
+#endif
     tcp_accept(sockfd, clientfd, *static_cast<func_args*>(args));
 
     tcp_close(sockfd);
