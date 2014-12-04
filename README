@@ -14,9 +14,9 @@ before calling SSL_new();
 
 yaSSL Release notes, version 2.3.6 (11/25/2014)
 
-    This release of yaSSL fixes some valgrind warnings/erros including
+    This release of yaSSL fixes some valgrind warnings/errors including
     uninitialized reads and off by one index errors induced from fuzzing
-    the handshake.  These were reproted by Orcale. 
+    the handshake.  These were reported by Oracle. 
 
 yaSSL Release notes, version 2.3.5 (9/29/2014)
 
