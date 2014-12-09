@@ -161,13 +161,13 @@ const char* const svrKey3  = "../../../certs/server-key.pem";
 
 // server dsa
 const char* const dsaCert = "../certs/dsa-cert.pem";
-const char* const dsaKey  = "../certs/dsa512.der";
+const char* const dsaKey  = "../certs/dsa1024.der";
 
 const char* const dsaCert2 = "../../certs/dsa-cert.pem";
-const char* const dsaKey2  = "../../certs/dsa512.der";
+const char* const dsaKey2  = "../../certs/dsa1024.der";
 
 const char* const dsaCert3 = "../../../certs/dsa-cert.pem";
-const char* const dsaKey3  = "../../../certs/dsa512.der";
+const char* const dsaKey3  = "../../../certs/dsa1024.der";
 
 
 // CA 
@@ -206,6 +206,13 @@ inline void store_ca(SSL_CTX* ctx)
         if (SSL_CTX_load_verify_locations(ctx, certSuite, 0) != SSL_SUCCESS)
             if (SSL_CTX_load_verify_locations(ctx, certDebug,0) != SSL_SUCCESS)
                 err_sys("failed to use certificate: certs/client-cert.pem");
+
+    // DSA cert 
+    if (SSL_CTX_load_verify_locations(ctx, dsaCert, 0) != SSL_SUCCESS)
+        if (SSL_CTX_load_verify_locations(ctx, dsaCert2, 0) != SSL_SUCCESS)
+            if (SSL_CTX_load_verify_locations(ctx, dsaCert3, 0) != SSL_SUCCESS)
+                err_sys("failed to use certificate: certs/dsa-cert.pem");
+
 }
 
 
@@ -282,7 +289,7 @@ inline void set_dsaServerCerts(SSL_CTX* ctx)
             != SSL_SUCCESS) 
                 if (SSL_CTX_use_PrivateKey_file(ctx, dsaKey3,SSL_FILETYPE_ASN1)
                     != SSL_SUCCESS) 
-                    err_sys("failed to use key file: certs/dsa512.der");
+                    err_sys("failed to use key file: certs/dsa1024.der");
 }
 
 

@@ -1,5 +1,8 @@
 /* server.cpp */
 
+// takes 2 optional command line argument to make scripting
+// if the first  command line argument is 'n' client auth is disabled
+// if the second command line argument is 'd' DSA certs are used instead of RSA
 
 #include "../../testsuite/test.hpp"
 
@@ -62,8 +65,21 @@ THREAD_RETURN YASSL_API server_test(void* args)
     SSL_CTX*    ctx = SSL_CTX_new(method);
 
     //SSL_CTX_set_cipher_list(ctx, "RC4-SHA:RC4-MD5");
-    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
-    set_serverCerts(ctx);
+    
+    // should we disable client auth
+    if (argc >= 2 && argv[1][0] == 'n')
+        printf("disabling client auth\n");
+    else
+        SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
+
+    // are we using DSA certs
+    if (argc >= 3 && argv[2][0] == 'd') {
+        printf("using DSA certs\n");
+        set_dsaServerCerts(ctx);
+    }
+    else {
+        set_serverCerts(ctx);
+    }
     DH* dh = set_tmpDH(ctx);
 
     SSL* ssl = SSL_new(ctx);

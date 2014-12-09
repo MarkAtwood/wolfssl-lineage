@@ -1,5 +1,9 @@
 /* client.cpp  */
 
+// takes an optional command line argument of cipher list to make scripting
+// easier
+
+
 #include "../../testsuite/test.hpp"
 
 //#define TEST_RESUME
@@ -59,6 +63,12 @@ void client_test(void* args)
     SSL_CTX*    ctx = SSL_CTX_new(method);
 
     set_certs(ctx);
+    if (argc >= 2) {
+        printf("setting cipher list to %s\n", argv[1]);
+        if (SSL_CTX_set_cipher_list(ctx, argv[1]) != SSL_SUCCESS) {
+            ClientError(ctx, NULL, sockfd, "set_cipher_list error\n");
+        }
+    }
     SSL* ssl = SSL_new(ctx);
 
     SSL_set_fd(ssl, sockfd);
