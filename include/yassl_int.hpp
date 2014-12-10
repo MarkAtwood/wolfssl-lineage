@@ -116,6 +116,25 @@ enum AcceptState {
 };
 
 
+// track received messages to explicitly disallow duplicate messages
+struct RecvdMessages {
+    uint8 gotClientHello_;
+    uint8 gotServerHello_;
+    uint8 gotCert_;
+    uint8 gotServerKeyExchange_;
+    uint8 gotCertRequest_;
+    uint8 gotServerHelloDone_;
+    uint8 gotCertVerify_;
+    uint8 gotClientKeyExchange_;
+    uint8 gotFinished_;
+    RecvdMessages() : gotClientHello_(0), gotServerHello_(0), gotCert_(0),
+                      gotServerKeyExchange_(0), gotCertRequest_(0),
+                      gotServerHelloDone_(0), gotCertVerify_(0),
+                      gotClientKeyExchange_(0), gotFinished_(0)
+                    {} 
+};
+
+
 // combines all states
 class States {
     RecordLayerState recordLayer_;
@@ -124,6 +143,7 @@ class States {
     ServerState      serverState_;
     ConnectState     connectState_;
     AcceptState      acceptState_;
+    RecvdMessages    recvdMessages_;
     char             errorString_[MAX_ERROR_SZ];
     YasslError       what_;
 public:
@@ -146,6 +166,7 @@ public:
     AcceptState&      UseAccept();
     char*             useString();
     void              SetError(YasslError);
+    int               SetMessageRecvd(HandShakeType);
 private:
     States(const States&);              // hide copy
     States& operator=(const States&);   // and assign
