@@ -4,6 +4,7 @@
 # 
 
 
+no_pid=-1
 server_pid=$no_pid
 
 
@@ -26,12 +27,24 @@ do_trap() {
 trap do_trap INT TERM
 
 
+# make sure example server and client are built
+if test ! -s ../examples/server/server; then
+    echo "Please build yaSSL first, example server missing"
+    exit -1
+fi
+
+if test ! -s ../examples/client/client; then
+    echo "Please build yaSSL first, example client missing"
+    exit -1
+fi
+
+
 # non DSA suites
 for suite in {"DHE-RSA-AES256-SHA","AES256-SHA","DHE-RSA-AES128-SHA","AES128-SHA","AES256-RMD","AES128-RMD","DES-CBC3-RMD","DHE-RSA-AES256-RMD","DHE-RSA-AES128-RMD","DHE-RSA-DES-CBC3-RMD","RC4-SHA","RC4-MD5","DES-CBC3-SHA","DES-CBC-SHA","EDH-RSA-DES-CBC3-SHA","EDH-RSA-DES-CBC-SHA"}
 do
   for client_auth in {y,n}
   do
-    echo "Trying $suite client auth = $client_auth ...\n"
+    echo "Trying $suite client auth = $client_auth ..."
 
     if test -e server_ready; then
         echo -e "removing exisitng server_ready file"
@@ -76,7 +89,7 @@ for suite in {"DHE-DSS-AES256-SHA","DHE-DSS-AES128-SHA","DHE-DSS-AES256-RMD","DH
 do
   for client_auth in {y,n}
   do
-    echo "Trying $suite client auth = $client_auth ...\n"
+    echo "Trying $suite client auth = $client_auth ..."
 
     if test -e server_ready; then
         echo -e "removing exisitng server_ready file"

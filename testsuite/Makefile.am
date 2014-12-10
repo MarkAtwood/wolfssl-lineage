@@ -8,4 +8,5 @@ testsuite_LDFLAGS  = -L../src/ -L../taocrypt/src
 testsuite_CXXFLAGS = -DNO_MAIN_DRIVER -Wall -Wno-unused
 testsuite_LDADD        = ../src/libyassl.la ../taocrypt/src/libtaocrypt.la
 testsuite_DEPENDENCIES = ../src/libyassl.la ../taocrypt/src/libtaocrypt.la
-EXTRA_DIST = testsuite.dsp test.hpp input quit make.bat testsuite.vcproj
+EXTRA_DIST = testsuite.dsp test.hpp input quit make.bat testsuite.vcproj \
+			 cipher-test.sh

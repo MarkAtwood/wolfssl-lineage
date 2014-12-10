@@ -882,6 +882,12 @@ void ChangeCipherSpec::Process(input_buffer& input, SSL& ssl)
         return;
     }
 
+    // detect duplicate change_cipher
+    if (ssl.getSecurity().get_parms().pending_ == false) {
+        ssl.order_error();
+        return;
+    }
+
     ssl.useSecurity().use_parms().pending_ = false;
     if (ssl.getSecurity().get_resuming()) {
         if (ssl.getSecurity().get_parms().entity_ == client_end)
