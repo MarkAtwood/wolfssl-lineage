@@ -1,27 +1,19 @@
-/* ssl.h                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
+/*
+   Copyright (c) 2005, 2014, Oracle and/or its affiliates. All rights reserved.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
  */
 
 /*  ssl.h defines openssl compatibility layer 
@@ -42,7 +34,7 @@
 #include "rsa.h"
 
 
-#define YASSL_VERSION "2.3.7"
+#define YASSL_VERSION "2.3.7b"
 
 
 #if defined(__cplusplus)
@@ -546,11 +538,23 @@ void MD5_Final(unsigned char*, MD5_CTX*);
 #define SSL_DEFAULT_CIPHER_LIST ""   /* default all */
 
 
-/* yaSSL adds */
+/* yaSSL extensions */
 int SSL_set_compression(SSL*);   /* turn on yaSSL zlib compression */
+char *yaSSL_ASN1_TIME_to_string(ASN1_TIME *time, char *buf, size_t len);
 
+#include "transport_types.h"
 
+/*
+  Set functions for yaSSL to use in order to send and receive data.
 
+  These hooks are offered in order to enable non-blocking I/O. If
+  not set, yaSSL defaults to using send() and recv().
+
+  @todo Remove hooks and accompanying code when yaSSL is fixed.
+*/
+void yaSSL_transport_set_ptr(SSL *, void *);
+void yaSSL_transport_set_recv_function(SSL *, yaSSL_recv_func_t);
+void yaSSL_transport_set_send_function(SSL *, yaSSL_send_func_t);
 
 #if defined(__cplusplus) && !defined(YASSL_MYSQL_COMPATIBLE)
 }      /* namespace  */

@@ -1,28 +1,20 @@
- /* ssl.cpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (c) 2005, 2014, Oracle and/or its affiliates. All rights reserved.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 /*  SSL source implements all openssl compatibility API functions
  *
@@ -45,6 +37,8 @@
 #include "file.hpp"             // for TaoCrypt Source
 #include "coding.hpp"           // HexDecoder
 #include "helpers.hpp"          // for placement new hack
+#include "rsa.hpp"              // for TaoCrypt RSA key decode
+#include "dsa.hpp"              // for TaoCrypt DSA key decode
 #include <stdio.h>
 
 #ifdef _WIN32
@@ -62,6 +56,8 @@ namespace yaSSL {
 
 int read_file(SSL_CTX* ctx, const char* file, int format, CertType type)
 {
+    int ret = SSL_SUCCESS;
+
     if (format != SSL_FILETYPE_ASN1 && format != SSL_FILETYPE_PEM)
         return SSL_BAD_FILETYPE;
 
@@ -149,8 +145,31 @@ int read_file(SSL_CTX* ctx, const char* file, int format, CertType type)
             }
         }
     }
+
+    if (type == PrivateKey && ctx->privateKey_) {
+        // see if key is valid early
+        TaoCrypt::Source rsaSource(ctx->privateKey_->get_buffer(),
+                                   ctx->privateKey_->get_length());
+        TaoCrypt::RSA_PrivateKey rsaKey;
+        rsaKey.Initialize(rsaSource);
+
+        if (rsaSource.GetError().What()) {
+            // rsa failed see if DSA works
+
+            TaoCrypt::Source dsaSource(ctx->privateKey_->get_buffer(),
+                                       ctx->privateKey_->get_length());
+            TaoCrypt::DSA_PrivateKey dsaKey;
+            dsaKey.Initialize(dsaSource);
+
+            if (rsaSource.GetError().What()) {
+                // neither worked
+                ret = SSL_FAILURE;
+            }
+        }
+    }
+
     fclose(input);
-    return SSL_SUCCESS;
+    return ret;
 }
 
 
@@ -602,7 +621,7 @@ int SSL_get_error(SSL* ssl, int /*previous*/)
    only need to turn on for client, becuase server on by default if built in
    but calling for server will tell you whether it's available or not
 */
-int yaSSL_set_compression(SSL* ssl)
+int SSL_set_compression(SSL* ssl)   /* Chad didn't rename to ya~ because it is prob. bug. */
 {
     return ssl->SetCompression();
 }
@@ -753,7 +772,7 @@ void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback vc)
 int SSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file,
                                   const char* path)
 {
-    int       ret = SSL_SUCCESS;
+    int       ret = SSL_FAILURE;
     const int HALF_PATH = 128;
 
     if (file) ret = read_file(ctx, file, SSL_FILETYPE_PEM, CA);
@@ -1205,8 +1224,7 @@ void SSL_CTX_set_default_passwd_cb_userdata(SSL_CTX* ctx, void* userdata)
 
 X509* SSL_get_certificate(SSL* ssl)
 {
-    // only used to pass to get_privatekey which isn't used
-    return 0;
+    return ssl->getCrypto().get_certManager().get_selfX509();
 }
 
 
@@ -1698,6 +1716,39 @@ unsigned long ERR_get_error()
 
     // end stunnel needs
 
+    char *yaSSL_ASN1_TIME_to_string(ASN1_TIME *time, char *buf, size_t len)
+    {
+      tm t;
+      static const char *month_names[12]=
+      {
+        "Jan","Feb","Mar","Apr","May","Jun",
+        "Jul","Aug","Sep","Oct","Nov","Dec"
+      };
+
+      TaoCrypt::ASN1_TIME_extract(time->data, time->type, &t);
+      snprintf(buf, len, "%s %2d %02d:%02d:%02d %d GMT",
+               month_names[t.tm_mon], t.tm_mday, t.tm_hour, t.tm_min, 
+               t.tm_sec, t.tm_year + 1900);
+      return buf;
+    }
+
+
+    void yaSSL_transport_set_ptr(SSL *ssl, void *ptr)
+    {
+      ssl->useSocket().set_transport_ptr(ptr);
+    }
+
+
+    void yaSSL_transport_set_recv_function(SSL *ssl, yaSSL_recv_func_t func)
+    {
+      ssl->useSocket().set_transport_recv_function(func);
+    }
+
+
+    void yaSSL_transport_set_send_function(SSL *ssl, yaSSL_send_func_t func)
+    {
+      ssl->useSocket().set_transport_send_function(func);
+    }
 
 } // extern "C"
 } // namespace

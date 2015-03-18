@@ -1,28 +1,20 @@
-  /* asn.cpp                                
- *
- * Copyright (C) 2003 Sawtooth Consulting Ltd.
- *
- * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
- * (todd at yassl.com, see www.yassl.com).
- *
- * yaSSL is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are special exceptions to the terms and conditions of the GPL as it
- * is applied to yaSSL. View the full text of the exception in the file
- * FLOSS-EXCEPTIONS in the directory of this software distribution.
- *
- * yaSSL is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
- */
+/*
+   Copyright (c) 2000, 2014, Oracle and/or its affiliates. All rights reserved.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING. If not, write to the
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+   MA  02110-1301  USA.
+*/
 
 /* asn.cpp implements ASN1 BER, PublicKey, and x509v3 decoding 
 */
@@ -43,6 +35,54 @@
 
 
 namespace TaoCrypt {
+
+// like atoi but only use first byte
+word32 btoi(byte b)
+{
+    return b - 0x30;
+}
+
+
+// two byte date/time, add to value
+void GetTime(int *value, const byte* date, int& i)
+{
+    *value += btoi(date[i++]) * 10;
+    *value += btoi(date[i++]);
+}
+
+
+bool ASN1_TIME_extract(const unsigned char* date, unsigned char format,
+                       tm *t)
+{
+  int i = 0;
+  memset(t, 0, sizeof (tm));
+
+  if (format != UTC_TIME && format != GENERALIZED_TIME)
+    return false;
+
+  if (format == UTC_TIME) {
+    if (btoi(date[0]) >= 5)
+      t->tm_year = 1900;
+    else
+      t->tm_year = 2000;
+  }
+  else  { // format == GENERALIZED_TIME
+    t->tm_year += btoi(date[i++]) * 1000;
+    t->tm_year += btoi(date[i++]) * 100;
+  }
+
+  GetTime(&t->tm_year, date, i);     t->tm_year -= 1900; // adjust
+  GetTime(&t->tm_mon,  date, i);     t->tm_mon  -= 1;    // adjust
+  GetTime(&t->tm_mday, date, i);
+  GetTime(&t->tm_hour, date, i);
+  GetTime(&t->tm_min,  date, i);
+  GetTime(&t->tm_sec,  date, i);
+
+  if (date[i] != 'Z')     // only Zulu supported for this profile
+    return false;
+  return true;
+}
+
 
 namespace { // locals
 
@@ -78,47 +118,12 @@ bool operator<(tm& a, tm&b)
 }
 
 
-// like atoi but only use first byte
-word32 btoi(byte b)
-{
-    return b - 0x30;
-}
-
-
-// two byte date/time, add to value
-void GetTime(int& value, const byte* date, int& i)
-{
-    value += btoi(date[i++]) * 10;
-    value += btoi(date[i++]);
-}
-
-
 // Make sure before and after dates are valid
 bool ValidateDate(const byte* date, byte format, CertDecoder::DateType dt)
 {
     tm certTime;
-    memset(&certTime, 0, sizeof(certTime));
-    int i = 0;
 
-    if (format == UTC_TIME) {
-        if (btoi(date[0]) >= 5)
-            certTime.tm_year = 1900;
-        else
-            certTime.tm_year = 2000;
-    }
-    else  { // format == GENERALIZED_TIME
-        certTime.tm_year += btoi(date[i++]) * 1000;
-        certTime.tm_year += btoi(date[i++]) * 100;
-    }
-
-    GetTime(certTime.tm_year, date, i);     certTime.tm_year -= 1900; // adjust
-    GetTime(certTime.tm_mon,  date, i);     certTime.tm_mon  -= 1;    // adjust
-    GetTime(certTime.tm_mday, date, i);
-    GetTime(certTime.tm_hour, date, i); 
-    GetTime(certTime.tm_min,  date, i); 
-    GetTime(certTime.tm_sec,  date, i); 
-
-    if (date[i] != 'Z')     // only Zulu supported for this profile
+    if (!ASN1_TIME_extract(date, format, &certTime))
         return false;
 
     time_t ltime = time(0);
@@ -890,10 +895,12 @@ void CertDecoder::GetDate(DateType dt)
     if (dt == BEFORE) {
         memcpy(beforeDate_, date, length);
         beforeDate_[length] = 0;
+        beforeDateType_= b;
     }
     else {  // after
         memcpy(afterDate_, date, length);
         afterDate_[length] = 0;
+        afterDateType_= b;
     }       
 }
 
@@ -1081,7 +1088,6 @@ word32 DER_Encoder::SetAlgoID(HashType aOID, byte* output)
                                          0x04, 0x02, 0x02, 0x05, 0x00 };
     static const byte sha512AlgoID[] = { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03,
                                          0x04, 0x02, 0x03, 0x05, 0x00 };
-
     int algoSz = 0;
     const byte* algoName = 0;
 
