@@ -1,20 +1,28 @@
-/*
-   Copyright (c) 2005, 2014, Oracle and/or its affiliates. All rights reserved.
-
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; version 2 of the License.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; see the file COPYING. If not, write to the
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
-   MA  02110-1301  USA.
-*/
+/* yassl_imp.cpp                                
+ *
+ * Copyright (C) 2003 Sawtooth Consulting Ltd.
+ *
+ * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
+ * (todd at yassl.com, see www.yassl.com).
+ *
+ * yaSSL is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * There are special exceptions to the terms and conditions of the GPL as it
+ * is applied to yaSSL. View the full text of the exception in the file
+ * FLOSS-EXCEPTIONS in the directory of this software distribution.
+ *
+ * yaSSL is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
+ */
 
 /*  yaSSL source implements all SSL.v3 secification structures.
  */
@@ -196,9 +204,16 @@ void DH_Server::build(SSL& ssl)
     sha.update(tmp.get_buffer(), tmp.get_size());
     sha.get_digest(&hash[MD5_LEN]);
 
-    if (ssl.getSecurity().get_parms().sig_algo_ == rsa_sa_algo)
+    if (ssl.getSecurity().get_parms().sig_algo_ == rsa_sa_algo) {
         auth->sign(signature_, hash, sizeof(hash),
                    ssl.getCrypto().get_random());
+        // check for rsa signautre fault
+        if (!auth->verify(hash, sizeof(hash), signature_,
+                                              auth->get_signatureLength())) {
+            ssl.SetError(rsaSignFault_error);
+            return;
+        }
+    }
     else {
         auth->sign(signature_, &hash[MD5_LEN], SHA_LEN,
                    ssl.getCrypto().get_random());
@@ -956,7 +971,7 @@ void Alert::Process(input_buffer& input, SSL& ssl)
         else
             hmac(ssl, verify, data, aSz, alert, true);
 
-        // read mac and skip fill
+        // read mac and fill
         int    digestSz = ssl.getCrypto().get_digest().get_digestSize();
         opaque mac[SHA_LEN];
         input.read(mac, digestSz);
@@ -1198,7 +1213,7 @@ void Data::Process(input_buffer& input, SSL& ssl)
     }
 
     int msgSz = ssl.getSecurity().get_parms().encrypt_size_;
-    int pad   = 0, padSz = 0;
+    int pad   = 0, padByte = 0;
     int ivExtra = 0;
     int digestSz = ssl.getCrypto().get_digest().get_digestSize();
     const byte* rawData = input.get_buffer() + input.get_current();
@@ -1208,7 +1223,7 @@ void Data::Process(input_buffer& input, SSL& ssl)
         if (ssl.isTLSv1_1())  // IV
             ivExtra = ssl.getCrypto().get_cipher().get_blockSize();
         pad = *(input.get_buffer() + input.get_current() + msgSz -ivExtra - 1);
-        padSz = 1;
+        padByte = 1;
 
         if (ssl.isTLS()) {
             if (timing_verify(ssl, rawData, pad,digestSz, msgSz-ivExtra) != 0) {
@@ -1237,7 +1252,7 @@ void Data::Process(input_buffer& input, SSL& ssl)
         }
     }
 
-    int dataSz = msgSz - ivExtra - digestSz - pad - padSz;
+    int dataSz = msgSz - ivExtra - digestSz - pad - padByte;   
 
     if (dataSz < 0 || dataSz > (MAX_RECORD_SIZE + COMPRESS_EXTRA)) {
         ssl.SetError(bad_input);
@@ -1264,7 +1279,7 @@ void Data::Process(input_buffer& input, SSL& ssl)
     }
 
     // advance past mac and fill
-    input.set_current(input.get_current() + digestSz + pad + padSz);
+    input.set_current(input.get_current() + digestSz + pad + padByte);
     if (input.get_error()) {
         ssl.SetError(bad_input);
         return;
@@ -1289,16 +1304,16 @@ output_buffer& operator<<(output_buffer& output, const HandShakeBase& hs)
 Certificate::Certificate(const x509* cert) : cert_(cert) 
 {
     if (cert)
-      set_length(cert_->get_length() + 2 * CERT_HEADER); // list and cert size
+        set_length(cert_->get_length() + 2 * CERT_HEADER); // list and cert size
     else
-      set_length(CERT_HEADER); // total blank cert size, just list header
+        set_length(CERT_HEADER); // total blank cert size, just list header
 }
 
 
 const opaque* Certificate::get_buffer() const
 {
     if (cert_)
-      return cert_->get_buffer();
+        return cert_->get_buffer();
 
     return NULL;
 }
@@ -1311,13 +1326,13 @@ output_buffer& operator<<(output_buffer& output, const Certificate& cert)
     opaque tmp[CERT_HEADER];
 
     if ((int)sz > CERT_HEADER)
-      sz -= 2 * CERT_HEADER;  // actual cert, not including headers
+        sz -= 2 * CERT_HEADER;  // actual cert, not including headers
     else {
-      sz = 0;                 // blank cert case
-      c32to24(sz, tmp);
-      output.write(tmp, CERT_HEADER);
+        sz = 0;                 // blank cert case 
+        c32to24(sz, tmp);
+        output.write(tmp, CERT_HEADER);
 
-      return output;
+        return output;
     }
 
     c32to24(sz + CERT_HEADER, tmp);
@@ -1375,9 +1390,9 @@ void Certificate::Process(input_buffer& input, SSL& ssl)
             return;
         }
         if (cert_sz) {
-          x509* myCert;
-          cm.AddPeerCert(myCert = NEW_YS x509(cert_sz));
-          input.read(myCert->use_buffer(), myCert->get_length());
+            x509* myCert;
+            cm.AddPeerCert(myCert = NEW_YS x509(cert_sz));
+            input.read(myCert->use_buffer(), myCert->get_length());
         }
 
         list_sz -= cert_sz + CERT_HEADER;
@@ -2118,7 +2133,7 @@ void CertificateRequest::Process(input_buffer& input, SSL& ssl)
 
     cm.setSendVerify();
     if (cm.get_cert() == NULL || cm.get_privateKey() == NULL)
-      cm.setSendBlankCert();  // send blank cert, OpenSSL requires now
+        cm.setSendBlankCert();  // send blank cert, OpenSSL requires now
 }
 
 
@@ -2159,6 +2174,12 @@ void CertificateVerify::Build(SSL& ssl)
         memcpy(sig.get(), len, VERIFY_HEADER);
         rsa.sign(sig.get() + VERIFY_HEADER, hashes_.md5_, sizeof(Hashes),
                  ssl.getCrypto().get_random());
+        // check for rsa signautre fault
+        if (!rsa.verify(hashes_.md5_, sizeof(Hashes), sig.get() + VERIFY_HEADER,
+                                                      rsa.get_cipherLength())) {
+            ssl.SetError(rsaSignFault_error);
+            return;
+        }
     }
     else {  // DSA
         DSS dss(cert.get_privateKey(), cert.get_privateKeyLength(), false);
@@ -2419,6 +2440,12 @@ void Finished::Process(input_buffer& input, SSL& ssl)
         fill = input[AUTO];
     if (input.get_error()) {
         ssl.SetError(bad_input);
+        return;
+    }
+
+    // verify mac
+    if (memcmp(mac, verifyMAC, digestSz)) {
+        ssl.SetError(verify_error);
         return;
     }
 

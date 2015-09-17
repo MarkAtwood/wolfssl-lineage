@@ -1,20 +1,28 @@
-/*
-   Copyright (c) 2005, 2014, Oracle and/or its affiliates. All rights reserved.
-
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; version 2 of the License.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; see the file COPYING. If not, write to the
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
-   MA  02110-1301  USA.
-*/
+ /* ssl.cpp                                
+ *
+ * Copyright (C) 2003 Sawtooth Consulting Ltd.
+ *
+ * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
+ * (todd at yassl.com, see www.yassl.com).
+ *
+ * yaSSL is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * There are special exceptions to the terms and conditions of the GPL as it
+ * is applied to yaSSL. View the full text of the exception in the file
+ * FLOSS-EXCEPTIONS in the directory of this software distribution.
+ *
+ * yaSSL is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
+ */
 
 /*  SSL source implements all openssl compatibility API functions
  *
@@ -621,7 +629,7 @@ int SSL_get_error(SSL* ssl, int /*previous*/)
    only need to turn on for client, becuase server on by default if built in
    but calling for server will tell you whether it's available or not
 */
-int SSL_set_compression(SSL* ssl)   /* Chad didn't rename to ya~ because it is prob. bug. */
+int yaSSL_set_compression(SSL* ssl)
 {
     return ssl->SetCompression();
 }
@@ -772,7 +780,7 @@ void SSL_CTX_set_verify(SSL_CTX* ctx, int mode, VerifyCallback vc)
 int SSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file,
                                   const char* path)
 {
-    int       ret = SSL_FAILURE;
+    int       ret = SSL_SUCCESS;
     const int HALF_PATH = 128;
 
     if (file) ret = read_file(ctx, file, SSL_FILETYPE_PEM, CA);

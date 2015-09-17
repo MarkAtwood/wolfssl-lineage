@@ -1,20 +1,28 @@
-/*
-   Copyright (c) 2005, 2013, Oracle and/or its affiliates. All rights reserved.
-
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; version 2 of the License.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; see the file COPYING. If not, write to the
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
-   MA  02110-1301  USA.
-*/
+/* yassl_types.hpp                                
+ *
+ * Copyright (C) 2003 Sawtooth Consulting Ltd.
+ *
+ * This file is part of yaSSL, an SSL implementation written by Todd A Ouska
+ * (todd at yassl.com, see www.yassl.com).
+ *
+ * yaSSL is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * There are special exceptions to the terms and conditions of the GPL as it
+ * is applied to yaSSL. View the full text of the exception in the file
+ * FLOSS-EXCEPTIONS in the directory of this software distribution.
+ *
+ * yaSSL is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
+ */
 
 /*  yaSSL types  header defines all constants, enums, and typedefs
  *  from the SSL.v3 specification "draft-freier-ssl-version3-02.txt"
@@ -26,13 +34,6 @@
 
 #include <stddef.h>
 #include "type_traits.hpp"
-
-
-#ifdef _MSC_VER
-    // disable conversion warning
-    // 4996 warning to use MS extensions e.g., strcpy_s instead of strncpy
-    #pragma warning(disable:4244 4996)
-#endif
 
 
 #ifdef _MSC_VER
@@ -95,7 +96,6 @@ namespace yaSSL {
 
 
 #else   // YASSL_PURE_C
-
 
     template<typename T>
     void ysDelete(T* ptr)
