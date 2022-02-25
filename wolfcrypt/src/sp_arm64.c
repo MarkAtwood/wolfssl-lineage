@@ -37174,7 +37174,7 @@ static int sp_256_ecc_mulmod_add_only_4(sp_point_256* r, const sp_point_256* g,
         XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
-    return MP_OKAY;
+    return err;
 }
 
 /* Multiply the base point of P256 by the scalar and return the result.
@@ -37609,6 +37609,8 @@ int sp_ecc_secret_gen_256(const mp_int* priv, const ecc_point* pub, byte* out,
 }
 #endif /* HAVE_ECC_DHE */
 
+#if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
+#endif
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 #endif
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
@@ -63031,7 +63033,7 @@ static int sp_384_ecc_mulmod_add_only_6(sp_point_384* r, const sp_point_384* g,
         XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
-    return MP_OKAY;
+    return err;
 }
 
 /* Multiply the base point of P384 by the scalar and return the result.
@@ -63470,6 +63472,8 @@ int sp_ecc_secret_gen_384(const mp_int* priv, const ecc_point* pub, byte* out,
 }
 #endif /* HAVE_ECC_DHE */
 
+#if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
+#endif
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 #endif
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
@@ -107875,7 +107879,7 @@ static int sp_521_ecc_mulmod_add_only_9(sp_point_521* r, const sp_point_521* g,
         XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
-    return MP_OKAY;
+    return err;
 }
 
 /* Multiply the base point of P521 by the scalar and return the result.
@@ -108329,6 +108333,8 @@ int sp_ecc_secret_gen_521(const mp_int* priv, const ecc_point* pub, byte* out,
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 #endif
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
+#endif
+#if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 /* Multiply two number mod the order of P521 curve. (r = a * b mod order)
  *
  * r  Result of the multiplication.
@@ -108619,8 +108625,8 @@ int sp_ecc_sign_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
     case 0: /* INIT */
         ctx->s = ctx->e;
         ctx->kInv = ctx->k;
-        if (hashLen > 65U) {
-            hashLen = 65U;
+        if (hashLen > 66U) {
+            hashLen = 66U;
         }
 
         ctx->i = SP_ECC_MAX_SIG_GEN;
@@ -108658,6 +108664,9 @@ int sp_ecc_sign_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
 
         sp_521_from_mp(ctx->x, 9, priv);
         sp_521_from_bin(ctx->e, 9, hash, (int)hashLen);
+        if (hashLen == 66U) {
+            sp_521_rshift_9(ctx->e, ctx->e, 7);
+        }
         ctx->state = 4;
         break;
     }
@@ -108794,8 +108803,8 @@ int sp_ecc_sign_521(const byte* hash, word32 hashLen, WC_RNG* rng,
         tmp = e + 8 * 9;
         s = e;
 
-        if (hashLen > 65U) {
-            hashLen = 65U;
+        if (hashLen > 66U) {
+            hashLen = 66U;
         }
     }
 
@@ -108823,6 +108832,10 @@ int sp_ecc_sign_521(const byte* hash, word32 hashLen, WC_RNG* rng,
 
             sp_521_from_mp(x, 9, priv);
             sp_521_from_bin(e, 9, hash, (int)hashLen);
+
+            if (hashLen == 66U) {
+                sp_521_rshift_9(e, e, 7);
+            }
 
             err = sp_521_calc_s_9(s, r, k, x, e, tmp);
         }
@@ -109199,8 +109212,8 @@ int sp_ecc_verify_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
 
     switch (ctx->state) {
     case 0: /* INIT */
-        if (hashLen > 65U) {
-            hashLen = 65U;
+        if (hashLen > 66U) {
+            hashLen = 66U;
         }
 
         sp_521_from_bin(ctx->u1, 9, hash, (int)hashLen);
@@ -109209,6 +109222,9 @@ int sp_ecc_verify_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
         sp_521_from_mp(ctx->p2.x, 9, pX);
         sp_521_from_mp(ctx->p2.y, 9, pY);
         sp_521_from_mp(ctx->p2.z, 9, pZ);
+        if (hashLen == 66U) {
+            sp_521_rshift_9(ctx->u1, ctx->u1, 7);
+        }
         ctx->state = 1;
         break;
     case 1: /* NORMS0 */
@@ -109360,8 +109376,8 @@ int sp_ecc_verify_521(const byte* hash, word32 hashLen, const mp_int* pX,
         tmp = u1 + 6 * 9;
         p2 = p1 + 1;
 
-        if (hashLen > 65U) {
-            hashLen = 65U;
+        if (hashLen > 66U) {
+            hashLen = 66U;
         }
 
         sp_521_from_bin(u1, 9, hash, (int)hashLen);
@@ -109370,6 +109386,10 @@ int sp_ecc_verify_521(const byte* hash, word32 hashLen, const mp_int* pX,
         sp_521_from_mp(p2->x, 9, pX);
         sp_521_from_mp(p2->y, 9, pY);
         sp_521_from_mp(p2->z, 9, pZ);
+
+        if (hashLen == 66U) {
+            sp_521_rshift_9(u1, u1, 7);
+        }
 
         err = sp_521_calc_vfy_point_9(p1, p2, s, u1, u2, tmp, heap);
     }
