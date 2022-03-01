@@ -103268,6 +103268,8 @@ int sp_ecc_secret_gen_256(const mp_int* priv, const ecc_point* pub, byte* out,
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 #endif
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
+#endif
+#if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into a. (a -= b)
  *
@@ -113731,6 +113733,8 @@ int sp_ecc_secret_gen_384(const mp_int* priv, const ecc_point* pub, byte* out,
 }
 #endif /* HAVE_ECC_DHE */
 
+#if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
+#endif
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 #endif
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
@@ -127935,6 +127939,360 @@ int sp_ecc_secret_gen_521(const mp_int* priv, const ecc_point* pub, byte* out,
 #endif /* HAVE_ECC_DHE */
 
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
+/* Right shift a by n bits into r. (r = a >> n)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * n  Integer representing number of bits to shift.
+ */
+static void sp_521_rshift_17(sp_digit* r, const sp_digit* a, byte n)
+{
+    __asm__ __volatile__ (
+        "movs	r7, #32\n\t"
+#ifdef WOLFSSL_KEIL
+        "subs	r7, r7, %[n]\n\t"
+#else
+#ifdef __clang__
+        "subs	r7, r7, %[n]\n\t"
+#else
+        "sub	r7, r7, %[n]\n\t"
+#endif
+#endif
+        "ldr	r3, [%[a]]\n\t"
+        "ldr	r4, [%[a], #4]\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r3, r3, %[n]\n\t"
+#else
+        "lsr	r3, r3, %[n]\n\t"
+#endif
+        "movs	r6, r4\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r4, r4, %[n]\n\t"
+#else
+        "lsr	r4, r4, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r3, r3, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r3, r6\n\t"
+#else
+        "orr	r3, r6\n\t"
+#endif
+        "ldr	r5, [%[a], #8]\n\t"
+        "str	r3, [%[r]]\n\t"
+        "movs	r6, r5\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r5, r5, %[n]\n\t"
+#else
+        "lsr	r5, r5, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r4, r6\n\t"
+#else
+        "orr	r4, r6\n\t"
+#endif
+        "ldr	r3, [%[a], #12]\n\t"
+        "str	r4, [%[r], #4]\n\t"
+        "movs	r6, r3\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r3, r3, %[n]\n\t"
+#else
+        "lsr	r3, r3, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r5, r5, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r5, r6\n\t"
+#else
+        "orr	r5, r6\n\t"
+#endif
+        "ldr	r4, [%[a], #16]\n\t"
+        "str	r5, [%[r], #8]\n\t"
+        "movs	r6, r4\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r4, r4, %[n]\n\t"
+#else
+        "lsr	r4, r4, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r3, r3, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r3, r6\n\t"
+#else
+        "orr	r3, r6\n\t"
+#endif
+        "ldr	r5, [%[a], #20]\n\t"
+        "str	r3, [%[r], #12]\n\t"
+        "movs	r6, r5\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r5, r5, %[n]\n\t"
+#else
+        "lsr	r5, r5, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r4, r6\n\t"
+#else
+        "orr	r4, r6\n\t"
+#endif
+        "ldr	r3, [%[a], #24]\n\t"
+        "str	r4, [%[r], #16]\n\t"
+        "movs	r6, r3\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r3, r3, %[n]\n\t"
+#else
+        "lsr	r3, r3, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r5, r5, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r5, r6\n\t"
+#else
+        "orr	r5, r6\n\t"
+#endif
+        "ldr	r4, [%[a], #28]\n\t"
+        "str	r5, [%[r], #20]\n\t"
+        "movs	r6, r4\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r4, r4, %[n]\n\t"
+#else
+        "lsr	r4, r4, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r3, r3, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r3, r6\n\t"
+#else
+        "orr	r3, r6\n\t"
+#endif
+        "ldr	r5, [%[a], #32]\n\t"
+        "str	r3, [%[r], #24]\n\t"
+        "movs	r6, r5\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r5, r5, %[n]\n\t"
+#else
+        "lsr	r5, r5, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r4, r6\n\t"
+#else
+        "orr	r4, r6\n\t"
+#endif
+        "ldr	r3, [%[a], #36]\n\t"
+        "str	r4, [%[r], #28]\n\t"
+        "movs	r6, r3\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r3, r3, %[n]\n\t"
+#else
+        "lsr	r3, r3, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r5, r5, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r5, r6\n\t"
+#else
+        "orr	r5, r6\n\t"
+#endif
+        "ldr	r4, [%[a], #40]\n\t"
+        "str	r5, [%[r], #32]\n\t"
+        "movs	r6, r4\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r4, r4, %[n]\n\t"
+#else
+        "lsr	r4, r4, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r3, r3, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r3, r6\n\t"
+#else
+        "orr	r3, r6\n\t"
+#endif
+        "ldr	r5, [%[a], #44]\n\t"
+        "str	r3, [%[r], #36]\n\t"
+        "movs	r6, r5\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r5, r5, %[n]\n\t"
+#else
+        "lsr	r5, r5, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r4, r6\n\t"
+#else
+        "orr	r4, r6\n\t"
+#endif
+        "ldr	r3, [%[a], #48]\n\t"
+        "str	r4, [%[r], #40]\n\t"
+        "movs	r6, r3\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r3, r3, %[n]\n\t"
+#else
+        "lsr	r3, r3, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r5, r5, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r5, r6\n\t"
+#else
+        "orr	r5, r6\n\t"
+#endif
+        "ldr	r4, [%[a], #52]\n\t"
+        "str	r5, [%[r], #44]\n\t"
+        "movs	r6, r4\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r4, r4, %[n]\n\t"
+#else
+        "lsr	r4, r4, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r3, r3, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r3, r6\n\t"
+#else
+        "orr	r3, r6\n\t"
+#endif
+        "ldr	r5, [%[a], #56]\n\t"
+        "str	r3, [%[r], #48]\n\t"
+        "movs	r6, r5\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r5, r5, %[n]\n\t"
+#else
+        "lsr	r5, r5, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r4, r6\n\t"
+#else
+        "orr	r4, r6\n\t"
+#endif
+        "ldr	r3, [%[a], #60]\n\t"
+        "str	r4, [%[r], #52]\n\t"
+        "movs	r6, r3\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r3, r3, %[n]\n\t"
+#else
+        "lsr	r3, r3, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r5, r5, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r5, r6\n\t"
+#else
+        "orr	r5, r6\n\t"
+#endif
+        "ldr	r4, [%[a], #64]\n\t"
+        "str	r5, [%[r], #56]\n\t"
+        "movs	r6, r4\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r4, r4, %[n]\n\t"
+#else
+        "lsr	r4, r4, %[n]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	r6, r6, r7\n\t"
+#else
+        "lsl	r6, r6, r7\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "orrs	r3, r3, r6\n\t"
+#elif defined(__clang__)
+        "orrs	r3, r6\n\t"
+#else
+        "orr	r3, r6\n\t"
+#endif
+        "str	r3, [%[r], #60]\n\t"
+        "str	r4, [%[r], #64]\n\t"
+        : [r] "+l" (r), [a] "+l" (a), [n] "+l" (n)
+        :
+        : "memory", "r3", "r4", "r5", "r6", "r7"
+    );
+}
+
+#endif
+#if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 #endif
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 /* Lefy shift a by n bits into r. (r = a << n)
@@ -129215,358 +129573,6 @@ static void sp_521_lshift_34(sp_digit* r, const sp_digit* a, byte n)
 #endif
         "str	r4, [%[r]]\n\t"
         "str	r5, [%[r], #4]\n\t"
-        : [r] "+l" (r), [a] "+l" (a), [n] "+l" (n)
-        :
-        : "memory", "r3", "r4", "r5", "r6", "r7"
-    );
-}
-
-/* Right shift a by n bits into r. (r = a >> n)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * n  Integer representing number of bits to shift.
- */
-static void sp_521_rshift_17(sp_digit* r, const sp_digit* a, byte n)
-{
-    __asm__ __volatile__ (
-        "movs	r7, #32\n\t"
-#ifdef WOLFSSL_KEIL
-        "subs	r7, r7, %[n]\n\t"
-#else
-#ifdef __clang__
-        "subs	r7, r7, %[n]\n\t"
-#else
-        "sub	r7, r7, %[n]\n\t"
-#endif
-#endif
-        "ldr	r3, [%[a]]\n\t"
-        "ldr	r4, [%[a], #4]\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r3, r3, %[n]\n\t"
-#else
-        "lsr	r3, r3, %[n]\n\t"
-#endif
-        "movs	r6, r4\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r4, r4, %[n]\n\t"
-#else
-        "lsr	r4, r4, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r3, r3, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r3, r6\n\t"
-#else
-        "orr	r3, r6\n\t"
-#endif
-        "ldr	r5, [%[a], #8]\n\t"
-        "str	r3, [%[r]]\n\t"
-        "movs	r6, r5\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r5, r5, %[n]\n\t"
-#else
-        "lsr	r5, r5, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r4, r6\n\t"
-#else
-        "orr	r4, r6\n\t"
-#endif
-        "ldr	r3, [%[a], #12]\n\t"
-        "str	r4, [%[r], #4]\n\t"
-        "movs	r6, r3\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r3, r3, %[n]\n\t"
-#else
-        "lsr	r3, r3, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r5, r5, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r5, r6\n\t"
-#else
-        "orr	r5, r6\n\t"
-#endif
-        "ldr	r4, [%[a], #16]\n\t"
-        "str	r5, [%[r], #8]\n\t"
-        "movs	r6, r4\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r4, r4, %[n]\n\t"
-#else
-        "lsr	r4, r4, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r3, r3, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r3, r6\n\t"
-#else
-        "orr	r3, r6\n\t"
-#endif
-        "ldr	r5, [%[a], #20]\n\t"
-        "str	r3, [%[r], #12]\n\t"
-        "movs	r6, r5\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r5, r5, %[n]\n\t"
-#else
-        "lsr	r5, r5, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r4, r6\n\t"
-#else
-        "orr	r4, r6\n\t"
-#endif
-        "ldr	r3, [%[a], #24]\n\t"
-        "str	r4, [%[r], #16]\n\t"
-        "movs	r6, r3\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r3, r3, %[n]\n\t"
-#else
-        "lsr	r3, r3, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r5, r5, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r5, r6\n\t"
-#else
-        "orr	r5, r6\n\t"
-#endif
-        "ldr	r4, [%[a], #28]\n\t"
-        "str	r5, [%[r], #20]\n\t"
-        "movs	r6, r4\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r4, r4, %[n]\n\t"
-#else
-        "lsr	r4, r4, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r3, r3, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r3, r6\n\t"
-#else
-        "orr	r3, r6\n\t"
-#endif
-        "ldr	r5, [%[a], #32]\n\t"
-        "str	r3, [%[r], #24]\n\t"
-        "movs	r6, r5\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r5, r5, %[n]\n\t"
-#else
-        "lsr	r5, r5, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r4, r6\n\t"
-#else
-        "orr	r4, r6\n\t"
-#endif
-        "ldr	r3, [%[a], #36]\n\t"
-        "str	r4, [%[r], #28]\n\t"
-        "movs	r6, r3\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r3, r3, %[n]\n\t"
-#else
-        "lsr	r3, r3, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r5, r5, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r5, r6\n\t"
-#else
-        "orr	r5, r6\n\t"
-#endif
-        "ldr	r4, [%[a], #40]\n\t"
-        "str	r5, [%[r], #32]\n\t"
-        "movs	r6, r4\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r4, r4, %[n]\n\t"
-#else
-        "lsr	r4, r4, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r3, r3, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r3, r6\n\t"
-#else
-        "orr	r3, r6\n\t"
-#endif
-        "ldr	r5, [%[a], #44]\n\t"
-        "str	r3, [%[r], #36]\n\t"
-        "movs	r6, r5\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r5, r5, %[n]\n\t"
-#else
-        "lsr	r5, r5, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r4, r6\n\t"
-#else
-        "orr	r4, r6\n\t"
-#endif
-        "ldr	r3, [%[a], #48]\n\t"
-        "str	r4, [%[r], #40]\n\t"
-        "movs	r6, r3\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r3, r3, %[n]\n\t"
-#else
-        "lsr	r3, r3, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r5, r5, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r5, r6\n\t"
-#else
-        "orr	r5, r6\n\t"
-#endif
-        "ldr	r4, [%[a], #52]\n\t"
-        "str	r5, [%[r], #44]\n\t"
-        "movs	r6, r4\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r4, r4, %[n]\n\t"
-#else
-        "lsr	r4, r4, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r3, r3, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r3, r6\n\t"
-#else
-        "orr	r3, r6\n\t"
-#endif
-        "ldr	r5, [%[a], #56]\n\t"
-        "str	r3, [%[r], #48]\n\t"
-        "movs	r6, r5\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r5, r5, %[n]\n\t"
-#else
-        "lsr	r5, r5, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r4, r6\n\t"
-#else
-        "orr	r4, r6\n\t"
-#endif
-        "ldr	r3, [%[a], #60]\n\t"
-        "str	r4, [%[r], #52]\n\t"
-        "movs	r6, r3\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r3, r3, %[n]\n\t"
-#else
-        "lsr	r3, r3, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r5, r5, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r5, r6\n\t"
-#else
-        "orr	r5, r6\n\t"
-#endif
-        "ldr	r4, [%[a], #64]\n\t"
-        "str	r5, [%[r], #56]\n\t"
-        "movs	r6, r4\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsrs	r4, r4, %[n]\n\t"
-#else
-        "lsr	r4, r4, %[n]\n\t"
-#endif
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "lsls	r6, r6, r7\n\t"
-#else
-        "lsl	r6, r6, r7\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "orrs	r3, r3, r6\n\t"
-#elif defined(__clang__)
-        "orrs	r3, r6\n\t"
-#else
-        "orr	r3, r6\n\t"
-#endif
-        "str	r3, [%[r], #60]\n\t"
-        "str	r4, [%[r], #64]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [n] "+l" (n)
         :
         : "memory", "r3", "r4", "r5", "r6", "r7"
@@ -130892,8 +130898,8 @@ int sp_ecc_sign_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
     case 0: /* INIT */
         ctx->s = ctx->e;
         ctx->kInv = ctx->k;
-        if (hashLen > 65U) {
-            hashLen = 65U;
+        if (hashLen > 66U) {
+            hashLen = 66U;
         }
 
         ctx->i = SP_ECC_MAX_SIG_GEN;
@@ -130931,6 +130937,9 @@ int sp_ecc_sign_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
 
         sp_521_from_mp(ctx->x, 17, priv);
         sp_521_from_bin(ctx->e, 17, hash, (int)hashLen);
+        if (hashLen == 66U) {
+            sp_521_rshift_17(ctx->e, ctx->e, 7);
+        }
         ctx->state = 4;
         break;
     }
@@ -131067,8 +131076,8 @@ int sp_ecc_sign_521(const byte* hash, word32 hashLen, WC_RNG* rng,
         tmp = e + 8 * 17;
         s = e;
 
-        if (hashLen > 65U) {
-            hashLen = 65U;
+        if (hashLen > 66U) {
+            hashLen = 66U;
         }
     }
 
@@ -131096,6 +131105,10 @@ int sp_ecc_sign_521(const byte* hash, word32 hashLen, WC_RNG* rng,
 
             sp_521_from_mp(x, 17, priv);
             sp_521_from_bin(e, 17, hash, (int)hashLen);
+
+            if (hashLen == 66U) {
+                sp_521_rshift_17(e, e, 7);
+            }
 
             err = sp_521_calc_s_17(s, r, k, x, e, tmp);
         }
@@ -133705,8 +133718,8 @@ int sp_ecc_verify_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
 
     switch (ctx->state) {
     case 0: /* INIT */
-        if (hashLen > 65U) {
-            hashLen = 65U;
+        if (hashLen > 66U) {
+            hashLen = 66U;
         }
 
         sp_521_from_bin(ctx->u1, 17, hash, (int)hashLen);
@@ -133715,6 +133728,9 @@ int sp_ecc_verify_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
         sp_521_from_mp(ctx->p2.x, 17, pX);
         sp_521_from_mp(ctx->p2.y, 17, pY);
         sp_521_from_mp(ctx->p2.z, 17, pZ);
+        if (hashLen == 66U) {
+            sp_521_rshift_17(ctx->u1, ctx->u1, 7);
+        }
         ctx->state = 1;
         break;
     case 1: /* NORMS0 */
@@ -133866,8 +133882,8 @@ int sp_ecc_verify_521(const byte* hash, word32 hashLen, const mp_int* pX,
         tmp = u1 + 6 * 17;
         p2 = p1 + 1;
 
-        if (hashLen > 65U) {
-            hashLen = 65U;
+        if (hashLen > 66U) {
+            hashLen = 66U;
         }
 
         sp_521_from_bin(u1, 17, hash, (int)hashLen);
@@ -133876,6 +133892,10 @@ int sp_ecc_verify_521(const byte* hash, word32 hashLen, const mp_int* pX,
         sp_521_from_mp(p2->x, 17, pX);
         sp_521_from_mp(p2->y, 17, pY);
         sp_521_from_mp(p2->z, 17, pZ);
+
+        if (hashLen == 66U) {
+            sp_521_rshift_17(u1, u1, 7);
+        }
 
         err = sp_521_calc_vfy_point_17(p1, p2, s, u1, u2, tmp, heap);
     }
