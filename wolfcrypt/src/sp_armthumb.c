@@ -48,19 +48,19 @@
 #include <wolfssl/wolfcrypt/sp.h>
 
 #ifdef WOLFSSL_SP_ARM_THUMB_ASM
-#define SP_PRINT_NUM(var, name, total, words, bits)     \
-    do {                                                \
-        int ii;                                         \
-        fprintf(stderr, name "=0x");                    \
-        for (ii = words - 1; ii >= 0; ii--)             \
-            fprintf(stderr, SP_PRINT_FMT, (var)[ii]);   \
-        fprintf(stderr, "\n");                         \
+#define SP_PRINT_NUM(var, name, total, words, bits)         \
+    do {                                                    \
+        int ii;                                             \
+        fprintf(stderr, name "=0x");                        \
+        for (ii = ((bits + 31) / 32) - 1; ii >= 0; ii--)    \
+            fprintf(stderr, SP_PRINT_FMT, (var)[ii]);       \
+        fprintf(stderr, "\n");                              \
     } while (0)
 
-#define SP_PRINT_VAL(var, name)                         \
+#define SP_PRINT_VAL(var, name)                             \
     fprintf(stderr, name "=0x" SP_PRINT_FMT "\n", var)
 
-#define SP_PRINT_INT(var, name)                         \
+#define SP_PRINT_INT(var, name)                             \
     fprintf(stderr, name "=%d\n", var)
 
 #if defined(WOLFSSL_HAVE_SP_RSA) || defined(WOLFSSL_HAVE_SP_DH)
@@ -9422,6 +9422,2906 @@ SP_NOINLINE static void sp_2048_mul_8(sp_digit* r, const sp_digit* a,
 }
 
 #endif /* !WOLFSSL_SP_LARGE_CODE */
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_2048_add_8(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5", "r6"
+    );
+    return (uint32_t)(size_t)r;
+}
+
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_2048_add_word_8(sp_digit* r, const sp_digit* a,
+        sp_digit b)
+{
+    __asm__ __volatile__ (
+        "movs	r5, #0\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, %[b]\n\t"
+#else
+        "add	r3, r3, %[b]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5"
+    );
+    return (uint32_t)(size_t)r;
+}
+
+/* Sub b from a into a. (a -= b)
+ *
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_2048_sub_in_place_16(sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "subs	r2, r2, r4\n\t"
+#else
+        "sub	r2, r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	%[a], %[a], %[a]\n\t"
+#elif defined(__clang__)
+        "sbcs	%[a], %[a]\n\t"
+#else
+        "sbc	%[a], %[a]\n\t"
+#endif
+        : [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r2", "r3", "r4", "r5"
+    );
+    return (uint32_t)(size_t)a;
+}
+
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_2048_add_16(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5", "r6"
+    );
+    return (uint32_t)(size_t)r;
+}
+
+/* AND m into each word of a and store in r.
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * m  Mask to AND against each digit.
+ */
+static void sp_2048_mask_8(sp_digit* r, const sp_digit* a, sp_digit m)
+{
+#ifdef WOLFSSL_SP_SMALL
+    int i;
+
+    for (i=0; i<8; i++) {
+        r[i] = a[i] & m;
+    }
+#else
+    r[0] = a[0] & m;
+    r[1] = a[1] & m;
+    r[2] = a[2] & m;
+    r[3] = a[3] & m;
+    r[4] = a[4] & m;
+    r[5] = a[5] & m;
+    r[6] = a[6] & m;
+    r[7] = a[7] & m;
+#endif
+}
+
+/* Multiply a and b into r. (r = a * b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static void sp_2048_mul_16(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    sp_digit* z0 = r;
+    sp_digit z1[16];
+    sp_digit a1[8];
+    sp_digit b1[8];
+    sp_digit* z2 = r + 16;
+    sp_digit u;
+    sp_digit ca;
+    sp_digit cb;
+
+    ca = sp_2048_add_8(a1, a, &a[8]);
+    cb = sp_2048_add_8(b1, b, &b[8]);
+    u  = ca & cb;
+
+    sp_2048_mul_8(z2, &a[8], &b[8]);
+    sp_2048_mul_8(z0, a, b);
+    sp_2048_mul_8(z1, a1, b1);
+
+    u += sp_2048_sub_in_place_16(z1, z0);
+    u += sp_2048_sub_in_place_16(z1, z2);
+    sp_2048_mask_8(a1, a1, 0 - cb);
+    u += sp_2048_add_8(z1 + 8, z1 + 8, a1);
+    sp_2048_mask_8(b1, b1, 0 - ca);
+    u += sp_2048_add_8(z1 + 8, z1 + 8, b1);
+
+    u += sp_2048_add_16(r + 8, r + 8, z1);
+    (void)sp_2048_add_word_8(r + 24, r + 24, u);
+}
+
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_2048_add_word_16(sp_digit* r, const sp_digit* a,
+        sp_digit b)
+{
+    __asm__ __volatile__ (
+        "movs	r5, #0\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, %[b]\n\t"
+#else
+        "add	r3, r3, %[b]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5"
+    );
+    return (uint32_t)(size_t)r;
+}
+
+/* Sub b from a into a. (a -= b)
+ *
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_2048_sub_in_place_32(sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "subs	r2, r2, r4\n\t"
+#else
+        "sub	r2, r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	%[a], %[a], %[a]\n\t"
+#elif defined(__clang__)
+        "sbcs	%[a], %[a]\n\t"
+#else
+        "sbc	%[a], %[a]\n\t"
+#endif
+        : [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r2", "r3", "r4", "r5"
+    );
+    return (uint32_t)(size_t)a;
+}
+
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5", "r6"
+    );
+    return (uint32_t)(size_t)r;
+}
+
+/* AND m into each word of a and store in r.
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * m  Mask to AND against each digit.
+ */
+static void sp_2048_mask_16(sp_digit* r, const sp_digit* a, sp_digit m)
+{
+#ifdef WOLFSSL_SP_SMALL
+    int i;
+
+    for (i=0; i<16; i++) {
+        r[i] = a[i] & m;
+    }
+#else
+    int i;
+
+    for (i = 0; i < 16; i += 8) {
+        r[i+0] = a[i+0] & m;
+        r[i+1] = a[i+1] & m;
+        r[i+2] = a[i+2] & m;
+        r[i+3] = a[i+3] & m;
+        r[i+4] = a[i+4] & m;
+        r[i+5] = a[i+5] & m;
+        r[i+6] = a[i+6] & m;
+        r[i+7] = a[i+7] & m;
+    }
+#endif
+}
+
+/* Multiply a and b into r. (r = a * b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static void sp_2048_mul_32(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    sp_digit* z0 = r;
+    sp_digit z1[32];
+    sp_digit a1[16];
+    sp_digit b1[16];
+    sp_digit* z2 = r + 32;
+    sp_digit u;
+    sp_digit ca;
+    sp_digit cb;
+
+    ca = sp_2048_add_16(a1, a, &a[16]);
+    cb = sp_2048_add_16(b1, b, &b[16]);
+    u  = ca & cb;
+
+    sp_2048_mul_16(z2, &a[16], &b[16]);
+    sp_2048_mul_16(z0, a, b);
+    sp_2048_mul_16(z1, a1, b1);
+
+    u += sp_2048_sub_in_place_32(z1, z0);
+    u += sp_2048_sub_in_place_32(z1, z2);
+    sp_2048_mask_16(a1, a1, 0 - cb);
+    u += sp_2048_add_16(z1 + 16, z1 + 16, a1);
+    sp_2048_mask_16(b1, b1, 0 - ca);
+    u += sp_2048_add_16(z1 + 16, z1 + 16, b1);
+
+    u += sp_2048_add_32(r + 16, r + 16, z1);
+    (void)sp_2048_add_word_16(r + 48, r + 48, u);
+}
+
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_2048_add_word_32(sp_digit* r, const sp_digit* a,
+        sp_digit b)
+{
+    __asm__ __volatile__ (
+        "movs	r5, #0\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, %[b]\n\t"
+#else
+        "add	r3, r3, %[b]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5"
+    );
+    return (uint32_t)(size_t)r;
+}
+
+/* Sub b from a into a. (a -= b)
+ *
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_2048_sub_in_place_64(sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "subs	r2, r2, r4\n\t"
+#else
+        "sub	r2, r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	%[a], %[a], %[a]\n\t"
+#elif defined(__clang__)
+        "sbcs	%[a], %[a]\n\t"
+#else
+        "sbc	%[a], %[a]\n\t"
+#endif
+        : [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r2", "r3", "r4", "r5"
+    );
+    return (uint32_t)(size_t)a;
+}
+
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_2048_add_64(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5", "r6"
+    );
+    return (uint32_t)(size_t)r;
+}
+
+/* AND m into each word of a and store in r.
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * m  Mask to AND against each digit.
+ */
+static void sp_2048_mask_32(sp_digit* r, const sp_digit* a, sp_digit m)
+{
+#ifdef WOLFSSL_SP_SMALL
+    int i;
+
+    for (i=0; i<32; i++) {
+        r[i] = a[i] & m;
+    }
+#else
+    int i;
+
+    for (i = 0; i < 32; i += 8) {
+        r[i+0] = a[i+0] & m;
+        r[i+1] = a[i+1] & m;
+        r[i+2] = a[i+2] & m;
+        r[i+3] = a[i+3] & m;
+        r[i+4] = a[i+4] & m;
+        r[i+5] = a[i+5] & m;
+        r[i+6] = a[i+6] & m;
+        r[i+7] = a[i+7] & m;
+    }
+#endif
+}
+
+/* Multiply a and b into r. (r = a * b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static void sp_2048_mul_64(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    sp_digit* z0 = r;
+    sp_digit z1[64];
+    sp_digit a1[32];
+    sp_digit b1[32];
+    sp_digit* z2 = r + 64;
+    sp_digit u;
+    sp_digit ca;
+    sp_digit cb;
+
+    ca = sp_2048_add_32(a1, a, &a[32]);
+    cb = sp_2048_add_32(b1, b, &b[32]);
+    u  = ca & cb;
+
+    sp_2048_mul_32(z2, &a[32], &b[32]);
+    sp_2048_mul_32(z0, a, b);
+    sp_2048_mul_32(z1, a1, b1);
+
+    u += sp_2048_sub_in_place_64(z1, z0);
+    u += sp_2048_sub_in_place_64(z1, z2);
+    sp_2048_mask_32(a1, a1, 0 - cb);
+    u += sp_2048_add_32(z1 + 32, z1 + 32, a1);
+    sp_2048_mask_32(b1, b1, 0 - ca);
+    u += sp_2048_add_32(z1 + 32, z1 + 32, b1);
+
+    u += sp_2048_add_64(r + 32, r + 32, z1);
+    (void)sp_2048_add_word_32(r + 96, r + 96, u);
+}
+
 #ifndef WOLFSSL_SP_LARGE_CODE
 /* Square a and put result in r. (r = a * a)
  *
@@ -16362,646 +19262,92 @@ SP_NOINLINE static void sp_2048_sqr_8(sp_digit* r, const sp_digit* a)
 }
 
 #endif /* !WOLFSSL_SP_LARGE_CODE */
-/* Add b to a into r. (r = a + b)
+/* Sub b from a into r. (r = a - b)
  *
  * r  A single precision integer.
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_add_8(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static sp_digit sp_2048_sub_8(sp_digit* r, const sp_digit* a,
         const sp_digit* b)
 {
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, r5\n\t"
+        "subs	r3, r3, r5\n\t"
 #else
-        "add	r3, r3, r5\n\t"
+        "sub	r3, r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "movs	%[r], #0\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	%[r], %[r]\n\t"
+        "sbc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "sbcs	r4, r6\n\t"
+#else
+        "sbc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "sbcs	%[r], %[r]\n\t"
+#else
+        "sbc	%[r], %[r]\n\t"
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
         : "memory", "r3", "r4", "r5", "r6"
-    );
-    return (uint32_t)(size_t)r;
-}
-
-/* Add b to a into r. (r = a + b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_2048_add_to_word_8(sp_digit* r, sp_digit a,
-        const sp_digit* b)
-{
-    __asm__ __volatile__ (
-        "movs	r5, #0\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, %[a]\n\t"
-#else
-        "add	r3, r3, %[a]\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "movs	%[r], #0\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
-#elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
-#else
-        "adc	%[r], %[r]\n\t"
-#endif
-        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
-        :
-        : "memory", "r3", "r4", "r5"
-    );
-    return (uint32_t)(size_t)r;
-}
-
-/* Sub b from a into a. (a -= b)
- *
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_2048_sub_in_place_16(sp_digit* a,
-        const sp_digit* b)
-{
-    __asm__ __volatile__ (
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "subs	r2, r2, r4\n\t"
-#else
-        "sub	r2, r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	%[a], %[a], %[a]\n\t"
-#elif defined(__clang__)
-        "sbcs	%[a], %[a]\n\t"
-#else
-        "sbc	%[a], %[a]\n\t"
-#endif
-        : [a] "+l" (a), [b] "+l" (b)
-        :
-        : "memory", "r2", "r3", "r4", "r5"
-    );
-    return (uint32_t)(size_t)a;
-}
-
-/* Add b to a into r. (r = a + b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_2048_add_16(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
-{
-    __asm__ __volatile__ (
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, r5\n\t"
-#else
-        "add	r3, r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "movs	%[r], #0\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
-#elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
-#else
-        "adc	%[r], %[r]\n\t"
-#endif
-        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
-        :
-        : "memory", "r3", "r4", "r5", "r6"
-    );
-    return (uint32_t)(size_t)r;
-}
-
-/* AND m into each word of a and store in r.
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
- */
-static void sp_2048_mask_8(sp_digit* r, const sp_digit* a, sp_digit m)
-{
-#ifdef WOLFSSL_SP_SMALL
-    int i;
-
-    for (i=0; i<8; i++) {
-        r[i] = a[i] & m;
-    }
-#else
-    r[0] = a[0] & m;
-    r[1] = a[1] & m;
-    r[2] = a[2] & m;
-    r[3] = a[3] & m;
-    r[4] = a[4] & m;
-    r[5] = a[5] & m;
-    r[6] = a[6] & m;
-    r[7] = a[7] & m;
-#endif
-}
-
-/* Multiply a and b into r. (r = a * b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static void sp_2048_mul_16(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
-{
-    sp_digit* z0 = r;
-    sp_digit z1[16];
-    sp_digit a1[8];
-    sp_digit b1[8];
-    sp_digit z2[16];
-    sp_digit u;
-    sp_digit ca;
-    sp_digit cb;
-
-    ca = sp_2048_add_8(a1, a, &a[8]);
-    cb = sp_2048_add_8(b1, b, &b[8]);
-    u  = ca & cb;
-    sp_2048_mul_8(z1, a1, b1);
-    sp_2048_mul_8(z2, &a[8], &b[8]);
-    sp_2048_mul_8(z0, a, b);
-    sp_2048_mask_8(r + 16, a1, 0 - cb);
-    sp_2048_mask_8(b1, b1, 0 - ca);
-    u += sp_2048_add_8(r + 16, r + 16, b1);
-    u += sp_2048_sub_in_place_16(z1, z2);
-    u += sp_2048_sub_in_place_16(z1, z0);
-    u += sp_2048_add_16(r + 8, r + 8, z1);
-    u += sp_2048_add_8(r + 16, r + 16, z2);
-    (void)sp_2048_add_to_word_8(r + 24, u, z2 + 8);
-}
-
-/* Double a into r. (r = a + a)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_2048_dbl_8(sp_digit* r, const sp_digit* a)
-{
-    __asm__ __volatile__ (
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r2, r2, r2\n\t"
-#else
-        "add	r2, r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "movs	%[r], #0\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
-#elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
-#else
-        "adc	%[r], %[r]\n\t"
-#endif
-        : [r] "+l" (r), [a] "+l" (a)
-        :
-        : "memory", "r2", "r3", "r4", "r5"
     );
     return (uint32_t)(size_t)r;
 }
@@ -17014,981 +19360,187 @@ SP_NOINLINE static sp_digit sp_2048_dbl_8(sp_digit* r, const sp_digit* a)
 SP_NOINLINE static void sp_2048_sqr_16(sp_digit* r, const sp_digit* a)
 {
     sp_digit* z0 = r;
-    sp_digit z2[16];
+    sp_digit* z2 = r + 16;
     sp_digit z1[16];
-    sp_digit a1[8];
+    sp_digit* a1 = z1;
+    sp_digit* zero = z1 + 8;
     sp_digit u;
+    sp_digit mask;
+    sp_digit* p1;
+    sp_digit* p2;
 
-    u = sp_2048_add_8(a1, a, &a[8]);
-    sp_2048_sqr_8(z1, a1);
+    XMEMSET(zero, 0, sizeof(sp_digit) * 8);
+
+    mask = sp_2048_sub_8(a1, a, &a[8]);
+    p1 = (sp_digit*)(((sp_digit)zero &   mask ) | ((sp_digit)a1 & (~mask)));
+    p2 = (sp_digit*)(((sp_digit)zero & (~mask)) | ((sp_digit)a1 &   mask ));
+    (void)sp_2048_sub_8(a1, p1, p2);
+
     sp_2048_sqr_8(z2, &a[8]);
     sp_2048_sqr_8(z0, a);
-    sp_2048_mask_8(r + 16, a1, 0 - u);
-    u += sp_2048_dbl_8(r + 16, r + 16);
-    u += sp_2048_sub_in_place_16(z1, z2);
-    u += sp_2048_sub_in_place_16(z1, z0);
-    u += sp_2048_add_16(r + 8, r + 8, z1);
-    u += sp_2048_add_8(r + 16, r + 16, z2);
-    (void)sp_2048_add_to_word_8(r + 24, u, z2 + 8);
+    sp_2048_sqr_8(z1, a1);
+
+    u = 0;
+    u -= sp_2048_sub_in_place_16(z1, z2);
+    u -= sp_2048_sub_in_place_16(z1, z0);
+    u += sp_2048_sub_in_place_16(r + 8, z1);
+    sp_2048_add_word_8(r + 24, r + 24, u);
 }
 
-/* Add b to a into r. (r = a + b)
+/* Sub b from a into r. (r = a - b)
  *
  * r  A single precision integer.
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_add_to_word_16(sp_digit* r, sp_digit a,
-        const sp_digit* b)
-{
-    __asm__ __volatile__ (
-        "movs	r5, #0\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, %[a]\n\t"
-#else
-        "add	r3, r3, %[a]\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "movs	%[r], #0\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
-#elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
-#else
-        "adc	%[r], %[r]\n\t"
-#endif
-        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
-        :
-        : "memory", "r3", "r4", "r5"
-    );
-    return (uint32_t)(size_t)r;
-}
-
-/* Sub b from a into a. (a -= b)
- *
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_2048_sub_in_place_32(sp_digit* a,
-        const sp_digit* b)
-{
-    __asm__ __volatile__ (
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "subs	r2, r2, r4\n\t"
-#else
-        "sub	r2, r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	%[a], %[a], %[a]\n\t"
-#elif defined(__clang__)
-        "sbcs	%[a], %[a]\n\t"
-#else
-        "sbc	%[a], %[a]\n\t"
-#endif
-        : [a] "+l" (a), [b] "+l" (b)
-        :
-        : "memory", "r2", "r3", "r4", "r5"
-    );
-    return (uint32_t)(size_t)a;
-}
-
-/* Add b to a into r. (r = a + b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static sp_digit sp_2048_sub_16(sp_digit* r, const sp_digit* a,
         const sp_digit* b)
 {
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, r5\n\t"
+        "subs	r3, r3, r5\n\t"
 #else
-        "add	r3, r3, r5\n\t"
+        "sub	r3, r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "movs	%[r], #0\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
+        "sbcs	%[r], %[r], %[r]\n\t"
 #elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
+        "sbcs	%[r], %[r]\n\t"
 #else
-        "adc	%[r], %[r]\n\t"
+        "sbc	%[r], %[r]\n\t"
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
         : "memory", "r3", "r4", "r5", "r6"
-    );
-    return (uint32_t)(size_t)r;
-}
-
-/* AND m into each word of a and store in r.
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
- */
-static void sp_2048_mask_16(sp_digit* r, const sp_digit* a, sp_digit m)
-{
-#ifdef WOLFSSL_SP_SMALL
-    int i;
-
-    for (i=0; i<16; i++) {
-        r[i] = a[i] & m;
-    }
-#else
-    int i;
-
-    for (i = 0; i < 16; i += 8) {
-        r[i+0] = a[i+0] & m;
-        r[i+1] = a[i+1] & m;
-        r[i+2] = a[i+2] & m;
-        r[i+3] = a[i+3] & m;
-        r[i+4] = a[i+4] & m;
-        r[i+5] = a[i+5] & m;
-        r[i+6] = a[i+6] & m;
-        r[i+7] = a[i+7] & m;
-    }
-#endif
-}
-
-/* Multiply a and b into r. (r = a * b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static void sp_2048_mul_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
-{
-    sp_digit* z0 = r;
-    sp_digit z1[32];
-    sp_digit a1[16];
-    sp_digit b1[16];
-    sp_digit z2[32];
-    sp_digit u;
-    sp_digit ca;
-    sp_digit cb;
-
-    ca = sp_2048_add_16(a1, a, &a[16]);
-    cb = sp_2048_add_16(b1, b, &b[16]);
-    u  = ca & cb;
-    sp_2048_mul_16(z1, a1, b1);
-    sp_2048_mul_16(z2, &a[16], &b[16]);
-    sp_2048_mul_16(z0, a, b);
-    sp_2048_mask_16(r + 32, a1, 0 - cb);
-    sp_2048_mask_16(b1, b1, 0 - ca);
-    u += sp_2048_add_16(r + 32, r + 32, b1);
-    u += sp_2048_sub_in_place_32(z1, z2);
-    u += sp_2048_sub_in_place_32(z1, z0);
-    u += sp_2048_add_32(r + 16, r + 16, z1);
-    u += sp_2048_add_16(r + 32, r + 32, z2);
-    (void)sp_2048_add_to_word_16(r + 48, u, z2 + 16);
-}
-
-/* Double a into r. (r = a + a)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_2048_dbl_16(sp_digit* r, const sp_digit* a)
-{
-    __asm__ __volatile__ (
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r2, r2, r2\n\t"
-#else
-        "add	r2, r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "movs	%[r], #0\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
-#elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
-#else
-        "adc	%[r], %[r]\n\t"
-#endif
-        : [r] "+l" (r), [a] "+l" (a)
-        :
-        : "memory", "r2", "r3", "r4", "r5"
     );
     return (uint32_t)(size_t)r;
 }
@@ -18001,1789 +19553,323 @@ SP_NOINLINE static sp_digit sp_2048_dbl_16(sp_digit* r, const sp_digit* a)
 SP_NOINLINE static void sp_2048_sqr_32(sp_digit* r, const sp_digit* a)
 {
     sp_digit* z0 = r;
-    sp_digit z2[32];
+    sp_digit* z2 = r + 32;
     sp_digit z1[32];
-    sp_digit a1[16];
+    sp_digit* a1 = z1;
+    sp_digit* zero = z1 + 16;
     sp_digit u;
+    sp_digit mask;
+    sp_digit* p1;
+    sp_digit* p2;
 
-    u = sp_2048_add_16(a1, a, &a[16]);
-    sp_2048_sqr_16(z1, a1);
+    XMEMSET(zero, 0, sizeof(sp_digit) * 16);
+
+    mask = sp_2048_sub_16(a1, a, &a[16]);
+    p1 = (sp_digit*)(((sp_digit)zero &   mask ) | ((sp_digit)a1 & (~mask)));
+    p2 = (sp_digit*)(((sp_digit)zero & (~mask)) | ((sp_digit)a1 &   mask ));
+    (void)sp_2048_sub_16(a1, p1, p2);
+
     sp_2048_sqr_16(z2, &a[16]);
     sp_2048_sqr_16(z0, a);
-    sp_2048_mask_16(r + 32, a1, 0 - u);
-    u += sp_2048_dbl_16(r + 32, r + 32);
-    u += sp_2048_sub_in_place_32(z1, z2);
-    u += sp_2048_sub_in_place_32(z1, z0);
-    u += sp_2048_add_32(r + 16, r + 16, z1);
-    u += sp_2048_add_16(r + 32, r + 32, z2);
-    (void)sp_2048_add_to_word_16(r + 48, u, z2 + 16);
+    sp_2048_sqr_16(z1, a1);
+
+    u = 0;
+    u -= sp_2048_sub_in_place_32(z1, z2);
+    u -= sp_2048_sub_in_place_32(z1, z0);
+    u += sp_2048_sub_in_place_32(r + 16, z1);
+    sp_2048_add_word_16(r + 48, r + 48, u);
 }
 
-/* Add b to a into r. (r = a + b)
+/* Sub b from a into r. (r = a - b)
  *
  * r  A single precision integer.
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_add_to_word_32(sp_digit* r, sp_digit a,
-        const sp_digit* b)
-{
-    __asm__ __volatile__ (
-        "movs	r5, #0\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, %[a]\n\t"
-#else
-        "add	r3, r3, %[a]\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "movs	%[r], #0\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
-#elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
-#else
-        "adc	%[r], %[r]\n\t"
-#endif
-        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
-        :
-        : "memory", "r3", "r4", "r5"
-    );
-    return (uint32_t)(size_t)r;
-}
-
-/* Sub b from a into a. (a -= b)
- *
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_2048_sub_in_place_64(sp_digit* a,
-        const sp_digit* b)
-{
-    __asm__ __volatile__ (
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "subs	r2, r2, r4\n\t"
-#else
-        "sub	r2, r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	%[a], %[a], %[a]\n\t"
-#elif defined(__clang__)
-        "sbcs	%[a], %[a]\n\t"
-#else
-        "sbc	%[a], %[a]\n\t"
-#endif
-        : [a] "+l" (a), [b] "+l" (b)
-        :
-        : "memory", "r2", "r3", "r4", "r5"
-    );
-    return (uint32_t)(size_t)a;
-}
-
-/* Add b to a into r. (r = a + b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_2048_add_64(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static sp_digit sp_2048_sub_32(sp_digit* r, const sp_digit* a,
         const sp_digit* b)
 {
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, r5\n\t"
+        "subs	r3, r3, r5\n\t"
 #else
-        "add	r3, r3, r5\n\t"
+        "sub	r3, r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "movs	%[r], #0\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
+        "sbcs	%[r], %[r], %[r]\n\t"
 #elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
+        "sbcs	%[r], %[r]\n\t"
 #else
-        "adc	%[r], %[r]\n\t"
+        "sbc	%[r], %[r]\n\t"
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
         : "memory", "r3", "r4", "r5", "r6"
-    );
-    return (uint32_t)(size_t)r;
-}
-
-/* AND m into each word of a and store in r.
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
- */
-static void sp_2048_mask_32(sp_digit* r, const sp_digit* a, sp_digit m)
-{
-#ifdef WOLFSSL_SP_SMALL
-    int i;
-
-    for (i=0; i<32; i++) {
-        r[i] = a[i] & m;
-    }
-#else
-    int i;
-
-    for (i = 0; i < 32; i += 8) {
-        r[i+0] = a[i+0] & m;
-        r[i+1] = a[i+1] & m;
-        r[i+2] = a[i+2] & m;
-        r[i+3] = a[i+3] & m;
-        r[i+4] = a[i+4] & m;
-        r[i+5] = a[i+5] & m;
-        r[i+6] = a[i+6] & m;
-        r[i+7] = a[i+7] & m;
-    }
-#endif
-}
-
-/* Multiply a and b into r. (r = a * b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static void sp_2048_mul_64(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
-{
-    sp_digit* z0 = r;
-    sp_digit z1[64];
-    sp_digit a1[32];
-    sp_digit b1[32];
-    sp_digit z2[64];
-    sp_digit u;
-    sp_digit ca;
-    sp_digit cb;
-
-    ca = sp_2048_add_32(a1, a, &a[32]);
-    cb = sp_2048_add_32(b1, b, &b[32]);
-    u  = ca & cb;
-    sp_2048_mul_32(z1, a1, b1);
-    sp_2048_mul_32(z2, &a[32], &b[32]);
-    sp_2048_mul_32(z0, a, b);
-    sp_2048_mask_32(r + 64, a1, 0 - cb);
-    sp_2048_mask_32(b1, b1, 0 - ca);
-    u += sp_2048_add_32(r + 64, r + 64, b1);
-    u += sp_2048_sub_in_place_64(z1, z2);
-    u += sp_2048_sub_in_place_64(z1, z0);
-    u += sp_2048_add_64(r + 32, r + 32, z1);
-    u += sp_2048_add_32(r + 64, r + 64, z2);
-    (void)sp_2048_add_to_word_32(r + 96, u, z2 + 32);
-}
-
-/* Double a into r. (r = a + a)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_2048_dbl_32(sp_digit* r, const sp_digit* a)
-{
-    __asm__ __volatile__ (
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r2, r2, r2\n\t"
-#else
-        "add	r2, r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "movs	%[r], #0\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
-#elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
-#else
-        "adc	%[r], %[r]\n\t"
-#endif
-        : [r] "+l" (r), [a] "+l" (a)
-        :
-        : "memory", "r2", "r3", "r4", "r5"
     );
     return (uint32_t)(size_t)r;
 }
@@ -19796,22 +19882,31 @@ SP_NOINLINE static sp_digit sp_2048_dbl_32(sp_digit* r, const sp_digit* a)
 SP_NOINLINE static void sp_2048_sqr_64(sp_digit* r, const sp_digit* a)
 {
     sp_digit* z0 = r;
-    sp_digit z2[64];
+    sp_digit* z2 = r + 64;
     sp_digit z1[64];
-    sp_digit a1[32];
+    sp_digit* a1 = z1;
+    sp_digit* zero = z1 + 32;
     sp_digit u;
+    sp_digit mask;
+    sp_digit* p1;
+    sp_digit* p2;
 
-    u = sp_2048_add_32(a1, a, &a[32]);
-    sp_2048_sqr_32(z1, a1);
+    XMEMSET(zero, 0, sizeof(sp_digit) * 32);
+
+    mask = sp_2048_sub_32(a1, a, &a[32]);
+    p1 = (sp_digit*)(((sp_digit)zero &   mask ) | ((sp_digit)a1 & (~mask)));
+    p2 = (sp_digit*)(((sp_digit)zero & (~mask)) | ((sp_digit)a1 &   mask ));
+    (void)sp_2048_sub_32(a1, p1, p2);
+
     sp_2048_sqr_32(z2, &a[32]);
     sp_2048_sqr_32(z0, a);
-    sp_2048_mask_32(r + 64, a1, 0 - u);
-    u += sp_2048_dbl_32(r + 64, r + 64);
-    u += sp_2048_sub_in_place_64(z1, z2);
-    u += sp_2048_sub_in_place_64(z1, z0);
-    u += sp_2048_add_64(r + 32, r + 32, z1);
-    u += sp_2048_add_32(r + 64, r + 64, z2);
-    (void)sp_2048_add_to_word_32(r + 96, u, z2 + 32);
+    sp_2048_sqr_32(z1, a1);
+
+    u = 0;
+    u -= sp_2048_sub_in_place_64(z1, z2);
+    u -= sp_2048_sub_in_place_64(z1, z0);
+    u += sp_2048_sub_in_place_64(r + 32, z1);
+    sp_2048_add_word_32(r + 96, r + 96, u);
 }
 
 #endif /* !WOLFSSL_SP_SMALL */
@@ -22890,7 +22985,7 @@ SP_NOINLINE static void sp_2048_mont_reduce_32(sp_digit* a, const sp_digit* m,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_2048_mont_mul_32(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_2048_mont_mul_32(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
     sp_2048_mul_32(r, a, b);
@@ -22904,7 +22999,7 @@ static void sp_2048_mont_mul_32(sp_digit* r, const sp_digit* a,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_2048_mont_sqr_32(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_2048_mont_sqr_32(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
     sp_2048_sqr_32(r, a);
@@ -23097,11 +23192,11 @@ SP_NOINLINE static void sp_2048_mul_d_32(sp_digit* r, const sp_digit* a,
     );
 }
 
-/* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
+/* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
- * div  The dividend.
+ * div  The divisor.
  * returns the result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
@@ -23726,7 +23821,7 @@ static WC_INLINE int sp_2048_div_32(const sp_digit* a, const sp_digit* d, sp_dig
 
     div = d[31];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 32);
-    for (i=31; i>=0; i--) {
+    for (i = 31; i >= 0; i--) {
         sp_digit hi = t1[32 + i] - (t1[32 + i] == div);
         r1 = div_2048_word_32(hi, t1[32 + i - 1], div);
 
@@ -25801,7 +25896,7 @@ SP_NOINLINE static void sp_2048_mont_reduce_64(sp_digit* a, const sp_digit* m,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_2048_mont_mul_64(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_2048_mont_mul_64(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
     sp_2048_mul_64(r, a, b);
@@ -25815,7 +25910,7 @@ static void sp_2048_mont_mul_64(sp_digit* r, const sp_digit* a,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_2048_mont_sqr_64(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_2048_mont_sqr_64(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
     sp_2048_sqr_64(r, a);
@@ -26464,11 +26559,11 @@ SP_NOINLINE static sp_digit sp_2048_sub_64(sp_digit* r, const sp_digit* a,
 }
 
 #endif /* WOLFSSL_SP_SMALL */
-/* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
+/* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
- * div  The dividend.
+ * div  The divisor.
  * returns the result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
@@ -26984,9 +27079,13 @@ static WC_INLINE int sp_2048_div_64_cond(const sp_digit* a, const sp_digit* d, s
 
     div = d[63];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 64);
-    for (i=63; i>=0; i--) {
-        sp_digit hi = t1[64 + i] - (t1[64 + i] == div);
-        r1 = div_2048_word_64(hi, t1[64 + i - 1], div);
+    for (i = 63; i >= 0; i--) {
+        if (t1[64 + i] == div) {
+            r1 = SP_DIGIT_MAX;
+        }
+        else {
+            r1 = div_2048_word_64(t1[64 + i], t1[64 + i - 1], div);
+        }
 
         sp_2048_mul_d_64(t2, d, r1);
         t1[64 + i] += sp_2048_sub_in_place_64(&t1[i], t2);
@@ -27184,7 +27283,7 @@ static WC_INLINE int sp_2048_div_64(const sp_digit* a, const sp_digit* d, sp_dig
 
     div = d[63];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 64);
-    for (i=63; i>=0; i--) {
+    for (i = 63; i >= 0; i--) {
         sp_digit hi = t1[64 + i] - (t1[64 + i] == div);
         r1 = div_2048_word_64(hi, t1[64 + i - 1], div);
 
@@ -27570,9 +27669,9 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
 #endif
 
     if (err == MP_OKAY) {
+        ah = a + 64;
         r = a + 64 * 2;
         m = r + 64 * 2;
-        ah = a + 64;
 
         sp_2048_from_bin(ah, 64, in, inLen);
 #if DIGIT_BIT >= 32
@@ -27590,7 +27689,38 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
     if (err == MP_OKAY) {
         sp_2048_from_mp(m, 64, mm);
 
-        if (e[0] == 0x3) {
+        if (e[0] == 0x10001) {
+            int i;
+            sp_digit mp;
+
+            sp_2048_mont_setup(m, &mp);
+
+            /* Convert to Montgomery form. */
+            XMEMSET(a, 0, sizeof(sp_digit) * 64);
+            err = sp_2048_mod_64_cond(r, a, m);
+            /* Montgomery form: r = a.R mod m */
+
+            if (err == MP_OKAY) {
+                /* r = a ^ 0x10000 => r = a squared 16 times */
+                for (i = 15; i >= 0; i--) {
+                    sp_2048_mont_sqr_64(r, r, m, mp);
+                }
+                /* mont_red(r.R.R) = (r.R.R / R) mod m = r.R mod m
+                 * mont_red(r.R * a) = (r.R.a / R) mod m = r.a mod m
+                 */
+                sp_2048_mont_mul_64(r, r, ah, m, mp);
+
+                for (i = 63; i > 0; i--) {
+                    if (r[i] != m[i]) {
+                        break;
+                    }
+                }
+                if (r[i] >= m[i]) {
+                    sp_2048_sub_in_place_64(r, m);
+                }
+            }
+        }
+        else if (e[0] == 0x3) {
             if (err == MP_OKAY) {
                 sp_2048_sqr_64(r, ah);
                 err = sp_2048_mod_64_cond(r, r, m);
@@ -27618,7 +27748,7 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
                 }
 
                 XMEMCPY(r, a, sizeof(sp_digit) * 64);
-                for (i--; i>=0; i--) {
+                for (i--; i >= 0; i--) {
                     sp_2048_mont_sqr_64(r, r, m, mp);
                     if (((e[0] >> i) & 1) == 1) {
                         sp_2048_mont_mul_64(r, r, a, m, mp);
@@ -50454,6 +50584,4148 @@ SP_NOINLINE static void sp_3072_mul_12(sp_digit* r, const sp_digit* a,
 }
 
 #endif /* !WOLFSSL_SP_LARGE_CODE */
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_3072_add_12(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5", "r6"
+    );
+    return (uint32_t)(size_t)r;
+}
+
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_3072_add_word_12(sp_digit* r, const sp_digit* a,
+        sp_digit b)
+{
+    __asm__ __volatile__ (
+        "movs	r5, #0\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, %[b]\n\t"
+#else
+        "add	r3, r3, %[b]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5"
+    );
+    return (uint32_t)(size_t)r;
+}
+
+/* Sub b from a into a. (a -= b)
+ *
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_3072_sub_in_place_24(sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "subs	r2, r2, r4\n\t"
+#else
+        "sub	r2, r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	%[a], %[a], %[a]\n\t"
+#elif defined(__clang__)
+        "sbcs	%[a], %[a]\n\t"
+#else
+        "sbc	%[a], %[a]\n\t"
+#endif
+        : [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r2", "r3", "r4", "r5"
+    );
+    return (uint32_t)(size_t)a;
+}
+
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_3072_add_24(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5", "r6"
+    );
+    return (uint32_t)(size_t)r;
+}
+
+/* AND m into each word of a and store in r.
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * m  Mask to AND against each digit.
+ */
+static void sp_3072_mask_12(sp_digit* r, const sp_digit* a, sp_digit m)
+{
+#ifdef WOLFSSL_SP_SMALL
+    int i;
+
+    for (i=0; i<12; i++) {
+        r[i] = a[i] & m;
+    }
+#else
+    r[0] = a[0] & m;
+    r[1] = a[1] & m;
+    r[2] = a[2] & m;
+    r[3] = a[3] & m;
+    r[4] = a[4] & m;
+    r[5] = a[5] & m;
+    r[6] = a[6] & m;
+    r[7] = a[7] & m;
+    r[8] = a[8] & m;
+    r[9] = a[9] & m;
+    r[10] = a[10] & m;
+    r[11] = a[11] & m;
+#endif
+}
+
+/* Multiply a and b into r. (r = a * b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static void sp_3072_mul_24(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    sp_digit* z0 = r;
+    sp_digit z1[24];
+    sp_digit a1[12];
+    sp_digit b1[12];
+    sp_digit* z2 = r + 24;
+    sp_digit u;
+    sp_digit ca;
+    sp_digit cb;
+
+    ca = sp_3072_add_12(a1, a, &a[12]);
+    cb = sp_3072_add_12(b1, b, &b[12]);
+    u  = ca & cb;
+
+    sp_3072_mul_12(z2, &a[12], &b[12]);
+    sp_3072_mul_12(z0, a, b);
+    sp_3072_mul_12(z1, a1, b1);
+
+    u += sp_3072_sub_in_place_24(z1, z0);
+    u += sp_3072_sub_in_place_24(z1, z2);
+    sp_3072_mask_12(a1, a1, 0 - cb);
+    u += sp_3072_add_12(z1 + 12, z1 + 12, a1);
+    sp_3072_mask_12(b1, b1, 0 - ca);
+    u += sp_3072_add_12(z1 + 12, z1 + 12, b1);
+
+    u += sp_3072_add_24(r + 12, r + 12, z1);
+    (void)sp_3072_add_word_12(r + 36, r + 36, u);
+}
+
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_3072_add_word_24(sp_digit* r, const sp_digit* a,
+        sp_digit b)
+{
+    __asm__ __volatile__ (
+        "movs	r5, #0\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, %[b]\n\t"
+#else
+        "add	r3, r3, %[b]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5"
+    );
+    return (uint32_t)(size_t)r;
+}
+
+/* Sub b from a into a. (a -= b)
+ *
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_3072_sub_in_place_48(sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "subs	r2, r2, r4\n\t"
+#else
+        "sub	r2, r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	%[a], %[a], %[a]\n\t"
+#elif defined(__clang__)
+        "sbcs	%[a], %[a]\n\t"
+#else
+        "sbc	%[a], %[a]\n\t"
+#endif
+        : [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r2", "r3", "r4", "r5"
+    );
+    return (uint32_t)(size_t)a;
+}
+
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5", "r6"
+    );
+    return (uint32_t)(size_t)r;
+}
+
+/* AND m into each word of a and store in r.
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * m  Mask to AND against each digit.
+ */
+static void sp_3072_mask_24(sp_digit* r, const sp_digit* a, sp_digit m)
+{
+#ifdef WOLFSSL_SP_SMALL
+    int i;
+
+    for (i=0; i<24; i++) {
+        r[i] = a[i] & m;
+    }
+#else
+    int i;
+
+    for (i = 0; i < 24; i += 8) {
+        r[i+0] = a[i+0] & m;
+        r[i+1] = a[i+1] & m;
+        r[i+2] = a[i+2] & m;
+        r[i+3] = a[i+3] & m;
+        r[i+4] = a[i+4] & m;
+        r[i+5] = a[i+5] & m;
+        r[i+6] = a[i+6] & m;
+        r[i+7] = a[i+7] & m;
+    }
+#endif
+}
+
+/* Multiply a and b into r. (r = a * b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static void sp_3072_mul_48(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    sp_digit* z0 = r;
+    sp_digit z1[48];
+    sp_digit a1[24];
+    sp_digit b1[24];
+    sp_digit* z2 = r + 48;
+    sp_digit u;
+    sp_digit ca;
+    sp_digit cb;
+
+    ca = sp_3072_add_24(a1, a, &a[24]);
+    cb = sp_3072_add_24(b1, b, &b[24]);
+    u  = ca & cb;
+
+    sp_3072_mul_24(z2, &a[24], &b[24]);
+    sp_3072_mul_24(z0, a, b);
+    sp_3072_mul_24(z1, a1, b1);
+
+    u += sp_3072_sub_in_place_48(z1, z0);
+    u += sp_3072_sub_in_place_48(z1, z2);
+    sp_3072_mask_24(a1, a1, 0 - cb);
+    u += sp_3072_add_24(z1 + 24, z1 + 24, a1);
+    sp_3072_mask_24(b1, b1, 0 - ca);
+    u += sp_3072_add_24(z1 + 24, z1 + 24, b1);
+
+    u += sp_3072_add_48(r + 24, r + 24, z1);
+    (void)sp_3072_add_word_24(r + 72, r + 72, u);
+}
+
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_3072_add_word_48(sp_digit* r, const sp_digit* a,
+        sp_digit b)
+{
+    __asm__ __volatile__ (
+        "movs	r5, #0\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, %[b]\n\t"
+#else
+        "add	r3, r3, %[b]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5"
+    );
+    return (uint32_t)(size_t)r;
+}
+
+/* Sub b from a into a. (a -= b)
+ *
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_3072_sub_in_place_96(sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "subs	r2, r2, r4\n\t"
+#else
+        "sub	r2, r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+        "ldm	%[b]!, {r4, r5}\n\t"
+        "ldr	r2, [%[a]]\n\t"
+        "ldr	r3, [%[a], #4]\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r2, r2, r4\n\t"
+#elif defined(__clang__)
+        "sbcs	r2, r4\n\t"
+#else
+        "sbc	r2, r4\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+        "stm	%[a]!, {r2, r3}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	%[a], %[a], %[a]\n\t"
+#elif defined(__clang__)
+        "sbcs	%[a], %[a]\n\t"
+#else
+        "sbc	%[a], %[a]\n\t"
+#endif
+        : [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r2", "r3", "r4", "r5"
+    );
+    return (uint32_t)(size_t)a;
+}
+
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_3072_add_96(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r6\n\t"
+#else
+        "adc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5", "r6"
+    );
+    return (uint32_t)(size_t)r;
+}
+
+/* AND m into each word of a and store in r.
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * m  Mask to AND against each digit.
+ */
+static void sp_3072_mask_48(sp_digit* r, const sp_digit* a, sp_digit m)
+{
+#ifdef WOLFSSL_SP_SMALL
+    int i;
+
+    for (i=0; i<48; i++) {
+        r[i] = a[i] & m;
+    }
+#else
+    int i;
+
+    for (i = 0; i < 48; i += 8) {
+        r[i+0] = a[i+0] & m;
+        r[i+1] = a[i+1] & m;
+        r[i+2] = a[i+2] & m;
+        r[i+3] = a[i+3] & m;
+        r[i+4] = a[i+4] & m;
+        r[i+5] = a[i+5] & m;
+        r[i+6] = a[i+6] & m;
+        r[i+7] = a[i+7] & m;
+    }
+#endif
+}
+
+/* Multiply a and b into r. (r = a * b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static void sp_3072_mul_96(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    sp_digit* z0 = r;
+    sp_digit z1[96];
+    sp_digit a1[48];
+    sp_digit b1[48];
+    sp_digit* z2 = r + 96;
+    sp_digit u;
+    sp_digit ca;
+    sp_digit cb;
+
+    ca = sp_3072_add_48(a1, a, &a[48]);
+    cb = sp_3072_add_48(b1, b, &b[48]);
+    u  = ca & cb;
+
+    sp_3072_mul_48(z2, &a[48], &b[48]);
+    sp_3072_mul_48(z0, a, b);
+    sp_3072_mul_48(z1, a1, b1);
+
+    u += sp_3072_sub_in_place_96(z1, z0);
+    u += sp_3072_sub_in_place_96(z1, z2);
+    sp_3072_mask_48(a1, a1, 0 - cb);
+    u += sp_3072_add_48(z1 + 48, z1 + 48, a1);
+    sp_3072_mask_48(b1, b1, 0 - ca);
+    u += sp_3072_add_48(z1 + 48, z1 + 48, b1);
+
+    u += sp_3072_add_96(r + 48, r + 48, z1);
+    (void)sp_3072_add_word_48(r + 144, r + 144, u);
+}
+
 #ifndef WOLFSSL_SP_LARGE_CODE
 /* Square a and put result in r. (r = a * a)
  *
@@ -65650,886 +69922,126 @@ SP_NOINLINE static void sp_3072_sqr_12(sp_digit* r, const sp_digit* a)
 }
 
 #endif /* !WOLFSSL_SP_LARGE_CODE */
-/* Add b to a into r. (r = a + b)
+/* Sub b from a into r. (r = a - b)
  *
  * r  A single precision integer.
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_add_12(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static sp_digit sp_3072_sub_12(sp_digit* r, const sp_digit* a,
         const sp_digit* b)
 {
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, r5\n\t"
+        "subs	r3, r3, r5\n\t"
 #else
-        "add	r3, r3, r5\n\t"
+        "sub	r3, r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "movs	%[r], #0\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	%[r], %[r]\n\t"
+        "sbc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "sbcs	r4, r6\n\t"
+#else
+        "sbc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "sbcs	r4, r6\n\t"
+#else
+        "sbc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "sbcs	%[r], %[r]\n\t"
+#else
+        "sbc	%[r], %[r]\n\t"
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
         : "memory", "r3", "r4", "r5", "r6"
-    );
-    return (uint32_t)(size_t)r;
-}
-
-/* Add b to a into r. (r = a + b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_3072_add_to_word_12(sp_digit* r, sp_digit a,
-        const sp_digit* b)
-{
-    __asm__ __volatile__ (
-        "movs	r5, #0\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, %[a]\n\t"
-#else
-        "add	r3, r3, %[a]\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "movs	%[r], #0\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
-#elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
-#else
-        "adc	%[r], %[r]\n\t"
-#endif
-        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
-        :
-        : "memory", "r3", "r4", "r5"
-    );
-    return (uint32_t)(size_t)r;
-}
-
-/* Sub b from a into a. (a -= b)
- *
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_3072_sub_in_place_24(sp_digit* a,
-        const sp_digit* b)
-{
-    __asm__ __volatile__ (
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "subs	r2, r2, r4\n\t"
-#else
-        "sub	r2, r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	%[a], %[a], %[a]\n\t"
-#elif defined(__clang__)
-        "sbcs	%[a], %[a]\n\t"
-#else
-        "sbc	%[a], %[a]\n\t"
-#endif
-        : [a] "+l" (a), [b] "+l" (b)
-        :
-        : "memory", "r2", "r3", "r4", "r5"
-    );
-    return (uint32_t)(size_t)a;
-}
-
-/* Add b to a into r. (r = a + b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_3072_add_24(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
-{
-    __asm__ __volatile__ (
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, r5\n\t"
-#else
-        "add	r3, r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "movs	%[r], #0\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
-#elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
-#else
-        "adc	%[r], %[r]\n\t"
-#endif
-        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
-        :
-        : "memory", "r3", "r4", "r5", "r6"
-    );
-    return (uint32_t)(size_t)r;
-}
-
-/* AND m into each word of a and store in r.
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
- */
-static void sp_3072_mask_12(sp_digit* r, const sp_digit* a, sp_digit m)
-{
-#ifdef WOLFSSL_SP_SMALL
-    int i;
-
-    for (i=0; i<12; i++) {
-        r[i] = a[i] & m;
-    }
-#else
-    r[0] = a[0] & m;
-    r[1] = a[1] & m;
-    r[2] = a[2] & m;
-    r[3] = a[3] & m;
-    r[4] = a[4] & m;
-    r[5] = a[5] & m;
-    r[6] = a[6] & m;
-    r[7] = a[7] & m;
-    r[8] = a[8] & m;
-    r[9] = a[9] & m;
-    r[10] = a[10] & m;
-    r[11] = a[11] & m;
-#endif
-}
-
-/* Multiply a and b into r. (r = a * b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static void sp_3072_mul_24(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
-{
-    sp_digit* z0 = r;
-    sp_digit z1[24];
-    sp_digit a1[12];
-    sp_digit b1[12];
-    sp_digit z2[24];
-    sp_digit u;
-    sp_digit ca;
-    sp_digit cb;
-
-    ca = sp_3072_add_12(a1, a, &a[12]);
-    cb = sp_3072_add_12(b1, b, &b[12]);
-    u  = ca & cb;
-    sp_3072_mul_12(z1, a1, b1);
-    sp_3072_mul_12(z2, &a[12], &b[12]);
-    sp_3072_mul_12(z0, a, b);
-    sp_3072_mask_12(r + 24, a1, 0 - cb);
-    sp_3072_mask_12(b1, b1, 0 - ca);
-    u += sp_3072_add_12(r + 24, r + 24, b1);
-    u += sp_3072_sub_in_place_24(z1, z2);
-    u += sp_3072_sub_in_place_24(z1, z0);
-    u += sp_3072_add_24(r + 12, r + 12, z1);
-    u += sp_3072_add_12(r + 24, r + 24, z2);
-    (void)sp_3072_add_to_word_12(r + 36, u, z2 + 12);
-}
-
-/* Double a into r. (r = a + a)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_3072_dbl_12(sp_digit* r, const sp_digit* a)
-{
-    __asm__ __volatile__ (
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r2, r2, r2\n\t"
-#else
-        "add	r2, r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "movs	%[r], #0\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
-#elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
-#else
-        "adc	%[r], %[r]\n\t"
-#endif
-        : [r] "+l" (r), [a] "+l" (a)
-        :
-        : "memory", "r2", "r3", "r4", "r5"
     );
     return (uint32_t)(size_t)r;
 }
@@ -66542,1385 +70054,255 @@ SP_NOINLINE static sp_digit sp_3072_dbl_12(sp_digit* r, const sp_digit* a)
 SP_NOINLINE static void sp_3072_sqr_24(sp_digit* r, const sp_digit* a)
 {
     sp_digit* z0 = r;
-    sp_digit z2[24];
+    sp_digit* z2 = r + 24;
     sp_digit z1[24];
-    sp_digit a1[12];
+    sp_digit* a1 = z1;
+    sp_digit* zero = z1 + 12;
     sp_digit u;
+    sp_digit mask;
+    sp_digit* p1;
+    sp_digit* p2;
 
-    u = sp_3072_add_12(a1, a, &a[12]);
-    sp_3072_sqr_12(z1, a1);
+    XMEMSET(zero, 0, sizeof(sp_digit) * 12);
+
+    mask = sp_3072_sub_12(a1, a, &a[12]);
+    p1 = (sp_digit*)(((sp_digit)zero &   mask ) | ((sp_digit)a1 & (~mask)));
+    p2 = (sp_digit*)(((sp_digit)zero & (~mask)) | ((sp_digit)a1 &   mask ));
+    (void)sp_3072_sub_12(a1, p1, p2);
+
     sp_3072_sqr_12(z2, &a[12]);
     sp_3072_sqr_12(z0, a);
-    sp_3072_mask_12(r + 24, a1, 0 - u);
-    u += sp_3072_dbl_12(r + 24, r + 24);
-    u += sp_3072_sub_in_place_24(z1, z2);
-    u += sp_3072_sub_in_place_24(z1, z0);
-    u += sp_3072_add_24(r + 12, r + 12, z1);
-    u += sp_3072_add_12(r + 24, r + 24, z2);
-    (void)sp_3072_add_to_word_12(r + 36, u, z2 + 12);
+    sp_3072_sqr_12(z1, a1);
+
+    u = 0;
+    u -= sp_3072_sub_in_place_24(z1, z2);
+    u -= sp_3072_sub_in_place_24(z1, z0);
+    u += sp_3072_sub_in_place_24(r + 12, z1);
+    sp_3072_add_word_12(r + 36, r + 36, u);
 }
 
-/* Add b to a into r. (r = a + b)
+/* Sub b from a into r. (r = a - b)
  *
  * r  A single precision integer.
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_add_to_word_24(sp_digit* r, sp_digit a,
-        const sp_digit* b)
-{
-    __asm__ __volatile__ (
-        "movs	r5, #0\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, %[a]\n\t"
-#else
-        "add	r3, r3, %[a]\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "movs	%[r], #0\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
-#elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
-#else
-        "adc	%[r], %[r]\n\t"
-#endif
-        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
-        :
-        : "memory", "r3", "r4", "r5"
-    );
-    return (uint32_t)(size_t)r;
-}
-
-/* Sub b from a into a. (a -= b)
- *
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_3072_sub_in_place_48(sp_digit* a,
-        const sp_digit* b)
-{
-    __asm__ __volatile__ (
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "subs	r2, r2, r4\n\t"
-#else
-        "sub	r2, r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	%[a], %[a], %[a]\n\t"
-#elif defined(__clang__)
-        "sbcs	%[a], %[a]\n\t"
-#else
-        "sbc	%[a], %[a]\n\t"
-#endif
-        : [a] "+l" (a), [b] "+l" (b)
-        :
-        : "memory", "r2", "r3", "r4", "r5"
-    );
-    return (uint32_t)(size_t)a;
-}
-
-/* Add b to a into r. (r = a + b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static sp_digit sp_3072_sub_24(sp_digit* r, const sp_digit* a,
         const sp_digit* b)
 {
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, r5\n\t"
+        "subs	r3, r3, r5\n\t"
 #else
-        "add	r3, r3, r5\n\t"
+        "sub	r3, r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "movs	%[r], #0\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
+        "sbcs	%[r], %[r], %[r]\n\t"
 #elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
+        "sbcs	%[r], %[r]\n\t"
 #else
-        "adc	%[r], %[r]\n\t"
+        "sbc	%[r], %[r]\n\t"
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
         : "memory", "r3", "r4", "r5", "r6"
-    );
-    return (uint32_t)(size_t)r;
-}
-
-/* AND m into each word of a and store in r.
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
- */
-static void sp_3072_mask_24(sp_digit* r, const sp_digit* a, sp_digit m)
-{
-#ifdef WOLFSSL_SP_SMALL
-    int i;
-
-    for (i=0; i<24; i++) {
-        r[i] = a[i] & m;
-    }
-#else
-    int i;
-
-    for (i = 0; i < 24; i += 8) {
-        r[i+0] = a[i+0] & m;
-        r[i+1] = a[i+1] & m;
-        r[i+2] = a[i+2] & m;
-        r[i+3] = a[i+3] & m;
-        r[i+4] = a[i+4] & m;
-        r[i+5] = a[i+5] & m;
-        r[i+6] = a[i+6] & m;
-        r[i+7] = a[i+7] & m;
-    }
-#endif
-}
-
-/* Multiply a and b into r. (r = a * b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static void sp_3072_mul_48(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
-{
-    sp_digit* z0 = r;
-    sp_digit z1[48];
-    sp_digit a1[24];
-    sp_digit b1[24];
-    sp_digit z2[48];
-    sp_digit u;
-    sp_digit ca;
-    sp_digit cb;
-
-    ca = sp_3072_add_24(a1, a, &a[24]);
-    cb = sp_3072_add_24(b1, b, &b[24]);
-    u  = ca & cb;
-    sp_3072_mul_24(z1, a1, b1);
-    sp_3072_mul_24(z2, &a[24], &b[24]);
-    sp_3072_mul_24(z0, a, b);
-    sp_3072_mask_24(r + 48, a1, 0 - cb);
-    sp_3072_mask_24(b1, b1, 0 - ca);
-    u += sp_3072_add_24(r + 48, r + 48, b1);
-    u += sp_3072_sub_in_place_48(z1, z2);
-    u += sp_3072_sub_in_place_48(z1, z0);
-    u += sp_3072_add_48(r + 24, r + 24, z1);
-    u += sp_3072_add_24(r + 48, r + 48, z2);
-    (void)sp_3072_add_to_word_24(r + 72, u, z2 + 24);
-}
-
-/* Double a into r. (r = a + a)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_3072_dbl_24(sp_digit* r, const sp_digit* a)
-{
-    __asm__ __volatile__ (
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r2, r2, r2\n\t"
-#else
-        "add	r2, r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "movs	%[r], #0\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
-#elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
-#else
-        "adc	%[r], %[r]\n\t"
-#endif
-        : [r] "+l" (r), [a] "+l" (a)
-        :
-        : "memory", "r2", "r3", "r4", "r5"
     );
     return (uint32_t)(size_t)r;
 }
@@ -67933,2597 +70315,459 @@ SP_NOINLINE static sp_digit sp_3072_dbl_24(sp_digit* r, const sp_digit* a)
 SP_NOINLINE static void sp_3072_sqr_48(sp_digit* r, const sp_digit* a)
 {
     sp_digit* z0 = r;
-    sp_digit z2[48];
+    sp_digit* z2 = r + 48;
     sp_digit z1[48];
-    sp_digit a1[24];
+    sp_digit* a1 = z1;
+    sp_digit* zero = z1 + 24;
     sp_digit u;
+    sp_digit mask;
+    sp_digit* p1;
+    sp_digit* p2;
 
-    u = sp_3072_add_24(a1, a, &a[24]);
-    sp_3072_sqr_24(z1, a1);
+    XMEMSET(zero, 0, sizeof(sp_digit) * 24);
+
+    mask = sp_3072_sub_24(a1, a, &a[24]);
+    p1 = (sp_digit*)(((sp_digit)zero &   mask ) | ((sp_digit)a1 & (~mask)));
+    p2 = (sp_digit*)(((sp_digit)zero & (~mask)) | ((sp_digit)a1 &   mask ));
+    (void)sp_3072_sub_24(a1, p1, p2);
+
     sp_3072_sqr_24(z2, &a[24]);
     sp_3072_sqr_24(z0, a);
-    sp_3072_mask_24(r + 48, a1, 0 - u);
-    u += sp_3072_dbl_24(r + 48, r + 48);
-    u += sp_3072_sub_in_place_48(z1, z2);
-    u += sp_3072_sub_in_place_48(z1, z0);
-    u += sp_3072_add_48(r + 24, r + 24, z1);
-    u += sp_3072_add_24(r + 48, r + 48, z2);
-    (void)sp_3072_add_to_word_24(r + 72, u, z2 + 24);
+    sp_3072_sqr_24(z1, a1);
+
+    u = 0;
+    u -= sp_3072_sub_in_place_48(z1, z2);
+    u -= sp_3072_sub_in_place_48(z1, z0);
+    u += sp_3072_sub_in_place_48(r + 24, z1);
+    sp_3072_add_word_24(r + 72, r + 72, u);
 }
 
-/* Add b to a into r. (r = a + b)
+/* Sub b from a into r. (r = a - b)
  *
  * r  A single precision integer.
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_add_to_word_48(sp_digit* r, sp_digit a,
-        const sp_digit* b)
-{
-    __asm__ __volatile__ (
-        "movs	r5, #0\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, %[a]\n\t"
-#else
-        "add	r3, r3, %[a]\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r5\n\t"
-#else
-        "adc	r4, r5\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "movs	%[r], #0\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
-#elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
-#else
-        "adc	%[r], %[r]\n\t"
-#endif
-        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
-        :
-        : "memory", "r3", "r4", "r5"
-    );
-    return (uint32_t)(size_t)r;
-}
-
-/* Sub b from a into a. (a -= b)
- *
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_3072_sub_in_place_96(sp_digit* a,
-        const sp_digit* b)
-{
-    __asm__ __volatile__ (
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "subs	r2, r2, r4\n\t"
-#else
-        "sub	r2, r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-        "ldm	%[b]!, {r4, r5}\n\t"
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	r2, r2, r4\n\t"
-#elif defined(__clang__)
-        "sbcs	r2, r4\n\t"
-#else
-        "sbc	r2, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "sbcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "sbcs	r3, r5\n\t"
-#else
-        "sbc	r3, r5\n\t"
-#endif
-        "stm	%[a]!, {r2, r3}\n\t"
-#ifdef WOLFSSL_KEIL
-        "sbcs	%[a], %[a], %[a]\n\t"
-#elif defined(__clang__)
-        "sbcs	%[a], %[a]\n\t"
-#else
-        "sbc	%[a], %[a]\n\t"
-#endif
-        : [a] "+l" (a), [b] "+l" (b)
-        :
-        : "memory", "r2", "r3", "r4", "r5"
-    );
-    return (uint32_t)(size_t)a;
-}
-
-/* Add b to a into r. (r = a + b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_3072_add_96(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static sp_digit sp_3072_sub_48(sp_digit* r, const sp_digit* a,
         const sp_digit* b)
 {
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, r5\n\t"
+        "subs	r3, r3, r5\n\t"
 #else
-        "add	r3, r3, r5\n\t"
+        "sub	r3, r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
+        "sbcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
-        "adcs	r3, r5\n\t"
+        "sbcs	r3, r5\n\t"
 #else
-        "adc	r3, r5\n\t"
+        "sbc	r3, r5\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
+        "sbcs	r4, r4, r6\n\t"
 #elif defined(__clang__)
-        "adcs	r4, r6\n\t"
+        "sbcs	r4, r6\n\t"
 #else
-        "adc	r4, r6\n\t"
-#endif
-        "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r5, r6}\n\t"
-        "ldm	%[a]!, {r3, r4}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r5\n\t"
-#else
-        "adc	r3, r5\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r6\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r6\n\t"
-#else
-        "adc	r4, r6\n\t"
+        "sbc	r4, r6\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "movs	%[r], #0\n\t"
 #ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
+        "sbcs	%[r], %[r], %[r]\n\t"
 #elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
+        "sbcs	%[r], %[r]\n\t"
 #else
-        "adc	%[r], %[r]\n\t"
+        "sbc	%[r], %[r]\n\t"
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
         : "memory", "r3", "r4", "r5", "r6"
-    );
-    return (uint32_t)(size_t)r;
-}
-
-/* AND m into each word of a and store in r.
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
- */
-static void sp_3072_mask_48(sp_digit* r, const sp_digit* a, sp_digit m)
-{
-#ifdef WOLFSSL_SP_SMALL
-    int i;
-
-    for (i=0; i<48; i++) {
-        r[i] = a[i] & m;
-    }
-#else
-    int i;
-
-    for (i = 0; i < 48; i += 8) {
-        r[i+0] = a[i+0] & m;
-        r[i+1] = a[i+1] & m;
-        r[i+2] = a[i+2] & m;
-        r[i+3] = a[i+3] & m;
-        r[i+4] = a[i+4] & m;
-        r[i+5] = a[i+5] & m;
-        r[i+6] = a[i+6] & m;
-        r[i+7] = a[i+7] & m;
-    }
-#endif
-}
-
-/* Multiply a and b into r. (r = a * b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-SP_NOINLINE static void sp_3072_mul_96(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
-{
-    sp_digit* z0 = r;
-    sp_digit z1[96];
-    sp_digit a1[48];
-    sp_digit b1[48];
-    sp_digit z2[96];
-    sp_digit u;
-    sp_digit ca;
-    sp_digit cb;
-
-    ca = sp_3072_add_48(a1, a, &a[48]);
-    cb = sp_3072_add_48(b1, b, &b[48]);
-    u  = ca & cb;
-    sp_3072_mul_48(z1, a1, b1);
-    sp_3072_mul_48(z2, &a[48], &b[48]);
-    sp_3072_mul_48(z0, a, b);
-    sp_3072_mask_48(r + 96, a1, 0 - cb);
-    sp_3072_mask_48(b1, b1, 0 - ca);
-    u += sp_3072_add_48(r + 96, r + 96, b1);
-    u += sp_3072_sub_in_place_96(z1, z2);
-    u += sp_3072_sub_in_place_96(z1, z0);
-    u += sp_3072_add_96(r + 48, r + 48, z1);
-    u += sp_3072_add_48(r + 96, r + 96, z2);
-    (void)sp_3072_add_to_word_48(r + 144, u, z2 + 48);
-}
-
-/* Double a into r. (r = a + a)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- */
-SP_NOINLINE static sp_digit sp_3072_dbl_48(sp_digit* r, const sp_digit* a)
-{
-    __asm__ __volatile__ (
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r2, r2, r2\n\t"
-#else
-        "add	r2, r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "ldm	%[a]!, {r2, r3, r4, r5}\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	r2, r2, r2\n\t"
-#elif defined(__clang__)
-        "adcs	r2, r2\n\t"
-#else
-        "adc	r2, r2\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r3, r3, r3\n\t"
-#elif defined(__clang__)
-        "adcs	r3, r3\n\t"
-#else
-        "adc	r3, r3\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r4, r4, r4\n\t"
-#elif defined(__clang__)
-        "adcs	r4, r4\n\t"
-#else
-        "adc	r4, r4\n\t"
-#endif
-#ifdef WOLFSSL_KEIL
-        "adcs	r5, r5, r5\n\t"
-#elif defined(__clang__)
-        "adcs	r5, r5\n\t"
-#else
-        "adc	r5, r5\n\t"
-#endif
-        "stm	%[r]!, {r2, r3, r4, r5}\n\t"
-        "movs	%[r], #0\n\t"
-#ifdef WOLFSSL_KEIL
-        "adcs	%[r], %[r], %[r]\n\t"
-#elif defined(__clang__)
-        "adcs	%[r], %[r]\n\t"
-#else
-        "adc	%[r], %[r]\n\t"
-#endif
-        : [r] "+l" (r), [a] "+l" (a)
-        :
-        : "memory", "r2", "r3", "r4", "r5"
     );
     return (uint32_t)(size_t)r;
 }
@@ -70536,22 +70780,31 @@ SP_NOINLINE static sp_digit sp_3072_dbl_48(sp_digit* r, const sp_digit* a)
 SP_NOINLINE static void sp_3072_sqr_96(sp_digit* r, const sp_digit* a)
 {
     sp_digit* z0 = r;
-    sp_digit z2[96];
+    sp_digit* z2 = r + 96;
     sp_digit z1[96];
-    sp_digit a1[48];
+    sp_digit* a1 = z1;
+    sp_digit* zero = z1 + 48;
     sp_digit u;
+    sp_digit mask;
+    sp_digit* p1;
+    sp_digit* p2;
 
-    u = sp_3072_add_48(a1, a, &a[48]);
-    sp_3072_sqr_48(z1, a1);
+    XMEMSET(zero, 0, sizeof(sp_digit) * 48);
+
+    mask = sp_3072_sub_48(a1, a, &a[48]);
+    p1 = (sp_digit*)(((sp_digit)zero &   mask ) | ((sp_digit)a1 & (~mask)));
+    p2 = (sp_digit*)(((sp_digit)zero & (~mask)) | ((sp_digit)a1 &   mask ));
+    (void)sp_3072_sub_48(a1, p1, p2);
+
     sp_3072_sqr_48(z2, &a[48]);
     sp_3072_sqr_48(z0, a);
-    sp_3072_mask_48(r + 96, a1, 0 - u);
-    u += sp_3072_dbl_48(r + 96, r + 96);
-    u += sp_3072_sub_in_place_96(z1, z2);
-    u += sp_3072_sub_in_place_96(z1, z0);
-    u += sp_3072_add_96(r + 48, r + 48, z1);
-    u += sp_3072_add_48(r + 96, r + 96, z2);
-    (void)sp_3072_add_to_word_48(r + 144, u, z2 + 48);
+    sp_3072_sqr_48(z1, a1);
+
+    u = 0;
+    u -= sp_3072_sub_in_place_96(z1, z2);
+    u -= sp_3072_sub_in_place_96(z1, z0);
+    u += sp_3072_sub_in_place_96(r + 48, z1);
+    sp_3072_add_word_48(r + 144, r + 144, u);
 }
 
 #endif /* !WOLFSSL_SP_SMALL */
@@ -73942,7 +74195,7 @@ SP_NOINLINE static void sp_3072_mont_reduce_48(sp_digit* a, const sp_digit* m,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_3072_mont_mul_48(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_3072_mont_mul_48(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
     sp_3072_mul_48(r, a, b);
@@ -73956,7 +74209,7 @@ static void sp_3072_mont_mul_48(sp_digit* r, const sp_digit* a,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_3072_mont_sqr_48(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_3072_mont_sqr_48(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
     sp_3072_sqr_48(r, a);
@@ -74149,11 +74402,11 @@ SP_NOINLINE static void sp_3072_mul_d_48(sp_digit* r, const sp_digit* a,
     );
 }
 
-/* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
+/* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
- * div  The dividend.
+ * div  The divisor.
  * returns the result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
@@ -74778,7 +75031,7 @@ static WC_INLINE int sp_3072_div_48(const sp_digit* a, const sp_digit* d, sp_dig
 
     div = d[47];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 48);
-    for (i=47; i>=0; i--) {
+    for (i = 47; i >= 0; i--) {
         sp_digit hi = t1[48 + i] - (t1[48 + i] == div);
         r1 = div_3072_word_48(hi, t1[48 + i - 1], div);
 
@@ -77407,7 +77660,7 @@ SP_NOINLINE static void sp_3072_mont_reduce_96(sp_digit* a, const sp_digit* m,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_3072_mont_mul_96(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_3072_mont_mul_96(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
     sp_3072_mul_96(r, a, b);
@@ -77421,7 +77674,7 @@ static void sp_3072_mont_mul_96(sp_digit* r, const sp_digit* a,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_3072_mont_sqr_96(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_3072_mont_sqr_96(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
     sp_3072_sqr_96(r, a);
@@ -78342,11 +78595,11 @@ SP_NOINLINE static sp_digit sp_3072_sub_96(sp_digit* r, const sp_digit* a,
 }
 
 #endif /* WOLFSSL_SP_SMALL */
-/* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
+/* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
- * div  The dividend.
+ * div  The divisor.
  * returns the result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
@@ -78862,9 +79115,13 @@ static WC_INLINE int sp_3072_div_96_cond(const sp_digit* a, const sp_digit* d, s
 
     div = d[95];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 96);
-    for (i=95; i>=0; i--) {
-        sp_digit hi = t1[96 + i] - (t1[96 + i] == div);
-        r1 = div_3072_word_96(hi, t1[96 + i - 1], div);
+    for (i = 95; i >= 0; i--) {
+        if (t1[96 + i] == div) {
+            r1 = SP_DIGIT_MAX;
+        }
+        else {
+            r1 = div_3072_word_96(t1[96 + i], t1[96 + i - 1], div);
+        }
 
         sp_3072_mul_d_96(t2, d, r1);
         t1[96 + i] += sp_3072_sub_in_place_96(&t1[i], t2);
@@ -79067,7 +79324,7 @@ static WC_INLINE int sp_3072_div_96(const sp_digit* a, const sp_digit* d, sp_dig
 
     div = d[95];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 96);
-    for (i=95; i>=0; i--) {
+    for (i = 95; i >= 0; i--) {
         sp_digit hi = t1[96 + i] - (t1[96 + i] == div);
         r1 = div_3072_word_96(hi, t1[96 + i - 1], div);
 
@@ -79453,9 +79710,9 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
 #endif
 
     if (err == MP_OKAY) {
+        ah = a + 96;
         r = a + 96 * 2;
         m = r + 96 * 2;
-        ah = a + 96;
 
         sp_3072_from_bin(ah, 96, in, inLen);
 #if DIGIT_BIT >= 32
@@ -79473,7 +79730,38 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
     if (err == MP_OKAY) {
         sp_3072_from_mp(m, 96, mm);
 
-        if (e[0] == 0x3) {
+        if (e[0] == 0x10001) {
+            int i;
+            sp_digit mp;
+
+            sp_3072_mont_setup(m, &mp);
+
+            /* Convert to Montgomery form. */
+            XMEMSET(a, 0, sizeof(sp_digit) * 96);
+            err = sp_3072_mod_96_cond(r, a, m);
+            /* Montgomery form: r = a.R mod m */
+
+            if (err == MP_OKAY) {
+                /* r = a ^ 0x10000 => r = a squared 16 times */
+                for (i = 15; i >= 0; i--) {
+                    sp_3072_mont_sqr_96(r, r, m, mp);
+                }
+                /* mont_red(r.R.R) = (r.R.R / R) mod m = r.R mod m
+                 * mont_red(r.R * a) = (r.R.a / R) mod m = r.a mod m
+                 */
+                sp_3072_mont_mul_96(r, r, ah, m, mp);
+
+                for (i = 95; i > 0; i--) {
+                    if (r[i] != m[i]) {
+                        break;
+                    }
+                }
+                if (r[i] >= m[i]) {
+                    sp_3072_sub_in_place_96(r, m);
+                }
+            }
+        }
+        else if (e[0] == 0x3) {
             if (err == MP_OKAY) {
                 sp_3072_sqr_96(r, ah);
                 err = sp_3072_mod_96_cond(r, r, m);
@@ -79501,7 +79789,7 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
                 }
 
                 XMEMCPY(r, a, sizeof(sp_digit) * 96);
-                for (i--; i>=0; i--) {
+                for (i--; i >= 0; i--) {
                     sp_3072_mont_sqr_96(r, r, m, mp);
                     if (((e[0] >> i) & 1) == 1) {
                         sp_3072_mont_mul_96(r, r, a, m, mp);
@@ -82715,16 +83003,16 @@ static void sp_4096_to_bin_128(sp_digit* r, byte* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
-        const sp_digit* b)
+SP_NOINLINE static sp_digit sp_4096_add_word_64(sp_digit* r, const sp_digit* a,
+        sp_digit b)
 {
     __asm__ __volatile__ (
         "movs	r5, #0\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
-        "adds	r3, r3, %[a]\n\t"
+        "adds	r3, r3, %[b]\n\t"
 #else
-        "add	r3, r3, %[a]\n\t"
+        "add	r3, r3, %[b]\n\t"
 #endif
 #ifdef WOLFSSL_KEIL
         "adcs	r4, r4, r5\n\t"
@@ -82734,7 +83022,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82750,7 +83038,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82766,7 +83054,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82782,7 +83070,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82798,7 +83086,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82814,7 +83102,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82830,7 +83118,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82846,7 +83134,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82862,7 +83150,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82878,7 +83166,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82894,7 +83182,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82910,7 +83198,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82926,7 +83214,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82942,7 +83230,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82958,7 +83246,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82974,7 +83262,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -82990,7 +83278,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -83006,7 +83294,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -83022,7 +83310,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -83038,7 +83326,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -83054,7 +83342,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -83070,7 +83358,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -83086,7 +83374,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -83102,7 +83390,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -83118,7 +83406,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -83134,7 +83422,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -83150,7 +83438,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -83166,7 +83454,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -83182,7 +83470,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -83198,7 +83486,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -83214,7 +83502,7 @@ SP_NOINLINE static sp_digit sp_4096_add_to_word_64(sp_digit* r, sp_digit a,
         "adc	r4, r5\n\t"
 #endif
         "stm	%[r]!, {r3, r4}\n\t"
-        "ldm	%[b]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
 #ifdef WOLFSSL_KEIL
         "adcs	r3, r3, r5\n\t"
 #elif defined(__clang__)
@@ -85542,7 +85830,7 @@ SP_NOINLINE static void sp_4096_mul_128(sp_digit* r, const sp_digit* a,
     sp_digit z1[128];
     sp_digit a1[64];
     sp_digit b1[64];
-    sp_digit z2[128];
+    sp_digit* z2 = r + 128;
     sp_digit u;
     sp_digit ca;
     sp_digit cb;
@@ -85550,17 +85838,20 @@ SP_NOINLINE static void sp_4096_mul_128(sp_digit* r, const sp_digit* a,
     ca = sp_2048_add_64(a1, a, &a[64]);
     cb = sp_2048_add_64(b1, b, &b[64]);
     u  = ca & cb;
-    sp_2048_mul_64(z1, a1, b1);
+
     sp_2048_mul_64(z2, &a[64], &b[64]);
     sp_2048_mul_64(z0, a, b);
-    sp_2048_mask_64(r + 128, a1, 0 - cb);
-    sp_2048_mask_64(b1, b1, 0 - ca);
-    u += sp_2048_add_64(r + 128, r + 128, b1);
-    u += sp_4096_sub_in_place_128(z1, z2);
+    sp_2048_mul_64(z1, a1, b1);
+
     u += sp_4096_sub_in_place_128(z1, z0);
+    u += sp_4096_sub_in_place_128(z1, z2);
+    sp_2048_mask_64(a1, a1, 0 - cb);
+    u += sp_2048_add_64(z1 + 64, z1 + 64, a1);
+    sp_2048_mask_64(b1, b1, 0 - ca);
+    u += sp_2048_add_64(z1 + 64, z1 + 64, b1);
+
     u += sp_4096_add_128(r + 64, r + 64, z1);
-    u += sp_4096_add_64(r + 128, r + 128, z2);
-    (void)sp_4096_add_to_word_64(r + 192, u, z2 + 64);
+    (void)sp_4096_add_word_64(r + 192, r + 192, u);
 }
 
 /* Square a and put result in r. (r = a * a)
@@ -85571,22 +85862,31 @@ SP_NOINLINE static void sp_4096_mul_128(sp_digit* r, const sp_digit* a,
 SP_NOINLINE static void sp_4096_sqr_128(sp_digit* r, const sp_digit* a)
 {
     sp_digit* z0 = r;
-    sp_digit z2[128];
+    sp_digit* z2 = r + 128;
     sp_digit z1[128];
-    sp_digit a1[64];
+    sp_digit* a1 = z1;
+    sp_digit* zero = z1 + 64;
     sp_digit u;
+    sp_digit mask;
+    sp_digit* p1;
+    sp_digit* p2;
 
-    u = sp_2048_add_64(a1, a, &a[64]);
-    sp_2048_sqr_64(z1, a1);
+    XMEMSET(zero, 0, sizeof(sp_digit) * 64);
+
+    mask = sp_2048_sub_64(a1, a, &a[64]);
+    p1 = (sp_digit*)(((sp_digit)zero &   mask ) | ((sp_digit)a1 & (~mask)));
+    p2 = (sp_digit*)(((sp_digit)zero & (~mask)) | ((sp_digit)a1 &   mask ));
+    (void)sp_2048_sub_64(a1, p1, p2);
+
     sp_2048_sqr_64(z2, &a[64]);
     sp_2048_sqr_64(z0, a);
-    sp_2048_mask_64(r + 128, a1, 0 - u);
-    u += sp_2048_dbl_64(r + 128, r + 128);
-    u += sp_4096_sub_in_place_128(z1, z2);
-    u += sp_4096_sub_in_place_128(z1, z0);
-    u += sp_4096_add_128(r + 64, r + 64, z1);
-    u += sp_4096_add_64(r + 128, r + 128, z2);
-    (void)sp_4096_add_to_word_64(r + 192, u, z2 + 64);
+    sp_2048_sqr_64(z1, a1);
+
+    u = 0;
+    u -= sp_4096_sub_in_place_128(z1, z2);
+    u -= sp_4096_sub_in_place_128(z1, z0);
+    u += sp_4096_sub_in_place_128(r + 64, z1);
+    sp_4096_add_word_64(r + 192, r + 192, u);
 }
 
 #endif /* !WOLFSSL_SP_SMALL */
@@ -89501,7 +89801,7 @@ SP_NOINLINE static void sp_4096_mont_reduce_128(sp_digit* a, const sp_digit* m,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_4096_mont_mul_128(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_4096_mont_mul_128(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
     sp_4096_mul_128(r, a, b);
@@ -89515,7 +89815,7 @@ static void sp_4096_mont_mul_128(sp_digit* r, const sp_digit* a,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_4096_mont_sqr_128(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_4096_mont_sqr_128(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
     sp_4096_sqr_128(r, a);
@@ -90708,11 +91008,11 @@ SP_NOINLINE static sp_digit sp_4096_sub_128(sp_digit* r, const sp_digit* a,
 }
 
 #endif /* WOLFSSL_SP_SMALL */
-/* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
+/* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
- * div  The dividend.
+ * div  The divisor.
  * returns the result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
@@ -91228,9 +91528,13 @@ static WC_INLINE int sp_4096_div_128_cond(const sp_digit* a, const sp_digit* d, 
 
     div = d[127];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 128);
-    for (i=127; i>=0; i--) {
-        sp_digit hi = t1[128 + i] - (t1[128 + i] == div);
-        r1 = div_4096_word_128(hi, t1[128 + i - 1], div);
+    for (i = 127; i >= 0; i--) {
+        if (t1[128 + i] == div) {
+            r1 = SP_DIGIT_MAX;
+        }
+        else {
+            r1 = div_4096_word_128(t1[128 + i], t1[128 + i - 1], div);
+        }
 
         sp_4096_mul_d_128(t2, d, r1);
         t1[128 + i] += sp_4096_sub_in_place_128(&t1[i], t2);
@@ -91434,7 +91738,7 @@ static WC_INLINE int sp_4096_div_128(const sp_digit* a, const sp_digit* d, sp_di
 
     div = d[127];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 128);
-    for (i=127; i>=0; i--) {
+    for (i = 127; i >= 0; i--) {
         sp_digit hi = t1[128 + i] - (t1[128 + i] == div);
         r1 = div_4096_word_128(hi, t1[128 + i - 1], div);
 
@@ -91820,9 +92124,9 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
 #endif
 
     if (err == MP_OKAY) {
+        ah = a + 128;
         r = a + 128 * 2;
         m = r + 128 * 2;
-        ah = a + 128;
 
         sp_4096_from_bin(ah, 128, in, inLen);
 #if DIGIT_BIT >= 32
@@ -91840,7 +92144,38 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
     if (err == MP_OKAY) {
         sp_4096_from_mp(m, 128, mm);
 
-        if (e[0] == 0x3) {
+        if (e[0] == 0x10001) {
+            int i;
+            sp_digit mp;
+
+            sp_4096_mont_setup(m, &mp);
+
+            /* Convert to Montgomery form. */
+            XMEMSET(a, 0, sizeof(sp_digit) * 128);
+            err = sp_4096_mod_128_cond(r, a, m);
+            /* Montgomery form: r = a.R mod m */
+
+            if (err == MP_OKAY) {
+                /* r = a ^ 0x10000 => r = a squared 16 times */
+                for (i = 15; i >= 0; i--) {
+                    sp_4096_mont_sqr_128(r, r, m, mp);
+                }
+                /* mont_red(r.R.R) = (r.R.R / R) mod m = r.R mod m
+                 * mont_red(r.R * a) = (r.R.a / R) mod m = r.a mod m
+                 */
+                sp_4096_mont_mul_128(r, r, ah, m, mp);
+
+                for (i = 127; i > 0; i--) {
+                    if (r[i] != m[i]) {
+                        break;
+                    }
+                }
+                if (r[i] >= m[i]) {
+                    sp_4096_sub_in_place_128(r, m);
+                }
+            }
+        }
+        else if (e[0] == 0x3) {
             if (err == MP_OKAY) {
                 sp_4096_sqr_128(r, ah);
                 err = sp_4096_mod_128_cond(r, r, m);
@@ -91868,7 +92203,7 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
                 }
 
                 XMEMCPY(r, a, sizeof(sp_digit) * 128);
-                for (i--; i>=0; i--) {
+                for (i--; i >= 0; i--) {
                     sp_4096_mont_sqr_128(r, r, m, mp);
                     if (((e[0] >> i) & 1) == 1) {
                         sp_4096_mont_mul_128(r, r, a, m, mp);
@@ -98051,7 +98386,7 @@ SP_NOINLINE static void sp_256_mont_reduce_order_8(sp_digit* a,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_256_mont_mul_8(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_256_mont_mul_8(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
     sp_256_mul_8(r, a, b);
@@ -98065,7 +98400,7 @@ static void sp_256_mont_mul_8(sp_digit* r, const sp_digit* a,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_256_mont_sqr_8(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_256_mont_sqr_8(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
     sp_256_sqr_8(r, a);
@@ -103623,11 +103958,11 @@ SP_NOINLINE static void sp_256_mul_d_8(sp_digit* r, const sp_digit* a,
     );
 }
 
-/* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
+/* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
- * div  The dividend.
+ * div  The divisor.
  * returns the result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
@@ -104169,7 +104504,7 @@ static WC_INLINE int sp_256_div_8(const sp_digit* a, const sp_digit* d, sp_digit
 
     div = d[7];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 8);
-    for (i=7; i>=0; i--) {
+    for (i = 7; i >= 0; i--) {
         sp_digit hi = t1[8 + i] - (t1[8 + i] == div);
         r1 = div_256_word_8(hi, t1[8 + i - 1], div);
 
@@ -109178,7 +109513,7 @@ SP_NOINLINE static void sp_384_mont_reduce_12(sp_digit* a, const sp_digit* m,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_384_mont_mul_12(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_384_mont_mul_12(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
     sp_384_mul_12(r, a, b);
@@ -109192,7 +109527,7 @@ static void sp_384_mont_mul_12(sp_digit* r, const sp_digit* a,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_384_mont_sqr_12(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_384_mont_sqr_12(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
     sp_384_sqr_12(r, a);
@@ -114127,11 +114462,11 @@ SP_NOINLINE static void sp_384_mul_d_12(sp_digit* r, const sp_digit* a,
     );
 }
 
-/* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
+/* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
- * div  The dividend.
+ * div  The divisor.
  * returns the result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
@@ -114677,7 +115012,7 @@ static WC_INLINE int sp_384_div_12(const sp_digit* a, const sp_digit* d, sp_digi
 
     div = d[11];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 12);
-    for (i=11; i>=0; i--) {
+    for (i = 11; i >= 0; i--) {
         sp_digit hi = t1[12 + i] - (t1[12 + i] == div);
         r1 = div_384_word_12(hi, t1[12 + i - 1], div);
 
@@ -121218,7 +121553,7 @@ SP_NOINLINE static void sp_521_mont_reduce_order_17(sp_digit* a,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_521_mont_mul_17(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_521_mont_mul_17(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
     sp_521_mul_17(r, a, b);
@@ -121232,7 +121567,7 @@ static void sp_521_mont_mul_17(sp_digit* r, const sp_digit* a,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_521_mont_sqr_17(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_521_mont_sqr_17(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
     sp_521_sqr_17(r, a);
@@ -130014,11 +130349,11 @@ SP_NOINLINE static void sp_521_mul_d_17(sp_digit* r, const sp_digit* a,
     );
 }
 
-/* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
+/* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
- * div  The dividend.
+ * div  The divisor.
  * returns the result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
@@ -130574,7 +130909,7 @@ static WC_INLINE int sp_521_div_17(const sp_digit* a, const sp_digit* d, sp_digi
     sp_521_lshift_17(sd, d, 23);
     sp_521_lshift_34(t1, t1, 23);
 
-    for (i=16; i>=0; i--) {
+    for (i = 16; i >= 0; i--) {
         sp_digit hi = t1[17 + i] - (t1[17 + i] == div);
         r1 = div_521_word_17(hi, t1[17 + i - 1], div);
 
@@ -197571,6 +197906,158 @@ SP_NOINLINE static sp_digit sp_1024_add_16(sp_digit* r, const sp_digit* a,
     return (uint32_t)(size_t)r;
 }
 
+/* Add b to a into r. (r = a + b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_1024_add_word_16(sp_digit* r, const sp_digit* a,
+        sp_digit b)
+{
+    __asm__ __volatile__ (
+        "movs	r5, #0\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, %[b]\n\t"
+#else
+        "add	r3, r3, %[b]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r3, r5\n\t"
+#else
+        "adc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r4, r4, r5\n\t"
+#elif defined(__clang__)
+        "adcs	r4, r5\n\t"
+#else
+        "adc	r4, r5\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "movs	%[r], #0\n\t"
+#ifdef WOLFSSL_KEIL
+        "adcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "adcs	%[r], %[r]\n\t"
+#else
+        "adc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5"
+    );
+    return (uint32_t)(size_t)r;
+}
+
 /* Sub b from a into a. (a -= b)
  *
  * a  A single precision integer.
@@ -198218,7 +198705,7 @@ SP_NOINLINE static void sp_1024_mul_32(sp_digit* r, const sp_digit* a,
     sp_digit z1[32];
     sp_digit a1[16];
     sp_digit b1[16];
-    sp_digit z2[32];
+    sp_digit* z2 = r + 32;
     sp_digit u;
     sp_digit ca;
     sp_digit cb;
@@ -198226,17 +198713,178 @@ SP_NOINLINE static void sp_1024_mul_32(sp_digit* r, const sp_digit* a,
     ca = sp_1024_add_16(a1, a, &a[16]);
     cb = sp_1024_add_16(b1, b, &b[16]);
     u  = ca & cb;
-    sp_1024_mul_16(z1, a1, b1);
+
     sp_1024_mul_16(z2, &a[16], &b[16]);
     sp_1024_mul_16(z0, a, b);
-    sp_1024_mask_16(r + 32, a1, 0 - cb);
-    sp_1024_mask_16(b1, b1, 0 - ca);
-    u += sp_1024_add_16(r + 32, r + 32, b1);
-    u += sp_1024_sub_in_place_32(z1, z2);
+    sp_1024_mul_16(z1, a1, b1);
+
     u += sp_1024_sub_in_place_32(z1, z0);
+    u += sp_1024_sub_in_place_32(z1, z2);
+    sp_1024_mask_16(a1, a1, 0 - cb);
+    u += sp_1024_add_16(z1 + 16, z1 + 16, a1);
+    sp_1024_mask_16(b1, b1, 0 - ca);
+    u += sp_1024_add_16(z1 + 16, z1 + 16, b1);
+
     u += sp_1024_add_32(r + 16, r + 16, z1);
-    u += sp_1024_add_16(r + 32, r + 32, z2);
-    (void)sp_1024_add_to_word_16(r + 48, u, z2 + 16);
+    (void)sp_1024_add_word_16(r + 48, r + 48, u);
+}
+
+/* Sub b from a into r. (r = a - b)
+ *
+ * r  A single precision integer.
+ * a  A single precision integer.
+ * b  A single precision integer.
+ */
+SP_NOINLINE static sp_digit sp_1024_sub_16(sp_digit* r, const sp_digit* a,
+        const sp_digit* b)
+{
+    __asm__ __volatile__ (
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "subs	r3, r3, r5\n\t"
+#else
+        "sub	r3, r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "sbcs	r4, r6\n\t"
+#else
+        "sbc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "sbcs	r4, r6\n\t"
+#else
+        "sbc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "sbcs	r4, r6\n\t"
+#else
+        "sbc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "sbcs	r4, r6\n\t"
+#else
+        "sbc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "sbcs	r4, r6\n\t"
+#else
+        "sbc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "sbcs	r4, r6\n\t"
+#else
+        "sbc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "sbcs	r4, r6\n\t"
+#else
+        "sbc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+        "ldm	%[b]!, {r5, r6}\n\t"
+        "ldm	%[a]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	r3, r3, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r3, r5\n\t"
+#else
+        "sbc	r3, r5\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r4, r4, r6\n\t"
+#elif defined(__clang__)
+        "sbcs	r4, r6\n\t"
+#else
+        "sbc	r4, r6\n\t"
+#endif
+        "stm	%[r]!, {r3, r4}\n\t"
+#ifdef WOLFSSL_KEIL
+        "sbcs	%[r], %[r], %[r]\n\t"
+#elif defined(__clang__)
+        "sbcs	%[r], %[r]\n\t"
+#else
+        "sbc	%[r], %[r]\n\t"
+#endif
+        : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
+        :
+        : "memory", "r3", "r4", "r5", "r6"
+    );
+    return (uint32_t)(size_t)r;
 }
 
 /* Square a and put result in r. (r = a * a)
@@ -198247,22 +198895,31 @@ SP_NOINLINE static void sp_1024_mul_32(sp_digit* r, const sp_digit* a,
 SP_NOINLINE static void sp_1024_sqr_32(sp_digit* r, const sp_digit* a)
 {
     sp_digit* z0 = r;
-    sp_digit z2[32];
+    sp_digit* z2 = r + 32;
     sp_digit z1[32];
-    sp_digit a1[16];
+    sp_digit* a1 = z1;
+    sp_digit* zero = z1 + 16;
     sp_digit u;
+    sp_digit mask;
+    sp_digit* p1;
+    sp_digit* p2;
 
-    u = sp_1024_add_16(a1, a, &a[16]);
-    sp_1024_sqr_16(z1, a1);
+    XMEMSET(zero, 0, sizeof(sp_digit) * 16);
+
+    mask = sp_1024_sub_16(a1, a, &a[16]);
+    p1 = (sp_digit*)(((sp_digit)zero &   mask ) | ((sp_digit)a1 & (~mask)));
+    p2 = (sp_digit*)(((sp_digit)zero & (~mask)) | ((sp_digit)a1 &   mask ));
+    (void)sp_1024_sub_16(a1, p1, p2);
+
     sp_1024_sqr_16(z2, &a[16]);
     sp_1024_sqr_16(z0, a);
-    sp_1024_mask_16(r + 32, a1, 0 - u);
-    u += sp_1024_dbl_16(r + 32, r + 32);
-    u += sp_1024_sub_in_place_32(z1, z2);
-    u += sp_1024_sub_in_place_32(z1, z0);
-    u += sp_1024_add_32(r + 16, r + 16, z1);
-    u += sp_1024_add_16(r + 32, r + 32, z2);
-    (void)sp_1024_add_to_word_16(r + 48, u, z2 + 16);
+    sp_1024_sqr_16(z1, a1);
+
+    u = 0;
+    u -= sp_1024_sub_in_place_32(z1, z2);
+    u -= sp_1024_sub_in_place_32(z1, z0);
+    u += sp_1024_sub_in_place_32(r + 16, z1);
+    sp_1024_add_word_16(r + 48, r + 48, u);
 }
 
 #else
@@ -199426,11 +200083,11 @@ SP_NOINLINE static void sp_1024_mul_d_32(sp_digit* r, const sp_digit* a,
     );
 }
 
-/* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
+/* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
- * div  The dividend.
+ * div  The divisor.
  * returns the result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
@@ -200085,7 +200742,7 @@ static WC_INLINE int sp_1024_div_32(const sp_digit* a, const sp_digit* d, sp_dig
 
     div = d[31];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 32);
-    for (i=31; i>=0; i--) {
+    for (i = 31; i >= 0; i--) {
         sp_digit hi = t1[32 + i] - (t1[32 + i] == div);
         r1 = div_1024_word_32(hi, t1[32 + i - 1], div);
 
@@ -201478,7 +202135,7 @@ SP_NOINLINE static void sp_1024_mont_reduce_32(sp_digit* a, const sp_digit* m,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_1024_mont_mul_32(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_1024_mont_mul_32(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
     sp_1024_mul_32(r, a, b);
@@ -201492,7 +202149,7 @@ static void sp_1024_mont_mul_32(sp_digit* r, const sp_digit* a,
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static void sp_1024_mont_sqr_32(sp_digit* r, const sp_digit* a,
+SP_NOINLINE static void sp_1024_mont_sqr_32(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
     sp_1024_sqr_32(r, a);
