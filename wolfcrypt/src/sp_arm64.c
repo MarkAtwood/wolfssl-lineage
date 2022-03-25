@@ -23081,7 +23081,7 @@ static void sp_256_map_4(sp_point_256* r, const sp_point_256* p,
                 (sp_digit)1 : (sp_digit)0));
     sp_256_norm_4(r->y);
 
-    XMEMSET(r->z, 0, sizeof(r->z));
+    XMEMSET(r->z, 0, sizeof(r->z) / 2);
     r->z[0] = 1;
 
 }
@@ -23235,6 +23235,7 @@ static void sp_256_mont_sub_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
     );
 }
 
+#define sp_256_mont_sub_lower_4 sp_256_mont_sub_4
 /* Divide the number by 2 mod the modulus (prime). (r = a / 2 % m)
  *
  * r  Result of division by 2.
@@ -23383,7 +23384,7 @@ static int sp_256_proj_point_dbl_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r, con
         break;
     case 16:
         /* Y = Y - X */
-        sp_256_mont_sub_4(ctx->y, ctx->y, ctx->x, p256_mod);
+        sp_256_mont_sub_lower_4(ctx->y, ctx->y, ctx->x, p256_mod);
         ctx->state = 17;
         break;
     case 17:
@@ -23409,7 +23410,8 @@ static int sp_256_proj_point_dbl_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r, con
 }
 #endif /* WOLFSSL_SP_NONBLOCK */
 
-static void sp_256_proj_point_dbl_4(sp_point_256* r, const sp_point_256* p, sp_digit* t)
+static void sp_256_proj_point_dbl_4(sp_point_256* r, const sp_point_256* p,
+    sp_digit* t)
 {
     sp_digit* t1 = t;
     sp_digit* t2 = t + 2*4;
@@ -23456,13 +23458,14 @@ static void sp_256_proj_point_dbl_4(sp_point_256* r, const sp_point_256* p, sp_d
     /* X = X - Y */
     sp_256_mont_sub_4(x, x, y, p256_mod);
     /* Y = Y - X */
-    sp_256_mont_sub_4(y, y, x, p256_mod);
+    sp_256_mont_sub_lower_4(y, y, x, p256_mod);
     /* Y = Y * T1 */
     sp_256_mont_mul_4(y, y, t1, p256_mod, p256_mp_mod);
     /* Y = Y - T2 */
     sp_256_mont_sub_4(y, y, t2, p256_mod);
 }
 
+#define sp_256_mont_tpl_lower_4 sp_256_mont_tpl_4
 /* Subtract two Montgomery form numbers (r = a - b % m).
  *
  * r   Result of subtration.
@@ -23521,24 +23524,12 @@ static void sp_256_mont_dbl_sub_4(sp_digit* r, const sp_digit* a, const sp_digit
         const sp_digit* m)
 {
     __asm__ __volatile__ (
-        "ldp	x4, x5, [%[a]]\n\t"
-        "ldp	x6, x7, [%[a],16]\n\t"
-        "adds	x4, x4, x4\n\t"
-        "ldp	x8, x9, [%[b]]\n\t"
-        "adcs	x5, x5, x5\n\t"
-        "ldp	x10, x11, [%[b],16]\n\t"
-        "adcs	x6, x6, x6\n\t"
-        "adcs	x7, x7, x7\n\t"
-        "mov	x13, 0xffffffff00000001\n\t"
-        "csetm	x14, cs\n\t"
-        "subs	x4, x4, x14\n\t"
-        "lsr	x12, x14, 32\n\t"
-        "sbcs	x5, x5, x12\n\t"
-        "and	x13, x13, x14\n\t"
-        "sbcs	x6, x6, xzr\n\t"
-        "sbc	x7, x7, x13\n\t"
+        "ldp	x4, x5, [%[a], 0]\n\t"
+        "ldp	x8, x9, [%[b], 0]\n\t"
         "subs	x4, x4, x8\n\t"
+        "ldp	x6, x7, [%[a], 16]\n\t"
         "sbcs	x5, x5, x9\n\t"
+        "ldp	x10, x11, [%[b], 16]\n\t"
         "sbcs	x6, x6, x10\n\t"
         "sbcs	x7, x7, x11\n\t"
         "mov	x13, 0xffffffff00000001\n\t"
@@ -23548,8 +23539,20 @@ static void sp_256_mont_dbl_sub_4(sp_digit* r, const sp_digit* a, const sp_digit
         "adcs	x5, x5, x12\n\t"
         "and	x13, x13, x14\n\t"
         "adcs	x6, x6, xzr\n\t"
-        "stp	x4, x5, [%[r],0]\n\t"
         "adc	x7, x7, x13\n\t"
+        "adds	x4, x4, x4\n\t"
+        "adcs	x5, x5, x5\n\t"
+        "adcs	x6, x6, x6\n\t"
+        "adcs	x7, x7, x7\n\t"
+        "mov	x13, 0xffffffff00000001\n\t"
+        "csetm	x14, cs\n\t"
+        "subs	x4, x4, x14\n\t"
+        "lsr	x12, x14, 32\n\t"
+        "sbcs	x5, x5, x12\n\t"
+        "and	x13, x13, x14\n\t"
+        "sbcs	x6, x6, xzr\n\t"
+        "stp	x4, x5, [%[r],0]\n\t"
+        "sbc	x7, x7, x13\n\t"
         "stp	x6, x7, [%[r],16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
@@ -23594,16 +23597,18 @@ static void sp_256_proj_point_dbl_n_4(sp_point_256* p, int n,
         /* A = 3*(X^2 - W) */
         sp_256_mont_sqr_4(t1, x, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(t1, t1, w, p256_mod);
-        sp_256_mont_tpl_4(a, t1, p256_mod);
+        sp_256_mont_tpl_lower_4(a, t1, p256_mod);
         /* B = X*Y^2 */
         sp_256_mont_sqr_4(t1, y, p256_mod, p256_mp_mod);
         sp_256_mont_mul_4(b, t1, x, p256_mod, p256_mp_mod);
         /* X = A^2 - 2B */
         sp_256_mont_sqr_4(x, a, p256_mod, p256_mp_mod);
         sp_256_mont_sub_dbl_4(x, x, b, p256_mod);
+        /*   b = 2.(B - X) */
+        sp_256_mont_dbl_sub_4(b, b, x, p256_mod);
         /* Z = Z*Y */
         sp_256_mont_mul_4(z, z, y, p256_mod, p256_mp_mod);
-        /* t2 = Y^4 */
+        /* t1 = Y^4 */
         sp_256_mont_sqr_4(t1, t1, p256_mod, p256_mp_mod);
 #ifdef WOLFSSL_SP_SMALL
         if (n != 0)
@@ -23613,29 +23618,29 @@ static void sp_256_proj_point_dbl_n_4(sp_point_256* p, int n,
             sp_256_mont_mul_4(w, w, t1, p256_mod, p256_mp_mod);
         }
         /* y = 2*A*(B - X) - Y^4 */
-        sp_256_mont_sub_4(y, b, x, p256_mod);
-        sp_256_mont_mul_4(y, y, a, p256_mod, p256_mp_mod);
-        sp_256_mont_dbl_sub_4(y, y, t1, p256_mod);
+        sp_256_mont_mul_4(y, b, a, p256_mod, p256_mp_mod);
+        sp_256_mont_sub_4(y, y, t1, p256_mod);
     }
 #ifndef WOLFSSL_SP_SMALL
     /* A = 3*(X^2 - W) */
     sp_256_mont_sqr_4(t1, x, p256_mod, p256_mp_mod);
     sp_256_mont_sub_4(t1, t1, w, p256_mod);
-    sp_256_mont_tpl_4(a, t1, p256_mod);
+    sp_256_mont_tpl_lower_4(a, t1, p256_mod);
     /* B = X*Y^2 */
     sp_256_mont_sqr_4(t1, y, p256_mod, p256_mp_mod);
     sp_256_mont_mul_4(b, t1, x, p256_mod, p256_mp_mod);
     /* X = A^2 - 2B */
     sp_256_mont_sqr_4(x, a, p256_mod, p256_mp_mod);
     sp_256_mont_sub_dbl_4(x, x, b, p256_mod);
+    /*   b = 2.(B - X) */
+    sp_256_mont_dbl_sub_4(b, b, x, p256_mod);
     /* Z = Z*Y */
     sp_256_mont_mul_4(z, z, y, p256_mod, p256_mp_mod);
-    /* t2 = Y^4 */
+    /* t1 = Y^4 */
     sp_256_mont_sqr_4(t1, t1, p256_mod, p256_mp_mod);
     /* y = 2*A*(B - X) - Y^4 */
-    sp_256_mont_sub_4(y, b, x, p256_mod);
-    sp_256_mont_mul_4(y, y, a, p256_mod, p256_mp_mod);
-    sp_256_mont_dbl_sub_4(y, y, t1, p256_mod);
+    sp_256_mont_mul_4(y, b, a, p256_mod, p256_mp_mod);
+    sp_256_mont_sub_4(y, y, t1, p256_mod);
 #endif
     /* Y = Y/2 */
     sp_256_div2_4(y, y, p256_mod);
@@ -23673,6 +23678,7 @@ typedef struct sp_256_proj_point_add_4_ctx {
     sp_digit* t3;
     sp_digit* t4;
     sp_digit* t5;
+    sp_digit* t6;
     sp_digit* x;
     sp_digit* y;
     sp_digit* z;
@@ -23701,6 +23707,10 @@ static int sp_256_proj_point_add_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
         ctx->t3 = t + 4*4;
         ctx->t4 = t + 6*4;
         ctx->t5 = t + 8*4;
+        ctx->t6 = t + 10*4;
+        ctx->x = ctx->t6;
+        ctx->y = ctx->t1;
+        ctx->z = ctx->t2;
 
         ctx->state = 1;
         break;
@@ -23725,29 +23735,6 @@ static int sp_256_proj_point_add_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
         break;
     case 3:
     {
-        int i;
-        ctx->rp[0] = r;
-
-        /*lint allow cast to different type of pointer*/
-        ctx->rp[1] = (sp_point_256*)t; /*lint !e9087 !e740*/
-        XMEMSET(ctx->rp[1], 0, sizeof(sp_point_256));
-        ctx->x = ctx->rp[p->infinity | q->infinity]->x;
-        ctx->y = ctx->rp[p->infinity | q->infinity]->y;
-        ctx->z = ctx->rp[p->infinity | q->infinity]->z;
-
-        ctx->ap[0] = p;
-        ctx->ap[1] = q;
-        for (i=0; i<4; i++) {
-            r->x[i] = ctx->ap[p->infinity]->x[i];
-        }
-        for (i=0; i<4; i++) {
-            r->y[i] = ctx->ap[p->infinity]->y[i];
-        }
-        for (i=0; i<4; i++) {
-            r->z[i] = ctx->ap[p->infinity]->z[i];
-        }
-        r->infinity = ctx->ap[p->infinity]->infinity;
-
         ctx->state = 4;
         break;
     }
@@ -23761,16 +23748,16 @@ static int sp_256_proj_point_add_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
         ctx->state = 6;
         break;
     case 6:
-        sp_256_mont_mul_4(ctx->t1, ctx->t1, ctx->x, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(ctx->t1, ctx->t1, p->x, p256_mod, p256_mp_mod);
         ctx->state = 7;
         break;
     case 7:
         /* U2 = X2*Z1^2 */
-        sp_256_mont_sqr_4(ctx->t2, ctx->z, p256_mod, p256_mp_mod);
+        sp_256_mont_sqr_4(ctx->t2, p->z, p256_mod, p256_mp_mod);
         ctx->state = 8;
         break;
     case 8:
-        sp_256_mont_mul_4(ctx->t4, ctx->t2, ctx->z, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(ctx->t4, ctx->t2, p->z, p256_mod, p256_mp_mod);
         ctx->state = 9;
         break;
     case 9:
@@ -23779,7 +23766,7 @@ static int sp_256_proj_point_add_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
         break;
     case 10:
         /* S1 = Y1*Z2^3 */
-        sp_256_mont_mul_4(ctx->t3, ctx->t3, ctx->y, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(ctx->t3, ctx->t3, p->y, p256_mod, p256_mp_mod);
         ctx->state = 11;
         break;
     case 11:
@@ -23798,29 +23785,29 @@ static int sp_256_proj_point_add_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
         ctx->state = 14;
         break;
     case 14:
-        /* Z3 = H*Z1*Z2 */
-        sp_256_mont_mul_4(ctx->z, ctx->z, q->z, p256_mod, p256_mp_mod);
+        /* X3 = R^2 - H^3 - 2*U1*H^2 */
+        sp_256_mont_sqr_4(ctx->t5, ctx->t2, p256_mod, p256_mp_mod);
         ctx->state = 15;
         break;
     case 15:
-        sp_256_mont_mul_4(ctx->z, ctx->z, ctx->t2, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(ctx->y, ctx->t1, ctx->t5, p256_mod, p256_mp_mod);
         ctx->state = 16;
         break;
     case 16:
-        /* X3 = R^2 - H^3 - 2*U1*H^2 */
-        sp_256_mont_sqr_4(ctx->x, ctx->t4, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(ctx->t5, ctx->t5, ctx->t2, p256_mod, p256_mp_mod);
         ctx->state = 17;
         break;
     case 17:
-        sp_256_mont_sqr_4(ctx->t5, ctx->t2, p256_mod, p256_mp_mod);
+        /* Z3 = H*Z1*Z2 */
+        sp_256_mont_mul_4(ctx->z, p->z, ctx->t2, p256_mod, p256_mp_mod);
         ctx->state = 18;
         break;
     case 18:
-        sp_256_mont_mul_4(ctx->y, ctx->t1, ctx->t5, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(ctx->z, ctx->z, q->z, p256_mod, p256_mp_mod);
         ctx->state = 19;
         break;
     case 19:
-        sp_256_mont_mul_4(ctx->t5, ctx->t5, ctx->t2, p256_mod, p256_mp_mod);
+        sp_256_mont_sqr_4(ctx->x, ctx->t4, p256_mod, p256_mp_mod);
         ctx->state = 20;
         break;
     case 20:
@@ -23828,24 +23815,24 @@ static int sp_256_proj_point_add_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
         ctx->state = 21;
         break;
     case 21:
-        sp_256_mont_dbl_4(ctx->t1, ctx->y, p256_mod);
+        sp_256_mont_mul_4(ctx->t5, ctx->t5, ctx->t3, p256_mod, p256_mp_mod);
         ctx->state = 22;
         break;
     case 22:
-        sp_256_mont_sub_4(ctx->x, ctx->x, ctx->t1, p256_mod);
+        sp_256_mont_dbl_4(ctx->t3, ctx->y, p256_mod);
         ctx->state = 23;
         break;
     case 23:
-        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_256_mont_sub_4(ctx->y, ctx->y, ctx->x, p256_mod);
+        sp_256_mont_sub_4(ctx->x, ctx->x, ctx->t3, p256_mod);
         ctx->state = 24;
         break;
     case 24:
-        sp_256_mont_mul_4(ctx->y, ctx->y, ctx->t4, p256_mod, p256_mp_mod);
+        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
+        sp_256_mont_sub_lower_4(ctx->y, ctx->y, ctx->x, p256_mod);
         ctx->state = 25;
         break;
     case 25:
-        sp_256_mont_mul_4(ctx->t5, ctx->t5, ctx->t3, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(ctx->y, ctx->y, ctx->t4, p256_mod, p256_mp_mod);
         ctx->state = 26;
         break;
     case 26:
@@ -23853,8 +23840,29 @@ static int sp_256_proj_point_add_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
         ctx->state = 27;
         /* fall-through */
     case 27:
+    {
+        int i;
+        sp_digit maskp = 0 - (q->infinity & (!p->infinity));
+        sp_digit maskq = 0 - (p->infinity & (!q->infinity));
+        sp_digit maskt = ~(maskp | maskq);
+        for (i = 0; i < 4; i++) {
+            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) |
+                      (ctx->x[i] & maskt);
+        }
+        for (i = 0; i < 4; i++) {
+            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) |
+                      (ctx->y[i] & maskt);
+        }
+        for (i = 0; i < 4; i++) {
+            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) |
+                      (ctx->z[i] & maskt);
+        }
+        r->z[0] |= p->infinity & q->infinity;
+        r->infinity = p->infinity & q->infinity;
+
         err = MP_OKAY;
         break;
+    }
     }
 
     if (err == MP_OKAY && ctx->state != 27) {
@@ -23867,24 +23875,13 @@ static int sp_256_proj_point_add_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
 static void sp_256_proj_point_add_4(sp_point_256* r,
         const sp_point_256* p, const sp_point_256* q, sp_digit* t)
 {
-    const sp_point_256* ap[2];
-    sp_point_256* rp[2];
     sp_digit* t1 = t;
     sp_digit* t2 = t + 2*4;
     sp_digit* t3 = t + 4*4;
     sp_digit* t4 = t + 6*4;
     sp_digit* t5 = t + 8*4;
-    sp_digit* x;
-    sp_digit* y;
-    sp_digit* z;
-    int i;
+    sp_digit* t6 = t + 10*4;
 
-    /* Ensure only the first point is the same as the result. */
-    if (q == r) {
-        const sp_point_256* a = p;
-        p = q;
-        q = a;
-    }
 
     /* Check double */
     (void)sp_256_sub_4(t1, p256_mod, q->y);
@@ -23894,60 +23891,60 @@ static void sp_256_proj_point_add_4(sp_point_256* r,
         sp_256_proj_point_dbl_4(r, p, t);
     }
     else {
-        rp[0] = r;
-
-        /*lint allow cast to different type of pointer*/
-        rp[1] = (sp_point_256*)t; /*lint !e9087 !e740*/
-        XMEMSET(rp[1], 0, sizeof(sp_point_256));
-        x = rp[p->infinity | q->infinity]->x;
-        y = rp[p->infinity | q->infinity]->y;
-        z = rp[p->infinity | q->infinity]->z;
-
-        ap[0] = p;
-        ap[1] = q;
-        for (i=0; i<4; i++) {
-            r->x[i] = ap[p->infinity]->x[i];
-        }
-        for (i=0; i<4; i++) {
-            r->y[i] = ap[p->infinity]->y[i];
-        }
-        for (i=0; i<4; i++) {
-            r->z[i] = ap[p->infinity]->z[i];
-        }
-        r->infinity = ap[p->infinity]->infinity;
+        sp_digit maskp;
+        sp_digit maskq;
+        sp_digit maskt;
+        sp_digit* x = t6;
+        sp_digit* y = t1;
+        sp_digit* z = t2;
+        int i;
 
         /* U1 = X1*Z2^2 */
         sp_256_mont_sqr_4(t1, q->z, p256_mod, p256_mp_mod);
         sp_256_mont_mul_4(t3, t1, q->z, p256_mod, p256_mp_mod);
-        sp_256_mont_mul_4(t1, t1, x, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(t1, t1, p->x, p256_mod, p256_mp_mod);
         /* U2 = X2*Z1^2 */
-        sp_256_mont_sqr_4(t2, z, p256_mod, p256_mp_mod);
-        sp_256_mont_mul_4(t4, t2, z, p256_mod, p256_mp_mod);
+        sp_256_mont_sqr_4(t2, p->z, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(t4, t2, p->z, p256_mod, p256_mp_mod);
         sp_256_mont_mul_4(t2, t2, q->x, p256_mod, p256_mp_mod);
         /* S1 = Y1*Z2^3 */
-        sp_256_mont_mul_4(t3, t3, y, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(t3, t3, p->y, p256_mod, p256_mp_mod);
         /* S2 = Y2*Z1^3 */
         sp_256_mont_mul_4(t4, t4, q->y, p256_mod, p256_mp_mod);
         /* H = U2 - U1 */
         sp_256_mont_sub_4(t2, t2, t1, p256_mod);
         /* R = S2 - S1 */
         sp_256_mont_sub_4(t4, t4, t3, p256_mod);
-        /* Z3 = H*Z1*Z2 */
-        sp_256_mont_mul_4(z, z, q->z, p256_mod, p256_mp_mod);
-        sp_256_mont_mul_4(z, z, t2, p256_mod, p256_mp_mod);
         /* X3 = R^2 - H^3 - 2*U1*H^2 */
-        sp_256_mont_sqr_4(x, t4, p256_mod, p256_mp_mod);
         sp_256_mont_sqr_4(t5, t2, p256_mod, p256_mp_mod);
         sp_256_mont_mul_4(y, t1, t5, p256_mod, p256_mp_mod);
         sp_256_mont_mul_4(t5, t5, t2, p256_mod, p256_mp_mod);
+        /* Z3 = H*Z1*Z2 */
+        sp_256_mont_mul_4(z, p->z, t2, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(z, z, q->z, p256_mod, p256_mp_mod);
+        sp_256_mont_sqr_4(x, t4, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(x, x, t5, p256_mod);
-        sp_256_mont_dbl_4(t1, y, p256_mod);
-        sp_256_mont_sub_4(x, x, t1, p256_mod);
-        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_256_mont_sub_4(y, y, x, p256_mod);
-        sp_256_mont_mul_4(y, y, t4, p256_mod, p256_mp_mod);
         sp_256_mont_mul_4(t5, t5, t3, p256_mod, p256_mp_mod);
+        sp_256_mont_sub_dbl_4(x, x, y, p256_mod);
+        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
+        sp_256_mont_sub_lower_4(y, y, x, p256_mod);
+        sp_256_mont_mul_4(y, y, t4, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(y, y, t5, p256_mod);
+
+        maskp = 0 - (q->infinity & (!p->infinity));
+        maskq = 0 - (p->infinity & (!q->infinity));
+        maskt = ~(maskp | maskq);
+        for (i = 0; i < 4; i++) {
+            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
+        }
+        for (i = 0; i < 4; i++) {
+            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
+        }
+        for (i = 0; i < 4; i++) {
+            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
+        }
+        r->z[0] |= p->infinity & q->infinity;
+        r->infinity = p->infinity & q->infinity;
     }
 }
 
@@ -23965,7 +23962,6 @@ static void sp_256_proj_point_dbl_n_store_4(sp_point_256* r,
     sp_digit* a = t + 2*4;
     sp_digit* b = t + 4*4;
     sp_digit* t1 = t + 6*4;
-    sp_digit* t2 = t + 8*4;
     sp_digit* x = r[2*m].x;
     sp_digit* y = r[(1<<n)*m].y;
     sp_digit* z = r[2*m].z;
@@ -23994,29 +23990,28 @@ static void sp_256_proj_point_dbl_n_store_4(sp_point_256* r,
         /* A = 3*(X^2 - W) */
         sp_256_mont_sqr_4(t1, x, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(t1, t1, w, p256_mod);
-        sp_256_mont_tpl_4(a, t1, p256_mod);
+        sp_256_mont_tpl_lower_4(a, t1, p256_mod);
         /* B = X*Y^2 */
-        sp_256_mont_sqr_4(t2, y, p256_mod, p256_mp_mod);
-        sp_256_mont_mul_4(b, t2, x, p256_mod, p256_mp_mod);
+        sp_256_mont_sqr_4(t1, y, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(b, t1, x, p256_mod, p256_mp_mod);
         x = r[j].x;
         /* X = A^2 - 2B */
         sp_256_mont_sqr_4(x, a, p256_mod, p256_mp_mod);
-        sp_256_mont_dbl_4(t1, b, p256_mod);
-        sp_256_mont_sub_4(x, x, t1, p256_mod);
+        sp_256_mont_sub_dbl_4(x, x, b, p256_mod);
+        /*   b = 2.(B - X) */
+        sp_256_mont_dbl_sub_4(b, b, x, p256_mod);
         /* Z = Z*Y */
         sp_256_mont_mul_4(r[j].z, z, y, p256_mod, p256_mp_mod);
         z = r[j].z;
-        /* t2 = Y^4 */
-        sp_256_mont_sqr_4(t2, t2, p256_mod, p256_mp_mod);
+        /* t1 = Y^4 */
+        sp_256_mont_sqr_4(t1, t1, p256_mod, p256_mp_mod);
         if (i != n) {
             /* W = W*Y^4 */
-            sp_256_mont_mul_4(w, w, t2, p256_mod, p256_mp_mod);
+            sp_256_mont_mul_4(w, w, t1, p256_mod, p256_mp_mod);
         }
         /* y = 2*A*(B - X) - Y^4 */
-        sp_256_mont_sub_4(y, b, x, p256_mod);
-        sp_256_mont_mul_4(y, y, a, p256_mod, p256_mp_mod);
-        sp_256_mont_dbl_4(y, y, p256_mod);
-        sp_256_mont_sub_4(y, y, t2, p256_mod);
+        sp_256_mont_mul_4(y, b, a, p256_mod, p256_mp_mod);
+        sp_256_mont_sub_4(y, y, t1, p256_mod);
 
         /* Y = Y/2 */
         sp_256_div2_4(r[j].y, y, p256_mod);
@@ -24042,30 +24037,30 @@ static void sp_256_proj_point_add_sub_4(sp_point_256* ra,
     sp_digit* t4 = t + 6*4;
     sp_digit* t5 = t + 8*4;
     sp_digit* t6 = t + 10*4;
-    sp_digit* x = ra->x;
-    sp_digit* y = ra->y;
-    sp_digit* z = ra->z;
+    sp_digit* xa = ra->x;
+    sp_digit* ya = ra->y;
+    sp_digit* za = ra->z;
     sp_digit* xs = rs->x;
     sp_digit* ys = rs->y;
     sp_digit* zs = rs->z;
 
 
-    XMEMCPY(x, p->x, sizeof(p->x) / 2);
-    XMEMCPY(y, p->y, sizeof(p->y) / 2);
-    XMEMCPY(z, p->z, sizeof(p->z) / 2);
+    XMEMCPY(xa, p->x, sizeof(p->x) / 2);
+    XMEMCPY(ya, p->y, sizeof(p->y) / 2);
+    XMEMCPY(za, p->z, sizeof(p->z) / 2);
     ra->infinity = 0;
     rs->infinity = 0;
 
     /* U1 = X1*Z2^2 */
     sp_256_mont_sqr_4(t1, q->z, p256_mod, p256_mp_mod);
     sp_256_mont_mul_4(t3, t1, q->z, p256_mod, p256_mp_mod);
-    sp_256_mont_mul_4(t1, t1, x, p256_mod, p256_mp_mod);
+    sp_256_mont_mul_4(t1, t1, xa, p256_mod, p256_mp_mod);
     /* U2 = X2*Z1^2 */
-    sp_256_mont_sqr_4(t2, z, p256_mod, p256_mp_mod);
-    sp_256_mont_mul_4(t4, t2, z, p256_mod, p256_mp_mod);
+    sp_256_mont_sqr_4(t2, za, p256_mod, p256_mp_mod);
+    sp_256_mont_mul_4(t4, t2, za, p256_mod, p256_mp_mod);
     sp_256_mont_mul_4(t2, t2, q->x, p256_mod, p256_mp_mod);
     /* S1 = Y1*Z2^3 */
-    sp_256_mont_mul_4(t3, t3, y, p256_mod, p256_mp_mod);
+    sp_256_mont_mul_4(t3, t3, ya, p256_mod, p256_mp_mod);
     /* S2 = Y2*Z1^3 */
     sp_256_mont_mul_4(t4, t4, q->y, p256_mod, p256_mp_mod);
     /* H = U2 - U1 */
@@ -24076,30 +24071,30 @@ static void sp_256_proj_point_add_sub_4(sp_point_256* ra,
     sp_256_mont_sub_4(t4, t4, t3, p256_mod);
     /* Z3 = H*Z1*Z2 */
     /* ZS = H*Z1*Z2 */
-    sp_256_mont_mul_4(z, z, q->z, p256_mod, p256_mp_mod);
-    sp_256_mont_mul_4(z, z, t2, p256_mod, p256_mp_mod);
-    XMEMCPY(zs, z, sizeof(p->z)/2);
+    sp_256_mont_mul_4(za, za, q->z, p256_mod, p256_mp_mod);
+    sp_256_mont_mul_4(za, za, t2, p256_mod, p256_mp_mod);
+    XMEMCPY(zs, za, sizeof(p->z)/2);
     /* X3 = R^2 - H^3 - 2*U1*H^2 */
     /* XS = RS^2 - H^3 - 2*U1*H^2 */
-    sp_256_mont_sqr_4(x, t4, p256_mod, p256_mp_mod);
+    sp_256_mont_sqr_4(xa, t4, p256_mod, p256_mp_mod);
     sp_256_mont_sqr_4(xs, t6, p256_mod, p256_mp_mod);
     sp_256_mont_sqr_4(t5, t2, p256_mod, p256_mp_mod);
-    sp_256_mont_mul_4(y, t1, t5, p256_mod, p256_mp_mod);
+    sp_256_mont_mul_4(ya, t1, t5, p256_mod, p256_mp_mod);
     sp_256_mont_mul_4(t5, t5, t2, p256_mod, p256_mp_mod);
-    sp_256_mont_sub_4(x, x, t5, p256_mod);
+    sp_256_mont_sub_4(xa, xa, t5, p256_mod);
     sp_256_mont_sub_4(xs, xs, t5, p256_mod);
-    sp_256_mont_dbl_4(t1, y, p256_mod);
-    sp_256_mont_sub_4(x, x, t1, p256_mod);
+    sp_256_mont_dbl_4(t1, ya, p256_mod);
+    sp_256_mont_sub_4(xa, xa, t1, p256_mod);
     sp_256_mont_sub_4(xs, xs, t1, p256_mod);
     /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
     /* YS = -RS*(U1*H^2 - XS) - S1*H^3 */
-    sp_256_mont_sub_4(ys, y, xs, p256_mod);
-    sp_256_mont_sub_4(y, y, x, p256_mod);
-    sp_256_mont_mul_4(y, y, t4, p256_mod, p256_mp_mod);
+    sp_256_mont_sub_lower_4(ys, ya, xs, p256_mod);
+    sp_256_mont_sub_lower_4(ya, ya, xa, p256_mod);
+    sp_256_mont_mul_4(ya, ya, t4, p256_mod, p256_mp_mod);
     sp_256_sub_4(t6, p256_mod, t6);
     sp_256_mont_mul_4(ys, ys, t6, p256_mod, p256_mp_mod);
     sp_256_mont_mul_4(t5, t5, t3, p256_mod, p256_mp_mod);
-    sp_256_mont_sub_4(y, y, t5, p256_mod);
+    sp_256_mont_sub_4(ya, ya, t5, p256_mod);
     sp_256_mont_sub_4(ys, ys, t5, p256_mod);
 }
 
@@ -24382,17 +24377,12 @@ typedef struct sp_table_entry_256 {
 static void sp_256_proj_point_add_qz1_4(sp_point_256* r, const sp_point_256* p,
         const sp_point_256* q, sp_digit* t)
 {
-    const sp_point_256* ap[2];
-    sp_point_256* rp[2];
     sp_digit* t1 = t;
     sp_digit* t2 = t + 2*4;
     sp_digit* t3 = t + 4*4;
     sp_digit* t4 = t + 6*4;
     sp_digit* t5 = t + 8*4;
-    sp_digit* x;
-    sp_digit* y;
-    sp_digit* z;
-    int i;
+    sp_digit* t6 = t + 10*4;
 
     /* Check double */
     (void)sp_256_sub_4(t1, p256_mod, q->y);
@@ -24402,53 +24392,53 @@ static void sp_256_proj_point_add_qz1_4(sp_point_256* r, const sp_point_256* p,
         sp_256_proj_point_dbl_4(r, p, t);
     }
     else {
-        rp[0] = r;
-
-        /*lint allow cast to different type of pointer*/
-        rp[1] = (sp_point_256*)t; /*lint !e9087 !e740*/
-        XMEMSET(rp[1], 0, sizeof(sp_point_256));
-        x = rp[p->infinity | q->infinity]->x;
-        y = rp[p->infinity | q->infinity]->y;
-        z = rp[p->infinity | q->infinity]->z;
-
-        ap[0] = p;
-        ap[1] = q;
-        for (i=0; i<4; i++) {
-            r->x[i] = ap[p->infinity]->x[i];
-        }
-        for (i=0; i<4; i++) {
-            r->y[i] = ap[p->infinity]->y[i];
-        }
-        for (i=0; i<4; i++) {
-            r->z[i] = ap[p->infinity]->z[i];
-        }
-        r->infinity = ap[p->infinity]->infinity;
+        sp_digit maskp;
+        sp_digit maskq;
+        sp_digit maskt;
+        sp_digit* x = t2;
+        sp_digit* y = t5;
+        sp_digit* z = t6;
+        int i;
 
         /* U2 = X2*Z1^2 */
-        sp_256_mont_sqr_4(t2, z, p256_mod, p256_mp_mod);
-        sp_256_mont_mul_4(t4, t2, z, p256_mod, p256_mp_mod);
+        sp_256_mont_sqr_4(t2, p->z, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(t4, t2, p->z, p256_mod, p256_mp_mod);
         sp_256_mont_mul_4(t2, t2, q->x, p256_mod, p256_mp_mod);
         /* S2 = Y2*Z1^3 */
         sp_256_mont_mul_4(t4, t4, q->y, p256_mod, p256_mp_mod);
         /* H = U2 - X1 */
-        sp_256_mont_sub_4(t2, t2, x, p256_mod);
+        sp_256_mont_sub_4(t2, t2, p->x, p256_mod);
         /* R = S2 - Y1 */
-        sp_256_mont_sub_4(t4, t4, y, p256_mod);
+        sp_256_mont_sub_4(t4, t4, p->y, p256_mod);
         /* Z3 = H*Z1 */
-        sp_256_mont_mul_4(z, z, t2, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(z, p->z, t2, p256_mod, p256_mp_mod);
         /* X3 = R^2 - H^3 - 2*X1*H^2 */
         sp_256_mont_sqr_4(t1, t4, p256_mod, p256_mp_mod);
         sp_256_mont_sqr_4(t5, t2, p256_mod, p256_mp_mod);
-        sp_256_mont_mul_4(t3, x, t5, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(t3, p->x, t5, p256_mod, p256_mp_mod);
         sp_256_mont_mul_4(t5, t5, t2, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(x, t1, t5, p256_mod);
-        sp_256_mont_dbl_4(t1, t3, p256_mod);
-        sp_256_mont_sub_4(x, x, t1, p256_mod);
+        sp_256_mont_sub_dbl_4(x, x, t3, p256_mod);
         /* Y3 = R*(X1*H^2 - X3) - Y1*H^3 */
-        sp_256_mont_sub_4(t3, t3, x, p256_mod);
+        sp_256_mont_sub_lower_4(t3, t3, x, p256_mod);
         sp_256_mont_mul_4(t3, t3, t4, p256_mod, p256_mp_mod);
-        sp_256_mont_mul_4(t5, t5, y, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(t5, t5, p->y, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(y, t3, t5, p256_mod);
+
+        maskp = 0 - (q->infinity & (!p->infinity));
+        maskq = 0 - (p->infinity & (!q->infinity));
+        maskt = ~(maskp | maskq);
+        for (i = 0; i < 4; i++) {
+            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
+        }
+        for (i = 0; i < 4; i++) {
+            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
+        }
+        for (i = 0; i < 4; i++) {
+            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
+        }
+        r->z[0] |= p->infinity & q->infinity;
+        r->infinity = p->infinity & q->infinity;
     }
 }
 
@@ -24626,7 +24616,7 @@ static int sp_256_ecc_mulmod_stripe_4(sp_point_256* r, const sp_point_256* g,
     sp_digit* t = NULL;
 #else
     sp_point_256 rt[2];
-    sp_digit t[2 * 4 * 5];
+    sp_digit t[2 * 4 * 6];
 #endif
     sp_point_256* p = NULL;
     int i;
@@ -24647,7 +24637,7 @@ static int sp_256_ecc_mulmod_stripe_4(sp_point_256* r, const sp_point_256* g,
     if (rt == NULL)
         err = MEMORY_E;
     if (err == MP_OKAY) {
-        t = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 5, heap,
+        t = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 6, heap,
                                DYNAMIC_TYPE_ECC);
         if (t == NULL)
             err = MEMORY_E;
@@ -24828,7 +24818,7 @@ static int sp_256_ecc_mulmod_4(sp_point_256* r, const sp_point_256* g, const sp_
 #ifndef FP_ECC
     return sp_256_ecc_mulmod_win_add_sub_4(r, g, k, map, ct, heap);
 #else
-    sp_digit tmp[2 * 4 * 5];
+    sp_digit tmp[2 * 4 * 6];
     sp_cache_256_t* cache;
     int err = MP_OKAY;
 
@@ -25018,7 +25008,7 @@ static int sp_256_ecc_mulmod_stripe_4(sp_point_256* r, const sp_point_256* g,
     sp_digit* t = NULL;
 #else
     sp_point_256 rt[2];
-    sp_digit t[2 * 4 * 5];
+    sp_digit t[2 * 4 * 6];
 #endif
     sp_point_256* p = NULL;
     int i;
@@ -25039,7 +25029,7 @@ static int sp_256_ecc_mulmod_stripe_4(sp_point_256* r, const sp_point_256* g,
     if (rt == NULL)
         err = MEMORY_E;
     if (err == MP_OKAY) {
-        t = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 5, heap,
+        t = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 6, heap,
                                DYNAMIC_TYPE_ECC);
         if (t == NULL)
             err = MEMORY_E;
@@ -25220,7 +25210,7 @@ static int sp_256_ecc_mulmod_4(sp_point_256* r, const sp_point_256* g, const sp_
 #ifndef FP_ECC
     return sp_256_ecc_mulmod_win_add_sub_4(r, g, k, map, ct, heap);
 #else
-    sp_digit tmp[2 * 4 * 5];
+    sp_digit tmp[2 * 4 * 6];
     sp_cache_256_t* cache;
     int err = MP_OKAY;
 
@@ -25331,7 +25321,7 @@ int sp_ecc_mulmod_add_256(const mp_int* km, const ecc_point* gm,
     sp_digit* k = NULL;
 #else
     sp_point_256 point[2];
-    sp_digit k[4 + 4 * 2 * 5];
+    sp_digit k[4 + 4 * 2 * 6];
 #endif
     sp_point_256* addP = NULL;
     sp_digit* tmp = NULL;
@@ -25344,7 +25334,7 @@ int sp_ecc_mulmod_add_256(const mp_int* km, const ecc_point* gm,
         err = MEMORY_E;
     if (err == MP_OKAY) {
         k = (sp_digit*)XMALLOC(
-            sizeof(sp_digit) * (4 + 4 * 2 * 5), heap,
+            sizeof(sp_digit) * (4 + 4 * 2 * 6), heap,
             DYNAMIC_TYPE_ECC);
         if (k == NULL)
             err = MEMORY_E;
@@ -39134,7 +39124,7 @@ static int sp_256_ecc_mulmod_add_only_4(sp_point_256* r, const sp_point_256* g,
     sp_digit* tmp = NULL;
 #else
     sp_point_256 rt[2];
-    sp_digit tmp[2 * 4 * 5];
+    sp_digit tmp[2 * 4 * 6];
 #endif
     sp_point_256* p = NULL;
     sp_digit* negy = NULL;
@@ -39153,7 +39143,7 @@ static int sp_256_ecc_mulmod_add_only_4(sp_point_256* r, const sp_point_256* g,
     if (rt == NULL)
         err = MEMORY_E;
     if (err == MP_OKAY) {
-        tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 5, heap,
+        tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 6, heap,
                                  DYNAMIC_TYPE_ECC);
         if (tmp == NULL)
             err = MEMORY_E;
@@ -39212,7 +39202,7 @@ static int sp_256_ecc_mulmod_add_only_4(sp_point_256* r, const sp_point_256* g,
     if (tmp != NULL)
 #endif
     {
-        ForceZero(tmp, sizeof(sp_digit) * 2 * 4 * 5);
+        ForceZero(tmp, sizeof(sp_digit) * 2 * 4 * 6);
     #if defined(WOLFSSL_SMALL_STACK) && !defined(WOLFSSL_SP_NO_MALLOC)
         XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
     #endif
@@ -39314,7 +39304,7 @@ int sp_ecc_mulmod_base_add_256(const mp_int* km, const ecc_point* am,
     sp_digit* k = NULL;
 #else
     sp_point_256 point[2];
-    sp_digit k[4 + 4 * 2 * 5];
+    sp_digit k[4 + 4 * 2 * 6];
 #endif
     sp_point_256* addP = NULL;
     sp_digit* tmp = NULL;
@@ -39327,7 +39317,7 @@ int sp_ecc_mulmod_base_add_256(const mp_int* km, const ecc_point* am,
         err = MEMORY_E;
     if (err == MP_OKAY) {
         k = (sp_digit*)XMALLOC(
-            sizeof(sp_digit) * (4 + 4 * 2 * 5),
+            sizeof(sp_digit) * (4 + 4 * 2 * 6),
             heap, DYNAMIC_TYPE_ECC);
         if (k == NULL)
             err = MEMORY_E;
@@ -40835,7 +40825,7 @@ typedef struct sp_ecc_verify_256_ctx {
     sp_digit u1[2*4];
     sp_digit u2[2*4];
     sp_digit s[2*4];
-    sp_digit tmp[2*4 * 5];
+    sp_digit tmp[2*4 * 6];
     sp_point_256 p1;
     sp_point_256 p2;
 } sp_ecc_verify_256_ctx;
@@ -40981,7 +40971,7 @@ int sp_ecc_verify_256(const byte* hash, word32 hashLen, const mp_int* pX,
     sp_digit* u1 = NULL;
     sp_point_256* p1 = NULL;
 #else
-    sp_digit  u1[16 * 4];
+    sp_digit  u1[18 * 4];
     sp_point_256 p1[2];
 #endif
     sp_digit* u2 = NULL;
@@ -41000,7 +40990,7 @@ int sp_ecc_verify_256(const byte* hash, word32 hashLen, const mp_int* pX,
             err = MEMORY_E;
     }
     if (err == MP_OKAY) {
-        u1 = (sp_digit*)XMALLOC(sizeof(sp_digit) * 16 * 4, heap,
+        u1 = (sp_digit*)XMALLOC(sizeof(sp_digit) * 18 * 4, heap,
                                                               DYNAMIC_TYPE_ECC);
         if (u1 == NULL)
             err = MEMORY_E;
@@ -41303,7 +41293,7 @@ int sp_ecc_proj_add_point_256(mp_int* pX, mp_int* pY, mp_int* pZ,
     sp_digit* tmp = NULL;
     sp_point_256* p = NULL;
 #else
-    sp_digit tmp[2 * 4 * 5];
+    sp_digit tmp[2 * 4 * 6];
     sp_point_256 p[2];
 #endif
     sp_point_256* q = NULL;
@@ -41317,7 +41307,7 @@ int sp_ecc_proj_add_point_256(mp_int* pX, mp_int* pY, mp_int* pZ,
             err = MEMORY_E;
     }
     if (err == MP_OKAY) {
-        tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 5, NULL,
+        tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 6, NULL,
                                  DYNAMIC_TYPE_ECC);
         if (tmp == NULL) {
             err = MEMORY_E;
@@ -43194,7 +43184,7 @@ static void sp_384_map_6(sp_point_384* r, const sp_point_384* p,
                 (sp_digit)1 : (sp_digit)0));
     sp_384_norm_6(r->y);
 
-    XMEMSET(r->z, 0, sizeof(r->z));
+    XMEMSET(r->z, 0, sizeof(r->z) / 2);
     r->z[0] = 1;
 
 }
@@ -43342,6 +43332,7 @@ static void sp_384_mont_sub_6(sp_digit* r, const sp_digit* a, const sp_digit* b,
     sp_384_cond_add_6(r, r, m, o);
 }
 
+#define sp_384_mont_sub_lower_6 sp_384_mont_sub_6
 static void sp_384_rshift1_6(sp_digit* r, const sp_digit* a)
 {
     __asm__ __volatile__ (
@@ -43493,7 +43484,7 @@ static int sp_384_proj_point_dbl_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r, con
         break;
     case 16:
         /* Y = Y - X */
-        sp_384_mont_sub_6(ctx->y, ctx->y, ctx->x, p384_mod);
+        sp_384_mont_sub_lower_6(ctx->y, ctx->y, ctx->x, p384_mod);
         ctx->state = 17;
         break;
     case 17:
@@ -43519,7 +43510,8 @@ static int sp_384_proj_point_dbl_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r, con
 }
 #endif /* WOLFSSL_SP_NONBLOCK */
 
-static void sp_384_proj_point_dbl_6(sp_point_384* r, const sp_point_384* p, sp_digit* t)
+static void sp_384_proj_point_dbl_6(sp_point_384* r, const sp_point_384* p,
+    sp_digit* t)
 {
     sp_digit* t1 = t;
     sp_digit* t2 = t + 2*6;
@@ -43566,13 +43558,15 @@ static void sp_384_proj_point_dbl_6(sp_point_384* r, const sp_point_384* p, sp_d
     /* X = X - Y */
     sp_384_mont_sub_6(x, x, y, p384_mod);
     /* Y = Y - X */
-    sp_384_mont_sub_6(y, y, x, p384_mod);
+    sp_384_mont_sub_lower_6(y, y, x, p384_mod);
     /* Y = Y * T1 */
     sp_384_mont_mul_6(y, y, t1, p384_mod, p384_mp_mod);
     /* Y = Y - T2 */
     sp_384_mont_sub_6(y, y, t2, p384_mod);
 }
 
+#define sp_384_mont_dbl_lower_6 sp_384_mont_dbl_6
+#define sp_384_mont_tpl_lower_6 sp_384_mont_tpl_6
 /* Double the Montgomery form projective point p a number of times.
  *
  * r  Result of repeated doubling of point.
@@ -43611,7 +43605,7 @@ static void sp_384_proj_point_dbl_n_6(sp_point_384* p, int n,
         /* A = 3*(X^2 - W) */
         sp_384_mont_sqr_6(t1, x, p384_mod, p384_mp_mod);
         sp_384_mont_sub_6(t1, t1, w, p384_mod);
-        sp_384_mont_tpl_6(a, t1, p384_mod);
+        sp_384_mont_tpl_lower_6(a, t1, p384_mod);
         /* B = X*Y^2 */
         sp_384_mont_sqr_6(t1, y, p384_mod, p384_mp_mod);
         sp_384_mont_mul_6(b, t1, x, p384_mod, p384_mp_mod);
@@ -43619,9 +43613,12 @@ static void sp_384_proj_point_dbl_n_6(sp_point_384* p, int n,
         sp_384_mont_sqr_6(x, a, p384_mod, p384_mp_mod);
         sp_384_mont_dbl_6(t2, b, p384_mod);
         sp_384_mont_sub_6(x, x, t2, p384_mod);
+        /*   b = 2.(B - X) */
+        sp_384_mont_sub_lower_6(t2, b, x, p384_mod);
+        sp_384_mont_dbl_lower_6(b, t2, p384_mod);
         /* Z = Z*Y */
         sp_384_mont_mul_6(z, z, y, p384_mod, p384_mp_mod);
-        /* t2 = Y^4 */
+        /* t1 = Y^4 */
         sp_384_mont_sqr_6(t1, t1, p384_mod, p384_mp_mod);
 #ifdef WOLFSSL_SP_SMALL
         if (n != 0)
@@ -43631,16 +43628,14 @@ static void sp_384_proj_point_dbl_n_6(sp_point_384* p, int n,
             sp_384_mont_mul_6(w, w, t1, p384_mod, p384_mp_mod);
         }
         /* y = 2*A*(B - X) - Y^4 */
-        sp_384_mont_sub_6(y, b, x, p384_mod);
-        sp_384_mont_mul_6(y, y, a, p384_mod, p384_mp_mod);
-        sp_384_mont_dbl_6(y, y, p384_mod);
+        sp_384_mont_mul_6(y, b, a, p384_mod, p384_mp_mod);
         sp_384_mont_sub_6(y, y, t1, p384_mod);
     }
 #ifndef WOLFSSL_SP_SMALL
     /* A = 3*(X^2 - W) */
     sp_384_mont_sqr_6(t1, x, p384_mod, p384_mp_mod);
     sp_384_mont_sub_6(t1, t1, w, p384_mod);
-    sp_384_mont_tpl_6(a, t1, p384_mod);
+    sp_384_mont_tpl_lower_6(a, t1, p384_mod);
     /* B = X*Y^2 */
     sp_384_mont_sqr_6(t1, y, p384_mod, p384_mp_mod);
     sp_384_mont_mul_6(b, t1, x, p384_mod, p384_mp_mod);
@@ -43648,14 +43643,15 @@ static void sp_384_proj_point_dbl_n_6(sp_point_384* p, int n,
     sp_384_mont_sqr_6(x, a, p384_mod, p384_mp_mod);
     sp_384_mont_dbl_6(t2, b, p384_mod);
     sp_384_mont_sub_6(x, x, t2, p384_mod);
+    /*   b = 2.(B - X) */
+    sp_384_mont_sub_lower_6(t2, b, x, p384_mod);
+    sp_384_mont_dbl_lower_6(b, t2, p384_mod);
     /* Z = Z*Y */
     sp_384_mont_mul_6(z, z, y, p384_mod, p384_mp_mod);
-    /* t2 = Y^4 */
+    /* t1 = Y^4 */
     sp_384_mont_sqr_6(t1, t1, p384_mod, p384_mp_mod);
     /* y = 2*A*(B - X) - Y^4 */
-    sp_384_mont_sub_6(y, b, x, p384_mod);
-    sp_384_mont_mul_6(y, y, a, p384_mod, p384_mp_mod);
-    sp_384_mont_dbl_6(y, y, p384_mod);
+    sp_384_mont_mul_6(y, b, a, p384_mod, p384_mp_mod);
     sp_384_mont_sub_6(y, y, t1, p384_mod);
 #endif
     /* Y = Y/2 */
@@ -43694,6 +43690,7 @@ typedef struct sp_384_proj_point_add_6_ctx {
     sp_digit* t3;
     sp_digit* t4;
     sp_digit* t5;
+    sp_digit* t6;
     sp_digit* x;
     sp_digit* y;
     sp_digit* z;
@@ -43722,6 +43719,10 @@ static int sp_384_proj_point_add_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
         ctx->t3 = t + 4*6;
         ctx->t4 = t + 6*6;
         ctx->t5 = t + 8*6;
+        ctx->t6 = t + 10*6;
+        ctx->x = ctx->t6;
+        ctx->y = ctx->t1;
+        ctx->z = ctx->t2;
 
         ctx->state = 1;
         break;
@@ -43746,29 +43747,6 @@ static int sp_384_proj_point_add_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
         break;
     case 3:
     {
-        int i;
-        ctx->rp[0] = r;
-
-        /*lint allow cast to different type of pointer*/
-        ctx->rp[1] = (sp_point_384*)t; /*lint !e9087 !e740*/
-        XMEMSET(ctx->rp[1], 0, sizeof(sp_point_384));
-        ctx->x = ctx->rp[p->infinity | q->infinity]->x;
-        ctx->y = ctx->rp[p->infinity | q->infinity]->y;
-        ctx->z = ctx->rp[p->infinity | q->infinity]->z;
-
-        ctx->ap[0] = p;
-        ctx->ap[1] = q;
-        for (i=0; i<6; i++) {
-            r->x[i] = ctx->ap[p->infinity]->x[i];
-        }
-        for (i=0; i<6; i++) {
-            r->y[i] = ctx->ap[p->infinity]->y[i];
-        }
-        for (i=0; i<6; i++) {
-            r->z[i] = ctx->ap[p->infinity]->z[i];
-        }
-        r->infinity = ctx->ap[p->infinity]->infinity;
-
         ctx->state = 4;
         break;
     }
@@ -43782,16 +43760,16 @@ static int sp_384_proj_point_add_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
         ctx->state = 6;
         break;
     case 6:
-        sp_384_mont_mul_6(ctx->t1, ctx->t1, ctx->x, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(ctx->t1, ctx->t1, p->x, p384_mod, p384_mp_mod);
         ctx->state = 7;
         break;
     case 7:
         /* U2 = X2*Z1^2 */
-        sp_384_mont_sqr_6(ctx->t2, ctx->z, p384_mod, p384_mp_mod);
+        sp_384_mont_sqr_6(ctx->t2, p->z, p384_mod, p384_mp_mod);
         ctx->state = 8;
         break;
     case 8:
-        sp_384_mont_mul_6(ctx->t4, ctx->t2, ctx->z, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(ctx->t4, ctx->t2, p->z, p384_mod, p384_mp_mod);
         ctx->state = 9;
         break;
     case 9:
@@ -43800,7 +43778,7 @@ static int sp_384_proj_point_add_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
         break;
     case 10:
         /* S1 = Y1*Z2^3 */
-        sp_384_mont_mul_6(ctx->t3, ctx->t3, ctx->y, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(ctx->t3, ctx->t3, p->y, p384_mod, p384_mp_mod);
         ctx->state = 11;
         break;
     case 11:
@@ -43819,29 +43797,29 @@ static int sp_384_proj_point_add_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
         ctx->state = 14;
         break;
     case 14:
-        /* Z3 = H*Z1*Z2 */
-        sp_384_mont_mul_6(ctx->z, ctx->z, q->z, p384_mod, p384_mp_mod);
+        /* X3 = R^2 - H^3 - 2*U1*H^2 */
+        sp_384_mont_sqr_6(ctx->t5, ctx->t2, p384_mod, p384_mp_mod);
         ctx->state = 15;
         break;
     case 15:
-        sp_384_mont_mul_6(ctx->z, ctx->z, ctx->t2, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(ctx->y, ctx->t1, ctx->t5, p384_mod, p384_mp_mod);
         ctx->state = 16;
         break;
     case 16:
-        /* X3 = R^2 - H^3 - 2*U1*H^2 */
-        sp_384_mont_sqr_6(ctx->x, ctx->t4, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(ctx->t5, ctx->t5, ctx->t2, p384_mod, p384_mp_mod);
         ctx->state = 17;
         break;
     case 17:
-        sp_384_mont_sqr_6(ctx->t5, ctx->t2, p384_mod, p384_mp_mod);
+        /* Z3 = H*Z1*Z2 */
+        sp_384_mont_mul_6(ctx->z, p->z, ctx->t2, p384_mod, p384_mp_mod);
         ctx->state = 18;
         break;
     case 18:
-        sp_384_mont_mul_6(ctx->y, ctx->t1, ctx->t5, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(ctx->z, ctx->z, q->z, p384_mod, p384_mp_mod);
         ctx->state = 19;
         break;
     case 19:
-        sp_384_mont_mul_6(ctx->t5, ctx->t5, ctx->t2, p384_mod, p384_mp_mod);
+        sp_384_mont_sqr_6(ctx->x, ctx->t4, p384_mod, p384_mp_mod);
         ctx->state = 20;
         break;
     case 20:
@@ -43849,24 +43827,24 @@ static int sp_384_proj_point_add_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
         ctx->state = 21;
         break;
     case 21:
-        sp_384_mont_dbl_6(ctx->t1, ctx->y, p384_mod);
+        sp_384_mont_mul_6(ctx->t5, ctx->t5, ctx->t3, p384_mod, p384_mp_mod);
         ctx->state = 22;
         break;
     case 22:
-        sp_384_mont_sub_6(ctx->x, ctx->x, ctx->t1, p384_mod);
+        sp_384_mont_dbl_6(ctx->t3, ctx->y, p384_mod);
         ctx->state = 23;
         break;
     case 23:
-        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_384_mont_sub_6(ctx->y, ctx->y, ctx->x, p384_mod);
+        sp_384_mont_sub_6(ctx->x, ctx->x, ctx->t3, p384_mod);
         ctx->state = 24;
         break;
     case 24:
-        sp_384_mont_mul_6(ctx->y, ctx->y, ctx->t4, p384_mod, p384_mp_mod);
+        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
+        sp_384_mont_sub_lower_6(ctx->y, ctx->y, ctx->x, p384_mod);
         ctx->state = 25;
         break;
     case 25:
-        sp_384_mont_mul_6(ctx->t5, ctx->t5, ctx->t3, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(ctx->y, ctx->y, ctx->t4, p384_mod, p384_mp_mod);
         ctx->state = 26;
         break;
     case 26:
@@ -43874,8 +43852,29 @@ static int sp_384_proj_point_add_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
         ctx->state = 27;
         /* fall-through */
     case 27:
+    {
+        int i;
+        sp_digit maskp = 0 - (q->infinity & (!p->infinity));
+        sp_digit maskq = 0 - (p->infinity & (!q->infinity));
+        sp_digit maskt = ~(maskp | maskq);
+        for (i = 0; i < 6; i++) {
+            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) |
+                      (ctx->x[i] & maskt);
+        }
+        for (i = 0; i < 6; i++) {
+            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) |
+                      (ctx->y[i] & maskt);
+        }
+        for (i = 0; i < 6; i++) {
+            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) |
+                      (ctx->z[i] & maskt);
+        }
+        r->z[0] |= p->infinity & q->infinity;
+        r->infinity = p->infinity & q->infinity;
+
         err = MP_OKAY;
         break;
+    }
     }
 
     if (err == MP_OKAY && ctx->state != 27) {
@@ -43888,24 +43887,13 @@ static int sp_384_proj_point_add_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
 static void sp_384_proj_point_add_6(sp_point_384* r,
         const sp_point_384* p, const sp_point_384* q, sp_digit* t)
 {
-    const sp_point_384* ap[2];
-    sp_point_384* rp[2];
     sp_digit* t1 = t;
     sp_digit* t2 = t + 2*6;
     sp_digit* t3 = t + 4*6;
     sp_digit* t4 = t + 6*6;
     sp_digit* t5 = t + 8*6;
-    sp_digit* x;
-    sp_digit* y;
-    sp_digit* z;
-    int i;
+    sp_digit* t6 = t + 10*6;
 
-    /* Ensure only the first point is the same as the result. */
-    if (q == r) {
-        const sp_point_384* a = p;
-        p = q;
-        q = a;
-    }
 
     /* Check double */
     (void)sp_384_sub_6(t1, p384_mod, q->y);
@@ -43915,60 +43903,61 @@ static void sp_384_proj_point_add_6(sp_point_384* r,
         sp_384_proj_point_dbl_6(r, p, t);
     }
     else {
-        rp[0] = r;
-
-        /*lint allow cast to different type of pointer*/
-        rp[1] = (sp_point_384*)t; /*lint !e9087 !e740*/
-        XMEMSET(rp[1], 0, sizeof(sp_point_384));
-        x = rp[p->infinity | q->infinity]->x;
-        y = rp[p->infinity | q->infinity]->y;
-        z = rp[p->infinity | q->infinity]->z;
-
-        ap[0] = p;
-        ap[1] = q;
-        for (i=0; i<6; i++) {
-            r->x[i] = ap[p->infinity]->x[i];
-        }
-        for (i=0; i<6; i++) {
-            r->y[i] = ap[p->infinity]->y[i];
-        }
-        for (i=0; i<6; i++) {
-            r->z[i] = ap[p->infinity]->z[i];
-        }
-        r->infinity = ap[p->infinity]->infinity;
+        sp_digit maskp;
+        sp_digit maskq;
+        sp_digit maskt;
+        sp_digit* x = t6;
+        sp_digit* y = t1;
+        sp_digit* z = t2;
+        int i;
 
         /* U1 = X1*Z2^2 */
         sp_384_mont_sqr_6(t1, q->z, p384_mod, p384_mp_mod);
         sp_384_mont_mul_6(t3, t1, q->z, p384_mod, p384_mp_mod);
-        sp_384_mont_mul_6(t1, t1, x, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(t1, t1, p->x, p384_mod, p384_mp_mod);
         /* U2 = X2*Z1^2 */
-        sp_384_mont_sqr_6(t2, z, p384_mod, p384_mp_mod);
-        sp_384_mont_mul_6(t4, t2, z, p384_mod, p384_mp_mod);
+        sp_384_mont_sqr_6(t2, p->z, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(t4, t2, p->z, p384_mod, p384_mp_mod);
         sp_384_mont_mul_6(t2, t2, q->x, p384_mod, p384_mp_mod);
         /* S1 = Y1*Z2^3 */
-        sp_384_mont_mul_6(t3, t3, y, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(t3, t3, p->y, p384_mod, p384_mp_mod);
         /* S2 = Y2*Z1^3 */
         sp_384_mont_mul_6(t4, t4, q->y, p384_mod, p384_mp_mod);
         /* H = U2 - U1 */
         sp_384_mont_sub_6(t2, t2, t1, p384_mod);
         /* R = S2 - S1 */
         sp_384_mont_sub_6(t4, t4, t3, p384_mod);
-        /* Z3 = H*Z1*Z2 */
-        sp_384_mont_mul_6(z, z, q->z, p384_mod, p384_mp_mod);
-        sp_384_mont_mul_6(z, z, t2, p384_mod, p384_mp_mod);
         /* X3 = R^2 - H^3 - 2*U1*H^2 */
-        sp_384_mont_sqr_6(x, t4, p384_mod, p384_mp_mod);
         sp_384_mont_sqr_6(t5, t2, p384_mod, p384_mp_mod);
         sp_384_mont_mul_6(y, t1, t5, p384_mod, p384_mp_mod);
         sp_384_mont_mul_6(t5, t5, t2, p384_mod, p384_mp_mod);
+        /* Z3 = H*Z1*Z2 */
+        sp_384_mont_mul_6(z, p->z, t2, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(z, z, q->z, p384_mod, p384_mp_mod);
+        sp_384_mont_sqr_6(x, t4, p384_mod, p384_mp_mod);
         sp_384_mont_sub_6(x, x, t5, p384_mod);
-        sp_384_mont_dbl_6(t1, y, p384_mod);
-        sp_384_mont_sub_6(x, x, t1, p384_mod);
-        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_384_mont_sub_6(y, y, x, p384_mod);
-        sp_384_mont_mul_6(y, y, t4, p384_mod, p384_mp_mod);
         sp_384_mont_mul_6(t5, t5, t3, p384_mod, p384_mp_mod);
+        sp_384_mont_dbl_6(t3, y, p384_mod);
+        sp_384_mont_sub_6(x, x, t3, p384_mod);
+        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
+        sp_384_mont_sub_lower_6(y, y, x, p384_mod);
+        sp_384_mont_mul_6(y, y, t4, p384_mod, p384_mp_mod);
         sp_384_mont_sub_6(y, y, t5, p384_mod);
+
+        maskp = 0 - (q->infinity & (!p->infinity));
+        maskq = 0 - (p->infinity & (!q->infinity));
+        maskt = ~(maskp | maskq);
+        for (i = 0; i < 6; i++) {
+            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
+        }
+        for (i = 0; i < 6; i++) {
+            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
+        }
+        for (i = 0; i < 6; i++) {
+            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
+        }
+        r->z[0] |= p->infinity & q->infinity;
+        r->infinity = p->infinity & q->infinity;
     }
 }
 
@@ -44015,29 +44004,30 @@ static void sp_384_proj_point_dbl_n_store_6(sp_point_384* r,
         /* A = 3*(X^2 - W) */
         sp_384_mont_sqr_6(t1, x, p384_mod, p384_mp_mod);
         sp_384_mont_sub_6(t1, t1, w, p384_mod);
-        sp_384_mont_tpl_6(a, t1, p384_mod);
+        sp_384_mont_tpl_lower_6(a, t1, p384_mod);
         /* B = X*Y^2 */
-        sp_384_mont_sqr_6(t2, y, p384_mod, p384_mp_mod);
-        sp_384_mont_mul_6(b, t2, x, p384_mod, p384_mp_mod);
+        sp_384_mont_sqr_6(t1, y, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(b, t1, x, p384_mod, p384_mp_mod);
         x = r[j].x;
         /* X = A^2 - 2B */
         sp_384_mont_sqr_6(x, a, p384_mod, p384_mp_mod);
-        sp_384_mont_dbl_6(t1, b, p384_mod);
-        sp_384_mont_sub_6(x, x, t1, p384_mod);
+        sp_384_mont_dbl_6(t2, b, p384_mod);
+        sp_384_mont_sub_6(x, x, t2, p384_mod);
+        /*  b = 2.(B - X) */
+        sp_384_mont_sub_lower_6(t2, b, x, p384_mod);
+        sp_384_mont_dbl_lower_6(b, t2, p384_mod);
         /* Z = Z*Y */
         sp_384_mont_mul_6(r[j].z, z, y, p384_mod, p384_mp_mod);
         z = r[j].z;
-        /* t2 = Y^4 */
-        sp_384_mont_sqr_6(t2, t2, p384_mod, p384_mp_mod);
+        /* t1 = Y^4 */
+        sp_384_mont_sqr_6(t1, t1, p384_mod, p384_mp_mod);
         if (i != n) {
             /* W = W*Y^4 */
-            sp_384_mont_mul_6(w, w, t2, p384_mod, p384_mp_mod);
+            sp_384_mont_mul_6(w, w, t1, p384_mod, p384_mp_mod);
         }
         /* y = 2*A*(B - X) - Y^4 */
-        sp_384_mont_sub_6(y, b, x, p384_mod);
-        sp_384_mont_mul_6(y, y, a, p384_mod, p384_mp_mod);
-        sp_384_mont_dbl_6(y, y, p384_mod);
-        sp_384_mont_sub_6(y, y, t2, p384_mod);
+        sp_384_mont_mul_6(y, b, a, p384_mod, p384_mp_mod);
+        sp_384_mont_sub_6(y, y, t1, p384_mod);
 
         /* Y = Y/2 */
         sp_384_div2_6(r[j].y, y, p384_mod);
@@ -44063,30 +44053,30 @@ static void sp_384_proj_point_add_sub_6(sp_point_384* ra,
     sp_digit* t4 = t + 6*6;
     sp_digit* t5 = t + 8*6;
     sp_digit* t6 = t + 10*6;
-    sp_digit* x = ra->x;
-    sp_digit* y = ra->y;
-    sp_digit* z = ra->z;
+    sp_digit* xa = ra->x;
+    sp_digit* ya = ra->y;
+    sp_digit* za = ra->z;
     sp_digit* xs = rs->x;
     sp_digit* ys = rs->y;
     sp_digit* zs = rs->z;
 
 
-    XMEMCPY(x, p->x, sizeof(p->x) / 2);
-    XMEMCPY(y, p->y, sizeof(p->y) / 2);
-    XMEMCPY(z, p->z, sizeof(p->z) / 2);
+    XMEMCPY(xa, p->x, sizeof(p->x) / 2);
+    XMEMCPY(ya, p->y, sizeof(p->y) / 2);
+    XMEMCPY(za, p->z, sizeof(p->z) / 2);
     ra->infinity = 0;
     rs->infinity = 0;
 
     /* U1 = X1*Z2^2 */
     sp_384_mont_sqr_6(t1, q->z, p384_mod, p384_mp_mod);
     sp_384_mont_mul_6(t3, t1, q->z, p384_mod, p384_mp_mod);
-    sp_384_mont_mul_6(t1, t1, x, p384_mod, p384_mp_mod);
+    sp_384_mont_mul_6(t1, t1, xa, p384_mod, p384_mp_mod);
     /* U2 = X2*Z1^2 */
-    sp_384_mont_sqr_6(t2, z, p384_mod, p384_mp_mod);
-    sp_384_mont_mul_6(t4, t2, z, p384_mod, p384_mp_mod);
+    sp_384_mont_sqr_6(t2, za, p384_mod, p384_mp_mod);
+    sp_384_mont_mul_6(t4, t2, za, p384_mod, p384_mp_mod);
     sp_384_mont_mul_6(t2, t2, q->x, p384_mod, p384_mp_mod);
     /* S1 = Y1*Z2^3 */
-    sp_384_mont_mul_6(t3, t3, y, p384_mod, p384_mp_mod);
+    sp_384_mont_mul_6(t3, t3, ya, p384_mod, p384_mp_mod);
     /* S2 = Y2*Z1^3 */
     sp_384_mont_mul_6(t4, t4, q->y, p384_mod, p384_mp_mod);
     /* H = U2 - U1 */
@@ -44097,30 +44087,30 @@ static void sp_384_proj_point_add_sub_6(sp_point_384* ra,
     sp_384_mont_sub_6(t4, t4, t3, p384_mod);
     /* Z3 = H*Z1*Z2 */
     /* ZS = H*Z1*Z2 */
-    sp_384_mont_mul_6(z, z, q->z, p384_mod, p384_mp_mod);
-    sp_384_mont_mul_6(z, z, t2, p384_mod, p384_mp_mod);
-    XMEMCPY(zs, z, sizeof(p->z)/2);
+    sp_384_mont_mul_6(za, za, q->z, p384_mod, p384_mp_mod);
+    sp_384_mont_mul_6(za, za, t2, p384_mod, p384_mp_mod);
+    XMEMCPY(zs, za, sizeof(p->z)/2);
     /* X3 = R^2 - H^3 - 2*U1*H^2 */
     /* XS = RS^2 - H^3 - 2*U1*H^2 */
-    sp_384_mont_sqr_6(x, t4, p384_mod, p384_mp_mod);
+    sp_384_mont_sqr_6(xa, t4, p384_mod, p384_mp_mod);
     sp_384_mont_sqr_6(xs, t6, p384_mod, p384_mp_mod);
     sp_384_mont_sqr_6(t5, t2, p384_mod, p384_mp_mod);
-    sp_384_mont_mul_6(y, t1, t5, p384_mod, p384_mp_mod);
+    sp_384_mont_mul_6(ya, t1, t5, p384_mod, p384_mp_mod);
     sp_384_mont_mul_6(t5, t5, t2, p384_mod, p384_mp_mod);
-    sp_384_mont_sub_6(x, x, t5, p384_mod);
+    sp_384_mont_sub_6(xa, xa, t5, p384_mod);
     sp_384_mont_sub_6(xs, xs, t5, p384_mod);
-    sp_384_mont_dbl_6(t1, y, p384_mod);
-    sp_384_mont_sub_6(x, x, t1, p384_mod);
+    sp_384_mont_dbl_6(t1, ya, p384_mod);
+    sp_384_mont_sub_6(xa, xa, t1, p384_mod);
     sp_384_mont_sub_6(xs, xs, t1, p384_mod);
     /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
     /* YS = -RS*(U1*H^2 - XS) - S1*H^3 */
-    sp_384_mont_sub_6(ys, y, xs, p384_mod);
-    sp_384_mont_sub_6(y, y, x, p384_mod);
-    sp_384_mont_mul_6(y, y, t4, p384_mod, p384_mp_mod);
+    sp_384_mont_sub_lower_6(ys, ya, xs, p384_mod);
+    sp_384_mont_sub_lower_6(ya, ya, xa, p384_mod);
+    sp_384_mont_mul_6(ya, ya, t4, p384_mod, p384_mp_mod);
     sp_384_sub_6(t6, p384_mod, t6);
     sp_384_mont_mul_6(ys, ys, t6, p384_mod, p384_mp_mod);
     sp_384_mont_mul_6(t5, t5, t3, p384_mod, p384_mp_mod);
-    sp_384_mont_sub_6(y, y, t5, p384_mod);
+    sp_384_mont_sub_6(ya, ya, t5, p384_mod);
     sp_384_mont_sub_6(ys, ys, t5, p384_mod);
 }
 
@@ -44415,17 +44405,12 @@ typedef struct sp_table_entry_384 {
 static void sp_384_proj_point_add_qz1_6(sp_point_384* r, const sp_point_384* p,
         const sp_point_384* q, sp_digit* t)
 {
-    const sp_point_384* ap[2];
-    sp_point_384* rp[2];
     sp_digit* t1 = t;
     sp_digit* t2 = t + 2*6;
     sp_digit* t3 = t + 4*6;
     sp_digit* t4 = t + 6*6;
     sp_digit* t5 = t + 8*6;
-    sp_digit* x;
-    sp_digit* y;
-    sp_digit* z;
-    int i;
+    sp_digit* t6 = t + 10*6;
 
     /* Check double */
     (void)sp_384_sub_6(t1, p384_mod, q->y);
@@ -44435,53 +44420,54 @@ static void sp_384_proj_point_add_qz1_6(sp_point_384* r, const sp_point_384* p,
         sp_384_proj_point_dbl_6(r, p, t);
     }
     else {
-        rp[0] = r;
-
-        /*lint allow cast to different type of pointer*/
-        rp[1] = (sp_point_384*)t; /*lint !e9087 !e740*/
-        XMEMSET(rp[1], 0, sizeof(sp_point_384));
-        x = rp[p->infinity | q->infinity]->x;
-        y = rp[p->infinity | q->infinity]->y;
-        z = rp[p->infinity | q->infinity]->z;
-
-        ap[0] = p;
-        ap[1] = q;
-        for (i=0; i<6; i++) {
-            r->x[i] = ap[p->infinity]->x[i];
-        }
-        for (i=0; i<6; i++) {
-            r->y[i] = ap[p->infinity]->y[i];
-        }
-        for (i=0; i<6; i++) {
-            r->z[i] = ap[p->infinity]->z[i];
-        }
-        r->infinity = ap[p->infinity]->infinity;
+        sp_digit maskp;
+        sp_digit maskq;
+        sp_digit maskt;
+        sp_digit* x = t2;
+        sp_digit* y = t5;
+        sp_digit* z = t6;
+        int i;
 
         /* U2 = X2*Z1^2 */
-        sp_384_mont_sqr_6(t2, z, p384_mod, p384_mp_mod);
-        sp_384_mont_mul_6(t4, t2, z, p384_mod, p384_mp_mod);
+        sp_384_mont_sqr_6(t2, p->z, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(t4, t2, p->z, p384_mod, p384_mp_mod);
         sp_384_mont_mul_6(t2, t2, q->x, p384_mod, p384_mp_mod);
         /* S2 = Y2*Z1^3 */
         sp_384_mont_mul_6(t4, t4, q->y, p384_mod, p384_mp_mod);
         /* H = U2 - X1 */
-        sp_384_mont_sub_6(t2, t2, x, p384_mod);
+        sp_384_mont_sub_6(t2, t2, p->x, p384_mod);
         /* R = S2 - Y1 */
-        sp_384_mont_sub_6(t4, t4, y, p384_mod);
+        sp_384_mont_sub_6(t4, t4, p->y, p384_mod);
         /* Z3 = H*Z1 */
-        sp_384_mont_mul_6(z, z, t2, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(z, p->z, t2, p384_mod, p384_mp_mod);
         /* X3 = R^2 - H^3 - 2*X1*H^2 */
         sp_384_mont_sqr_6(t1, t4, p384_mod, p384_mp_mod);
         sp_384_mont_sqr_6(t5, t2, p384_mod, p384_mp_mod);
-        sp_384_mont_mul_6(t3, x, t5, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(t3, p->x, t5, p384_mod, p384_mp_mod);
         sp_384_mont_mul_6(t5, t5, t2, p384_mod, p384_mp_mod);
         sp_384_mont_sub_6(x, t1, t5, p384_mod);
         sp_384_mont_dbl_6(t1, t3, p384_mod);
         sp_384_mont_sub_6(x, x, t1, p384_mod);
         /* Y3 = R*(X1*H^2 - X3) - Y1*H^3 */
-        sp_384_mont_sub_6(t3, t3, x, p384_mod);
+        sp_384_mont_sub_lower_6(t3, t3, x, p384_mod);
         sp_384_mont_mul_6(t3, t3, t4, p384_mod, p384_mp_mod);
-        sp_384_mont_mul_6(t5, t5, y, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(t5, t5, p->y, p384_mod, p384_mp_mod);
         sp_384_mont_sub_6(y, t3, t5, p384_mod);
+
+        maskp = 0 - (q->infinity & (!p->infinity));
+        maskq = 0 - (p->infinity & (!q->infinity));
+        maskt = ~(maskp | maskq);
+        for (i = 0; i < 6; i++) {
+            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
+        }
+        for (i = 0; i < 6; i++) {
+            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
+        }
+        for (i = 0; i < 6; i++) {
+            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
+        }
+        r->z[0] |= p->infinity & q->infinity;
+        r->infinity = p->infinity & q->infinity;
     }
 }
 
@@ -66648,7 +66634,7 @@ typedef struct sp_ecc_verify_384_ctx {
     sp_digit u1[2*6];
     sp_digit u2[2*6];
     sp_digit s[2*6];
-    sp_digit tmp[2*6 * 5];
+    sp_digit tmp[2*6 * 6];
     sp_point_384 p1;
     sp_point_384 p2;
 } sp_ecc_verify_384_ctx;
@@ -66794,7 +66780,7 @@ int sp_ecc_verify_384(const byte* hash, word32 hashLen, const mp_int* pX,
     sp_digit* u1 = NULL;
     sp_point_384* p1 = NULL;
 #else
-    sp_digit  u1[16 * 6];
+    sp_digit  u1[18 * 6];
     sp_point_384 p1[2];
 #endif
     sp_digit* u2 = NULL;
@@ -66813,7 +66799,7 @@ int sp_ecc_verify_384(const byte* hash, word32 hashLen, const mp_int* pX,
             err = MEMORY_E;
     }
     if (err == MP_OKAY) {
-        u1 = (sp_digit*)XMALLOC(sizeof(sp_digit) * 16 * 6, heap,
+        u1 = (sp_digit*)XMALLOC(sizeof(sp_digit) * 18 * 6, heap,
                                                               DYNAMIC_TYPE_ECC);
         if (u1 == NULL)
             err = MEMORY_E;
@@ -67116,7 +67102,7 @@ int sp_ecc_proj_add_point_384(mp_int* pX, mp_int* pY, mp_int* pZ,
     sp_digit* tmp = NULL;
     sp_point_384* p = NULL;
 #else
-    sp_digit tmp[2 * 6 * 5];
+    sp_digit tmp[2 * 6 * 6];
     sp_point_384 p[2];
 #endif
     sp_point_384* q = NULL;
@@ -67130,7 +67116,7 @@ int sp_ecc_proj_add_point_384(mp_int* pX, mp_int* pY, mp_int* pZ,
             err = MEMORY_E;
     }
     if (err == MP_OKAY) {
-        tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 6 * 5, NULL,
+        tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 6 * 6, NULL,
                                  DYNAMIC_TYPE_ECC);
         if (tmp == NULL) {
             err = MEMORY_E;
@@ -71128,7 +71114,7 @@ static void sp_521_map_9(sp_point_521* r, const sp_point_521* p,
                 (sp_digit)1 : (sp_digit)0));
     sp_521_norm_9(r->y);
 
-    XMEMSET(r->z, 0, sizeof(r->z));
+    XMEMSET(r->z, 0, sizeof(r->z) / 2);
     r->z[0] = 1;
 
 }
@@ -71337,6 +71323,7 @@ static void sp_521_mont_sub_9(sp_digit* r, const sp_digit* a, const sp_digit* b,
     );
 }
 
+#define sp_521_mont_sub_lower_9 sp_521_mont_sub_9
 #ifdef WOLFSSL_SP_SMALL
 /* Conditionally add a and b using the mask m.
  * m is -1 to add and 0 when not.
@@ -71595,7 +71582,7 @@ static int sp_521_proj_point_dbl_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r, con
         break;
     case 16:
         /* Y = Y - X */
-        sp_521_mont_sub_9(ctx->y, ctx->y, ctx->x, p521_mod);
+        sp_521_mont_sub_lower_9(ctx->y, ctx->y, ctx->x, p521_mod);
         ctx->state = 17;
         break;
     case 17:
@@ -71621,7 +71608,8 @@ static int sp_521_proj_point_dbl_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r, con
 }
 #endif /* WOLFSSL_SP_NONBLOCK */
 
-static void sp_521_proj_point_dbl_9(sp_point_521* r, const sp_point_521* p, sp_digit* t)
+static void sp_521_proj_point_dbl_9(sp_point_521* r, const sp_point_521* p,
+    sp_digit* t)
 {
     sp_digit* t1 = t;
     sp_digit* t2 = t + 2*9;
@@ -71668,13 +71656,15 @@ static void sp_521_proj_point_dbl_9(sp_point_521* r, const sp_point_521* p, sp_d
     /* X = X - Y */
     sp_521_mont_sub_9(x, x, y, p521_mod);
     /* Y = Y - X */
-    sp_521_mont_sub_9(y, y, x, p521_mod);
+    sp_521_mont_sub_lower_9(y, y, x, p521_mod);
     /* Y = Y * T1 */
     sp_521_mont_mul_9(y, y, t1, p521_mod, p521_mp_mod);
     /* Y = Y - T2 */
     sp_521_mont_sub_9(y, y, t2, p521_mod);
 }
 
+#define sp_521_mont_dbl_lower_9 sp_521_mont_dbl_9
+#define sp_521_mont_tpl_lower_9 sp_521_mont_tpl_9
 /* Double the Montgomery form projective point p a number of times.
  *
  * r  Result of repeated doubling of point.
@@ -71713,7 +71703,7 @@ static void sp_521_proj_point_dbl_n_9(sp_point_521* p, int n,
         /* A = 3*(X^2 - W) */
         sp_521_mont_sqr_9(t1, x, p521_mod, p521_mp_mod);
         sp_521_mont_sub_9(t1, t1, w, p521_mod);
-        sp_521_mont_tpl_9(a, t1, p521_mod);
+        sp_521_mont_tpl_lower_9(a, t1, p521_mod);
         /* B = X*Y^2 */
         sp_521_mont_sqr_9(t1, y, p521_mod, p521_mp_mod);
         sp_521_mont_mul_9(b, t1, x, p521_mod, p521_mp_mod);
@@ -71721,9 +71711,12 @@ static void sp_521_proj_point_dbl_n_9(sp_point_521* p, int n,
         sp_521_mont_sqr_9(x, a, p521_mod, p521_mp_mod);
         sp_521_mont_dbl_9(t2, b, p521_mod);
         sp_521_mont_sub_9(x, x, t2, p521_mod);
+        /*   b = 2.(B - X) */
+        sp_521_mont_sub_lower_9(t2, b, x, p521_mod);
+        sp_521_mont_dbl_lower_9(b, t2, p521_mod);
         /* Z = Z*Y */
         sp_521_mont_mul_9(z, z, y, p521_mod, p521_mp_mod);
-        /* t2 = Y^4 */
+        /* t1 = Y^4 */
         sp_521_mont_sqr_9(t1, t1, p521_mod, p521_mp_mod);
 #ifdef WOLFSSL_SP_SMALL
         if (n != 0)
@@ -71733,16 +71726,14 @@ static void sp_521_proj_point_dbl_n_9(sp_point_521* p, int n,
             sp_521_mont_mul_9(w, w, t1, p521_mod, p521_mp_mod);
         }
         /* y = 2*A*(B - X) - Y^4 */
-        sp_521_mont_sub_9(y, b, x, p521_mod);
-        sp_521_mont_mul_9(y, y, a, p521_mod, p521_mp_mod);
-        sp_521_mont_dbl_9(y, y, p521_mod);
+        sp_521_mont_mul_9(y, b, a, p521_mod, p521_mp_mod);
         sp_521_mont_sub_9(y, y, t1, p521_mod);
     }
 #ifndef WOLFSSL_SP_SMALL
     /* A = 3*(X^2 - W) */
     sp_521_mont_sqr_9(t1, x, p521_mod, p521_mp_mod);
     sp_521_mont_sub_9(t1, t1, w, p521_mod);
-    sp_521_mont_tpl_9(a, t1, p521_mod);
+    sp_521_mont_tpl_lower_9(a, t1, p521_mod);
     /* B = X*Y^2 */
     sp_521_mont_sqr_9(t1, y, p521_mod, p521_mp_mod);
     sp_521_mont_mul_9(b, t1, x, p521_mod, p521_mp_mod);
@@ -71750,14 +71741,15 @@ static void sp_521_proj_point_dbl_n_9(sp_point_521* p, int n,
     sp_521_mont_sqr_9(x, a, p521_mod, p521_mp_mod);
     sp_521_mont_dbl_9(t2, b, p521_mod);
     sp_521_mont_sub_9(x, x, t2, p521_mod);
+    /*   b = 2.(B - X) */
+    sp_521_mont_sub_lower_9(t2, b, x, p521_mod);
+    sp_521_mont_dbl_lower_9(b, t2, p521_mod);
     /* Z = Z*Y */
     sp_521_mont_mul_9(z, z, y, p521_mod, p521_mp_mod);
-    /* t2 = Y^4 */
+    /* t1 = Y^4 */
     sp_521_mont_sqr_9(t1, t1, p521_mod, p521_mp_mod);
     /* y = 2*A*(B - X) - Y^4 */
-    sp_521_mont_sub_9(y, b, x, p521_mod);
-    sp_521_mont_mul_9(y, y, a, p521_mod, p521_mp_mod);
-    sp_521_mont_dbl_9(y, y, p521_mod);
+    sp_521_mont_mul_9(y, b, a, p521_mod, p521_mp_mod);
     sp_521_mont_sub_9(y, y, t1, p521_mod);
 #endif
     /* Y = Y/2 */
@@ -71797,6 +71789,7 @@ typedef struct sp_521_proj_point_add_9_ctx {
     sp_digit* t3;
     sp_digit* t4;
     sp_digit* t5;
+    sp_digit* t6;
     sp_digit* x;
     sp_digit* y;
     sp_digit* z;
@@ -71825,6 +71818,10 @@ static int sp_521_proj_point_add_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
         ctx->t3 = t + 4*9;
         ctx->t4 = t + 6*9;
         ctx->t5 = t + 8*9;
+        ctx->t6 = t + 10*9;
+        ctx->x = ctx->t6;
+        ctx->y = ctx->t1;
+        ctx->z = ctx->t2;
 
         ctx->state = 1;
         break;
@@ -71849,29 +71846,6 @@ static int sp_521_proj_point_add_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
         break;
     case 3:
     {
-        int i;
-        ctx->rp[0] = r;
-
-        /*lint allow cast to different type of pointer*/
-        ctx->rp[1] = (sp_point_521*)t; /*lint !e9087 !e740*/
-        XMEMSET(ctx->rp[1], 0, sizeof(sp_point_521));
-        ctx->x = ctx->rp[p->infinity | q->infinity]->x;
-        ctx->y = ctx->rp[p->infinity | q->infinity]->y;
-        ctx->z = ctx->rp[p->infinity | q->infinity]->z;
-
-        ctx->ap[0] = p;
-        ctx->ap[1] = q;
-        for (i=0; i<9; i++) {
-            r->x[i] = ctx->ap[p->infinity]->x[i];
-        }
-        for (i=0; i<9; i++) {
-            r->y[i] = ctx->ap[p->infinity]->y[i];
-        }
-        for (i=0; i<9; i++) {
-            r->z[i] = ctx->ap[p->infinity]->z[i];
-        }
-        r->infinity = ctx->ap[p->infinity]->infinity;
-
         ctx->state = 4;
         break;
     }
@@ -71885,16 +71859,16 @@ static int sp_521_proj_point_add_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
         ctx->state = 6;
         break;
     case 6:
-        sp_521_mont_mul_9(ctx->t1, ctx->t1, ctx->x, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(ctx->t1, ctx->t1, p->x, p521_mod, p521_mp_mod);
         ctx->state = 7;
         break;
     case 7:
         /* U2 = X2*Z1^2 */
-        sp_521_mont_sqr_9(ctx->t2, ctx->z, p521_mod, p521_mp_mod);
+        sp_521_mont_sqr_9(ctx->t2, p->z, p521_mod, p521_mp_mod);
         ctx->state = 8;
         break;
     case 8:
-        sp_521_mont_mul_9(ctx->t4, ctx->t2, ctx->z, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(ctx->t4, ctx->t2, p->z, p521_mod, p521_mp_mod);
         ctx->state = 9;
         break;
     case 9:
@@ -71903,7 +71877,7 @@ static int sp_521_proj_point_add_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
         break;
     case 10:
         /* S1 = Y1*Z2^3 */
-        sp_521_mont_mul_9(ctx->t3, ctx->t3, ctx->y, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(ctx->t3, ctx->t3, p->y, p521_mod, p521_mp_mod);
         ctx->state = 11;
         break;
     case 11:
@@ -71922,29 +71896,29 @@ static int sp_521_proj_point_add_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
         ctx->state = 14;
         break;
     case 14:
-        /* Z3 = H*Z1*Z2 */
-        sp_521_mont_mul_9(ctx->z, ctx->z, q->z, p521_mod, p521_mp_mod);
+        /* X3 = R^2 - H^3 - 2*U1*H^2 */
+        sp_521_mont_sqr_9(ctx->t5, ctx->t2, p521_mod, p521_mp_mod);
         ctx->state = 15;
         break;
     case 15:
-        sp_521_mont_mul_9(ctx->z, ctx->z, ctx->t2, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(ctx->y, ctx->t1, ctx->t5, p521_mod, p521_mp_mod);
         ctx->state = 16;
         break;
     case 16:
-        /* X3 = R^2 - H^3 - 2*U1*H^2 */
-        sp_521_mont_sqr_9(ctx->x, ctx->t4, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(ctx->t5, ctx->t5, ctx->t2, p521_mod, p521_mp_mod);
         ctx->state = 17;
         break;
     case 17:
-        sp_521_mont_sqr_9(ctx->t5, ctx->t2, p521_mod, p521_mp_mod);
+        /* Z3 = H*Z1*Z2 */
+        sp_521_mont_mul_9(ctx->z, p->z, ctx->t2, p521_mod, p521_mp_mod);
         ctx->state = 18;
         break;
     case 18:
-        sp_521_mont_mul_9(ctx->y, ctx->t1, ctx->t5, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(ctx->z, ctx->z, q->z, p521_mod, p521_mp_mod);
         ctx->state = 19;
         break;
     case 19:
-        sp_521_mont_mul_9(ctx->t5, ctx->t5, ctx->t2, p521_mod, p521_mp_mod);
+        sp_521_mont_sqr_9(ctx->x, ctx->t4, p521_mod, p521_mp_mod);
         ctx->state = 20;
         break;
     case 20:
@@ -71952,24 +71926,24 @@ static int sp_521_proj_point_add_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
         ctx->state = 21;
         break;
     case 21:
-        sp_521_mont_dbl_9(ctx->t1, ctx->y, p521_mod);
+        sp_521_mont_mul_9(ctx->t5, ctx->t5, ctx->t3, p521_mod, p521_mp_mod);
         ctx->state = 22;
         break;
     case 22:
-        sp_521_mont_sub_9(ctx->x, ctx->x, ctx->t1, p521_mod);
+        sp_521_mont_dbl_9(ctx->t3, ctx->y, p521_mod);
         ctx->state = 23;
         break;
     case 23:
-        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_521_mont_sub_9(ctx->y, ctx->y, ctx->x, p521_mod);
+        sp_521_mont_sub_9(ctx->x, ctx->x, ctx->t3, p521_mod);
         ctx->state = 24;
         break;
     case 24:
-        sp_521_mont_mul_9(ctx->y, ctx->y, ctx->t4, p521_mod, p521_mp_mod);
+        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
+        sp_521_mont_sub_lower_9(ctx->y, ctx->y, ctx->x, p521_mod);
         ctx->state = 25;
         break;
     case 25:
-        sp_521_mont_mul_9(ctx->t5, ctx->t5, ctx->t3, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(ctx->y, ctx->y, ctx->t4, p521_mod, p521_mp_mod);
         ctx->state = 26;
         break;
     case 26:
@@ -71977,8 +71951,29 @@ static int sp_521_proj_point_add_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
         ctx->state = 27;
         /* fall-through */
     case 27:
+    {
+        int i;
+        sp_digit maskp = 0 - (q->infinity & (!p->infinity));
+        sp_digit maskq = 0 - (p->infinity & (!q->infinity));
+        sp_digit maskt = ~(maskp | maskq);
+        for (i = 0; i < 9; i++) {
+            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) |
+                      (ctx->x[i] & maskt);
+        }
+        for (i = 0; i < 9; i++) {
+            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) |
+                      (ctx->y[i] & maskt);
+        }
+        for (i = 0; i < 9; i++) {
+            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) |
+                      (ctx->z[i] & maskt);
+        }
+        r->z[0] |= p->infinity & q->infinity;
+        r->infinity = p->infinity & q->infinity;
+
         err = MP_OKAY;
         break;
+    }
     }
 
     if (err == MP_OKAY && ctx->state != 27) {
@@ -71991,24 +71986,13 @@ static int sp_521_proj_point_add_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
 static void sp_521_proj_point_add_9(sp_point_521* r,
         const sp_point_521* p, const sp_point_521* q, sp_digit* t)
 {
-    const sp_point_521* ap[2];
-    sp_point_521* rp[2];
     sp_digit* t1 = t;
     sp_digit* t2 = t + 2*9;
     sp_digit* t3 = t + 4*9;
     sp_digit* t4 = t + 6*9;
     sp_digit* t5 = t + 8*9;
-    sp_digit* x;
-    sp_digit* y;
-    sp_digit* z;
-    int i;
+    sp_digit* t6 = t + 10*9;
 
-    /* Ensure only the first point is the same as the result. */
-    if (q == r) {
-        const sp_point_521* a = p;
-        p = q;
-        q = a;
-    }
 
     /* Check double */
     (void)sp_521_sub_9(t1, p521_mod, q->y);
@@ -72018,60 +72002,61 @@ static void sp_521_proj_point_add_9(sp_point_521* r,
         sp_521_proj_point_dbl_9(r, p, t);
     }
     else {
-        rp[0] = r;
-
-        /*lint allow cast to different type of pointer*/
-        rp[1] = (sp_point_521*)t; /*lint !e9087 !e740*/
-        XMEMSET(rp[1], 0, sizeof(sp_point_521));
-        x = rp[p->infinity | q->infinity]->x;
-        y = rp[p->infinity | q->infinity]->y;
-        z = rp[p->infinity | q->infinity]->z;
-
-        ap[0] = p;
-        ap[1] = q;
-        for (i=0; i<9; i++) {
-            r->x[i] = ap[p->infinity]->x[i];
-        }
-        for (i=0; i<9; i++) {
-            r->y[i] = ap[p->infinity]->y[i];
-        }
-        for (i=0; i<9; i++) {
-            r->z[i] = ap[p->infinity]->z[i];
-        }
-        r->infinity = ap[p->infinity]->infinity;
+        sp_digit maskp;
+        sp_digit maskq;
+        sp_digit maskt;
+        sp_digit* x = t6;
+        sp_digit* y = t1;
+        sp_digit* z = t2;
+        int i;
 
         /* U1 = X1*Z2^2 */
         sp_521_mont_sqr_9(t1, q->z, p521_mod, p521_mp_mod);
         sp_521_mont_mul_9(t3, t1, q->z, p521_mod, p521_mp_mod);
-        sp_521_mont_mul_9(t1, t1, x, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(t1, t1, p->x, p521_mod, p521_mp_mod);
         /* U2 = X2*Z1^2 */
-        sp_521_mont_sqr_9(t2, z, p521_mod, p521_mp_mod);
-        sp_521_mont_mul_9(t4, t2, z, p521_mod, p521_mp_mod);
+        sp_521_mont_sqr_9(t2, p->z, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(t4, t2, p->z, p521_mod, p521_mp_mod);
         sp_521_mont_mul_9(t2, t2, q->x, p521_mod, p521_mp_mod);
         /* S1 = Y1*Z2^3 */
-        sp_521_mont_mul_9(t3, t3, y, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(t3, t3, p->y, p521_mod, p521_mp_mod);
         /* S2 = Y2*Z1^3 */
         sp_521_mont_mul_9(t4, t4, q->y, p521_mod, p521_mp_mod);
         /* H = U2 - U1 */
         sp_521_mont_sub_9(t2, t2, t1, p521_mod);
         /* R = S2 - S1 */
         sp_521_mont_sub_9(t4, t4, t3, p521_mod);
-        /* Z3 = H*Z1*Z2 */
-        sp_521_mont_mul_9(z, z, q->z, p521_mod, p521_mp_mod);
-        sp_521_mont_mul_9(z, z, t2, p521_mod, p521_mp_mod);
         /* X3 = R^2 - H^3 - 2*U1*H^2 */
-        sp_521_mont_sqr_9(x, t4, p521_mod, p521_mp_mod);
         sp_521_mont_sqr_9(t5, t2, p521_mod, p521_mp_mod);
         sp_521_mont_mul_9(y, t1, t5, p521_mod, p521_mp_mod);
         sp_521_mont_mul_9(t5, t5, t2, p521_mod, p521_mp_mod);
+        /* Z3 = H*Z1*Z2 */
+        sp_521_mont_mul_9(z, p->z, t2, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(z, z, q->z, p521_mod, p521_mp_mod);
+        sp_521_mont_sqr_9(x, t4, p521_mod, p521_mp_mod);
         sp_521_mont_sub_9(x, x, t5, p521_mod);
-        sp_521_mont_dbl_9(t1, y, p521_mod);
-        sp_521_mont_sub_9(x, x, t1, p521_mod);
-        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_521_mont_sub_9(y, y, x, p521_mod);
-        sp_521_mont_mul_9(y, y, t4, p521_mod, p521_mp_mod);
         sp_521_mont_mul_9(t5, t5, t3, p521_mod, p521_mp_mod);
+        sp_521_mont_dbl_9(t3, y, p521_mod);
+        sp_521_mont_sub_9(x, x, t3, p521_mod);
+        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
+        sp_521_mont_sub_lower_9(y, y, x, p521_mod);
+        sp_521_mont_mul_9(y, y, t4, p521_mod, p521_mp_mod);
         sp_521_mont_sub_9(y, y, t5, p521_mod);
+
+        maskp = 0 - (q->infinity & (!p->infinity));
+        maskq = 0 - (p->infinity & (!q->infinity));
+        maskt = ~(maskp | maskq);
+        for (i = 0; i < 9; i++) {
+            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
+        }
+        for (i = 0; i < 9; i++) {
+            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
+        }
+        for (i = 0; i < 9; i++) {
+            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
+        }
+        r->z[0] |= p->infinity & q->infinity;
+        r->infinity = p->infinity & q->infinity;
     }
 }
 
@@ -72118,29 +72103,30 @@ static void sp_521_proj_point_dbl_n_store_9(sp_point_521* r,
         /* A = 3*(X^2 - W) */
         sp_521_mont_sqr_9(t1, x, p521_mod, p521_mp_mod);
         sp_521_mont_sub_9(t1, t1, w, p521_mod);
-        sp_521_mont_tpl_9(a, t1, p521_mod);
+        sp_521_mont_tpl_lower_9(a, t1, p521_mod);
         /* B = X*Y^2 */
-        sp_521_mont_sqr_9(t2, y, p521_mod, p521_mp_mod);
-        sp_521_mont_mul_9(b, t2, x, p521_mod, p521_mp_mod);
+        sp_521_mont_sqr_9(t1, y, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(b, t1, x, p521_mod, p521_mp_mod);
         x = r[j].x;
         /* X = A^2 - 2B */
         sp_521_mont_sqr_9(x, a, p521_mod, p521_mp_mod);
-        sp_521_mont_dbl_9(t1, b, p521_mod);
-        sp_521_mont_sub_9(x, x, t1, p521_mod);
+        sp_521_mont_dbl_9(t2, b, p521_mod);
+        sp_521_mont_sub_9(x, x, t2, p521_mod);
+        /*  b = 2.(B - X) */
+        sp_521_mont_sub_lower_9(t2, b, x, p521_mod);
+        sp_521_mont_dbl_lower_9(b, t2, p521_mod);
         /* Z = Z*Y */
         sp_521_mont_mul_9(r[j].z, z, y, p521_mod, p521_mp_mod);
         z = r[j].z;
-        /* t2 = Y^4 */
-        sp_521_mont_sqr_9(t2, t2, p521_mod, p521_mp_mod);
+        /* t1 = Y^4 */
+        sp_521_mont_sqr_9(t1, t1, p521_mod, p521_mp_mod);
         if (i != n) {
             /* W = W*Y^4 */
-            sp_521_mont_mul_9(w, w, t2, p521_mod, p521_mp_mod);
+            sp_521_mont_mul_9(w, w, t1, p521_mod, p521_mp_mod);
         }
         /* y = 2*A*(B - X) - Y^4 */
-        sp_521_mont_sub_9(y, b, x, p521_mod);
-        sp_521_mont_mul_9(y, y, a, p521_mod, p521_mp_mod);
-        sp_521_mont_dbl_9(y, y, p521_mod);
-        sp_521_mont_sub_9(y, y, t2, p521_mod);
+        sp_521_mont_mul_9(y, b, a, p521_mod, p521_mp_mod);
+        sp_521_mont_sub_9(y, y, t1, p521_mod);
 
         /* Y = Y/2 */
         sp_521_div2_9(r[j].y, y, p521_mod);
@@ -72166,30 +72152,30 @@ static void sp_521_proj_point_add_sub_9(sp_point_521* ra,
     sp_digit* t4 = t + 6*9;
     sp_digit* t5 = t + 8*9;
     sp_digit* t6 = t + 10*9;
-    sp_digit* x = ra->x;
-    sp_digit* y = ra->y;
-    sp_digit* z = ra->z;
+    sp_digit* xa = ra->x;
+    sp_digit* ya = ra->y;
+    sp_digit* za = ra->z;
     sp_digit* xs = rs->x;
     sp_digit* ys = rs->y;
     sp_digit* zs = rs->z;
 
 
-    XMEMCPY(x, p->x, sizeof(p->x) / 2);
-    XMEMCPY(y, p->y, sizeof(p->y) / 2);
-    XMEMCPY(z, p->z, sizeof(p->z) / 2);
+    XMEMCPY(xa, p->x, sizeof(p->x) / 2);
+    XMEMCPY(ya, p->y, sizeof(p->y) / 2);
+    XMEMCPY(za, p->z, sizeof(p->z) / 2);
     ra->infinity = 0;
     rs->infinity = 0;
 
     /* U1 = X1*Z2^2 */
     sp_521_mont_sqr_9(t1, q->z, p521_mod, p521_mp_mod);
     sp_521_mont_mul_9(t3, t1, q->z, p521_mod, p521_mp_mod);
-    sp_521_mont_mul_9(t1, t1, x, p521_mod, p521_mp_mod);
+    sp_521_mont_mul_9(t1, t1, xa, p521_mod, p521_mp_mod);
     /* U2 = X2*Z1^2 */
-    sp_521_mont_sqr_9(t2, z, p521_mod, p521_mp_mod);
-    sp_521_mont_mul_9(t4, t2, z, p521_mod, p521_mp_mod);
+    sp_521_mont_sqr_9(t2, za, p521_mod, p521_mp_mod);
+    sp_521_mont_mul_9(t4, t2, za, p521_mod, p521_mp_mod);
     sp_521_mont_mul_9(t2, t2, q->x, p521_mod, p521_mp_mod);
     /* S1 = Y1*Z2^3 */
-    sp_521_mont_mul_9(t3, t3, y, p521_mod, p521_mp_mod);
+    sp_521_mont_mul_9(t3, t3, ya, p521_mod, p521_mp_mod);
     /* S2 = Y2*Z1^3 */
     sp_521_mont_mul_9(t4, t4, q->y, p521_mod, p521_mp_mod);
     /* H = U2 - U1 */
@@ -72200,30 +72186,30 @@ static void sp_521_proj_point_add_sub_9(sp_point_521* ra,
     sp_521_mont_sub_9(t4, t4, t3, p521_mod);
     /* Z3 = H*Z1*Z2 */
     /* ZS = H*Z1*Z2 */
-    sp_521_mont_mul_9(z, z, q->z, p521_mod, p521_mp_mod);
-    sp_521_mont_mul_9(z, z, t2, p521_mod, p521_mp_mod);
-    XMEMCPY(zs, z, sizeof(p->z)/2);
+    sp_521_mont_mul_9(za, za, q->z, p521_mod, p521_mp_mod);
+    sp_521_mont_mul_9(za, za, t2, p521_mod, p521_mp_mod);
+    XMEMCPY(zs, za, sizeof(p->z)/2);
     /* X3 = R^2 - H^3 - 2*U1*H^2 */
     /* XS = RS^2 - H^3 - 2*U1*H^2 */
-    sp_521_mont_sqr_9(x, t4, p521_mod, p521_mp_mod);
+    sp_521_mont_sqr_9(xa, t4, p521_mod, p521_mp_mod);
     sp_521_mont_sqr_9(xs, t6, p521_mod, p521_mp_mod);
     sp_521_mont_sqr_9(t5, t2, p521_mod, p521_mp_mod);
-    sp_521_mont_mul_9(y, t1, t5, p521_mod, p521_mp_mod);
+    sp_521_mont_mul_9(ya, t1, t5, p521_mod, p521_mp_mod);
     sp_521_mont_mul_9(t5, t5, t2, p521_mod, p521_mp_mod);
-    sp_521_mont_sub_9(x, x, t5, p521_mod);
+    sp_521_mont_sub_9(xa, xa, t5, p521_mod);
     sp_521_mont_sub_9(xs, xs, t5, p521_mod);
-    sp_521_mont_dbl_9(t1, y, p521_mod);
-    sp_521_mont_sub_9(x, x, t1, p521_mod);
+    sp_521_mont_dbl_9(t1, ya, p521_mod);
+    sp_521_mont_sub_9(xa, xa, t1, p521_mod);
     sp_521_mont_sub_9(xs, xs, t1, p521_mod);
     /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
     /* YS = -RS*(U1*H^2 - XS) - S1*H^3 */
-    sp_521_mont_sub_9(ys, y, xs, p521_mod);
-    sp_521_mont_sub_9(y, y, x, p521_mod);
-    sp_521_mont_mul_9(y, y, t4, p521_mod, p521_mp_mod);
+    sp_521_mont_sub_lower_9(ys, ya, xs, p521_mod);
+    sp_521_mont_sub_lower_9(ya, ya, xa, p521_mod);
+    sp_521_mont_mul_9(ya, ya, t4, p521_mod, p521_mp_mod);
     sp_521_sub_9(t6, p521_mod, t6);
     sp_521_mont_mul_9(ys, ys, t6, p521_mod, p521_mp_mod);
     sp_521_mont_mul_9(t5, t5, t3, p521_mod, p521_mp_mod);
-    sp_521_mont_sub_9(y, y, t5, p521_mod);
+    sp_521_mont_sub_9(ya, ya, t5, p521_mod);
     sp_521_mont_sub_9(ys, ys, t5, p521_mod);
 }
 
@@ -72536,17 +72522,12 @@ typedef struct sp_table_entry_521 {
 static void sp_521_proj_point_add_qz1_9(sp_point_521* r, const sp_point_521* p,
         const sp_point_521* q, sp_digit* t)
 {
-    const sp_point_521* ap[2];
-    sp_point_521* rp[2];
     sp_digit* t1 = t;
     sp_digit* t2 = t + 2*9;
     sp_digit* t3 = t + 4*9;
     sp_digit* t4 = t + 6*9;
     sp_digit* t5 = t + 8*9;
-    sp_digit* x;
-    sp_digit* y;
-    sp_digit* z;
-    int i;
+    sp_digit* t6 = t + 10*9;
 
     /* Check double */
     (void)sp_521_sub_9(t1, p521_mod, q->y);
@@ -72556,53 +72537,54 @@ static void sp_521_proj_point_add_qz1_9(sp_point_521* r, const sp_point_521* p,
         sp_521_proj_point_dbl_9(r, p, t);
     }
     else {
-        rp[0] = r;
-
-        /*lint allow cast to different type of pointer*/
-        rp[1] = (sp_point_521*)t; /*lint !e9087 !e740*/
-        XMEMSET(rp[1], 0, sizeof(sp_point_521));
-        x = rp[p->infinity | q->infinity]->x;
-        y = rp[p->infinity | q->infinity]->y;
-        z = rp[p->infinity | q->infinity]->z;
-
-        ap[0] = p;
-        ap[1] = q;
-        for (i=0; i<9; i++) {
-            r->x[i] = ap[p->infinity]->x[i];
-        }
-        for (i=0; i<9; i++) {
-            r->y[i] = ap[p->infinity]->y[i];
-        }
-        for (i=0; i<9; i++) {
-            r->z[i] = ap[p->infinity]->z[i];
-        }
-        r->infinity = ap[p->infinity]->infinity;
+        sp_digit maskp;
+        sp_digit maskq;
+        sp_digit maskt;
+        sp_digit* x = t2;
+        sp_digit* y = t5;
+        sp_digit* z = t6;
+        int i;
 
         /* U2 = X2*Z1^2 */
-        sp_521_mont_sqr_9(t2, z, p521_mod, p521_mp_mod);
-        sp_521_mont_mul_9(t4, t2, z, p521_mod, p521_mp_mod);
+        sp_521_mont_sqr_9(t2, p->z, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(t4, t2, p->z, p521_mod, p521_mp_mod);
         sp_521_mont_mul_9(t2, t2, q->x, p521_mod, p521_mp_mod);
         /* S2 = Y2*Z1^3 */
         sp_521_mont_mul_9(t4, t4, q->y, p521_mod, p521_mp_mod);
         /* H = U2 - X1 */
-        sp_521_mont_sub_9(t2, t2, x, p521_mod);
+        sp_521_mont_sub_9(t2, t2, p->x, p521_mod);
         /* R = S2 - Y1 */
-        sp_521_mont_sub_9(t4, t4, y, p521_mod);
+        sp_521_mont_sub_9(t4, t4, p->y, p521_mod);
         /* Z3 = H*Z1 */
-        sp_521_mont_mul_9(z, z, t2, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(z, p->z, t2, p521_mod, p521_mp_mod);
         /* X3 = R^2 - H^3 - 2*X1*H^2 */
         sp_521_mont_sqr_9(t1, t4, p521_mod, p521_mp_mod);
         sp_521_mont_sqr_9(t5, t2, p521_mod, p521_mp_mod);
-        sp_521_mont_mul_9(t3, x, t5, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(t3, p->x, t5, p521_mod, p521_mp_mod);
         sp_521_mont_mul_9(t5, t5, t2, p521_mod, p521_mp_mod);
         sp_521_mont_sub_9(x, t1, t5, p521_mod);
         sp_521_mont_dbl_9(t1, t3, p521_mod);
         sp_521_mont_sub_9(x, x, t1, p521_mod);
         /* Y3 = R*(X1*H^2 - X3) - Y1*H^3 */
-        sp_521_mont_sub_9(t3, t3, x, p521_mod);
+        sp_521_mont_sub_lower_9(t3, t3, x, p521_mod);
         sp_521_mont_mul_9(t3, t3, t4, p521_mod, p521_mp_mod);
-        sp_521_mont_mul_9(t5, t5, y, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(t5, t5, p->y, p521_mod, p521_mp_mod);
         sp_521_mont_sub_9(y, t3, t5, p521_mod);
+
+        maskp = 0 - (q->infinity & (!p->infinity));
+        maskq = 0 - (p->infinity & (!q->infinity));
+        maskt = ~(maskp | maskq);
+        for (i = 0; i < 9; i++) {
+            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
+        }
+        for (i = 0; i < 9; i++) {
+            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
+        }
+        for (i = 0; i < 9; i++) {
+            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
+        }
+        r->z[0] |= p->infinity & q->infinity;
+        r->infinity = p->infinity & q->infinity;
     }
 }
 
@@ -72800,7 +72782,7 @@ static int sp_521_ecc_mulmod_stripe_9(sp_point_521* r, const sp_point_521* g,
     sp_digit* t = NULL;
 #else
     sp_point_521 rt[2];
-    sp_digit t[2 * 9 * 5];
+    sp_digit t[2 * 9 * 6];
 #endif
     sp_point_521* p = NULL;
     int i;
@@ -72821,7 +72803,7 @@ static int sp_521_ecc_mulmod_stripe_9(sp_point_521* r, const sp_point_521* g,
     if (rt == NULL)
         err = MEMORY_E;
     if (err == MP_OKAY) {
-        t = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 9 * 5, heap,
+        t = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 9 * 6, heap,
                                DYNAMIC_TYPE_ECC);
         if (t == NULL)
             err = MEMORY_E;
@@ -73212,7 +73194,7 @@ static int sp_521_ecc_mulmod_stripe_9(sp_point_521* r, const sp_point_521* g,
     sp_digit* t = NULL;
 #else
     sp_point_521 rt[2];
-    sp_digit t[2 * 9 * 5];
+    sp_digit t[2 * 9 * 6];
 #endif
     sp_point_521* p = NULL;
     int i;
@@ -73233,7 +73215,7 @@ static int sp_521_ecc_mulmod_stripe_9(sp_point_521* r, const sp_point_521* g,
     if (rt == NULL)
         err = MEMORY_E;
     if (err == MP_OKAY) {
-        t = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 9 * 5, heap,
+        t = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 9 * 6, heap,
                                DYNAMIC_TYPE_ECC);
         if (t == NULL)
             err = MEMORY_E;
@@ -73525,7 +73507,7 @@ int sp_ecc_mulmod_add_521(const mp_int* km, const ecc_point* gm,
     sp_digit* k = NULL;
 #else
     sp_point_521 point[2];
-    sp_digit k[9 + 9 * 2 * 5];
+    sp_digit k[9 + 9 * 2 * 6];
 #endif
     sp_point_521* addP = NULL;
     sp_digit* tmp = NULL;
@@ -73538,7 +73520,7 @@ int sp_ecc_mulmod_add_521(const mp_int* km, const ecc_point* gm,
         err = MEMORY_E;
     if (err == MP_OKAY) {
         k = (sp_digit*)XMALLOC(
-            sizeof(sp_digit) * (9 + 9 * 2 * 5), heap,
+            sizeof(sp_digit) * (9 + 9 * 2 * 6), heap,
             DYNAMIC_TYPE_ECC);
         if (k == NULL)
             err = MEMORY_E;
@@ -109858,7 +109840,7 @@ static int sp_521_ecc_mulmod_add_only_9(sp_point_521* r, const sp_point_521* g,
     sp_digit* tmp = NULL;
 #else
     sp_point_521 rt[2];
-    sp_digit tmp[2 * 9 * 5];
+    sp_digit tmp[2 * 9 * 6];
 #endif
     sp_point_521* p = NULL;
     sp_digit* negy = NULL;
@@ -109877,7 +109859,7 @@ static int sp_521_ecc_mulmod_add_only_9(sp_point_521* r, const sp_point_521* g,
     if (rt == NULL)
         err = MEMORY_E;
     if (err == MP_OKAY) {
-        tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 9 * 5, heap,
+        tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 9 * 6, heap,
                                  DYNAMIC_TYPE_ECC);
         if (tmp == NULL)
             err = MEMORY_E;
@@ -109936,7 +109918,7 @@ static int sp_521_ecc_mulmod_add_only_9(sp_point_521* r, const sp_point_521* g,
     if (tmp != NULL)
 #endif
     {
-        ForceZero(tmp, sizeof(sp_digit) * 2 * 9 * 5);
+        ForceZero(tmp, sizeof(sp_digit) * 2 * 9 * 6);
     #if defined(WOLFSSL_SMALL_STACK) && !defined(WOLFSSL_SP_NO_MALLOC)
         XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
     #endif
@@ -110038,7 +110020,7 @@ int sp_ecc_mulmod_base_add_521(const mp_int* km, const ecc_point* am,
     sp_digit* k = NULL;
 #else
     sp_point_521 point[2];
-    sp_digit k[9 + 9 * 2 * 5];
+    sp_digit k[9 + 9 * 2 * 6];
 #endif
     sp_point_521* addP = NULL;
     sp_digit* tmp = NULL;
@@ -110051,7 +110033,7 @@ int sp_ecc_mulmod_base_add_521(const mp_int* km, const ecc_point* am,
         err = MEMORY_E;
     if (err == MP_OKAY) {
         k = (sp_digit*)XMALLOC(
-            sizeof(sp_digit) * (9 + 9 * 2 * 5),
+            sizeof(sp_digit) * (9 + 9 * 2 * 6),
             heap, DYNAMIC_TYPE_ECC);
         if (k == NULL)
             err = MEMORY_E;
@@ -111286,7 +111268,7 @@ typedef struct sp_ecc_verify_521_ctx {
     sp_digit u1[2*9];
     sp_digit u2[2*9];
     sp_digit s[2*9];
-    sp_digit tmp[2*9 * 5];
+    sp_digit tmp[2*9 * 6];
     sp_point_521 p1;
     sp_point_521 p2;
 } sp_ecc_verify_521_ctx;
@@ -111435,7 +111417,7 @@ int sp_ecc_verify_521(const byte* hash, word32 hashLen, const mp_int* pX,
     sp_digit* u1 = NULL;
     sp_point_521* p1 = NULL;
 #else
-    sp_digit  u1[16 * 9];
+    sp_digit  u1[18 * 9];
     sp_point_521 p1[2];
 #endif
     sp_digit* u2 = NULL;
@@ -111454,7 +111436,7 @@ int sp_ecc_verify_521(const byte* hash, word32 hashLen, const mp_int* pX,
             err = MEMORY_E;
     }
     if (err == MP_OKAY) {
-        u1 = (sp_digit*)XMALLOC(sizeof(sp_digit) * 16 * 9, heap,
+        u1 = (sp_digit*)XMALLOC(sizeof(sp_digit) * 18 * 9, heap,
                                                               DYNAMIC_TYPE_ECC);
         if (u1 == NULL)
             err = MEMORY_E;
@@ -111761,7 +111743,7 @@ int sp_ecc_proj_add_point_521(mp_int* pX, mp_int* pY, mp_int* pZ,
     sp_digit* tmp = NULL;
     sp_point_521* p = NULL;
 #else
-    sp_digit tmp[2 * 9 * 5];
+    sp_digit tmp[2 * 9 * 6];
     sp_point_521 p[2];
 #endif
     sp_point_521* q = NULL;
@@ -111775,7 +111757,7 @@ int sp_ecc_proj_add_point_521(mp_int* pX, mp_int* pY, mp_int* pZ,
             err = MEMORY_E;
     }
     if (err == MP_OKAY) {
-        tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 9 * 5, NULL,
+        tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 9 * 6, NULL,
                                  DYNAMIC_TYPE_ECC);
         if (tmp == NULL) {
             err = MEMORY_E;
@@ -114631,7 +114613,7 @@ static void sp_1024_map_16(sp_point_1024* r, const sp_point_1024* p,
                 (sp_digit)1 : (sp_digit)0));
     sp_1024_norm_16(r->y);
 
-    XMEMSET(r->z, 0, sizeof(r->z));
+    XMEMSET(r->z, 0, sizeof(r->z) / 2);
     r->z[0] = 1;
 
 }
@@ -115089,6 +115071,7 @@ static void sp_1024_mont_sub_16(sp_digit* r, const sp_digit* a, const sp_digit* 
     );
 }
 
+#define sp_1024_mont_sub_lower_16 sp_1024_mont_sub_16
 #ifdef WOLFSSL_SP_SMALL
 /* Conditionally add a and b using the mask m.
  * m is -1 to add and 0 when not.
@@ -115391,7 +115374,7 @@ static int sp_1024_proj_point_dbl_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r, 
         break;
     case 16:
         /* Y = Y - X */
-        sp_1024_mont_sub_16(ctx->y, ctx->y, ctx->x, p1024_mod);
+        sp_1024_mont_sub_lower_16(ctx->y, ctx->y, ctx->x, p1024_mod);
         ctx->state = 17;
         break;
     case 17:
@@ -115417,7 +115400,8 @@ static int sp_1024_proj_point_dbl_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r, 
 }
 #endif /* WOLFSSL_SP_NONBLOCK */
 
-static void sp_1024_proj_point_dbl_16(sp_point_1024* r, const sp_point_1024* p, sp_digit* t)
+static void sp_1024_proj_point_dbl_16(sp_point_1024* r, const sp_point_1024* p,
+    sp_digit* t)
 {
     sp_digit* t1 = t;
     sp_digit* t2 = t + 2*16;
@@ -115464,13 +115448,15 @@ static void sp_1024_proj_point_dbl_16(sp_point_1024* r, const sp_point_1024* p, 
     /* X = X - Y */
     sp_1024_mont_sub_16(x, x, y, p1024_mod);
     /* Y = Y - X */
-    sp_1024_mont_sub_16(y, y, x, p1024_mod);
+    sp_1024_mont_sub_lower_16(y, y, x, p1024_mod);
     /* Y = Y * T1 */
     sp_1024_mont_mul_16(y, y, t1, p1024_mod, p1024_mp_mod);
     /* Y = Y - T2 */
     sp_1024_mont_sub_16(y, y, t2, p1024_mod);
 }
 
+#define sp_1024_mont_dbl_lower_16 sp_1024_mont_dbl_16
+#define sp_1024_mont_tpl_lower_16 sp_1024_mont_tpl_16
 /* Double the Montgomery form projective point p a number of times.
  *
  * r  Result of repeated doubling of point.
@@ -115509,7 +115495,7 @@ static void sp_1024_proj_point_dbl_n_16(sp_point_1024* p, int n,
         /* A = 3*(X^2 - W) */
         sp_1024_mont_sqr_16(t1, x, p1024_mod, p1024_mp_mod);
         sp_1024_mont_sub_16(t1, t1, w, p1024_mod);
-        sp_1024_mont_tpl_16(a, t1, p1024_mod);
+        sp_1024_mont_tpl_lower_16(a, t1, p1024_mod);
         /* B = X*Y^2 */
         sp_1024_mont_sqr_16(t1, y, p1024_mod, p1024_mp_mod);
         sp_1024_mont_mul_16(b, t1, x, p1024_mod, p1024_mp_mod);
@@ -115517,9 +115503,12 @@ static void sp_1024_proj_point_dbl_n_16(sp_point_1024* p, int n,
         sp_1024_mont_sqr_16(x, a, p1024_mod, p1024_mp_mod);
         sp_1024_mont_dbl_16(t2, b, p1024_mod);
         sp_1024_mont_sub_16(x, x, t2, p1024_mod);
+        /*   b = 2.(B - X) */
+        sp_1024_mont_sub_lower_16(t2, b, x, p1024_mod);
+        sp_1024_mont_dbl_lower_16(b, t2, p1024_mod);
         /* Z = Z*Y */
         sp_1024_mont_mul_16(z, z, y, p1024_mod, p1024_mp_mod);
-        /* t2 = Y^4 */
+        /* t1 = Y^4 */
         sp_1024_mont_sqr_16(t1, t1, p1024_mod, p1024_mp_mod);
 #ifdef WOLFSSL_SP_SMALL
         if (n != 0)
@@ -115529,16 +115518,14 @@ static void sp_1024_proj_point_dbl_n_16(sp_point_1024* p, int n,
             sp_1024_mont_mul_16(w, w, t1, p1024_mod, p1024_mp_mod);
         }
         /* y = 2*A*(B - X) - Y^4 */
-        sp_1024_mont_sub_16(y, b, x, p1024_mod);
-        sp_1024_mont_mul_16(y, y, a, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_dbl_16(y, y, p1024_mod);
+        sp_1024_mont_mul_16(y, b, a, p1024_mod, p1024_mp_mod);
         sp_1024_mont_sub_16(y, y, t1, p1024_mod);
     }
 #ifndef WOLFSSL_SP_SMALL
     /* A = 3*(X^2 - W) */
     sp_1024_mont_sqr_16(t1, x, p1024_mod, p1024_mp_mod);
     sp_1024_mont_sub_16(t1, t1, w, p1024_mod);
-    sp_1024_mont_tpl_16(a, t1, p1024_mod);
+    sp_1024_mont_tpl_lower_16(a, t1, p1024_mod);
     /* B = X*Y^2 */
     sp_1024_mont_sqr_16(t1, y, p1024_mod, p1024_mp_mod);
     sp_1024_mont_mul_16(b, t1, x, p1024_mod, p1024_mp_mod);
@@ -115546,14 +115533,15 @@ static void sp_1024_proj_point_dbl_n_16(sp_point_1024* p, int n,
     sp_1024_mont_sqr_16(x, a, p1024_mod, p1024_mp_mod);
     sp_1024_mont_dbl_16(t2, b, p1024_mod);
     sp_1024_mont_sub_16(x, x, t2, p1024_mod);
+    /*   b = 2.(B - X) */
+    sp_1024_mont_sub_lower_16(t2, b, x, p1024_mod);
+    sp_1024_mont_dbl_lower_16(b, t2, p1024_mod);
     /* Z = Z*Y */
     sp_1024_mont_mul_16(z, z, y, p1024_mod, p1024_mp_mod);
-    /* t2 = Y^4 */
+    /* t1 = Y^4 */
     sp_1024_mont_sqr_16(t1, t1, p1024_mod, p1024_mp_mod);
     /* y = 2*A*(B - X) - Y^4 */
-    sp_1024_mont_sub_16(y, b, x, p1024_mod);
-    sp_1024_mont_mul_16(y, y, a, p1024_mod, p1024_mp_mod);
-    sp_1024_mont_dbl_16(y, y, p1024_mod);
+    sp_1024_mont_mul_16(y, b, a, p1024_mod, p1024_mp_mod);
     sp_1024_mont_sub_16(y, y, t1, p1024_mod);
 #endif
     /* Y = Y/2 */
@@ -115694,6 +115682,7 @@ typedef struct sp_1024_proj_point_add_16_ctx {
     sp_digit* t3;
     sp_digit* t4;
     sp_digit* t5;
+    sp_digit* t6;
     sp_digit* x;
     sp_digit* y;
     sp_digit* z;
@@ -115722,6 +115711,10 @@ static int sp_1024_proj_point_add_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
         ctx->t3 = t + 4*16;
         ctx->t4 = t + 6*16;
         ctx->t5 = t + 8*16;
+        ctx->t6 = t + 10*16;
+        ctx->x = ctx->t6;
+        ctx->y = ctx->t1;
+        ctx->z = ctx->t2;
 
         ctx->state = 1;
         break;
@@ -115746,29 +115739,6 @@ static int sp_1024_proj_point_add_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
         break;
     case 3:
     {
-        int i;
-        ctx->rp[0] = r;
-
-        /*lint allow cast to different type of pointer*/
-        ctx->rp[1] = (sp_point_1024*)t; /*lint !e9087 !e740*/
-        XMEMSET(ctx->rp[1], 0, sizeof(sp_point_1024));
-        ctx->x = ctx->rp[p->infinity | q->infinity]->x;
-        ctx->y = ctx->rp[p->infinity | q->infinity]->y;
-        ctx->z = ctx->rp[p->infinity | q->infinity]->z;
-
-        ctx->ap[0] = p;
-        ctx->ap[1] = q;
-        for (i=0; i<16; i++) {
-            r->x[i] = ctx->ap[p->infinity]->x[i];
-        }
-        for (i=0; i<16; i++) {
-            r->y[i] = ctx->ap[p->infinity]->y[i];
-        }
-        for (i=0; i<16; i++) {
-            r->z[i] = ctx->ap[p->infinity]->z[i];
-        }
-        r->infinity = ctx->ap[p->infinity]->infinity;
-
         ctx->state = 4;
         break;
     }
@@ -115782,16 +115752,16 @@ static int sp_1024_proj_point_add_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
         ctx->state = 6;
         break;
     case 6:
-        sp_1024_mont_mul_16(ctx->t1, ctx->t1, ctx->x, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(ctx->t1, ctx->t1, p->x, p1024_mod, p1024_mp_mod);
         ctx->state = 7;
         break;
     case 7:
         /* U2 = X2*Z1^2 */
-        sp_1024_mont_sqr_16(ctx->t2, ctx->z, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_sqr_16(ctx->t2, p->z, p1024_mod, p1024_mp_mod);
         ctx->state = 8;
         break;
     case 8:
-        sp_1024_mont_mul_16(ctx->t4, ctx->t2, ctx->z, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(ctx->t4, ctx->t2, p->z, p1024_mod, p1024_mp_mod);
         ctx->state = 9;
         break;
     case 9:
@@ -115800,7 +115770,7 @@ static int sp_1024_proj_point_add_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
         break;
     case 10:
         /* S1 = Y1*Z2^3 */
-        sp_1024_mont_mul_16(ctx->t3, ctx->t3, ctx->y, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(ctx->t3, ctx->t3, p->y, p1024_mod, p1024_mp_mod);
         ctx->state = 11;
         break;
     case 11:
@@ -115819,29 +115789,29 @@ static int sp_1024_proj_point_add_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
         ctx->state = 14;
         break;
     case 14:
-        /* Z3 = H*Z1*Z2 */
-        sp_1024_mont_mul_16(ctx->z, ctx->z, q->z, p1024_mod, p1024_mp_mod);
+        /* X3 = R^2 - H^3 - 2*U1*H^2 */
+        sp_1024_mont_sqr_16(ctx->t5, ctx->t2, p1024_mod, p1024_mp_mod);
         ctx->state = 15;
         break;
     case 15:
-        sp_1024_mont_mul_16(ctx->z, ctx->z, ctx->t2, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(ctx->y, ctx->t1, ctx->t5, p1024_mod, p1024_mp_mod);
         ctx->state = 16;
         break;
     case 16:
-        /* X3 = R^2 - H^3 - 2*U1*H^2 */
-        sp_1024_mont_sqr_16(ctx->x, ctx->t4, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(ctx->t5, ctx->t5, ctx->t2, p1024_mod, p1024_mp_mod);
         ctx->state = 17;
         break;
     case 17:
-        sp_1024_mont_sqr_16(ctx->t5, ctx->t2, p1024_mod, p1024_mp_mod);
+        /* Z3 = H*Z1*Z2 */
+        sp_1024_mont_mul_16(ctx->z, p->z, ctx->t2, p1024_mod, p1024_mp_mod);
         ctx->state = 18;
         break;
     case 18:
-        sp_1024_mont_mul_16(ctx->y, ctx->t1, ctx->t5, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(ctx->z, ctx->z, q->z, p1024_mod, p1024_mp_mod);
         ctx->state = 19;
         break;
     case 19:
-        sp_1024_mont_mul_16(ctx->t5, ctx->t5, ctx->t2, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_sqr_16(ctx->x, ctx->t4, p1024_mod, p1024_mp_mod);
         ctx->state = 20;
         break;
     case 20:
@@ -115849,24 +115819,24 @@ static int sp_1024_proj_point_add_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
         ctx->state = 21;
         break;
     case 21:
-        sp_1024_mont_dbl_16(ctx->t1, ctx->y, p1024_mod);
+        sp_1024_mont_mul_16(ctx->t5, ctx->t5, ctx->t3, p1024_mod, p1024_mp_mod);
         ctx->state = 22;
         break;
     case 22:
-        sp_1024_mont_sub_16(ctx->x, ctx->x, ctx->t1, p1024_mod);
+        sp_1024_mont_dbl_16(ctx->t3, ctx->y, p1024_mod);
         ctx->state = 23;
         break;
     case 23:
-        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_1024_mont_sub_16(ctx->y, ctx->y, ctx->x, p1024_mod);
+        sp_1024_mont_sub_16(ctx->x, ctx->x, ctx->t3, p1024_mod);
         ctx->state = 24;
         break;
     case 24:
-        sp_1024_mont_mul_16(ctx->y, ctx->y, ctx->t4, p1024_mod, p1024_mp_mod);
+        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
+        sp_1024_mont_sub_lower_16(ctx->y, ctx->y, ctx->x, p1024_mod);
         ctx->state = 25;
         break;
     case 25:
-        sp_1024_mont_mul_16(ctx->t5, ctx->t5, ctx->t3, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(ctx->y, ctx->y, ctx->t4, p1024_mod, p1024_mp_mod);
         ctx->state = 26;
         break;
     case 26:
@@ -115874,8 +115844,29 @@ static int sp_1024_proj_point_add_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
         ctx->state = 27;
         /* fall-through */
     case 27:
+    {
+        int i;
+        sp_digit maskp = 0 - (q->infinity & (!p->infinity));
+        sp_digit maskq = 0 - (p->infinity & (!q->infinity));
+        sp_digit maskt = ~(maskp | maskq);
+        for (i = 0; i < 16; i++) {
+            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) |
+                      (ctx->x[i] & maskt);
+        }
+        for (i = 0; i < 16; i++) {
+            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) |
+                      (ctx->y[i] & maskt);
+        }
+        for (i = 0; i < 16; i++) {
+            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) |
+                      (ctx->z[i] & maskt);
+        }
+        r->z[0] |= p->infinity & q->infinity;
+        r->infinity = p->infinity & q->infinity;
+
         err = MP_OKAY;
         break;
+    }
     }
 
     if (err == MP_OKAY && ctx->state != 27) {
@@ -115888,24 +115879,13 @@ static int sp_1024_proj_point_add_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
 static void sp_1024_proj_point_add_16(sp_point_1024* r,
         const sp_point_1024* p, const sp_point_1024* q, sp_digit* t)
 {
-    const sp_point_1024* ap[2];
-    sp_point_1024* rp[2];
     sp_digit* t1 = t;
     sp_digit* t2 = t + 2*16;
     sp_digit* t3 = t + 4*16;
     sp_digit* t4 = t + 6*16;
     sp_digit* t5 = t + 8*16;
-    sp_digit* x;
-    sp_digit* y;
-    sp_digit* z;
-    int i;
+    sp_digit* t6 = t + 10*16;
 
-    /* Ensure only the first point is the same as the result. */
-    if (q == r) {
-        const sp_point_1024* a = p;
-        p = q;
-        q = a;
-    }
 
     /* Check double */
     (void)sp_1024_mont_sub_16(t1, p1024_mod, q->y, p1024_mod);
@@ -115915,60 +115895,61 @@ static void sp_1024_proj_point_add_16(sp_point_1024* r,
         sp_1024_proj_point_dbl_16(r, p, t);
     }
     else {
-        rp[0] = r;
-
-        /*lint allow cast to different type of pointer*/
-        rp[1] = (sp_point_1024*)t; /*lint !e9087 !e740*/
-        XMEMSET(rp[1], 0, sizeof(sp_point_1024));
-        x = rp[p->infinity | q->infinity]->x;
-        y = rp[p->infinity | q->infinity]->y;
-        z = rp[p->infinity | q->infinity]->z;
-
-        ap[0] = p;
-        ap[1] = q;
-        for (i=0; i<16; i++) {
-            r->x[i] = ap[p->infinity]->x[i];
-        }
-        for (i=0; i<16; i++) {
-            r->y[i] = ap[p->infinity]->y[i];
-        }
-        for (i=0; i<16; i++) {
-            r->z[i] = ap[p->infinity]->z[i];
-        }
-        r->infinity = ap[p->infinity]->infinity;
+        sp_digit maskp;
+        sp_digit maskq;
+        sp_digit maskt;
+        sp_digit* x = t6;
+        sp_digit* y = t1;
+        sp_digit* z = t2;
+        int i;
 
         /* U1 = X1*Z2^2 */
         sp_1024_mont_sqr_16(t1, q->z, p1024_mod, p1024_mp_mod);
         sp_1024_mont_mul_16(t3, t1, q->z, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_mul_16(t1, t1, x, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(t1, t1, p->x, p1024_mod, p1024_mp_mod);
         /* U2 = X2*Z1^2 */
-        sp_1024_mont_sqr_16(t2, z, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_mul_16(t4, t2, z, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_sqr_16(t2, p->z, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(t4, t2, p->z, p1024_mod, p1024_mp_mod);
         sp_1024_mont_mul_16(t2, t2, q->x, p1024_mod, p1024_mp_mod);
         /* S1 = Y1*Z2^3 */
-        sp_1024_mont_mul_16(t3, t3, y, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(t3, t3, p->y, p1024_mod, p1024_mp_mod);
         /* S2 = Y2*Z1^3 */
         sp_1024_mont_mul_16(t4, t4, q->y, p1024_mod, p1024_mp_mod);
         /* H = U2 - U1 */
         sp_1024_mont_sub_16(t2, t2, t1, p1024_mod);
         /* R = S2 - S1 */
         sp_1024_mont_sub_16(t4, t4, t3, p1024_mod);
-        /* Z3 = H*Z1*Z2 */
-        sp_1024_mont_mul_16(z, z, q->z, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_mul_16(z, z, t2, p1024_mod, p1024_mp_mod);
         /* X3 = R^2 - H^3 - 2*U1*H^2 */
-        sp_1024_mont_sqr_16(x, t4, p1024_mod, p1024_mp_mod);
         sp_1024_mont_sqr_16(t5, t2, p1024_mod, p1024_mp_mod);
         sp_1024_mont_mul_16(y, t1, t5, p1024_mod, p1024_mp_mod);
         sp_1024_mont_mul_16(t5, t5, t2, p1024_mod, p1024_mp_mod);
+        /* Z3 = H*Z1*Z2 */
+        sp_1024_mont_mul_16(z, p->z, t2, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(z, z, q->z, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_sqr_16(x, t4, p1024_mod, p1024_mp_mod);
         sp_1024_mont_sub_16(x, x, t5, p1024_mod);
-        sp_1024_mont_dbl_16(t1, y, p1024_mod);
-        sp_1024_mont_sub_16(x, x, t1, p1024_mod);
-        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_1024_mont_sub_16(y, y, x, p1024_mod);
-        sp_1024_mont_mul_16(y, y, t4, p1024_mod, p1024_mp_mod);
         sp_1024_mont_mul_16(t5, t5, t3, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_dbl_16(t3, y, p1024_mod);
+        sp_1024_mont_sub_16(x, x, t3, p1024_mod);
+        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
+        sp_1024_mont_sub_lower_16(y, y, x, p1024_mod);
+        sp_1024_mont_mul_16(y, y, t4, p1024_mod, p1024_mp_mod);
         sp_1024_mont_sub_16(y, y, t5, p1024_mod);
+
+        maskp = 0 - (q->infinity & (!p->infinity));
+        maskq = 0 - (p->infinity & (!q->infinity));
+        maskt = ~(maskp | maskq);
+        for (i = 0; i < 16; i++) {
+            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
+        }
+        for (i = 0; i < 16; i++) {
+            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
+        }
+        for (i = 0; i < 16; i++) {
+            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
+        }
+        r->z[0] |= p->infinity & q->infinity;
+        r->infinity = p->infinity & q->infinity;
     }
 }
 
@@ -116015,29 +115996,30 @@ static void sp_1024_proj_point_dbl_n_store_16(sp_point_1024* r,
         /* A = 3*(X^2 - W) */
         sp_1024_mont_sqr_16(t1, x, p1024_mod, p1024_mp_mod);
         sp_1024_mont_sub_16(t1, t1, w, p1024_mod);
-        sp_1024_mont_tpl_16(a, t1, p1024_mod);
+        sp_1024_mont_tpl_lower_16(a, t1, p1024_mod);
         /* B = X*Y^2 */
-        sp_1024_mont_sqr_16(t2, y, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_mul_16(b, t2, x, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_sqr_16(t1, y, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(b, t1, x, p1024_mod, p1024_mp_mod);
         x = r[j].x;
         /* X = A^2 - 2B */
         sp_1024_mont_sqr_16(x, a, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_dbl_16(t1, b, p1024_mod);
-        sp_1024_mont_sub_16(x, x, t1, p1024_mod);
+        sp_1024_mont_dbl_16(t2, b, p1024_mod);
+        sp_1024_mont_sub_16(x, x, t2, p1024_mod);
+        /*  b = 2.(B - X) */
+        sp_1024_mont_sub_lower_16(t2, b, x, p1024_mod);
+        sp_1024_mont_dbl_lower_16(b, t2, p1024_mod);
         /* Z = Z*Y */
         sp_1024_mont_mul_16(r[j].z, z, y, p1024_mod, p1024_mp_mod);
         z = r[j].z;
-        /* t2 = Y^4 */
-        sp_1024_mont_sqr_16(t2, t2, p1024_mod, p1024_mp_mod);
+        /* t1 = Y^4 */
+        sp_1024_mont_sqr_16(t1, t1, p1024_mod, p1024_mp_mod);
         if (i != n) {
             /* W = W*Y^4 */
-            sp_1024_mont_mul_16(w, w, t2, p1024_mod, p1024_mp_mod);
+            sp_1024_mont_mul_16(w, w, t1, p1024_mod, p1024_mp_mod);
         }
         /* y = 2*A*(B - X) - Y^4 */
-        sp_1024_mont_sub_16(y, b, x, p1024_mod);
-        sp_1024_mont_mul_16(y, y, a, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_dbl_16(y, y, p1024_mod);
-        sp_1024_mont_sub_16(y, y, t2, p1024_mod);
+        sp_1024_mont_mul_16(y, b, a, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_sub_16(y, y, t1, p1024_mod);
 
         /* Y = Y/2 */
         sp_1024_div2_16(r[j].y, y, p1024_mod);
@@ -116063,30 +116045,30 @@ static void sp_1024_proj_point_add_sub_16(sp_point_1024* ra,
     sp_digit* t4 = t + 6*16;
     sp_digit* t5 = t + 8*16;
     sp_digit* t6 = t + 10*16;
-    sp_digit* x = ra->x;
-    sp_digit* y = ra->y;
-    sp_digit* z = ra->z;
+    sp_digit* xa = ra->x;
+    sp_digit* ya = ra->y;
+    sp_digit* za = ra->z;
     sp_digit* xs = rs->x;
     sp_digit* ys = rs->y;
     sp_digit* zs = rs->z;
 
 
-    XMEMCPY(x, p->x, sizeof(p->x) / 2);
-    XMEMCPY(y, p->y, sizeof(p->y) / 2);
-    XMEMCPY(z, p->z, sizeof(p->z) / 2);
+    XMEMCPY(xa, p->x, sizeof(p->x) / 2);
+    XMEMCPY(ya, p->y, sizeof(p->y) / 2);
+    XMEMCPY(za, p->z, sizeof(p->z) / 2);
     ra->infinity = 0;
     rs->infinity = 0;
 
     /* U1 = X1*Z2^2 */
     sp_1024_mont_sqr_16(t1, q->z, p1024_mod, p1024_mp_mod);
     sp_1024_mont_mul_16(t3, t1, q->z, p1024_mod, p1024_mp_mod);
-    sp_1024_mont_mul_16(t1, t1, x, p1024_mod, p1024_mp_mod);
+    sp_1024_mont_mul_16(t1, t1, xa, p1024_mod, p1024_mp_mod);
     /* U2 = X2*Z1^2 */
-    sp_1024_mont_sqr_16(t2, z, p1024_mod, p1024_mp_mod);
-    sp_1024_mont_mul_16(t4, t2, z, p1024_mod, p1024_mp_mod);
+    sp_1024_mont_sqr_16(t2, za, p1024_mod, p1024_mp_mod);
+    sp_1024_mont_mul_16(t4, t2, za, p1024_mod, p1024_mp_mod);
     sp_1024_mont_mul_16(t2, t2, q->x, p1024_mod, p1024_mp_mod);
     /* S1 = Y1*Z2^3 */
-    sp_1024_mont_mul_16(t3, t3, y, p1024_mod, p1024_mp_mod);
+    sp_1024_mont_mul_16(t3, t3, ya, p1024_mod, p1024_mp_mod);
     /* S2 = Y2*Z1^3 */
     sp_1024_mont_mul_16(t4, t4, q->y, p1024_mod, p1024_mp_mod);
     /* H = U2 - U1 */
@@ -116097,30 +116079,30 @@ static void sp_1024_proj_point_add_sub_16(sp_point_1024* ra,
     sp_1024_mont_sub_16(t4, t4, t3, p1024_mod);
     /* Z3 = H*Z1*Z2 */
     /* ZS = H*Z1*Z2 */
-    sp_1024_mont_mul_16(z, z, q->z, p1024_mod, p1024_mp_mod);
-    sp_1024_mont_mul_16(z, z, t2, p1024_mod, p1024_mp_mod);
-    XMEMCPY(zs, z, sizeof(p->z)/2);
+    sp_1024_mont_mul_16(za, za, q->z, p1024_mod, p1024_mp_mod);
+    sp_1024_mont_mul_16(za, za, t2, p1024_mod, p1024_mp_mod);
+    XMEMCPY(zs, za, sizeof(p->z)/2);
     /* X3 = R^2 - H^3 - 2*U1*H^2 */
     /* XS = RS^2 - H^3 - 2*U1*H^2 */
-    sp_1024_mont_sqr_16(x, t4, p1024_mod, p1024_mp_mod);
+    sp_1024_mont_sqr_16(xa, t4, p1024_mod, p1024_mp_mod);
     sp_1024_mont_sqr_16(xs, t6, p1024_mod, p1024_mp_mod);
     sp_1024_mont_sqr_16(t5, t2, p1024_mod, p1024_mp_mod);
-    sp_1024_mont_mul_16(y, t1, t5, p1024_mod, p1024_mp_mod);
+    sp_1024_mont_mul_16(ya, t1, t5, p1024_mod, p1024_mp_mod);
     sp_1024_mont_mul_16(t5, t5, t2, p1024_mod, p1024_mp_mod);
-    sp_1024_mont_sub_16(x, x, t5, p1024_mod);
+    sp_1024_mont_sub_16(xa, xa, t5, p1024_mod);
     sp_1024_mont_sub_16(xs, xs, t5, p1024_mod);
-    sp_1024_mont_dbl_16(t1, y, p1024_mod);
-    sp_1024_mont_sub_16(x, x, t1, p1024_mod);
+    sp_1024_mont_dbl_16(t1, ya, p1024_mod);
+    sp_1024_mont_sub_16(xa, xa, t1, p1024_mod);
     sp_1024_mont_sub_16(xs, xs, t1, p1024_mod);
     /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
     /* YS = -RS*(U1*H^2 - XS) - S1*H^3 */
-    sp_1024_mont_sub_16(ys, y, xs, p1024_mod);
-    sp_1024_mont_sub_16(y, y, x, p1024_mod);
-    sp_1024_mont_mul_16(y, y, t4, p1024_mod, p1024_mp_mod);
+    sp_1024_mont_sub_lower_16(ys, ya, xs, p1024_mod);
+    sp_1024_mont_sub_lower_16(ya, ya, xa, p1024_mod);
+    sp_1024_mont_mul_16(ya, ya, t4, p1024_mod, p1024_mp_mod);
     sp_1024_mont_sub_16(t6, p1024_mod, t6, p1024_mod);
     sp_1024_mont_mul_16(ys, ys, t6, p1024_mod, p1024_mp_mod);
     sp_1024_mont_mul_16(t5, t5, t3, p1024_mod, p1024_mp_mod);
-    sp_1024_mont_sub_16(y, y, t5, p1024_mod);
+    sp_1024_mont_sub_16(ya, ya, t5, p1024_mod);
     sp_1024_mont_sub_16(ys, ys, t5, p1024_mod);
 }
 
@@ -116372,17 +116354,12 @@ typedef struct sp_table_entry_1024 {
 static void sp_1024_proj_point_add_qz1_16(sp_point_1024* r, const sp_point_1024* p,
         const sp_point_1024* q, sp_digit* t)
 {
-    const sp_point_1024* ap[2];
-    sp_point_1024* rp[2];
     sp_digit* t1 = t;
     sp_digit* t2 = t + 2*16;
     sp_digit* t3 = t + 4*16;
     sp_digit* t4 = t + 6*16;
     sp_digit* t5 = t + 8*16;
-    sp_digit* x;
-    sp_digit* y;
-    sp_digit* z;
-    int i;
+    sp_digit* t6 = t + 10*16;
 
     /* Check double */
     (void)sp_1024_mont_sub_16(t1, p1024_mod, q->y, p1024_mod);
@@ -116392,53 +116369,54 @@ static void sp_1024_proj_point_add_qz1_16(sp_point_1024* r, const sp_point_1024*
         sp_1024_proj_point_dbl_16(r, p, t);
     }
     else {
-        rp[0] = r;
-
-        /*lint allow cast to different type of pointer*/
-        rp[1] = (sp_point_1024*)t; /*lint !e9087 !e740*/
-        XMEMSET(rp[1], 0, sizeof(sp_point_1024));
-        x = rp[p->infinity | q->infinity]->x;
-        y = rp[p->infinity | q->infinity]->y;
-        z = rp[p->infinity | q->infinity]->z;
-
-        ap[0] = p;
-        ap[1] = q;
-        for (i=0; i<16; i++) {
-            r->x[i] = ap[p->infinity]->x[i];
-        }
-        for (i=0; i<16; i++) {
-            r->y[i] = ap[p->infinity]->y[i];
-        }
-        for (i=0; i<16; i++) {
-            r->z[i] = ap[p->infinity]->z[i];
-        }
-        r->infinity = ap[p->infinity]->infinity;
+        sp_digit maskp;
+        sp_digit maskq;
+        sp_digit maskt;
+        sp_digit* x = t2;
+        sp_digit* y = t5;
+        sp_digit* z = t6;
+        int i;
 
         /* U2 = X2*Z1^2 */
-        sp_1024_mont_sqr_16(t2, z, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_mul_16(t4, t2, z, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_sqr_16(t2, p->z, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(t4, t2, p->z, p1024_mod, p1024_mp_mod);
         sp_1024_mont_mul_16(t2, t2, q->x, p1024_mod, p1024_mp_mod);
         /* S2 = Y2*Z1^3 */
         sp_1024_mont_mul_16(t4, t4, q->y, p1024_mod, p1024_mp_mod);
         /* H = U2 - X1 */
-        sp_1024_mont_sub_16(t2, t2, x, p1024_mod);
+        sp_1024_mont_sub_16(t2, t2, p->x, p1024_mod);
         /* R = S2 - Y1 */
-        sp_1024_mont_sub_16(t4, t4, y, p1024_mod);
+        sp_1024_mont_sub_16(t4, t4, p->y, p1024_mod);
         /* Z3 = H*Z1 */
-        sp_1024_mont_mul_16(z, z, t2, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(z, p->z, t2, p1024_mod, p1024_mp_mod);
         /* X3 = R^2 - H^3 - 2*X1*H^2 */
         sp_1024_mont_sqr_16(t1, t4, p1024_mod, p1024_mp_mod);
         sp_1024_mont_sqr_16(t5, t2, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_mul_16(t3, x, t5, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(t3, p->x, t5, p1024_mod, p1024_mp_mod);
         sp_1024_mont_mul_16(t5, t5, t2, p1024_mod, p1024_mp_mod);
         sp_1024_mont_sub_16(x, t1, t5, p1024_mod);
         sp_1024_mont_dbl_16(t1, t3, p1024_mod);
         sp_1024_mont_sub_16(x, x, t1, p1024_mod);
         /* Y3 = R*(X1*H^2 - X3) - Y1*H^3 */
-        sp_1024_mont_sub_16(t3, t3, x, p1024_mod);
+        sp_1024_mont_sub_lower_16(t3, t3, x, p1024_mod);
         sp_1024_mont_mul_16(t3, t3, t4, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_mul_16(t5, t5, y, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(t5, t5, p->y, p1024_mod, p1024_mp_mod);
         sp_1024_mont_sub_16(y, t3, t5, p1024_mod);
+
+        maskp = 0 - (q->infinity & (!p->infinity));
+        maskq = 0 - (p->infinity & (!q->infinity));
+        maskt = ~(maskp | maskq);
+        for (i = 0; i < 16; i++) {
+            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
+        }
+        for (i = 0; i < 16; i++) {
+            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
+        }
+        for (i = 0; i < 16; i++) {
+            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
+        }
+        r->z[0] |= p->infinity & q->infinity;
+        r->infinity = p->infinity & q->infinity;
     }
 }
 
@@ -116581,7 +116559,7 @@ static int sp_1024_ecc_mulmod_stripe_16(sp_point_1024* r, const sp_point_1024* g
     sp_digit* t = NULL;
 #else
     sp_point_1024 rt[2];
-    sp_digit t[2 * 16 * 5];
+    sp_digit t[2 * 16 * 6];
 #endif
     sp_point_1024* p = NULL;
     int i;
@@ -116602,7 +116580,7 @@ static int sp_1024_ecc_mulmod_stripe_16(sp_point_1024* r, const sp_point_1024* g
     if (rt == NULL)
         err = MEMORY_E;
     if (err == MP_OKAY) {
-        t = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 16 * 5, heap,
+        t = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 16 * 6, heap,
                                DYNAMIC_TYPE_ECC);
         if (t == NULL)
             err = MEMORY_E;
@@ -116767,7 +116745,7 @@ static int sp_1024_ecc_mulmod_16(sp_point_1024* r, const sp_point_1024* g, const
 #ifndef FP_ECC
     return sp_1024_ecc_mulmod_win_add_sub_16(r, g, k, map, ct, heap);
 #else
-    sp_digit tmp[2 * 16 * 5];
+    sp_digit tmp[2 * 16 * 6];
     sp_cache_1024_t* cache;
     int err = MP_OKAY;
 
@@ -120277,7 +120255,7 @@ int sp_ecc_mulmod_base_add_1024(const mp_int* km, const ecc_point* am,
     sp_digit* k = NULL;
 #else
     sp_point_1024 point[2];
-    sp_digit k[16 + 16 * 2 * 5];
+    sp_digit k[16 + 16 * 2 * 6];
 #endif
     sp_point_1024* addP = NULL;
     sp_digit* tmp = NULL;
@@ -120290,7 +120268,7 @@ int sp_ecc_mulmod_base_add_1024(const mp_int* km, const ecc_point* am,
         err = MEMORY_E;
     if (err == MP_OKAY) {
         k = (sp_digit*)XMALLOC(
-            sizeof(sp_digit) * (16 + 16 * 2 * 5),
+            sizeof(sp_digit) * (16 + 16 * 2 * 6),
             heap, DYNAMIC_TYPE_ECC);
         if (k == NULL)
             err = MEMORY_E;
