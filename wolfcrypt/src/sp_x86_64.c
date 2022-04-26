@@ -65,8 +65,20 @@
 
 #if defined(WOLFSSL_HAVE_SP_RSA) || defined(WOLFSSL_HAVE_SP_DH)
 #ifndef WOLFSSL_SP_NO_2048
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_from_bin_bswap(sp_digit* r, int size, const byte* a, int n);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_from_bin_movbe(sp_digit* r, int size, const byte* a, int n);
+#ifdef __cplusplus
+}
+#endif
 /* Read big endian unsigned byte array into r.
  *
  * r  A single precision integer.
@@ -174,8 +186,20 @@ static void sp_2048_from_mp(sp_digit* r, int size, const mp_int* a)
 #endif
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_to_bin_bswap_32(sp_digit* r, byte* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_to_bin_movbe_32(sp_digit* r, byte* a);
+#ifdef __cplusplus
+}
+#endif
 /* Write r as big endian to byte array.
  * Fixed length number of bytes written: 256
  *
@@ -211,23 +235,95 @@ static void sp_2048_to_bin_32(sp_digit* r, byte* a)
  */
 #define sp_2048_norm_32(a)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_mul_16(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_mul_avx2_16(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_2048_add_16(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_2048_sub_in_place_32(sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_mul_32(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_mul_avx2_32(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_sqr_16(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_sqr_avx2_16(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_sqr_32(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_sqr_avx2_32(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_2048_sub_in_place_16(sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 #endif /* (WOLFSSL_HAVE_SP_RSA & !WOLFSSL_RSA_PUBLIC_ONLY) | WOLFSSL_HAVE_SP_DH */
 
 /* Caclulate the bottom digit of -1/a mod 2^n.
@@ -251,7 +347,13 @@ static void sp_2048_mont_setup(const sp_digit* a, sp_digit* rho)
     *rho = (sp_digit)0 - x;
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_mul_d_32(sp_digit* r, const sp_digit* a, sp_digit b);
+#ifdef __cplusplus
+}
+#endif
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
 /* r = 2^n mod m where n is the number of bits to reduce by.
  * Given m must be 2048 bits, just need to subtract.
@@ -269,8 +371,20 @@ static void sp_2048_mont_norm_16(sp_digit* r, const sp_digit* m)
     sp_2048_sub_in_place_16(r, m);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_2048_cond_sub_16(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_mont_reduce_16(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
@@ -301,12 +415,36 @@ SP_NOINLINE static void sp_2048_mont_sqr_16(sp_digit* r, const sp_digit* a,
     sp_2048_mont_reduce_16(r, m, mp);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_2048_cond_sub_avx2_16(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_mul_d_16(sp_digit* r, const sp_digit* a, sp_digit b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_mul_d_avx2_16(sp_digit* r, const sp_digit* a, const sp_digit b);
+#ifdef __cplusplus
+}
+#endif
 #ifdef _WIN64
 #if _MSC_VER < 1920
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit div_2048_word_asm_16(sp_digit d1, sp_digit d0, sp_digit div);
+#ifdef __cplusplus
+}
+#endif
 #endif /* _MSC_VER < 1920 */
 /* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
  *
@@ -377,7 +515,13 @@ static void sp_2048_mask_16(sp_digit* r, const sp_digit* a, sp_digit m)
 #endif
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_int64 sp_2048_cmp_16(const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
@@ -457,7 +601,13 @@ static WC_INLINE int sp_2048_mod_16(sp_digit* r, const sp_digit* a,
     return sp_2048_div_16(a, m, NULL, r);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_get_from_table_16(sp_digit* r, sp_digit** table, int idx);
+#ifdef __cplusplus
+}
+#endif
 
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
@@ -653,7 +803,13 @@ static int sp_2048_mod_exp_16(sp_digit* r, const sp_digit* a, const sp_digit* e,
     return err;
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_mont_reduce_avx2_16(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 #ifdef HAVE_INTEL_AVX2
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
@@ -688,7 +844,13 @@ SP_NOINLINE static void sp_2048_mont_sqr_avx2_16(sp_digit* r, const sp_digit* a,
 }
 
 #endif /* HAVE_INTEL_AVX2 */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_get_from_table_avx2_16(sp_digit* r, sp_digit** table, int idx);
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef HAVE_INTEL_AVX2
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
@@ -906,8 +1068,20 @@ static void sp_2048_mont_norm_32(sp_digit* r, const sp_digit* m)
 }
 
 #endif /* (WOLFSSL_HAVE_SP_RSA & !WOLFSSL_RSA_PUBLIC_ONLY) | WOLFSSL_HAVE_SP_DH */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_2048_cond_sub_32(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_mont_reduce_32(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
@@ -938,11 +1112,29 @@ SP_NOINLINE static void sp_2048_mont_sqr_32(sp_digit* r, const sp_digit* a,
     sp_2048_mont_reduce_32(r, m, mp);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_2048_sub_32(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_mul_d_avx2_32(sp_digit* r, const sp_digit* a, const sp_digit b);
+#ifdef __cplusplus
+}
+#endif
 #ifdef _WIN64
 #if _MSC_VER < 1920
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit div_2048_word_asm_32(sp_digit d1, sp_digit d0, sp_digit div);
+#ifdef __cplusplus
+}
+#endif
 #endif /* _MSC_VER < 1920 */
 /* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
  *
@@ -1069,7 +1261,13 @@ static WC_INLINE int sp_2048_mod_32_cond(sp_digit* r, const sp_digit* a,
 }
 
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_2048_cond_sub_avx2_32(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
 /* AND m into each word of a and store in r.
  *
  * r  A single precision integer.
@@ -1100,7 +1298,13 @@ static void sp_2048_mask_32(sp_digit* r, const sp_digit* a, sp_digit m)
 #endif
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_int64 sp_2048_cmp_32(const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
@@ -1182,7 +1386,13 @@ static WC_INLINE int sp_2048_mod_32(sp_digit* r, const sp_digit* a,
 }
 
 #endif /* WOLFSSL_HAVE_SP_DH || !WOLFSSL_RSA_PUBLIC_ONLY */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_get_from_table_32(sp_digit* r, sp_digit** table, int idx);
+#ifdef __cplusplus
+}
+#endif
 
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
@@ -1412,7 +1622,13 @@ static int sp_2048_mod_exp_32(sp_digit* r, const sp_digit* a, const sp_digit* e,
 }
 
 #endif /* (WOLFSSL_HAVE_SP_RSA && !WOLFSSL_RSA_PUBLIC_ONLY) || WOLFSSL_HAVE_SP_DH */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_mont_reduce_avx2_32(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 #ifdef HAVE_INTEL_AVX2
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
@@ -1448,7 +1664,13 @@ SP_NOINLINE static void sp_2048_mont_sqr_avx2_32(sp_digit* r, const sp_digit* a,
 
 #endif /* HAVE_INTEL_AVX2 */
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_get_from_table_avx2_32(sp_digit* r, sp_digit** table, int idx);
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef HAVE_INTEL_AVX2
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
@@ -1985,8 +2207,20 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
 }
 
 #else
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_2048_cond_add_16(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_2048_cond_add_avx2_16(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
 /* RSA private key operation.
  *
  * in      Array of bytes representing the number to exponentiate, base.
@@ -2297,7 +2531,13 @@ int sp_ModExp_2048(const mp_int* base, const mp_int* exp, const mp_int* mod,
 
 #ifdef WOLFSSL_HAVE_SP_DH
 #ifdef HAVE_FFDHE_2048
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_2048_lshift_32(sp_digit* r, const sp_digit* a, int n);
+#ifdef __cplusplus
+}
+#endif
 #ifdef HAVE_INTEL_AVX2
 /* Modular exponentiate 2 to the e mod m. (r = 2^e mod m)
  *
@@ -2776,8 +3016,20 @@ int sp_ModExp_1024(const mp_int* base, const mp_int* exp, const mp_int* mod,
 #endif /* !WOLFSSL_SP_NO_2048 */
 
 #ifndef WOLFSSL_SP_NO_3072
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_from_bin_bswap(sp_digit* r, int size, const byte* a, int n);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_from_bin_movbe(sp_digit* r, int size, const byte* a, int n);
+#ifdef __cplusplus
+}
+#endif
 /* Read big endian unsigned byte array into r.
  *
  * r  A single precision integer.
@@ -2885,8 +3137,20 @@ static void sp_3072_from_mp(sp_digit* r, int size, const mp_int* a)
 #endif
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_to_bin_bswap_48(sp_digit* r, byte* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_to_bin_movbe_48(sp_digit* r, byte* a);
+#ifdef __cplusplus
+}
+#endif
 /* Write r as big endian to byte array.
  * Fixed length number of bytes written: 384
  *
@@ -2922,30 +3186,132 @@ static void sp_3072_to_bin_48(sp_digit* r, byte* a)
  */
 #define sp_3072_norm_48(a)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_mul_12(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_mul_avx2_12(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_3072_add_12(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_3072_sub_in_place_24(sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_3072_add_24(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_mul_24(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_mul_avx2_24(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_3072_sub_in_place_48(sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_mul_48(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_mul_avx2_48(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_sqr_12(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_sqr_avx2_12(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_sqr_24(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_sqr_avx2_24(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_sqr_48(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_sqr_avx2_48(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
 #endif /* (WOLFSSL_HAVE_SP_RSA & !WOLFSSL_RSA_PUBLIC_ONLY) | WOLFSSL_HAVE_SP_DH */
@@ -2971,7 +3337,13 @@ static void sp_3072_mont_setup(const sp_digit* a, sp_digit* rho)
     *rho = (sp_digit)0 - x;
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_mul_d_48(sp_digit* r, const sp_digit* a, sp_digit b);
+#ifdef __cplusplus
+}
+#endif
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
 /* r = 2^n mod m where n is the number of bits to reduce by.
  * Given m must be 3072 bits, just need to subtract.
@@ -2989,8 +3361,20 @@ static void sp_3072_mont_norm_24(sp_digit* r, const sp_digit* m)
     sp_3072_sub_in_place_24(r, m);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_3072_cond_sub_24(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_mont_reduce_24(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
@@ -3021,12 +3405,36 @@ SP_NOINLINE static void sp_3072_mont_sqr_24(sp_digit* r, const sp_digit* a,
     sp_3072_mont_reduce_24(r, m, mp);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_3072_cond_sub_avx2_24(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_mul_d_24(sp_digit* r, const sp_digit* a, sp_digit b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_mul_d_avx2_24(sp_digit* r, const sp_digit* a, const sp_digit b);
+#ifdef __cplusplus
+}
+#endif
 #ifdef _WIN64
 #if _MSC_VER < 1920
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit div_3072_word_asm_24(sp_digit d1, sp_digit d0, sp_digit div);
+#ifdef __cplusplus
+}
+#endif
 #endif /* _MSC_VER < 1920 */
 /* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
  *
@@ -3097,7 +3505,13 @@ static void sp_3072_mask_24(sp_digit* r, const sp_digit* a, sp_digit m)
 #endif
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_int64 sp_3072_cmp_24(const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
@@ -3177,7 +3591,13 @@ static WC_INLINE int sp_3072_mod_24(sp_digit* r, const sp_digit* a,
     return sp_3072_div_24(a, m, NULL, r);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_get_from_table_24(sp_digit* r, sp_digit** table, int idx);
+#ifdef __cplusplus
+}
+#endif
 
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
@@ -3373,7 +3793,13 @@ static int sp_3072_mod_exp_24(sp_digit* r, const sp_digit* a, const sp_digit* e,
     return err;
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_mont_reduce_avx2_24(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 #ifdef HAVE_INTEL_AVX2
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
@@ -3408,7 +3834,13 @@ SP_NOINLINE static void sp_3072_mont_sqr_avx2_24(sp_digit* r, const sp_digit* a,
 }
 
 #endif /* HAVE_INTEL_AVX2 */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_get_from_table_avx2_24(sp_digit* r, sp_digit** table, int idx);
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef HAVE_INTEL_AVX2
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
@@ -3626,8 +4058,20 @@ static void sp_3072_mont_norm_48(sp_digit* r, const sp_digit* m)
 }
 
 #endif /* (WOLFSSL_HAVE_SP_RSA & !WOLFSSL_RSA_PUBLIC_ONLY) | WOLFSSL_HAVE_SP_DH */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_3072_cond_sub_48(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_mont_reduce_48(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
@@ -3658,11 +4102,29 @@ SP_NOINLINE static void sp_3072_mont_sqr_48(sp_digit* r, const sp_digit* a,
     sp_3072_mont_reduce_48(r, m, mp);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_3072_sub_48(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_mul_d_avx2_48(sp_digit* r, const sp_digit* a, const sp_digit b);
+#ifdef __cplusplus
+}
+#endif
 #ifdef _WIN64
 #if _MSC_VER < 1920
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit div_3072_word_asm_48(sp_digit d1, sp_digit d0, sp_digit div);
+#ifdef __cplusplus
+}
+#endif
 #endif /* _MSC_VER < 1920 */
 /* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
  *
@@ -3789,7 +4251,13 @@ static WC_INLINE int sp_3072_mod_48_cond(sp_digit* r, const sp_digit* a,
 }
 
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_3072_cond_sub_avx2_48(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
 /* AND m into each word of a and store in r.
  *
  * r  A single precision integer.
@@ -3820,7 +4288,13 @@ static void sp_3072_mask_48(sp_digit* r, const sp_digit* a, sp_digit m)
 #endif
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_int64 sp_3072_cmp_48(const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
@@ -3902,7 +4376,13 @@ static WC_INLINE int sp_3072_mod_48(sp_digit* r, const sp_digit* a,
 }
 
 #endif /* WOLFSSL_HAVE_SP_DH || !WOLFSSL_RSA_PUBLIC_ONLY */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_get_from_table_48(sp_digit* r, sp_digit** table, int idx);
+#ifdef __cplusplus
+}
+#endif
 
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
@@ -4080,7 +4560,13 @@ static int sp_3072_mod_exp_48(sp_digit* r, const sp_digit* a, const sp_digit* e,
 }
 
 #endif /* (WOLFSSL_HAVE_SP_RSA && !WOLFSSL_RSA_PUBLIC_ONLY) || WOLFSSL_HAVE_SP_DH */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_mont_reduce_avx2_48(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 #ifdef HAVE_INTEL_AVX2
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
@@ -4116,7 +4602,13 @@ SP_NOINLINE static void sp_3072_mont_sqr_avx2_48(sp_digit* r, const sp_digit* a,
 
 #endif /* HAVE_INTEL_AVX2 */
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_get_from_table_avx2_48(sp_digit* r, sp_digit** table, int idx);
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef HAVE_INTEL_AVX2
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
@@ -4601,8 +5093,20 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
 }
 
 #else
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_3072_cond_add_24(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_3072_cond_add_avx2_24(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
 /* RSA private key operation.
  *
  * in      Array of bytes representing the number to exponentiate, base.
@@ -4913,7 +5417,13 @@ int sp_ModExp_3072(const mp_int* base, const mp_int* exp, const mp_int* mod,
 
 #ifdef WOLFSSL_HAVE_SP_DH
 #ifdef HAVE_FFDHE_3072
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_3072_lshift_48(sp_digit* r, const sp_digit* a, int n);
+#ifdef __cplusplus
+}
+#endif
 #ifdef HAVE_INTEL_AVX2
 /* Modular exponentiate 2 to the e mod m. (r = 2^e mod m)
  *
@@ -5392,8 +5902,20 @@ int sp_ModExp_1536(const mp_int* base, const mp_int* exp, const mp_int* mod,
 #endif /* !WOLFSSL_SP_NO_3072 */
 
 #ifdef WOLFSSL_SP_4096
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_from_bin_bswap(sp_digit* r, int size, const byte* a, int n);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_from_bin_movbe(sp_digit* r, int size, const byte* a, int n);
+#ifdef __cplusplus
+}
+#endif
 /* Read big endian unsigned byte array into r.
  *
  * r  A single precision integer.
@@ -5501,8 +6023,20 @@ static void sp_4096_from_mp(sp_digit* r, int size, const mp_int* a)
 #endif
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_to_bin_bswap_64(sp_digit* r, byte* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_to_bin_movbe_64(sp_digit* r, byte* a);
+#ifdef __cplusplus
+}
+#endif
 /* Write r as big endian to byte array.
  * Fixed length number of bytes written: 512
  *
@@ -5538,15 +6072,51 @@ static void sp_4096_to_bin_64(sp_digit* r, byte* a)
  */
 #define sp_4096_norm_64(a)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_4096_sub_in_place_64(sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_4096_add_64(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_mul_64(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_mul_avx2_64(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_sqr_64(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_sqr_avx2_64(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 
 /* Caclulate the bottom digit of -1/a mod 2^n.
  *
@@ -5569,7 +6139,13 @@ static void sp_4096_mont_setup(const sp_digit* a, sp_digit* rho)
     *rho = (sp_digit)0 - x;
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_mul_d_64(sp_digit* r, const sp_digit* a, sp_digit b);
+#ifdef __cplusplus
+}
+#endif
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
 /* r = 2^n mod m where n is the number of bits to reduce by.
  * Given m must be 4096 bits, just need to subtract.
@@ -5588,8 +6164,20 @@ static void sp_4096_mont_norm_64(sp_digit* r, const sp_digit* m)
 }
 
 #endif /* (WOLFSSL_HAVE_SP_RSA & !WOLFSSL_RSA_PUBLIC_ONLY) | WOLFSSL_HAVE_SP_DH */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_4096_cond_sub_64(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_mont_reduce_64(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
@@ -5620,11 +6208,29 @@ SP_NOINLINE static void sp_4096_mont_sqr_64(sp_digit* r, const sp_digit* a,
     sp_4096_mont_reduce_64(r, m, mp);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_4096_sub_64(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_mul_d_avx2_64(sp_digit* r, const sp_digit* a, const sp_digit b);
+#ifdef __cplusplus
+}
+#endif
 #ifdef _WIN64
 #if _MSC_VER < 1920
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit div_4096_word_asm_64(sp_digit d1, sp_digit d0, sp_digit div);
+#ifdef __cplusplus
+}
+#endif
 #endif /* _MSC_VER < 1920 */
 /* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
  *
@@ -5751,7 +6357,13 @@ static WC_INLINE int sp_4096_mod_64_cond(sp_digit* r, const sp_digit* a,
 }
 
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_4096_cond_sub_avx2_64(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
 /* AND m into each word of a and store in r.
  *
  * r  A single precision integer.
@@ -5782,7 +6394,13 @@ static void sp_4096_mask_64(sp_digit* r, const sp_digit* a, sp_digit m)
 #endif
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_int64 sp_4096_cmp_64(const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
@@ -5864,7 +6482,13 @@ static WC_INLINE int sp_4096_mod_64(sp_digit* r, const sp_digit* a,
 }
 
 #endif /* WOLFSSL_HAVE_SP_DH || !WOLFSSL_RSA_PUBLIC_ONLY */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_get_from_table_64(sp_digit* r, sp_digit** table, int idx);
+#ifdef __cplusplus
+}
+#endif
 
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
@@ -6042,7 +6666,13 @@ static int sp_4096_mod_exp_64(sp_digit* r, const sp_digit* a, const sp_digit* e,
 }
 
 #endif /* (WOLFSSL_HAVE_SP_RSA && !WOLFSSL_RSA_PUBLIC_ONLY) || WOLFSSL_HAVE_SP_DH */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_mont_reduce_avx2_64(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 #ifdef HAVE_INTEL_AVX2
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
@@ -6078,7 +6708,13 @@ SP_NOINLINE static void sp_4096_mont_sqr_avx2_64(sp_digit* r, const sp_digit* a,
 
 #endif /* HAVE_INTEL_AVX2 */
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_get_from_table_avx2_64(sp_digit* r, sp_digit** table, int idx);
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef HAVE_INTEL_AVX2
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
@@ -6563,8 +7199,20 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
 }
 
 #else
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_4096_cond_add_32(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_4096_cond_add_avx2_32(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
 /* RSA private key operation.
  *
  * in      Array of bytes representing the number to exponentiate, base.
@@ -6875,7 +7523,13 @@ int sp_ModExp_4096(const mp_int* base, const mp_int* exp, const mp_int* mod,
 
 #ifdef WOLFSSL_HAVE_SP_DH
 #ifdef HAVE_FFDHE_4096
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_4096_lshift_64(sp_digit* r, const sp_digit* a, int n);
+#ifdef __cplusplus
+}
+#endif
 #ifdef HAVE_INTEL_AVX2
 /* Modular exponentiate 2 to the e mod m. (r = 2^e mod m)
  *
@@ -7351,16 +8005,52 @@ static const sp_digit p256_b[4] = {
 };
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mul_4(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 #ifdef HAVE_INTEL_AVX2
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mul_avx2_4(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 #endif /* HAVE_INTEL_AVX2 */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_sqr_4(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 #ifdef HAVE_INTEL_AVX2
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_sqr_avx2_4(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 #endif /* HAVE_INTEL_AVX2 */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_256_add_4(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_256_sub_4(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply a number by Montgomery normalizer mod modulus (prime).
  *
  * r  The resulting Montgomery form number.
@@ -7622,9 +8312,27 @@ static int sp_256_point_to_ecc_point_4(const sp_point_256* p, ecc_point* pm)
     return err;
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_cond_copy_4(sp_digit* r, const sp_digit* a, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_mul_4(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_sqr_4(sp_digit* r, const sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 #if !defined(WOLFSSL_SP_SMALL) || defined(HAVE_COMP_KEY)
 /* Square the Montgomery form number a number of times. (r = a ^ n mod m)
  *
@@ -7721,16 +8429,40 @@ static void sp_256_mont_inv_4(sp_digit* r, const sp_digit* a, sp_digit* td)
 #endif /* WOLFSSL_SP_SMALL */
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_int64 sp_256_cmp_4(const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 /* Normalize the values in each word to 64.
  *
  * a  Array of sp_digit to normalize.
  */
 #define sp_256_norm_4(a)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_256_cond_sub_4(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_reduce_4(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_reduce_order_4(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 /* Map the Montgomery form projective coordinate point to an affine point.
  *
  * r  Resulting affine coordinate point.
@@ -7774,12 +8506,48 @@ static void sp_256_map_4(sp_point_256* r, const sp_point_256* p,
 
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_add_4(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_dbl_4(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_tpl_4(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_sub_4(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_sub_lower_4(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_div2_4(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
 /* Double the Montgomery form projective point p.
  *
  * r  Result of doubling point.
@@ -7976,9 +8744,27 @@ static void sp_256_proj_point_dbl_4(sp_point_256* r, const sp_point_256* p,
     sp_256_mont_sub_4(y, y, t2, p256_mod);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_tpl_lower_4(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_sub_dbl_4(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_dbl_sub_4(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
 /* Double the Montgomery form projective point p a number of times.
  *
  * r  Result of repeated doubling of point.
@@ -8609,8 +9395,20 @@ static void sp_256_ecc_recode_6_4(const sp_digit* k, ecc_recode_256* v)
     }
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_get_point_33_4(sp_point_256* r, const sp_point_256* table, int idx);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_get_point_33_avx2_4(sp_point_256* r, const sp_point_256* table, int idx);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply the point by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
@@ -8758,8 +9556,20 @@ static int sp_256_ecc_mulmod_win_add_sub_4(sp_point_256* r, const sp_point_256* 
 
 #ifdef HAVE_INTEL_AVX2
 #define sp_256_mod_mul_norm_avx2_4 sp_256_mod_mul_norm_4
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_mul_avx2_4(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_sqr_avx2_4(sp_digit* r, const sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 #if !defined(WOLFSSL_SP_SMALL) || defined(HAVE_COMP_KEY)
 /* Square the Montgomery form number a number of times. (r = a ^ n mod m)
  *
@@ -8849,9 +9659,21 @@ static void sp_256_mont_inv_avx2_4(sp_digit* r, const sp_digit* a, sp_digit* td)
 #endif /* WOLFSSL_SP_SMALL */
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_256_cond_sub_avx2_4(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
 #define sp_256_mont_reduce_avx2_4         sp_256_mont_reduce_4
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_reduce_avx2_order_4(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 /* Map the Montgomery form projective coordinate point to an affine point.
  *
  * r  Resulting affine coordinate point.
@@ -8900,7 +9722,13 @@ static void sp_256_map_avx2_4(sp_point_256* r, const sp_point_256* p,
 #define sp_256_mont_tpl_avx2_4 sp_256_mont_tpl_4
 #define sp_256_mont_sub_avx2_4 sp_256_mont_sub_4
 #define sp_256_mont_sub_lower_avx2_4 sp_256_mont_sub_lower_4
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_div2_avx2_4(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
 /* Double the Montgomery form projective point p.
  *
  * r  Result of doubling point.
@@ -9981,8 +10809,20 @@ static int sp_256_gen_stripe_table_4(const sp_point_256* a,
 
 #endif /* FP_ECC */
 #if defined(FP_ECC) || defined(WOLFSSL_SP_SMALL)
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_get_entry_64_4(sp_point_256* r, const sp_table_entry_256* table, int idx);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_get_entry_64_avx2_4(sp_point_256* r, const sp_table_entry_256* table, int idx);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply the point by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
@@ -11215,8 +12055,20 @@ static void sp_256_ecc_recode_7_4(const sp_digit* k, ecc_recode_256* v)
     }
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_get_entry_65_4(sp_point_256* r, const sp_table_entry_256* table, int idx);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_get_entry_65_avx2_4(sp_point_256* r, const sp_table_entry_256* table, int idx);
+#ifdef __cplusplus
+}
+#endif
 static const sp_table_entry_256 p256_table[2405] = {
     /* 0 << 0 */
     { { 0x00, 0x00, 0x00, 0x00 },
@@ -23599,9 +24451,27 @@ int sp_ecc_mulmod_base_add_256(const mp_int* km, const ecc_point* am,
 #if defined(WOLFSSL_VALIDATE_ECC_KEYGEN) || defined(HAVE_ECC_SIGN) || \
                                                         defined(HAVE_ECC_VERIFY)
 #endif /* WOLFSSL_VALIDATE_ECC_KEYGEN | HAVE_ECC_SIGN | HAVE_ECC_VERIFY */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_add_one_4(sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_from_bin_bswap(sp_digit* r, int size, const byte* a, int n);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_from_bin_movbe(sp_digit* r, int size, const byte* a, int n);
+#ifdef __cplusplus
+}
+#endif
 /* Read big endian unsigned byte array into r.
  *
  * r  A single precision integer.
@@ -23754,8 +24624,20 @@ int sp_ecc_make_key_256(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 }
 
 #ifdef HAVE_ECC_DHE
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_to_bin_bswap_4(sp_digit* r, byte* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_to_bin_movbe_4(sp_digit* r, byte* a);
+#ifdef __cplusplus
+}
+#endif
 /* Write r as big endian to byte array.
  * Fixed length number of bytes written: 32
  *
@@ -23852,12 +24734,36 @@ int sp_ecc_secret_gen_256(const mp_int* priv, const ecc_point* pub, byte* out,
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 #endif
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_256_sub_in_place_4(sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mul_d_4(sp_digit* r, const sp_digit* a, sp_digit b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mul_d_avx2_4(sp_digit* r, const sp_digit* a, const sp_digit b);
+#ifdef __cplusplus
+}
+#endif
 #ifdef _WIN64
 #if _MSC_VER < 1920
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit div_256_word_asm_4(sp_digit d1, sp_digit d0, sp_digit div);
+#ifdef __cplusplus
+}
+#endif
 #endif /* _MSC_VER < 1920 */
 /* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
  *
@@ -24247,9 +25153,21 @@ static void sp_256_mont_inv_order_4(sp_digit* r, const sp_digit* a,
 
 #endif /* HAVE_ECC_SIGN || (HAVE_ECC_VERIFY && WOLFSSL_SP_SMALL) */
 #ifdef HAVE_INTEL_AVX2
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_mul_order_avx2_4(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 #if defined(HAVE_ECC_SIGN) || (defined(HAVE_ECC_VERIFY) && defined(WOLFSSL_SP_SMALL))
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mont_sqr_order_avx2_4(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 
 #ifndef WOLFSSL_SP_SMALL
 /* Square number mod the order of P256 curve a number of times.
@@ -24848,8 +25766,20 @@ int sp_ecc_sign_256(const byte* hash, word32 hashLen, WC_RNG* rng,
 #endif /* HAVE_ECC_SIGN */
 
 #ifndef WOLFSSL_SP_SMALL
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mod_inv_4(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_256_mod_inv_avx2_4(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
 #endif /* WOLFSSL_SP_SMALL */
 
 /* Add point p1 into point p2. Handles p1 == p2 and result at infinity.
@@ -26009,16 +26939,52 @@ static const sp_digit p384_b[6] = {
 };
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_mul_6(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 #ifdef HAVE_INTEL_AVX2
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_mul_avx2_6(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 #endif /* HAVE_INTEL_AVX2 */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_sqr_6(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 #ifdef HAVE_INTEL_AVX2
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_sqr_avx2_6(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 #endif /* HAVE_INTEL_AVX2 */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_384_add_6(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_384_sub_6(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply a number by Montgomery normalizer mod modulus (prime).
  *
  * r  The resulting Montgomery form number.
@@ -26322,10 +27288,34 @@ static int sp_384_point_to_ecc_point_6(const sp_point_384* p, ecc_point* pm)
     return err;
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_cond_copy_6(sp_digit* r, const sp_digit* a, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_384_cond_sub_6(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_mont_reduce_6(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_mont_reduce_order_6(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
@@ -26468,7 +27458,13 @@ static void sp_384_mont_inv_6(sp_digit* r, const sp_digit* a, sp_digit* td)
 #endif /* WOLFSSL_SP_SMALL */
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_int64 sp_384_cmp_6(const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 /* Normalize the values in each word to 64.
  *
  * a  Array of sp_digit to normalize.
@@ -26518,12 +27514,48 @@ static void sp_384_map_6(sp_point_384* r, const sp_point_384* p,
 
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_mont_add_6(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_mont_dbl_6(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_mont_tpl_6(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_mont_sub_6(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_mont_sub_lower_6(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_div2_6(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
 /* Double the Montgomery form projective point p.
  *
  * r  Result of doubling point.
@@ -26720,8 +27752,20 @@ static void sp_384_proj_point_dbl_6(sp_point_384* r, const sp_point_384* p,
     sp_384_mont_sub_6(y, y, t2, p384_mod);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_mont_dbl_lower_6(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_mont_tpl_lower_6(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
 /* Double the Montgomery form projective point p a number of times.
  *
  * r  Result of repeated doubling of point.
@@ -27361,8 +28405,20 @@ static void sp_384_ecc_recode_6_6(const sp_digit* k, ecc_recode_384* v)
     }
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_get_point_33_6(sp_point_384* r, const sp_point_384* table, int idx);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_get_point_33_avx2_6(sp_point_384* r, const sp_point_384* table, int idx);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply the point by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
@@ -27512,7 +28568,13 @@ static int sp_384_ecc_mulmod_win_add_sub_6(sp_point_384* r, const sp_point_384* 
 #define sp_384_mod_mul_norm_avx2_6 sp_384_mod_mul_norm_6
 #ifdef HAVE_INTEL_AVX2
 #define sp_384_mont_reduce_avx2_6         sp_384_mont_reduce_6
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_mont_reduce_order_avx2_6(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
@@ -27651,7 +28713,13 @@ static void sp_384_mont_inv_avx2_6(sp_digit* r, const sp_digit* a, sp_digit* td)
 #endif /* WOLFSSL_SP_SMALL */
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_384_cond_sub_avx2_6(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
 /* Map the Montgomery form projective coordinate point to an affine point.
  *
  * r  Resulting affine coordinate point.
@@ -27700,7 +28768,13 @@ static void sp_384_map_avx2_6(sp_point_384* r, const sp_point_384* p,
 #define sp_384_mont_tpl_avx2_6 sp_384_mont_tpl_6
 #define sp_384_mont_sub_avx2_6 sp_384_mont_sub_6
 #define sp_384_mont_sub_lower_avx2_6 sp_384_mont_sub_lower_6
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_div2_avx2_6(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
 /* Double the Montgomery form projective point p.
  *
  * r  Result of doubling point.
@@ -28790,8 +29864,20 @@ static int sp_384_gen_stripe_table_6(const sp_point_384* a,
 
 #endif /* FP_ECC */
 #if defined(FP_ECC) || defined(WOLFSSL_SP_SMALL)
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_get_entry_64_6(sp_point_384* r, const sp_table_entry_384* table, int idx);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_get_entry_64_avx2_6(sp_point_384* r, const sp_table_entry_384* table, int idx);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply the point by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
@@ -30025,8 +31111,20 @@ static void sp_384_ecc_recode_7_6(const sp_digit* k, ecc_recode_384* v)
     }
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_get_entry_65_6(sp_point_384* r, const sp_table_entry_384* table, int idx);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_get_entry_65_avx2_6(sp_point_384* r, const sp_table_entry_384* table, int idx);
+#ifdef __cplusplus
+}
+#endif
 static const sp_table_entry_384 p384_table[3575] = {
     /* 0 << 0 */
     { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
@@ -48223,9 +49321,27 @@ int sp_ecc_mulmod_base_add_384(const mp_int* km, const ecc_point* am,
 #if defined(WOLFSSL_VALIDATE_ECC_KEYGEN) || defined(HAVE_ECC_SIGN) || \
                                                         defined(HAVE_ECC_VERIFY)
 #endif /* WOLFSSL_VALIDATE_ECC_KEYGEN | HAVE_ECC_SIGN | HAVE_ECC_VERIFY */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_add_one_6(sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_from_bin_bswap(sp_digit* r, int size, const byte* a, int n);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_from_bin_movbe(sp_digit* r, int size, const byte* a, int n);
+#ifdef __cplusplus
+}
+#endif
 /* Read big endian unsigned byte array into r.
  *
  * r  A single precision integer.
@@ -48378,8 +49494,20 @@ int sp_ecc_make_key_384(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 }
 
 #ifdef HAVE_ECC_DHE
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_to_bin_bswap_6(sp_digit* r, byte* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_to_bin_movbe_6(sp_digit* r, byte* a);
+#ifdef __cplusplus
+}
+#endif
 /* Write r as big endian to byte array.
  * Fixed length number of bytes written: 48
  *
@@ -48476,12 +49604,36 @@ int sp_ecc_secret_gen_384(const mp_int* priv, const ecc_point* pub, byte* out,
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 #endif
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_384_sub_in_place_6(sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_mul_d_6(sp_digit* r, const sp_digit* a, sp_digit b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_mul_d_avx2_6(sp_digit* r, const sp_digit* a, const sp_digit b);
+#ifdef __cplusplus
+}
+#endif
 #ifdef _WIN64
 #if _MSC_VER < 1920
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit div_384_word_asm_6(sp_digit d1, sp_digit d0, sp_digit div);
+#ifdef __cplusplus
+}
+#endif
 #endif /* _MSC_VER < 1920 */
 /* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
  *
@@ -49342,9 +50494,27 @@ int sp_ecc_sign_384(const byte* hash, word32 hashLen, WC_RNG* rng,
 #endif /* HAVE_ECC_SIGN */
 
 #ifndef WOLFSSL_SP_SMALL
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_rshift1_6(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_384_div2_mod_6(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern int sp_384_num_bits_6(const sp_digit * a);
+#ifdef __cplusplus
+}
+#endif
 /* Non-constant time modular inversion.
  *
  * @param  [out]  r   Resulting number.
@@ -50645,16 +51815,52 @@ static const sp_digit p521_b[9] = {
 };
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mul_9(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 #ifdef HAVE_INTEL_AVX2
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mul_avx2_9(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 #endif /* HAVE_INTEL_AVX2 */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_sqr_9(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 #ifdef HAVE_INTEL_AVX2
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_sqr_avx2_9(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 #endif /* HAVE_INTEL_AVX2 */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_521_add_9(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_521_sub_9(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply a number by Montgomery normalizer mod modulus (prime).
  *
  * r  The resulting Montgomery form number.
@@ -50865,9 +52071,27 @@ static int sp_521_point_to_ecc_point_9(const sp_point_521* p, ecc_point* pm)
     return err;
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_cond_copy_9(sp_digit* r, const sp_digit* a, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mont_mul_9(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mont_sqr_9(sp_digit* r, const sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 #if !defined(WOLFSSL_SP_SMALL) || defined(HAVE_COMP_KEY)
 /* Square the Montgomery form number a number of times. (r = a ^ n mod m)
  *
@@ -50977,16 +52201,40 @@ static void sp_521_mont_inv_9(sp_digit* r, const sp_digit* a, sp_digit* td)
 #endif /* WOLFSSL_SP_SMALL */
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_int64 sp_521_cmp_9(const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 /* Normalize the values in each word to 64.
  *
  * a  Array of sp_digit to normalize.
  */
 #define sp_521_norm_9(a)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_521_cond_sub_9(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mont_reduce_9(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mont_reduce_order_9(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 /* Map the Montgomery form projective coordinate point to an affine point.
  *
  * r  Resulting affine coordinate point.
@@ -51030,12 +52278,42 @@ static void sp_521_map_9(sp_point_521* r, const sp_point_521* p,
 
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mont_add_9(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mont_dbl_9(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mont_tpl_9(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mont_sub_9(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
 #define sp_521_mont_sub_lower_9 sp_521_mont_sub_9
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_div2_9(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
 /* Double the Montgomery form projective point p.
  *
  * r  Result of doubling point.
@@ -51875,8 +53153,20 @@ static void sp_521_ecc_recode_6_9(const sp_digit* k, ecc_recode_521* v)
     }
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_get_point_33_9(sp_point_521* r, const sp_point_521* table, int idx);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_get_point_33_avx2_9(sp_point_521* r, const sp_point_521* table, int idx);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply the point by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
@@ -52024,8 +53314,20 @@ static int sp_521_ecc_mulmod_win_add_sub_9(sp_point_521* r, const sp_point_521* 
 
 #ifdef HAVE_INTEL_AVX2
 #define sp_521_mod_mul_norm_avx2_9 sp_521_mod_mul_norm_9
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mont_mul_avx2_9(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mont_sqr_avx2_9(sp_digit* r, const sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 #if !defined(WOLFSSL_SP_SMALL) || defined(HAVE_COMP_KEY)
 /* Square the Montgomery form number a number of times. (r = a ^ n mod m)
  *
@@ -52127,10 +53429,22 @@ static void sp_521_mont_inv_avx2_9(sp_digit* r, const sp_digit* a, sp_digit* td)
 #endif /* WOLFSSL_SP_SMALL */
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_521_cond_sub_avx2_9(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
 #define sp_521_mont_reduce_avx2_9    sp_521_mont_reduce_9
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mont_reduce_order_avx2_9(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 /* Map the Montgomery form projective coordinate point to an affine point.
  *
  * r  Resulting affine coordinate point.
@@ -52179,7 +53493,13 @@ static void sp_521_map_avx2_9(sp_point_521* r, const sp_point_521* p,
 #define sp_521_mont_tpl_avx2_9 sp_521_mont_tpl_9
 #define sp_521_mont_sub_avx2_9 sp_521_mont_sub_9
 #define sp_521_mont_sub_lower_avx2_9 sp_521_mont_sub_avx2_9
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_div2_avx2_9(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
 /* Double the Montgomery form projective point p.
  *
  * r  Result of doubling point.
@@ -53269,8 +54589,20 @@ static int sp_521_gen_stripe_table_9(const sp_point_521* a,
 
 #endif /* FP_ECC */
 #if defined(FP_ECC) || defined(WOLFSSL_SP_SMALL)
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_get_entry_64_9(sp_point_521* r, const sp_table_entry_521* table, int idx);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_get_entry_64_avx2_9(sp_point_521* r, const sp_table_entry_521* table, int idx);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply the point by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
@@ -54630,8 +55962,20 @@ static void sp_521_ecc_recode_7_9(const sp_digit* k, ecc_recode_521* v)
     }
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_get_entry_65_9(sp_point_521* r, const sp_table_entry_521* table, int idx);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_get_entry_65_avx2_9(sp_point_521* r, const sp_table_entry_521* table, int idx);
+#ifdef __cplusplus
+}
+#endif
 static const sp_table_entry_521 p521_table[4875] = {
     /* 0 << 0 */
     { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
@@ -88888,9 +90232,27 @@ int sp_ecc_mulmod_base_add_521(const mp_int* km, const ecc_point* am,
 #if defined(WOLFSSL_VALIDATE_ECC_KEYGEN) || defined(HAVE_ECC_SIGN) || \
                                                         defined(HAVE_ECC_VERIFY)
 #endif /* WOLFSSL_VALIDATE_ECC_KEYGEN | HAVE_ECC_SIGN | HAVE_ECC_VERIFY */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_add_one_9(sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_from_bin_bswap(sp_digit* r, int size, const byte* a, int n);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_from_bin_movbe(sp_digit* r, int size, const byte* a, int n);
+#ifdef __cplusplus
+}
+#endif
 /* Read big endian unsigned byte array into r.
  *
  * r  A single precision integer.
@@ -89044,8 +90406,20 @@ int sp_ecc_make_key_521(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 }
 
 #ifdef HAVE_ECC_DHE
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_to_bin_bswap_9(sp_digit* r, byte* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_to_bin_movbe_9(sp_digit* r, byte* a);
+#ifdef __cplusplus
+}
+#endif
 /* Write r as big endian to byte array.
  * Fixed length number of bytes written: 66
  *
@@ -89140,17 +90514,59 @@ int sp_ecc_secret_gen_521(const mp_int* priv, const ecc_point* pub, byte* out,
 #endif /* HAVE_ECC_DHE */
 
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_rshift_9(sp_digit* r, const sp_digit* a, int n);
+#ifdef __cplusplus
+}
+#endif
 #endif
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_lshift_9(sp_digit* r, const sp_digit* a, int n);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_lshift_18(sp_digit* r, const sp_digit* a, int n);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_521_sub_in_place_9(sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mul_d_9(sp_digit* r, const sp_digit* a, sp_digit b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_mul_d_avx2_9(sp_digit* r, const sp_digit* a, const sp_digit b);
+#ifdef __cplusplus
+}
+#endif
 #ifdef _WIN64
 #if _MSC_VER < 1920
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit div_521_word_asm_9(sp_digit d1, sp_digit d0, sp_digit div);
+#ifdef __cplusplus
+}
+#endif
 #endif /* _MSC_VER < 1920 */
 /* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
  *
@@ -90052,9 +91468,27 @@ int sp_ecc_sign_521(const byte* hash, word32 hashLen, WC_RNG* rng,
 #endif /* HAVE_ECC_SIGN */
 
 #ifndef WOLFSSL_SP_SMALL
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_rshift1_9(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_521_div2_mod_9(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern int sp_521_num_bits_9(const sp_digit * a);
+#ifdef __cplusplus
+}
+#endif
 /* Non-constant time modular inversion.
  *
  * @param  [out]  r   Resulting number.
@@ -91194,10 +92628,34 @@ typedef struct sp_point_1024 {
     int infinity;
 } sp_point_1024;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_mul_16(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_sqr_16(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_mul_avx2_16(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_sqr_avx2_16(sp_digit* r, const sp_digit* a);
+#ifdef __cplusplus
+}
+#endif
 /* The modulus (prime) of the curve P1024. */
 static const sp_digit p1024_mod[16] = {
     0x666d807afea85febL,0x80c5df10ac7ace87L,0xfce3e82389857db0L,
@@ -91274,15 +92732,57 @@ static const sp_point_1024 p1024_base = {
     0
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_1024_add_16(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_1024_sub_in_place_16(sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_1024_cond_sub_16(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_1024_cond_sub_avx2_16(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_mul_d_16(sp_digit* r, const sp_digit* a, sp_digit b);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_mul_d_avx2_16(sp_digit* r, const sp_digit* a, const sp_digit b);
+#ifdef __cplusplus
+}
+#endif
 #ifdef _WIN64
 #if _MSC_VER < 1920
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit div_1024_word_asm_16(sp_digit d1, sp_digit d0, sp_digit div);
+#ifdef __cplusplus
+}
+#endif
 #endif /* _MSC_VER < 1920 */
 /* Divide the double width number (d1|d0) by the dividend. (d1|d0 / div)
  *
@@ -91353,7 +92853,13 @@ static void sp_1024_mask_16(sp_digit* r, const sp_digit* a, sp_digit m)
 #endif
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_int64 sp_1024_cmp_16(const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
@@ -91714,8 +93220,20 @@ static int sp_1024_point_to_ecc_point_16(const sp_point_1024* p, ecc_point* pm)
     return err;
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_cond_copy_16(sp_digit* r, const sp_digit* a, sp_digit m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_mont_reduce_16(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
@@ -91853,12 +93371,42 @@ static void sp_1024_map_16(sp_point_1024* r, const sp_point_1024* p,
 
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_mont_add_16(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_mont_dbl_16(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_mont_tpl_16(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_mont_sub_16(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
 #define sp_1024_mont_sub_lower_16 sp_1024_mont_sub_16
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_div2_16(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
 /* Double the Montgomery form projective point p.
  *
  * r  Result of doubling point.
@@ -92149,7 +93697,13 @@ static void sp_1024_proj_point_dbl_n_16(sp_point_1024* p, int i,
     sp_1024_div2_16(y, y, p1024_mod);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern sp_digit sp_1024_sub_16(sp_digit* r, const sp_digit* a, const sp_digit* b);
+#ifdef __cplusplus
+}
+#endif
 /* Compare two numbers to determine if they are equal.
  * Constant time implementation.
  *
@@ -92861,7 +94415,13 @@ static int sp_1024_ecc_mulmod_win_add_sub_16(sp_point_1024* r, const sp_point_10
 
 #ifdef HAVE_INTEL_AVX2
 #ifdef HAVE_INTEL_AVX2
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_mont_reduce_avx2_16(sp_digit* a, const sp_digit* m, sp_digit mp);
+#ifdef __cplusplus
+}
+#endif
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
@@ -92974,12 +94534,42 @@ static void sp_1024_map_avx2_16(sp_point_1024* r, const sp_point_1024* p,
 
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_mont_add_avx2_16(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_mont_dbl_avx2_16(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_mont_tpl_avx2_16(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_mont_sub_avx2_16(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
 #define sp_1024_mont_sub_lower_avx2_16 sp_1024_mont_sub_avx2_16
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_div2_avx2_16(sp_digit* r, const sp_digit* a, const sp_digit* m);
+#ifdef __cplusplus
+}
+#endif
 /* Double the Montgomery form projective point p.
  *
  * r  Result of doubling point.
@@ -103292,8 +104882,20 @@ int sp_Pairing_precomp_1024(const ecc_point* pm, const ecc_point* qm, mp_int* re
 }
 
 #ifdef HAVE_ECC_CHECK_KEY
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_from_bin_bswap(sp_digit* r, int size, const byte* a, int n);
+#ifdef __cplusplus
+}
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void sp_1024_from_bin_movbe(sp_digit* r, int size, const byte* a, int n);
+#ifdef __cplusplus
+}
+#endif
 /* Read big endian unsigned byte array into r.
  *
  * r  A single precision integer.
