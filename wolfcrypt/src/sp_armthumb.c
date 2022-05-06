@@ -23666,6 +23666,122 @@ SP_NOINLINE static sp_digit div_2048_word_32(sp_digit d1, sp_digit d0,
 #else
         "add	r3, r3, r5\n\t"
 #endif
+        "# r * div - Start\n\t"
+        "uxth	%[d1], r3\n\t"
+        "uxth	r4, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	r4, %[d1], r4\n\t"
+#elif defined(__clang__)
+        "muls	r4, %[d1]\n\t"
+#else
+        "mul	r4, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[div], #16\n\t"
+#else
+        "lsr	r6, %[div], #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r5, %[d1], #16\n\t"
+#else
+        "lsr	r5, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r7\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r7\n\t"
+#else
+        "adc	r5, r7\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	%[d1], r3, #16\n\t"
+#else
+        "lsr	%[d1], r3, #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	r6, %[d1], r6\n\t"
+#elif defined(__clang__)
+        "muls	r6, %[d1]\n\t"
+#else
+        "mul	r6, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r5, r5, r6\n\t"
+#else
+        "add	r5, r5, r6\n\t"
+#endif
+        "uxth	r6, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[d1], #16\n\t"
+#else
+        "lsr	r6, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r6\n\t"
+#else
+        "adc	r5, r6\n\t"
+#endif
+        "# r * div - Done\n\t"
+        "mov	%[d1], r8\n\t"
+        "mov	r6, r9\n\t"
+#ifdef WOLFSSL_KEIL
+        "subs	r4, %[d1], r4\n\t"
+#else
+#ifdef __clang__
+        "subs	r4, %[d1], r4\n\t"
+#else
+        "sub	r4, %[d1], r4\n\t"
+#endif
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r6, r6, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r6, r5\n\t"
+#else
+        "sbc	r6, r5\n\t"
+#endif
+        "movs	r5, r6\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
         "movs	r6, %[div]\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
         "subs	r6, r6, r4\n\t"
@@ -23849,7 +23965,9 @@ static WC_INLINE int sp_2048_div_32(const sp_digit* a, const sp_digit* d, sp_dig
  */
 static WC_INLINE int sp_2048_mod_32(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
-    return sp_2048_div_32(a, m, NULL, r);
+    int ret;
+    ret = sp_2048_div_32(a, m, NULL, r);
+    return ret;
 }
 
 #ifdef WOLFSSL_SP_SMALL
@@ -27027,6 +27145,122 @@ SP_NOINLINE static sp_digit div_2048_word_64(sp_digit d1, sp_digit d0,
 #else
         "add	r3, r3, r5\n\t"
 #endif
+        "# r * div - Start\n\t"
+        "uxth	%[d1], r3\n\t"
+        "uxth	r4, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	r4, %[d1], r4\n\t"
+#elif defined(__clang__)
+        "muls	r4, %[d1]\n\t"
+#else
+        "mul	r4, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[div], #16\n\t"
+#else
+        "lsr	r6, %[div], #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r5, %[d1], #16\n\t"
+#else
+        "lsr	r5, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r7\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r7\n\t"
+#else
+        "adc	r5, r7\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	%[d1], r3, #16\n\t"
+#else
+        "lsr	%[d1], r3, #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	r6, %[d1], r6\n\t"
+#elif defined(__clang__)
+        "muls	r6, %[d1]\n\t"
+#else
+        "mul	r6, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r5, r5, r6\n\t"
+#else
+        "add	r5, r5, r6\n\t"
+#endif
+        "uxth	r6, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[d1], #16\n\t"
+#else
+        "lsr	r6, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r6\n\t"
+#else
+        "adc	r5, r6\n\t"
+#endif
+        "# r * div - Done\n\t"
+        "mov	%[d1], r8\n\t"
+        "mov	r6, r9\n\t"
+#ifdef WOLFSSL_KEIL
+        "subs	r4, %[d1], r4\n\t"
+#else
+#ifdef __clang__
+        "subs	r4, %[d1], r4\n\t"
+#else
+        "sub	r4, %[d1], r4\n\t"
+#endif
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r6, r6, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r6, r5\n\t"
+#else
+        "sbc	r6, r5\n\t"
+#endif
+        "movs	r5, r6\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
         "movs	r6, %[div]\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
         "subs	r6, r6, r4\n\t"
@@ -27114,7 +27348,9 @@ static WC_INLINE int sp_2048_div_64_cond(const sp_digit* a, const sp_digit* d, s
  */
 static WC_INLINE int sp_2048_mod_64_cond(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
-    return sp_2048_div_64_cond(a, m, NULL, r);
+    int ret;
+    ret = sp_2048_div_64_cond(a, m, NULL, r);
+    return ret;
 }
 
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
@@ -27305,7 +27541,9 @@ static WC_INLINE int sp_2048_div_64(const sp_digit* a, const sp_digit* d, sp_dig
  */
 static WC_INLINE int sp_2048_mod_64(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
-    return sp_2048_div_64(a, m, NULL, r);
+    int ret;
+    ret = sp_2048_div_64(a, m, NULL, r);
+    return ret;
 }
 
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || \
@@ -74870,6 +75108,122 @@ SP_NOINLINE static sp_digit div_3072_word_48(sp_digit d1, sp_digit d0,
 #else
         "add	r3, r3, r5\n\t"
 #endif
+        "# r * div - Start\n\t"
+        "uxth	%[d1], r3\n\t"
+        "uxth	r4, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	r4, %[d1], r4\n\t"
+#elif defined(__clang__)
+        "muls	r4, %[d1]\n\t"
+#else
+        "mul	r4, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[div], #16\n\t"
+#else
+        "lsr	r6, %[div], #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r5, %[d1], #16\n\t"
+#else
+        "lsr	r5, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r7\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r7\n\t"
+#else
+        "adc	r5, r7\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	%[d1], r3, #16\n\t"
+#else
+        "lsr	%[d1], r3, #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	r6, %[d1], r6\n\t"
+#elif defined(__clang__)
+        "muls	r6, %[d1]\n\t"
+#else
+        "mul	r6, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r5, r5, r6\n\t"
+#else
+        "add	r5, r5, r6\n\t"
+#endif
+        "uxth	r6, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[d1], #16\n\t"
+#else
+        "lsr	r6, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r6\n\t"
+#else
+        "adc	r5, r6\n\t"
+#endif
+        "# r * div - Done\n\t"
+        "mov	%[d1], r8\n\t"
+        "mov	r6, r9\n\t"
+#ifdef WOLFSSL_KEIL
+        "subs	r4, %[d1], r4\n\t"
+#else
+#ifdef __clang__
+        "subs	r4, %[d1], r4\n\t"
+#else
+        "sub	r4, %[d1], r4\n\t"
+#endif
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r6, r6, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r6, r5\n\t"
+#else
+        "sbc	r6, r5\n\t"
+#endif
+        "movs	r5, r6\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
         "movs	r6, %[div]\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
         "subs	r6, r6, r4\n\t"
@@ -75053,7 +75407,9 @@ static WC_INLINE int sp_3072_div_48(const sp_digit* a, const sp_digit* d, sp_dig
  */
 static WC_INLINE int sp_3072_mod_48(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
-    return sp_3072_div_48(a, m, NULL, r);
+    int ret;
+    ret = sp_3072_div_48(a, m, NULL, r);
+    return ret;
 }
 
 #ifdef WOLFSSL_SP_SMALL
@@ -79057,6 +79413,122 @@ SP_NOINLINE static sp_digit div_3072_word_96(sp_digit d1, sp_digit d0,
 #else
         "add	r3, r3, r5\n\t"
 #endif
+        "# r * div - Start\n\t"
+        "uxth	%[d1], r3\n\t"
+        "uxth	r4, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	r4, %[d1], r4\n\t"
+#elif defined(__clang__)
+        "muls	r4, %[d1]\n\t"
+#else
+        "mul	r4, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[div], #16\n\t"
+#else
+        "lsr	r6, %[div], #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r5, %[d1], #16\n\t"
+#else
+        "lsr	r5, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r7\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r7\n\t"
+#else
+        "adc	r5, r7\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	%[d1], r3, #16\n\t"
+#else
+        "lsr	%[d1], r3, #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	r6, %[d1], r6\n\t"
+#elif defined(__clang__)
+        "muls	r6, %[d1]\n\t"
+#else
+        "mul	r6, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r5, r5, r6\n\t"
+#else
+        "add	r5, r5, r6\n\t"
+#endif
+        "uxth	r6, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[d1], #16\n\t"
+#else
+        "lsr	r6, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r6\n\t"
+#else
+        "adc	r5, r6\n\t"
+#endif
+        "# r * div - Done\n\t"
+        "mov	%[d1], r8\n\t"
+        "mov	r6, r9\n\t"
+#ifdef WOLFSSL_KEIL
+        "subs	r4, %[d1], r4\n\t"
+#else
+#ifdef __clang__
+        "subs	r4, %[d1], r4\n\t"
+#else
+        "sub	r4, %[d1], r4\n\t"
+#endif
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r6, r6, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r6, r5\n\t"
+#else
+        "sbc	r6, r5\n\t"
+#endif
+        "movs	r5, r6\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
         "movs	r6, %[div]\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
         "subs	r6, r6, r4\n\t"
@@ -79144,7 +79616,9 @@ static WC_INLINE int sp_3072_div_96_cond(const sp_digit* a, const sp_digit* d, s
  */
 static WC_INLINE int sp_3072_mod_96_cond(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
-    return sp_3072_div_96_cond(a, m, NULL, r);
+    int ret;
+    ret = sp_3072_div_96_cond(a, m, NULL, r);
+    return ret;
 }
 
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
@@ -79340,7 +79814,9 @@ static WC_INLINE int sp_3072_div_96(const sp_digit* a, const sp_digit* d, sp_dig
  */
 static WC_INLINE int sp_3072_mod_96(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
-    return sp_3072_div_96(a, m, NULL, r);
+    int ret;
+    ret = sp_3072_div_96(a, m, NULL, r);
+    return ret;
 }
 
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || \
@@ -91470,6 +91946,122 @@ SP_NOINLINE static sp_digit div_4096_word_128(sp_digit d1, sp_digit d0,
 #else
         "add	r3, r3, r5\n\t"
 #endif
+        "# r * div - Start\n\t"
+        "uxth	%[d1], r3\n\t"
+        "uxth	r4, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	r4, %[d1], r4\n\t"
+#elif defined(__clang__)
+        "muls	r4, %[d1]\n\t"
+#else
+        "mul	r4, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[div], #16\n\t"
+#else
+        "lsr	r6, %[div], #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r5, %[d1], #16\n\t"
+#else
+        "lsr	r5, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r7\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r7\n\t"
+#else
+        "adc	r5, r7\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	%[d1], r3, #16\n\t"
+#else
+        "lsr	%[d1], r3, #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	r6, %[d1], r6\n\t"
+#elif defined(__clang__)
+        "muls	r6, %[d1]\n\t"
+#else
+        "mul	r6, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r5, r5, r6\n\t"
+#else
+        "add	r5, r5, r6\n\t"
+#endif
+        "uxth	r6, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[d1], #16\n\t"
+#else
+        "lsr	r6, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r6\n\t"
+#else
+        "adc	r5, r6\n\t"
+#endif
+        "# r * div - Done\n\t"
+        "mov	%[d1], r8\n\t"
+        "mov	r6, r9\n\t"
+#ifdef WOLFSSL_KEIL
+        "subs	r4, %[d1], r4\n\t"
+#else
+#ifdef __clang__
+        "subs	r4, %[d1], r4\n\t"
+#else
+        "sub	r4, %[d1], r4\n\t"
+#endif
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r6, r6, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r6, r5\n\t"
+#else
+        "sbc	r6, r5\n\t"
+#endif
+        "movs	r5, r6\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
         "movs	r6, %[div]\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
         "subs	r6, r6, r4\n\t"
@@ -91557,7 +92149,9 @@ static WC_INLINE int sp_4096_div_128_cond(const sp_digit* a, const sp_digit* d, 
  */
 static WC_INLINE int sp_4096_mod_128_cond(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
-    return sp_4096_div_128_cond(a, m, NULL, r);
+    int ret;
+    ret = sp_4096_div_128_cond(a, m, NULL, r);
+    return ret;
 }
 
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
@@ -91754,7 +92348,9 @@ static WC_INLINE int sp_4096_div_128(const sp_digit* a, const sp_digit* d, sp_di
  */
 static WC_INLINE int sp_4096_mod_128(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
-    return sp_4096_div_128(a, m, NULL, r);
+    int ret;
+    ret = sp_4096_div_128(a, m, NULL, r);
+    return ret;
 }
 
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || \
@@ -104427,6 +105023,122 @@ SP_NOINLINE static sp_digit div_256_word_8(sp_digit d1, sp_digit d0,
 #else
         "add	r3, r3, r5\n\t"
 #endif
+        "# r * div - Start\n\t"
+        "uxth	%[d1], r3\n\t"
+        "uxth	r4, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	r4, %[d1], r4\n\t"
+#elif defined(__clang__)
+        "muls	r4, %[d1]\n\t"
+#else
+        "mul	r4, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[div], #16\n\t"
+#else
+        "lsr	r6, %[div], #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r5, %[d1], #16\n\t"
+#else
+        "lsr	r5, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r7\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r7\n\t"
+#else
+        "adc	r5, r7\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	%[d1], r3, #16\n\t"
+#else
+        "lsr	%[d1], r3, #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	r6, %[d1], r6\n\t"
+#elif defined(__clang__)
+        "muls	r6, %[d1]\n\t"
+#else
+        "mul	r6, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r5, r5, r6\n\t"
+#else
+        "add	r5, r5, r6\n\t"
+#endif
+        "uxth	r6, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[d1], #16\n\t"
+#else
+        "lsr	r6, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r6\n\t"
+#else
+        "adc	r5, r6\n\t"
+#endif
+        "# r * div - Done\n\t"
+        "mov	%[d1], r8\n\t"
+        "mov	r6, r9\n\t"
+#ifdef WOLFSSL_KEIL
+        "subs	r4, %[d1], r4\n\t"
+#else
+#ifdef __clang__
+        "subs	r4, %[d1], r4\n\t"
+#else
+        "sub	r4, %[d1], r4\n\t"
+#endif
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r6, r6, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r6, r5\n\t"
+#else
+        "sbc	r6, r5\n\t"
+#endif
+        "movs	r5, r6\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
         "movs	r6, %[div]\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
         "subs	r6, r6, r4\n\t"
@@ -104527,7 +105239,9 @@ static WC_INLINE int sp_256_div_8(const sp_digit* a, const sp_digit* d, sp_digit
  */
 static WC_INLINE int sp_256_mod_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
-    return sp_256_div_8(a, m, NULL, r);
+    int ret;
+    ret = sp_256_div_8(a, m, NULL, r);
+    return ret;
 }
 
 #endif
@@ -114938,6 +115652,122 @@ SP_NOINLINE static sp_digit div_384_word_12(sp_digit d1, sp_digit d0,
 #else
         "add	r3, r3, r5\n\t"
 #endif
+        "# r * div - Start\n\t"
+        "uxth	%[d1], r3\n\t"
+        "uxth	r4, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	r4, %[d1], r4\n\t"
+#elif defined(__clang__)
+        "muls	r4, %[d1]\n\t"
+#else
+        "mul	r4, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[div], #16\n\t"
+#else
+        "lsr	r6, %[div], #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r5, %[d1], #16\n\t"
+#else
+        "lsr	r5, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r7\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r7\n\t"
+#else
+        "adc	r5, r7\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	%[d1], r3, #16\n\t"
+#else
+        "lsr	%[d1], r3, #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	r6, %[d1], r6\n\t"
+#elif defined(__clang__)
+        "muls	r6, %[d1]\n\t"
+#else
+        "mul	r6, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r5, r5, r6\n\t"
+#else
+        "add	r5, r5, r6\n\t"
+#endif
+        "uxth	r6, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[d1], #16\n\t"
+#else
+        "lsr	r6, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r6\n\t"
+#else
+        "adc	r5, r6\n\t"
+#endif
+        "# r * div - Done\n\t"
+        "mov	%[d1], r8\n\t"
+        "mov	r6, r9\n\t"
+#ifdef WOLFSSL_KEIL
+        "subs	r4, %[d1], r4\n\t"
+#else
+#ifdef __clang__
+        "subs	r4, %[d1], r4\n\t"
+#else
+        "sub	r4, %[d1], r4\n\t"
+#endif
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r6, r6, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r6, r5\n\t"
+#else
+        "sbc	r6, r5\n\t"
+#endif
+        "movs	r5, r6\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
         "movs	r6, %[div]\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
         "subs	r6, r6, r4\n\t"
@@ -115042,7 +115872,9 @@ static WC_INLINE int sp_384_div_12(const sp_digit* a, const sp_digit* d, sp_digi
  */
 static WC_INLINE int sp_384_mod_12(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
-    return sp_384_div_12(a, m, NULL, r);
+    int ret;
+    ret = sp_384_div_12(a, m, NULL, r);
+    return ret;
 }
 
 #endif
@@ -130832,6 +131664,122 @@ SP_NOINLINE static sp_digit div_521_word_17(sp_digit d1, sp_digit d0,
 #else
         "add	r3, r3, r5\n\t"
 #endif
+        "# r * div - Start\n\t"
+        "uxth	%[d1], r3\n\t"
+        "uxth	r4, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	r4, %[d1], r4\n\t"
+#elif defined(__clang__)
+        "muls	r4, %[d1]\n\t"
+#else
+        "mul	r4, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[div], #16\n\t"
+#else
+        "lsr	r6, %[div], #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r5, %[d1], #16\n\t"
+#else
+        "lsr	r5, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r7\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r7\n\t"
+#else
+        "adc	r5, r7\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	%[d1], r3, #16\n\t"
+#else
+        "lsr	%[d1], r3, #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	r6, %[d1], r6\n\t"
+#elif defined(__clang__)
+        "muls	r6, %[d1]\n\t"
+#else
+        "mul	r6, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r5, r5, r6\n\t"
+#else
+        "add	r5, r5, r6\n\t"
+#endif
+        "uxth	r6, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[d1], #16\n\t"
+#else
+        "lsr	r6, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r6\n\t"
+#else
+        "adc	r5, r6\n\t"
+#endif
+        "# r * div - Done\n\t"
+        "mov	%[d1], r8\n\t"
+        "mov	r6, r9\n\t"
+#ifdef WOLFSSL_KEIL
+        "subs	r4, %[d1], r4\n\t"
+#else
+#ifdef __clang__
+        "subs	r4, %[d1], r4\n\t"
+#else
+        "sub	r4, %[d1], r4\n\t"
+#endif
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r6, r6, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r6, r5\n\t"
+#else
+        "sbc	r6, r5\n\t"
+#endif
+        "movs	r5, r6\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
         "movs	r6, %[div]\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
         "subs	r6, r6, r4\n\t"
@@ -130947,7 +131895,9 @@ static WC_INLINE int sp_521_div_17(const sp_digit* a, const sp_digit* d, sp_digi
  */
 static WC_INLINE int sp_521_mod_17(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
-    return sp_521_div_17(a, m, NULL, r);
+    int ret;
+    ret = sp_521_div_17(a, m, NULL, r);
+    return ret;
 }
 
 #endif
@@ -200566,6 +201516,122 @@ SP_NOINLINE static sp_digit div_1024_word_32(sp_digit d1, sp_digit d0,
 #else
         "add	r3, r3, r5\n\t"
 #endif
+        "# r * div - Start\n\t"
+        "uxth	%[d1], r3\n\t"
+        "uxth	r4, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	r4, %[d1], r4\n\t"
+#elif defined(__clang__)
+        "muls	r4, %[d1]\n\t"
+#else
+        "mul	r4, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[div], #16\n\t"
+#else
+        "lsr	r6, %[div], #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r5, %[d1], #16\n\t"
+#else
+        "lsr	r5, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r7\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r7\n\t"
+#else
+        "adc	r5, r7\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	%[d1], r3, #16\n\t"
+#else
+        "lsr	%[d1], r3, #16\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "muls	r6, %[d1], r6\n\t"
+#elif defined(__clang__)
+        "muls	r6, %[d1]\n\t"
+#else
+        "mul	r6, %[d1]\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r5, r5, r6\n\t"
+#else
+        "add	r5, r5, r6\n\t"
+#endif
+        "uxth	r6, %[div]\n\t"
+#ifdef WOLFSSL_KEIL
+        "muls	%[d1], r6, %[d1]\n\t"
+#elif defined(__clang__)
+        "muls	%[d1], r6\n\t"
+#else
+        "mul	%[d1], r6\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsrs	r6, %[d1], #16\n\t"
+#else
+        "lsr	r6, %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "lsls	%[d1], %[d1], #16\n\t"
+#else
+        "lsl	%[d1], %[d1], #16\n\t"
+#endif
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r4, r4, %[d1]\n\t"
+#else
+        "add	r4, r4, %[d1]\n\t"
+#endif
+#ifdef WOLFSSL_KEIL
+        "adcs	r5, r5, r6\n\t"
+#elif defined(__clang__)
+        "adcs	r5, r6\n\t"
+#else
+        "adc	r5, r6\n\t"
+#endif
+        "# r * div - Done\n\t"
+        "mov	%[d1], r8\n\t"
+        "mov	r6, r9\n\t"
+#ifdef WOLFSSL_KEIL
+        "subs	r4, %[d1], r4\n\t"
+#else
+#ifdef __clang__
+        "subs	r4, %[d1], r4\n\t"
+#else
+        "sub	r4, %[d1], r4\n\t"
+#endif
+#endif
+#ifdef WOLFSSL_KEIL
+        "sbcs	r6, r6, r5\n\t"
+#elif defined(__clang__)
+        "sbcs	r6, r5\n\t"
+#else
+        "sbc	r6, r5\n\t"
+#endif
+        "movs	r5, r6\n\t"
+#if defined(__clang__) || defined(WOLFSSL_KEIL)
+        "adds	r3, r3, r5\n\t"
+#else
+        "add	r3, r3, r5\n\t"
+#endif
         "movs	r6, %[div]\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
         "subs	r6, r6, r4\n\t"
@@ -200779,7 +201845,9 @@ static WC_INLINE int sp_1024_div_32(const sp_digit* a, const sp_digit* d, sp_dig
  */
 static WC_INLINE int sp_1024_mod_32(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
-    return sp_1024_div_32(a, m, NULL, r);
+    int ret;
+    ret = sp_1024_div_32(a, m, NULL, r);
+    return ret;
 }
 
 /* Multiply a number by Montgomery normalizer mod modulus (prime).
