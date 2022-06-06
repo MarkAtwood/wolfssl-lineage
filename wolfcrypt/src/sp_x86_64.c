@@ -436,7 +436,7 @@ extern void sp_2048_mul_d_avx2_16(sp_digit* r, const sp_digit* a, const sp_digit
 #ifdef __cplusplus
 }
 #endif
-#ifdef _WIN64
+#if defined(_WIN64) && !defined(__clang__)
 #if _MSC_VER < 1920
 #ifdef __cplusplus
 extern "C" {
@@ -484,7 +484,7 @@ static WC_INLINE sp_digit div_2048_word_16(sp_digit d1, sp_digit d0,
     );
     return r;
 }
-#endif /* _WIN64 */
+#endif /* _WIN64 && !__clang__ */
 /* AND m into each word of a and store in r.
  *
  * r  A single precision integer.
@@ -1120,7 +1120,7 @@ extern void sp_2048_mul_d_avx2_32(sp_digit* r, const sp_digit* a, const sp_digit
 #ifdef __cplusplus
 }
 #endif
-#ifdef _WIN64
+#if defined(_WIN64) && !defined(__clang__)
 #if _MSC_VER < 1920
 #ifdef __cplusplus
 extern "C" {
@@ -1168,7 +1168,7 @@ static WC_INLINE sp_digit div_2048_word_32(sp_digit d1, sp_digit d0,
     );
     return r;
 }
-#endif /* _WIN64 */
+#endif /* _WIN64 && !__clang__ */
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
@@ -3420,7 +3420,7 @@ extern void sp_3072_mul_d_avx2_24(sp_digit* r, const sp_digit* a, const sp_digit
 #ifdef __cplusplus
 }
 #endif
-#ifdef _WIN64
+#if defined(_WIN64) && !defined(__clang__)
 #if _MSC_VER < 1920
 #ifdef __cplusplus
 extern "C" {
@@ -3468,7 +3468,7 @@ static WC_INLINE sp_digit div_3072_word_24(sp_digit d1, sp_digit d0,
     );
     return r;
 }
-#endif /* _WIN64 */
+#endif /* _WIN64 && !__clang__ */
 /* AND m into each word of a and store in r.
  *
  * r  A single precision integer.
@@ -4104,7 +4104,7 @@ extern void sp_3072_mul_d_avx2_48(sp_digit* r, const sp_digit* a, const sp_digit
 #ifdef __cplusplus
 }
 #endif
-#ifdef _WIN64
+#if defined(_WIN64) && !defined(__clang__)
 #if _MSC_VER < 1920
 #ifdef __cplusplus
 extern "C" {
@@ -4152,7 +4152,7 @@ static WC_INLINE sp_digit div_3072_word_48(sp_digit d1, sp_digit d0,
     );
     return r;
 }
-#endif /* _WIN64 */
+#endif /* _WIN64 && !__clang__ */
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
@@ -6210,7 +6210,7 @@ extern void sp_4096_mul_d_avx2_64(sp_digit* r, const sp_digit* a, const sp_digit
 #ifdef __cplusplus
 }
 #endif
-#ifdef _WIN64
+#if defined(_WIN64) && !defined(__clang__)
 #if _MSC_VER < 1920
 #ifdef __cplusplus
 extern "C" {
@@ -6258,7 +6258,7 @@ static WC_INLINE sp_digit div_4096_word_64(sp_digit d1, sp_digit d0,
     );
     return r;
 }
-#endif /* _WIN64 */
+#endif /* _WIN64 && !__clang__ */
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
@@ -24747,7 +24747,7 @@ extern void sp_256_mul_d_avx2_4(sp_digit* r, const sp_digit* a, const sp_digit b
 #ifdef __cplusplus
 }
 #endif
-#ifdef _WIN64
+#if defined(_WIN64) && !defined(__clang__)
 #if _MSC_VER < 1920
 #ifdef __cplusplus
 extern "C" {
@@ -24795,7 +24795,7 @@ static WC_INLINE sp_digit div_256_word_4(sp_digit d1, sp_digit d0,
     );
     return r;
 }
-#endif /* _WIN64 */
+#endif /* _WIN64 && !__clang__ */
 /* AND m into each word of a and store in r.
  *
  * r  A single precision integer.
@@ -49621,7 +49621,7 @@ extern void sp_384_mul_d_avx2_6(sp_digit* r, const sp_digit* a, const sp_digit b
 #ifdef __cplusplus
 }
 #endif
-#ifdef _WIN64
+#if defined(_WIN64) && !defined(__clang__)
 #if _MSC_VER < 1920
 #ifdef __cplusplus
 extern "C" {
@@ -49669,7 +49669,7 @@ static WC_INLINE sp_digit div_384_word_6(sp_digit d1, sp_digit d0,
     );
     return r;
 }
-#endif /* _WIN64 */
+#endif /* _WIN64 && !__clang__ */
 /* AND m into each word of a and store in r.
  *
  * r  A single precision integer.
@@ -90558,7 +90558,7 @@ extern void sp_521_mul_d_avx2_9(sp_digit* r, const sp_digit* a, const sp_digit b
 #ifdef __cplusplus
 }
 #endif
-#ifdef _WIN64
+#if defined(_WIN64) && !defined(__clang__)
 #if _MSC_VER < 1920
 #ifdef __cplusplus
 extern "C" {
@@ -90606,7 +90606,7 @@ static WC_INLINE sp_digit div_521_word_9(sp_digit d1, sp_digit d0,
     );
     return r;
 }
-#endif /* _WIN64 */
+#endif /* _WIN64 && !__clang__ */
 /* AND m into each word of a and store in r.
  *
  * r  A single precision integer.
@@ -92774,7 +92774,7 @@ extern void sp_1024_mul_d_avx2_16(sp_digit* r, const sp_digit* a, const sp_digit
 #ifdef __cplusplus
 }
 #endif
-#ifdef _WIN64
+#if defined(_WIN64) && !defined(__clang__)
 #if _MSC_VER < 1920
 #ifdef __cplusplus
 extern "C" {
@@ -92822,7 +92822,7 @@ static WC_INLINE sp_digit div_1024_word_16(sp_digit d1, sp_digit d0,
     );
     return r;
 }
-#endif /* _WIN64 */
+#endif /* _WIN64 && !__clang__ */
 /* AND m into each word of a and store in r.
  *
  * r  A single precision integer.
