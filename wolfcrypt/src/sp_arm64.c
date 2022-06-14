@@ -3934,9 +3934,13 @@ static WC_INLINE int sp_2048_div_16(const sp_digit* a, const sp_digit* d, sp_dig
 
     div = d[15];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 16);
+    r1 = sp_2048_cmp_16(&t1[16], d) >= 0;
+    sp_2048_cond_sub_16(&t1[16], &t1[16], d, (sp_digit)0 - r1);
     for (i = 15; i >= 0; i--) {
-        sp_digit hi = t1[16 + i] - (t1[16 + i] == div);
+        sp_digit mask = 0 - (t1[16 + i] == div);
+        sp_digit hi = t1[16 + i] + mask;
         r1 = div_2048_word_16(hi, t1[16 + i - 1], div);
+        r1 |= mask;
 
         sp_2048_mul_d_16(t2, d, r1);
         t1[16 + i] += sp_2048_sub_in_place_16(&t1[i], t2);
@@ -4970,6 +4974,13 @@ static WC_INLINE int sp_2048_div_32_cond(const sp_digit* a, const sp_digit* d, s
 
     div = d[31];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 32);
+    for (i = 31; i > 0; i--) {
+        if (t1[i + 32] != d[i])
+            break;
+    }
+    if (t1[i + 32] >= d[i]) {
+        sp_2048_sub_in_place_32(&t1[32], d);
+    }
     for (i = 31; i >= 0; i--) {
         if (t1[32 + i] == div) {
             r1 = SP_DIGIT_MAX;
@@ -5530,9 +5541,13 @@ static WC_INLINE int sp_2048_div_32(const sp_digit* a, const sp_digit* d, sp_dig
 
     div = d[31];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 32);
+    r1 = sp_2048_cmp_32(&t1[32], d) >= 0;
+    sp_2048_cond_sub_32(&t1[32], &t1[32], d, (sp_digit)0 - r1);
     for (i = 31; i >= 0; i--) {
-        sp_digit hi = t1[32 + i] - (t1[32 + i] == div);
+        sp_digit mask = 0 - (t1[32 + i] == div);
+        sp_digit hi = t1[32 + i] + mask;
         r1 = div_2048_word_32(hi, t1[32 + i - 1], div);
+        r1 |= mask;
 
         sp_2048_mul_d_32(t2, d, r1);
         t1[32 + i] += sp_2048_sub_in_place_32(&t1[i], t2);
@@ -13071,9 +13086,13 @@ static WC_INLINE int sp_3072_div_24(const sp_digit* a, const sp_digit* d, sp_dig
 
     div = d[23];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 24);
+    r1 = sp_3072_cmp_24(&t1[24], d) >= 0;
+    sp_3072_cond_sub_24(&t1[24], &t1[24], d, (sp_digit)0 - r1);
     for (i = 23; i >= 0; i--) {
-        sp_digit hi = t1[24 + i] - (t1[24 + i] == div);
+        sp_digit mask = 0 - (t1[24 + i] == div);
+        sp_digit hi = t1[24 + i] + mask;
         r1 = div_3072_word_24(hi, t1[24 + i - 1], div);
+        r1 |= mask;
 
         sp_3072_mul_d_24(t2, d, r1);
         t1[24 + i] += sp_3072_sub_in_place_24(&t1[i], t2);
@@ -14347,6 +14366,13 @@ static WC_INLINE int sp_3072_div_48_cond(const sp_digit* a, const sp_digit* d, s
 
     div = d[47];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 48);
+    for (i = 47; i > 0; i--) {
+        if (t1[i + 48] != d[i])
+            break;
+    }
+    if (t1[i + 48] >= d[i]) {
+        sp_3072_sub_in_place_48(&t1[48], d);
+    }
     for (i = 47; i >= 0; i--) {
         if (t1[48 + i] == div) {
             r1 = SP_DIGIT_MAX;
@@ -15059,9 +15085,13 @@ static WC_INLINE int sp_3072_div_48(const sp_digit* a, const sp_digit* d, sp_dig
 
     div = d[47];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 48);
+    r1 = sp_3072_cmp_48(&t1[48], d) >= 0;
+    sp_3072_cond_sub_48(&t1[48], &t1[48], d, (sp_digit)0 - r1);
     for (i = 47; i >= 0; i--) {
-        sp_digit hi = t1[48 + i] - (t1[48 + i] == div);
+        sp_digit mask = 0 - (t1[48 + i] == div);
+        sp_digit hi = t1[48 + i] + mask;
         r1 = div_3072_word_48(hi, t1[48 + i - 1], div);
+        r1 |= mask;
 
         sp_3072_mul_d_48(t2, d, r1);
         t1[48 + i] += sp_3072_sub_in_place_48(&t1[i], t2);
@@ -19256,6 +19286,13 @@ static WC_INLINE int sp_4096_div_64_cond(const sp_digit* a, const sp_digit* d, s
 
     div = d[63];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 64);
+    for (i = 63; i > 0; i--) {
+        if (t1[i + 64] != d[i])
+            break;
+    }
+    if (t1[i + 64] >= d[i]) {
+        sp_4096_sub_in_place_64(&t1[64], d);
+    }
     for (i = 63; i >= 0; i--) {
         if (t1[64 + i] == div) {
             r1 = SP_DIGIT_MAX;
@@ -20120,9 +20157,13 @@ static WC_INLINE int sp_4096_div_64(const sp_digit* a, const sp_digit* d, sp_dig
 
     div = d[63];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 64);
+    r1 = sp_4096_cmp_64(&t1[64], d) >= 0;
+    sp_4096_cond_sub_64(&t1[64], &t1[64], d, (sp_digit)0 - r1);
     for (i = 63; i >= 0; i--) {
-        sp_digit hi = t1[64 + i] - (t1[64 + i] == div);
+        sp_digit mask = 0 - (t1[64 + i] == div);
+        sp_digit hi = t1[64 + i] + mask;
         r1 = div_4096_word_64(hi, t1[64 + i - 1], div);
+        r1 |= mask;
 
         sp_4096_mul_d_64(t2, d, r1);
         t1[64 + i] += sp_4096_sub_in_place_64(&t1[i], t2);
@@ -22388,11 +22429,13 @@ SP_NOINLINE static void sp_256_mont_mul_4(sp_digit* r, const sp_digit* a, const 
         "adcs	x15, x15, xzr\n\t"
         "extr	x6, x6, x5, 32\n\t"
         "adc	x8, x8, xzr\n\t"
-        "adds	x11, x11, x6\n\t"
         "extr	x5, x5, x4, 32\n\t"
+        "lsl	x4, x4, 32\n\t"
+        "adds	x9, x9, x4\n\t"
+        "adcs	x10, x10, x5\n\t"
+        "adcs	x11, x11, x6\n\t"
         "adcs	x12, x12, x7\n\t"
         "adcs	x13, x13, x16\n\t"
-        "lsl	x4, x4, 32\n\t"
         "adcs	x14, x14, xzr\n\t"
         "adcs	x15, x15, xzr\n\t"
         "adc	x8, x8, xzr\n\t"
@@ -22400,12 +22443,11 @@ SP_NOINLINE static void sp_256_mont_mul_4(sp_digit* r, const sp_digit* a, const 
         "subs	x11, x11, x4\n\t"
         "sbcs	x12, x12, x5\n\t"
         "sbcs	x13, x13, x6\n\t"
-        "sub	x8, xzr, x8\n\t"
         "sbcs	x14, x14, x7\n\t"
-        "sub	x8, x8, #1\n\t"
         "sbcs	x15, x15, x16\n\t"
         "mov	x19, 0xffffffff00000001\n\t"
-        "adc	x8, x8, xzr\n\t"
+        "sbc	x8, x8, xzr\n\t"
+        "neg	x8, x8\n\t"
         "# mask m and sub from result if overflow\n\t"
         "#  m[0] = -1 & mask = mask\n\t"
         "subs	x12, x12, x8\n\t"
@@ -22535,11 +22577,13 @@ SP_NOINLINE static void sp_256_mont_sqr_4(sp_digit* r, const sp_digit* a, const 
         "adcs	x15, x15, xzr\n\t"
         "extr	x5, x5, x4, 32\n\t"
         "adc	x8, x8, xzr\n\t"
-        "adds	x11, x11, x5\n\t"
         "extr	x4, x4, x3, 32\n\t"
+        "lsl	x3, x3, 32\n\t"
+        "adds	x9, x9, x3\n\t"
+        "adcs	x10, x10, x4\n\t"
+        "adcs	x11, x11, x5\n\t"
         "adcs	x12, x12, x6\n\t"
         "adcs	x13, x13, x7\n\t"
-        "lsl	x3, x3, 32\n\t"
         "adcs	x14, x14, xzr\n\t"
         "adcs	x15, x15, xzr\n\t"
         "adc	x8, x8, xzr\n\t"
@@ -22547,12 +22591,11 @@ SP_NOINLINE static void sp_256_mont_sqr_4(sp_digit* r, const sp_digit* a, const 
         "subs	x11, x11, x3\n\t"
         "sbcs	x12, x12, x4\n\t"
         "sbcs	x13, x13, x5\n\t"
-        "sub	x8, xzr, x8\n\t"
         "sbcs	x14, x14, x6\n\t"
-        "sub	x8, x8, #1\n\t"
         "sbcs	x15, x15, x7\n\t"
         "mov	x17, 0xffffffff00000001\n\t"
-        "adc	x8, x8, xzr\n\t"
+        "sbc	x8, x8, xzr\n\t"
+        "neg	x8, x8\n\t"
         "# mask m and sub from result if overflow\n\t"
         "#  m[0] = -1 & mask = mask\n\t"
         "subs	x12, x12, x8\n\t"
@@ -22839,11 +22882,13 @@ SP_NOINLINE static void sp_256_mont_reduce_4(sp_digit* a, const sp_digit* m,
         "adcs	x17, x17, xzr\n\t"
         "extr	x5, x5, x4, 32\n\t"
         "adc	x10, x10, xzr\n\t"
-        "adds	x13, x13, x5\n\t"
         "extr	x4, x4, x3, 32\n\t"
+        "lsl	x3, x3, 32\n\t"
+        "adds	x11, x11, x3\n\t"
+        "adcs	x12, x12, x4\n\t"
+        "adcs	x13, x13, x5\n\t"
         "adcs	x14, x14, x6\n\t"
         "adcs	x15, x15, x7\n\t"
-        "lsl	x3, x3, 32\n\t"
         "adcs	x16, x16, xzr\n\t"
         "adcs	x17, x17, xzr\n\t"
         "adc	x10, x10, xzr\n\t"
@@ -22851,12 +22896,11 @@ SP_NOINLINE static void sp_256_mont_reduce_4(sp_digit* a, const sp_digit* m,
         "subs	x13, x13, x3\n\t"
         "sbcs	x14, x14, x4\n\t"
         "sbcs	x15, x15, x5\n\t"
-        "sub	x10, xzr, x10\n\t"
         "sbcs	x16, x16, x6\n\t"
-        "sub	x10, x10, #1\n\t"
         "sbcs	x17, x17, x7\n\t"
         "mov	x9, 0xffffffff00000001\n\t"
-        "adc	x10, x10, xzr\n\t"
+        "sbc	x10, x10, xzr\n\t"
+        "neg	x10, x10\n\t"
         "# mask m and sub from result if overflow\n\t"
         "#  m[0] = -1 & mask = mask\n\t"
         "subs	x14, x14, x10\n\t"
@@ -39854,9 +39898,13 @@ static WC_INLINE int sp_256_div_4(const sp_digit* a, const sp_digit* d, sp_digit
 
     div = d[3];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 4);
+    r1 = sp_256_cmp_4(&t1[4], d) >= 0;
+    sp_256_cond_sub_4(&t1[4], &t1[4], d, (sp_digit)0 - r1);
     for (i = 3; i >= 0; i--) {
-        sp_digit hi = t1[4 + i] - (t1[4 + i] == div);
+        sp_digit mask = 0 - (t1[4 + i] == div);
+        sp_digit hi = t1[4 + i] + mask;
         r1 = div_256_word_4(hi, t1[4 + i - 1], div);
+        r1 |= mask;
 
         sp_256_mul_d_4(t2, d, r1);
         t1[4 + i] += sp_256_sub_in_place_4(&t1[i], t2);
@@ -65802,9 +65850,13 @@ static WC_INLINE int sp_384_div_6(const sp_digit* a, const sp_digit* d, sp_digit
 
     div = d[5];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 6);
+    r1 = sp_384_cmp_6(&t1[6], d) >= 0;
+    sp_384_cond_sub_6(&t1[6], &t1[6], d, (sp_digit)0 - r1);
     for (i = 5; i >= 0; i--) {
-        sp_digit hi = t1[6 + i] - (t1[6 + i] == div);
+        sp_digit mask = 0 - (t1[6 + i] == div);
+        sp_digit hi = t1[6 + i] + mask;
         r1 = div_384_word_6(hi, t1[6 + i - 1], div);
+        r1 |= mask;
 
         sp_384_mul_d_6(t2, d, r1);
         t1[6 + i] += sp_384_sub_in_place_6(&t1[i], t2);
@@ -113907,9 +113959,13 @@ static WC_INLINE int sp_1024_div_16(const sp_digit* a, const sp_digit* d, sp_dig
 
     div = d[15];
     XMEMCPY(t1, a, sizeof(*t1) * 2 * 16);
+    r1 = sp_1024_cmp_16(&t1[16], d) >= 0;
+    sp_1024_cond_sub_16(&t1[16], &t1[16], d, (sp_digit)0 - r1);
     for (i = 15; i >= 0; i--) {
-        sp_digit hi = t1[16 + i] - (t1[16 + i] == div);
+        sp_digit mask = 0 - (t1[16 + i] == div);
+        sp_digit hi = t1[16 + i] + mask;
         r1 = div_1024_word_16(hi, t1[16 + i - 1], div);
+        r1 |= mask;
 
         sp_1024_mul_d_16(t2, d, r1);
         t1[16 + i] += sp_1024_sub_in_place_16(&t1[i], t2);
