@@ -25498,9 +25498,6 @@ int sp_ecc_sign_256_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
     case 0: /* INIT */
         ctx->s = ctx->e;
         ctx->kInv = ctx->k;
-        if (hashLen > 32U) {
-            hashLen = 32U;
-        }
 
         ctx->i = SP_ECC_MAX_SIG_GEN;
         ctx->state = 1;
@@ -25535,6 +25532,9 @@ int sp_ecc_sign_256_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
             (sp_digit)0 - (sp_digit)(c >= 0));
         sp_256_norm_4(ctx->r);
 
+        if (hashLen > 32U) {
+            hashLen = 32U;
+        }
         sp_256_from_mp(ctx->x, 4, priv);
         sp_256_from_bin(ctx->e, 4, hash, (int)hashLen);
         ctx->state = 4;
@@ -50230,9 +50230,6 @@ int sp_ecc_sign_384_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
     case 0: /* INIT */
         ctx->s = ctx->e;
         ctx->kInv = ctx->k;
-        if (hashLen > 48U) {
-            hashLen = 48U;
-        }
 
         ctx->i = SP_ECC_MAX_SIG_GEN;
         ctx->state = 1;
@@ -50267,6 +50264,9 @@ int sp_ecc_sign_384_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
             (sp_digit)0 - (sp_digit)(c >= 0));
         sp_384_norm_6(ctx->r);
 
+        if (hashLen > 48U) {
+            hashLen = 48U;
+        }
         sp_384_from_mp(ctx->x, 6, priv);
         sp_384_from_bin(ctx->e, 6, hash, (int)hashLen);
         ctx->state = 4;
@@ -91201,9 +91201,6 @@ int sp_ecc_sign_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
     case 0: /* INIT */
         ctx->s = ctx->e;
         ctx->kInv = ctx->k;
-        if (hashLen > 66U) {
-            hashLen = 66U;
-        }
 
         ctx->i = SP_ECC_MAX_SIG_GEN;
         ctx->state = 1;
@@ -91238,6 +91235,9 @@ int sp_ecc_sign_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
             (sp_digit)0 - (sp_digit)(c >= 0));
         sp_521_norm_9(ctx->r);
 
+        if (hashLen > 66U) {
+            hashLen = 66U;
+        }
         sp_521_from_mp(ctx->x, 9, priv);
         sp_521_from_bin(ctx->e, 9, hash, (int)hashLen);
         if (hashLen == 66U) {
