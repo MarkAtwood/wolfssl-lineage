@@ -112,12 +112,15 @@ static void sp_2048_from_bin(sp_digit* r, int size, const byte* a, int n)
 static void sp_2048_from_mp(sp_digit* r, int size, const mp_int* a)
 {
 #if DIGIT_BIT == 32
-    int j;
+    int i;
+    int j = 0;
 
-    XMEMCPY(r, a->dp, sizeof(sp_digit) * a->used);
-
-    for (j = a->used; j < size; j++) {
-        r[j] = 0;
+    for (i = 0; i < size; i++) {
+        sp_digit mask =
+            (((sp_digit)(a->used - i - 1)) >> (SP_WORD_SIZE - 1)) - 1;
+        r[i] = a->dp[j] & mask;
+        j += (int)(((sp_digit)1) -
+                   (((sp_digit)(a->used - i - 2)) >> (SP_WORD_SIZE - 1)));
     }
 #elif DIGIT_BIT > 32
     int i;
@@ -17676,12 +17679,15 @@ static void sp_3072_from_bin(sp_digit* r, int size, const byte* a, int n)
 static void sp_3072_from_mp(sp_digit* r, int size, const mp_int* a)
 {
 #if DIGIT_BIT == 32
-    int j;
+    int i;
+    int j = 0;
 
-    XMEMCPY(r, a->dp, sizeof(sp_digit) * a->used);
-
-    for (j = a->used; j < size; j++) {
-        r[j] = 0;
+    for (i = 0; i < size; i++) {
+        sp_digit mask =
+            (((sp_digit)(a->used - i - 1)) >> (SP_WORD_SIZE - 1)) - 1;
+        r[i] = a->dp[j] & mask;
+        j += (int)(((sp_digit)1) -
+                   (((sp_digit)(a->used - i - 2)) >> (SP_WORD_SIZE - 1)));
     }
 #elif DIGIT_BIT > 32
     int i;
@@ -44710,12 +44716,15 @@ static void sp_4096_from_bin(sp_digit* r, int size, const byte* a, int n)
 static void sp_4096_from_mp(sp_digit* r, int size, const mp_int* a)
 {
 #if DIGIT_BIT == 32
-    int j;
+    int i;
+    int j = 0;
 
-    XMEMCPY(r, a->dp, sizeof(sp_digit) * a->used);
-
-    for (j = a->used; j < size; j++) {
-        r[j] = 0;
+    for (i = 0; i < size; i++) {
+        sp_digit mask =
+            (((sp_digit)(a->used - i - 1)) >> (SP_WORD_SIZE - 1)) - 1;
+        r[i] = a->dp[j] & mask;
+        j += (int)(((sp_digit)1) -
+                   (((sp_digit)(a->used - i - 2)) >> (SP_WORD_SIZE - 1)));
     }
 #elif DIGIT_BIT > 32
     int i;
@@ -64715,12 +64724,15 @@ static int sp_256_mod_mul_norm_8(sp_digit* r, const sp_digit* a, const sp_digit*
 static void sp_256_from_mp(sp_digit* r, int size, const mp_int* a)
 {
 #if DIGIT_BIT == 32
-    int j;
+    int i;
+    int j = 0;
 
-    XMEMCPY(r, a->dp, sizeof(sp_digit) * a->used);
-
-    for (j = a->used; j < size; j++) {
-        r[j] = 0;
+    for (i = 0; i < size; i++) {
+        sp_digit mask =
+            (((sp_digit)(a->used - i - 1)) >> (SP_WORD_SIZE - 1)) - 1;
+        r[i] = a->dp[j] & mask;
+        j += (int)(((sp_digit)1) -
+                   (((sp_digit)(a->used - i - 2)) >> (SP_WORD_SIZE - 1)));
     }
 #elif DIGIT_BIT > 32
     int i;
@@ -86096,12 +86108,15 @@ static int sp_384_mod_mul_norm_12(sp_digit* r, const sp_digit* a, const sp_digit
 static void sp_384_from_mp(sp_digit* r, int size, const mp_int* a)
 {
 #if DIGIT_BIT == 32
-    int j;
+    int i;
+    int j = 0;
 
-    XMEMCPY(r, a->dp, sizeof(sp_digit) * a->used);
-
-    for (j = a->used; j < size; j++) {
-        r[j] = 0;
+    for (i = 0; i < size; i++) {
+        sp_digit mask =
+            (((sp_digit)(a->used - i - 1)) >> (SP_WORD_SIZE - 1)) - 1;
+        r[i] = a->dp[j] & mask;
+        j += (int)(((sp_digit)1) -
+                   (((sp_digit)(a->used - i - 2)) >> (SP_WORD_SIZE - 1)));
     }
 #elif DIGIT_BIT > 32
     int i;
@@ -112020,12 +112035,15 @@ static int sp_521_mod_mul_norm_17(sp_digit* r, const sp_digit* a, const sp_digit
 static void sp_521_from_mp(sp_digit* r, int size, const mp_int* a)
 {
 #if DIGIT_BIT == 32
-    int j;
+    int i;
+    int j = 0;
 
-    XMEMCPY(r, a->dp, sizeof(sp_digit) * a->used);
-
-    for (j = a->used; j < size; j++) {
-        r[j] = 0;
+    for (i = 0; i < size; i++) {
+        sp_digit mask =
+            (((sp_digit)(a->used - i - 1)) >> (SP_WORD_SIZE - 1)) - 1;
+        r[i] = a->dp[j] & mask;
+        j += (int)(((sp_digit)1) -
+                   (((sp_digit)(a->used - i - 2)) >> (SP_WORD_SIZE - 1)));
     }
 #elif DIGIT_BIT > 32
     int i;
@@ -140879,12 +140897,15 @@ static void sp_1024_point_free_32(sp_point_1024* p, int clear, void* heap)
 static void sp_1024_from_mp(sp_digit* r, int size, const mp_int* a)
 {
 #if DIGIT_BIT == 32
-    int j;
+    int i;
+    int j = 0;
 
-    XMEMCPY(r, a->dp, sizeof(sp_digit) * a->used);
-
-    for (j = a->used; j < size; j++) {
-        r[j] = 0;
+    for (i = 0; i < size; i++) {
+        sp_digit mask =
+            (((sp_digit)(a->used - i - 1)) >> (SP_WORD_SIZE - 1)) - 1;
+        r[i] = a->dp[j] & mask;
+        j += (int)(((sp_digit)1) -
+                   (((sp_digit)(a->used - i - 2)) >> (SP_WORD_SIZE - 1)));
     }
 #elif DIGIT_BIT > 32
     int i;
