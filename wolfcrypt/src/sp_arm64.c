@@ -3940,7 +3940,7 @@ static WC_INLINE int sp_2048_div_16(const sp_digit* a, const sp_digit* d, sp_dig
     r1 = sp_2048_cmp_16(&t1[16], d) >= 0;
     sp_2048_cond_sub_16(&t1[16], &t1[16], d, (sp_digit)0 - r1);
     for (i = 15; i >= 0; i--) {
-        sp_digit mask = 0 - (t1[16 + i] == div);
+        volatile sp_digit mask = (sp_digit)0 - (t1[16 + i] == div);
         sp_digit hi = t1[16 + i] + mask;
         r1 = div_2048_word_16(hi, t1[16 + i - 1], div);
         r1 |= mask;
@@ -5547,7 +5547,7 @@ static WC_INLINE int sp_2048_div_32(const sp_digit* a, const sp_digit* d, sp_dig
     r1 = sp_2048_cmp_32(&t1[32], d) >= 0;
     sp_2048_cond_sub_32(&t1[32], &t1[32], d, (sp_digit)0 - r1);
     for (i = 31; i >= 0; i--) {
-        sp_digit mask = 0 - (t1[32 + i] == div);
+        volatile sp_digit mask = (sp_digit)0 - (t1[32 + i] == div);
         sp_digit hi = t1[32 + i] + mask;
         r1 = div_2048_word_32(hi, t1[32 + i - 1], div);
         r1 |= mask;
@@ -13095,7 +13095,7 @@ static WC_INLINE int sp_3072_div_24(const sp_digit* a, const sp_digit* d, sp_dig
     r1 = sp_3072_cmp_24(&t1[24], d) >= 0;
     sp_3072_cond_sub_24(&t1[24], &t1[24], d, (sp_digit)0 - r1);
     for (i = 23; i >= 0; i--) {
-        sp_digit mask = 0 - (t1[24 + i] == div);
+        volatile sp_digit mask = (sp_digit)0 - (t1[24 + i] == div);
         sp_digit hi = t1[24 + i] + mask;
         r1 = div_3072_word_24(hi, t1[24 + i - 1], div);
         r1 |= mask;
@@ -15094,7 +15094,7 @@ static WC_INLINE int sp_3072_div_48(const sp_digit* a, const sp_digit* d, sp_dig
     r1 = sp_3072_cmp_48(&t1[48], d) >= 0;
     sp_3072_cond_sub_48(&t1[48], &t1[48], d, (sp_digit)0 - r1);
     for (i = 47; i >= 0; i--) {
-        sp_digit mask = 0 - (t1[48 + i] == div);
+        volatile sp_digit mask = (sp_digit)0 - (t1[48 + i] == div);
         sp_digit hi = t1[48 + i] + mask;
         r1 = div_3072_word_48(hi, t1[48 + i - 1], div);
         r1 |= mask;
@@ -20169,7 +20169,7 @@ static WC_INLINE int sp_4096_div_64(const sp_digit* a, const sp_digit* d, sp_dig
     r1 = sp_4096_cmp_64(&t1[64], d) >= 0;
     sp_4096_cond_sub_64(&t1[64], &t1[64], d, (sp_digit)0 - r1);
     for (i = 63; i >= 0; i--) {
-        sp_digit mask = 0 - (t1[64 + i] == div);
+        volatile sp_digit mask = (sp_digit)0 - (t1[64 + i] == div);
         sp_digit hi = t1[64 + i] + mask;
         r1 = div_4096_word_64(hi, t1[64 + i - 1], div);
         r1 |= mask;
@@ -40041,7 +40041,7 @@ static WC_INLINE int sp_256_div_4(const sp_digit* a, const sp_digit* d, sp_digit
     r1 = sp_256_cmp_4(&t1[4], d) >= 0;
     sp_256_cond_sub_4(&t1[4], &t1[4], d, (sp_digit)0 - r1);
     for (i = 3; i >= 0; i--) {
-        sp_digit mask = 0 - (t1[4 + i] == div);
+        volatile sp_digit mask = (sp_digit)0 - (t1[4 + i] == div);
         sp_digit hi = t1[4 + i] + mask;
         r1 = div_256_word_4(hi, t1[4 + i - 1], div);
         r1 |= mask;
@@ -66122,7 +66122,7 @@ static WC_INLINE int sp_384_div_6(const sp_digit* a, const sp_digit* d, sp_digit
     r1 = sp_384_cmp_6(&t1[6], d) >= 0;
     sp_384_cond_sub_6(&t1[6], &t1[6], d, (sp_digit)0 - r1);
     for (i = 5; i >= 0; i--) {
-        sp_digit mask = 0 - (t1[6 + i] == div);
+        volatile sp_digit mask = (sp_digit)0 - (t1[6 + i] == div);
         sp_digit hi = t1[6 + i] + mask;
         r1 = div_384_word_6(hi, t1[6 + i - 1], div);
         r1 |= mask;
@@ -114358,7 +114358,7 @@ static WC_INLINE int sp_1024_div_16(const sp_digit* a, const sp_digit* d, sp_dig
     r1 = sp_1024_cmp_16(&t1[16], d) >= 0;
     sp_1024_cond_sub_16(&t1[16], &t1[16], d, (sp_digit)0 - r1);
     for (i = 15; i >= 0; i--) {
-        sp_digit mask = 0 - (t1[16 + i] == div);
+        volatile sp_digit mask = (sp_digit)0 - (t1[16 + i] == div);
         sp_digit hi = t1[16 + i] + mask;
         r1 = div_1024_word_16(hi, t1[16 + i - 1], div);
         r1 |= mask;
