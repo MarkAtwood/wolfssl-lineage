@@ -93010,6 +93010,7 @@ int sp_ecc_uncompress_521(mp_int* xm, int odd, mp_int* ym)
 }
 #endif
 #endif /* WOLFSSL_SP_521 */
+#ifdef WOLFCRYPT_HAVE_SAKKE
 #ifdef WOLFSSL_SP_1024
 
 /* Point structure to use. */
@@ -105544,6 +105545,7 @@ int sp_ecc_check_key_1024(const mp_int* pX, const mp_int* pY,
 }
 #endif
 #endif /* WOLFSSL_SP_1024 */
+#endif /* WOLFCRYPT_HAVE_SAKKE */
 #endif /* WOLFSSL_HAVE_SP_ECC */
 #endif /* WOLFSSL_SP_X86_64_ASM */
 #endif /* WOLFSSL_HAVE_SP_RSA | WOLFSSL_HAVE_SP_DH | WOLFSSL_HAVE_SP_ECC */
