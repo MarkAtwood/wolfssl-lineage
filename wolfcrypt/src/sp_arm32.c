@@ -231,8 +231,12 @@ static void sp_2048_to_bin_64(sp_digit* r, byte* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_2048_mul_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_2048_mul_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #32\n\t"
         "mov	r10, #0\n\t"
@@ -2680,8 +2684,12 @@ static void sp_2048_mul_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_add_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_add_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
@@ -2711,8 +2719,11 @@ static sp_digit sp_2048_add_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer and result.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_sub_in_place_16(sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_sub_in_place_16(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r2, r3, r4, r5}\n\t"
         "ldm	%[b]!, {r6, r7, r8, r9}\n\t"
@@ -2756,8 +2767,12 @@ static sp_digit sp_2048_sub_in_place_16(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_add_16(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_add_16(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
@@ -2866,8 +2881,11 @@ SP_NOINLINE static void sp_2048_mul_16(sp_digit* r, const sp_digit* a,
  * a  A single precision integer and result.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_sub_in_place_32(sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_sub_in_place_32(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r2, r3, r4, r5}\n\t"
         "ldm	%[b]!, {r6, r7, r8, r9}\n\t"
@@ -2939,8 +2957,12 @@ static sp_digit sp_2048_sub_in_place_32(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
@@ -3081,8 +3103,11 @@ SP_NOINLINE static void sp_2048_mul_32(sp_digit* r, const sp_digit* a,
  * a  A single precision integer and result.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_sub_in_place_64(sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_sub_in_place_64(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r2, r3, r4, r5}\n\t"
         "ldm	%[b]!, {r6, r7, r8, r9}\n\t"
@@ -3210,8 +3235,12 @@ static sp_digit sp_2048_sub_in_place_64(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_add_64(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_add_64(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
@@ -3408,8 +3437,11 @@ SP_NOINLINE static void sp_2048_mul_64(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_2048_sqr_8(sp_digit* r, const sp_digit* a)
+static void sp_2048_sqr_8(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #32\n\t"
         /* A[0] * A[0] */
@@ -4906,8 +4938,12 @@ static void sp_2048_sqr_8(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_sub_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
         "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
@@ -4973,8 +5009,12 @@ SP_NOINLINE static void sp_2048_sqr_16(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_sub_16(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_sub_16(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
         "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
@@ -5054,8 +5094,12 @@ SP_NOINLINE static void sp_2048_sqr_32(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_sub_32(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
         "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
@@ -5165,8 +5209,12 @@ SP_NOINLINE static void sp_2048_sqr_64(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_add_64(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_add_64(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r3, #0\n\t"
         "add	r12, %[a], #0x100\n\t"
@@ -5199,8 +5247,11 @@ static sp_digit sp_2048_add_64(sp_digit* r, const sp_digit* a, const sp_digit* b
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_sub_in_place_64(sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_sub_in_place_64(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         "mov	r12, #0\n\t"
@@ -5234,8 +5285,12 @@ static sp_digit sp_2048_sub_in_place_64(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_2048_mul_64(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_2048_mul_64(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x200\n\t"
         "mov	r5, #0\n\t"
@@ -5320,8 +5375,11 @@ static void sp_2048_mul_64(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_2048_sqr_64(sp_digit* r, const sp_digit* a)
+static void sp_2048_sqr_64(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x200\n\t"
         "mov	r12, #0\n\t"
@@ -5478,8 +5536,12 @@ static void sp_2048_mask_32(sp_digit* r, const sp_digit* a, sp_digit m)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r3, #0\n\t"
         "add	r12, %[a], #0x80\n\t"
@@ -5512,8 +5574,11 @@ static sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a, const sp_digit* b
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_sub_in_place_32(sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_sub_in_place_32(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         "mov	r12, #0\n\t"
@@ -5547,8 +5612,12 @@ static sp_digit sp_2048_sub_in_place_32(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_2048_mul_32(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_2048_mul_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x100\n\t"
         "mov	r5, #0\n\t"
@@ -5633,8 +5702,11 @@ static void sp_2048_mul_32(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_2048_sqr_32(sp_digit* r, const sp_digit* a)
+static void sp_2048_sqr_32(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x100\n\t"
         "mov	r12, #0\n\t"
@@ -5795,8 +5867,12 @@ static void sp_2048_mont_setup(const sp_digit* a, sp_digit* rho)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_2048_mul_d_64(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_2048_mul_d_64(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -5890,8 +5966,12 @@ static void sp_2048_mul_d_64(sp_digit* r, const sp_digit* a, sp_digit b)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_2048_mul_d_64(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_2048_mul_d_64(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -8468,8 +8548,13 @@ static void sp_2048_mont_norm_32(sp_digit* r, const sp_digit* m)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_2048_cond_sub_32(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_2048_cond_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r6, #0\n\t"
         "mov	r12, #0\n\t"
@@ -8503,8 +8588,13 @@ static sp_digit sp_2048_cond_sub_32(sp_digit* r, const sp_digit* a, const sp_dig
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_2048_cond_sub_32(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_2048_cond_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	lr, #0\n\t"
         "ldm	%[a]!, {r4, r5}\n\t"
@@ -8634,8 +8724,12 @@ static sp_digit sp_2048_cond_sub_32(sp_digit* r, const sp_digit* a, const sp_dig
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-static SP_NOINLINE void sp_2048_mont_reduce_32(sp_digit* a, const sp_digit* m, sp_digit mp)
+static SP_NOINLINE void sp_2048_mont_reduce_32(sp_digit* a_p, const sp_digit* m_p, sp_digit mp_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* m asm ("r1") = m_p;
+    register sp_digit mp asm ("r2") = mp_p;
+
     __asm__ __volatile__ (
 #if !(defined(WOLFSSL_SP_ARM_ARCH) && (WOLFSSL_SP_ARM_ARCH < 4))
         "ldr	r11, [%[m]]\n\t"
@@ -9833,8 +9927,12 @@ SP_NOINLINE static void sp_2048_mont_sqr_32(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_2048_mul_d_32(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_2048_mul_d_32(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -9928,8 +10026,12 @@ static void sp_2048_mul_d_32(sp_digit* r, const sp_digit* a, sp_digit b)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_2048_mul_d_32(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_2048_mul_d_32(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -11212,8 +11314,12 @@ static void sp_2048_mul_d_32(sp_digit* r, const sp_digit* a, sp_digit b)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_2048_word_32(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_2048_word_32(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	r6, %[div], #16\n\t"
         "add	lr, r6, #1\n\t"
@@ -11267,8 +11373,12 @@ static sp_digit div_2048_word_32(sp_digit d1, sp_digit d0, sp_digit div)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_2048_word_32(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_2048_word_32(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	lr, %[div], #1\n\t"
         "add	lr, lr, #1\n\t"
@@ -11399,8 +11509,11 @@ static sp_digit div_2048_word_32(sp_digit d1, sp_digit d0, sp_digit div)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-static sp_int32 sp_2048_cmp_32(const sp_digit* a, const sp_digit* b)
+static sp_int32 sp_2048_cmp_32(const sp_digit* a_p, const sp_digit* b_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r2, #-1\n\t"
         "mov	r6, #1\n\t"
@@ -12192,8 +12305,13 @@ static void sp_2048_mont_norm_64(sp_digit* r, const sp_digit* m)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_2048_cond_sub_64(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_2048_cond_sub_64(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r6, #0\n\t"
         "mov	r12, #0\n\t"
@@ -12227,8 +12345,13 @@ static sp_digit sp_2048_cond_sub_64(sp_digit* r, const sp_digit* a, const sp_dig
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_2048_cond_sub_64(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_2048_cond_sub_64(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	lr, #0\n\t"
         "ldm	%[a]!, {r4, r5}\n\t"
@@ -12470,8 +12593,12 @@ static sp_digit sp_2048_cond_sub_64(sp_digit* r, const sp_digit* a, const sp_dig
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-static SP_NOINLINE void sp_2048_mont_reduce_64(sp_digit* a, const sp_digit* m, sp_digit mp)
+static SP_NOINLINE void sp_2048_mont_reduce_64(sp_digit* a_p, const sp_digit* m_p, sp_digit mp_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* m asm ("r1") = m_p;
+    register sp_digit mp asm ("r2") = mp_p;
+
     __asm__ __volatile__ (
 #if !(defined(WOLFSSL_SP_ARM_ARCH) && (WOLFSSL_SP_ARM_ARCH < 4))
         "ldr	r11, [%[m]]\n\t"
@@ -14789,8 +14916,12 @@ SP_NOINLINE static void sp_2048_mont_sqr_64(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_sub_64(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_sub_64(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "add	lr, %[a], #0x100\n\t"
@@ -14822,8 +14953,12 @@ static sp_digit sp_2048_sub_64(sp_digit* r, const sp_digit* a, const sp_digit* b
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_2048_sub_64(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_2048_sub_64(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
         "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
@@ -14956,8 +15091,12 @@ static sp_digit sp_2048_sub_64(sp_digit* r, const sp_digit* a, const sp_digit* b
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_2048_word_64(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_2048_word_64(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	r6, %[div], #16\n\t"
         "add	lr, r6, #1\n\t"
@@ -15011,8 +15150,12 @@ static sp_digit div_2048_word_64(sp_digit d1, sp_digit d0, sp_digit div)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_2048_word_64(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_2048_word_64(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	lr, %[div], #1\n\t"
         "add	lr, lr, #1\n\t"
@@ -15246,8 +15389,11 @@ static void sp_2048_mask_64(sp_digit* r, const sp_digit* a, sp_digit m)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-static sp_int32 sp_2048_cmp_64(const sp_digit* a, const sp_digit* b)
+static sp_int32 sp_2048_cmp_64(const sp_digit* a_p, const sp_digit* b_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r2, #-1\n\t"
         "mov	r6, #1\n\t"
@@ -16514,8 +16660,13 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-static sp_digit sp_2048_cond_add_32(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_2048_cond_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	lr, #0\n\t"
         "mov	r6, #0\n\t"
@@ -16549,8 +16700,13 @@ static sp_digit sp_2048_cond_add_32(sp_digit* r, const sp_digit* a, const sp_dig
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-static sp_digit sp_2048_cond_add_32(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_2048_cond_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r8, #0\n\t"
         "ldm	%[a]!, {r4, r5}\n\t"
@@ -16988,8 +17144,12 @@ int sp_ModExp_2048(const mp_int* base, const mp_int* exp, const mp_int* mod,
 #ifdef WOLFSSL_HAVE_SP_DH
 
 #ifdef HAVE_FFDHE_2048
-static void sp_2048_lshift_64(sp_digit* r, const sp_digit* a, byte n)
+static void sp_2048_lshift_64(sp_digit* r_p, const sp_digit* a_p, byte n_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register byte n asm ("r2") = n_p;
+
     __asm__ __volatile__ (
         "rsb	r12, %[n], #31\n\t"
         "ldr	r5, [%[a], #252]\n\t"
@@ -17798,8 +17958,12 @@ static void sp_3072_to_bin_96(sp_digit* r, byte* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_3072_mul_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_3072_mul_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #48\n\t"
         "mov	r10, #0\n\t"
@@ -23293,8 +23457,12 @@ static void sp_3072_mul_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_add_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_add_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
@@ -23331,8 +23499,11 @@ static sp_digit sp_3072_add_12(sp_digit* r, const sp_digit* a, const sp_digit* b
  * a  A single precision integer and result.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_sub_in_place_24(sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_sub_in_place_24(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r2, r3, r4, r5}\n\t"
         "ldm	%[b]!, {r6, r7, r8, r9}\n\t"
@@ -23390,8 +23561,12 @@ static sp_digit sp_3072_sub_in_place_24(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_add_24(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_add_24(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
@@ -23518,8 +23693,11 @@ SP_NOINLINE static void sp_3072_mul_24(sp_digit* r, const sp_digit* a,
  * a  A single precision integer and result.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_sub_in_place_48(sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_sub_in_place_48(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r2, r3, r4, r5}\n\t"
         "ldm	%[b]!, {r6, r7, r8, r9}\n\t"
@@ -23619,8 +23797,12 @@ static sp_digit sp_3072_sub_in_place_48(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_add_48(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
@@ -23789,8 +23971,11 @@ SP_NOINLINE static void sp_3072_mul_48(sp_digit* r, const sp_digit* a,
  * a  A single precision integer and result.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_sub_in_place_96(sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_sub_in_place_96(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r2, r3, r4, r5}\n\t"
         "ldm	%[b]!, {r6, r7, r8, r9}\n\t"
@@ -23974,8 +24159,12 @@ static sp_digit sp_3072_sub_in_place_96(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_add_96(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_add_96(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
@@ -24228,8 +24417,11 @@ SP_NOINLINE static void sp_3072_mul_96(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_3072_sqr_12(sp_digit* r, const sp_digit* a)
+static void sp_3072_sqr_12(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #48\n\t"
         /* A[0] * A[0] */
@@ -27288,8 +27480,12 @@ static void sp_3072_sqr_12(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_sub_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_sub_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
         "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
@@ -27362,8 +27558,12 @@ SP_NOINLINE static void sp_3072_sqr_24(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_sub_24(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_sub_24(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
         "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
@@ -27457,8 +27657,12 @@ SP_NOINLINE static void sp_3072_sqr_48(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_sub_48(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_sub_48(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
         "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
@@ -27596,8 +27800,12 @@ SP_NOINLINE static void sp_3072_sqr_96(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_add_96(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_add_96(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r3, #0\n\t"
         "add	r12, %[a], #0x180\n\t"
@@ -27630,8 +27838,11 @@ static sp_digit sp_3072_add_96(sp_digit* r, const sp_digit* a, const sp_digit* b
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_sub_in_place_96(sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_sub_in_place_96(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         "mov	r12, #0\n\t"
@@ -27665,8 +27876,12 @@ static sp_digit sp_3072_sub_in_place_96(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_3072_mul_96(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_3072_mul_96(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x300\n\t"
         "mov	r5, #0\n\t"
@@ -27751,8 +27966,11 @@ static void sp_3072_mul_96(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_3072_sqr_96(sp_digit* r, const sp_digit* a)
+static void sp_3072_sqr_96(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x300\n\t"
         "mov	r12, #0\n\t"
@@ -27909,8 +28127,12 @@ static void sp_3072_mask_48(sp_digit* r, const sp_digit* a, sp_digit m)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_add_48(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r3, #0\n\t"
         "add	r12, %[a], #0xc0\n\t"
@@ -27943,8 +28165,11 @@ static sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a, const sp_digit* b
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_sub_in_place_48(sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_sub_in_place_48(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         "mov	r12, #0\n\t"
@@ -27978,8 +28203,12 @@ static sp_digit sp_3072_sub_in_place_48(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_3072_mul_48(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_3072_mul_48(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x180\n\t"
         "mov	r5, #0\n\t"
@@ -28064,8 +28293,11 @@ static void sp_3072_mul_48(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_3072_sqr_48(sp_digit* r, const sp_digit* a)
+static void sp_3072_sqr_48(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x180\n\t"
         "mov	r12, #0\n\t"
@@ -28226,8 +28458,12 @@ static void sp_3072_mont_setup(const sp_digit* a, sp_digit* rho)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_3072_mul_d_96(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_3072_mul_d_96(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -28321,8 +28557,12 @@ static void sp_3072_mul_d_96(sp_digit* r, const sp_digit* a, sp_digit b)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_3072_mul_d_96(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_3072_mul_d_96(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -32179,8 +32419,13 @@ static void sp_3072_mont_norm_48(sp_digit* r, const sp_digit* m)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_3072_cond_sub_48(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_3072_cond_sub_48(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r6, #0\n\t"
         "mov	r12, #0\n\t"
@@ -32214,8 +32459,13 @@ static sp_digit sp_3072_cond_sub_48(sp_digit* r, const sp_digit* a, const sp_dig
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_3072_cond_sub_48(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_3072_cond_sub_48(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	lr, #0\n\t"
         "ldm	%[a]!, {r4, r5}\n\t"
@@ -32401,8 +32651,12 @@ static sp_digit sp_3072_cond_sub_48(sp_digit* r, const sp_digit* a, const sp_dig
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-static SP_NOINLINE void sp_3072_mont_reduce_48(sp_digit* a, const sp_digit* m, sp_digit mp)
+static SP_NOINLINE void sp_3072_mont_reduce_48(sp_digit* a_p, const sp_digit* m_p, sp_digit mp_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* m asm ("r1") = m_p;
+    register sp_digit mp asm ("r2") = mp_p;
+
     __asm__ __volatile__ (
 #if !(defined(WOLFSSL_SP_ARM_ARCH) && (WOLFSSL_SP_ARM_ARCH < 4))
         "ldr	r11, [%[m]]\n\t"
@@ -34160,8 +34414,12 @@ SP_NOINLINE static void sp_3072_mont_sqr_48(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_3072_mul_d_48(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_3072_mul_d_48(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -34255,8 +34513,12 @@ static void sp_3072_mul_d_48(sp_digit* r, const sp_digit* a, sp_digit b)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_3072_mul_d_48(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_3072_mul_d_48(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -36179,8 +36441,12 @@ static void sp_3072_mul_d_48(sp_digit* r, const sp_digit* a, sp_digit b)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_3072_word_48(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_3072_word_48(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	r6, %[div], #16\n\t"
         "add	lr, r6, #1\n\t"
@@ -36234,8 +36500,12 @@ static sp_digit div_3072_word_48(sp_digit d1, sp_digit d0, sp_digit div)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_3072_word_48(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_3072_word_48(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	lr, %[div], #1\n\t"
         "add	lr, lr, #1\n\t"
@@ -36366,8 +36636,11 @@ static sp_digit div_3072_word_48(sp_digit d1, sp_digit d0, sp_digit div)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-static sp_int32 sp_3072_cmp_48(const sp_digit* a, const sp_digit* b)
+static sp_int32 sp_3072_cmp_48(const sp_digit* a_p, const sp_digit* b_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r2, #-1\n\t"
         "mov	r6, #1\n\t"
@@ -37335,8 +37608,13 @@ static void sp_3072_mont_norm_96(sp_digit* r, const sp_digit* m)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_3072_cond_sub_96(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_3072_cond_sub_96(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r6, #0\n\t"
         "mov	r12, #0\n\t"
@@ -37370,8 +37648,13 @@ static sp_digit sp_3072_cond_sub_96(sp_digit* r, const sp_digit* a, const sp_dig
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_3072_cond_sub_96(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_3072_cond_sub_96(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	lr, #0\n\t"
         "ldm	%[a]!, {r4, r5}\n\t"
@@ -37725,8 +38008,12 @@ static sp_digit sp_3072_cond_sub_96(sp_digit* r, const sp_digit* a, const sp_dig
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-static SP_NOINLINE void sp_3072_mont_reduce_96(sp_digit* a, const sp_digit* m, sp_digit mp)
+static SP_NOINLINE void sp_3072_mont_reduce_96(sp_digit* a_p, const sp_digit* m_p, sp_digit mp_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* m asm ("r1") = m_p;
+    register sp_digit mp asm ("r2") = mp_p;
+
     __asm__ __volatile__ (
 #if !(defined(WOLFSSL_SP_ARM_ARCH) && (WOLFSSL_SP_ARM_ARCH < 4))
         "ldr	r11, [%[m]]\n\t"
@@ -41164,8 +41451,12 @@ SP_NOINLINE static void sp_3072_mont_sqr_96(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_sub_96(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_sub_96(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "add	lr, %[a], #0x180\n\t"
@@ -41197,8 +41488,12 @@ static sp_digit sp_3072_sub_96(sp_digit* r, const sp_digit* a, const sp_digit* b
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_3072_sub_96(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_3072_sub_96(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
         "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
@@ -41387,8 +41682,12 @@ static sp_digit sp_3072_sub_96(sp_digit* r, const sp_digit* a, const sp_digit* b
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_3072_word_96(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_3072_word_96(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	r6, %[div], #16\n\t"
         "add	lr, r6, #1\n\t"
@@ -41442,8 +41741,12 @@ static sp_digit div_3072_word_96(sp_digit d1, sp_digit d0, sp_digit div)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_3072_word_96(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_3072_word_96(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	lr, %[div], #1\n\t"
         "add	lr, lr, #1\n\t"
@@ -41677,8 +41980,11 @@ static void sp_3072_mask_96(sp_digit* r, const sp_digit* a, sp_digit m)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-static sp_int32 sp_3072_cmp_96(const sp_digit* a, const sp_digit* b)
+static sp_int32 sp_3072_cmp_96(const sp_digit* a_p, const sp_digit* b_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r2, #-1\n\t"
         "mov	r6, #1\n\t"
@@ -43303,8 +43609,13 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-static sp_digit sp_3072_cond_add_48(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_3072_cond_add_48(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	lr, #0\n\t"
         "mov	r6, #0\n\t"
@@ -43338,8 +43649,13 @@ static sp_digit sp_3072_cond_add_48(sp_digit* r, const sp_digit* a, const sp_dig
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-static sp_digit sp_3072_cond_add_48(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_3072_cond_add_48(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r8, #0\n\t"
         "ldm	%[a]!, {r4, r5}\n\t"
@@ -43833,8 +44149,12 @@ int sp_ModExp_3072(const mp_int* base, const mp_int* exp, const mp_int* mod,
 #ifdef WOLFSSL_HAVE_SP_DH
 
 #ifdef HAVE_FFDHE_3072
-static void sp_3072_lshift_96(sp_digit* r, const sp_digit* a, byte n)
+static void sp_3072_lshift_96(sp_digit* r_p, const sp_digit* a_p, byte n_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register byte n asm ("r2") = n_p;
+
     __asm__ __volatile__ (
         "rsb	r12, %[n], #31\n\t"
         "ldr	r5, [%[a], #380]\n\t"
@@ -44834,8 +45154,11 @@ static void sp_4096_to_bin_128(sp_digit* r, byte* a)
  * a  A single precision integer and result.
  * b  A single precision integer.
  */
-static sp_digit sp_4096_sub_in_place_128(sp_digit* a, const sp_digit* b)
+static sp_digit sp_4096_sub_in_place_128(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r2, r3, r4, r5}\n\t"
         "ldm	%[b]!, {r6, r7, r8, r9}\n\t"
@@ -45075,8 +45398,12 @@ static sp_digit sp_4096_sub_in_place_128(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_4096_add_128(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_4096_add_128(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
@@ -45394,8 +45721,12 @@ SP_NOINLINE static void sp_4096_sqr_128(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_4096_add_128(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_4096_add_128(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r3, #0\n\t"
         "add	r12, %[a], #0x200\n\t"
@@ -45428,8 +45759,11 @@ static sp_digit sp_4096_add_128(sp_digit* r, const sp_digit* a, const sp_digit* 
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_4096_sub_in_place_128(sp_digit* a, const sp_digit* b)
+static sp_digit sp_4096_sub_in_place_128(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         "mov	r12, #0\n\t"
@@ -45463,8 +45797,12 @@ static sp_digit sp_4096_sub_in_place_128(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_4096_mul_128(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_4096_mul_128(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x400\n\t"
         "mov	r5, #0\n\t"
@@ -45549,8 +45887,11 @@ static void sp_4096_mul_128(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_4096_sqr_128(sp_digit* r, const sp_digit* a)
+static void sp_4096_sqr_128(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x400\n\t"
         "mov	r12, #0\n\t"
@@ -45709,8 +46050,12 @@ static void sp_4096_mont_setup(const sp_digit* a, sp_digit* rho)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_4096_mul_d_128(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_4096_mul_d_128(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -45804,8 +46149,12 @@ static void sp_4096_mul_d_128(sp_digit* r, const sp_digit* a, sp_digit b)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_4096_mul_d_128(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_4096_mul_d_128(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -50943,8 +51292,13 @@ static void sp_4096_mont_norm_128(sp_digit* r, const sp_digit* m)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_4096_cond_sub_128(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_4096_cond_sub_128(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r6, #0\n\t"
         "mov	r12, #0\n\t"
@@ -50978,8 +51332,13 @@ static sp_digit sp_4096_cond_sub_128(sp_digit* r, const sp_digit* a, const sp_di
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_4096_cond_sub_128(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_4096_cond_sub_128(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	lr, #0\n\t"
         "ldm	%[a]!, {r4, r5}\n\t"
@@ -51445,8 +51804,12 @@ static sp_digit sp_4096_cond_sub_128(sp_digit* r, const sp_digit* a, const sp_di
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-static SP_NOINLINE void sp_4096_mont_reduce_128(sp_digit* a, const sp_digit* m, sp_digit mp)
+static SP_NOINLINE void sp_4096_mont_reduce_128(sp_digit* a_p, const sp_digit* m_p, sp_digit mp_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* m asm ("r1") = m_p;
+    register sp_digit mp asm ("r2") = mp_p;
+
     __asm__ __volatile__ (
 #if !(defined(WOLFSSL_SP_ARM_ARCH) && (WOLFSSL_SP_ARM_ARCH < 4))
         "ldr	r11, [%[m]]\n\t"
@@ -56004,8 +56367,12 @@ SP_NOINLINE static void sp_4096_mont_sqr_128(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_4096_sub_128(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_4096_sub_128(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "add	lr, %[a], #0x200\n\t"
@@ -56037,8 +56404,12 @@ static sp_digit sp_4096_sub_128(sp_digit* r, const sp_digit* a, const sp_digit* 
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_4096_sub_128(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_4096_sub_128(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
         "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
@@ -56283,8 +56654,12 @@ static sp_digit sp_4096_sub_128(sp_digit* r, const sp_digit* a, const sp_digit* 
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_4096_word_128(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_4096_word_128(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	r6, %[div], #16\n\t"
         "add	lr, r6, #1\n\t"
@@ -56338,8 +56713,12 @@ static sp_digit div_4096_word_128(sp_digit d1, sp_digit d0, sp_digit div)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_4096_word_128(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_4096_word_128(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	lr, %[div], #1\n\t"
         "add	lr, lr, #1\n\t"
@@ -56573,8 +56952,11 @@ static void sp_4096_mask_128(sp_digit* r, const sp_digit* a, sp_digit m)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-static sp_int32 sp_4096_cmp_128(const sp_digit* a, const sp_digit* b)
+static sp_int32 sp_4096_cmp_128(const sp_digit* a_p, const sp_digit* b_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r2, #-1\n\t"
         "mov	r6, #1\n\t"
@@ -58551,8 +58933,13 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-static sp_digit sp_4096_cond_add_64(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_4096_cond_add_64(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	lr, #0\n\t"
         "mov	r6, #0\n\t"
@@ -58586,8 +58973,13 @@ static sp_digit sp_4096_cond_add_64(sp_digit* r, const sp_digit* a, const sp_dig
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-static sp_digit sp_4096_cond_add_64(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_4096_cond_add_64(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r8, #0\n\t"
         "ldm	%[a]!, {r4, r5}\n\t"
@@ -59137,8 +59529,12 @@ int sp_ModExp_4096(const mp_int* base, const mp_int* exp, const mp_int* mod,
 #ifdef WOLFSSL_HAVE_SP_DH
 
 #ifdef HAVE_FFDHE_4096
-static void sp_4096_lshift_128(sp_digit* r, const sp_digit* a, byte n)
+static void sp_4096_lshift_128(sp_digit* r_p, const sp_digit* a_p, byte n_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register byte n asm ("r2") = n_p;
+
     __asm__ __volatile__ (
         "rsb	r12, %[n], #31\n\t"
         "ldr	r5, [%[a], #508]\n\t"
@@ -60204,8 +60600,12 @@ static const sp_digit p256_b[8] = {
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_256_mul_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_256_mul_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x40\n\t"
         "mov	r5, #0\n\t"
@@ -60292,8 +60692,12 @@ static void sp_256_mul_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_256_mul_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_256_mul_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #32\n\t"
         "mov	r10, #0\n\t"
@@ -62742,8 +63146,11 @@ static void sp_256_mul_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_256_sqr_8(sp_digit* r, const sp_digit* a)
+static void sp_256_sqr_8(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x40\n\t"
         "mov	r12, #0\n\t"
@@ -62880,8 +63287,11 @@ static void sp_256_sqr_8(sp_digit* r, const sp_digit* a)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_256_sqr_8(sp_digit* r, const sp_digit* a)
+static void sp_256_sqr_8(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #32\n\t"
         /* A[0] * A[0] */
@@ -64380,8 +64790,12 @@ static void sp_256_sqr_8(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_256_add_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_256_add_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r3, #0\n\t"
         "add	r12, %[a], #32\n\t"
@@ -64414,8 +64828,12 @@ static sp_digit sp_256_add_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_256_add_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_256_add_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
@@ -64448,8 +64866,12 @@ static sp_digit sp_256_add_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_256_sub_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_256_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "add	lr, %[a], #32\n\t"
@@ -64481,8 +64903,12 @@ static sp_digit sp_256_sub_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_256_sub_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_256_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
         "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
@@ -64513,8 +64939,11 @@ static sp_digit sp_256_sub_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  The number to convert.
  * m  The modulus (prime).
  */
-static int sp_256_mod_mul_norm_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
+static int sp_256_mod_mul_norm_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #24\n\t"
         "ldm	%[a], {r2, r3, r4, r5, r6, r7, r8, r9}\n\t"
@@ -64711,7 +65140,7 @@ static int sp_256_mod_mul_norm_8(sp_digit* r, const sp_digit* a, const sp_digit*
         :
         : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr", "r10"
     );
-    (void)m;
+    (void)m_p;
     return (uint32_t)(size_t)r;
 }
 
@@ -64919,8 +65348,12 @@ static int sp_256_point_to_ecc_point_8(const sp_point_256* p, ecc_point* pm)
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static SP_NOINLINE void sp_256_mont_mul_8(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m, sp_digit mp)
+static SP_NOINLINE void sp_256_mont_mul_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, const sp_digit* m_p, sp_digit mp_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x44\n\t"
         "mov	r5, #0\n\t"
@@ -67489,9 +67922,9 @@ static SP_NOINLINE void sp_256_mont_mul_8(sp_digit* r, const sp_digit* a, const 
         :
         : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r12"
     );
-    (void)mp;
-    (void)m;
-    (void)mp;
+    (void)mp_p;
+    (void)m_p;
+    (void)mp_p;
 }
 
 /* Square the Montgomery form number mod the modulus (prime). (r = a * a mod m)
@@ -67501,8 +67934,11 @@ static SP_NOINLINE void sp_256_mont_mul_8(sp_digit* r, const sp_digit* a, const 
  * m   Modulus (prime).
  * mp  Montgomery mulitplier.
  */
-static SP_NOINLINE void sp_256_mont_sqr_8(sp_digit* r, const sp_digit* a, const sp_digit* m, sp_digit mp)
+static SP_NOINLINE void sp_256_mont_sqr_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* m_p, sp_digit mp_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x44\n\t"
         "mov	r5, #0\n\t"
@@ -68928,8 +69364,8 @@ static SP_NOINLINE void sp_256_mont_sqr_8(sp_digit* r, const sp_digit* a, const 
         :
         : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r12", "r8", "r9", "r10", "lr"
     );
-    (void)m;
-    (void)mp;
+    (void)m_p;
+    (void)mp_p;
 }
 
 #if !defined(WOLFSSL_SP_SMALL) || defined(HAVE_COMP_KEY)
@@ -69035,8 +69471,11 @@ static void sp_256_mont_inv_8(sp_digit* r, const sp_digit* a, sp_digit* td)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-static sp_int32 sp_256_cmp_8(const sp_digit* a, const sp_digit* b)
+static sp_int32 sp_256_cmp_8(const sp_digit* a_p, const sp_digit* b_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r2, #-1\n\t"
         "mov	r6, #1\n\t"
@@ -69174,8 +69613,13 @@ static sp_int32 sp_256_cmp_8(const sp_digit* a, const sp_digit* b)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_256_cond_sub_8(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_256_cond_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r6, #0\n\t"
         "mov	r12, #0\n\t"
@@ -69209,8 +69653,13 @@ static sp_digit sp_256_cond_sub_8(sp_digit* r, const sp_digit* a, const sp_digit
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_256_cond_sub_8(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_256_cond_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	lr, #0\n\t"
         "ldm	%[a]!, {r4, r5}\n\t"
@@ -69259,8 +69708,12 @@ static sp_digit sp_256_cond_sub_8(sp_digit* r, const sp_digit* a, const sp_digit
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a, const sp_digit* m, sp_digit mp)
+static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a_p, const sp_digit* m_p, sp_digit mp_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* m asm ("r1") = m_p;
+    register sp_digit mp asm ("r2") = mp_p;
+
     __asm__ __volatile__ (
 #if !(defined(WOLFSSL_SP_ARM_ARCH) && (WOLFSSL_SP_ARM_ARCH < 4))
         "ldr	r11, [%[m]]\n\t"
@@ -69588,8 +70041,10 @@ static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a, const sp_digit* m, sp_
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a, const sp_digit* m, sp_digit mp)
+static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a_p, const sp_digit* m_p, sp_digit mp_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+
     __asm__ __volatile__ (
         "mov	r1, #0\n\t"
         /* # i = 0 */
@@ -69681,8 +70136,8 @@ static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a, const sp_digit* m, sp_
         :
         : "memory", "r1", "r2", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
     );
-    (void)m;
-    (void)mp;
+    (void)m_p;
+    (void)mp_p;
 }
 
 /* Reduce the number back to 256 bits using Montgomery reduction.
@@ -69691,8 +70146,12 @@ static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a, const sp_digit* m, sp_
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-static SP_NOINLINE void sp_256_mont_reduce_order_8(sp_digit* a, const sp_digit* m, sp_digit mp)
+static SP_NOINLINE void sp_256_mont_reduce_order_8(sp_digit* a_p, const sp_digit* m_p, sp_digit mp_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* m asm ("r1") = m_p;
+    register sp_digit mp asm ("r2") = mp_p;
+
     __asm__ __volatile__ (
 #if !(defined(WOLFSSL_SP_ARM_ARCH) && (WOLFSSL_SP_ARM_ARCH < 4))
         "ldr	r11, [%[m]]\n\t"
@@ -70062,8 +70521,12 @@ static void sp_256_map_8(sp_point_256* r, const sp_point_256* p,
  * b   Second number to add in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_256_mont_add_8(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m)
+static void sp_256_mont_add_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r8, r9, r10, r11}\n\t"
@@ -70092,10 +70555,11 @@ static void sp_256_mont_add_8(sp_digit* r, const sp_digit* a, const sp_digit* b,
         "sbcs	r10, r10, r12\n\t"
         "sbc	r11, r11, r3\n\t"
         "stm	%[r], {r4, r5, r6, r7, r8, r9, r10, r11}\n\t"
-        : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
+        : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
         : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
     );
+    (void)m_p;
 }
 
 /* Double a Montgomery form number (r = a + a % m).
@@ -70104,8 +70568,11 @@ static void sp_256_mont_add_8(sp_digit* r, const sp_digit* a, const sp_digit* b,
  * a   Number to double in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_256_mont_dbl_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
+static void sp_256_mont_dbl_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "mov	r3, #0\n\t"
         "ldm	%[a], {r4, r5, r6, r7, r8, r9, r10, r11}\n\t"
@@ -70129,10 +70596,11 @@ static void sp_256_mont_dbl_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
         "sbcs	r10, r10, r3\n\t"
         "sbc	r11, r11, r2\n\t"
         "stm	%[r], {r4, r5, r6, r7, r8, r9, r10, r11}\n\t"
-        : [r] "+r" (r), [a] "+r" (a), [m] "+r" (m)
+        : [r] "+r" (r), [a] "+r" (a)
         :
         : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r2", "r3"
     );
+    (void)m_p;
 }
 
 /* Triple a Montgomery form number (r = a + a + a % m).
@@ -70141,8 +70609,11 @@ static void sp_256_mont_dbl_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
  * a   Number to triple in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_256_mont_tpl_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
+static void sp_256_mont_tpl_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "mov	r3, #0\n\t"
         "ldm	%[a], {r4, r5, r6, r7, r8, r9, r10, r11}\n\t"
@@ -70204,10 +70675,11 @@ static void sp_256_mont_tpl_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
         "sbcs	r10, r10, r3\n\t"
         "sbc	r11, r11, r2\n\t"
         "stm	%[r], {r4, r5, r6, r7, r8, r9, r10, r11}\n\t"
-        : [r] "+r" (r), [a] "+r" (a), [m] "+r" (m)
+        : [r] "+r" (r), [a] "+r" (a)
         :
         : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r2", "r3"
     );
+    (void)m_p;
 }
 
 /* Subtract two Montgomery form numbers (r = a - b % m).
@@ -70217,8 +70689,12 @@ static void sp_256_mont_tpl_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
  * b   Number to subtract with in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_256_mont_sub_8(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m)
+static void sp_256_mont_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r8, r9, r10, r11}\n\t"
@@ -70247,10 +70723,11 @@ static void sp_256_mont_sub_8(sp_digit* r, const sp_digit* a, const sp_digit* b,
         "adcs	r10, r10, r12\n\t"
         "adc	r11, r11, r3\n\t"
         "stm	%[r], {r4, r5, r6, r7, r8, r9, r10, r11}\n\t"
-        : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
+        : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
         : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
     );
+    (void)m_p;
 }
 
 #define sp_256_mont_sub_lower_8 sp_256_mont_sub_8
@@ -70260,8 +70737,12 @@ static void sp_256_mont_sub_8(sp_digit* r, const sp_digit* a, const sp_digit* b,
  * a  Number to divide.
  * m  Modulus (prime).
  */
-static void sp_256_div2_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
+static void sp_256_div2_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* m asm ("r2") = m_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         "ldm	%[a], {r4, r5, r6, r7}\n\t"
@@ -73809,8 +74290,10 @@ int sp_ecc_mulmod_base_add_256(const mp_int* km, const ecc_point* am,
  *
  * a  A single precision integer.
  */
-static void sp_256_add_one_8(sp_digit* a)
+static void sp_256_add_one_8(sp_digit* a_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r1, r2, r3, r4}\n\t"
         "adds	r1, r1, #1\n\t"
@@ -74205,8 +74688,11 @@ int sp_ecc_secret_gen_256_nb(sp_ecc_ctx_t* sp_ctx, const mp_int* priv,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_256_sub_in_place_8(sp_digit* a, const sp_digit* b)
+static sp_digit sp_256_sub_in_place_8(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         "mov	r12, #0\n\t"
@@ -74238,8 +74724,11 @@ static sp_digit sp_256_sub_in_place_8(sp_digit* a, const sp_digit* b)
  * a  A single precision integer and result.
  * b  A single precision integer.
  */
-static sp_digit sp_256_sub_in_place_8(sp_digit* a, const sp_digit* b)
+static sp_digit sp_256_sub_in_place_8(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r2, r3, r4, r5}\n\t"
         "ldm	%[b]!, {r6, r7, r8, r9}\n\t"
@@ -74271,8 +74760,12 @@ static sp_digit sp_256_sub_in_place_8(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_256_mul_d_8(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_256_mul_d_8(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -74366,8 +74859,12 @@ static void sp_256_mul_d_8(sp_digit* r, const sp_digit* a, sp_digit b)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_256_mul_d_8(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_256_mul_d_8(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -74690,8 +75187,12 @@ static void sp_256_mul_d_8(sp_digit* r, const sp_digit* a, sp_digit b)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_256_word_8(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_256_word_8(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	r6, %[div], #16\n\t"
         "add	lr, r6, #1\n\t"
@@ -74745,8 +75246,12 @@ static sp_digit div_256_word_8(sp_digit d1, sp_digit d0, sp_digit div)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_256_word_8(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_256_word_8(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	lr, %[div], #1\n\t"
         "add	lr, lr, #1\n\t"
@@ -75507,8 +76012,11 @@ int sp_ecc_sign_256_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
 #endif /* HAVE_ECC_SIGN */
 
 #ifndef WOLFSSL_SP_SMALL
-static void sp_256_rshift1_8(sp_digit* r, const sp_digit* a)
+static void sp_256_rshift1_8(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "mov	r11, #0\n\t"
         "mov	r12, #0\n\t"
@@ -75589,8 +76097,12 @@ static void sp_256_rshift1_8(sp_digit* r, const sp_digit* a)
  * a  Number to divide.
  * m  Modulus.
  */
-static void sp_256_div2_mod_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
+static void sp_256_div2_mod_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* m asm ("r2") = m_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldr	r4, [%[a]], #4\n\t"
@@ -75701,8 +76213,10 @@ static const unsigned char L_sp_256_num_bits_8_table[] = {
     0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 
 };
 
-static int sp_256_num_bits_8(const sp_digit* a)
+static int sp_256_num_bits_8(const sp_digit* a_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+
     __asm__ __volatile__ (
         "mov	lr, %[L_sp_256_num_bits_8_table]\n\t"
         "ldr	r1, [%[a], #28]\n\t"
@@ -76021,8 +76535,10 @@ static int sp_256_num_bits_8(const sp_digit* a)
 }
 
 #else
-static int sp_256_num_bits_8(const sp_digit* a)
+static int sp_256_num_bits_8(const sp_digit* a_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+
     __asm__ __volatile__ (
         "ldr	r1, [%[a], #28]\n\t"
         "cmp	r1, #0\n\t"
@@ -77198,8 +77714,12 @@ static const sp_digit p384_b[12] = {
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_384_mul_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_384_mul_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x60\n\t"
         "mov	r5, #0\n\t"
@@ -77286,8 +77806,12 @@ static void sp_384_mul_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_384_mul_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_384_mul_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #48\n\t"
         "mov	r10, #0\n\t"
@@ -82782,8 +83306,11 @@ static void sp_384_mul_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_384_sqr_12(sp_digit* r, const sp_digit* a)
+static void sp_384_sqr_12(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x60\n\t"
         "mov	r12, #0\n\t"
@@ -82920,8 +83447,11 @@ static void sp_384_sqr_12(sp_digit* r, const sp_digit* a)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_384_sqr_12(sp_digit* r, const sp_digit* a)
+static void sp_384_sqr_12(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #48\n\t"
         /* A[0] * A[0] */
@@ -85982,8 +86512,12 @@ static void sp_384_sqr_12(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_384_add_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_384_add_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r3, #0\n\t"
         "add	r12, %[a], #48\n\t"
@@ -86016,8 +86550,12 @@ static sp_digit sp_384_add_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_384_add_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_384_add_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
@@ -86057,8 +86595,12 @@ static sp_digit sp_384_add_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_384_sub_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_384_sub_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "add	lr, %[a], #48\n\t"
@@ -86090,8 +86632,12 @@ static sp_digit sp_384_sub_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_384_sub_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_384_sub_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
         "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
@@ -86429,8 +86975,13 @@ static int sp_384_point_to_ecc_point_12(const sp_point_384* p, ecc_point* pm)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_384_cond_sub_12(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_384_cond_sub_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r6, #0\n\t"
         "mov	r12, #0\n\t"
@@ -86464,8 +87015,13 @@ static sp_digit sp_384_cond_sub_12(sp_digit* r, const sp_digit* a, const sp_digi
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_384_cond_sub_12(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_384_cond_sub_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	lr, #0\n\t"
         "ldm	%[a]!, {r4, r5}\n\t"
@@ -86527,8 +87083,12 @@ static sp_digit sp_384_cond_sub_12(sp_digit* r, const sp_digit* a, const sp_digi
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-static SP_NOINLINE void sp_384_mont_reduce_12(sp_digit* a, const sp_digit* m, sp_digit mp)
+static SP_NOINLINE void sp_384_mont_reduce_12(sp_digit* a_p, const sp_digit* m_p, sp_digit mp_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* m asm ("r1") = m_p;
+    register sp_digit mp asm ("r2") = mp_p;
+
     __asm__ __volatile__ (
 #if !(defined(WOLFSSL_SP_ARM_ARCH) && (WOLFSSL_SP_ARM_ARCH < 4))
         "ldr	r11, [%[m]]\n\t"
@@ -87138,8 +87698,11 @@ static void sp_384_mont_inv_12(sp_digit* r, const sp_digit* a, sp_digit* td)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-static sp_int32 sp_384_cmp_12(const sp_digit* a, const sp_digit* b)
+static sp_int32 sp_384_cmp_12(const sp_digit* a_p, const sp_digit* b_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r2, #-1\n\t"
         "mov	r6, #1\n\t"
@@ -87360,8 +87923,13 @@ static void sp_384_map_12(sp_point_384* r, const sp_point_384* p,
  * b   Second number to add in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_384_mont_add_12(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m)
+static void sp_384_mont_add_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register const sp_digit* m asm ("r3") = m_p;
+
     sp_digit o;
 
     o = sp_384_add_12(r, a, b);
@@ -87374,8 +87942,12 @@ static void sp_384_mont_add_12(sp_digit* r, const sp_digit* a, const sp_digit* b
  * a   Number to double in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_384_mont_dbl_12(sp_digit* r, const sp_digit* a, const sp_digit* m)
+static void sp_384_mont_dbl_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* m asm ("r2") = m_p;
+
     sp_digit o;
 
     o = sp_384_add_12(r, a, a);
@@ -87388,8 +87960,12 @@ static void sp_384_mont_dbl_12(sp_digit* r, const sp_digit* a, const sp_digit* m
  * a   Number to triple in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_384_mont_tpl_12(sp_digit* r, const sp_digit* a, const sp_digit* m)
+static void sp_384_mont_tpl_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* m asm ("r2") = m_p;
+
     sp_digit o;
 
     o = sp_384_add_12(r, a, a);
@@ -87407,8 +87983,13 @@ static void sp_384_mont_tpl_12(sp_digit* r, const sp_digit* a, const sp_digit* m
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-static sp_digit sp_384_cond_add_12(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_384_cond_add_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	lr, #0\n\t"
         "mov	r6, #0\n\t"
@@ -87442,8 +88023,13 @@ static sp_digit sp_384_cond_add_12(sp_digit* r, const sp_digit* a, const sp_digi
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-static sp_digit sp_384_cond_add_12(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_384_cond_add_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r8, #0\n\t"
         "ldm	%[a]!, {r4, r5}\n\t"
@@ -87504,8 +88090,13 @@ static sp_digit sp_384_cond_add_12(sp_digit* r, const sp_digit* a, const sp_digi
  * b   Number to subtract with in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_384_mont_sub_12(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m)
+static void sp_384_mont_sub_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register const sp_digit* m asm ("r3") = m_p;
+
     sp_digit o;
 
     o = sp_384_sub_12(r, a, b);
@@ -87516,8 +88107,11 @@ static void sp_384_mont_sub_12(sp_digit* r, const sp_digit* a, const sp_digit* b
 #ifdef WOLFSSL_SP_SMALL
 #else
 #endif /* WOLFSSL_SP_SMALL */
-static void sp_384_rshift1_12(sp_digit* r, const sp_digit* a)
+static void sp_384_rshift1_12(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r2, r3}\n\t"
         "lsr	r2, r2, #1\n\t"
@@ -91126,8 +91720,10 @@ int sp_ecc_mulmod_base_add_384(const mp_int* km, const ecc_point* am,
  *
  * a  A single precision integer.
  */
-static void sp_384_add_one_12(sp_digit* a)
+static void sp_384_add_one_12(sp_digit* a_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r1, r2, r3, r4}\n\t"
         "adds	r1, r1, #1\n\t"
@@ -91528,8 +92124,11 @@ int sp_ecc_secret_gen_384_nb(sp_ecc_ctx_t* sp_ctx, const mp_int* priv,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_384_sub_in_place_12(sp_digit* a, const sp_digit* b)
+static sp_digit sp_384_sub_in_place_12(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         "mov	r12, #0\n\t"
@@ -91561,8 +92160,11 @@ static sp_digit sp_384_sub_in_place_12(sp_digit* a, const sp_digit* b)
  * a  A single precision integer and result.
  * b  A single precision integer.
  */
-static sp_digit sp_384_sub_in_place_12(sp_digit* a, const sp_digit* b)
+static sp_digit sp_384_sub_in_place_12(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r2, r3, r4, r5}\n\t"
         "ldm	%[b]!, {r6, r7, r8, r9}\n\t"
@@ -91601,8 +92203,12 @@ static sp_digit sp_384_sub_in_place_12(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_384_mul_d_12(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_384_mul_d_12(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -91696,8 +92302,12 @@ static void sp_384_mul_d_12(sp_digit* r, const sp_digit* a, sp_digit b)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_384_mul_d_12(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_384_mul_d_12(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -92180,8 +92790,12 @@ static void sp_384_mul_d_12(sp_digit* r, const sp_digit* a, sp_digit b)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_384_word_12(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_384_word_12(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	r6, %[div], #16\n\t"
         "add	lr, r6, #1\n\t"
@@ -92235,8 +92849,12 @@ static sp_digit div_384_word_12(sp_digit d1, sp_digit d0, sp_digit div)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_384_word_12(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_384_word_12(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	lr, %[div], #1\n\t"
         "add	lr, lr, #1\n\t"
@@ -92978,8 +93596,12 @@ int sp_ecc_sign_384_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
  * a  Number to divide.
  * m  Modulus.
  */
-static void sp_384_div2_mod_12(sp_digit* r, const sp_digit* a, const sp_digit* m)
+static void sp_384_div2_mod_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* m asm ("r2") = m_p;
+
     __asm__ __volatile__ (
         "ldr	r4, [%[a]], #4\n\t"
         "ands	r3, r4, #1\n\t"
@@ -93113,8 +93735,10 @@ static const unsigned char L_sp_384_num_bits_12_table[] = {
     0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 
 };
 
-static int sp_384_num_bits_12(const sp_digit* a)
+static int sp_384_num_bits_12(const sp_digit* a_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+
     __asm__ __volatile__ (
         "mov	lr, %[L_sp_384_num_bits_12_table]\n\t"
         "ldr	r1, [%[a], #44]\n\t"
@@ -93685,8 +94309,10 @@ static int sp_384_num_bits_12(const sp_digit* a)
 }
 
 #else
-static int sp_384_num_bits_12(const sp_digit* a)
+static int sp_384_num_bits_12(const sp_digit* a_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+
     __asm__ __volatile__ (
         "ldr	r1, [%[a], #44]\n\t"
         "cmp	r1, #0\n\t"
@@ -94968,8 +95594,12 @@ static const sp_digit p521_b[17] = {
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_521_mul_17(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_521_mul_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x88\n\t"
         "mov	r5, #0\n\t"
@@ -95059,8 +95689,12 @@ static void sp_521_mul_17(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_521_mul_17(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_521_mul_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x44\n\t"
         "mov	r10, #0\n\t"
@@ -106074,8 +106708,11 @@ static void sp_521_mul_17(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_521_sqr_17(sp_digit* r, const sp_digit* a)
+static void sp_521_sqr_17(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x88\n\t"
         "mov	r12, #0\n\t"
@@ -106215,8 +106852,11 @@ static void sp_521_sqr_17(sp_digit* r, const sp_digit* a)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_521_sqr_17(sp_digit* r, const sp_digit* a)
+static void sp_521_sqr_17(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x44\n\t"
         /* A[0] * A[0] */
@@ -112086,8 +112726,12 @@ static void sp_521_sqr_17(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_521_add_17(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_521_add_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r3, #0\n\t"
         "add	r12, %[a], #0x40\n\t"
@@ -112126,8 +112770,12 @@ static sp_digit sp_521_add_17(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_521_add_17(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_521_add_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
@@ -112178,8 +112826,12 @@ static sp_digit sp_521_add_17(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_521_sub_17(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_521_sub_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "add	lr, %[a], #0x40\n\t"
@@ -112216,8 +112868,12 @@ static sp_digit sp_521_sub_17(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_521_sub_17(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_521_sub_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
         "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
@@ -112482,8 +113138,13 @@ static int sp_521_point_to_ecc_point_17(const sp_point_521* p, ecc_point* pm)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_521_cond_sub_17(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_521_cond_sub_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r6, #0\n\t"
         "mov	r12, #0\n\t"
@@ -112517,8 +113178,13 @@ static sp_digit sp_521_cond_sub_17(sp_digit* r, const sp_digit* a, const sp_digi
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_521_cond_sub_17(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_521_cond_sub_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	lr, #0\n\t"
         "ldm	%[a]!, {r4, r5}\n\t"
@@ -112597,8 +113263,10 @@ static sp_digit sp_521_cond_sub_17(sp_digit* r, const sp_digit* a, const sp_digi
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-static SP_NOINLINE void sp_521_mont_reduce_17(sp_digit* a, const sp_digit* m, sp_digit mp)
+static SP_NOINLINE void sp_521_mont_reduce_17(sp_digit* a_p, const sp_digit* m_p, sp_digit mp_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x44\n\t"
         "mov	r12, sp\n\t"
@@ -112713,8 +113381,8 @@ static SP_NOINLINE void sp_521_mont_reduce_17(sp_digit* a, const sp_digit* m, sp
         :
         : "memory", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr"
     );
-    (void)m;
-    (void)mp;
+    (void)m_p;
+    (void)mp_p;
 }
 
 /* Reduce the number back to 521 bits using Montgomery reduction.
@@ -112723,8 +113391,12 @@ static SP_NOINLINE void sp_521_mont_reduce_17(sp_digit* a, const sp_digit* m, sp
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-static SP_NOINLINE void sp_521_mont_reduce_order_17(sp_digit* a, const sp_digit* m, sp_digit mp)
+static SP_NOINLINE void sp_521_mont_reduce_order_17(sp_digit* a_p, const sp_digit* m_p, sp_digit mp_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* m asm ("r1") = m_p;
+    register sp_digit mp asm ("r2") = mp_p;
+
     __asm__ __volatile__ (
 #if !(defined(WOLFSSL_SP_ARM_ARCH) && (WOLFSSL_SP_ARM_ARCH < 4))
         "ldr	r11, [%[m]]\n\t"
@@ -113589,8 +114261,11 @@ static void sp_521_mont_inv_17(sp_digit* r, const sp_digit* a, sp_digit* td)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-static sp_int32 sp_521_cmp_17(const sp_digit* a, const sp_digit* b)
+static sp_int32 sp_521_cmp_17(const sp_digit* a_p, const sp_digit* b_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r2, #-1\n\t"
         "mov	r6, #1\n\t"
@@ -113866,8 +114541,12 @@ static void sp_521_map_17(sp_point_521* r, const sp_point_521* p,
  * b   Second number to add in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_521_mont_add_17(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m)
+static void sp_521_mont_add_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r3, #0\n\t"
         "ldm	%[a]!, {r8, r9, r10, r11}\n\t"
@@ -113935,10 +114614,11 @@ static void sp_521_mont_add_17(sp_digit* r, const sp_digit* a, const sp_digit* b
         "ldm	%[r], {r4}\n\t"
         "adcs	r4, r4, #0\n\t"
         "stm	%[r]!, {r4}\n\t"
-        : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
+        : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
         : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
     );
+    (void)m_p;
 }
 
 /* Double a Montgomery form number (r = a + a % m).
@@ -113947,8 +114627,11 @@ static void sp_521_mont_add_17(sp_digit* r, const sp_digit* a, const sp_digit* b
  * a   Number to double in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_521_mont_dbl_17(sp_digit* r, const sp_digit* a, const sp_digit* m)
+static void sp_521_mont_dbl_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "mov	r2, #0\n\t"
         "ldm	%[a]!, {r4, r5, r6, r7, r8, r9, r10, r11}\n\t"
@@ -114007,10 +114690,11 @@ static void sp_521_mont_dbl_17(sp_digit* r, const sp_digit* a, const sp_digit* m
         "ldm	%[r], {r4}\n\t"
         "adcs	r4, r4, #0\n\t"
         "stm	%[r]!, {r4}\n\t"
-        : [r] "+r" (r), [a] "+r" (a), [m] "+r" (m)
+        : [r] "+r" (r), [a] "+r" (a)
         :
         : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r2", "r3"
     );
+    (void)m_p;
 }
 
 /* Triple a Montgomery form number (r = a + a + a % m).
@@ -114019,8 +114703,11 @@ static void sp_521_mont_dbl_17(sp_digit* r, const sp_digit* a, const sp_digit* m
  * a   Number to triple in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_521_mont_tpl_17(sp_digit* r, const sp_digit* a, const sp_digit* m)
+static void sp_521_mont_tpl_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "mov	r2, #0\n\t"
         "ldm	%[a]!, {r4, r5, r6, r7, r8, r9, r10, r11}\n\t"
@@ -114099,10 +114786,11 @@ static void sp_521_mont_tpl_17(sp_digit* r, const sp_digit* a, const sp_digit* m
         "ldm	%[r], {r4}\n\t"
         "adcs	r4, r4, #0\n\t"
         "stm	%[r]!, {r4}\n\t"
-        : [r] "+r" (r), [a] "+r" (a), [m] "+r" (m)
+        : [r] "+r" (r), [a] "+r" (a)
         :
         : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r2", "r3"
     );
+    (void)m_p;
 }
 
 /* Subtract two Montgomery form numbers (r = a - b % m).
@@ -114112,8 +114800,12 @@ static void sp_521_mont_tpl_17(sp_digit* r, const sp_digit* a, const sp_digit* m
  * b   Number to subtract with in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_521_mont_sub_17(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m)
+static void sp_521_mont_sub_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r3, #0\n\t"
         "ldm	%[a]!, {r8, r9, r10, r11}\n\t"
@@ -114182,15 +114874,19 @@ static void sp_521_mont_sub_17(sp_digit* r, const sp_digit* a, const sp_digit* b
         "ldm	%[r], {r4}\n\t"
         "sbcs	r4, r4, #0\n\t"
         "stm	%[r]!, {r4}\n\t"
-        : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
+        : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
         : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
     );
+    (void)m_p;
 }
 
 #define sp_521_mont_sub_lower_17 sp_521_mont_sub_17
-static void sp_521_rshift1_17(sp_digit* r, const sp_digit* a)
+static void sp_521_rshift1_17(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r2, r3}\n\t"
         "lsr	r2, r2, #1\n\t"
@@ -118441,8 +119137,10 @@ int sp_ecc_mulmod_base_add_521(const mp_int* km, const ecc_point* am,
  *
  * a  A single precision integer.
  */
-static void sp_521_add_one_17(sp_digit* a)
+static void sp_521_add_one_17(sp_digit* a_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r1, r2, r3, r4}\n\t"
         "adds	r1, r1, #1\n\t"
@@ -118845,8 +119543,12 @@ int sp_ecc_secret_gen_521_nb(sp_ecc_ctx_t* sp_ctx, const mp_int* priv,
 #endif /* HAVE_ECC_DHE */
 
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
-static void sp_521_rshift_17(sp_digit* r, const sp_digit* a, byte n)
+static void sp_521_rshift_17(sp_digit* r_p, const sp_digit* a_p, byte n_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register byte n asm ("r2") = n_p;
+
     __asm__ __volatile__ (
         "rsb	r12, %[n], #32\n\t"
 #if defined(WOLFSSL_SP_ARM_ARCH) && (WOLFSSL_SP_ARM_ARCH < 7)
@@ -118950,8 +119652,12 @@ static void sp_521_rshift_17(sp_digit* r, const sp_digit* a, byte n)
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 #endif
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
-static void sp_521_lshift_17(sp_digit* r, const sp_digit* a, byte n)
+static void sp_521_lshift_17(sp_digit* r_p, const sp_digit* a_p, byte n_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register byte n asm ("r2") = n_p;
+
     __asm__ __volatile__ (
         "rsb	r12, %[n], #31\n\t"
         "ldr	r5, [%[a], #64]\n\t"
@@ -119062,8 +119768,12 @@ static void sp_521_lshift_17(sp_digit* r, const sp_digit* a, byte n)
     );
 }
 
-static void sp_521_lshift_34(sp_digit* r, const sp_digit* a, byte n)
+static void sp_521_lshift_34(sp_digit* r_p, const sp_digit* a_p, byte n_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register byte n asm ("r2") = n_p;
+
     __asm__ __volatile__ (
         "rsb	r12, %[n], #31\n\t"
         "ldr	r5, [%[a], #132]\n\t"
@@ -119282,8 +119992,11 @@ static void sp_521_lshift_34(sp_digit* r, const sp_digit* a, byte n)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_521_sub_in_place_17(sp_digit* a, const sp_digit* b)
+static sp_digit sp_521_sub_in_place_17(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         "mov	r12, #0\n\t"
@@ -119320,8 +120033,11 @@ static sp_digit sp_521_sub_in_place_17(sp_digit* a, const sp_digit* b)
  * a  A single precision integer and result.
  * b  A single precision integer.
  */
-static sp_digit sp_521_sub_in_place_17(sp_digit* a, const sp_digit* b)
+static sp_digit sp_521_sub_in_place_17(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r2, r3, r4, r5}\n\t"
         "ldm	%[b]!, {r6, r7, r8, r9}\n\t"
@@ -119371,8 +120087,12 @@ static sp_digit sp_521_sub_in_place_17(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_521_mul_d_17(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_521_mul_d_17(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -119466,8 +120186,12 @@ static void sp_521_mul_d_17(sp_digit* r, const sp_digit* a, sp_digit b)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_521_mul_d_17(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_521_mul_d_17(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -120150,8 +120874,12 @@ static void sp_521_mul_d_17(sp_digit* r, const sp_digit* a, sp_digit b)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_521_word_17(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_521_word_17(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	r6, %[div], #16\n\t"
         "add	lr, r6, #1\n\t"
@@ -120205,8 +120933,12 @@ static sp_digit div_521_word_17(sp_digit d1, sp_digit d0, sp_digit div)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_521_word_17(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_521_word_17(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	lr, %[div], #1\n\t"
         "add	lr, lr, #1\n\t"
@@ -120977,8 +121709,12 @@ int sp_ecc_sign_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
  * a  Number to divide.
  * m  Modulus.
  */
-static void sp_521_div2_mod_17(sp_digit* r, const sp_digit* a, const sp_digit* m)
+static void sp_521_div2_mod_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* m asm ("r2") = m_p;
+
     __asm__ __volatile__ (
         "ldr	r4, [%[a]], #4\n\t"
         "ands	r3, r4, #1\n\t"
@@ -121147,8 +121883,10 @@ static const unsigned char L_sp_521_num_bits_17_table[] = {
     0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 
 };
 
-static int sp_521_num_bits_17(const sp_digit* a)
+static int sp_521_num_bits_17(const sp_digit* a_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+
     __asm__ __volatile__ (
         "mov	lr, %[L_sp_521_num_bits_17_table]\n\t"
         "ldr	r1, [%[a], #64]\n\t"
@@ -122034,8 +122772,10 @@ static int sp_521_num_bits_17(const sp_digit* a)
 }
 
 #else
-static int sp_521_num_bits_17(const sp_digit* a)
+static int sp_521_num_bits_17(const sp_digit* a_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+
     __asm__ __volatile__ (
         "ldr	r1, [%[a], #64]\n\t"
         "cmp	r1, #0\n\t"
@@ -123275,8 +124015,12 @@ typedef struct sp_point_1024 {
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_1024_mul_16(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_1024_mul_16(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x40\n\t"
         "mov	r10, #0\n\t"
@@ -133031,8 +133775,11 @@ static void sp_1024_mul_16(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_1024_sqr_16(sp_digit* r, const sp_digit* a)
+static void sp_1024_sqr_16(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x40\n\t"
         /* A[0] * A[0] */
@@ -138261,8 +139008,12 @@ static void sp_1024_sqr_16(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_1024_add_16(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_1024_add_16(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
@@ -138306,8 +139057,11 @@ static sp_digit sp_1024_add_16(sp_digit* r, const sp_digit* a, const sp_digit* b
  * a  A single precision integer and result.
  * b  A single precision integer.
  */
-static sp_digit sp_1024_sub_in_place_32(sp_digit* a, const sp_digit* b)
+static sp_digit sp_1024_sub_in_place_32(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r2, r3, r4, r5}\n\t"
         "ldm	%[b]!, {r6, r7, r8, r9}\n\t"
@@ -138379,8 +139133,12 @@ static sp_digit sp_1024_sub_in_place_32(sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_1024_add_32(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_1024_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
@@ -138522,8 +139280,12 @@ SP_NOINLINE static void sp_1024_mul_32(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_1024_sub_16(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_1024_sub_16(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
         "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
@@ -138604,8 +139366,12 @@ SP_NOINLINE static void sp_1024_sqr_32(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_1024_mul_32(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static void sp_1024_mul_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x100\n\t"
         "mov	r5, #0\n\t"
@@ -138690,8 +139456,11 @@ static void sp_1024_mul_32(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_1024_sqr_32(sp_digit* r, const sp_digit* a)
+static void sp_1024_sqr_32(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x100\n\t"
         "mov	r12, #0\n\t"
@@ -138914,8 +139683,11 @@ static const sp_point_1024 p1024_base = {
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_1024_sub_in_place_32(sp_digit* a, const sp_digit* b)
+static sp_digit sp_1024_sub_in_place_32(sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         "mov	r12, #0\n\t"
@@ -138951,8 +139723,13 @@ static sp_digit sp_1024_sub_in_place_32(sp_digit* a, const sp_digit* b)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_1024_cond_sub_32(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_1024_cond_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r6, #0\n\t"
         "mov	r12, #0\n\t"
@@ -138986,8 +139763,13 @@ static sp_digit sp_1024_cond_sub_32(sp_digit* r, const sp_digit* a, const sp_dig
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-static sp_digit sp_1024_cond_sub_32(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_1024_cond_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	lr, #0\n\t"
         "ldm	%[a]!, {r4, r5}\n\t"
@@ -139118,8 +139900,12 @@ static sp_digit sp_1024_cond_sub_32(sp_digit* r, const sp_digit* a, const sp_dig
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_1024_add_32(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_1024_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r3, #0\n\t"
         "add	r12, %[a], #0x80\n\t"
@@ -139153,8 +139939,12 @@ static sp_digit sp_1024_add_32(sp_digit* r, const sp_digit* a, const sp_digit* b
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_1024_mul_d_32(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_1024_mul_d_32(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -139248,8 +140038,12 @@ static void sp_1024_mul_d_32(sp_digit* r, const sp_digit* a, sp_digit b)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-static void sp_1024_mul_d_32(sp_digit* r, const sp_digit* a, sp_digit b)
+static void sp_1024_mul_d_32(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register sp_digit b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r10, #0\n\t"
         /* A[0] * B */
@@ -140532,8 +141326,12 @@ static void sp_1024_mul_d_32(sp_digit* r, const sp_digit* a, sp_digit b)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_1024_word_32(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_1024_word_32(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	r6, %[div], #16\n\t"
         "add	lr, r6, #1\n\t"
@@ -140587,8 +141385,12 @@ static sp_digit div_1024_word_32(sp_digit d1, sp_digit d0, sp_digit div)
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-static sp_digit div_1024_word_32(sp_digit d1, sp_digit d0, sp_digit div)
+static sp_digit div_1024_word_32(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
 {
+    register sp_digit d1 asm ("r0") = d1_p;
+    register sp_digit d0 asm ("r1") = d0_p;
+    register sp_digit div asm ("r2") = div_p;
+
     __asm__ __volatile__ (
         "lsr	lr, %[div], #1\n\t"
         "add	lr, lr, #1\n\t"
@@ -140749,8 +141551,11 @@ static void sp_1024_mask_32(sp_digit* r, const sp_digit* a, sp_digit m)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-static sp_int32 sp_1024_cmp_32(const sp_digit* a, const sp_digit* b)
+static sp_int32 sp_1024_cmp_32(const sp_digit* a_p, const sp_digit* b_p)
 {
+    register const sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* b asm ("r1") = b_p;
+
     __asm__ __volatile__ (
         "mov	r2, #-1\n\t"
         "mov	r6, #1\n\t"
@@ -141468,8 +142273,12 @@ static int sp_1024_point_to_ecc_point_32(const sp_point_1024* p, ecc_point* pm)
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-static SP_NOINLINE void sp_1024_mont_reduce_32(sp_digit* a, const sp_digit* m, sp_digit mp)
+static SP_NOINLINE void sp_1024_mont_reduce_32(sp_digit* a_p, const sp_digit* m_p, sp_digit mp_p)
 {
+    register sp_digit* a asm ("r0") = a_p;
+    register const sp_digit* m asm ("r1") = m_p;
+    register sp_digit mp asm ("r2") = mp_p;
+
     __asm__ __volatile__ (
 #if !(defined(WOLFSSL_SP_ARM_ARCH) && (WOLFSSL_SP_ARM_ARCH < 4))
         "ldr	r11, [%[m]]\n\t"
@@ -142777,8 +143586,13 @@ static void sp_1024_map_32(sp_point_1024* r, const sp_point_1024* p,
  * b   Second number to add in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_1024_mont_add_32(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m)
+static void sp_1024_mont_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register const sp_digit* m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r4, r5, r6, r7}\n\t"
@@ -142944,8 +143758,12 @@ static void sp_1024_mont_add_32(sp_digit* r, const sp_digit* a, const sp_digit* 
  * a   Number to double in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_1024_mont_dbl_32(sp_digit* r, const sp_digit* a, const sp_digit* m)
+static void sp_1024_mont_dbl_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* m asm ("r2") = m_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r4, r5, r6, r7, r8, r9, r10, r11}\n\t"
@@ -143095,8 +143913,12 @@ static void sp_1024_mont_dbl_32(sp_digit* r, const sp_digit* a, const sp_digit* 
  * a   Number to triple in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_1024_mont_tpl_32(sp_digit* r, const sp_digit* a, const sp_digit* m)
+static void sp_1024_mont_tpl_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* m asm ("r2") = m_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "ldm	%[a]!, {r4, r5, r6, r7, r8, r9, r10, r11}\n\t"
@@ -143402,8 +144224,13 @@ static void sp_1024_mont_tpl_32(sp_digit* r, const sp_digit* a, const sp_digit* 
  * b   Number to subtract with in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_1024_mont_sub_32(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m)
+static void sp_1024_mont_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, const sp_digit* m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register const sp_digit* m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r4, r5, r6, r7}\n\t"
         "ldm	%[b]!, {r8, r9, r10, r11}\n\t"
@@ -143567,8 +144394,13 @@ static void sp_1024_mont_sub_32(sp_digit* r, const sp_digit* a, const sp_digit* 
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-static sp_digit sp_1024_cond_add_32(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_1024_cond_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	lr, #0\n\t"
         "mov	r6, #0\n\t"
@@ -143602,8 +144434,13 @@ static sp_digit sp_1024_cond_add_32(sp_digit* r, const sp_digit* a, const sp_dig
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-static sp_digit sp_1024_cond_add_32(sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
+static sp_digit sp_1024_cond_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p, sp_digit m_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+    register sp_digit m asm ("r3") = m_p;
+
     __asm__ __volatile__ (
         "mov	r8, #0\n\t"
         "ldm	%[a]!, {r4, r5}\n\t"
@@ -143727,8 +144564,11 @@ static sp_digit sp_1024_cond_add_32(sp_digit* r, const sp_digit* a, const sp_dig
 }
 
 #endif /* WOLFSSL_SP_SMALL */
-static void sp_1024_rshift1_32(sp_digit* r, const sp_digit* a)
+static void sp_1024_rshift1_32(sp_digit* r_p, const sp_digit* a_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+
     __asm__ __volatile__ (
         "ldm	%[a], {r2, r3}\n\t"
         "lsr	r2, r2, #1\n\t"
@@ -144080,8 +144920,12 @@ static void sp_1024_proj_point_dbl_32(sp_point_1024* r, const sp_point_1024* p,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_1024_sub_32(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_1024_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "mov	r12, #0\n\t"
         "add	lr, %[a], #0x80\n\t"
@@ -144113,8 +144957,12 @@ static sp_digit sp_1024_sub_32(sp_digit* r, const sp_digit* a, const sp_digit* b
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static sp_digit sp_1024_sub_32(sp_digit* r, const sp_digit* a, const sp_digit* b)
+static sp_digit sp_1024_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p)
 {
+    register sp_digit* r asm ("r0") = r_p;
+    register const sp_digit* a asm ("r1") = a_p;
+    register const sp_digit* b asm ("r2") = b_p;
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
         "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
