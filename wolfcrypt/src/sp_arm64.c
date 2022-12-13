@@ -75,7 +75,7 @@
 static void sp_2048_from_bin(sp_digit* r, int size, const byte* a, int n)
 {
     sp_int64 nl = n;
-    sp_int64 size8 = size * 8;
+    sp_int64 bytes = size * 8;
 
     __asm__ __volatile__ (
         "add	x4, %[a], %[n]\n\t"
@@ -88,7 +88,9 @@ static void sp_2048_from_bin(sp_digit* r, int size, const byte* a, int n)
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "rev	x8, x8\n\t"
+    #endif
         "str	x8, [x5], 8\n\t"
         "add	x7, x7, 8\n\t"
         "b.ge	1b\n\t"
@@ -96,7 +98,11 @@ static void sp_2048_from_bin(sp_digit* r, int size, const byte* a, int n)
         "cmp	x6, -7\n\t"
         "b.lt	20f\n\t"
         /* Put in less than 8 bytes. */
+    #ifdef LITTLE_ENDIAN_ORDER
         "str	xzr, [x5]\n\t"
+    #else
+        "str	xzr, [x5], 7\n\t"
+    #endif
         "add	x7, x7, 8\n\t"
         "add	x4, x4, 7\n\t"
         "b.eq	17f\n\t"
@@ -109,25 +115,53 @@ static void sp_2048_from_bin(sp_digit* r, int size, const byte* a, int n)
         "cmp	x6, -2\n\t"
         "b.eq	12f\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "12:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "13:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "14:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "15:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "16:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "17:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "20:\n\t"
         "add	x5, %[r], x7\n\t"
         "subs	x7, %[size], x7\n\t"
@@ -139,7 +173,7 @@ static void sp_2048_from_bin(sp_digit* r, int size, const byte* a, int n)
         "b.gt	21b\n\t"
         "30:\n\t"
         :
-        : [r] "r" (r), [size] "r" (size8), [a] "r" (a), [n] "r" (nl)
+        : [r] "r" (r), [size] "r" (bytes), [a] "r" (a), [n] "r" (nl)
         : "memory", "x4", "x5", "x6", "x7", "x8"
     );
 }
@@ -246,7 +280,9 @@ static void sp_2048_to_bin_32(sp_digit* r, byte* a)
     for (i = 31; i >= 0; i--, j += 8) {
         __asm__ __volatile__ (
             "ldr	x4, [%[r]]\n\t"
+        #ifdef LITTLE_ENDIAN_ORDER
             "rev	x4, x4\n\t"
+        #endif
             "str	x4, [%[a]]\n\t"
             :
             : [r] "r" (r + i), [a] "r" (a + j)
@@ -6932,7 +6968,7 @@ int sp_ModExp_1024(const mp_int* base, const mp_int* exp, const mp_int* mod,
 static void sp_3072_from_bin(sp_digit* r, int size, const byte* a, int n)
 {
     sp_int64 nl = n;
-    sp_int64 size8 = size * 8;
+    sp_int64 bytes = size * 8;
 
     __asm__ __volatile__ (
         "add	x4, %[a], %[n]\n\t"
@@ -6945,7 +6981,9 @@ static void sp_3072_from_bin(sp_digit* r, int size, const byte* a, int n)
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "rev	x8, x8\n\t"
+    #endif
         "str	x8, [x5], 8\n\t"
         "add	x7, x7, 8\n\t"
         "b.ge	1b\n\t"
@@ -6953,7 +6991,11 @@ static void sp_3072_from_bin(sp_digit* r, int size, const byte* a, int n)
         "cmp	x6, -7\n\t"
         "b.lt	20f\n\t"
         /* Put in less than 8 bytes. */
+    #ifdef LITTLE_ENDIAN_ORDER
         "str	xzr, [x5]\n\t"
+    #else
+        "str	xzr, [x5], 7\n\t"
+    #endif
         "add	x7, x7, 8\n\t"
         "add	x4, x4, 7\n\t"
         "b.eq	17f\n\t"
@@ -6966,25 +7008,53 @@ static void sp_3072_from_bin(sp_digit* r, int size, const byte* a, int n)
         "cmp	x6, -2\n\t"
         "b.eq	12f\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "12:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "13:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "14:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "15:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "16:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "17:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "20:\n\t"
         "add	x5, %[r], x7\n\t"
         "subs	x7, %[size], x7\n\t"
@@ -6996,7 +7066,7 @@ static void sp_3072_from_bin(sp_digit* r, int size, const byte* a, int n)
         "b.gt	21b\n\t"
         "30:\n\t"
         :
-        : [r] "r" (r), [size] "r" (size8), [a] "r" (a), [n] "r" (nl)
+        : [r] "r" (r), [size] "r" (bytes), [a] "r" (a), [n] "r" (nl)
         : "memory", "x4", "x5", "x6", "x7", "x8"
     );
 }
@@ -7103,7 +7173,9 @@ static void sp_3072_to_bin_48(sp_digit* r, byte* a)
     for (i = 47; i >= 0; i--, j += 8) {
         __asm__ __volatile__ (
             "ldr	x4, [%[r]]\n\t"
+        #ifdef LITTLE_ENDIAN_ORDER
             "rev	x4, x4\n\t"
+        #endif
             "str	x4, [%[a]]\n\t"
             :
             : [r] "r" (r + i), [a] "r" (a + j)
@@ -16499,7 +16571,7 @@ int sp_ModExp_1536(const mp_int* base, const mp_int* exp, const mp_int* mod,
 static void sp_4096_from_bin(sp_digit* r, int size, const byte* a, int n)
 {
     sp_int64 nl = n;
-    sp_int64 size8 = size * 8;
+    sp_int64 bytes = size * 8;
 
     __asm__ __volatile__ (
         "add	x4, %[a], %[n]\n\t"
@@ -16512,7 +16584,9 @@ static void sp_4096_from_bin(sp_digit* r, int size, const byte* a, int n)
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "rev	x8, x8\n\t"
+    #endif
         "str	x8, [x5], 8\n\t"
         "add	x7, x7, 8\n\t"
         "b.ge	1b\n\t"
@@ -16520,7 +16594,11 @@ static void sp_4096_from_bin(sp_digit* r, int size, const byte* a, int n)
         "cmp	x6, -7\n\t"
         "b.lt	20f\n\t"
         /* Put in less than 8 bytes. */
+    #ifdef LITTLE_ENDIAN_ORDER
         "str	xzr, [x5]\n\t"
+    #else
+        "str	xzr, [x5], 7\n\t"
+    #endif
         "add	x7, x7, 8\n\t"
         "add	x4, x4, 7\n\t"
         "b.eq	17f\n\t"
@@ -16533,25 +16611,53 @@ static void sp_4096_from_bin(sp_digit* r, int size, const byte* a, int n)
         "cmp	x6, -2\n\t"
         "b.eq	12f\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "12:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "13:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "14:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "15:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "16:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "17:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "20:\n\t"
         "add	x5, %[r], x7\n\t"
         "subs	x7, %[size], x7\n\t"
@@ -16563,7 +16669,7 @@ static void sp_4096_from_bin(sp_digit* r, int size, const byte* a, int n)
         "b.gt	21b\n\t"
         "30:\n\t"
         :
-        : [r] "r" (r), [size] "r" (size8), [a] "r" (a), [n] "r" (nl)
+        : [r] "r" (r), [size] "r" (bytes), [a] "r" (a), [n] "r" (nl)
         : "memory", "x4", "x5", "x6", "x7", "x8"
     );
 }
@@ -16670,7 +16776,9 @@ static void sp_4096_to_bin_64(sp_digit* r, byte* a)
     for (i = 63; i >= 0; i--, j += 8) {
         __asm__ __volatile__ (
             "ldr	x4, [%[r]]\n\t"
+        #ifdef LITTLE_ENDIAN_ORDER
             "rev	x4, x4\n\t"
+        #endif
             "str	x4, [%[a]]\n\t"
             :
             : [r] "r" (r + i), [a] "r" (a + j)
@@ -39497,7 +39605,7 @@ static void sp_256_add_one_4(sp_digit* a)
 static void sp_256_from_bin(sp_digit* r, int size, const byte* a, int n)
 {
     sp_int64 nl = n;
-    sp_int64 size8 = size * 8;
+    sp_int64 bytes = size * 8;
 
     __asm__ __volatile__ (
         "add	x4, %[a], %[n]\n\t"
@@ -39510,7 +39618,9 @@ static void sp_256_from_bin(sp_digit* r, int size, const byte* a, int n)
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "rev	x8, x8\n\t"
+    #endif
         "str	x8, [x5], 8\n\t"
         "add	x7, x7, 8\n\t"
         "b.ge	1b\n\t"
@@ -39518,7 +39628,11 @@ static void sp_256_from_bin(sp_digit* r, int size, const byte* a, int n)
         "cmp	x6, -7\n\t"
         "b.lt	20f\n\t"
         /* Put in less than 8 bytes. */
+    #ifdef LITTLE_ENDIAN_ORDER
         "str	xzr, [x5]\n\t"
+    #else
+        "str	xzr, [x5], 7\n\t"
+    #endif
         "add	x7, x7, 8\n\t"
         "add	x4, x4, 7\n\t"
         "b.eq	17f\n\t"
@@ -39531,25 +39645,53 @@ static void sp_256_from_bin(sp_digit* r, int size, const byte* a, int n)
         "cmp	x6, -2\n\t"
         "b.eq	12f\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "12:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "13:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "14:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "15:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "16:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "17:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "20:\n\t"
         "add	x5, %[r], x7\n\t"
         "subs	x7, %[size], x7\n\t"
@@ -39561,7 +39703,7 @@ static void sp_256_from_bin(sp_digit* r, int size, const byte* a, int n)
         "b.gt	21b\n\t"
         "30:\n\t"
         :
-        : [r] "r" (r), [size] "r" (size8), [a] "r" (a), [n] "r" (nl)
+        : [r] "r" (r), [size] "r" (bytes), [a] "r" (a), [n] "r" (nl)
         : "memory", "x4", "x5", "x6", "x7", "x8"
     );
 }
@@ -39773,7 +39915,9 @@ static void sp_256_to_bin_4(sp_digit* r, byte* a)
     for (i = 3; i >= 0; i--, j += 8) {
         __asm__ __volatile__ (
             "ldr	x4, [%[r]]\n\t"
+        #ifdef LITTLE_ENDIAN_ORDER
             "rev	x4, x4\n\t"
+        #endif
             "str	x4, [%[a]]\n\t"
             :
             : [r] "r" (r + i), [a] "r" (a + j)
@@ -65545,7 +65689,7 @@ static void sp_384_add_one_6(sp_digit* a)
 static void sp_384_from_bin(sp_digit* r, int size, const byte* a, int n)
 {
     sp_int64 nl = n;
-    sp_int64 size8 = size * 8;
+    sp_int64 bytes = size * 8;
 
     __asm__ __volatile__ (
         "add	x4, %[a], %[n]\n\t"
@@ -65558,7 +65702,9 @@ static void sp_384_from_bin(sp_digit* r, int size, const byte* a, int n)
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "rev	x8, x8\n\t"
+    #endif
         "str	x8, [x5], 8\n\t"
         "add	x7, x7, 8\n\t"
         "b.ge	1b\n\t"
@@ -65566,7 +65712,11 @@ static void sp_384_from_bin(sp_digit* r, int size, const byte* a, int n)
         "cmp	x6, -7\n\t"
         "b.lt	20f\n\t"
         /* Put in less than 8 bytes. */
+    #ifdef LITTLE_ENDIAN_ORDER
         "str	xzr, [x5]\n\t"
+    #else
+        "str	xzr, [x5], 7\n\t"
+    #endif
         "add	x7, x7, 8\n\t"
         "add	x4, x4, 7\n\t"
         "b.eq	17f\n\t"
@@ -65579,25 +65729,53 @@ static void sp_384_from_bin(sp_digit* r, int size, const byte* a, int n)
         "cmp	x6, -2\n\t"
         "b.eq	12f\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "12:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "13:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "14:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "15:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "16:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "17:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "20:\n\t"
         "add	x5, %[r], x7\n\t"
         "subs	x7, %[size], x7\n\t"
@@ -65609,7 +65787,7 @@ static void sp_384_from_bin(sp_digit* r, int size, const byte* a, int n)
         "b.gt	21b\n\t"
         "30:\n\t"
         :
-        : [r] "r" (r), [size] "r" (size8), [a] "r" (a), [n] "r" (nl)
+        : [r] "r" (r), [size] "r" (bytes), [a] "r" (a), [n] "r" (nl)
         : "memory", "x4", "x5", "x6", "x7", "x8"
     );
 }
@@ -65821,7 +65999,9 @@ static void sp_384_to_bin_6(sp_digit* r, byte* a)
     for (i = 5; i >= 0; i--, j += 8) {
         __asm__ __volatile__ (
             "ldr	x4, [%[r]]\n\t"
+        #ifdef LITTLE_ENDIAN_ORDER
             "rev	x4, x4\n\t"
+        #endif
             "str	x4, [%[a]]\n\t"
             :
             : [r] "r" (r + i), [a] "r" (a + j)
@@ -110580,7 +110760,7 @@ static void sp_521_add_one_9(sp_digit* a)
 static void sp_521_from_bin(sp_digit* r, int size, const byte* a, int n)
 {
     sp_int64 nl = n;
-    sp_int64 size8 = size * 8;
+    sp_int64 bytes = size * 8;
 
     __asm__ __volatile__ (
         "add	x4, %[a], %[n]\n\t"
@@ -110593,7 +110773,9 @@ static void sp_521_from_bin(sp_digit* r, int size, const byte* a, int n)
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "rev	x8, x8\n\t"
+    #endif
         "str	x8, [x5], 8\n\t"
         "add	x7, x7, 8\n\t"
         "b.ge	1b\n\t"
@@ -110601,7 +110783,11 @@ static void sp_521_from_bin(sp_digit* r, int size, const byte* a, int n)
         "cmp	x6, -7\n\t"
         "b.lt	20f\n\t"
         /* Put in less than 8 bytes. */
+    #ifdef LITTLE_ENDIAN_ORDER
         "str	xzr, [x5]\n\t"
+    #else
+        "str	xzr, [x5], 7\n\t"
+    #endif
         "add	x7, x7, 8\n\t"
         "add	x4, x4, 7\n\t"
         "b.eq	17f\n\t"
@@ -110614,25 +110800,53 @@ static void sp_521_from_bin(sp_digit* r, int size, const byte* a, int n)
         "cmp	x6, -2\n\t"
         "b.eq	12f\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "12:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "13:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "14:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "15:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "16:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "17:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "20:\n\t"
         "add	x5, %[r], x7\n\t"
         "subs	x7, %[size], x7\n\t"
@@ -110644,7 +110858,7 @@ static void sp_521_from_bin(sp_digit* r, int size, const byte* a, int n)
         "b.gt	21b\n\t"
         "30:\n\t"
         :
-        : [r] "r" (r), [size] "r" (size8), [a] "r" (a), [n] "r" (nl)
+        : [r] "r" (r), [size] "r" (bytes), [a] "r" (a), [n] "r" (nl)
         : "memory", "x4", "x5", "x6", "x7", "x8"
     );
 }
@@ -110859,7 +111073,9 @@ static void sp_521_to_bin_9(sp_digit* r, byte* a)
     for (i = 7; i >= 0; i--, j += 8) {
         __asm__ __volatile__ (
             "ldr	x4, [%[r]]\n\t"
+        #ifdef LITTLE_ENDIAN_ORDER
             "rev	x4, x4\n\t"
+        #endif
             "str	x4, [%[a]]\n\t"
             :
             : [r] "r" (r + i), [a] "r" (a + j)
@@ -124262,7 +124478,7 @@ int sp_Pairing_precomp_1024(const ecc_point* pm, const ecc_point* qm,
 static void sp_1024_from_bin(sp_digit* r, int size, const byte* a, int n)
 {
     sp_int64 nl = n;
-    sp_int64 size8 = size * 8;
+    sp_int64 bytes = size * 8;
 
     __asm__ __volatile__ (
         "add	x4, %[a], %[n]\n\t"
@@ -124275,7 +124491,9 @@ static void sp_1024_from_bin(sp_digit* r, int size, const byte* a, int n)
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "rev	x8, x8\n\t"
+    #endif
         "str	x8, [x5], 8\n\t"
         "add	x7, x7, 8\n\t"
         "b.ge	1b\n\t"
@@ -124283,7 +124501,11 @@ static void sp_1024_from_bin(sp_digit* r, int size, const byte* a, int n)
         "cmp	x6, -7\n\t"
         "b.lt	20f\n\t"
         /* Put in less than 8 bytes. */
+    #ifdef LITTLE_ENDIAN_ORDER
         "str	xzr, [x5]\n\t"
+    #else
+        "str	xzr, [x5], 7\n\t"
+    #endif
         "add	x7, x7, 8\n\t"
         "add	x4, x4, 7\n\t"
         "b.eq	17f\n\t"
@@ -124296,25 +124518,53 @@ static void sp_1024_from_bin(sp_digit* r, int size, const byte* a, int n)
         "cmp	x6, -2\n\t"
         "b.eq	12f\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "12:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "13:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "14:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "15:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "16:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "17:\n\t"
         "ldrb	w8, [x4], -1\n\t"
+    #ifdef LITTLE_ENDIAN_ORDER
         "strb	w8, [x5], 1\n\t"
+    #else
+        "strb	w8, [x5], -1\n\t"
+    #endif
         "20:\n\t"
         "add	x5, %[r], x7\n\t"
         "subs	x7, %[size], x7\n\t"
@@ -124326,7 +124576,7 @@ static void sp_1024_from_bin(sp_digit* r, int size, const byte* a, int n)
         "b.gt	21b\n\t"
         "30:\n\t"
         :
-        : [r] "r" (r), [size] "r" (size8), [a] "r" (a), [n] "r" (nl)
+        : [r] "r" (r), [size] "r" (bytes), [a] "r" (a), [n] "r" (nl)
         : "memory", "x4", "x5", "x6", "x7", "x8"
     );
 }
