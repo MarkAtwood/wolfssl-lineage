@@ -17700,6 +17700,9 @@ int sp_DhExp_2048(const mp_int* base, const byte* exp, word32 expLen,
     else if (mp_count_bits(mod) != 2048) {
         err = MP_READ_E;
     }
+    else if (*outLen < 256U) {
+        err = BUFFER_E;
+    }
     else if (mp_iseven(mod)) {
         err = MP_VAL;
     }
@@ -44897,6 +44900,9 @@ int sp_DhExp_3072(const mp_int* base, const byte* exp, word32 expLen,
     else if (mp_count_bits(mod) != 3072) {
         err = MP_READ_E;
     }
+    else if (*outLen < 384U) {
+        err = BUFFER_E;
+    }
     else if (mp_iseven(mod)) {
         err = MP_VAL;
     }
@@ -60468,6 +60474,9 @@ int sp_DhExp_4096(const mp_int* base, const byte* exp, word32 expLen,
     }
     else if (mp_count_bits(mod) != 4096) {
         err = MP_READ_E;
+    }
+    else if (*outLen < 512U) {
+        err = BUFFER_E;
     }
     else if (mp_iseven(mod)) {
         err = MP_VAL;

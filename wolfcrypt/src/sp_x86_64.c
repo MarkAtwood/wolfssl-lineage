@@ -2472,8 +2472,13 @@ int sp_ModExp_2048(const mp_int* base, const mp_int* exp, const mp_int* mod,
 
     ASSERT_SAVED_VECTOR_REGISTERS();
 
-    if (mp_count_bits(base) > 2048 || expBits > 2048 ||
-                                                   mp_count_bits(mod) != 2048) {
+    if (mp_count_bits(base) > 2048) {
+        err = MP_READ_E;
+    }
+    else if (expBits > 2048) {
+        err = MP_READ_E;
+    }
+    else if (mp_count_bits(mod) != 2048) {
         err = MP_READ_E;
     }
     else if (mp_iseven(mod)) {
@@ -2849,9 +2854,17 @@ int sp_DhExp_2048(const mp_int* base, const byte* exp, word32 expLen,
 
     ASSERT_SAVED_VECTOR_REGISTERS();
 
-    if (mp_count_bits(base) > 2048 || expLen > 256 ||
-                                                   mp_count_bits(mod) != 2048) {
+    if (mp_count_bits(base) > 2048) {
         err = MP_READ_E;
+    }
+    else if (expLen > 256U) {
+        err = MP_READ_E;
+    }
+    else if (mp_count_bits(mod) != 2048) {
+        err = MP_READ_E;
+    }
+    else if (*outLen < 256U) {
+        err = BUFFER_E;
     }
     else if (mp_iseven(mod)) {
         err = MP_VAL;
@@ -2953,8 +2966,13 @@ int sp_ModExp_1024(const mp_int* base, const mp_int* exp, const mp_int* mod,
 
     ASSERT_SAVED_VECTOR_REGISTERS();
 
-    if (mp_count_bits(base) > 1024 || expBits > 1024 ||
-                                                   mp_count_bits(mod) != 1024) {
+    if (mp_count_bits(base) > 1024) {
+        err = MP_READ_E;
+    }
+    else if (expBits > 1024) {
+        err = MP_READ_E;
+    }
+    else if (mp_count_bits(mod) != 1024) {
         err = MP_READ_E;
     }
     else if (mp_iseven(mod)) {
@@ -5355,8 +5373,13 @@ int sp_ModExp_3072(const mp_int* base, const mp_int* exp, const mp_int* mod,
 
     ASSERT_SAVED_VECTOR_REGISTERS();
 
-    if (mp_count_bits(base) > 3072 || expBits > 3072 ||
-                                                   mp_count_bits(mod) != 3072) {
+    if (mp_count_bits(base) > 3072) {
+        err = MP_READ_E;
+    }
+    else if (expBits > 3072) {
+        err = MP_READ_E;
+    }
+    else if (mp_count_bits(mod) != 3072) {
         err = MP_READ_E;
     }
     else if (mp_iseven(mod)) {
@@ -5732,9 +5755,17 @@ int sp_DhExp_3072(const mp_int* base, const byte* exp, word32 expLen,
 
     ASSERT_SAVED_VECTOR_REGISTERS();
 
-    if (mp_count_bits(base) > 3072 || expLen > 384 ||
-                                                   mp_count_bits(mod) != 3072) {
+    if (mp_count_bits(base) > 3072) {
         err = MP_READ_E;
+    }
+    else if (expLen > 384U) {
+        err = MP_READ_E;
+    }
+    else if (mp_count_bits(mod) != 3072) {
+        err = MP_READ_E;
+    }
+    else if (*outLen < 384U) {
+        err = BUFFER_E;
     }
     else if (mp_iseven(mod)) {
         err = MP_VAL;
@@ -5836,8 +5867,13 @@ int sp_ModExp_1536(const mp_int* base, const mp_int* exp, const mp_int* mod,
 
     ASSERT_SAVED_VECTOR_REGISTERS();
 
-    if (mp_count_bits(base) > 1536 || expBits > 1536 ||
-                                                   mp_count_bits(mod) != 1536) {
+    if (mp_count_bits(base) > 1536) {
+        err = MP_READ_E;
+    }
+    else if (expBits > 1536) {
+        err = MP_READ_E;
+    }
+    else if (mp_count_bits(mod) != 1536) {
         err = MP_READ_E;
     }
     else if (mp_iseven(mod)) {
@@ -7464,8 +7500,13 @@ int sp_ModExp_4096(const mp_int* base, const mp_int* exp, const mp_int* mod,
 
     ASSERT_SAVED_VECTOR_REGISTERS();
 
-    if (mp_count_bits(base) > 4096 || expBits > 4096 ||
-                                                   mp_count_bits(mod) != 4096) {
+    if (mp_count_bits(base) > 4096) {
+        err = MP_READ_E;
+    }
+    else if (expBits > 4096) {
+        err = MP_READ_E;
+    }
+    else if (mp_count_bits(mod) != 4096) {
         err = MP_READ_E;
     }
     else if (mp_iseven(mod)) {
@@ -7841,9 +7882,17 @@ int sp_DhExp_4096(const mp_int* base, const byte* exp, word32 expLen,
 
     ASSERT_SAVED_VECTOR_REGISTERS();
 
-    if (mp_count_bits(base) > 4096 || expLen > 512 ||
-                                                   mp_count_bits(mod) != 4096) {
+    if (mp_count_bits(base) > 4096) {
         err = MP_READ_E;
+    }
+    else if (expLen > 512U) {
+        err = MP_READ_E;
+    }
+    else if (mp_count_bits(mod) != 4096) {
+        err = MP_READ_E;
+    }
+    else if (*outLen < 512U) {
+        err = BUFFER_E;
     }
     else if (mp_iseven(mod)) {
         err = MP_VAL;
