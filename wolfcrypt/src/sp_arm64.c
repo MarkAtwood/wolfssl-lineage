@@ -22172,6 +22172,18 @@ static int sp_256_mod_mul_norm_4(sp_digit* r, const sp_digit* a, const sp_digit*
     t[5] += t[4] >> 32; t[4] &= 0xffffffff;
     t[6] += t[5] >> 32; t[5] &= 0xffffffff;
     t[7] += t[6] >> 32; t[6] &= 0xffffffff;
+    o     = t[7] >> 32; t[7] &= 0xffffffff;
+    t[0] += o;
+    t[3] -= o;
+    t[6] -= o;
+    t[7] += o;
+    t[1] += t[0] >> 32; t[0] &= 0xffffffff;
+    t[2] += t[1] >> 32; t[1] &= 0xffffffff;
+    t[3] += t[2] >> 32; t[2] &= 0xffffffff;
+    t[4] += t[3] >> 32; t[3] &= 0xffffffff;
+    t[5] += t[4] >> 32; t[4] &= 0xffffffff;
+    t[6] += t[5] >> 32; t[5] &= 0xffffffff;
+    t[7] += t[6] >> 32; t[6] &= 0xffffffff;
     r[0] = (t[1] << 32) | t[0];
     r[1] = (t[3] << 32) | t[2];
     r[2] = (t[5] << 32) | t[4];
