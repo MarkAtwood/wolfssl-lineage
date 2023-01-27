@@ -174,7 +174,7 @@ static void sp_2048_from_bin(sp_digit* r, int size, const byte* a, int n)
         "30:\n\t"
         :
         : [r] "r" (r), [size] "r" (bytes), [a] "r" (a), [n] "r" (nl)
-        : "memory", "x4", "x5", "x6", "x7", "x8"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "cc"
     );
 }
 
@@ -719,7 +719,7 @@ static void sp_2048_mul_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "stp	x5, x3, [%[r], 112]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "cc"
     );
 }
 
@@ -756,7 +756,7 @@ static sp_digit sp_2048_add_8(sp_digit* r, const sp_digit* a,
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -790,7 +790,7 @@ static void sp_2048_add_word_8(sp_digit* r, const sp_digit* a,
         "stp	x5, x6, [%[r], 48]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6"
+        : "memory", "x3", "x4", "x5", "x6", "cc"
     );
 }
 
@@ -845,7 +845,7 @@ static sp_digit sp_2048_sub_in_place_16(sp_digit* a, const sp_digit* b)
         "csetm	%[a], cc\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     return (sp_digit)a;
@@ -904,7 +904,7 @@ static sp_digit sp_2048_add_16(sp_digit* r, const sp_digit* a,
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -955,7 +955,7 @@ static sp_digit sp_2048_cond_add_8(sp_digit* r, const sp_digit* a, const sp_digi
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return (sp_digit)r;
@@ -1041,7 +1041,7 @@ static void sp_2048_add_word_16(sp_digit* r, const sp_digit* a,
         "stp	x5, x6, [%[r], 112]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6"
+        : "memory", "x3", "x4", "x5", "x6", "cc"
     );
 }
 
@@ -1136,7 +1136,7 @@ static sp_digit sp_2048_sub_in_place_32(sp_digit* a, const sp_digit* b)
         "csetm	%[a], cc\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     return (sp_digit)a;
@@ -1235,7 +1235,7 @@ static sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a,
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -1314,7 +1314,7 @@ static sp_digit sp_2048_cond_add_16(sp_digit* r, const sp_digit* a, const sp_dig
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return (sp_digit)r;
@@ -2359,7 +2359,7 @@ static void sp_2048_sqr_16(sp_digit* r, const sp_digit* a)
         "stp	x2, x3, [%[r], 240]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "cc"
     );
 }
 
@@ -2416,7 +2416,7 @@ static sp_digit sp_2048_sub_16(sp_digit* r, const sp_digit* a,
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -2489,7 +2489,7 @@ static sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a,
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return c;
@@ -2525,7 +2525,7 @@ static sp_digit sp_2048_sub_in_place_32(sp_digit* a, const sp_digit* b)
         "b.ne	1b\n\t"
         : [c] "+r" (c), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return c;
@@ -2577,7 +2577,7 @@ static void sp_2048_mul_32(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -2642,7 +2642,7 @@ static void sp_2048_sqr_32(sp_digit* r, const sp_digit* a)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -2681,7 +2681,7 @@ static sp_digit sp_2048_add_16(sp_digit* r, const sp_digit* a,
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return c;
@@ -2717,7 +2717,7 @@ static sp_digit sp_2048_sub_in_place_16(sp_digit* a, const sp_digit* b)
         "b.ne	1b\n\t"
         : [c] "+r" (c), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return c;
@@ -2769,7 +2769,7 @@ static void sp_2048_mul_16(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -2834,7 +2834,7 @@ static void sp_2048_sqr_16(sp_digit* r, const sp_digit* a)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -2900,7 +2900,7 @@ static void sp_2048_mul_d_32(sp_digit* r, const sp_digit* a,
         "str	x3, [%[r], 256]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -3173,7 +3173,7 @@ static void sp_2048_mul_d_32(sp_digit* r, const sp_digit* a,
         "stp	x4, x5, [%[r], 248]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #endif
 }
@@ -3397,7 +3397,7 @@ SP_NOINLINE static void sp_2048_mont_reduce_16(sp_digit* a, const sp_digit* m,
         "stp	x27, x28, [%[a], 112]\n\t"
         : [a] "+r" (a), [mp] "+r" (mp)
         : [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28", "cc"
     );
 
 }
@@ -3461,7 +3461,7 @@ static sp_digit sp_2048_cond_sub_16(sp_digit* r, const sp_digit* a, const sp_dig
         "b.lt	1b\n\t"
         : [c] "+r" (c)
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return c;
@@ -3527,7 +3527,7 @@ static sp_digit sp_2048_cond_sub_16(sp_digit* r, const sp_digit* a, const sp_dig
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return (sp_digit)r;
@@ -3570,7 +3570,7 @@ static void sp_2048_mul_d_16(sp_digit* r, const sp_digit* a,
         "str	x3, [%[r], 128]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -3707,7 +3707,7 @@ static void sp_2048_mul_d_16(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r], 120]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #endif
 }
@@ -3767,7 +3767,7 @@ static sp_digit div_2048_word_16(sp_digit d1, sp_digit d0, sp_digit div)
 
         : [d1] "+r" (d1), [d0] "+r" (d0)
         : [div] "r" (div)
-        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return d1;
@@ -3839,7 +3839,7 @@ static sp_int64 sp_2048_cmp_16(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -3946,7 +3946,7 @@ static sp_int64 sp_2048_cmp_16(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #endif
 
@@ -4759,7 +4759,7 @@ SP_NOINLINE static void sp_2048_mont_reduce_32(sp_digit* a, const sp_digit* m,
         "stp	x10, x11, [%[a], 240]\n\t"
         : [a] "+r" (a), [mp] "+r" (mp)
         : [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x10", "x8", "x9", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x10", "x8", "x9", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "cc"
     );
 
 }
@@ -4825,7 +4825,7 @@ static sp_digit sp_2048_sub_32(sp_digit* r, const sp_digit* a,
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return c;
@@ -4925,7 +4925,7 @@ static sp_digit sp_2048_sub_32(sp_digit* r, const sp_digit* a,
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -4987,7 +4987,7 @@ static sp_digit div_2048_word_32_cond(sp_digit d1, sp_digit d0, sp_digit div)
 
         : [d1] "+r" (d1), [d0] "+r" (d0)
         : [div] "r" (div)
-        : "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     return d1;
@@ -5094,7 +5094,7 @@ static sp_digit sp_2048_cond_sub_32(sp_digit* r, const sp_digit* a, const sp_dig
         "b.lt	1b\n\t"
         : [c] "+r" (c)
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return c;
@@ -5216,7 +5216,7 @@ static sp_digit sp_2048_cond_sub_32(sp_digit* r, const sp_digit* a, const sp_dig
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return (sp_digit)r;
@@ -5278,7 +5278,7 @@ static sp_digit div_2048_word_32(sp_digit d1, sp_digit d0, sp_digit div)
 
         : [d1] "+r" (d1), [d0] "+r" (d0)
         : [div] "r" (div)
-        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return d1;
@@ -5350,7 +5350,7 @@ static sp_int64 sp_2048_cmp_32(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -5553,7 +5553,7 @@ static sp_int64 sp_2048_cmp_32(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #endif
 
@@ -6183,7 +6183,7 @@ static sp_digit sp_2048_cond_add_16(sp_digit* r, const sp_digit* a, const sp_dig
         "b.lt	1b\n\t"
         : [c] "+r" (c)
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x5", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return c;
@@ -6703,7 +6703,7 @@ static void sp_2048_lshift_32(sp_digit* r, const sp_digit* a, byte n)
         "stp	x2, x3, [%[r]]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [n] "r" (n64)
-        : "memory", "x2", "x3", "x4", "x5", "x6"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "cc"
     );
 }
 
@@ -7070,7 +7070,7 @@ static void sp_3072_from_bin(sp_digit* r, int size, const byte* a, int n)
         "30:\n\t"
         :
         : [r] "r" (r), [size] "r" (bytes), [a] "r" (a), [n] "r" (nl)
-        : "memory", "x4", "x5", "x6", "x7", "x8"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "cc"
     );
 }
 
@@ -7441,7 +7441,7 @@ static void sp_3072_mul_6(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "stp	x4, x5, [%[r], 80]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "cc"
     );
 }
 
@@ -7476,7 +7476,7 @@ static sp_digit sp_3072_add_6(sp_digit* r, const sp_digit* a,
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -7508,7 +7508,7 @@ static void sp_3072_add_word_6(sp_digit* r, const sp_digit* a,
         "str		x4, [%[r], 40]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6"
+        : "memory", "x3", "x4", "x5", "x6", "cc"
     );
 }
 
@@ -7553,7 +7553,7 @@ static sp_digit sp_3072_sub_in_place_12(sp_digit* a, const sp_digit* b)
         "csetm	%[a], cc\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     return (sp_digit)a;
@@ -7602,7 +7602,7 @@ static sp_digit sp_3072_add_12(sp_digit* r, const sp_digit* a,
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -7646,7 +7646,7 @@ static sp_digit sp_3072_cond_add_6(sp_digit* r, const sp_digit* a, const sp_digi
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return (sp_digit)r;
@@ -7724,7 +7724,7 @@ static void sp_3072_add_word_12(sp_digit* r, const sp_digit* a,
         "stp	x5, x6, [%[r], 80]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6"
+        : "memory", "x3", "x4", "x5", "x6", "cc"
     );
 }
 
@@ -7799,7 +7799,7 @@ static sp_digit sp_3072_sub_in_place_24(sp_digit* a, const sp_digit* b)
         "csetm	%[a], cc\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     return (sp_digit)a;
@@ -7878,7 +7878,7 @@ static sp_digit sp_3072_add_24(sp_digit* r, const sp_digit* a,
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -7943,7 +7943,7 @@ static sp_digit sp_3072_cond_add_12(sp_digit* r, const sp_digit* a, const sp_dig
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return (sp_digit)r;
@@ -8045,7 +8045,7 @@ static void sp_3072_add_word_24(sp_digit* r, const sp_digit* a,
         "stp	x5, x6, [%[r], 176]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6"
+        : "memory", "x3", "x4", "x5", "x6", "cc"
     );
 }
 
@@ -8180,7 +8180,7 @@ static sp_digit sp_3072_sub_in_place_48(sp_digit* a, const sp_digit* b)
         "csetm	%[a], cc\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     return (sp_digit)a;
@@ -8319,7 +8319,7 @@ static sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a,
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -8426,7 +8426,7 @@ static sp_digit sp_3072_cond_add_24(sp_digit* r, const sp_digit* a, const sp_dig
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return (sp_digit)r;
@@ -11145,7 +11145,7 @@ static void sp_3072_sqr_24(sp_digit* r, const sp_digit* a)
         "stp	x9, x10, [%[r], 176]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [tmp] "r" (tmp)
-        : "memory", "x2", "x3", "x4", "x8", "x9", "x10", "x5", "x6", "x7"
+        : "memory", "x2", "x3", "x4", "x8", "x9", "x10", "x5", "x6", "x7", "cc"
     );
 }
 
@@ -11222,7 +11222,7 @@ static sp_digit sp_3072_sub_24(sp_digit* r, const sp_digit* a,
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -11295,7 +11295,7 @@ static sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a,
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return c;
@@ -11331,7 +11331,7 @@ static sp_digit sp_3072_sub_in_place_48(sp_digit* a, const sp_digit* b)
         "b.ne	1b\n\t"
         : [c] "+r" (c), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return c;
@@ -11383,7 +11383,7 @@ static void sp_3072_mul_48(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -11448,7 +11448,7 @@ static void sp_3072_sqr_48(sp_digit* r, const sp_digit* a)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -11487,7 +11487,7 @@ static sp_digit sp_3072_add_24(sp_digit* r, const sp_digit* a,
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return c;
@@ -11523,7 +11523,7 @@ static sp_digit sp_3072_sub_in_place_24(sp_digit* a, const sp_digit* b)
         "b.ne	1b\n\t"
         : [c] "+r" (c), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return c;
@@ -11575,7 +11575,7 @@ static void sp_3072_mul_24(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -11640,7 +11640,7 @@ static void sp_3072_sqr_24(sp_digit* r, const sp_digit* a)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -11706,7 +11706,7 @@ static void sp_3072_mul_d_48(sp_digit* r, const sp_digit* a,
         "str	x3, [%[r], 384]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -12116,7 +12116,7 @@ static void sp_3072_mul_d_48(sp_digit* r, const sp_digit* a,
         "str	x3, [%[r], 384]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #endif
 }
@@ -12446,7 +12446,7 @@ SP_NOINLINE static void sp_3072_mont_reduce_24(sp_digit* a, const sp_digit* m,
         "stp	x10, x11, [%[a], 176]\n\t"
         : [a] "+r" (a), [mp] "+r" (mp)
         : [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x10", "x8", "x9", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x10", "x8", "x9", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "cc"
     );
 
 }
@@ -12510,7 +12510,7 @@ static sp_digit sp_3072_cond_sub_24(sp_digit* r, const sp_digit* a, const sp_dig
         "b.lt	1b\n\t"
         : [c] "+r" (c)
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return c;
@@ -12604,7 +12604,7 @@ static sp_digit sp_3072_cond_sub_24(sp_digit* r, const sp_digit* a, const sp_dig
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return (sp_digit)r;
@@ -12647,7 +12647,7 @@ static void sp_3072_mul_d_24(sp_digit* r, const sp_digit* a,
         "str	x3, [%[r], 192]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -12853,7 +12853,7 @@ static void sp_3072_mul_d_24(sp_digit* r, const sp_digit* a,
         "str	x3, [%[r], 192]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #endif
 }
@@ -12913,7 +12913,7 @@ static sp_digit div_3072_word_24(sp_digit d1, sp_digit d0, sp_digit div)
 
         : [d1] "+r" (d1), [d0] "+r" (d0)
         : [div] "r" (div)
-        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return d1;
@@ -12985,7 +12985,7 @@ static sp_int64 sp_3072_cmp_24(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -13140,7 +13140,7 @@ static sp_int64 sp_3072_cmp_24(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #endif
 
@@ -14153,7 +14153,7 @@ SP_NOINLINE static void sp_3072_mont_reduce_48(sp_digit* a, const sp_digit* m,
         "stp	x10, x11, [%[a], 368]\n\t"
         : [a] "+r" (a), [mp] "+r" (mp)
         : [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x10", "x8", "x9", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x10", "x8", "x9", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "cc"
     );
 
 }
@@ -14219,7 +14219,7 @@ static sp_digit sp_3072_sub_48(sp_digit* r, const sp_digit* a,
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return c;
@@ -14359,7 +14359,7 @@ static sp_digit sp_3072_sub_48(sp_digit* r, const sp_digit* a,
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -14421,7 +14421,7 @@ static sp_digit div_3072_word_48_cond(sp_digit d1, sp_digit d0, sp_digit div)
 
         : [d1] "+r" (d1), [d0] "+r" (d0)
         : [div] "r" (div)
-        : "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     return d1;
@@ -14528,7 +14528,7 @@ static sp_digit sp_3072_cond_sub_48(sp_digit* r, const sp_digit* a, const sp_dig
         "b.lt	1b\n\t"
         : [c] "+r" (c)
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return c;
@@ -14706,7 +14706,7 @@ static sp_digit sp_3072_cond_sub_48(sp_digit* r, const sp_digit* a, const sp_dig
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return (sp_digit)r;
@@ -14768,7 +14768,7 @@ static sp_digit div_3072_word_48(sp_digit d1, sp_digit d0, sp_digit div)
 
         : [d1] "+r" (d1), [d0] "+r" (d0)
         : [div] "r" (div)
-        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return d1;
@@ -14840,7 +14840,7 @@ static sp_int64 sp_3072_cmp_48(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -15139,7 +15139,7 @@ static sp_int64 sp_3072_cmp_48(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #endif
 
@@ -15693,7 +15693,7 @@ static sp_digit sp_3072_cond_add_24(sp_digit* r, const sp_digit* a, const sp_dig
         "b.lt	1b\n\t"
         : [c] "+r" (c)
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x5", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return c;
@@ -16309,7 +16309,7 @@ static void sp_3072_lshift_48(sp_digit* r, const sp_digit* a, byte n)
         "stp	x4, x2, [%[r]]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [n] "r" (n64)
-        : "memory", "x2", "x3", "x4", "x5", "x6"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "cc"
     );
 }
 
@@ -16676,7 +16676,7 @@ static void sp_4096_from_bin(sp_digit* r, int size, const byte* a, int n)
         "30:\n\t"
         :
         : [r] "r" (r), [size] "r" (bytes), [a] "r" (a), [n] "r" (nl)
-        : "memory", "x4", "x5", "x6", "x7", "x8"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "cc"
     );
 }
 
@@ -16884,7 +16884,7 @@ static void sp_4096_add_word_32(sp_digit* r, const sp_digit* a,
         "stp	x5, x6, [%[r], 240]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6"
+        : "memory", "x3", "x4", "x5", "x6", "cc"
     );
 }
 
@@ -17059,7 +17059,7 @@ static sp_digit sp_4096_sub_in_place_64(sp_digit* a, const sp_digit* b)
         "csetm	%[a], cc\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     return (sp_digit)a;
@@ -17238,7 +17238,7 @@ static sp_digit sp_4096_add_64(sp_digit* r, const sp_digit* a,
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -17373,7 +17373,7 @@ static sp_digit sp_4096_cond_add_32(sp_digit* r, const sp_digit* a, const sp_dig
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return (sp_digit)r;
@@ -17482,7 +17482,7 @@ static sp_digit sp_4096_add_64(sp_digit* r, const sp_digit* a,
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return c;
@@ -17518,7 +17518,7 @@ static sp_digit sp_4096_sub_in_place_64(sp_digit* a, const sp_digit* b)
         "b.ne	1b\n\t"
         : [c] "+r" (c), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return c;
@@ -17570,7 +17570,7 @@ static void sp_4096_mul_64(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -17635,7 +17635,7 @@ static void sp_4096_sqr_64(sp_digit* r, const sp_digit* a)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -17699,7 +17699,7 @@ static void sp_4096_mul_d_64(sp_digit* r, const sp_digit* a,
         "str	x3, [%[r], 512]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -18244,7 +18244,7 @@ static void sp_4096_mul_d_64(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r], 504]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #endif
 }
@@ -19075,7 +19075,7 @@ SP_NOINLINE static void sp_4096_mont_reduce_64(sp_digit* a, const sp_digit* m,
         "stp	x10, x11, [%[a], 496]\n\t"
         : [a] "+r" (a), [mp] "+r" (mp)
         : [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x10", "x8", "x9", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x10", "x8", "x9", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "cc"
     );
 
 }
@@ -19141,7 +19141,7 @@ static sp_digit sp_4096_sub_64(sp_digit* r, const sp_digit* a,
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return c;
@@ -19321,7 +19321,7 @@ static sp_digit sp_4096_sub_64(sp_digit* r, const sp_digit* a,
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -19383,7 +19383,7 @@ static sp_digit div_4096_word_64_cond(sp_digit d1, sp_digit d0, sp_digit div)
 
         : [d1] "+r" (d1), [d0] "+r" (d0)
         : [div] "r" (div)
-        : "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     return d1;
@@ -19490,7 +19490,7 @@ static sp_digit sp_4096_cond_sub_64(sp_digit* r, const sp_digit* a, const sp_dig
         "b.lt	1b\n\t"
         : [c] "+r" (c)
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return c;
@@ -19724,7 +19724,7 @@ static sp_digit sp_4096_cond_sub_64(sp_digit* r, const sp_digit* a, const sp_dig
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return (sp_digit)r;
@@ -19786,7 +19786,7 @@ static sp_digit div_4096_word_64(sp_digit d1, sp_digit d0, sp_digit div)
 
         : [d1] "+r" (d1), [d0] "+r" (d0)
         : [div] "r" (div)
-        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return d1;
@@ -19858,7 +19858,7 @@ static sp_int64 sp_4096_cmp_64(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -20253,7 +20253,7 @@ static sp_int64 sp_4096_cmp_64(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #endif
 
@@ -20807,7 +20807,7 @@ static sp_digit sp_4096_cond_add_32(sp_digit* r, const sp_digit* a, const sp_dig
         "b.lt	1b\n\t"
         : [c] "+r" (c)
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x5", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return c;
@@ -21519,7 +21519,7 @@ static void sp_4096_lshift_64(sp_digit* r, const sp_digit* a, byte n)
         "stp	x3, x4, [%[r]]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [n] "r" (n64)
-        : "memory", "x2", "x3", "x4", "x5", "x6"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "cc"
     );
 }
 
@@ -21853,7 +21853,7 @@ static void sp_256_mul_4(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -21973,7 +21973,7 @@ static void sp_256_mul_4(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "stp	x14, x15, [%[r], 48]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [tmp] "r" (tmp)
-        : "memory", "x4", "x5", "x6", "x7", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15"
+        : "memory", "x4", "x5", "x6", "x7", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "cc"
     );
 }
 
@@ -22051,7 +22051,7 @@ static void sp_256_sqr_4(sp_digit* r, const sp_digit* a)
         "stp	x14, x15, [%[r], 48]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "cc"
     );
 }
 
@@ -22078,7 +22078,7 @@ static sp_digit sp_256_add_4(sp_digit* r, const sp_digit* a,
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -22107,7 +22107,7 @@ static sp_digit sp_256_sub_4(sp_digit* r, const sp_digit* a,
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -22417,7 +22417,7 @@ static void sp_256_cond_copy_4(sp_digit* r, const sp_digit* a, sp_digit m)
         "stp	x5, x6, [%[r], 16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 }
 
@@ -22604,7 +22604,7 @@ SP_NOINLINE static void sp_256_mont_mul_4(sp_digit* r, const sp_digit* a, const 
         "stp	x14, x15, [%[r], 16]\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         : [r] "r" (r)
-        : "memory", "x4", "x5", "x6", "x7", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15"
+        : "memory", "x4", "x5", "x6", "x7", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "cc"
     );
 }
 
@@ -22752,7 +22752,7 @@ SP_NOINLINE static void sp_256_mont_sqr_4(sp_digit* r, const sp_digit* a, const 
         "stp	x14, x15, [%[r], 16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "cc"
     );
 }
 
@@ -22888,7 +22888,7 @@ static sp_int64 sp_256_cmp_4(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -22923,7 +22923,7 @@ static sp_int64 sp_256_cmp_4(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #endif
 
@@ -22966,7 +22966,7 @@ static sp_digit sp_256_cond_sub_4(sp_digit* r, const sp_digit* a, const sp_digit
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return (sp_digit)r;
@@ -23057,7 +23057,7 @@ SP_NOINLINE static void sp_256_mont_reduce_4(sp_digit* a, const sp_digit* m,
         "stp	x16, x17, [%[a], 16]\n\t"
         :
         : [a] "r" (a), [m] "r" (m), [mp] "r" (mp)
-        : "memory", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 }
 /* Reduce the number back to 256 bits using Montgomery reduction.
@@ -23212,7 +23212,7 @@ SP_NOINLINE static void sp_256_mont_reduce_order_4(sp_digit* a, const sp_digit* 
         "stp	x15, x16, [%[a], 16]\n\t"
         :
         : [a] "r" (a), [m] "r" (m), [mp] "r" (mp)
-        : "memory", "x3", "x4", "x5", "x8", "x6", "x7", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21"
+        : "memory", "x3", "x4", "x5", "x8", "x6", "x7", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "cc"
     );
 }
 
@@ -23288,7 +23288,7 @@ static void sp_256_mont_add_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
         "stp	x6, x7, [%[r],16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "cc"
     );
 }
 
@@ -23319,7 +23319,7 @@ static void sp_256_mont_dbl_4(sp_digit* r, const sp_digit* a, const sp_digit* m)
         "stp	x5, x6, [%[r],16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     (void)m;
@@ -23365,7 +23365,7 @@ static void sp_256_mont_tpl_4(sp_digit* r, const sp_digit* a, const sp_digit* m)
         "stp	x5, x6, [%[r], 16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x10", "x11", "x12", "x13", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x10", "x11", "x12", "x13", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     (void)m;
@@ -23402,7 +23402,7 @@ static void sp_256_mont_sub_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
         "stp	x6, x7, [%[r],16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "cc"
     );
 }
 
@@ -23435,7 +23435,7 @@ static void sp_256_div2_4(sp_digit* r, const sp_digit* a, const sp_digit* m)
         "stp	x5, x6, [%[r], 16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
 }
@@ -23680,7 +23680,7 @@ static void sp_256_mont_sub_dbl_4(sp_digit* r, const sp_digit* a, const sp_digit
         "stp	x6, x7, [%[r],16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "cc"
     );
 }
 
@@ -23727,7 +23727,7 @@ static void sp_256_mont_dbl_sub_4(sp_digit* r, const sp_digit* a, const sp_digit
         "stp	x6, x7, [%[r],16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "cc"
     );
 }
 
@@ -39612,7 +39612,7 @@ static void sp_256_add_one_4(sp_digit* a)
         "stp	x3, x4, [%[a], 16]\n\t"
         :
         : [a] "r" (a)
-        : "memory", "x1", "x2", "x3", "x4"
+        : "memory", "x1", "x2", "x3", "x4", "cc"
     );
 }
 
@@ -39725,7 +39725,7 @@ static void sp_256_from_bin(sp_digit* r, int size, const byte* a, int n)
         "30:\n\t"
         :
         : [r] "r" (r), [size] "r" (bytes), [a] "r" (a), [n] "r" (nl)
-        : "memory", "x4", "x5", "x6", "x7", "x8"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "cc"
     );
 }
 
@@ -40087,7 +40087,7 @@ static sp_digit sp_256_sub_in_place_4(sp_digit* a, const sp_digit* b)
         "csetm	%[a], cc\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     return (sp_digit)a;
@@ -40128,7 +40128,7 @@ static void sp_256_mul_d_4(sp_digit* r, const sp_digit* a,
         "stp	x5, x6, [%[r], 24]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 }
 
@@ -40187,7 +40187,7 @@ static sp_digit div_256_word_4(sp_digit d1, sp_digit d0, sp_digit div)
 
         : [d1] "+r" (d1), [d0] "+r" (d0)
         : [div] "r" (div)
-        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return d1;
@@ -41084,7 +41084,7 @@ static int sp_256_mod_inv_4(sp_digit* r, const sp_digit* a,
         "\n102:\n\t"
         : [m] "+r" (m)
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "cc"
     );
 
     return MP_OKAY;
@@ -42131,7 +42131,7 @@ static void sp_384_mul_6(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -42377,7 +42377,7 @@ static void sp_384_mul_6(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "stp	x4, x5, [%[r], 80]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "cc"
     );
 }
 
@@ -42442,7 +42442,7 @@ static void sp_384_sqr_6(sp_digit* r, const sp_digit* a)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -42593,7 +42593,7 @@ static void sp_384_sqr_6(sp_digit* r, const sp_digit* a)
         "stp	x15, x16, [%[r], 80]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x16", "x17", "x19", "x20", "x21", "x22"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x16", "x17", "x19", "x20", "x21", "x22", "cc"
     );
 }
 
@@ -42629,7 +42629,7 @@ static sp_digit sp_384_add_6(sp_digit* r, const sp_digit* a,
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -42666,7 +42666,7 @@ static sp_digit sp_384_sub_6(sp_digit* r, const sp_digit* a,
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -43017,7 +43017,7 @@ static void sp_384_cond_copy_6(sp_digit* r, const sp_digit* a, sp_digit m)
         "stp	x7, x8, [%[r], 32]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "cc"
     );
 }
 
@@ -43148,7 +43148,7 @@ SP_NOINLINE static void sp_384_mont_reduce_6(sp_digit* a, const sp_digit* m,
         "stp	x9, x10, [%[a], #32]\n\t"
         :
         : [a] "r" (a), [m] "r" (m), [mp] "r" (mp)
-        : "memory", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14"
+        : "memory", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "cc"
     );
 }
 
@@ -43246,7 +43246,7 @@ SP_NOINLINE static void sp_384_mont_reduce_order_6(sp_digit* a, const sp_digit* 
         "stp	x16, x17, [%[a], 32]\n\t"
         : [a] "+r" (a), [mp] "+r" (mp)
         : [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "cc"
     );
 
 }
@@ -43429,7 +43429,7 @@ static sp_int64 sp_384_cmp_6(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -43476,7 +43476,7 @@ static sp_int64 sp_384_cmp_6(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #endif
 
@@ -43526,7 +43526,7 @@ static sp_digit sp_384_cond_sub_6(sp_digit* r, const sp_digit* a, const sp_digit
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return (sp_digit)r;
@@ -43648,7 +43648,7 @@ static sp_digit sp_384_cond_add_6(sp_digit* r, const sp_digit* a, const sp_digit
         "b.lt	1b\n\t"
         : [c] "+r" (c)
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x5", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return c;
@@ -43693,7 +43693,7 @@ static sp_digit sp_384_cond_add_6(sp_digit* r, const sp_digit* a, const sp_digit
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return (sp_digit)r;
@@ -43734,7 +43734,7 @@ static void sp_384_rshift1_6(sp_digit* r, const sp_digit* a)
         "stp	x6, x7, [%[r], 32]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "cc"
     );
 }
 
@@ -65696,7 +65696,7 @@ static void sp_384_add_one_6(sp_digit* a)
         "stp	x1, x2, [%[a], 32]\n\t"
         :
         : [a] "r" (a)
-        : "memory", "x1", "x2", "x3", "x4"
+        : "memory", "x1", "x2", "x3", "x4", "cc"
     );
 }
 
@@ -65809,7 +65809,7 @@ static void sp_384_from_bin(sp_digit* r, int size, const byte* a, int n)
         "30:\n\t"
         :
         : [r] "r" (r), [size] "r" (bytes), [a] "r" (a), [n] "r" (nl)
-        : "memory", "x4", "x5", "x6", "x7", "x8"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "cc"
     );
 }
 
@@ -66179,7 +66179,7 @@ static sp_digit sp_384_sub_in_place_6(sp_digit* a, const sp_digit* b)
         "csetm	%[a], cc\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     return (sp_digit)a;
@@ -66221,7 +66221,7 @@ static void sp_384_mul_d_6(sp_digit* r, const sp_digit* a,
         "str	x3, [%[r], 48]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -66274,7 +66274,7 @@ static void sp_384_mul_d_6(sp_digit* r, const sp_digit* a,
         "str	x3, [%[r], 48]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #endif
 }
@@ -66334,7 +66334,7 @@ static sp_digit div_384_word_6(sp_digit d1, sp_digit d0, sp_digit div)
 
         : [d1] "+r" (d1), [d0] "+r" (d0)
         : [div] "r" (div)
-        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return d1;
@@ -66992,7 +66992,7 @@ static void sp_384_div2_mod_6(sp_digit* r, const sp_digit* a,
         "str	x8, [%[r], 40]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "cc"
     );
 }
 
@@ -68192,7 +68192,7 @@ static void sp_521_mul_9(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -68718,7 +68718,7 @@ static void sp_521_mul_9(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "stp	x4, x5, [%[r], 128]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "cc"
     );
 }
 
@@ -68783,7 +68783,7 @@ static void sp_521_sqr_9(sp_digit* r, const sp_digit* a)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -69160,7 +69160,7 @@ static void sp_521_sqr_9(sp_digit* r, const sp_digit* a)
         "stp	x3, x4, [%[r], 128]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "cc"
     );
 }
 
@@ -69202,7 +69202,7 @@ static sp_digit sp_521_add_9(sp_digit* r, const sp_digit* a,
         "cset	%[c], cs\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return c;
@@ -69246,7 +69246,7 @@ static sp_digit sp_521_add_9(sp_digit* r, const sp_digit* a,
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -69290,7 +69290,7 @@ static sp_digit sp_521_sub_9(sp_digit* r, const sp_digit* a,
         "csetm	%[c], cc\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return c;
@@ -69334,7 +69334,7 @@ static sp_digit sp_521_sub_9(sp_digit* r, const sp_digit* a,
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -69402,7 +69402,7 @@ static void sp_521_lshift_9(sp_digit* r, const sp_digit* a, byte n)
         "stp	x4, x2, [%[r]]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [n] "r" (n64)
-        : "memory", "x2", "x3", "x4", "x5", "x6"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "cc"
     );
 }
 
@@ -69521,7 +69521,7 @@ static void sp_521_lshift_18(sp_digit* r, const sp_digit* a, byte n)
         "stp	x4, x2, [%[r]]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [n] "r" (n64)
-        : "memory", "x2", "x3", "x4", "x5", "x6"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "cc"
     );
 }
 
@@ -69574,7 +69574,7 @@ static void sp_521_rshift_9(sp_digit* r, const sp_digit* a, byte n)
         "stp	x3, x4, [%[r], 56]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [n] "r" (nl)
-        : "memory", "x2", "x3", "x4", "x5", "x6"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "cc"
     );
 }
 
@@ -69613,7 +69613,7 @@ static sp_digit sp_521_sub_in_place_9(sp_digit* a, const sp_digit* b)
         "csetm	%[c], cc\n\t"
         : [c] "+r" (c), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return c;
@@ -69655,7 +69655,7 @@ static sp_digit sp_521_sub_in_place_9(sp_digit* a, const sp_digit* b)
         "csetm	%[a], cc\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     return (sp_digit)a;
@@ -69691,7 +69691,7 @@ static sp_digit sp_521_cond_sub_9(sp_digit* r, const sp_digit* a, const sp_digit
         "b.lt	1b\n\t"
         : [c] "+r" (c)
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return c;
@@ -69734,7 +69734,7 @@ static sp_digit sp_521_cond_sub_9(sp_digit* r, const sp_digit* a, const sp_digit
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return (sp_digit)r;
@@ -69777,7 +69777,7 @@ static void sp_521_mul_d_9(sp_digit* r, const sp_digit* a,
         "str	x3, [%[r], 72]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -69856,7 +69856,7 @@ static void sp_521_mul_d_9(sp_digit* r, const sp_digit* a,
         "str	x3, [%[r], 72]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #endif
 }
@@ -69916,7 +69916,7 @@ static sp_digit div_521_word_9(sp_digit d1, sp_digit d0, sp_digit div)
 
         : [d1] "+r" (d1), [d0] "+r" (d0)
         : [div] "r" (div)
-        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return d1;
@@ -69992,7 +69992,7 @@ static sp_int64 sp_521_cmp_9(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -70058,7 +70058,7 @@ static sp_int64 sp_521_cmp_9(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #endif
 
@@ -70389,7 +70389,7 @@ static void sp_521_cond_copy_9(sp_digit* r, const sp_digit* a, sp_digit m)
         "str	x11, [%[r], 64]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "cc"
     );
 }
 
@@ -70974,7 +70974,7 @@ SP_NOINLINE static void sp_521_mont_mul_9(sp_digit* r, const sp_digit* a, const 
         "ldp	x29, x30, [sp], #0xa0\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         : [r] "r" (r)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "cc"
     );
 }
 
@@ -71409,7 +71409,7 @@ SP_NOINLINE static void sp_521_mont_sqr_9(sp_digit* r, const sp_digit* a, const 
         "ldp	x29, x30, [sp], #0xa0\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "cc"
     );
 }
 
@@ -71670,7 +71670,7 @@ SP_NOINLINE static void sp_521_mont_reduce_9(sp_digit* a, const sp_digit* m,
         "str	x21, [%[a], 64]\n\t"
         : [a] "+r" (a), [mp] "+r" (mp)
         : [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "cc"
     );
 
 }
@@ -71764,7 +71764,7 @@ static void sp_521_mont_add_9(sp_digit* r, const sp_digit* a, const sp_digit* b,
         "str	x12, [%[r], 64]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "cc"
     );
 }
 
@@ -71809,7 +71809,7 @@ static void sp_521_mont_dbl_9(sp_digit* r, const sp_digit* a, const sp_digit* m)
         "str	x12, [%[r], 64]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "cc"
     );
 }
 
@@ -71863,7 +71863,7 @@ static void sp_521_mont_tpl_9(sp_digit* r, const sp_digit* a, const sp_digit* m)
         "str	x22, [%[r], 64]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "cc"
     );
 }
 
@@ -71916,7 +71916,7 @@ static void sp_521_mont_sub_9(sp_digit* r, const sp_digit* a, const sp_digit* b,
         "str	x12, [%[r], 64]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "cc"
     );
 }
 
@@ -71950,7 +71950,7 @@ static sp_digit sp_521_cond_add_9(sp_digit* r, const sp_digit* a, const sp_digit
         "b.lt	1b\n\t"
         : [c] "+r" (c)
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x5", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return c;
@@ -72007,7 +72007,7 @@ static sp_digit sp_521_cond_add_9(sp_digit* r, const sp_digit* a, const sp_digit
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return (sp_digit)r;
@@ -72045,7 +72045,7 @@ static void sp_521_rshift1_9(sp_digit* r, const sp_digit* a)
         "stp	x3, x4, [%[r], 56]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x2", "x3", "x4"
+        : "memory", "x2", "x3", "x4", "cc"
     );
 }
 
@@ -110767,7 +110767,7 @@ static void sp_521_add_one_9(sp_digit* a)
         "str	x1, [%[a], 64]\n\t"
         :
         : [a] "r" (a)
-        : "memory", "x1", "x2", "x3", "x4"
+        : "memory", "x1", "x2", "x3", "x4", "cc"
     );
 }
 
@@ -110880,7 +110880,7 @@ static void sp_521_from_bin(sp_digit* r, int size, const byte* a, int n)
         "30:\n\t"
         :
         : [r] "r" (r), [size] "r" (bytes), [a] "r" (a), [n] "r" (nl)
-        : "memory", "x4", "x5", "x6", "x7", "x8"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "cc"
     );
 }
 
@@ -111832,7 +111832,7 @@ static void sp_521_div2_mod_9(sp_digit* r, const sp_digit* a,
         "str	x11, [%[r], 64]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "cc"
     );
 }
 
@@ -113286,7 +113286,7 @@ static void sp_1024_mul_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "stp	x5, x3, [%[r], 112]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "cc"
     );
 }
 
@@ -113529,7 +113529,7 @@ static void sp_1024_sqr_8(sp_digit* r, const sp_digit* a)
         "stp	x20, x21, [%[r], 112]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28", "cc"
     );
 }
 
@@ -113566,7 +113566,7 @@ static sp_digit sp_1024_add_8(sp_digit* r, const sp_digit* a,
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -113600,7 +113600,7 @@ static void sp_1024_add_word_8(sp_digit* r, const sp_digit* a,
         "stp	x5, x6, [%[r], 48]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6"
+        : "memory", "x3", "x4", "x5", "x6", "cc"
     );
 }
 
@@ -113655,7 +113655,7 @@ static sp_digit sp_1024_sub_in_place_16(sp_digit* a, const sp_digit* b)
         "csetm	%[a], cc\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 
     return (sp_digit)a;
@@ -113714,7 +113714,7 @@ static sp_digit sp_1024_add_16(sp_digit* r, const sp_digit* a,
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -113765,7 +113765,7 @@ static sp_digit sp_1024_cond_add_8(sp_digit* r, const sp_digit* a, const sp_digi
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return (sp_digit)r;
@@ -113840,7 +113840,7 @@ static sp_digit sp_1024_sub_8(sp_digit* r, const sp_digit* a,
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -113926,7 +113926,7 @@ static void sp_1024_mul_16(sp_digit* r, const sp_digit* a, const sp_digit* b)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -113991,7 +113991,7 @@ static void sp_1024_sqr_16(sp_digit* r, const sp_digit* a)
         "str	x6, [%[r], x5]\n\t"
         :
         : [r] "r" (tmp), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     XMEMCPY(r, tmp, sizeof(tmp));
@@ -114103,7 +114103,7 @@ static sp_digit sp_1024_sub_in_place_16(sp_digit* a, const sp_digit* b)
         "b.ne	1b\n\t"
         : [c] "+r" (c), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return c;
@@ -114139,7 +114139,7 @@ static sp_digit sp_1024_cond_sub_16(sp_digit* r, const sp_digit* a, const sp_dig
         "b.lt	1b\n\t"
         : [c] "+r" (c)
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return c;
@@ -114205,7 +114205,7 @@ static sp_digit sp_1024_cond_sub_16(sp_digit* r, const sp_digit* a, const sp_dig
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x6", "x5", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return (sp_digit)r;
@@ -114243,7 +114243,7 @@ static sp_digit sp_1024_add_16(sp_digit* r, const sp_digit* a,
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return c;
@@ -114286,7 +114286,7 @@ static void sp_1024_mul_d_16(sp_digit* r, const sp_digit* a,
         "str	x3, [%[r], 128]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -114423,7 +114423,7 @@ static void sp_1024_mul_d_16(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r], 120]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #endif
 }
@@ -114483,7 +114483,7 @@ static sp_digit div_1024_word_16(sp_digit d1, sp_digit d0, sp_digit div)
 
         : [d1] "+r" (d1), [d0] "+r" (d0)
         : [div] "r" (div)
-        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return d1;
@@ -114555,7 +114555,7 @@ static sp_int64 sp_1024_cmp_16(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 #else
     __asm__ __volatile__ (
@@ -114662,7 +114662,7 @@ static sp_int64 sp_1024_cmp_16(const sp_digit* a, const sp_digit* b)
         "orr	%[a], %[a], x3\n\t"
         : [a] "+r" (a)
         : [b] "r" (b)
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
+        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
     );
 #endif
 
@@ -115078,7 +115078,7 @@ static void sp_1024_cond_copy_16(sp_digit* r, const sp_digit* a, sp_digit m)
         "stp	x3, x4, [%[r], 112]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6"
+        : "memory", "x3", "x4", "x5", "x6", "cc"
     );
 }
 
@@ -115289,7 +115289,7 @@ SP_NOINLINE static void sp_1024_mont_reduce_16(sp_digit* a, const sp_digit* m,
         "stp	x27, x28, [%[a], 112]\n\t"
         : [a] "+r" (a), [mp] "+r" (mp)
         : [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28", "cc"
     );
 
 }
@@ -115530,7 +115530,7 @@ static void sp_1024_mont_add_16(sp_digit* r, const sp_digit* a, const sp_digit* 
         "stp       x19, x20, [%[r], 112]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "cc"
     );
 }
 
@@ -115622,7 +115622,7 @@ static void sp_1024_mont_dbl_16(sp_digit* r, const sp_digit* a, const sp_digit* 
         "stp       x19, x20, [%[r], 112]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "cc"
     );
 }
 
@@ -115783,7 +115783,7 @@ static void sp_1024_mont_tpl_16(sp_digit* r, const sp_digit* a, const sp_digit* 
         "stp       x19, x20, [%[r], 112]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "cc"
     );
 }
 
@@ -115881,7 +115881,7 @@ static void sp_1024_mont_sub_16(sp_digit* r, const sp_digit* a, const sp_digit* 
         "stp       x19, x20, [%[r], 112]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "cc"
     );
 }
 
@@ -115915,7 +115915,7 @@ static sp_digit sp_1024_cond_add_16(sp_digit* r, const sp_digit* a, const sp_dig
         "b.lt	1b\n\t"
         : [c] "+r" (c)
         : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x8", "x9", "x10", "x11", "x12"
+        : "memory", "x4", "x5", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 
     return c;
@@ -115995,7 +115995,7 @@ static sp_digit sp_1024_cond_add_16(sp_digit* r, const sp_digit* a, const sp_dig
         "cset	%[r], cs\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return (sp_digit)r;
@@ -116054,7 +116054,7 @@ static void sp_1024_rshift1_16(sp_digit* r, const sp_digit* a)
         "stp	x4, x2, [%[r], 112]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x2", "x3", "x4"
+        : "memory", "x2", "x3", "x4", "cc"
     );
 }
 
@@ -116394,7 +116394,7 @@ static sp_digit sp_1024_sub_16(sp_digit* r, const sp_digit* a,
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
     );
 
     return c;
@@ -116454,7 +116454,7 @@ static sp_digit sp_1024_sub_16(sp_digit* r, const sp_digit* a,
         "csetm	%[r], cc\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
     );
 
     return (sp_digit)r;
@@ -124598,7 +124598,7 @@ static void sp_1024_from_bin(sp_digit* r, int size, const byte* a, int n)
         "30:\n\t"
         :
         : [r] "r" (r), [size] "r" (bytes), [a] "r" (a), [n] "r" (nl)
-        : "memory", "x4", "x5", "x6", "x7", "x8"
+        : "memory", "x4", "x5", "x6", "x7", "x8", "cc"
     );
 }
 
