@@ -334,7 +334,7 @@ extern sp_digit sp_2048_sub_in_place_16(sp_digit* a, const sp_digit* b);
 #endif
 #endif /* (WOLFSSL_HAVE_SP_RSA & !WOLFSSL_RSA_PUBLIC_ONLY) | WOLFSSL_HAVE_SP_DH */
 
-/* Caclulate the bottom digit of -1/a mod 2^n.
+/* Calculate the bottom digit of -1/a mod 2^n.
  *
  * a    A single precision number.
  * rho  Bottom word of inverse.
@@ -400,7 +400,7 @@ extern void sp_2048_mont_reduce_16(sp_digit* a, const sp_digit* m, sp_digit mp);
  * a   First number to multiply in Montgomery form.
  * b   Second number to multiply in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_2048_mont_mul_16(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -414,7 +414,7 @@ SP_NOINLINE static void sp_2048_mont_mul_16(sp_digit* r, const sp_digit* a,
  * r   Result of squaring.
  * a   Number to square in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_2048_mont_sqr_16(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -823,7 +823,7 @@ extern void sp_2048_mont_reduce_avx2_16(sp_digit* a, const sp_digit* m, sp_digit
  * a   First number to multiply in Montgomery form.
  * b   Second number to multiply in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_2048_mont_mul_avx2_16(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -839,7 +839,7 @@ SP_NOINLINE static void sp_2048_mont_mul_avx2_16(sp_digit* r, const sp_digit* a,
  * r   Result of squaring.
  * a   Number to square in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_2048_mont_sqr_avx2_16(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -1091,7 +1091,7 @@ extern void sp_2048_mont_reduce_32(sp_digit* a, const sp_digit* m, sp_digit mp);
  * a   First number to multiply in Montgomery form.
  * b   Second number to multiply in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_2048_mont_mul_32(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -1105,7 +1105,7 @@ SP_NOINLINE static void sp_2048_mont_mul_32(sp_digit* r, const sp_digit* a,
  * r   Result of squaring.
  * a   Number to square in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_2048_mont_sqr_32(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -1636,7 +1636,7 @@ extern void sp_2048_mont_reduce_avx2_32(sp_digit* a, const sp_digit* m, sp_digit
  * a   First number to multiply in Montgomery form.
  * b   Second number to multiply in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_2048_mont_mul_avx2_32(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -1652,7 +1652,7 @@ SP_NOINLINE static void sp_2048_mont_mul_avx2_32(sp_digit* r, const sp_digit* a,
  * r   Result of squaring.
  * a   Number to square in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_2048_mont_sqr_avx2_32(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -3336,7 +3336,7 @@ extern void sp_3072_sqr_avx2_48(sp_digit* r, const sp_digit* a);
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
 #endif /* (WOLFSSL_HAVE_SP_RSA & !WOLFSSL_RSA_PUBLIC_ONLY) | WOLFSSL_HAVE_SP_DH */
 
-/* Caclulate the bottom digit of -1/a mod 2^n.
+/* Calculate the bottom digit of -1/a mod 2^n.
  *
  * a    A single precision number.
  * rho  Bottom word of inverse.
@@ -3402,7 +3402,7 @@ extern void sp_3072_mont_reduce_24(sp_digit* a, const sp_digit* m, sp_digit mp);
  * a   First number to multiply in Montgomery form.
  * b   Second number to multiply in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_3072_mont_mul_24(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -3416,7 +3416,7 @@ SP_NOINLINE static void sp_3072_mont_mul_24(sp_digit* r, const sp_digit* a,
  * r   Result of squaring.
  * a   Number to square in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_3072_mont_sqr_24(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -3825,7 +3825,7 @@ extern void sp_3072_mont_reduce_avx2_24(sp_digit* a, const sp_digit* m, sp_digit
  * a   First number to multiply in Montgomery form.
  * b   Second number to multiply in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_3072_mont_mul_avx2_24(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -3841,7 +3841,7 @@ SP_NOINLINE static void sp_3072_mont_mul_avx2_24(sp_digit* r, const sp_digit* a,
  * r   Result of squaring.
  * a   Number to square in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_3072_mont_sqr_avx2_24(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -4093,7 +4093,7 @@ extern void sp_3072_mont_reduce_48(sp_digit* a, const sp_digit* m, sp_digit mp);
  * a   First number to multiply in Montgomery form.
  * b   Second number to multiply in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_3072_mont_mul_48(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -4107,7 +4107,7 @@ SP_NOINLINE static void sp_3072_mont_mul_48(sp_digit* r, const sp_digit* a,
  * r   Result of squaring.
  * a   Number to square in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_3072_mont_sqr_48(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -4586,7 +4586,7 @@ extern void sp_3072_mont_reduce_avx2_48(sp_digit* a, const sp_digit* m, sp_digit
  * a   First number to multiply in Montgomery form.
  * b   Second number to multiply in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_3072_mont_mul_avx2_48(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -4602,7 +4602,7 @@ SP_NOINLINE static void sp_3072_mont_mul_avx2_48(sp_digit* r, const sp_digit* a,
  * r   Result of squaring.
  * a   Number to square in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_3072_mont_sqr_avx2_48(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -6150,7 +6150,7 @@ extern void sp_4096_sqr_avx2_64(sp_digit* r, const sp_digit* a);
 }
 #endif
 
-/* Caclulate the bottom digit of -1/a mod 2^n.
+/* Calculate the bottom digit of -1/a mod 2^n.
  *
  * a    A single precision number.
  * rho  Bottom word of inverse.
@@ -6217,7 +6217,7 @@ extern void sp_4096_mont_reduce_64(sp_digit* a, const sp_digit* m, sp_digit mp);
  * a   First number to multiply in Montgomery form.
  * b   Second number to multiply in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_4096_mont_mul_64(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -6231,7 +6231,7 @@ SP_NOINLINE static void sp_4096_mont_mul_64(sp_digit* r, const sp_digit* a,
  * r   Result of squaring.
  * a   Number to square in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_4096_mont_sqr_64(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -6710,7 +6710,7 @@ extern void sp_4096_mont_reduce_avx2_64(sp_digit* a, const sp_digit* m, sp_digit
  * a   First number to multiply in Montgomery form.
  * b   Second number to multiply in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_4096_mont_mul_avx2_64(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -6726,7 +6726,7 @@ SP_NOINLINE static void sp_4096_mont_mul_avx2_64(sp_digit* r, const sp_digit* a,
  * r   Result of squaring.
  * a   Number to square in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_4096_mont_sqr_avx2_64(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -8397,7 +8397,7 @@ extern void sp_256_mont_sqr_4(sp_digit* r, const sp_digit* a, const sp_digit* m,
  * a   Number to square in Montgomery form.
  * n   Number of times to square.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 static void sp_256_mont_sqr_n_4(sp_digit* r, const sp_digit* a, int n,
         const sp_digit* m, sp_digit mp)
@@ -9616,7 +9616,7 @@ extern void sp_256_mont_sqr_avx2_4(sp_digit* r, const sp_digit* a, const sp_digi
  * a   Number to square in Montgomery form.
  * n   Number of times to square.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 static void sp_256_mont_sqr_n_avx2_4(sp_digit* r, const sp_digit* a, int n,
         const sp_digit* m, sp_digit mp)
@@ -10994,7 +10994,7 @@ static THREAD_LS_T int sp_cache_256_inited = 0;
 
 /* Get the cache entry for the point.
  *
- * g      [in]   Point scalar multipling.
+ * g      [in]   Point scalar multiplying.
  * cache  [out]  Cache table to use.
  */
 static void sp_ecc_get_cache_256(const sp_point_256* g, sp_cache_256_t** cache)
@@ -11571,7 +11571,7 @@ int sp_ecc_mulmod_256(const mp_int* km, const ecc_point* gm, ecc_point* r,
  *
  * km      Scalar to multiply by.
  * p       Point to multiply.
- * am      Point to add to scalar mulitply result.
+ * am      Point to add to scalar multiply result.
  * inMont  Point to add is in montgomery form.
  * r       Resulting point.
  * map     Indicates whether to convert result to affine.
@@ -24409,7 +24409,7 @@ int sp_ecc_mulmod_base_256(const mp_int* km, ecc_point* r, int map, void* heap)
  * the result. If map is true then convert result to affine coordinates.
  *
  * km      Scalar to multiply by.
- * am      Point to add to scalar mulitply result.
+ * am      Point to add to scalar multiply result.
  * inMont  Point to add is in montgomery form.
  * r       Resulting point.
  * map     Indicates whether to convert result to affine.
@@ -26012,7 +26012,7 @@ static void sp_256_add_points_4(sp_point_256* p1, const sp_point_256* p2,
  * p2    Public point and temporary.
  * s     Second part of signature as a number.
  * u1    Temporary number.
- * u2    Temproray number.
+ * u2    Temporary number.
  * heap  Heap to use for allocation.
  * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
  */
@@ -27509,7 +27509,7 @@ extern void sp_384_mont_reduce_order_6(sp_digit* a, const sp_digit* m, sp_digit 
  * a   First number to multiply in Montgomery form.
  * b   Second number to multiply in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_384_mont_mul_6(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -27523,7 +27523,7 @@ SP_NOINLINE static void sp_384_mont_mul_6(sp_digit* r, const sp_digit* a,
  * r   Result of squaring.
  * a   Number to square in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_384_mont_sqr_6(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -27539,7 +27539,7 @@ SP_NOINLINE static void sp_384_mont_sqr_6(sp_digit* r, const sp_digit* a,
  * a   Number to square in Montgomery form.
  * n   Number of times to square.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 static void sp_384_mont_sqr_n_6(sp_digit* r, const sp_digit* a, int n,
         const sp_digit* m, sp_digit mp)
@@ -28751,7 +28751,7 @@ extern void sp_384_mont_reduce_order_avx2_6(sp_digit* a, const sp_digit* m, sp_d
  * a   First number to multiply in Montgomery form.
  * b   Second number to multiply in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_384_mont_mul_avx2_6(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -28767,7 +28767,7 @@ SP_NOINLINE static void sp_384_mont_mul_avx2_6(sp_digit* r, const sp_digit* a,
  * r   Result of squaring.
  * a   Number to square in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_384_mont_sqr_avx2_6(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -28784,7 +28784,7 @@ SP_NOINLINE static void sp_384_mont_sqr_avx2_6(sp_digit* r, const sp_digit* a,
  * a   Number to square in Montgomery form.
  * n   Number of times to square.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 static void sp_384_mont_sqr_n_avx2_6(sp_digit* r, const sp_digit* a, int n,
         const sp_digit* m, sp_digit mp)
@@ -30180,7 +30180,7 @@ static THREAD_LS_T int sp_cache_384_inited = 0;
 
 /* Get the cache entry for the point.
  *
- * g      [in]   Point scalar multipling.
+ * g      [in]   Point scalar multiplying.
  * cache  [out]  Cache table to use.
  */
 static void sp_ecc_get_cache_384(const sp_point_384* g, sp_cache_384_t** cache)
@@ -30758,7 +30758,7 @@ int sp_ecc_mulmod_384(const mp_int* km, const ecc_point* gm, ecc_point* r,
  *
  * km      Scalar to multiply by.
  * p       Point to multiply.
- * am      Point to add to scalar mulitply result.
+ * am      Point to add to scalar multiply result.
  * inMont  Point to add is in montgomery form.
  * r       Resulting point.
  * map     Indicates whether to convert result to affine.
@@ -49410,7 +49410,7 @@ int sp_ecc_mulmod_base_384(const mp_int* km, ecc_point* r, int map, void* heap)
  * the result. If map is true then convert result to affine coordinates.
  *
  * km      Scalar to multiply by.
- * am      Point to add to scalar mulitply result.
+ * am      Point to add to scalar multiply result.
  * inMont  Point to add is in montgomery form.
  * r       Resulting point.
  * map     Indicates whether to convert result to affine.
@@ -50962,7 +50962,7 @@ static void sp_384_add_points_6(sp_point_384* p1, const sp_point_384* p2,
  * p2    Public point and temporary.
  * s     Second part of signature as a number.
  * u1    Temporary number.
- * u2    Temproray number.
+ * u2    Temporary number.
  * heap  Heap to use for allocation.
  * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
  */
@@ -52416,7 +52416,7 @@ extern void sp_521_mont_sqr_9(sp_digit* r, const sp_digit* a, const sp_digit* m,
  * a   Number to square in Montgomery form.
  * n   Number of times to square.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 static void sp_521_mont_sqr_n_9(sp_digit* r, const sp_digit* a, int n,
         const sp_digit* m, sp_digit mp)
@@ -53635,7 +53635,7 @@ extern void sp_521_mont_sqr_avx2_9(sp_digit* r, const sp_digit* a, const sp_digi
  * a   Number to square in Montgomery form.
  * n   Number of times to square.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 static void sp_521_mont_sqr_n_avx2_9(sp_digit* r, const sp_digit* a, int n,
         const sp_digit* m, sp_digit mp)
@@ -55036,7 +55036,7 @@ static THREAD_LS_T int sp_cache_521_inited = 0;
 
 /* Get the cache entry for the point.
  *
- * g      [in]   Point scalar multipling.
+ * g      [in]   Point scalar multiplying.
  * cache  [out]  Cache table to use.
  */
 static void sp_ecc_get_cache_521(const sp_point_521* g, sp_cache_521_t** cache)
@@ -55614,7 +55614,7 @@ int sp_ecc_mulmod_521(const mp_int* km, const ecc_point* gm, ecc_point* r,
  *
  * km      Scalar to multiply by.
  * p       Point to multiply.
- * am      Point to add to scalar mulitply result.
+ * am      Point to add to scalar multiply result.
  * inMont  Point to add is in montgomery form.
  * r       Resulting point.
  * map     Indicates whether to convert result to affine.
@@ -90452,7 +90452,7 @@ int sp_ecc_mulmod_base_521(const mp_int* km, ecc_point* r, int map, void* heap)
  * the result. If map is true then convert result to affine coordinates.
  *
  * km      Scalar to multiply by.
- * am      Point to add to scalar mulitply result.
+ * am      Point to add to scalar multiply result.
  * inMont  Point to add is in montgomery form.
  * r       Resulting point.
  * map     Indicates whether to convert result to affine.
@@ -92071,7 +92071,7 @@ static void sp_521_add_points_9(sp_point_521* p1, const sp_point_521* p2,
  * p2    Public point and temporary.
  * s     Second part of signature as a number.
  * u1    Temporary number.
- * u2    Temproray number.
+ * u2    Temporary number.
  * heap  Heap to use for allocation.
  * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
  */
@@ -93694,7 +93694,7 @@ extern void sp_1024_mont_reduce_16(sp_digit* a, const sp_digit* m, sp_digit mp);
  * a   First number to multiply in Montgomery form.
  * b   Second number to multiply in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_1024_mont_mul_16(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -93708,7 +93708,7 @@ SP_NOINLINE static void sp_1024_mont_mul_16(sp_digit* r, const sp_digit* a,
  * r   Result of squaring.
  * a   Number to square in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_1024_mont_sqr_16(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -94868,7 +94868,7 @@ extern void sp_1024_mont_reduce_avx2_16(sp_digit* a, const sp_digit* m, sp_digit
  * a   First number to multiply in Montgomery form.
  * b   Second number to multiply in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_1024_mont_mul_avx2_16(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -94884,7 +94884,7 @@ SP_NOINLINE static void sp_1024_mont_mul_avx2_16(sp_digit* r, const sp_digit* a,
  * r   Result of squaring.
  * a   Number to square in Montgomery form.
  * m   Modulus (prime).
- * mp  Montgomery mulitplier.
+ * mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_1024_mont_sqr_avx2_16(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -96221,7 +96221,7 @@ static THREAD_LS_T int sp_cache_1024_inited = 0;
 
 /* Get the cache entry for the point.
  *
- * g      [in]   Point scalar multipling.
+ * g      [in]   Point scalar multiplying.
  * cache  [out]  Cache table to use.
  */
 static void sp_ecc_get_cache_1024(const sp_point_1024* g, sp_cache_1024_t** cache)
@@ -100214,7 +100214,7 @@ int sp_ecc_mulmod_base_1024(const mp_int* km, ecc_point* r, int map, void* heap)
  * the result. If map is true then convert result to affine coordinates.
  *
  * km      Scalar to multiply by.
- * am      Point to add to scalar mulitply result.
+ * am      Point to add to scalar multiply result.
  * inMont  Point to add is in montgomery form.
  * r       Resulting point.
  * map     Indicates whether to convert result to affine.
@@ -100488,7 +100488,7 @@ int sp_ecc_mulmod_table_1024(const mp_int* km, const ecc_point* gm, byte* table,
     return err;
 }
 
-/* Multiply p* in projective co-ordinates by q*.
+/* Multiply p* in projective coordinates by q*.
  *
  * r.x = p.x - (p.y * q.y)
  * r.y = (p.x * q.y) + p.y
@@ -100514,7 +100514,7 @@ static void sp_1024_proj_mul_qx1_16(sp_digit* px, sp_digit* py,
     sp_1024_mont_add_16(py, t1, py, p1024_mod);
 }
 
-/* Square p* in projective co-ordinates.
+/* Square p* in projective coordinates.
  *
  *   px' = (p.x + p.y) * (p.x - p.y) = p.x^2 - p.y^2
  *   py' = 2 * p.x * p.y
@@ -102280,7 +102280,7 @@ static int sp_ModExp_Fp_star_x64_1024(const mp_int* base, mp_int* exp, mp_int* r
 
 #endif /* WOLFSSL_SP_SMALL */
 #ifdef HAVE_INTEL_AVX2
-/* Multiply p* in projective co-ordinates by q*.
+/* Multiply p* in projective coordinates by q*.
  *
  * r.x = p.x - (p.y * q.y)
  * r.y = (p.x * q.y) + p.y
@@ -102306,7 +102306,7 @@ static void sp_1024_proj_mul_qx1_avx2_16(sp_digit* px, sp_digit* py,
     sp_1024_mont_add_avx2_16(py, t1, py, p1024_mod);
 }
 
-/* Square p* in projective co-ordinates.
+/* Square p* in projective coordinates.
  *
  *   px' = (p.x + p.y) * (p.x - p.y) = p.x^2 - p.y^2
  *   py' = 2 * p.x * p.y
@@ -102559,7 +102559,7 @@ int sp_ModExp_Fp_star_1024(const mp_int* base, mp_int* exp, mp_int* res)
    return err;
 }
 
-/* Multiply p* by q* in projective co-ordinates.
+/* Multiply p* by q* in projective coordinates.
  *
  *   p.x' = (p.x * q.x) - (p.y * q.y)
  *   p.y' = (p.x * q.y) + (p.y * q.x)
@@ -103360,7 +103360,7 @@ static int sp_Pairing_x64_1024(const ecc_point* pm, const ecc_point* qm, mp_int*
 
 #endif /* WOLFSSL_SP_SMALL */
 #ifdef HAVE_INTEL_AVX2
-/* Multiply p* by q* in projective co-ordinates.
+/* Multiply p* by q* in projective coordinates.
  *
  *   p.x' = (p.x * q.x) - (p.y * q.y)
  *   p.y' = (p.x * q.y) + (p.y * q.x)
