@@ -52,6 +52,15 @@
 
 #include <wolfssl/wolfcrypt/sp.h>
 
+#ifdef __IAR_SYSTEMS_ICC__
+#define __asm__        asm
+#define __volatile__   volatile
+#endif /* __IAR_SYSTEMS_ICC__ */
+#ifdef __KEIL__
+#define __asm__        __asm
+#define __volatile__   volatile
+#endif
+
 #ifdef WOLFSSL_SP_ARM64_ASM
 #define SP_PRINT_NUM(var, name, total, words, bits)         \
     do {                                                    \
@@ -193,14 +202,14 @@ static void sp_2048_from_mp(sp_digit* r, int size, const mp_int* a)
 {
 #if DIGIT_BIT == 64
     int i;
-    int j = 0;
+    sp_digit j = (sp_digit)0 - (sp_digit)a->used;
+    int o = 0;
 
     for (i = 0; i < size; i++) {
-        sp_digit mask =
-            (((sp_digit)((int)a->used - i - 1)) >> (SP_WORD_SIZE - 1)) - 1;
-        r[i] = a->dp[j] & mask;
-        j += (int)(((sp_digit)1) -
-                   (((sp_digit)((int)a->used - i - 2)) >> (SP_WORD_SIZE - 1)));
+        sp_digit mask = (sp_digit)0 - (j >> 63);
+        r[i] = a->dp[o] & mask;
+        j++;
+        o += (int)(j >> 63);
     }
 #elif DIGIT_BIT > 64
     unsigned int i;
@@ -758,7 +767,7 @@ static sp_digit sp_2048_add_8(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r], 32]\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r], 48]\n\t"
-        "cset	%[r], cs\n\t"
+        "adc	%[r], xzr, xzr\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
         : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
@@ -906,7 +915,7 @@ static sp_digit sp_2048_add_16(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r], 96]\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r], 112]\n\t"
-        "cset	%[r], cs\n\t"
+        "adc	%[r], xzr, xzr\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
         : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
@@ -1237,7 +1246,7 @@ static sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r], 224]\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r], 240]\n\t"
-        "cset	%[r], cs\n\t"
+        "adc	%[r], xzr, xzr\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
         : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
@@ -2489,7 +2498,7 @@ static sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r]], #16\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r]], #16\n\t"
-        "cset	%[c], cs\n\t"
+        "adc	%[c], xzr, xzr\n\t"
         "cmp	%[a], x11\n\t"
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
@@ -2681,7 +2690,7 @@ static sp_digit sp_2048_add_16(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r]], #16\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r]], #16\n\t"
-        "cset	%[c], cs\n\t"
+        "adc	%[c], xzr, xzr\n\t"
         "cmp	%[a], x11\n\t"
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
@@ -3339,7 +3348,7 @@ SP_NOINLINE static void sp_2048_mont_reduce_16(sp_digit* a, const sp_digit* m,
         "umulh	x8, x10, x9\n\t"
         "adds	x6, x6, x7\n\t"
         "adcs	x8, x8, x3\n\t"
-        "cset	x3, cs\n\t"
+        "adc	x3, xzr, xzr\n\t"
         "adds	x27, x28, x6\n\t"
         "ldr	x28, [%[a], 128]\n\t"
         "adcs	x28, x28, x8\n\t"
@@ -3719,7 +3728,7 @@ static void sp_2048_mul_d_16(sp_digit* r, const sp_digit* a,
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * Assumes divisor has higest bit set.
+ * Assumes divisor has highest bit set.
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
@@ -4642,7 +4651,7 @@ SP_NOINLINE static void sp_2048_mont_reduce_32(sp_digit* a, const sp_digit* m,
         "ldp	x8, x9, [%[a], 248]\n\t"
         "adds	x5, x5, x6\n\t"
         "adcs	x7, x7, x3\n\t"
-        "cset	x3, cs\n\t"
+        "adc	x3, xzr, xzr\n\t"
         "adds	x8, x8, x5\n\t"
         "str	x8, [%[a], 248]\n\t"
         "adcs	x9, x9, x7\n\t"
@@ -4939,7 +4948,7 @@ static sp_digit sp_2048_sub_32(sp_digit* r, const sp_digit* a,
 #endif /* WOLFSSL_SP_SMALL */
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * Assumes divisor has higest bit set.
+ * Assumes divisor has highest bit set.
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
@@ -5230,7 +5239,7 @@ static sp_digit sp_2048_cond_sub_32(sp_digit* r, const sp_digit* a, const sp_dig
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * Assumes divisor has higest bit set.
+ * Assumes divisor has highest bit set.
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
@@ -7086,14 +7095,14 @@ static void sp_3072_from_mp(sp_digit* r, int size, const mp_int* a)
 {
 #if DIGIT_BIT == 64
     int i;
-    int j = 0;
+    sp_digit j = (sp_digit)0 - (sp_digit)a->used;
+    int o = 0;
 
     for (i = 0; i < size; i++) {
-        sp_digit mask =
-            (((sp_digit)((int)a->used - i - 1)) >> (SP_WORD_SIZE - 1)) - 1;
-        r[i] = a->dp[j] & mask;
-        j += (int)(((sp_digit)1) -
-                   (((sp_digit)((int)a->used - i - 2)) >> (SP_WORD_SIZE - 1)));
+        sp_digit mask = (sp_digit)0 - (j >> 63);
+        r[i] = a->dp[o] & mask;
+        j++;
+        o += (int)(j >> 63);
     }
 #elif DIGIT_BIT > 64
     unsigned int i;
@@ -7475,7 +7484,7 @@ static sp_digit sp_3072_add_6(sp_digit* r, const sp_digit* a,
         "adcs	x4, x4, x8\n\t"
         "str	x3, [%[r], 32]\n\t"
         "str	x4, [%[r], 40]\n\t"
-        "cset	%[r], cs\n\t"
+        "adc	%[r], xzr, xzr\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
         : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
@@ -7601,7 +7610,7 @@ static sp_digit sp_3072_add_12(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r], 64]\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r], 80]\n\t"
-        "cset	%[r], cs\n\t"
+        "adc	%[r], xzr, xzr\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
         : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
@@ -7877,7 +7886,7 @@ static sp_digit sp_3072_add_24(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r], 160]\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r], 176]\n\t"
-        "cset	%[r], cs\n\t"
+        "adc	%[r], xzr, xzr\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
         : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
@@ -8318,7 +8327,7 @@ static sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r], 352]\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r], 368]\n\t"
-        "cset	%[r], cs\n\t"
+        "adc	%[r], xzr, xzr\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
         : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
@@ -11292,7 +11301,7 @@ static sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r]], #16\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r]], #16\n\t"
-        "cset	%[c], cs\n\t"
+        "adc	%[c], xzr, xzr\n\t"
         "cmp	%[a], x11\n\t"
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
@@ -11484,7 +11493,7 @@ static sp_digit sp_3072_add_24(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r]], #16\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r]], #16\n\t"
-        "cset	%[c], cs\n\t"
+        "adc	%[c], xzr, xzr\n\t"
         "cmp	%[a], x11\n\t"
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
@@ -12354,7 +12363,7 @@ SP_NOINLINE static void sp_3072_mont_reduce_24(sp_digit* a, const sp_digit* m,
         "ldp	x8, x9, [%[a], 184]\n\t"
         "adds	x5, x5, x6\n\t"
         "adcs	x7, x7, x3\n\t"
-        "cset	x3, cs\n\t"
+        "adc	x3, xzr, xzr\n\t"
         "adds	x8, x8, x5\n\t"
         "str	x8, [%[a], 184]\n\t"
         "adcs	x9, x9, x7\n\t"
@@ -12862,7 +12871,7 @@ static void sp_3072_mul_d_24(sp_digit* r, const sp_digit* a,
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * Assumes divisor has higest bit set.
+ * Assumes divisor has highest bit set.
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
@@ -13977,7 +13986,7 @@ SP_NOINLINE static void sp_3072_mont_reduce_48(sp_digit* a, const sp_digit* m,
         "ldp	x8, x9, [%[a], 376]\n\t"
         "adds	x5, x5, x6\n\t"
         "adcs	x7, x7, x3\n\t"
-        "cset	x3, cs\n\t"
+        "adc	x3, xzr, xzr\n\t"
         "adds	x8, x8, x5\n\t"
         "str	x8, [%[a], 376]\n\t"
         "adcs	x9, x9, x7\n\t"
@@ -14370,7 +14379,7 @@ static sp_digit sp_3072_sub_48(sp_digit* r, const sp_digit* a,
 #endif /* WOLFSSL_SP_SMALL */
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * Assumes divisor has higest bit set.
+ * Assumes divisor has highest bit set.
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
@@ -14717,7 +14726,7 @@ static sp_digit sp_3072_cond_sub_48(sp_digit* r, const sp_digit* a, const sp_dig
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * Assumes divisor has higest bit set.
+ * Assumes divisor has highest bit set.
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
@@ -16689,14 +16698,14 @@ static void sp_4096_from_mp(sp_digit* r, int size, const mp_int* a)
 {
 #if DIGIT_BIT == 64
     int i;
-    int j = 0;
+    sp_digit j = (sp_digit)0 - (sp_digit)a->used;
+    int o = 0;
 
     for (i = 0; i < size; i++) {
-        sp_digit mask =
-            (((sp_digit)((int)a->used - i - 1)) >> (SP_WORD_SIZE - 1)) - 1;
-        r[i] = a->dp[j] & mask;
-        j += (int)(((sp_digit)1) -
-                   (((sp_digit)((int)a->used - i - 2)) >> (SP_WORD_SIZE - 1)));
+        sp_digit mask = (sp_digit)0 - (j >> 63);
+        r[i] = a->dp[o] & mask;
+        j++;
+        o += (int)(j >> 63);
     }
 #elif DIGIT_BIT > 64
     unsigned int i;
@@ -17234,7 +17243,7 @@ static sp_digit sp_4096_add_64(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r], 480]\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r], 496]\n\t"
-        "cset	%[r], cs\n\t"
+        "adc	%[r], xzr, xzr\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
         : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
@@ -17476,7 +17485,7 @@ static sp_digit sp_4096_add_64(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r]], #16\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r]], #16\n\t"
-        "cset	%[c], cs\n\t"
+        "adc	%[c], xzr, xzr\n\t"
         "cmp	%[a], x11\n\t"
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
@@ -18840,7 +18849,7 @@ SP_NOINLINE static void sp_4096_mont_reduce_64(sp_digit* a, const sp_digit* m,
         "ldp	x8, x9, [%[a], 504]\n\t"
         "adds	x5, x5, x6\n\t"
         "adcs	x7, x7, x3\n\t"
-        "cset	x3, cs\n\t"
+        "adc	x3, xzr, xzr\n\t"
         "adds	x8, x8, x5\n\t"
         "str	x8, [%[a], 504]\n\t"
         "adcs	x9, x9, x7\n\t"
@@ -19329,7 +19338,7 @@ static sp_digit sp_4096_sub_64(sp_digit* r, const sp_digit* a,
 #endif /* WOLFSSL_SP_SMALL */
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * Assumes divisor has higest bit set.
+ * Assumes divisor has highest bit set.
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
@@ -19732,7 +19741,7 @@ static sp_digit sp_4096_cond_sub_64(sp_digit* r, const sp_digit* a, const sp_dig
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * Assumes divisor has higest bit set.
+ * Assumes divisor has highest bit set.
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
@@ -21864,112 +21873,101 @@ static void sp_256_mul_4(sp_digit* r, const sp_digit* a, const sp_digit* b)
  */
 static void sp_256_mul_4(sp_digit* r, const sp_digit* a, const sp_digit* b)
 {
-    sp_digit tmp[4];
-
     __asm__ __volatile__ (
-        "ldp       x16, x17, [%[a], 0]\n\t"
-        "ldp       x21, x22, [%[b], 0]\n\t"
-        "#  A[0] * B[0]\n\t"
-        "mul       x8, x16, x21\n\t"
-        "ldr       x19, [%[a], 16]\n\t"
-        "umulh     x9, x16, x21\n\t"
-        "ldr       x23, [%[b], 16]\n\t"
-        "#  A[0] * B[1]\n\t"
-        "mul       x4, x16, x22\n\t"
-        "ldr       x20, [%[a], 24]\n\t"
-        "umulh     x5, x16, x22\n\t"
-        "ldr       x24, [%[b], 24]\n\t"
-        "adds  x9, x9, x4\n\t"
-        "#  A[1] * B[0]\n\t"
-        "mul       x4, x17, x21\n\t"
-        "adc   x10, xzr, x5\n\t"
-        "umulh     x5, x17, x21\n\t"
-        "adds  x9, x9, x4\n\t"
-        "#  A[0] * B[2]\n\t"
-        "mul       x4, x16, x23\n\t"
-        "adcs   x10, x10, x5\n\t"
-        "umulh     x5, x16, x23\n\t"
-        "adc     x11, xzr, xzr\n\t"
-        "adds  x10, x10, x4\n\t"
-        "#  A[1] * B[1]\n\t"
-        "mul       x4, x17, x22\n\t"
-        "adc   x11, x11, x5\n\t"
-        "umulh     x5, x17, x22\n\t"
-        "adds  x10, x10, x4\n\t"
-        "#  A[2] * B[0]\n\t"
-        "mul       x4, x19, x21\n\t"
-        "adcs   x11, x11, x5\n\t"
-        "umulh     x5, x19, x21\n\t"
-        "adc     x12, xzr, xzr\n\t"
-        "adds  x10, x10, x4\n\t"
-        "#  A[0] * B[3]\n\t"
-        "mul       x4, x16, x24\n\t"
-        "adcs   x11, x11, x5\n\t"
-        "umulh     x5, x16, x24\n\t"
-        "adc     x12, x12, xzr\n\t"
-        "adds  x11, x11, x4\n\t"
-        "#  A[1] * B[2]\n\t"
-        "mul       x4, x17, x23\n\t"
-        "adcs   x12, x12, x5\n\t"
-        "umulh     x5, x17, x23\n\t"
-        "adc     x13, xzr, xzr\n\t"
-        "adds  x11, x11, x4\n\t"
-        "#  A[2] * B[1]\n\t"
-        "mul       x4, x19, x22\n\t"
-        "adcs   x12, x12, x5\n\t"
-        "umulh     x5, x19, x22\n\t"
-        "adc     x13, x13, xzr\n\t"
-        "adds  x11, x11, x4\n\t"
-        "#  A[3] * B[0]\n\t"
-        "mul       x4, x20, x21\n\t"
-        "adcs   x12, x12, x5\n\t"
-        "umulh     x5, x20, x21\n\t"
-        "adc     x13, x13, xzr\n\t"
-        "adds  x11, x11, x4\n\t"
-        "#  A[1] * B[3]\n\t"
-        "mul       x4, x17, x24\n\t"
-        "adcs   x12, x12, x5\n\t"
-        "umulh     x5, x17, x24\n\t"
-        "adc     x13, x13, xzr\n\t"
-        "adds  x12, x12, x4\n\t"
-        "#  A[2] * B[2]\n\t"
-        "mul       x4, x19, x23\n\t"
-        "adcs   x13, x13, x5\n\t"
-        "umulh     x5, x19, x23\n\t"
-        "adc     x14, xzr, xzr\n\t"
-        "adds  x12, x12, x4\n\t"
-        "#  A[3] * B[1]\n\t"
-        "mul       x4, x20, x22\n\t"
-        "adcs   x13, x13, x5\n\t"
-        "umulh     x5, x20, x22\n\t"
-        "adc     x14, x14, xzr\n\t"
-        "adds  x12, x12, x4\n\t"
-        "#  A[2] * B[3]\n\t"
-        "mul       x4, x19, x24\n\t"
-        "adcs   x13, x13, x5\n\t"
-        "umulh     x5, x19, x24\n\t"
-        "adc     x14, x14, xzr\n\t"
-        "adds  x13, x13, x4\n\t"
-        "#  A[3] * B[2]\n\t"
-        "mul       x4, x20, x23\n\t"
-        "adcs   x14, x14, x5\n\t"
-        "umulh     x5, x20, x23\n\t"
-        "adc     x15, xzr, xzr\n\t"
-        "adds  x13, x13, x4\n\t"
-        "#  A[3] * B[3]\n\t"
-        "mul       x4, x20, x24\n\t"
-        "adcs   x14, x14, x5\n\t"
-        "umulh     x5, x20, x24\n\t"
-        "adc     x15, x15, xzr\n\t"
-        "adds  x14, x14, x4\n\t"
-        "adc   x15, x15, x5\n\t"
-        "stp	x8, x9, [%[r], 0]\n\t"
-        "stp	x10, x11, [%[r], 16]\n\t"
-        "stp	x12, x13, [%[r], 32]\n\t"
-        "stp	x14, x15, [%[r], 48]\n\t"
+        "ldp	x13, x14, [%[a], 0]\n\t"
+        "ldp	x15, x16, [%[a], 16]\n\t"
+        "ldp	x17, x19, [%[b], 0]\n\t"
+        "ldp	x20, x21, [%[b], 16]\n\t"
+        "# A[0] * B[0]\n\t"
+        "umulh	x6, x13, x17\n\t"
+        "mul	x5, x13, x17\n\t"
+        "# A[2] * B[0]\n\t"
+        "umulh	x8, x15, x17\n\t"
+        "mul	x7, x15, x17\n\t"
+        "# A[1] * B[0]\n\t"
+        "mul	x3, x14, x17\n\t"
+        "adds	x6, x6, x3\n\t"
+        "umulh	x4, x14, x17\n\t"
+        "adcs	x7, x7, x4\n\t"
+        "adc	x8, x8, xzr\n\t"
+        "# A[0] * B[2]\n\t"
+        "mul	x3, x13, x20\n\t"
+        "adds	x7, x7, x3\n\t"
+        "umulh	x4, x13, x20\n\t"
+        "adcs	x8, x8, x4\n\t"
+        "# A[1] * B[3]\n\t"
+        "mul	x9, x14, x21\n\t"
+        "adcs	x9, x9, xzr\n\t"
+        "umulh	x10, x14, x21\n\t"
+        "adc	x10, x10, xzr\n\t"
+        "# A[0] * B[1]\n\t"
+        "mul	x3, x13, x19\n\t"
+        "adds	x6, x6, x3\n\t"
+        "umulh	x4, x13, x19\n\t"
+        "adcs	x7, x7, x4\n\t"
+        "# A[2] * B[1]\n\t"
+        "mul	x3, x15, x19\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "umulh	x4, x15, x19\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "adc	x10, x10, xzr\n\t"
+        "# A[1] * B[2]\n\t"
+        "mul	x3, x14, x20\n\t"
+        "adds	x8, x8, x3\n\t"
+        "umulh	x4, x14, x20\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "adcs	x10, x10, xzr\n\t"
+        "adc	x11, xzr, xzr\n\t"
+        "# A[1] * B[1]\n\t"
+        "mul	x3, x14, x19\n\t"
+        "adds	x7, x7, x3\n\t"
+        "umulh	x4, x14, x19\n\t"
+        "adcs	x8, x8, x4\n\t"
+        "# A[3] * B[1]\n\t"
+        "mul	x3, x16, x19\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "umulh	x4, x16, x19\n\t"
+        "adcs	x10, x10, x4\n\t"
+        "adc	x11, x11, xzr\n\t"
+        "# A[2] * B[2]\n\t"
+        "mul	x3, x15, x20\n\t"
+        "adds	x9, x9, x3\n\t"
+        "umulh	x4, x15, x20\n\t"
+        "adcs	x10, x10, x4\n\t"
+        "# A[3] * B[3]\n\t"
+        "mul	x3, x16, x21\n\t"
+        "adcs	x11, x11, x3\n\t"
+        "umulh	x12, x16, x21\n\t"
+        "adc	x12, x12, xzr\n\t"
+        "# A[0] * B[3]\n\t"
+        "mul	x3, x13, x21\n\t"
+        "adds	x8, x8, x3\n\t"
+        "umulh	x4, x13, x21\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "# A[2] * B[3]\n\t"
+        "mul	x3, x15, x21\n\t"
+        "adcs	x10, x10, x3\n\t"
+        "umulh	x4, x15, x21\n\t"
+        "adcs	x11, x11, x4\n\t"
+        "adc	x12, x12, xzr\n\t"
+        "# A[3] * B[0]\n\t"
+        "mul	x3, x16, x17\n\t"
+        "adds	x8, x8, x3\n\t"
+        "umulh	x4, x16, x17\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "# A[3] * B[2]\n\t"
+        "mul	x3, x16, x20\n\t"
+        "adcs	x10, x10, x3\n\t"
+        "umulh	x4, x16, x20\n\t"
+        "adcs	x11, x11, x4\n\t"
+        "adc	x12, x12, xzr\n\t"
+        "stp	x5, x6, [%[r], 0]\n\t"
+        "stp	x7, x8, [%[r], 16]\n\t"
+        "stp	x9, x10, [%[r], 32]\n\t"
+        "stp	x11, x12, [%[r], 48]\n\t"
         :
-        : [r] "r" (r), [a] "r" (a), [b] "r" (b), [tmp] "r" (tmp)
-        : "memory", "x4", "x5", "x6", "x7", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "cc"
+        : [r] "r" (r), [a] "r" (a), [b] "r" (b)
+        : "memory", "x3", "x4", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 }
 
@@ -21982,72 +21980,68 @@ static void sp_256_mul_4(sp_digit* r, const sp_digit* a, const sp_digit* b)
 static void sp_256_sqr_4(sp_digit* r, const sp_digit* a)
 {
     __asm__ __volatile__ (
-        "ldp       x16, x17, [%[a], 0]\n\t"
-        "#  A[0] * A[1]\n\t"
-        "mul	x9, x16, x17\n\t"
-        "ldr       x19, [%[a], 16]\n\t"
-        "umulh	x10, x16, x17\n\t"
-        "ldr       x20, [%[a], 24]\n\t"
-        "#  A[0] * A[2]\n\t"
-        "mul	x4, x16, x19\n\t"
-        "umulh	x5, x16, x19\n\t"
-        "adds	x10, x10, x4\n\t"
-        "#  A[0] * A[3]\n\t"
-        "mul	x4, x16, x20\n\t"
-        "adc	x11, xzr, x5\n\t"
-        "umulh	x5, x16, x20\n\t"
-        "adds	x11, x11, x4\n\t"
-        "#  A[1] * A[2]\n\t"
-        "mul	x4, x17, x19\n\t"
-        "adc	x12, xzr, x5\n\t"
-        "umulh	x5, x17, x19\n\t"
-        "adds	x11, x11, x4\n\t"
-        "#  A[1] * A[3]\n\t"
-        "mul	x4, x17, x20\n\t"
-        "adcs	x12, x12, x5\n\t"
-        "umulh	x5, x17, x20\n\t"
-        "adc	x13, xzr, xzr\n\t"
-        "adds	x12, x12, x4\n\t"
-        "#  A[2] * A[3]\n\t"
-        "mul	x4, x19, x20\n\t"
-        "adc	x13, x13, x5\n\t"
-        "umulh	x5, x19, x20\n\t"
-        "adds	x13, x13, x4\n\t"
-        "adc	x14, xzr, x5\n\t"
+        "ldp	x12, x13, [%[a], 0]\n\t"
+        "ldp	x14, x15, [%[a], 16]\n\t"
+        "# A[0] * A[1]\n\t"
+        "umulh	x6, x12, x13\n\t"
+        "mul	x5, x12, x13\n\t"
+        "# A[0] * A[3]\n\t"
+        "umulh	x8, x12, x15\n\t"
+        "mul	x7, x12, x15\n\t"
+        "# A[0] * A[2]\n\t"
+        "mul	x2, x12, x14\n\t"
+        "adds	x6, x6, x2\n\t"
+        "umulh	x3, x12, x14\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "# A[1] * A[3]\n\t"
+        "mul	x2, x13, x15\n\t"
+        "adcs	x8, x8, x2\n\t"
+        "umulh	x9, x13, x15\n\t"
+        "adc	x9, x9, xzr\n\t"
+        "# A[1] * A[2]\n\t"
+        "mul	x2, x13, x14\n\t"
+        "adds	x7, x7, x2\n\t"
+        "umulh	x3, x13, x14\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "# A[2] * A[3]\n\t"
+        "mul	x2, x14, x15\n\t"
+        "adcs	x9, x9, x2\n\t"
+        "umulh	x10, x14, x15\n\t"
+        "adc	x10, x10, xzr\n\t"
         "# Double\n\t"
-        "adds	x9, x9, x9\n\t"
+        "adds	x5, x5, x5\n\t"
+        "adcs	x6, x6, x6\n\t"
+        "adcs	x7, x7, x7\n\t"
+        "adcs	x8, x8, x8\n\t"
+        "adcs	x9, x9, x9\n\t"
         "adcs	x10, x10, x10\n\t"
-        "adcs	x11, x11, x11\n\t"
-        "adcs	x12, x12, x12\n\t"
-        "adcs	x13, x13, x13\n\t"
-        "#  A[0] * A[0]\n\t"
-        "mul	x8, x16, x16\n\t"
-        "adcs	x14, x14, x14\n\t"
-        "umulh	x3, x16, x16\n\t"
-        "cset	x15, cs\n\t"
-        "#  A[1] * A[1]\n\t"
-        "mul	x4, x17, x17\n\t"
-        "adds	x9, x9, x3\n\t"
-        "umulh	x5, x17, x17\n\t"
-        "adcs	x10, x10, x4\n\t"
-        "#  A[2] * A[2]\n\t"
-        "mul	x6, x19, x19\n\t"
-        "adcs	x11, x11, x5\n\t"
-        "umulh	x7, x19, x19\n\t"
-        "adcs	x12, x12, x6\n\t"
-        "#  A[3] * A[3]\n\t"
-        "mul	x16, x20, x20\n\t"
-        "adcs	x13, x13, x7\n\t"
-        "umulh	x17, x20, x20\n\t"
-        "adcs	x14, x14, x16\n\t"
-        "adc	x15, x15, x17\n\t"
-        "stp	x8, x9, [%[r], 0]\n\t"
-        "stp	x10, x11, [%[r], 16]\n\t"
-        "stp	x12, x13, [%[r], 32]\n\t"
-        "stp	x14, x15, [%[r], 48]\n\t"
+        "adc	x11, xzr, xzr\n\t"
+        "# A[0] * A[0]\n\t"
+        "umulh	x3, x12, x12\n\t"
+        "mul	x4, x12, x12\n\t"
+        "# A[1] * A[1]\n\t"
+        "mul	x2, x13, x13\n\t"
+        "adds	x5, x5, x3\n\t"
+        "umulh	x3, x13, x13\n\t"
+        "adcs	x6, x6, x2\n\t"
+        "# A[2] * A[2]\n\t"
+        "mul	x2, x14, x14\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "umulh	x3, x14, x14\n\t"
+        "adcs	x8, x8, x2\n\t"
+        "# A[3] * A[3]\n\t"
+        "mul	x2, x15, x15\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "umulh	x3, x15, x15\n\t"
+        "adcs	x10, x10, x2\n\t"
+        "adc	x11, x11, x3\n\t"
+        "stp	x4, x5, [%[r], 0]\n\t"
+        "stp	x6, x7, [%[r], 16]\n\t"
+        "stp	x8, x9, [%[r], 32]\n\t"
+        "stp	x10, x11, [%[r], 48]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "cc"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "cc"
     );
 }
 
@@ -22071,7 +22065,7 @@ static sp_digit sp_256_add_4(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r], 0]\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r], 16]\n\t"
-        "cset	%[r], cs\n\t"
+        "adc	%[r], xzr, xzr\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
         : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
@@ -22198,14 +22192,14 @@ static void sp_256_from_mp(sp_digit* r, int size, const mp_int* a)
 {
 #if DIGIT_BIT == 64
     int i;
-    int j = 0;
+    sp_digit j = (sp_digit)0 - (sp_digit)a->used;
+    int o = 0;
 
     for (i = 0; i < size; i++) {
-        sp_digit mask =
-            (((sp_digit)((int)a->used - i - 1)) >> (SP_WORD_SIZE - 1)) - 1;
-        r[i] = a->dp[j] & mask;
-        j += (int)(((sp_digit)1) -
-                   (((sp_digit)((int)a->used - i - 2)) >> (SP_WORD_SIZE - 1)));
+        sp_digit mask = (sp_digit)0 - (j >> 63);
+        r[i] = a->dp[o] & mask;
+        j++;
+        o += (int)(j >> 63);
     }
 #elif DIGIT_BIT > 64
     unsigned int i;
@@ -22426,181 +22420,171 @@ static void sp_256_cond_copy_4(sp_digit* r, const sp_digit* a, sp_digit m)
  * m   Modulus (prime).
  * mp  Montgomery multiplier.
  */
-SP_NOINLINE static void sp_256_mont_mul_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
+static void sp_256_mont_mul_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
         const sp_digit* m, sp_digit mp)
 {
     (void)m;
     (void)mp;
 
     __asm__ __volatile__ (
-        "ldp       x16, x17, [%[a], 0]\n\t"
-        "ldp       x21, x22, [%[b], 0]\n\t"
-        "#  A[0] * B[0]\n\t"
-        "mul       x8, x16, x21\n\t"
-        "ldr       x19, [%[a], 16]\n\t"
-        "umulh     x9, x16, x21\n\t"
-        "ldr       x23, [%[b], 16]\n\t"
-        "#  A[0] * B[1]\n\t"
-        "mul       x4, x16, x22\n\t"
-        "ldr       x20, [%[a], 24]\n\t"
-        "umulh     x5, x16, x22\n\t"
-        "ldr       x24, [%[b], 24]\n\t"
-        "adds  x9, x9, x4\n\t"
-        "#  A[1] * B[0]\n\t"
-        "mul       x4, x17, x21\n\t"
-        "adc   x10, xzr, x5\n\t"
-        "umulh     x5, x17, x21\n\t"
-        "adds  x9, x9, x4\n\t"
-        "#  A[0] * B[2]\n\t"
-        "mul       x4, x16, x23\n\t"
-        "adcs   x10, x10, x5\n\t"
-        "umulh     x5, x16, x23\n\t"
-        "adc     x11, xzr, xzr\n\t"
-        "adds  x10, x10, x4\n\t"
-        "#  A[1] * B[1]\n\t"
-        "mul       x4, x17, x22\n\t"
-        "adc   x11, x11, x5\n\t"
-        "umulh     x5, x17, x22\n\t"
-        "adds  x10, x10, x4\n\t"
-        "#  A[2] * B[0]\n\t"
-        "mul       x4, x19, x21\n\t"
-        "adcs   x11, x11, x5\n\t"
-        "umulh     x5, x19, x21\n\t"
-        "adc     x12, xzr, xzr\n\t"
-        "adds  x10, x10, x4\n\t"
-        "#  A[0] * B[3]\n\t"
-        "mul       x4, x16, x24\n\t"
-        "adcs   x11, x11, x5\n\t"
-        "umulh     x5, x16, x24\n\t"
-        "adc     x12, x12, xzr\n\t"
-        "adds  x11, x11, x4\n\t"
-        "#  A[1] * B[2]\n\t"
-        "mul       x4, x17, x23\n\t"
-        "adcs   x12, x12, x5\n\t"
-        "umulh     x5, x17, x23\n\t"
-        "adc     x13, xzr, xzr\n\t"
-        "adds  x11, x11, x4\n\t"
-        "#  A[2] * B[1]\n\t"
-        "mul       x4, x19, x22\n\t"
-        "adcs   x12, x12, x5\n\t"
-        "umulh     x5, x19, x22\n\t"
-        "adc     x13, x13, xzr\n\t"
-        "adds  x11, x11, x4\n\t"
-        "#  A[3] * B[0]\n\t"
-        "mul       x4, x20, x21\n\t"
-        "adcs   x12, x12, x5\n\t"
-        "umulh     x5, x20, x21\n\t"
-        "adc     x13, x13, xzr\n\t"
-        "adds  x11, x11, x4\n\t"
-        "#  A[1] * B[3]\n\t"
-        "mul       x4, x17, x24\n\t"
-        "adcs   x12, x12, x5\n\t"
-        "umulh     x5, x17, x24\n\t"
-        "adc     x13, x13, xzr\n\t"
-        "adds  x12, x12, x4\n\t"
-        "#  A[2] * B[2]\n\t"
-        "mul       x4, x19, x23\n\t"
-        "adcs   x13, x13, x5\n\t"
-        "umulh     x5, x19, x23\n\t"
-        "adc     x14, xzr, xzr\n\t"
-        "adds  x12, x12, x4\n\t"
-        "#  A[3] * B[1]\n\t"
-        "mul       x4, x20, x22\n\t"
-        "adcs   x13, x13, x5\n\t"
-        "umulh     x5, x20, x22\n\t"
-        "adc     x14, x14, xzr\n\t"
-        "adds  x12, x12, x4\n\t"
-        "#  A[2] * B[3]\n\t"
-        "mul       x4, x19, x24\n\t"
-        "adcs   x13, x13, x5\n\t"
-        "umulh     x5, x19, x24\n\t"
-        "adc     x14, x14, xzr\n\t"
-        "adds  x13, x13, x4\n\t"
-        "#  A[3] * B[2]\n\t"
-        "mul       x4, x20, x23\n\t"
-        "adcs   x14, x14, x5\n\t"
-        "umulh     x5, x20, x23\n\t"
-        "adc     x15, xzr, xzr\n\t"
-        "adds  x13, x13, x4\n\t"
-        "#  A[3] * B[3]\n\t"
-        "mul       x4, x20, x24\n\t"
-        "adcs   x14, x14, x5\n\t"
-        "umulh     x5, x20, x24\n\t"
-        "adc     x15, x15, xzr\n\t"
-        "adds  x14, x14, x4\n\t"
-        "mov	x4, x8\n\t"
-        "adc   x15, x15, x5\n\t"
+        "ldp	x13, x14, [%[a], 0]\n\t"
+        "ldp	x15, x16, [%[a], 16]\n\t"
+        "ldp	x17, x19, [%[b], 0]\n\t"
+        "ldp	x20, x21, [%[b], 16]\n\t"
+        "# A[0] * B[0]\n\t"
+        "umulh	x6, x13, x17\n\t"
+        "mul	x5, x13, x17\n\t"
+        "# A[2] * B[0]\n\t"
+        "umulh	x8, x15, x17\n\t"
+        "mul	x7, x15, x17\n\t"
+        "# A[1] * B[0]\n\t"
+        "mul	x3, x14, x17\n\t"
+        "adds	x6, x6, x3\n\t"
+        "umulh	x4, x14, x17\n\t"
+        "adcs	x7, x7, x4\n\t"
+        "adc	x8, x8, xzr\n\t"
+        "# A[0] * B[2]\n\t"
+        "mul	x3, x13, x20\n\t"
+        "adds	x7, x7, x3\n\t"
+        "umulh	x4, x13, x20\n\t"
+        "adcs	x8, x8, x4\n\t"
+        "# A[1] * B[3]\n\t"
+        "mul	x9, x14, x21\n\t"
+        "adcs	x9, x9, xzr\n\t"
+        "umulh	x10, x14, x21\n\t"
+        "adc	x10, x10, xzr\n\t"
+        "# A[0] * B[1]\n\t"
+        "mul	x3, x13, x19\n\t"
+        "adds	x6, x6, x3\n\t"
+        "umulh	x4, x13, x19\n\t"
+        "adcs	x7, x7, x4\n\t"
+        "# A[2] * B[1]\n\t"
+        "mul	x3, x15, x19\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "umulh	x4, x15, x19\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "adc	x10, x10, xzr\n\t"
+        "# A[1] * B[2]\n\t"
+        "mul	x3, x14, x20\n\t"
+        "adds	x8, x8, x3\n\t"
+        "umulh	x4, x14, x20\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "adcs	x10, x10, xzr\n\t"
+        "adc	x11, xzr, xzr\n\t"
+        "# A[1] * B[1]\n\t"
+        "mul	x3, x14, x19\n\t"
+        "adds	x7, x7, x3\n\t"
+        "umulh	x4, x14, x19\n\t"
+        "adcs	x8, x8, x4\n\t"
+        "# A[3] * B[1]\n\t"
+        "mul	x3, x16, x19\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "umulh	x4, x16, x19\n\t"
+        "adcs	x10, x10, x4\n\t"
+        "adc	x11, x11, xzr\n\t"
+        "# A[2] * B[2]\n\t"
+        "mul	x3, x15, x20\n\t"
+        "adds	x9, x9, x3\n\t"
+        "umulh	x4, x15, x20\n\t"
+        "adcs	x10, x10, x4\n\t"
+        "# A[3] * B[3]\n\t"
+        "mul	x3, x16, x21\n\t"
+        "adcs	x11, x11, x3\n\t"
+        "umulh	x12, x16, x21\n\t"
+        "adc	x12, x12, xzr\n\t"
+        "# A[0] * B[3]\n\t"
+        "mul	x3, x13, x21\n\t"
+        "adds	x8, x8, x3\n\t"
+        "umulh	x4, x13, x21\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "# A[2] * B[3]\n\t"
+        "mul	x3, x15, x21\n\t"
+        "adcs	x10, x10, x3\n\t"
+        "umulh	x4, x15, x21\n\t"
+        "adcs	x11, x11, x4\n\t"
+        "adc	x12, x12, xzr\n\t"
+        "# A[3] * B[0]\n\t"
+        "mul	x3, x16, x17\n\t"
+        "adds	x8, x8, x3\n\t"
+        "umulh	x4, x16, x17\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "# A[3] * B[2]\n\t"
+        "mul	x3, x16, x20\n\t"
+        "adcs	x10, x10, x3\n\t"
+        "umulh	x4, x16, x20\n\t"
+        "adcs	x11, x11, x4\n\t"
+        "mov	x3, x5\n\t"
+        "adc	x12, x12, xzr\n\t"
         "# Start Reduction\n\t"
-        "mov	x5, x9\n\t"
-        "mov	x6, x10\n\t"
+        "mov	x4, x6\n\t"
+        "mov	x13, x7\n\t"
         "# mu = a[0]-a[3] + a[0]-a[2] << 32 << 64 + (a[0] * 2) << 192\n\t"
         "#    - a[0] << 32 << 192\n\t"
         "#   + (a[0] * 2) << 192\n\t"
         "#   a[0]-a[2] << 32\n\t"
-        "extr	x22, x10, x9, 32\n\t"
-        "add	x7, x11, x8\n\t"
-        "extr	x21, x9, x8, 32\n\t"
-        "add	x7, x7, x8\n\t"
+        "lsl	x15, x5, #32\n\t"
+        "extr	x17, x7, x6, 32\n\t"
+        "add	x14, x8, x5\n\t"
+        "extr	x16, x6, x5, 32\n\t"
+        "add	x14, x14, x5\n\t"
         "#   + a[0]-a[2] << 32 << 64\n\t"
         "#   - a[0] << 32 << 192\n\t"
-        "adds	x5, x5, x8, lsl #32\n\t"
-        "sub	x7, x7, x8, lsl #32\n\t"
-        "adcs	x6, x6, x21\n\t"
-        "adc	x7, x7, x22\n\t"
+        "adds	x4, x4, x15\n\t"
+        "sub	x14, x14, x15\n\t"
+        "adcs	x13, x13, x16\n\t"
+        "adc	x14, x14, x17\n\t"
         "# a += (mu << 256) - (mu << 224) + (mu << 192) + (mu << 96) - mu\n\t"
         "#   a += mu << 256\n\t"
-        "adds	x12, x12, x4\n\t"
-        "adcs	x13, x13, x5\n\t"
-        "adcs	x14, x14, x6\n\t"
-        "adcs	x15, x15, x7\n\t"
-        "cset	x8, cs\n\t"
+        "adds	x9, x9, x3\n\t"
+        "adcs	x10, x10, x4\n\t"
+        "adcs	x11, x11, x13\n\t"
+        "adcs	x12, x12, x14\n\t"
+        "adc	x5, xzr, xzr\n\t"
         "#   a += mu << 192\n\t"
         "# mu <<= 32\n\t"
         "#   a += (mu << 32) << 64\n\t"
-        "adds	x11, x11, x4\n\t"
-        "adcs	x12, x12, x5\n\t"
-        "adcs	x13, x13, x6\n\t"
-        "lsr	x16, x7, 32\n\t"
-        "adcs	x14, x14, x7\n\t"
-        "extr	x7, x7, x6, 32\n\t"
-        "adcs	x15, x15, xzr\n\t"
-        "extr	x6, x6, x5, 32\n\t"
-        "adc	x8, x8, xzr\n\t"
-        "extr	x5, x5, x4, 32\n\t"
-        "lsl	x4, x4, 32\n\t"
-        "adds	x9, x9, x4\n\t"
-        "adcs	x10, x10, x5\n\t"
-        "adcs	x11, x11, x6\n\t"
-        "adcs	x12, x12, x7\n\t"
-        "adcs	x13, x13, x16\n\t"
-        "adcs	x14, x14, xzr\n\t"
-        "adcs	x15, x15, xzr\n\t"
-        "adc	x8, x8, xzr\n\t"
+        "adds	x8, x8, x3\n\t"
+        "extr	x16, x14, x13, 32\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "extr	x15, x13, x4, 32\n\t"
+        "adcs	x10, x10, x13\n\t"
+        "extr	x4, x4, x3, 32\n\t"
+        "adcs	x11, x11, x14\n\t"
+        "lsl  x3, x3, 32\n\t"
+        "adc	x13, xzr, xzr\n\t"
+        "adds	x6, x6, x3\n\t"
+        "lsr	x17, x14, 32\n\t"
+        "adcs	x7, x7, x4\n\t"
+        "adcs	x8, x8, x15\n\t"
+        "adcs	x9, x9, x16\n\t"
+        "adcs	x10, x10, x17\n\t"
+        "adcs	x11, x11, xzr\n\t"
+        "adcs	x12, x12, x13\n\t"
+        "adc	x5, x5, xzr\n\t"
         "#   a -= (mu << 32) << 192\n\t"
-        "subs	x11, x11, x4\n\t"
-        "sbcs	x12, x12, x5\n\t"
-        "sbcs	x13, x13, x6\n\t"
-        "sbcs	x14, x14, x7\n\t"
-        "sbcs	x15, x15, x16\n\t"
-        "mov	x19, 0xffffffff00000001\n\t"
-        "sbc	x8, x8, xzr\n\t"
-        "neg	x8, x8\n\t"
+        "subs	x8, x8, x3\n\t"
+        "sbcs	x9, x9, x4\n\t"
+        "sbcs	x10, x10, x15\n\t"
+        "sbcs	x11, x11, x16\n\t"
+        "sbcs	x12, x12, x17\n\t"
+        "sbc	x5, x5, xzr\n\t"
+        "neg	x5, x5\n\t"
         "# mask m and sub from result if overflow\n\t"
         "#  m[0] = -1 & mask = mask\n\t"
-        "subs	x12, x12, x8\n\t"
+        "subs	x9, x9, x5\n\t"
         "#  m[1] = 0xffffffff & mask = mask >> 32 as mask is all 1s or 0s\n\t"
-        "lsr	x17, x8, 32\n\t"
-        "sbcs	x13, x13, x17\n\t"
-        "and	x19, x19, x8\n\t"
+        "lsr	x16, x5, 32\n\t"
+        "sbcs	x10, x10, x16\n\t"
+        "sub	x17, xzr, x16\n\t"
         "#  m[2] =  0 & mask = 0\n\t"
-        "sbcs	x14, x14, xzr\n\t"
-        "stp	x12, x13, [%[r], 0]\n\t"
+        "sbcs	x11, x11, xzr\n\t"
+        "stp	x9, x10, [%[r], 0]\n\t"
         "#  m[3] =  0xffffffff00000001 & mask\n\t"
-        "sbc	x15, x15, x19\n\t"
-        "stp	x14, x15, [%[r], 16]\n\t"
-        : [a] "+r" (a), [b] "+r" (b)
-        : [r] "r" (r)
-        : "memory", "x4", "x5", "x6", "x7", "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "cc"
+        "sbc	x12, x12, x17\n\t"
+        "stp	x11, x12, [%[r], 16]\n\t"
+        :
+        : [r] "r" (r), [a] "r" (a), [b] "r" (b)
+        : "memory", "x3", "x4", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
     );
 }
 
@@ -22611,144 +22595,139 @@ SP_NOINLINE static void sp_256_mont_mul_4(sp_digit* r, const sp_digit* a, const 
  * m   Modulus (prime).
  * mp  Montgomery multiplier.
  */
-SP_NOINLINE static void sp_256_mont_sqr_4(sp_digit* r, const sp_digit* a, const sp_digit* m,
+static void sp_256_mont_sqr_4(sp_digit* r, const sp_digit* a, const sp_digit* m,
         sp_digit mp)
 {
     (void)m;
     (void)mp;
 
     __asm__ __volatile__ (
-        "ldp       x16, x17, [%[a], 0]\n\t"
-        "#  A[0] * A[1]\n\t"
-        "mul	x9, x16, x17\n\t"
-        "ldr       x19, [%[a], 16]\n\t"
-        "umulh	x10, x16, x17\n\t"
-        "ldr       x20, [%[a], 24]\n\t"
-        "#  A[0] * A[2]\n\t"
-        "mul	x4, x16, x19\n\t"
-        "umulh	x5, x16, x19\n\t"
-        "adds	x10, x10, x4\n\t"
-        "#  A[0] * A[3]\n\t"
-        "mul	x4, x16, x20\n\t"
-        "adc	x11, xzr, x5\n\t"
-        "umulh	x5, x16, x20\n\t"
-        "adds	x11, x11, x4\n\t"
-        "#  A[1] * A[2]\n\t"
-        "mul	x4, x17, x19\n\t"
-        "adc	x12, xzr, x5\n\t"
-        "umulh	x5, x17, x19\n\t"
-        "adds	x11, x11, x4\n\t"
-        "#  A[1] * A[3]\n\t"
-        "mul	x4, x17, x20\n\t"
-        "adcs	x12, x12, x5\n\t"
-        "umulh	x5, x17, x20\n\t"
-        "adc	x13, xzr, xzr\n\t"
-        "adds	x12, x12, x4\n\t"
-        "#  A[2] * A[3]\n\t"
-        "mul	x4, x19, x20\n\t"
-        "adc	x13, x13, x5\n\t"
-        "umulh	x5, x19, x20\n\t"
-        "adds	x13, x13, x4\n\t"
-        "adc	x14, xzr, x5\n\t"
+        "ldp	x12, x13, [%[a], 0]\n\t"
+        "ldp	x14, x15, [%[a], 16]\n\t"
+        "# A[0] * A[1]\n\t"
+        "umulh	x6, x12, x13\n\t"
+        "mul	x5, x12, x13\n\t"
+        "# A[0] * A[3]\n\t"
+        "umulh	x8, x12, x15\n\t"
+        "mul	x7, x12, x15\n\t"
+        "# A[0] * A[2]\n\t"
+        "mul	x2, x12, x14\n\t"
+        "adds	x6, x6, x2\n\t"
+        "umulh	x3, x12, x14\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "# A[1] * A[3]\n\t"
+        "mul	x2, x13, x15\n\t"
+        "adcs	x8, x8, x2\n\t"
+        "umulh	x9, x13, x15\n\t"
+        "adc	x9, x9, xzr\n\t"
+        "# A[1] * A[2]\n\t"
+        "mul	x2, x13, x14\n\t"
+        "adds	x7, x7, x2\n\t"
+        "umulh	x3, x13, x14\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "# A[2] * A[3]\n\t"
+        "mul	x2, x14, x15\n\t"
+        "adcs	x9, x9, x2\n\t"
+        "umulh	x10, x14, x15\n\t"
+        "adc	x10, x10, xzr\n\t"
         "# Double\n\t"
-        "adds	x9, x9, x9\n\t"
+        "adds	x5, x5, x5\n\t"
+        "adcs	x6, x6, x6\n\t"
+        "adcs	x7, x7, x7\n\t"
+        "adcs	x8, x8, x8\n\t"
+        "adcs	x9, x9, x9\n\t"
         "adcs	x10, x10, x10\n\t"
-        "adcs	x11, x11, x11\n\t"
-        "adcs	x12, x12, x12\n\t"
-        "adcs	x13, x13, x13\n\t"
-        "#  A[0] * A[0]\n\t"
-        "mul	x8, x16, x16\n\t"
-        "adcs	x14, x14, x14\n\t"
-        "umulh	x3, x16, x16\n\t"
-        "cset	x15, cs\n\t"
-        "#  A[1] * A[1]\n\t"
-        "mul	x4, x17, x17\n\t"
-        "adds	x9, x9, x3\n\t"
-        "umulh	x5, x17, x17\n\t"
-        "adcs	x10, x10, x4\n\t"
-        "#  A[2] * A[2]\n\t"
-        "mul	x6, x19, x19\n\t"
-        "adcs	x11, x11, x5\n\t"
-        "umulh	x7, x19, x19\n\t"
-        "adcs	x12, x12, x6\n\t"
-        "#  A[3] * A[3]\n\t"
-        "mul	x16, x20, x20\n\t"
-        "adcs	x13, x13, x7\n\t"
-        "umulh	x17, x20, x20\n\t"
-        "adcs	x14, x14, x16\n\t"
-        "mov	x3, x8\n\t"
-        "adc	x15, x15, x17\n\t"
+        "adc	x11, xzr, xzr\n\t"
+        "# A[0] * A[0]\n\t"
+        "umulh	x3, x12, x12\n\t"
+        "mul	x4, x12, x12\n\t"
+        "# A[1] * A[1]\n\t"
+        "mul	x2, x13, x13\n\t"
+        "adds	x5, x5, x3\n\t"
+        "umulh	x3, x13, x13\n\t"
+        "adcs	x6, x6, x2\n\t"
+        "# A[2] * A[2]\n\t"
+        "mul	x2, x14, x14\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "umulh	x3, x14, x14\n\t"
+        "adcs	x8, x8, x2\n\t"
+        "# A[3] * A[3]\n\t"
+        "mul	x2, x15, x15\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "umulh	x3, x15, x15\n\t"
+        "adcs	x10, x10, x2\n\t"
+        "mov	x2, x4\n\t"
+        "adc	x11, x11, x3\n\t"
         "# Start Reduction\n\t"
-        "mov	x4, x9\n\t"
-        "mov	x5, x10\n\t"
+        "mov	x3, x5\n\t"
+        "mov	x12, x6\n\t"
         "# mu = a[0]-a[3] + a[0]-a[2] << 32 << 64 + (a[0] * 2) << 192\n\t"
         "#    - a[0] << 32 << 192\n\t"
         "#   + (a[0] * 2) << 192\n\t"
         "#   a[0]-a[2] << 32\n\t"
-        "extr	x21, x10, x9, 32\n\t"
-        "add	x6, x11, x8\n\t"
-        "extr	x20, x9, x8, 32\n\t"
-        "add	x6, x6, x8\n\t"
+        "lsl	x14, x4, #32\n\t"
+        "extr	x16, x6, x5, 32\n\t"
+        "add	x13, x7, x4\n\t"
+        "extr	x15, x5, x4, 32\n\t"
+        "add	x13, x13, x4\n\t"
         "#   + a[0]-a[2] << 32 << 64\n\t"
         "#   - a[0] << 32 << 192\n\t"
-        "adds	x4, x4, x8, lsl #32\n\t"
-        "sub	x6, x6, x8, lsl #32\n\t"
-        "adcs	x5, x5, x20\n\t"
-        "adc	x6, x6, x21\n\t"
+        "adds	x3, x3, x14\n\t"
+        "sub	x13, x13, x14\n\t"
+        "adcs	x12, x12, x15\n\t"
+        "adc	x13, x13, x16\n\t"
         "# a += (mu << 256) - (mu << 224) + (mu << 192) + (mu << 96) - mu\n\t"
         "#   a += mu << 256\n\t"
-        "adds	x12, x12, x3\n\t"
-        "adcs	x13, x13, x4\n\t"
-        "adcs	x14, x14, x5\n\t"
-        "adcs	x15, x15, x6\n\t"
-        "cset	x8, cs\n\t"
+        "adds	x8, x8, x2\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "adcs	x10, x10, x12\n\t"
+        "adcs	x11, x11, x13\n\t"
+        "adc	x4, xzr, xzr\n\t"
         "#   a += mu << 192\n\t"
         "# mu <<= 32\n\t"
         "#   a += (mu << 32) << 64\n\t"
-        "adds	x11, x11, x3\n\t"
-        "adcs	x12, x12, x4\n\t"
-        "adcs	x13, x13, x5\n\t"
-        "lsr	x7, x6, 32\n\t"
-        "adcs	x14, x14, x6\n\t"
-        "extr	x6, x6, x5, 32\n\t"
-        "adcs	x15, x15, xzr\n\t"
-        "extr	x5, x5, x4, 32\n\t"
-        "adc	x8, x8, xzr\n\t"
-        "extr	x4, x4, x3, 32\n\t"
-        "lsl	x3, x3, 32\n\t"
-        "adds	x9, x9, x3\n\t"
-        "adcs	x10, x10, x4\n\t"
-        "adcs	x11, x11, x5\n\t"
-        "adcs	x12, x12, x6\n\t"
-        "adcs	x13, x13, x7\n\t"
-        "adcs	x14, x14, xzr\n\t"
-        "adcs	x15, x15, xzr\n\t"
-        "adc	x8, x8, xzr\n\t"
+        "adds	x7, x7, x2\n\t"
+        "extr	x15, x13, x12, 32\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "extr	x14, x12, x3, 32\n\t"
+        "adcs	x9, x9, x12\n\t"
+        "extr	x3, x3, x2, 32\n\t"
+        "adcs	x10, x10, x13\n\t"
+        "lsl  x2, x2, 32\n\t"
+        "adc	x12, xzr, xzr\n\t"
+        "adds	x5, x5, x2\n\t"
+        "lsr	x16, x13, 32\n\t"
+        "adcs	x6, x6, x3\n\t"
+        "adcs	x7, x7, x14\n\t"
+        "adcs	x8, x8, x15\n\t"
+        "adcs	x9, x9, x16\n\t"
+        "adcs	x10, x10, xzr\n\t"
+        "adcs	x11, x11, x12\n\t"
+        "adc	x4, x4, xzr\n\t"
         "#   a -= (mu << 32) << 192\n\t"
-        "subs	x11, x11, x3\n\t"
-        "sbcs	x12, x12, x4\n\t"
-        "sbcs	x13, x13, x5\n\t"
-        "sbcs	x14, x14, x6\n\t"
-        "sbcs	x15, x15, x7\n\t"
-        "mov	x17, 0xffffffff00000001\n\t"
-        "sbc	x8, x8, xzr\n\t"
-        "neg	x8, x8\n\t"
+        "subs	x7, x7, x2\n\t"
+        "sbcs	x8, x8, x3\n\t"
+        "sbcs	x9, x9, x14\n\t"
+        "sbcs	x10, x10, x15\n\t"
+        "sbcs	x11, x11, x16\n\t"
+        "sbc	x4, x4, xzr\n\t"
+        "neg	x4, x4\n\t"
         "# mask m and sub from result if overflow\n\t"
         "#  m[0] = -1 & mask = mask\n\t"
-        "subs	x12, x12, x8\n\t"
+        "subs	x8, x8, x4\n\t"
         "#  m[1] = 0xffffffff & mask = mask >> 32 as mask is all 1s or 0s\n\t"
-        "lsr	x16, x8, 32\n\t"
-        "sbcs	x13, x13, x16\n\t"
-        "and	x17, x17, x8\n\t"
+        "lsr	x15, x4, 32\n\t"
+        "sbcs	x9, x9, x15\n\t"
+        "sub	x16, xzr, x15\n\t"
         "#  m[2] =  0 & mask = 0\n\t"
-        "sbcs	x14, x14, xzr\n\t"
-        "stp	x12, x13, [%[r], 0]\n\t"
+        "sbcs	x10, x10, xzr\n\t"
+        "stp	x8, x9, [%[r], 0]\n\t"
         "#  m[3] =  0xffffffff00000001 & mask\n\t"
-        "sbc	x15, x15, x17\n\t"
-        "stp	x14, x15, [%[r], 16]\n\t"
+        "sbc	x11, x11, x16\n\t"
+        "stp	x10, x11, [%[r], 16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "cc"
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "cc"
     );
 }
 
@@ -22990,52 +22969,51 @@ SP_NOINLINE static void sp_256_mont_reduce_4(sp_digit* a, const sp_digit* m,
         "#    - a[0] << 32 << 192\n\t"
         "#   + (a[0] * 2) << 192\n\t"
         "#   a[0]-a[2] << 32\n\t"
-        "extr	x20, x12, x11, 32\n\t"
+        "lsl	x7, x10, #32\n\t"
+        "extr	x9, x12, x11, 32\n\t"
         "add	x6, x13, x10\n\t"
-        "extr	x19, x11, x10, 32\n\t"
+        "extr	x8, x11, x10, 32\n\t"
         "add	x6, x6, x10\n\t"
         "#   + a[0]-a[2] << 32 << 64\n\t"
         "#   - a[0] << 32 << 192\n\t"
-        "adds	x4, x4, x10, lsl #32\n\t"
-        "sub	x6, x6, x10, lsl #32\n\t"
-        "adcs	x5, x5, x19\n\t"
-        "adc	x6, x6, x20\n\t"
+        "adds	x4, x4, x7\n\t"
+        "sub	x6, x6, x7\n\t"
+        "adcs	x5, x5, x8\n\t"
+        "adc	x6, x6, x9\n\t"
         "# a += (mu << 256) - (mu << 224) + (mu << 192) + (mu << 96) - mu\n\t"
         "#   a += mu << 256\n\t"
         "adds	x14, x14, x3\n\t"
         "adcs	x15, x15, x4\n\t"
         "adcs	x16, x16, x5\n\t"
         "adcs	x17, x17, x6\n\t"
-        "cset	x10, cs\n\t"
+        "adc	x10, xzr, xzr\n\t"
         "#   a += mu << 192\n\t"
         "# mu <<= 32\n\t"
         "#   a += (mu << 32) << 64\n\t"
         "adds	x13, x13, x3\n\t"
+        "extr	x8, x6, x5, 32\n\t"
         "adcs	x14, x14, x4\n\t"
+        "extr	x7, x5, x4, 32\n\t"
         "adcs	x15, x15, x5\n\t"
-        "lsr	x7, x6, 32\n\t"
-        "adcs	x16, x16, x6\n\t"
-        "extr	x6, x6, x5, 32\n\t"
-        "adcs	x17, x17, xzr\n\t"
-        "extr	x5, x5, x4, 32\n\t"
-        "adc	x10, x10, xzr\n\t"
         "extr	x4, x4, x3, 32\n\t"
-        "lsl	x3, x3, 32\n\t"
+        "adcs	x16, x16, x6\n\t"
+        "lsl  x3, x3, 32\n\t"
+        "adc	x5, xzr, xzr\n\t"
         "adds	x11, x11, x3\n\t"
+        "lsr	x9, x6, 32\n\t"
         "adcs	x12, x12, x4\n\t"
-        "adcs	x13, x13, x5\n\t"
-        "adcs	x14, x14, x6\n\t"
-        "adcs	x15, x15, x7\n\t"
+        "adcs	x13, x13, x7\n\t"
+        "adcs	x14, x14, x8\n\t"
+        "adcs	x15, x15, x9\n\t"
         "adcs	x16, x16, xzr\n\t"
-        "adcs	x17, x17, xzr\n\t"
+        "adcs	x17, x17, x5\n\t"
         "adc	x10, x10, xzr\n\t"
         "#   a -= (mu << 32) << 192\n\t"
         "subs	x13, x13, x3\n\t"
         "sbcs	x14, x14, x4\n\t"
-        "sbcs	x15, x15, x5\n\t"
-        "sbcs	x16, x16, x6\n\t"
-        "sbcs	x17, x17, x7\n\t"
-        "mov	x9, 0xffffffff00000001\n\t"
+        "sbcs	x15, x15, x7\n\t"
+        "sbcs	x16, x16, x8\n\t"
+        "sbcs	x17, x17, x9\n\t"
         "sbc	x10, x10, xzr\n\t"
         "neg	x10, x10\n\t"
         "# mask m and sub from result if overflow\n\t"
@@ -23044,7 +23022,7 @@ SP_NOINLINE static void sp_256_mont_reduce_4(sp_digit* a, const sp_digit* m,
         "#  m[1] = 0xffffffff & mask = mask >> 32 as mask is all 1s or 0s\n\t"
         "lsr	x8, x10, 32\n\t"
         "sbcs	x15, x15, x8\n\t"
-        "and	x9, x9, x10\n\t"
+        "sub	x9, xzr, x8\n\t"
         "#  m[2] =  0 & mask = 0\n\t"
         "sbcs	x16, x16, xzr\n\t"
         "stp	x14, x15, [%[a], 0]\n\t"
@@ -23056,162 +23034,6 @@ SP_NOINLINE static void sp_256_mont_reduce_4(sp_digit* a, const sp_digit* m,
         : "memory", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x19", "x20", "cc"
     );
 }
-/* Reduce the number back to 256 bits using Montgomery reduction.
- *
- * a   A single precision number to reduce in place.
- * m   The single precision number representing the modulus.
- * mp  The digit representing the negative inverse of m mod 2^n.
- */
-SP_NOINLINE static void sp_256_mont_reduce_order_4(sp_digit* a, const sp_digit* m,
-        sp_digit mp)
-{
-    __asm__ __volatile__ (
-        "ldp	x9, x10, [%[a], 0]\n\t"
-        "ldp	x11, x12, [%[a], 16]\n\t"
-        "ldp	x17, x19, [%[m], 0]\n\t"
-        "ldp	x20, x21, [%[m], 16]\n\t"
-        "mov	x8, xzr\n\t"
-        "# mu = a[0] * mp\n\t"
-        "mul	x5, %[mp], x9\n\t"
-        "ldr	x13, [%[a], 32]\n\t"
-        "# a[0+0] += m[0] * mu\n\t"
-        "mul	x3, x17, x5\n\t"
-        "ldr	x14, [%[a], 40]\n\t"
-        "umulh	x6, x17, x5\n\t"
-        "ldr	x15, [%[a], 48]\n\t"
-        "adds	x9, x9, x3\n\t"
-        "ldr	x16, [%[a], 56]\n\t"
-        "adc	x6, x6, xzr\n\t"
-        "# a[0+1] += m[1] * mu\n\t"
-        "mul	x3, x19, x5\n\t"
-        "umulh	x7, x19, x5\n\t"
-        "adds	x3, x3, x6\n\t"
-        "adc	x7, x7, xzr\n\t"
-        "adds	x10, x10, x3\n\t"
-        "adc	x7, x7, xzr\n\t"
-        "# a[0+2] += m[2] * mu\n\t"
-        "mul	x3, x20, x5\n\t"
-        "umulh	x6, x20, x5\n\t"
-        "adds	x3, x3, x7\n\t"
-        "adc	x6, x6, xzr\n\t"
-        "adds	x11, x11, x3\n\t"
-        "adc	x6, x6, xzr\n\t"
-        "# a[0+3] += m[3] * mu\n\t"
-        "mul	x3, x21, x5\n\t"
-        "umulh	x4, x21, x5\n\t"
-        "adds	x3, x3, x6\n\t"
-        "adcs	x4, x4, x8\n\t"
-        "cset	x8, cs\n\t"
-        "adds	x12, x12, x3\n\t"
-        "adcs	x13, x13, x4\n\t"
-        "adc	x8, x8, xzr\n\t"
-        "# mu = a[1] * mp\n\t"
-        "mul	x5, %[mp], x10\n\t"
-        "# a[1+0] += m[0] * mu\n\t"
-        "mul	x3, x17, x5\n\t"
-        "umulh	x6, x17, x5\n\t"
-        "adds	x10, x10, x3\n\t"
-        "adc	x6, x6, xzr\n\t"
-        "# a[1+1] += m[1] * mu\n\t"
-        "mul	x3, x19, x5\n\t"
-        "umulh	x7, x19, x5\n\t"
-        "adds	x3, x3, x6\n\t"
-        "adc	x7, x7, xzr\n\t"
-        "adds	x11, x11, x3\n\t"
-        "adc	x7, x7, xzr\n\t"
-        "# a[1+2] += m[2] * mu\n\t"
-        "mul	x3, x20, x5\n\t"
-        "umulh	x6, x20, x5\n\t"
-        "adds	x3, x3, x7\n\t"
-        "adc	x6, x6, xzr\n\t"
-        "adds	x12, x12, x3\n\t"
-        "adc	x6, x6, xzr\n\t"
-        "# a[1+3] += m[3] * mu\n\t"
-        "mul	x3, x21, x5\n\t"
-        "umulh	x4, x21, x5\n\t"
-        "adds	x3, x3, x6\n\t"
-        "adcs	x4, x4, x8\n\t"
-        "cset	x8, cs\n\t"
-        "adds	x13, x13, x3\n\t"
-        "adcs	x14, x14, x4\n\t"
-        "adc	x8, x8, xzr\n\t"
-        "# mu = a[2] * mp\n\t"
-        "mul	x5, %[mp], x11\n\t"
-        "# a[2+0] += m[0] * mu\n\t"
-        "mul	x3, x17, x5\n\t"
-        "umulh	x6, x17, x5\n\t"
-        "adds	x11, x11, x3\n\t"
-        "adc	x6, x6, xzr\n\t"
-        "# a[2+1] += m[1] * mu\n\t"
-        "mul	x3, x19, x5\n\t"
-        "umulh	x7, x19, x5\n\t"
-        "adds	x3, x3, x6\n\t"
-        "adc	x7, x7, xzr\n\t"
-        "adds	x12, x12, x3\n\t"
-        "adc	x7, x7, xzr\n\t"
-        "# a[2+2] += m[2] * mu\n\t"
-        "mul	x3, x20, x5\n\t"
-        "umulh	x6, x20, x5\n\t"
-        "adds	x3, x3, x7\n\t"
-        "adc	x6, x6, xzr\n\t"
-        "adds	x13, x13, x3\n\t"
-        "adc	x6, x6, xzr\n\t"
-        "# a[2+3] += m[3] * mu\n\t"
-        "mul	x3, x21, x5\n\t"
-        "umulh	x4, x21, x5\n\t"
-        "adds	x3, x3, x6\n\t"
-        "adcs	x4, x4, x8\n\t"
-        "cset	x8, cs\n\t"
-        "adds	x14, x14, x3\n\t"
-        "adcs	x15, x15, x4\n\t"
-        "adc	x8, x8, xzr\n\t"
-        "# mu = a[3] * mp\n\t"
-        "mul	x5, %[mp], x12\n\t"
-        "# a[3+0] += m[0] * mu\n\t"
-        "mul	x3, x17, x5\n\t"
-        "umulh	x6, x17, x5\n\t"
-        "adds	x12, x12, x3\n\t"
-        "adc	x6, x6, xzr\n\t"
-        "# a[3+1] += m[1] * mu\n\t"
-        "mul	x3, x19, x5\n\t"
-        "umulh	x7, x19, x5\n\t"
-        "adds	x3, x3, x6\n\t"
-        "adc	x7, x7, xzr\n\t"
-        "adds	x13, x13, x3\n\t"
-        "adc	x7, x7, xzr\n\t"
-        "# a[3+2] += m[2] * mu\n\t"
-        "mul	x3, x20, x5\n\t"
-        "umulh	x6, x20, x5\n\t"
-        "adds	x3, x3, x7\n\t"
-        "adc	x6, x6, xzr\n\t"
-        "adds	x14, x14, x3\n\t"
-        "adc	x6, x6, xzr\n\t"
-        "# a[3+3] += m[3] * mu\n\t"
-        "mul	x3, x21, x5\n\t"
-        "umulh	x4, x21, x5\n\t"
-        "adds	x3, x3, x6\n\t"
-        "adcs	x4, x4, x8\n\t"
-        "cset	x8, cs\n\t"
-        "adds	x15, x15, x3\n\t"
-        "adcs	x16, x16, x4\n\t"
-        "adc	x8, x8, xzr\n\t"
-        "sub	x3, xzr, x8\n\t"
-        "and	x17, x17, x3\n\t"
-        "and	x19, x19, x3\n\t"
-        "and	x20, x20, x3\n\t"
-        "and	x21, x21, x3\n\t"
-        "subs	x13, x13, x17\n\t"
-        "sbcs	x14, x14, x19\n\t"
-        "sbcs	x15, x15, x20\n\t"
-        "stp	x13, x14, [%[a], 0]\n\t"
-        "sbc	x16, x16, x21\n\t"
-        "stp	x15, x16, [%[a], 16]\n\t"
-        :
-        : [a] "r" (a), [m] "r" (m), [mp] "r" (mp)
-        : "memory", "x3", "x4", "x5", "x8", "x6", "x7", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "cc"
-    );
-}
-
 /* Map the Montgomery form projective coordinate point to an affine point.
  *
  * r  Resulting affine coordinate point.
@@ -23252,41 +23074,6 @@ static void sp_256_map_4(sp_point_256* r, const sp_point_256* p,
     r->z[0] = 1;
 }
 
-/* Add two Montgomery form numbers (r = a + b % m).
- *
- * r   Result of addition.
- * a   First number to add in Montgomery form.
- * b   Second number to add in Montgomery form.
- * m   Modulus (prime).
- */
-static void sp_256_mont_add_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
-        const sp_digit* m)
-{
-    __asm__ __volatile__ (
-        "ldp	x4, x5, [%[a], 0]\n\t"
-        "ldp	x8, x9, [%[b], 0]\n\t"
-        "adds	x4, x4, x8\n\t"
-        "ldp	x6, x7, [%[a], 16]\n\t"
-        "adcs	x5, x5, x9\n\t"
-        "ldp	x10, x11, [%[b], 16]\n\t"
-        "adcs	x6, x6, x10\n\t"
-        "adcs	x7, x7, x11\n\t"
-        "mov	x13, 0xffffffff00000001\n\t"
-        "csetm	x14, cs\n\t"
-        "subs	x4, x4, x14\n\t"
-        "lsr	x12, x14, 32\n\t"
-        "sbcs	x5, x5, x12\n\t"
-        "and	x13, x13, x14\n\t"
-        "sbcs	x6, x6, xzr\n\t"
-        "stp	x4, x5, [%[r],0]\n\t"
-        "sbc	x7, x7, x13\n\t"
-        "stp	x6, x7, [%[r],16]\n\t"
-        :
-        : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "cc"
-    );
-}
-
 /* Double a Montgomery form number (r = a + a % m).
  *
  * r   Result of doubling.
@@ -23298,23 +23085,30 @@ static void sp_256_mont_dbl_4(sp_digit* r, const sp_digit* a, const sp_digit* m)
     __asm__ __volatile__ (
         "ldp	x3, x4, [%[a]]\n\t"
         "ldp	x5, x6, [%[a],16]\n\t"
-        "adds	x3, x3, x3\n\t"
-        "adcs	x4, x4, x4\n\t"
-        "adcs	x5, x5, x5\n\t"
-        "adcs	x6, x6, x6\n\t"
-        "mov	x8, 0xffffffff00000001\n\t"
-        "csetm	x9, cs\n\t"
-        "subs	x3, x3, x9\n\t"
-        "lsr	x7, x9, 32\n\t"
-        "sbcs	x4, x4, x7\n\t"
-        "and	x8, x8, x9\n\t"
-        "sbcs	x5, x5, xzr\n\t"
-        "stp	x3, x4, [%[r],0]\n\t"
-        "sbc	x6, x6, x8\n\t"
-        "stp	x5, x6, [%[r],16]\n\t"
+        "lsl	x9, x3, #1\n\t"
+        "extr	x10, x4, x3, #63\n\t"
+        "extr	x11, x5, x4, #63\n\t"
+        "asr	x13, x6, #63\n\t"
+        "extr	x12, x6, x5, #63\n\t"
+        "subs	x9, x9, x13\n\t"
+        "lsr	x7, x13, 32\n\t"
+        "sbcs	x10, x10, x7\n\t"
+        "sub	x8, xzr, x7\n\t"
+        "sbcs	x11, x11, xzr\n\t"
+        "sbcs	x12, x12, x8\n\t"
+        "sbc	x8, xzr, xzr\n\t"
+        "sub	x13, x13, x8\n\t"
+        "subs	x9, x9, x13\n\t"
+        "lsr	x7, x13, 32\n\t"
+        "sbcs	x10, x10, x7\n\t"
+        "sub	x8, xzr, x7\n\t"
+        "sbcs	x11, x11, xzr\n\t"
+        "stp	x9, x10, [%[r],0]\n\t"
+        "sbc	x12, x12, x8\n\t"
+        "stp	x11, x12, [%[r],16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x13", "cc"
     );
 
     (void)m;
@@ -23329,38 +23123,46 @@ static void sp_256_mont_dbl_4(sp_digit* r, const sp_digit* a, const sp_digit* m)
 static void sp_256_mont_tpl_4(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
     __asm__ __volatile__ (
-        "ldp	x10, x11, [%[a]]\n\t"
-        "adds	x3, x10, x10\n\t"
-        "ldr	x12, [%[a], 16]\n\t"
-        "adcs	x4, x11, x11\n\t"
-        "ldr	x13, [%[a], 24]\n\t"
-        "adcs	x5, x12, x12\n\t"
-        "adcs	x6, x13, x13\n\t"
-        "mov	x8, 0xffffffff00000001\n\t"
-        "csetm	x9, cs\n\t"
-        "subs	x3, x3, x9\n\t"
-        "lsr	x7, x9, 32\n\t"
+        "ldp	x9, x10, [%[a]]\n\t"
+        "ldp	x11, x12, [%[a], 16]\n\t"
+        "lsl	x3, x9, #1\n\t"
+        "extr	x4, x10, x9, #63\n\t"
+        "extr	x5, x11, x10, #63\n\t"
+        "asr	x13, x12, #63\n\t"
+        "extr	x6, x12, x11, #63\n\t"
+        "subs	x3, x3, x13\n\t"
+        "lsr	x7, x13, 32\n\t"
         "sbcs	x4, x4, x7\n\t"
-        "and	x8, x8, x9\n\t"
+        "sub	x8, xzr, x7\n\t"
         "sbcs	x5, x5, xzr\n\t"
-        "sbc	x6, x6, x8\n\t"
-        "adds	x3, x3, x10\n\t"
-        "adcs	x4, x4, x11\n\t"
-        "adcs	x5, x5, x12\n\t"
-        "adcs	x6, x6, x13\n\t"
-        "mov	x8, 0xffffffff00000001\n\t"
-        "csetm	x9, cs\n\t"
-        "subs	x3, x3, x9\n\t"
-        "lsr	x7, x9, 32\n\t"
+        "sbcs	x6, x6, x8\n\t"
+        "neg	x13, x13\n\t"
+        "sbc	x13, x13, xzr\n\t"
+        "adds	x3, x3, x9\n\t"
+        "adcs	x4, x4, x10\n\t"
+        "adcs	x5, x5, x11\n\t"
+        "adcs	x6, x6, x12\n\t"
+        "adc	x13, x13, xzr\n\t"
+        "neg	x13, x13\n\t"
+        "subs	x3, x3, x13, asr #1\n\t"
+        "lsr	x7, x13, 32\n\t"
         "sbcs	x4, x4, x7\n\t"
-        "and	x8, x8, x9\n\t"
+        "sub	x8, xzr, x7\n\t"
+        "sbcs	x5, x5, xzr\n\t"
+        "sbcs	x6, x6, x8\n\t"
+        "sbc	x8, xzr, xzr\n\t"
+        "sub	x13, x13, x8\n\t"
+        "subs	x3, x3, x13\n\t"
+        "lsr	x7, x13, 32\n\t"
+        "sbcs	x4, x4, x7\n\t"
+        "sub	x8, xzr, x7\n\t"
         "sbcs	x5, x5, xzr\n\t"
         "stp	x3, x4, [%[r], 0]\n\t"
         "sbc	x6, x6, x8\n\t"
         "stp	x5, x6, [%[r], 16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x10", "x11", "x12", "x13", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "cc"
+        : "memory", "x9", "x10", "x11", "x12", "x3", "x4", "x5", "x6", "x7", "x8", "x13", "cc"
     );
 
     (void)m;
@@ -23378,30 +23180,37 @@ static void sp_256_mont_sub_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
 {
     __asm__ __volatile__ (
         "ldp	x4, x5, [%[a], 0]\n\t"
-        "ldp	x8, x9, [%[b], 0]\n\t"
-        "subs	x4, x4, x8\n\t"
         "ldp	x6, x7, [%[a], 16]\n\t"
-        "sbcs	x5, x5, x9\n\t"
+        "ldp	x8, x9, [%[b], 0]\n\t"
         "ldp	x10, x11, [%[b], 16]\n\t"
+        "subs	x4, x4, x8\n\t"
+        "sbcs	x5, x5, x9\n\t"
         "sbcs	x6, x6, x10\n\t"
         "sbcs	x7, x7, x11\n\t"
-        "mov	x13, 0xffffffff00000001\n\t"
-        "csetm	x14, cc\n\t"
+        "sbc	x14, xzr, xzr\n\t"
         "adds	x4, x4, x14\n\t"
         "lsr	x12, x14, 32\n\t"
         "adcs	x5, x5, x12\n\t"
-        "and	x13, x13, x14\n\t"
+        "sub	x13, xzr, x12\n\t"
+        "adcs	x6, x6, xzr\n\t"
+        "adcs	x7, x7, x13\n\t"
+        "adc	x14, x14, xzr\n\t"
+        "adds	x4, x4, x14\n\t"
+        "lsr	x12, x14, 32\n\t"
+        "adcs	x5, x5, x12\n\t"
+        "sub	x13, xzr, x12\n\t"
         "adcs	x6, x6, xzr\n\t"
         "stp	x4, x5, [%[r],0]\n\t"
         "adc	x7, x7, x13\n\t"
         "stp	x6, x7, [%[r],16]\n\t"
         :
-        : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
+        : [r] "r" (r), [a] "r" (a), [b] "r" (b)
         : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "cc"
     );
+
+    (void)m;
 }
 
-#define sp_256_mont_sub_lower_4 sp_256_mont_sub_4
 /* Divide the number by 2 mod the modulus (prime). (r = a / 2 % m)
  *
  * r  Result of division by 2.
@@ -23412,27 +23221,166 @@ static void sp_256_div2_4(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp	x3, x4, [%[a], 0]\n\t"
-        "and	x9, x3, 1\n\t"
         "ldp	x5, x6, [%[a], 16]\n\t"
-        "sub	x10, xzr, x9\n\t"
-        "lsr	x7, x10, 32\n\t"
-        "adds	x3, x3, x10\n\t"
-        "and	x8, x10, 0xffffffff00000001\n\t"
+        "sbfx	x8, x3, 0, 1\n\t"
+        "adds	x3, x3, x8\n\t"
+        "lsr	x7, x8, 32\n\t"
         "adcs	x4, x4, x7\n\t"
+        "sub	x8, xzr, x7\n\t"
         "adcs	x5, x5, xzr\n\t"
         "extr	x3, x4, x3, 1\n\t"
         "adcs	x6, x6, x8\n\t"
         "extr	x4, x5, x4, 1\n\t"
-        "cset	x9, cs\n\t"
+        "adc	x9, xzr, xzr\n\t"
         "extr	x5, x6, x5, 1\n\t"
         "extr	x6, x9, x6, 1\n\t"
         "stp	x3, x4, [%[r], 0]\n\t"
         "stp	x5, x6, [%[r], 16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a), [m] "r" (m)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x9", "x8", "cc"
+    );
+}
+
+/* Double number and subtract (r = (a - 2.b) % m).
+ *
+ * r   Result of subtration.
+ * a   Number to subtract from in Montgomery form.
+ * b   Number to subtract with in Montgomery form.
+ * m   Modulus (prime).
+ */
+static void sp_256_mont_rsb_sub_dbl_4(sp_digit* r, const sp_digit* a,
+        sp_digit* b, const sp_digit* m)
+{
+    __asm__ __volatile__ (
+        "ldp	x8, x9, [%[b]]\n\t"
+        "ldp	x10, x11, [%[b],16]\n\t"
+        "lsl	x15, x8, #1\n\t"
+        "extr	x16, x9, x8, #63\n\t"
+        "extr	x17, x10, x9, #63\n\t"
+        "asr	x14, x11, #63\n\t"
+        "extr	x19, x11, x10, #63\n\t"
+        "ldp	x4, x5, [%[a]]\n\t"
+        "ldp	x6, x7, [%[a],16]\n\t"
+        "subs	x15, x15, x14\n\t"
+        "lsr	x12, x14, 32\n\t"
+        "sbcs	x16, x16, x12\n\t"
+        "sub	x13, xzr, x12\n\t"
+        "sbcs	x17, x17, xzr\n\t"
+        "sbcs	x19, x19, x13\n\t"
+        "neg	x14, x14\n\t"
+        "sbc	x14, x14, xzr\n\t"
+        "subs	x15, x4, x15\n\t"
+        "sbcs	x16, x5, x16\n\t"
+        "sbcs	x17, x6, x17\n\t"
+        "sbcs	x19, x7, x19\n\t"
+        "sbc	x14, xzr, x14\n\t"
+        "adds	x15, x15, x14, asr #1\n\t"
+        "lsr	x12, x14, 32\n\t"
+        "adcs	x16, x16, x12\n\t"
+        "sub	x13, xzr, x12\n\t"
+        "adcs	x17, x17, xzr\n\t"
+        "adcs	x19, x19, x13\n\t"
+        "adc	x14, x14, xzr\n\t"
+        "adds	x15, x15, x14\n\t"
+        "lsr	x12, x14, 32\n\t"
+        "adcs	x16, x16, x12\n\t"
+        "sub	x13, xzr, x12\n\t"
+        "adcs	x17, x17, xzr\n\t"
+        "stp	x15, x16, [%[r],0]\n\t"
+        "adc	x19, x19, x13\n\t"
+        "stp	x17, x19, [%[r],16]\n\t"
+        "subs	x15, x8, x15\n\t"
+        "sbcs	x16, x9, x16\n\t"
+        "sbcs	x17, x10, x17\n\t"
+        "sbcs	x19, x11, x19\n\t"
+        "sbc	x14, xzr, xzr\n\t"
+        "adds	x15, x15, x14\n\t"
+        "lsr	x12, x14, 32\n\t"
+        "adcs	x16, x16, x12\n\t"
+        "sub	x13, xzr, x12\n\t"
+        "adcs	x17, x17, xzr\n\t"
+        "adcs	x19, x19, x13\n\t"
+        "adc	x14, x14, xzr\n\t"
+        "adds	x15, x15, x14\n\t"
+        "lsr	x12, x14, 32\n\t"
+        "adcs	x16, x16, x12\n\t"
+        "sub	x13, xzr, x12\n\t"
+        "adcs	x17, x17, xzr\n\t"
+        "stp	x15, x16, [%[b],0]\n\t"
+        "adc	x19, x19, x13\n\t"
+        "stp	x17, x19, [%[b],16]\n\t"
+        :
+        : [r] "r" (r), [a] "r" (a), [b] "r" (b)
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "cc"
     );
 
+    (void)m;
+}
+
+/* Subtract two Montgomery form numbers (r = a - b % m).
+ *
+ * ra  Result of addition.
+ * rs  Result of subtration.
+ * a   Number to subtract from in Montgomery form.
+ * b   Number to subtract with in Montgomery form.
+ * m   Modulus (prime).
+ */
+static void sp_256_mont_add_sub_4(sp_digit* ra, sp_digit* rs, const sp_digit* a,
+        const sp_digit* b, const sp_digit* m)
+{
+    __asm__ __volatile__ (
+        "ldp	x4, x5, [%[a], 0]\n\t"
+        "ldp	x6, x7, [%[a], 16]\n\t"
+        "ldp	x8, x9, [%[b], 0]\n\t"
+        "ldp	x10, x11, [%[b], 16]\n\t"
+        "adds	x14, x4, x8\n\t"
+        "adcs	x15, x5, x9\n\t"
+        "adcs	x16, x6, x10\n\t"
+        "adcs	x17, x7, x11\n\t"
+        "csetm	x19, cs\n\t"
+        "subs	x14, x14, x19\n\t"
+        "lsr	x12, x19, 32\n\t"
+        "sbcs	x15, x15, x12\n\t"
+        "sub	x13, xzr, x12\n\t"
+        "sbcs	x16, x16, xzr\n\t"
+        "sbcs	x17, x17, x13\n\t"
+        "sbc	x13, xzr, xzr\n\t"
+        "sub	x19, x19, x13\n\t"
+        "subs	x14, x14, x19\n\t"
+        "lsr	x12, x19, 32\n\t"
+        "sbcs	x15, x15, x12\n\t"
+        "sub	x13, xzr, x12\n\t"
+        "sbcs	x16, x16, xzr\n\t"
+        "stp	x14, x15, [%[ra],0]\n\t"
+        "sbc	x17, x17, x13\n\t"
+        "stp	x16, x17, [%[ra],16]\n\t"
+        "subs	x4, x4, x8\n\t"
+        "sbcs	x5, x5, x9\n\t"
+        "sbcs	x6, x6, x10\n\t"
+        "sbcs	x7, x7, x11\n\t"
+        "sbc	x19, xzr, xzr\n\t"
+        "adds	x4, x4, x19\n\t"
+        "lsr	x12, x19, 32\n\t"
+        "adcs	x5, x5, x12\n\t"
+        "sub	x13, xzr, x12\n\t"
+        "adcs	x6, x6, xzr\n\t"
+        "adcs	x7, x7, x13\n\t"
+        "adc	x19, x19, xzr\n\t"
+        "adds	x4, x4, x19\n\t"
+        "lsr	x12, x19, 32\n\t"
+        "adcs	x5, x5, x12\n\t"
+        "sub	x13, xzr, x12\n\t"
+        "adcs	x6, x6, xzr\n\t"
+        "stp	x4, x5, [%[rs],0]\n\t"
+        "adc	x7, x7, x13\n\t"
+        "stp	x6, x7, [%[rs],16]\n\t"
+        :
+        : [ra] "r" (ra), [rs] "r" (rs), [a] "r" (a), [b] "r" (b)
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x19", "x14", "x15", "x16", "x17", "cc"
+    );
+
+    (void)m;
 }
 
 /* Double the Montgomery form projective point p.
@@ -23464,10 +23412,8 @@ static void sp_256_proj_point_dbl_4(sp_point_256* r, const sp_point_256* p,
     sp_256_mont_mul_4(z, p->y, p->z, p256_mod, p256_mp_mod);
     /* Z = 2Z */
     sp_256_mont_dbl_4(z, z, p256_mod);
-    /* T2 = X - T1 */
-    sp_256_mont_sub_4(t2, p->x, t1, p256_mod);
-    /* T1 = X + T1 */
-    sp_256_mont_add_4(t1, p->x, t1, p256_mod);
+    /* T1/T2 = X +/- T1 */
+    sp_256_mont_add_sub_4(t1, t2, p->x, t1, p256_mod);
     /* T2 = T1 * T2 */
     sp_256_mont_mul_4(t2, t1, t2, p256_mod, p256_mp_mod);
     /* T1 = 3T2 */
@@ -23484,12 +23430,9 @@ static void sp_256_proj_point_dbl_4(sp_point_256* r, const sp_point_256* p,
     sp_256_mont_mul_4(y, y, p->x, p256_mod, p256_mp_mod);
     /* X = T1 * T1 */
     sp_256_mont_sqr_4(x, t1, p256_mod, p256_mp_mod);
-    /* X = X - Y */
-    sp_256_mont_sub_4(x, x, y, p256_mod);
-    /* X = X - Y */
-    sp_256_mont_sub_4(x, x, y, p256_mod);
+    /* X = X - 2*Y */
     /* Y = Y - X */
-    sp_256_mont_sub_lower_4(y, y, x, p256_mod);
+    sp_256_mont_rsb_sub_dbl_4(x, x, y, p256_mod);
     /* Y = Y * T1 */
     sp_256_mont_mul_4(y, y, t1, p256_mod, p256_mp_mod);
     /* Y = Y - T2 */
@@ -23550,13 +23493,11 @@ static int sp_256_proj_point_dbl_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r, con
         ctx->state = 4;
         break;
     case 4:
-        /* T2 = X - T1 */
-        sp_256_mont_sub_4(ctx->t2, p->x, ctx->t1, p256_mod);
+        /* T1/T2 = X +/- T1 */
+        sp_256_mont_add_sub_4(ctx->t1, ctx->t2, p->x, ctx->t1, p256_mod);
         ctx->state = 5;
         break;
     case 5:
-        /* T1 = X + T1 */
-        sp_256_mont_add_4(ctx->t1, p->x, ctx->t1, p256_mod);
         ctx->state = 6;
         break;
     case 6:
@@ -23600,18 +23541,15 @@ static int sp_256_proj_point_dbl_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r, con
         ctx->state = 14;
         break;
     case 14:
-        /* X = X - Y */
-        sp_256_mont_sub_4(ctx->x, ctx->x, ctx->y, p256_mod);
+        /* X = X - 2*Y */
+        /* Y = Y - X */
+        sp_256_mont_rsb_sub_dbl_4(ctx->x, ctx->x, ctx->y, p256_mod);
         ctx->state = 15;
         break;
     case 15:
-        /* X = X - Y */
-        sp_256_mont_sub_4(ctx->x, ctx->x, ctx->y, p256_mod);
         ctx->state = 16;
         break;
     case 16:
-        /* Y = Y - X */
-        sp_256_mont_sub_lower_4(ctx->y, ctx->y, ctx->x, p256_mod);
         ctx->state = 17;
         break;
     case 17:
@@ -23636,101 +23574,6 @@ static int sp_256_proj_point_dbl_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r, con
     return err;
 }
 #endif /* WOLFSSL_SP_NONBLOCK */
-#define sp_256_mont_tpl_lower_4 sp_256_mont_tpl_4
-/* Subtract two Montgomery form numbers (r = a - b % m).
- *
- * r   Result of subtration.
- * a   Number to subtract from in Montgomery form.
- * b   Number to subtract with in Montgomery form.
- * m   Modulus (prime).
- */
-static void sp_256_mont_sub_dbl_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
-        const sp_digit* m)
-{
-    __asm__ __volatile__ (
-        "ldp	x8, x9, [%[b]]\n\t"
-        "ldp	x10, x11, [%[b],16]\n\t"
-        "adds	x8, x8, x8\n\t"
-        "ldp	x4, x5, [%[a]]\n\t"
-        "adcs	x9, x9, x9\n\t"
-        "ldp	x6, x7, [%[a],16]\n\t"
-        "adcs	x10, x10, x10\n\t"
-        "adcs	x11, x11, x11\n\t"
-        "mov	x13, 0xffffffff00000001\n\t"
-        "csetm	x14, cs\n\t"
-        "subs	x8, x8, x14\n\t"
-        "lsr	x12, x14, 32\n\t"
-        "sbcs	x9, x9, x12\n\t"
-        "and	x13, x13, x14\n\t"
-        "sbcs	x10, x10, xzr\n\t"
-        "sbc	x11, x11, x13\n\t"
-        "subs	x4, x4, x8\n\t"
-        "sbcs	x5, x5, x9\n\t"
-        "sbcs	x6, x6, x10\n\t"
-        "sbcs	x7, x7, x11\n\t"
-        "mov	x13, 0xffffffff00000001\n\t"
-        "csetm	x14, cc\n\t"
-        "adds	x4, x4, x14\n\t"
-        "lsr	x12, x14, 32\n\t"
-        "adcs	x5, x5, x12\n\t"
-        "and	x13, x13, x14\n\t"
-        "adcs	x6, x6, xzr\n\t"
-        "stp	x4, x5, [%[r],0]\n\t"
-        "adc	x7, x7, x13\n\t"
-        "stp	x6, x7, [%[r],16]\n\t"
-        :
-        : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "cc"
-    );
-}
-
-/* Subtract two Montgomery form numbers (r = a - b % m).
- *
- * r   Result of subtration.
- * a   Number to subtract from in Montgomery form.
- * b   Number to subtract with in Montgomery form.
- * m   Modulus (prime).
- */
-static void sp_256_mont_dbl_sub_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
-        const sp_digit* m)
-{
-    __asm__ __volatile__ (
-        "ldp	x4, x5, [%[a], 0]\n\t"
-        "ldp	x8, x9, [%[b], 0]\n\t"
-        "subs	x4, x4, x8\n\t"
-        "ldp	x6, x7, [%[a], 16]\n\t"
-        "sbcs	x5, x5, x9\n\t"
-        "ldp	x10, x11, [%[b], 16]\n\t"
-        "sbcs	x6, x6, x10\n\t"
-        "sbcs	x7, x7, x11\n\t"
-        "mov	x13, 0xffffffff00000001\n\t"
-        "csetm	x14, cc\n\t"
-        "adds	x4, x4, x14\n\t"
-        "lsr	x12, x14, 32\n\t"
-        "adcs	x5, x5, x12\n\t"
-        "and	x13, x13, x14\n\t"
-        "adcs	x6, x6, xzr\n\t"
-        "adc	x7, x7, x13\n\t"
-        "adds	x4, x4, x4\n\t"
-        "adcs	x5, x5, x5\n\t"
-        "adcs	x6, x6, x6\n\t"
-        "adcs	x7, x7, x7\n\t"
-        "mov	x13, 0xffffffff00000001\n\t"
-        "csetm	x14, cs\n\t"
-        "subs	x4, x4, x14\n\t"
-        "lsr	x12, x14, 32\n\t"
-        "sbcs	x5, x5, x12\n\t"
-        "and	x13, x13, x14\n\t"
-        "sbcs	x6, x6, xzr\n\t"
-        "stp	x4, x5, [%[r],0]\n\t"
-        "sbc	x7, x7, x13\n\t"
-        "stp	x6, x7, [%[r],16]\n\t"
-        :
-        : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
-        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "cc"
-    );
-}
-
 /* Double the Montgomery form projective point p a number of times.
  *
  * r  Result of repeated doubling of point.
@@ -23768,15 +23611,15 @@ static void sp_256_proj_point_dbl_n_4(sp_point_256* p, int i,
         /* A = 3*(X^2 - W) */
         sp_256_mont_sqr_4(t1, x, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(t1, t1, w, p256_mod);
-        sp_256_mont_tpl_lower_4(a, t1, p256_mod);
+        sp_256_mont_tpl_4(a, t1, p256_mod);
         /* B = X*Y^2 */
         sp_256_mont_sqr_4(t1, y, p256_mod, p256_mp_mod);
         sp_256_mont_mul_4(b, t1, x, p256_mod, p256_mp_mod);
         /* X = A^2 - 2B */
         sp_256_mont_sqr_4(x, a, p256_mod, p256_mp_mod);
-        sp_256_mont_sub_dbl_4(x, x, b, p256_mod);
+        sp_256_mont_rsb_sub_dbl_4(x, x, b, p256_mod);
         /* B = 2.(B - X) */
-        sp_256_mont_dbl_sub_4(b, b, x, p256_mod);
+        sp_256_mont_dbl_4(b, b, p256_mod);
         /* Z = Z*Y */
         sp_256_mont_mul_4(z, z, y, p256_mod, p256_mp_mod);
         /* t1 = Y^4 */
@@ -23796,15 +23639,15 @@ static void sp_256_proj_point_dbl_n_4(sp_point_256* p, int i,
     /* A = 3*(X^2 - W) */
     sp_256_mont_sqr_4(t1, x, p256_mod, p256_mp_mod);
     sp_256_mont_sub_4(t1, t1, w, p256_mod);
-    sp_256_mont_tpl_lower_4(a, t1, p256_mod);
+    sp_256_mont_tpl_4(a, t1, p256_mod);
     /* B = X*Y^2 */
     sp_256_mont_sqr_4(t1, y, p256_mod, p256_mp_mod);
     sp_256_mont_mul_4(b, t1, x, p256_mod, p256_mp_mod);
     /* X = A^2 - 2B */
     sp_256_mont_sqr_4(x, a, p256_mod, p256_mp_mod);
-    sp_256_mont_sub_dbl_4(x, x, b, p256_mod);
+    sp_256_mont_rsb_sub_dbl_4(x, x, b, p256_mod);
     /* B = 2.(B - X) */
-    sp_256_mont_dbl_sub_4(b, b, x, p256_mod);
+    sp_256_mont_dbl_4(b, b, p256_mod);
     /* Z = Z*Y */
     sp_256_mont_mul_4(z, z, y, p256_mod, p256_mp_mod);
     /* t1 = Y^4 */
@@ -23852,12 +23695,12 @@ static int sp_256_iszero_4(const sp_digit* a)
 static void sp_256_proj_point_add_4(sp_point_256* r,
         const sp_point_256* p, const sp_point_256* q, sp_digit* t)
 {
-    sp_digit* t1 = t;
-    sp_digit* t2 = t + 2*4;
-    sp_digit* t3 = t + 4*4;
-    sp_digit* t4 = t + 6*4;
-    sp_digit* t5 = t + 8*4;
-    sp_digit* t6 = t + 10*4;
+    sp_digit* t6 = t;
+    sp_digit* t1 = t + 2*4;
+    sp_digit* t2 = t + 4*4;
+    sp_digit* t3 = t + 6*4;
+    sp_digit* t4 = t + 8*4;
+    sp_digit* t5 = t + 10*4;
 
     /* U1 = X1*Z2^2 */
     sp_256_mont_sqr_4(t1, q->z, p256_mod, p256_mp_mod);
@@ -23879,17 +23722,9 @@ static void sp_256_proj_point_add_4(sp_point_256* r,
         sp_256_proj_point_dbl_4(r, p, t);
     }
     else {
-        sp_digit maskp;
-        sp_digit maskq;
-        sp_digit maskt;
         sp_digit* x = t6;
         sp_digit* y = t1;
         sp_digit* z = t2;
-        int i;
-
-        maskp = 0 - (q->infinity & (!p->infinity));
-        maskq = 0 - (p->infinity & (!q->infinity));
-        maskt = ~(maskp | maskq);
 
         /* H = U2 - U1 */
         sp_256_mont_sub_4(t2, t2, t1, p256_mod);
@@ -23905,22 +23740,74 @@ static void sp_256_proj_point_add_4(sp_point_256* r,
         sp_256_mont_sqr_4(x, t4, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(x, x, t5, p256_mod);
         sp_256_mont_mul_4(t5, t5, t3, p256_mod, p256_mp_mod);
-        sp_256_mont_sub_dbl_4(x, x, y, p256_mod);
         /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_256_mont_sub_lower_4(y, y, x, p256_mod);
+        sp_256_mont_rsb_sub_dbl_4(x, x, y, p256_mod);
         sp_256_mont_mul_4(y, y, t4, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(y, y, t5, p256_mod);
-        for (i = 0; i < 4; i++) {
-            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
-        }
-        for (i = 0; i < 4; i++) {
-            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
-        }
-        for (i = 0; i < 4; i++) {
-            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
-        }
-        r->z[0] |= p->infinity & q->infinity;
-        r->infinity = p->infinity & q->infinity;
+{
+    __asm__ __volatile__ (
+        "ldrsw	x10, [%[p], #192]\n\t"
+        "ldrsw	x11, [%[q], #192]\n\t"
+        "ldp	x12, x13, [%[x], #0]\n\t"
+        "ldp	x14, x15, [%[x], #16]\n\t"
+        "ldp	x16, x17, [%[y], #0]\n\t"
+        "ldp	x19, x20, [%[y], #16]\n\t"
+        "ldp	x21, x22, [%[z], #0]\n\t"
+        "ldp	x23, x24, [%[z], #16]\n\t"
+        "bics	xzr, x11, x10\n\t"
+        "ldp	x25, x26, [%[p], #0]\n\t"
+        "ldp	x27, x28, [%[p], #16]\n\t"
+        "csel	x12, x12, x25, eq\n\t"
+        "csel	x13, x13, x26, eq\n\t"
+        "csel	x14, x14, x27, eq\n\t"
+        "csel	x15, x15, x28, eq\n\t"
+        "ldp	x25, x26, [%[p], #64]\n\t"
+        "ldp	x27, x28, [%[p], #80]\n\t"
+        "csel	x16, x16, x25, eq\n\t"
+        "csel	x17, x17, x26, eq\n\t"
+        "csel	x19, x19, x27, eq\n\t"
+        "csel	x20, x20, x28, eq\n\t"
+        "ldp	x25, x26, [%[p], #128]\n\t"
+        "ldp	x27, x28, [%[p], #144]\n\t"
+        "csel	x21, x21, x25, eq\n\t"
+        "csel	x22, x22, x26, eq\n\t"
+        "csel	x23, x23, x27, eq\n\t"
+        "csel	x24, x24, x28, eq\n\t"
+        "bics	xzr, x10, x11\n\t"
+        "and	x10, x10, x11\n\t"
+        "ldp	x25, x26, [%[q], #0]\n\t"
+        "ldp	x27, x28, [%[q], #16]\n\t"
+        "csel	x12, x12, x25, eq\n\t"
+        "csel	x13, x13, x26, eq\n\t"
+        "csel	x14, x14, x27, eq\n\t"
+        "csel	x15, x15, x28, eq\n\t"
+        "ldp	x25, x26, [%[q], #64]\n\t"
+        "ldp	x27, x28, [%[q], #80]\n\t"
+        "csel	x16, x16, x25, eq\n\t"
+        "csel	x17, x17, x26, eq\n\t"
+        "csel	x19, x19, x27, eq\n\t"
+        "csel	x20, x20, x28, eq\n\t"
+        "ldp	x25, x26, [%[q], #128]\n\t"
+        "ldp	x27, x28, [%[q], #144]\n\t"
+        "csel	x21, x21, x25, eq\n\t"
+        "csel	x22, x22, x26, eq\n\t"
+        "csel	x23, x23, x27, eq\n\t"
+        "csel	x24, x24, x28, eq\n\t"
+        "orr	x21, x21, x10\n\t"
+        "stp	x12, x13, [%[r], #0]\n\t"
+        "stp	x14, x15, [%[r], #16]\n\t"
+        "stp	x16, x17, [%[r], #64]\n\t"
+        "stp	x19, x20, [%[r], #80]\n\t"
+        "stp	x21, x22, [%[r], #128]\n\t"
+        "stp	x23, x24, [%[r], #144]\n\t"
+        "str	w10, [%[r], #192]\n\t"
+        :
+        : [r] "r" (r), [p] "r" (p), [q] "r" (q), [x] "r" (x),
+          [y] "r" (y), [z] "r" (z)
+        : "memory", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17",
+          "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28"
+    );
+}
     }
 }
 
@@ -23966,12 +23853,12 @@ static int sp_256_proj_point_add_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
 
     switch (ctx->state) {
     case 0: /* INIT */
-        ctx->t1 = t;
-        ctx->t2 = t + 2*4;
-        ctx->t3 = t + 4*4;
-        ctx->t4 = t + 6*4;
-        ctx->t5 = t + 8*4;
-        ctx->t6 = t + 10*4;
+        ctx->t6 = t;
+        ctx->t1 = t + 2*4;
+        ctx->t2 = t + 4*4;
+        ctx->t3 = t + 6*4;
+        ctx->t4 = t + 8*4;
+        ctx->t5 = t + 10*4;
         ctx->x = ctx->t6;
         ctx->y = ctx->t1;
         ctx->z = ctx->t2;
@@ -24072,12 +23959,11 @@ static int sp_256_proj_point_add_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
         ctx->state = 20;
         break;
     case 20:
-        sp_256_mont_sub_dbl_4(ctx->x, ctx->x, ctx->y, p256_mod);
+        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
+        sp_256_mont_rsb_sub_dbl_4(ctx->x, ctx->x, ctx->y, p256_mod);
         ctx->state = 21;
         break;
     case 21:
-        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_256_mont_sub_lower_4(ctx->y, ctx->y, ctx->x, p256_mod);
         ctx->state = 22;
         break;
     case 22:
@@ -24090,22 +23976,70 @@ static int sp_256_proj_point_add_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
         break;
     case 24:
     {
-        int i;
-        sp_digit maskp = 0 - (q->infinity & (!p->infinity));
-        sp_digit maskq = 0 - (p->infinity & (!q->infinity));
-        sp_digit maskt = ~(maskp | maskq);
-
-        for (i = 0; i < 4; i++) {
-            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (ctx->x[i] & maskt);
-        }
-        for (i = 0; i < 4; i++) {
-            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (ctx->y[i] & maskt);
-        }
-        for (i = 0; i < 4; i++) {
-            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (ctx->z[i] & maskt);
-        }
-        r->z[0] |= p->infinity & q->infinity;
-        r->infinity = p->infinity & q->infinity;
+{
+    __asm__ __volatile__ (
+        "ldrsw	x10, [%[p], #192]\n\t"
+        "ldrsw	x11, [%[q], #192]\n\t"
+        "ldp	x12, x13, [%[x], #0]\n\t"
+        "ldp	x14, x15, [%[x], #16]\n\t"
+        "ldp	x16, x17, [%[y], #0]\n\t"
+        "ldp	x19, x20, [%[y], #16]\n\t"
+        "ldp	x21, x22, [%[z], #0]\n\t"
+        "ldp	x23, x24, [%[z], #16]\n\t"
+        "bics	xzr, x11, x10\n\t"
+        "ldp	x25, x26, [%[p], #0]\n\t"
+        "ldp	x27, x28, [%[p], #16]\n\t"
+        "csel	x12, x12, x25, eq\n\t"
+        "csel	x13, x13, x26, eq\n\t"
+        "csel	x14, x14, x27, eq\n\t"
+        "csel	x15, x15, x28, eq\n\t"
+        "ldp	x25, x26, [%[p], #64]\n\t"
+        "ldp	x27, x28, [%[p], #80]\n\t"
+        "csel	x16, x16, x25, eq\n\t"
+        "csel	x17, x17, x26, eq\n\t"
+        "csel	x19, x19, x27, eq\n\t"
+        "csel	x20, x20, x28, eq\n\t"
+        "ldp	x25, x26, [%[p], #128]\n\t"
+        "ldp	x27, x28, [%[p], #144]\n\t"
+        "csel	x21, x21, x25, eq\n\t"
+        "csel	x22, x22, x26, eq\n\t"
+        "csel	x23, x23, x27, eq\n\t"
+        "csel	x24, x24, x28, eq\n\t"
+        "bics	xzr, x10, x11\n\t"
+        "and	x10, x10, x11\n\t"
+        "ldp	x25, x26, [%[q], #0]\n\t"
+        "ldp	x27, x28, [%[q], #16]\n\t"
+        "csel	x12, x12, x25, eq\n\t"
+        "csel	x13, x13, x26, eq\n\t"
+        "csel	x14, x14, x27, eq\n\t"
+        "csel	x15, x15, x28, eq\n\t"
+        "ldp	x25, x26, [%[q], #64]\n\t"
+        "ldp	x27, x28, [%[q], #80]\n\t"
+        "csel	x16, x16, x25, eq\n\t"
+        "csel	x17, x17, x26, eq\n\t"
+        "csel	x19, x19, x27, eq\n\t"
+        "csel	x20, x20, x28, eq\n\t"
+        "ldp	x25, x26, [%[q], #128]\n\t"
+        "ldp	x27, x28, [%[q], #144]\n\t"
+        "csel	x21, x21, x25, eq\n\t"
+        "csel	x22, x22, x26, eq\n\t"
+        "csel	x23, x23, x27, eq\n\t"
+        "csel	x24, x24, x28, eq\n\t"
+        "orr	x21, x21, x10\n\t"
+        "stp	x12, x13, [%[r], #0]\n\t"
+        "stp	x14, x15, [%[r], #16]\n\t"
+        "stp	x16, x17, [%[r], #64]\n\t"
+        "stp	x19, x20, [%[r], #80]\n\t"
+        "stp	x21, x22, [%[r], #128]\n\t"
+        "stp	x23, x24, [%[r], #144]\n\t"
+        "str	w10, [%[r], #192]\n\t"
+        :
+        : [r] "r" (r), [p] "r" (p), [q] "r" (q), [x] "r" (ctx->x),
+          [y] "r" (ctx->y), [z] "r" (ctx->z)
+        : "memory", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17",
+          "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28"
+    );
+}
         ctx->state = 25;
         break;
     }
@@ -24163,16 +24097,16 @@ static void sp_256_proj_point_dbl_n_store_4(sp_point_256* r,
         /* A = 3*(X^2 - W) */
         sp_256_mont_sqr_4(t1, x, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(t1, t1, w, p256_mod);
-        sp_256_mont_tpl_lower_4(a, t1, p256_mod);
+        sp_256_mont_tpl_4(a, t1, p256_mod);
         /* B = X*Y^2 */
         sp_256_mont_sqr_4(t1, y, p256_mod, p256_mp_mod);
         sp_256_mont_mul_4(b, t1, x, p256_mod, p256_mp_mod);
         x = r[j].x;
         /* X = A^2 - 2B */
         sp_256_mont_sqr_4(x, a, p256_mod, p256_mp_mod);
-        sp_256_mont_sub_dbl_4(x, x, b, p256_mod);
+        sp_256_mont_rsb_sub_dbl_4(x, x, b, p256_mod);
         /* B = 2.(B - X) */
-        sp_256_mont_dbl_sub_4(b, b, x, p256_mod);
+        sp_256_mont_dbl_4(b, b, p256_mod);
         /* Z = Z*Y */
         sp_256_mont_mul_4(r[j].z, z, y, p256_mod, p256_mp_mod);
         z = r[j].z;
@@ -24237,10 +24171,8 @@ static void sp_256_proj_point_add_sub_4(sp_point_256* ra,
     sp_256_mont_mul_4(t4, t4, q->y, p256_mod, p256_mp_mod);
     /* H = U2 - U1 */
     sp_256_mont_sub_4(t2, t2, t1, p256_mod);
-    /* RS = S2 + S1 */
-    sp_256_mont_add_4(t6, t4, t3, p256_mod);
-    /* R = S2 - S1 */
-    sp_256_mont_sub_4(t4, t4, t3, p256_mod);
+    /* RS/R = S2 +/ S1 */
+    sp_256_mont_add_sub_4(t6, t4, t4, t3, p256_mod);
     /* Z3 = H*Z1*Z2 */
     /* ZS = H*Z1*Z2 */
     sp_256_mont_mul_4(za, za, q->z, p256_mod, p256_mp_mod);
@@ -24260,8 +24192,8 @@ static void sp_256_proj_point_add_sub_4(sp_point_256* ra,
     sp_256_mont_sub_4(xs, xs, t1, p256_mod);
     /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
     /* YS = -RS*(U1*H^2 - XS) - S1*H^3 */
-    sp_256_mont_sub_lower_4(ys, ya, xs, p256_mod);
-    sp_256_mont_sub_lower_4(ya, ya, xa, p256_mod);
+    sp_256_mont_sub_4(ys, ya, xs, p256_mod);
+    sp_256_mont_sub_4(ya, ya, xa, p256_mod);
     sp_256_mont_mul_4(ya, ya, t4, p256_mod, p256_mp_mod);
     sp_256_sub_4(t6, p256_mod, t6);
     sp_256_mont_mul_4(ys, ys, t6, p256_mod, p256_mp_mod);
@@ -24351,36 +24283,63 @@ static void sp_256_ecc_recode_6_4(const sp_digit* k, ecc_recode_256* v)
 static void sp_256_get_point_33_4(sp_point_256* r, const sp_point_256* table,
     int idx)
 {
-    int i;
-    sp_digit mask;
-
-    r->x[0] = 0;
-    r->x[1] = 0;
-    r->x[2] = 0;
-    r->x[3] = 0;
-    r->y[0] = 0;
-    r->y[1] = 0;
-    r->y[2] = 0;
-    r->y[3] = 0;
-    r->z[0] = 0;
-    r->z[1] = 0;
-    r->z[2] = 0;
-    r->z[3] = 0;
-    for (i = 1; i < 33; i++) {
-        mask = 0 - (i == idx);
-        r->x[0] |= mask & table[i].x[0];
-        r->x[1] |= mask & table[i].x[1];
-        r->x[2] |= mask & table[i].x[2];
-        r->x[3] |= mask & table[i].x[3];
-        r->y[0] |= mask & table[i].y[0];
-        r->y[1] |= mask & table[i].y[1];
-        r->y[2] |= mask & table[i].y[2];
-        r->y[3] |= mask & table[i].y[3];
-        r->z[0] |= mask & table[i].z[0];
-        r->z[1] |= mask & table[i].z[1];
-        r->z[2] |= mask & table[i].z[2];
-        r->z[3] |= mask & table[i].z[3];
-    }
+    __asm__ __volatile__ (
+        "mov	w30, #1\n\t"
+        "add	%[table], %[table], #200\n\t"
+        "cmp	%w[idx], w30\n\t"
+        "add	w30, w30, #1\n\t"
+        "ldp	x15, x16, [%[table], #0]\n\t"
+        "ldp	x17, x19, [%[table], #16]\n\t"
+        "csel	x3, xzr, x15, ne\n\t"
+        "csel	x4, xzr, x16, ne\n\t"
+        "csel	x5, xzr, x17, ne\n\t"
+        "csel	x6, xzr, x19, ne\n\t"
+        "ldp	x15, x16, [%[table], #64]\n\t"
+        "ldp	x17, x19, [%[table], #80]\n\t"
+        "csel	x7, xzr, x15, ne\n\t"
+        "csel	x8, xzr, x16, ne\n\t"
+        "csel	x9, xzr, x17, ne\n\t"
+        "csel	x10, xzr, x19, ne\n\t"
+        "ldp	x15, x16, [%[table], #128]\n\t"
+        "ldp	x17, x19, [%[table], #144]\n\t"
+        "csel	x11, xzr, x15, ne\n\t"
+        "csel	x12, xzr, x16, ne\n\t"
+        "csel	x13, xzr, x17, ne\n\t"
+        "csel	x14, xzr, x19, ne\n\t"
+        "1:\n\t"
+        "add	%[table], %[table], #200\n\t"
+        "cmp	%w[idx], w30\n\t"
+        "add	w30, w30, #1\n\t"
+        "ldp	x15, x16, [%[table], #0]\n\t"
+        "ldp	x17, x19, [%[table], #16]\n\t"
+        "csel	x3, x3, x15, ne\n\t"
+        "csel	x4, x4, x16, ne\n\t"
+        "csel	x5, x5, x17, ne\n\t"
+        "csel	x6, x6, x19, ne\n\t"
+        "ldp	x15, x16, [%[table], #64]\n\t"
+        "ldp	x17, x19, [%[table], #80]\n\t"
+        "csel	x7, x7, x15, ne\n\t"
+        "csel	x8, x8, x16, ne\n\t"
+        "csel	x9, x9, x17, ne\n\t"
+        "csel	x10, x10, x19, ne\n\t"
+        "ldp	x15, x16, [%[table], #128]\n\t"
+        "ldp	x17, x19, [%[table], #144]\n\t"
+        "csel	x11, x11, x15, ne\n\t"
+        "csel	x12, x12, x16, ne\n\t"
+        "csel	x13, x13, x17, ne\n\t"
+        "csel	x14, x14, x19, ne\n\t"
+        "cmp	w30, #33\n\t"
+        "b.ne	1b\n\t"
+        "stp	x3, x4, [%[r], #0]\n\t"
+        "stp	x5, x6, [%[r], #16]\n\t"
+        "stp	x7, x8, [%[r], #64]\n\t"
+        "stp	x9, x10, [%[r], #80]\n\t"
+        "stp	x11, x12, [%[r], #128]\n\t"
+        "stp	x13, x14, [%[r], #144]\n\t"
+       : [table] "+r" (table)
+       : [r] "r" (r), [idx] "r" (idx)
+       : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "w30"
+    );
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
 /* Multiply the point by the scalar and return the result.
@@ -24423,7 +24382,7 @@ static int sp_256_ecc_mulmod_win_add_sub_4(sp_point_256* r, const sp_point_256* 
     (void)heap;
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    t = (sp_point_256*)XMALLOC(sizeof(sp_point_256) * 
+    t = (sp_point_256*)XMALLOC(sizeof(sp_point_256) *
         (33+2), heap, DYNAMIC_TYPE_ECC);
     if (t == NULL)
         err = MEMORY_E;
@@ -24528,15 +24487,12 @@ static int sp_256_ecc_mulmod_win_add_sub_4(sp_point_256* r, const sp_point_256* 
     return err;
 }
 
-#ifndef WC_NO_CACHE_RESISTANT
 /* A table entry for pre-computed points. */
 typedef struct sp_table_entry_256 {
     sp_digit x[4];
     sp_digit y[4];
 } sp_table_entry_256;
 
-#if defined(FP_ECC) || defined(WOLFSSL_SP_SMALL)
-#endif /* FP_ECC | WOLFSSL_SP_SMALL */
 /* Add two Montgomery form projective points. The second point has a q value of
  * one.
  * Only the first point can be the same pointer as the result point.
@@ -24549,12 +24505,11 @@ typedef struct sp_table_entry_256 {
 static void sp_256_proj_point_add_qz1_4(sp_point_256* r,
     const sp_point_256* p, const sp_point_256* q, sp_digit* t)
 {
-    sp_digit* t1 = t;
-    sp_digit* t2 = t + 2*4;
-    sp_digit* t3 = t + 4*4;
-    sp_digit* t4 = t + 6*4;
-    sp_digit* t5 = t + 8*4;
-    sp_digit* t6 = t + 10*4;
+    sp_digit* t2 = t;
+    sp_digit* t3 = t + 2*4;
+    sp_digit* t6 = t + 4*4;
+    sp_digit* t1 = t + 6*4;
+    sp_digit* t4 = t + 8*4;
 
     /* Calculate values to subtract from P->x and P->y. */
     /* U2 = X2*Z1^2 */
@@ -24570,13 +24525,9 @@ static void sp_256_proj_point_add_qz1_4(sp_point_256* r,
         sp_256_proj_point_dbl_4(r, p, t);
     }
     else {
-        sp_digit maskp;
-        sp_digit maskq;
-        sp_digit maskt;
         sp_digit* x = t2;
-        sp_digit* y = t5;
+        sp_digit* y = t3;
         sp_digit* z = t6;
-        int i;
 
         /* H = U2 - X1 */
         sp_256_mont_sub_4(t2, t2, p->x, p256_mod);
@@ -24585,35 +24536,86 @@ static void sp_256_proj_point_add_qz1_4(sp_point_256* r,
         /* Z3 = H*Z1 */
         sp_256_mont_mul_4(z, p->z, t2, p256_mod, p256_mp_mod);
         /* X3 = R^2 - H^3 - 2*X1*H^2 */
-        sp_256_mont_sqr_4(t1, t4, p256_mod, p256_mp_mod);
-        sp_256_mont_sqr_4(t5, t2, p256_mod, p256_mp_mod);
-        sp_256_mont_mul_4(t3, p->x, t5, p256_mod, p256_mp_mod);
-        sp_256_mont_mul_4(t5, t5, t2, p256_mod, p256_mp_mod);
-        sp_256_mont_sub_4(x, t1, t5, p256_mod);
-        sp_256_mont_sub_dbl_4(x, x, t3, p256_mod);
+        sp_256_mont_sqr_4(t1, t2, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(t3, p->x, t1, p256_mod, p256_mp_mod);
+        sp_256_mont_mul_4(t1, t1, t2, p256_mod, p256_mp_mod);
+        sp_256_mont_sqr_4(t2, t4, p256_mod, p256_mp_mod);
+        sp_256_mont_sub_4(t2, t2, t1, p256_mod);
+        sp_256_mont_rsb_sub_dbl_4(x, t2, t3, p256_mod);
         /* Y3 = R*(X1*H^2 - X3) - Y1*H^3 */
-        sp_256_mont_sub_lower_4(t3, t3, x, p256_mod);
         sp_256_mont_mul_4(t3, t3, t4, p256_mod, p256_mp_mod);
-        sp_256_mont_mul_4(t5, t5, p->y, p256_mod, p256_mp_mod);
-        sp_256_mont_sub_4(y, t3, t5, p256_mod);
-
-        maskp = 0 - (q->infinity & (!p->infinity));
-        maskq = 0 - (p->infinity & (!q->infinity));
-        maskt = ~(maskp | maskq);
-        for (i = 0; i < 4; i++) {
-            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
-        }
-        for (i = 0; i < 4; i++) {
-            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
-        }
-        for (i = 0; i < 4; i++) {
-            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
-        }
-        r->z[0] |= p->infinity & q->infinity;
-        r->infinity = p->infinity & q->infinity;
+        sp_256_mont_mul_4(t1, t1, p->y, p256_mod, p256_mp_mod);
+        sp_256_mont_sub_4(y, t3, t1, p256_mod);
+{
+    __asm__ __volatile__ (
+        "ldrsw	x10, [%[p], #192]\n\t"
+        "ldrsw	x11, [%[q], #192]\n\t"
+        "ldp	x12, x13, [%[x], #0]\n\t"
+        "ldp	x14, x15, [%[x], #16]\n\t"
+        "ldp	x16, x17, [%[y], #0]\n\t"
+        "ldp	x19, x20, [%[y], #16]\n\t"
+        "ldp	x21, x22, [%[z], #0]\n\t"
+        "ldp	x23, x24, [%[z], #16]\n\t"
+        "bics	xzr, x11, x10\n\t"
+        "ldp	x25, x26, [%[p], #0]\n\t"
+        "ldp	x27, x28, [%[p], #16]\n\t"
+        "csel	x12, x12, x25, eq\n\t"
+        "csel	x13, x13, x26, eq\n\t"
+        "csel	x14, x14, x27, eq\n\t"
+        "csel	x15, x15, x28, eq\n\t"
+        "ldp	x25, x26, [%[p], #64]\n\t"
+        "ldp	x27, x28, [%[p], #80]\n\t"
+        "csel	x16, x16, x25, eq\n\t"
+        "csel	x17, x17, x26, eq\n\t"
+        "csel	x19, x19, x27, eq\n\t"
+        "csel	x20, x20, x28, eq\n\t"
+        "ldp	x25, x26, [%[p], #128]\n\t"
+        "ldp	x27, x28, [%[p], #144]\n\t"
+        "csel	x21, x21, x25, eq\n\t"
+        "csel	x22, x22, x26, eq\n\t"
+        "csel	x23, x23, x27, eq\n\t"
+        "csel	x24, x24, x28, eq\n\t"
+        "bics	xzr, x10, x11\n\t"
+        "and	x10, x10, x11\n\t"
+        "ldp	x25, x26, [%[q], #0]\n\t"
+        "ldp	x27, x28, [%[q], #16]\n\t"
+        "csel	x12, x12, x25, eq\n\t"
+        "csel	x13, x13, x26, eq\n\t"
+        "csel	x14, x14, x27, eq\n\t"
+        "csel	x15, x15, x28, eq\n\t"
+        "ldp	x25, x26, [%[q], #64]\n\t"
+        "ldp	x27, x28, [%[q], #80]\n\t"
+        "csel	x16, x16, x25, eq\n\t"
+        "csel	x17, x17, x26, eq\n\t"
+        "csel	x19, x19, x27, eq\n\t"
+        "csel	x20, x20, x28, eq\n\t"
+        "ldp	x25, x26, [%[q], #128]\n\t"
+        "ldp	x27, x28, [%[q], #144]\n\t"
+        "csel	x21, x21, x25, eq\n\t"
+        "csel	x22, x22, x26, eq\n\t"
+        "csel	x23, x23, x27, eq\n\t"
+        "csel	x24, x24, x28, eq\n\t"
+        "orr	x21, x21, x10\n\t"
+        "stp	x12, x13, [%[r], #0]\n\t"
+        "stp	x14, x15, [%[r], #16]\n\t"
+        "stp	x16, x17, [%[r], #64]\n\t"
+        "stp	x19, x20, [%[r], #80]\n\t"
+        "stp	x21, x22, [%[r], #128]\n\t"
+        "stp	x23, x24, [%[r], #144]\n\t"
+        "str	w10, [%[r], #192]\n\t"
+        :
+        : [r] "r" (r), [p] "r" (p), [q] "r" (q), [x] "r" (x),
+          [y] "r" (y), [z] "r" (z)
+        : "memory", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17",
+          "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28"
+    );
+}
     }
 }
 
+#ifndef WC_NO_CACHE_RESISTANT
+#if defined(FP_ECC) || defined(WOLFSSL_SP_SMALL)
+#endif /* FP_ECC | WOLFSSL_SP_SMALL */
 #ifdef FP_ECC
 /* Convert the projective point to affine.
  * Ordinates are in Montgomery form.
@@ -24739,28 +24741,49 @@ static int sp_256_gen_stripe_table_4(const sp_point_256* a,
 static void sp_256_get_entry_64_4(sp_point_256* r,
     const sp_table_entry_256* table, int idx)
 {
-    int i;
-    sp_digit mask;
-
-    r->x[0] = 0;
-    r->x[1] = 0;
-    r->x[2] = 0;
-    r->x[3] = 0;
-    r->y[0] = 0;
-    r->y[1] = 0;
-    r->y[2] = 0;
-    r->y[3] = 0;
-    for (i = 1; i < 64; i++) {
-        mask = 0 - (i == idx);
-        r->x[0] |= mask & table[i].x[0];
-        r->x[1] |= mask & table[i].x[1];
-        r->x[2] |= mask & table[i].x[2];
-        r->x[3] |= mask & table[i].x[3];
-        r->y[0] |= mask & table[i].y[0];
-        r->y[1] |= mask & table[i].y[1];
-        r->y[2] |= mask & table[i].y[2];
-        r->y[3] |= mask & table[i].y[3];
-    }
+    __asm__ __volatile__ (
+        "mov	w30, #1\n\t"
+        "add	%[table], %[table], #64\n\t"
+        "cmp	%w[idx], w30\n\t"
+        "add	w30, w30, #1\n\t"
+        "ldp	x11, x12, [%[table], #0]\n\t"
+        "ldp	x13, x14, [%[table], #16]\n\t"
+        "ldp	x15, x16, [%[table], #32]\n\t"
+        "ldp	x17, x19, [%[table], #48]\n\t"
+        "csel	x3, xzr, x11, ne\n\t"
+        "csel	x4, xzr, x12, ne\n\t"
+        "csel	x5, xzr, x13, ne\n\t"
+        "csel	x6, xzr, x14, ne\n\t"
+        "csel	x7, xzr, x15, ne\n\t"
+        "csel	x8, xzr, x16, ne\n\t"
+        "csel	x9, xzr, x17, ne\n\t"
+        "csel	x10, xzr, x19, ne\n\t"
+        "1:\n\t"
+        "add	%[table], %[table], #64\n\t"
+        "cmp	%w[idx], w30\n\t"
+        "add	w30, w30, #1\n\t"
+        "ldp	x11, x12, [%[table], #0]\n\t"
+        "ldp	x13, x14, [%[table], #16]\n\t"
+        "ldp	x15, x16, [%[table], #32]\n\t"
+        "ldp	x17, x19, [%[table], #48]\n\t"
+        "csel	x3, x3, x11, ne\n\t"
+        "csel	x4, x4, x12, ne\n\t"
+        "csel	x5, x5, x13, ne\n\t"
+        "csel	x6, x6, x14, ne\n\t"
+        "csel	x7, x7, x15, ne\n\t"
+        "csel	x8, x8, x16, ne\n\t"
+        "csel	x9, x9, x17, ne\n\t"
+        "csel	x10, x10, x19, ne\n\t"
+        "cmp	w30, #64\n\t"
+        "b.ne	1b\n\t"
+        "stp	x3, x4, [%[r], #0]\n\t"
+        "stp	x5, x6, [%[r], #16]\n\t"
+        "stp	x7, x8, [%[r], #64]\n\t"
+        "stp	x9, x10, [%[r], #80]\n\t"
+       : [table] "+r" (table)
+       : [r] "r" (r), [idx] "r" (idx)
+       : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "w30"
+    );
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
 /* Multiply the point by the scalar and return the result.
@@ -24788,7 +24811,7 @@ static int sp_256_ecc_mulmod_stripe_4(sp_point_256* r, const sp_point_256* g,
     sp_digit* t = NULL;
 #else
     sp_point_256 rt[2];
-    sp_digit t[2 * 4 * 6];
+    sp_digit t[2 * 4 * 5];
 #endif
     sp_point_256* p = NULL;
     int i;
@@ -24809,7 +24832,7 @@ static int sp_256_ecc_mulmod_stripe_4(sp_point_256* r, const sp_point_256* g,
     if (rt == NULL)
         err = MEMORY_E;
     if (err == MP_OKAY) {
-        t = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 6, heap,
+        t = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 5, heap,
                                DYNAMIC_TYPE_ECC);
         if (t == NULL)
             err = MEMORY_E;
@@ -24993,13 +25016,13 @@ static int sp_256_ecc_mulmod_4(sp_point_256* r, const sp_point_256* g, const sp_
 #ifdef WOLFSSL_SP_SMALL_STACK
     sp_digit* tmp;
 #else
-    sp_digit tmp[2 * 4 * 6];
+    sp_digit tmp[2 * 4 * 5];
 #endif
     sp_cache_256_t* cache;
     int err = MP_OKAY;
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 6, heap, DYNAMIC_TYPE_ECC);
+    tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 5, heap, DYNAMIC_TYPE_ECC);
     if (tmp == NULL) {
         err = MEMORY_E;
     }
@@ -25147,28 +25170,49 @@ static int sp_256_gen_stripe_table_4(const sp_point_256* a,
 static void sp_256_get_entry_256_4(sp_point_256* r,
     const sp_table_entry_256* table, int idx)
 {
-    int i;
-    sp_digit mask;
-
-    r->x[0] = 0;
-    r->x[1] = 0;
-    r->x[2] = 0;
-    r->x[3] = 0;
-    r->y[0] = 0;
-    r->y[1] = 0;
-    r->y[2] = 0;
-    r->y[3] = 0;
-    for (i = 1; i < 256; i++) {
-        mask = 0 - (i == idx);
-        r->x[0] |= mask & table[i].x[0];
-        r->x[1] |= mask & table[i].x[1];
-        r->x[2] |= mask & table[i].x[2];
-        r->x[3] |= mask & table[i].x[3];
-        r->y[0] |= mask & table[i].y[0];
-        r->y[1] |= mask & table[i].y[1];
-        r->y[2] |= mask & table[i].y[2];
-        r->y[3] |= mask & table[i].y[3];
-    }
+    __asm__ __volatile__ (
+        "mov	w30, #1\n\t"
+        "add	%[table], %[table], #64\n\t"
+        "cmp	%w[idx], w30\n\t"
+        "add	w30, w30, #1\n\t"
+        "ldp	x11, x12, [%[table], #0]\n\t"
+        "ldp	x13, x14, [%[table], #16]\n\t"
+        "ldp	x15, x16, [%[table], #32]\n\t"
+        "ldp	x17, x19, [%[table], #48]\n\t"
+        "csel	x3, xzr, x11, ne\n\t"
+        "csel	x4, xzr, x12, ne\n\t"
+        "csel	x5, xzr, x13, ne\n\t"
+        "csel	x6, xzr, x14, ne\n\t"
+        "csel	x7, xzr, x15, ne\n\t"
+        "csel	x8, xzr, x16, ne\n\t"
+        "csel	x9, xzr, x17, ne\n\t"
+        "csel	x10, xzr, x19, ne\n\t"
+        "1:\n\t"
+        "add	%[table], %[table], #64\n\t"
+        "cmp	%w[idx], w30\n\t"
+        "add	w30, w30, #1\n\t"
+        "ldp	x11, x12, [%[table], #0]\n\t"
+        "ldp	x13, x14, [%[table], #16]\n\t"
+        "ldp	x15, x16, [%[table], #32]\n\t"
+        "ldp	x17, x19, [%[table], #48]\n\t"
+        "csel	x3, x3, x11, ne\n\t"
+        "csel	x4, x4, x12, ne\n\t"
+        "csel	x5, x5, x13, ne\n\t"
+        "csel	x6, x6, x14, ne\n\t"
+        "csel	x7, x7, x15, ne\n\t"
+        "csel	x8, x8, x16, ne\n\t"
+        "csel	x9, x9, x17, ne\n\t"
+        "csel	x10, x10, x19, ne\n\t"
+        "cmp	w30, #256\n\t"
+        "b.ne	1b\n\t"
+        "stp	x3, x4, [%[r], #0]\n\t"
+        "stp	x5, x6, [%[r], #16]\n\t"
+        "stp	x7, x8, [%[r], #64]\n\t"
+        "stp	x9, x10, [%[r], #80]\n\t"
+       : [table] "+r" (table)
+       : [r] "r" (r), [idx] "r" (idx)
+       : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "w30"
+    );
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
 /* Multiply the point by the scalar and return the result.
@@ -25196,7 +25240,7 @@ static int sp_256_ecc_mulmod_stripe_4(sp_point_256* r, const sp_point_256* g,
     sp_digit* t = NULL;
 #else
     sp_point_256 rt[2];
-    sp_digit t[2 * 4 * 6];
+    sp_digit t[2 * 4 * 5];
 #endif
     sp_point_256* p = NULL;
     int i;
@@ -25217,7 +25261,7 @@ static int sp_256_ecc_mulmod_stripe_4(sp_point_256* r, const sp_point_256* g,
     if (rt == NULL)
         err = MEMORY_E;
     if (err == MP_OKAY) {
-        t = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 6, heap,
+        t = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 5, heap,
                                DYNAMIC_TYPE_ECC);
         if (t == NULL)
             err = MEMORY_E;
@@ -25401,13 +25445,13 @@ static int sp_256_ecc_mulmod_4(sp_point_256* r, const sp_point_256* g, const sp_
 #ifdef WOLFSSL_SP_SMALL_STACK
     sp_digit* tmp;
 #else
-    sp_digit tmp[2 * 4 * 6];
+    sp_digit tmp[2 * 4 * 5];
 #endif
     sp_cache_256_t* cache;
     int err = MP_OKAY;
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 6, heap, DYNAMIC_TYPE_ECC);
+    tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 5, heap, DYNAMIC_TYPE_ECC);
     if (tmp == NULL) {
         err = MEMORY_E;
     }
@@ -25521,7 +25565,7 @@ int sp_ecc_mulmod_add_256(const mp_int* km, const ecc_point* gm,
     const ecc_point* am, int inMont, ecc_point* r, int map, void* heap)
 {
 #ifdef WOLFSSL_SP_SMALL_STACK
-    sp_point_256* point = NULL;    
+    sp_point_256* point = NULL;
     sp_digit* k = NULL;
 #else
     sp_point_256 point[2];
@@ -27325,28 +27369,49 @@ static void sp_256_ecc_recode_7_4(const sp_digit* k, ecc_recode_256* v)
 static void sp_256_get_entry_65_4(sp_point_256* r,
     const sp_table_entry_256* table, int idx)
 {
-    int i;
-    sp_digit mask;
-
-    r->x[0] = 0;
-    r->x[1] = 0;
-    r->x[2] = 0;
-    r->x[3] = 0;
-    r->y[0] = 0;
-    r->y[1] = 0;
-    r->y[2] = 0;
-    r->y[3] = 0;
-    for (i = 1; i < 65; i++) {
-        mask = 0 - (i == idx);
-        r->x[0] |= mask & table[i].x[0];
-        r->x[1] |= mask & table[i].x[1];
-        r->x[2] |= mask & table[i].x[2];
-        r->x[3] |= mask & table[i].x[3];
-        r->y[0] |= mask & table[i].y[0];
-        r->y[1] |= mask & table[i].y[1];
-        r->y[2] |= mask & table[i].y[2];
-        r->y[3] |= mask & table[i].y[3];
-    }
+    __asm__ __volatile__ (
+        "mov	w30, #1\n\t"
+        "add	%[table], %[table], #64\n\t"
+        "cmp	%w[idx], w30\n\t"
+        "add	w30, w30, #1\n\t"
+        "ldp	x11, x12, [%[table], #0]\n\t"
+        "ldp	x13, x14, [%[table], #16]\n\t"
+        "ldp	x15, x16, [%[table], #32]\n\t"
+        "ldp	x17, x19, [%[table], #48]\n\t"
+        "csel	x3, xzr, x11, ne\n\t"
+        "csel	x4, xzr, x12, ne\n\t"
+        "csel	x5, xzr, x13, ne\n\t"
+        "csel	x6, xzr, x14, ne\n\t"
+        "csel	x7, xzr, x15, ne\n\t"
+        "csel	x8, xzr, x16, ne\n\t"
+        "csel	x9, xzr, x17, ne\n\t"
+        "csel	x10, xzr, x19, ne\n\t"
+        "1:\n\t"
+        "add	%[table], %[table], #64\n\t"
+        "cmp	%w[idx], w30\n\t"
+        "add	w30, w30, #1\n\t"
+        "ldp	x11, x12, [%[table], #0]\n\t"
+        "ldp	x13, x14, [%[table], #16]\n\t"
+        "ldp	x15, x16, [%[table], #32]\n\t"
+        "ldp	x17, x19, [%[table], #48]\n\t"
+        "csel	x3, x3, x11, ne\n\t"
+        "csel	x4, x4, x12, ne\n\t"
+        "csel	x5, x5, x13, ne\n\t"
+        "csel	x6, x6, x14, ne\n\t"
+        "csel	x7, x7, x15, ne\n\t"
+        "csel	x8, x8, x16, ne\n\t"
+        "csel	x9, x9, x17, ne\n\t"
+        "csel	x10, x10, x19, ne\n\t"
+        "cmp	w30, #65\n\t"
+        "b.ne	1b\n\t"
+        "stp	x3, x4, [%[r], #0]\n\t"
+        "stp	x5, x6, [%[r], #16]\n\t"
+        "stp	x7, x8, [%[r], #64]\n\t"
+        "stp	x9, x10, [%[r], #80]\n\t"
+       : [table] "+r" (table)
+       : [r] "r" (r), [idx] "r" (idx)
+       : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "w30"
+    );
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
 static const sp_table_entry_256 p256_table[2405] = {
@@ -39328,7 +39393,7 @@ static int sp_256_ecc_mulmod_add_only_4(sp_point_256* r, const sp_point_256* g,
     sp_digit* tmp = NULL;
 #else
     sp_point_256 rt[2];
-    sp_digit tmp[2 * 4 * 6];
+    sp_digit tmp[2 * 4 * 5];
 #endif
     sp_point_256* p = NULL;
     sp_digit* negy = NULL;
@@ -39347,7 +39412,7 @@ static int sp_256_ecc_mulmod_add_only_4(sp_point_256* r, const sp_point_256* g,
     if (rt == NULL)
         err = MEMORY_E;
     if (err == MP_OKAY) {
-        tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 6, heap,
+        tmp = (sp_digit*)XMALLOC(sizeof(sp_digit) * 2 * 4 * 5, heap,
                                  DYNAMIC_TYPE_ECC);
         if (tmp == NULL)
             err = MEMORY_E;
@@ -39406,7 +39471,7 @@ static int sp_256_ecc_mulmod_add_only_4(sp_point_256* r, const sp_point_256* g,
     if (tmp != NULL)
 #endif
     {
-        ForceZero(tmp, sizeof(sp_digit) * 2 * 4 * 6);
+        ForceZero(tmp, sizeof(sp_digit) * 2 * 4 * 5);
     #ifdef WOLFSSL_SP_SMALL_STACK
         XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
     #endif
@@ -39515,7 +39580,7 @@ int sp_ecc_mulmod_base_add_256(const mp_int* km, const ecc_point* am,
     int err = MP_OKAY;
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    point = (sp_point_256*)XMALLOC(sizeof(sp_point_256) * 2, heap, 
+    point = (sp_point_256*)XMALLOC(sizeof(sp_point_256) * 2, heap,
                                          DYNAMIC_TYPE_ECC);
     if (point == NULL)
         err = MEMORY_E;
@@ -39758,7 +39823,7 @@ int sp_ecc_make_key_256(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     sp_point_256* infinity = NULL;
 #endif
     int err = MP_OKAY;
-    
+
 
     (void)heap;
 
@@ -39766,7 +39831,7 @@ int sp_ecc_make_key_256(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     #ifdef WOLFSSL_VALIDATE_ECC_KEYGEN
     point = (sp_point_256*)XMALLOC(sizeof(sp_point_256) * 2, heap, DYNAMIC_TYPE_ECC);
     #else
-    point = (sp_point_256*)XMALLOC(sizeof(sp_point_256), heap, DYNAMIC_TYPE_ECC);    
+    point = (sp_point_256*)XMALLOC(sizeof(sp_point_256), heap, DYNAMIC_TYPE_ECC);
     #endif
     if (point == NULL)
         err = MEMORY_E;
@@ -40110,7 +40175,7 @@ static void sp_256_mul_d_4(sp_digit* r, const sp_digit* a,
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * Assumes divisor has higest bit set.
+ * Assumes divisor has highest bit set.
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
@@ -40256,8 +40321,211 @@ static WC_INLINE int sp_256_mod_4(sp_digit* r, const sp_digit* a, const sp_digit
  */
 static void sp_256_mont_mul_order_4(sp_digit* r, const sp_digit* a, const sp_digit* b)
 {
-    sp_256_mul_4(r, a, b);
-    sp_256_mont_reduce_order_4(r, p256_order, p256_mp_order);
+    __asm__ __volatile__ (
+        "ldp	x13, x14, [%[a], 0]\n\t"
+        "ldp	x15, x16, [%[a], 16]\n\t"
+        "ldp	x17, x19, [%[b], 0]\n\t"
+        "ldp	x20, x21, [%[b], 16]\n\t"
+        "# A[0] * B[0]\n\t"
+        "umulh	x6, x13, x17\n\t"
+        "mul	x5, x13, x17\n\t"
+        "# A[2] * B[0]\n\t"
+        "umulh	x8, x15, x17\n\t"
+        "mul	x7, x15, x17\n\t"
+        "# A[1] * B[0]\n\t"
+        "mul	x3, x14, x17\n\t"
+        "adds	x6, x6, x3\n\t"
+        "umulh	x4, x14, x17\n\t"
+        "adcs	x7, x7, x4\n\t"
+        "adc	x8, x8, xzr\n\t"
+        "# A[0] * B[2]\n\t"
+        "mul	x3, x13, x20\n\t"
+        "adds	x7, x7, x3\n\t"
+        "umulh	x4, x13, x20\n\t"
+        "adcs	x8, x8, x4\n\t"
+        "# A[1] * B[3]\n\t"
+        "mul	x9, x14, x21\n\t"
+        "adcs	x9, x9, xzr\n\t"
+        "umulh	x10, x14, x21\n\t"
+        "adc	x10, x10, xzr\n\t"
+        "# A[0] * B[1]\n\t"
+        "mul	x3, x13, x19\n\t"
+        "adds	x6, x6, x3\n\t"
+        "umulh	x4, x13, x19\n\t"
+        "adcs	x7, x7, x4\n\t"
+        "# A[2] * B[1]\n\t"
+        "mul	x3, x15, x19\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "umulh	x4, x15, x19\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "adc	x10, x10, xzr\n\t"
+        "# A[1] * B[2]\n\t"
+        "mul	x3, x14, x20\n\t"
+        "adds	x8, x8, x3\n\t"
+        "umulh	x4, x14, x20\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "adcs	x10, x10, xzr\n\t"
+        "adc	x11, xzr, xzr\n\t"
+        "# A[1] * B[1]\n\t"
+        "mul	x3, x14, x19\n\t"
+        "adds	x7, x7, x3\n\t"
+        "umulh	x4, x14, x19\n\t"
+        "adcs	x8, x8, x4\n\t"
+        "# A[3] * B[1]\n\t"
+        "mul	x3, x16, x19\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "umulh	x4, x16, x19\n\t"
+        "adcs	x10, x10, x4\n\t"
+        "adc	x11, x11, xzr\n\t"
+        "# A[2] * B[2]\n\t"
+        "mul	x3, x15, x20\n\t"
+        "adds	x9, x9, x3\n\t"
+        "umulh	x4, x15, x20\n\t"
+        "adcs	x10, x10, x4\n\t"
+        "# A[3] * B[3]\n\t"
+        "mul	x3, x16, x21\n\t"
+        "adcs	x11, x11, x3\n\t"
+        "umulh	x12, x16, x21\n\t"
+        "adc	x12, x12, xzr\n\t"
+        "# A[0] * B[3]\n\t"
+        "mul	x3, x13, x21\n\t"
+        "adds	x8, x8, x3\n\t"
+        "umulh	x4, x13, x21\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "# A[2] * B[3]\n\t"
+        "mul	x3, x15, x21\n\t"
+        "adcs	x10, x10, x3\n\t"
+        "umulh	x4, x15, x21\n\t"
+        "adcs	x11, x11, x4\n\t"
+        "adc	x12, x12, xzr\n\t"
+        "# A[3] * B[0]\n\t"
+        "mul	x3, x16, x17\n\t"
+        "adds	x8, x8, x3\n\t"
+        "umulh	x4, x16, x17\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "# A[3] * B[2]\n\t"
+        "mul	x3, x16, x20\n\t"
+        "adcs	x10, x10, x3\n\t"
+        "umulh	x4, x16, x20\n\t"
+        "adcs	x11, x11, x4\n\t"
+        "adc	x12, x12, xzr\n\t"
+        "ldp   x13, x14, [%[m], 0]\n\t"
+        "mov	x15, 0xffffffffffffffff\n\t"
+        "mov	x16, 0xffffffff00000000\n\t"
+        "# mu = a[0] * mp\n\t"
+        "mul	x17, %[mp], x5\n\t"
+        "# a[0+0] += m[0] * mu\n\t"
+        "mul	x3, x13, x17\n\t"
+        "adds	x5, x5, x3\n\t"
+        "umulh	x4, x13, x17\n\t"
+        "adcs	x6, x6, x4\n\t"
+        "# a[0+2] += m[2] * mu\n\t"
+        "mul	x3, x15, x17\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "umulh	x4, x15, x17\n\t"
+        "adcs	x8, x8, x4\n\t"
+        "adcs	x9, x9, xzr\n\t"
+        "adc	x19, xzr, xzr\n\t"
+        "# a[0+1] += m[1] * mu\n\t"
+        "mul	x3, x14, x17\n\t"
+        "adds	x6, x6, x3\n\t"
+        "umulh	x4, x14, x17\n\t"
+        "adcs	x7, x7, x4\n\t"
+        "# a[0+3] += m[3] * mu\n\t"
+        "mul	x3, x16, x17\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "umulh	x4, x16, x17\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "# mu = a[1] * mp\n\t"
+        "mul	x17, %[mp], x6\n\t"
+        "adc	x19, x19, xzr\n\t"
+        "# a[1+0] += m[0] * mu\n\t"
+        "mul	x3, x13, x17\n\t"
+        "adds	x6, x6, x3\n\t"
+        "umulh	x4, x13, x17\n\t"
+        "adcs	x7, x7, x4\n\t"
+        "# a[1+2] += m[2] * mu\n\t"
+        "mul	x3, x15, x17\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "umulh	x4, x15, x17\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "adcs	x10, x10, x19\n\t"
+        "adc	x19, xzr, xzr\n\t"
+        "# a[1+1] += m[1] * mu\n\t"
+        "mul	x3, x14, x17\n\t"
+        "adds	x7, x7, x3\n\t"
+        "umulh	x4, x14, x17\n\t"
+        "adcs	x8, x8, x4\n\t"
+        "# a[1+3] += m[3] * mu\n\t"
+        "mul	x3, x16, x17\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "umulh	x4, x16, x17\n\t"
+        "adcs	x10, x10, x4\n\t"
+        "# mu = a[2] * mp\n\t"
+        "mul	x17, %[mp], x7\n\t"
+        "adc	x19, x19, xzr\n\t"
+        "# a[2+0] += m[0] * mu\n\t"
+        "mul	x3, x13, x17\n\t"
+        "adds	x7, x7, x3\n\t"
+        "umulh	x4, x13, x17\n\t"
+        "adcs	x8, x8, x4\n\t"
+        "# a[2+2] += m[2] * mu\n\t"
+        "mul	x3, x15, x17\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "umulh	x4, x15, x17\n\t"
+        "adcs	x10, x10, x4\n\t"
+        "adcs	x11, x11, x19\n\t"
+        "adc	x19, xzr, xzr\n\t"
+        "# a[2+1] += m[1] * mu\n\t"
+        "mul	x3, x14, x17\n\t"
+        "adds	x8, x8, x3\n\t"
+        "umulh	x4, x14, x17\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "# a[2+3] += m[3] * mu\n\t"
+        "mul	x3, x16, x17\n\t"
+        "adcs	x10, x10, x3\n\t"
+        "umulh	x4, x16, x17\n\t"
+        "adcs	x11, x11, x4\n\t"
+        "# mu = a[3] * mp\n\t"
+        "mul	x17, %[mp], x8\n\t"
+        "adc	x19, x19, xzr\n\t"
+        "# a[3+0] += m[0] * mu\n\t"
+        "mul	x3, x13, x17\n\t"
+        "adds	x8, x8, x3\n\t"
+        "umulh	x4, x13, x17\n\t"
+        "adcs	x9, x9, x4\n\t"
+        "# a[3+2] += m[2] * mu\n\t"
+        "mul	x3, x15, x17\n\t"
+        "adcs	x10, x10, x3\n\t"
+        "umulh	x4, x15, x17\n\t"
+        "adcs	x11, x11, x4\n\t"
+        "adcs	x12, x12, x19\n\t"
+        "adc	x19, xzr, xzr\n\t"
+        "# a[3+1] += m[1] * mu\n\t"
+        "mul	x3, x14, x17\n\t"
+        "adds	x9, x9, x3\n\t"
+        "umulh	x4, x14, x17\n\t"
+        "adcs	x10, x10, x4\n\t"
+        "# a[3+3] += m[3] * mu\n\t"
+        "mul	x3, x16, x17\n\t"
+        "adcs	x11, x11, x3\n\t"
+        "umulh	x4, x16, x17\n\t"
+        "adcs	x12, x12, x4\n\t"
+        "csel	x13, x13, xzr, cs\n\t"
+        "csel	x14, x14, xzr, cs\n\t"
+        "csel	x15, x15, xzr, cs\n\t"
+        "csel	x16, x16, xzr, cs\n\t"
+        "subs	x9, x9, x13\n\t"
+        "sbcs	x10, x10, x14\n\t"
+        "sbcs	x11, x11, x15\n\t"
+        "stp	x9, x10, [%[r], 0]\n\t"
+        "sbc	x12, x12, x16\n\t"
+        "stp	x11, x12, [%[r], 16]\n\t"
+        :
+        : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (p256_order),
+          [mp] "r" (p256_mp_order)
+        : "memory", "x3", "x4", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "cc"
+    );
 }
 
 #if defined(HAVE_ECC_SIGN) || (defined(HAVE_ECC_VERIFY) && defined(WOLFSSL_SP_SMALL))
@@ -40266,11 +40534,6 @@ static void sp_256_mont_mul_order_4(sp_digit* r, const sp_digit* a, const sp_dig
 static const uint64_t p256_order_minus_2[4] = {
     0xf3b9cac2fc63254fU,0xbce6faada7179e84U,0xffffffffffffffffU,
     0xffffffff00000000U
-};
-#else
-/* The low half of the order-2 of the P256 curve. */
-static const sp_int_digit p256_order_low[2] = {
-    0xf3b9cac2fc63254fU,0xbce6faada7179e84U
 };
 #endif /* WOLFSSL_SP_SMALL */
 
@@ -40281,8 +40544,179 @@ static const sp_int_digit p256_order_low[2] = {
  */
 static void sp_256_mont_sqr_order_4(sp_digit* r, const sp_digit* a)
 {
-    sp_256_sqr_4(r, a);
-    sp_256_mont_reduce_order_4(r, p256_order, p256_mp_order);
+    __asm__ __volatile__ (
+        "ldp	x12, x13, [%[a], 0]\n\t"
+        "ldp	x14, x15, [%[a], 16]\n\t"
+        "# A[0] * A[1]\n\t"
+        "umulh	x6, x12, x13\n\t"
+        "mul	x5, x12, x13\n\t"
+        "# A[0] * A[3]\n\t"
+        "umulh	x8, x12, x15\n\t"
+        "mul	x7, x12, x15\n\t"
+        "# A[0] * A[2]\n\t"
+        "mul	x2, x12, x14\n\t"
+        "adds	x6, x6, x2\n\t"
+        "umulh	x3, x12, x14\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "# A[1] * A[3]\n\t"
+        "mul	x2, x13, x15\n\t"
+        "adcs	x8, x8, x2\n\t"
+        "umulh	x9, x13, x15\n\t"
+        "adc	x9, x9, xzr\n\t"
+        "# A[1] * A[2]\n\t"
+        "mul	x2, x13, x14\n\t"
+        "adds	x7, x7, x2\n\t"
+        "umulh	x3, x13, x14\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "# A[2] * A[3]\n\t"
+        "mul	x2, x14, x15\n\t"
+        "adcs	x9, x9, x2\n\t"
+        "umulh	x10, x14, x15\n\t"
+        "adc	x10, x10, xzr\n\t"
+        "# Double\n\t"
+        "adds	x5, x5, x5\n\t"
+        "adcs	x6, x6, x6\n\t"
+        "adcs	x7, x7, x7\n\t"
+        "adcs	x8, x8, x8\n\t"
+        "adcs	x9, x9, x9\n\t"
+        "adcs	x10, x10, x10\n\t"
+        "adc	x11, xzr, xzr\n\t"
+        "# A[0] * A[0]\n\t"
+        "umulh	x3, x12, x12\n\t"
+        "mul	x4, x12, x12\n\t"
+        "# A[1] * A[1]\n\t"
+        "mul	x2, x13, x13\n\t"
+        "adds	x5, x5, x3\n\t"
+        "umulh	x3, x13, x13\n\t"
+        "adcs	x6, x6, x2\n\t"
+        "# A[2] * A[2]\n\t"
+        "mul	x2, x14, x14\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "umulh	x3, x14, x14\n\t"
+        "adcs	x8, x8, x2\n\t"
+        "# A[3] * A[3]\n\t"
+        "mul	x2, x15, x15\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "umulh	x3, x15, x15\n\t"
+        "adcs	x10, x10, x2\n\t"
+        "adc	x11, x11, x3\n\t"
+        "ldp   x12, x13, [%[m], 0]\n\t"
+        "mov	x14, 0xffffffffffffffff\n\t"
+        "mov	x15, 0xffffffff00000000\n\t"
+        "# mu = a[0] * mp\n\t"
+        "mul	x16, %[mp], x4\n\t"
+        "# a[0+0] += m[0] * mu\n\t"
+        "mul	x2, x12, x16\n\t"
+        "adds	x4, x4, x2\n\t"
+        "umulh	x3, x12, x16\n\t"
+        "adcs	x5, x5, x3\n\t"
+        "# a[0+2] += m[2] * mu\n\t"
+        "mul	x2, x14, x16\n\t"
+        "adcs	x6, x6, x2\n\t"
+        "umulh	x3, x14, x16\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "adcs	x8, x8, xzr\n\t"
+        "adc	x17, xzr, xzr\n\t"
+        "# a[0+1] += m[1] * mu\n\t"
+        "mul	x2, x13, x16\n\t"
+        "adds	x5, x5, x2\n\t"
+        "umulh	x3, x13, x16\n\t"
+        "adcs	x6, x6, x3\n\t"
+        "# a[0+3] += m[3] * mu\n\t"
+        "mul	x2, x15, x16\n\t"
+        "adcs	x7, x7, x2\n\t"
+        "umulh	x3, x15, x16\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "# mu = a[1] * mp\n\t"
+        "mul	x16, %[mp], x5\n\t"
+        "adc	x17, x17, xzr\n\t"
+        "# a[1+0] += m[0] * mu\n\t"
+        "mul	x2, x12, x16\n\t"
+        "adds	x5, x5, x2\n\t"
+        "umulh	x3, x12, x16\n\t"
+        "adcs	x6, x6, x3\n\t"
+        "# a[1+2] += m[2] * mu\n\t"
+        "mul	x2, x14, x16\n\t"
+        "adcs	x7, x7, x2\n\t"
+        "umulh	x3, x14, x16\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "adcs	x9, x9, x17\n\t"
+        "adc	x17, xzr, xzr\n\t"
+        "# a[1+1] += m[1] * mu\n\t"
+        "mul	x2, x13, x16\n\t"
+        "adds	x6, x6, x2\n\t"
+        "umulh	x3, x13, x16\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "# a[1+3] += m[3] * mu\n\t"
+        "mul	x2, x15, x16\n\t"
+        "adcs	x8, x8, x2\n\t"
+        "umulh	x3, x15, x16\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "# mu = a[2] * mp\n\t"
+        "mul	x16, %[mp], x6\n\t"
+        "adc	x17, x17, xzr\n\t"
+        "# a[2+0] += m[0] * mu\n\t"
+        "mul	x2, x12, x16\n\t"
+        "adds	x6, x6, x2\n\t"
+        "umulh	x3, x12, x16\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "# a[2+2] += m[2] * mu\n\t"
+        "mul	x2, x14, x16\n\t"
+        "adcs	x8, x8, x2\n\t"
+        "umulh	x3, x14, x16\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "adcs	x10, x10, x17\n\t"
+        "adc	x17, xzr, xzr\n\t"
+        "# a[2+1] += m[1] * mu\n\t"
+        "mul	x2, x13, x16\n\t"
+        "adds	x7, x7, x2\n\t"
+        "umulh	x3, x13, x16\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "# a[2+3] += m[3] * mu\n\t"
+        "mul	x2, x15, x16\n\t"
+        "adcs	x9, x9, x2\n\t"
+        "umulh	x3, x15, x16\n\t"
+        "adcs	x10, x10, x3\n\t"
+        "# mu = a[3] * mp\n\t"
+        "mul	x16, %[mp], x7\n\t"
+        "adc	x17, x17, xzr\n\t"
+        "# a[3+0] += m[0] * mu\n\t"
+        "mul	x2, x12, x16\n\t"
+        "adds	x7, x7, x2\n\t"
+        "umulh	x3, x12, x16\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "# a[3+2] += m[2] * mu\n\t"
+        "mul	x2, x14, x16\n\t"
+        "adcs	x9, x9, x2\n\t"
+        "umulh	x3, x14, x16\n\t"
+        "adcs	x10, x10, x3\n\t"
+        "adcs	x11, x11, x17\n\t"
+        "adc	x17, xzr, xzr\n\t"
+        "# a[3+1] += m[1] * mu\n\t"
+        "mul	x2, x13, x16\n\t"
+        "adds	x8, x8, x2\n\t"
+        "umulh	x3, x13, x16\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "# a[3+3] += m[3] * mu\n\t"
+        "mul	x2, x15, x16\n\t"
+        "adcs	x10, x10, x2\n\t"
+        "umulh	x3, x15, x16\n\t"
+        "adcs	x11, x11, x3\n\t"
+        "csel	x12, x12, xzr, cs\n\t"
+        "csel	x13, x13, xzr, cs\n\t"
+        "csel	x14, x14, xzr, cs\n\t"
+        "csel	x15, x15, xzr, cs\n\t"
+        "subs	x8, x8, x12\n\t"
+        "sbcs	x9, x9, x13\n\t"
+        "sbcs	x10, x10, x14\n\t"
+        "stp	x8, x9, [%[r], 0]\n\t"
+        "sbc	x11, x11, x15\n\t"
+        "stp	x10, x11, [%[r], 16]\n\t"
+        :
+        : [r] "r" (r), [a] "r" (a), [m] "r" (p256_order),
+          [mp] "r" (p256_mp_order)
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "cc"
+    );
 }
 
 #ifndef WOLFSSL_SP_SMALL
@@ -40294,12 +40728,183 @@ static void sp_256_mont_sqr_order_4(sp_digit* r, const sp_digit* a)
  */
 static void sp_256_mont_sqr_n_order_4(sp_digit* r, const sp_digit* a, int n)
 {
-    int i;
 
-    sp_256_mont_sqr_order_4(r, a);
-    for (i=1; i<n; i++) {
-        sp_256_mont_sqr_order_4(r, r);
-    }
+    __asm__ __volatile__ (
+        "ldp	x12, x13, [%[a], 0]\n\t"
+        "ldp	x14, x15, [%[a], 16]\n\t"
+        "1:\n\t"
+        "# A[0] * A[1]\n\t"
+        "umulh	x6, x12, x13\n\t"
+        "mul	x5, x12, x13\n\t"
+        "# A[0] * A[3]\n\t"
+        "umulh	x8, x12, x15\n\t"
+        "mul	x7, x12, x15\n\t"
+        "# A[0] * A[2]\n\t"
+        "mul	x2, x12, x14\n\t"
+        "adds	x6, x6, x2\n\t"
+        "umulh	x3, x12, x14\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "# A[1] * A[3]\n\t"
+        "mul	x2, x13, x15\n\t"
+        "adcs	x8, x8, x2\n\t"
+        "umulh	x9, x13, x15\n\t"
+        "adc	x9, x9, xzr\n\t"
+        "# A[1] * A[2]\n\t"
+        "mul	x2, x13, x14\n\t"
+        "adds	x7, x7, x2\n\t"
+        "umulh	x3, x13, x14\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "# A[2] * A[3]\n\t"
+        "mul	x2, x14, x15\n\t"
+        "adcs	x9, x9, x2\n\t"
+        "umulh	x10, x14, x15\n\t"
+        "adc	x10, x10, xzr\n\t"
+        "# Double\n\t"
+        "adds	x5, x5, x5\n\t"
+        "adcs	x6, x6, x6\n\t"
+        "adcs	x7, x7, x7\n\t"
+        "adcs	x8, x8, x8\n\t"
+        "adcs	x9, x9, x9\n\t"
+        "adcs	x10, x10, x10\n\t"
+        "adc	x11, xzr, xzr\n\t"
+        "# A[0] * A[0]\n\t"
+        "umulh	x3, x12, x12\n\t"
+        "mul	x4, x12, x12\n\t"
+        "# A[1] * A[1]\n\t"
+        "mul	x2, x13, x13\n\t"
+        "adds	x5, x5, x3\n\t"
+        "umulh	x3, x13, x13\n\t"
+        "adcs	x6, x6, x2\n\t"
+        "# A[2] * A[2]\n\t"
+        "mul	x2, x14, x14\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "umulh	x3, x14, x14\n\t"
+        "adcs	x8, x8, x2\n\t"
+        "# A[3] * A[3]\n\t"
+        "mul	x2, x15, x15\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "umulh	x3, x15, x15\n\t"
+        "adcs	x10, x10, x2\n\t"
+        "adc	x11, x11, x3\n\t"
+        "ldp   x12, x13, [%[m], 0]\n\t"
+        "mov	x14, 0xffffffffffffffff\n\t"
+        "mov	x15, 0xffffffff00000000\n\t"
+        "# mu = a[0] * mp\n\t"
+        "mul	x16, %[mp], x4\n\t"
+        "# a[0+0] += m[0] * mu\n\t"
+        "mul	x2, x12, x16\n\t"
+        "adds	x4, x4, x2\n\t"
+        "umulh	x3, x12, x16\n\t"
+        "adcs	x5, x5, x3\n\t"
+        "# a[0+2] += m[2] * mu\n\t"
+        "mul	x2, x14, x16\n\t"
+        "adcs	x6, x6, x2\n\t"
+        "umulh	x3, x14, x16\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "adcs	x8, x8, xzr\n\t"
+        "adc	x17, xzr, xzr\n\t"
+        "# a[0+1] += m[1] * mu\n\t"
+        "mul	x2, x13, x16\n\t"
+        "adds	x5, x5, x2\n\t"
+        "umulh	x3, x13, x16\n\t"
+        "adcs	x6, x6, x3\n\t"
+        "# a[0+3] += m[3] * mu\n\t"
+        "mul	x2, x15, x16\n\t"
+        "adcs	x7, x7, x2\n\t"
+        "umulh	x3, x15, x16\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "# mu = a[1] * mp\n\t"
+        "mul	x16, %[mp], x5\n\t"
+        "adc	x17, x17, xzr\n\t"
+        "# a[1+0] += m[0] * mu\n\t"
+        "mul	x2, x12, x16\n\t"
+        "adds	x5, x5, x2\n\t"
+        "umulh	x3, x12, x16\n\t"
+        "adcs	x6, x6, x3\n\t"
+        "# a[1+2] += m[2] * mu\n\t"
+        "mul	x2, x14, x16\n\t"
+        "adcs	x7, x7, x2\n\t"
+        "umulh	x3, x14, x16\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "adcs	x9, x9, x17\n\t"
+        "adc	x17, xzr, xzr\n\t"
+        "# a[1+1] += m[1] * mu\n\t"
+        "mul	x2, x13, x16\n\t"
+        "adds	x6, x6, x2\n\t"
+        "umulh	x3, x13, x16\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "# a[1+3] += m[3] * mu\n\t"
+        "mul	x2, x15, x16\n\t"
+        "adcs	x8, x8, x2\n\t"
+        "umulh	x3, x15, x16\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "# mu = a[2] * mp\n\t"
+        "mul	x16, %[mp], x6\n\t"
+        "adc	x17, x17, xzr\n\t"
+        "# a[2+0] += m[0] * mu\n\t"
+        "mul	x2, x12, x16\n\t"
+        "adds	x6, x6, x2\n\t"
+        "umulh	x3, x12, x16\n\t"
+        "adcs	x7, x7, x3\n\t"
+        "# a[2+2] += m[2] * mu\n\t"
+        "mul	x2, x14, x16\n\t"
+        "adcs	x8, x8, x2\n\t"
+        "umulh	x3, x14, x16\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "adcs	x10, x10, x17\n\t"
+        "adc	x17, xzr, xzr\n\t"
+        "# a[2+1] += m[1] * mu\n\t"
+        "mul	x2, x13, x16\n\t"
+        "adds	x7, x7, x2\n\t"
+        "umulh	x3, x13, x16\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "# a[2+3] += m[3] * mu\n\t"
+        "mul	x2, x15, x16\n\t"
+        "adcs	x9, x9, x2\n\t"
+        "umulh	x3, x15, x16\n\t"
+        "adcs	x10, x10, x3\n\t"
+        "# mu = a[3] * mp\n\t"
+        "mul	x16, %[mp], x7\n\t"
+        "adc	x17, x17, xzr\n\t"
+        "# a[3+0] += m[0] * mu\n\t"
+        "mul	x2, x12, x16\n\t"
+        "adds	x7, x7, x2\n\t"
+        "umulh	x3, x12, x16\n\t"
+        "adcs	x8, x8, x3\n\t"
+        "# a[3+2] += m[2] * mu\n\t"
+        "mul	x2, x14, x16\n\t"
+        "adcs	x9, x9, x2\n\t"
+        "umulh	x3, x14, x16\n\t"
+        "adcs	x10, x10, x3\n\t"
+        "adcs	x11, x11, x17\n\t"
+        "adc	x17, xzr, xzr\n\t"
+        "# a[3+1] += m[1] * mu\n\t"
+        "mul	x2, x13, x16\n\t"
+        "adds	x8, x8, x2\n\t"
+        "umulh	x3, x13, x16\n\t"
+        "adcs	x9, x9, x3\n\t"
+        "# a[3+3] += m[3] * mu\n\t"
+        "mul	x2, x15, x16\n\t"
+        "adcs	x10, x10, x2\n\t"
+        "umulh	x3, x15, x16\n\t"
+        "adcs	x11, x11, x3\n\t"
+        "csel	x12, x12, xzr, cs\n\t"
+        "csel	x13, x13, xzr, cs\n\t"
+        "csel	x14, x14, xzr, cs\n\t"
+        "csel	x15, x15, xzr, cs\n\t"
+        "subs	x12, x8, x12\n\t"
+        "sbcs	x13, x9, x13\n\t"
+        "sbcs	x14, x10, x14\n\t"
+        "sbc	x15, x11, x15\n\t"
+        "subs	%w[n], %w[n], #1\n\t"
+        "b.ne	1b\n\t"
+        "stp	x12, x13, [%[r], 0]\n\t"
+        "stp	x14, x15, [%[r], 16]\n\t"
+        : [n] "+r" (n)
+        : [r] "r" (r), [a] "r" (a), [m] "r" (p256_order),
+          [mp] "r" (p256_mp_order)
+        : "memory", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "cc"
+    );
 }
 #endif /* !WOLFSSL_SP_SMALL */
 
@@ -40370,77 +40975,109 @@ static void sp_256_mont_inv_order_4(sp_digit* r, const sp_digit* a,
     sp_digit* t = td;
     sp_digit* t2 = td + 2 * 4;
     sp_digit* t3 = td + 4 * 4;
-    int i;
+    sp_digit* t5 = td + 6 * 4;
+    sp_digit* t7 = td + 8 * 4;
+    sp_digit* t15 = td + 10 * 4;
 
-    /* t = a^2 */
-    sp_256_mont_sqr_order_4(t, a);
-    /* t = a^3 = t * a */
-    sp_256_mont_mul_order_4(t, t, a);
-    /* t2= a^c = t ^ 2 ^ 2 */
-    sp_256_mont_sqr_n_order_4(t2, t, 2);
-    /* t3= a^f = t2 * t */
-    sp_256_mont_mul_order_4(t3, t2, t);
-    /* t2= a^f0 = t3 ^ 2 ^ 4 */
-    sp_256_mont_sqr_n_order_4(t2, t3, 4);
-    /* t = a^ff = t2 * t3 */
-    sp_256_mont_mul_order_4(t, t2, t3);
-    /* t3= a^ff00 = t ^ 2 ^ 8 */
+    /* t2 = a^2 */
+    sp_256_mont_sqr_order_4(t2, a);
+    /* t3 = a^3 = t * a */
+    sp_256_mont_mul_order_4(t3, t2, a);
+    /* t5 = a^5 = t3 * t2 */
+    sp_256_mont_mul_order_4(t5, t3, t2);
+    /* t7 = a^6 = t3 ^ 2 */
+    sp_256_mont_sqr_order_4(t7, t3);
+    /* t7 = a^7 = t7 * a */
+    sp_256_mont_mul_order_4(t7, t7, a);
+    /* t2 = a^c = t3 ^ 2 */
+    sp_256_mont_sqr_order_4(t2, t7);
+    /* t15= a^f = t2 * t3 */
+    sp_256_mont_mul_order_4(t15, t2, a);
+    /* t2 = a^f0 = t15 ^ 2 ^ 4 */
+    sp_256_mont_sqr_n_order_4(t2, t15, 4);
+    /* t  = a^ff = t2 * t15 */
+    sp_256_mont_mul_order_4(t, t2, t15);
+    /* t15= a^ff00 = t ^ 2 ^ 8 */
     sp_256_mont_sqr_n_order_4(t2, t, 8);
-    /* t = a^ffff = t2 * t */
+    /* t  = a^ffff = t2 * t */
     sp_256_mont_mul_order_4(t, t2, t);
-    /* t2= a^ffff0000 = t ^ 2 ^ 16 */
+    /* t2 = a^ffff0000 = t ^ 2 ^ 16 */
     sp_256_mont_sqr_n_order_4(t2, t, 16);
-    /* t = a^ffffffff = t2 * t */
+    /* t  = a^ffffffff = t2 * t */
     sp_256_mont_mul_order_4(t, t2, t);
-    /* t2= a^ffffffff0000000000000000 = t ^ 2 ^ 64  */
+    /* t2 = a^ffffffff0000000000000000 = t ^ 2 ^ 64  */
     sp_256_mont_sqr_n_order_4(t2, t, 64);
-    /* t2= a^ffffffff00000000ffffffff = t2 * t */
+    /* t2 = a^ffffffff00000000ffffffff = t2 * t */
     sp_256_mont_mul_order_4(t2, t2, t);
-    /* t2= a^ffffffff00000000ffffffff00000000 = t2 ^ 2 ^ 32  */
+    /* t2 = a^ffffffff00000000ffffffff00000000 = t2 ^ 2 ^ 32  */
     sp_256_mont_sqr_n_order_4(t2, t2, 32);
-    /* t2= a^ffffffff00000000ffffffffffffffff = t2 * t */
+    /* t2 = a^ffffffff00000000ffffffffffffffff = t2 * t */
     sp_256_mont_mul_order_4(t2, t2, t);
-    /* t2= a^ffffffff00000000ffffffffffffffffbce6 */
-    for (i=127; i>=112; i--) {
-        sp_256_mont_sqr_order_4(t2, t2);
-        if ((p256_order_low[i / 64] & ((sp_int_digit)1 << (i % 64))) != 0) {
-            sp_256_mont_mul_order_4(t2, t2, a);
-        }
-    }
-    /* t2= a^ffffffff00000000ffffffffffffffffbce6f */
+
+    /* ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc63254f */
+    sp_256_mont_sqr_order_4(t2, t2);
+    sp_256_mont_mul_order_4(t2, t2, a);
+    sp_256_mont_sqr_n_order_4(t2, t2, 5);
+    sp_256_mont_mul_order_4(t2, t2, t15);
+    sp_256_mont_sqr_n_order_4(t2, t2, 5);
+    sp_256_mont_mul_order_4(t2, t2, t7);
     sp_256_mont_sqr_n_order_4(t2, t2, 4);
     sp_256_mont_mul_order_4(t2, t2, t3);
-    /* t2= a^ffffffff00000000ffffffffffffffffbce6faada7179e84 */
-    for (i=107; i>=64; i--) {
-        sp_256_mont_sqr_order_4(t2, t2);
-        if ((p256_order_low[i / 64] & ((sp_int_digit)1 << (i % 64))) != 0) {
-            sp_256_mont_mul_order_4(t2, t2, a);
-        }
-    }
-    /* t2= a^ffffffff00000000ffffffffffffffffbce6faada7179e84f */
+    sp_256_mont_sqr_n_order_4(t2, t2, 5);
+    sp_256_mont_mul_order_4(t2, t2, t15);
+    sp_256_mont_sqr_n_order_4(t2, t2, 3);
+    sp_256_mont_mul_order_4(t2, t2, t5);
     sp_256_mont_sqr_n_order_4(t2, t2, 4);
+    sp_256_mont_mul_order_4(t2, t2, t5);
+    sp_256_mont_sqr_n_order_4(t2, t2, 3);
     sp_256_mont_mul_order_4(t2, t2, t3);
-    /* t2= a^ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2 */
-    for (i=59; i>=32; i--) {
-        sp_256_mont_sqr_order_4(t2, t2);
-        if ((p256_order_low[i / 64] & ((sp_int_digit)1 << (i % 64))) != 0) {
-            sp_256_mont_mul_order_4(t2, t2, a);
-        }
-    }
-    /* t2= a^ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2f */
-    sp_256_mont_sqr_n_order_4(t2, t2, 4);
+    sp_256_mont_sqr_n_order_4(t2, t2, 3);
     sp_256_mont_mul_order_4(t2, t2, t3);
-    /* t2= a^ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc63254 */
-    for (i=27; i>=0; i--) {
-        sp_256_mont_sqr_order_4(t2, t2);
-        if ((p256_order_low[i / 64] & ((sp_int_digit)1 << (i % 64))) != 0) {
-            sp_256_mont_mul_order_4(t2, t2, a);
-        }
-    }
-    /* t2= a^ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632540 */
+    sp_256_mont_sqr_n_order_4(t2, t2, 2);
+    sp_256_mont_mul_order_4(t2, t2, a);
+    sp_256_mont_sqr_n_order_4(t2, t2, 5);
+    sp_256_mont_mul_order_4(t2, t2, t7);
     sp_256_mont_sqr_n_order_4(t2, t2, 4);
-    /* r = a^ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc63254f */
-    sp_256_mont_mul_order_4(r, t2, t3);
+    sp_256_mont_mul_order_4(t2, t2, a);
+    sp_256_mont_sqr_n_order_4(t2, t2, 5);
+    sp_256_mont_mul_order_4(t2, t2, t15);
+    sp_256_mont_sqr_n_order_4(t2, t2, 6);
+    sp_256_mont_mul_order_4(t2, t2, t15);
+    sp_256_mont_sqr_n_order_4(t2, t2, 2);
+    sp_256_mont_mul_order_4(t2, t2, a);
+    sp_256_mont_sqr_n_order_4(t2, t2, 5);
+    sp_256_mont_mul_order_4(t2, t2, a);
+    sp_256_mont_sqr_n_order_4(t2, t2, 6);
+    sp_256_mont_mul_order_4(t2, t2, t15);
+    sp_256_mont_sqr_n_order_4(t2, t2, 5);
+    sp_256_mont_mul_order_4(t2, t2, t7);
+    sp_256_mont_sqr_n_order_4(t2, t2, 4);
+    sp_256_mont_mul_order_4(t2, t2, t7);
+    sp_256_mont_sqr_n_order_4(t2, t2, 5);
+    sp_256_mont_mul_order_4(t2, t2, t7);
+    sp_256_mont_sqr_n_order_4(t2, t2, 5);
+    sp_256_mont_mul_order_4(t2, t2, t5);
+    sp_256_mont_sqr_n_order_4(t2, t2, 3);
+    sp_256_mont_mul_order_4(t2, t2, t3);
+    sp_256_mont_sqr_n_order_4(t2, t2, 5);
+    sp_256_mont_mul_order_4(t2, t2, a);
+    sp_256_mont_sqr_n_order_4(t2, t2, 5);
+    sp_256_mont_mul_order_4(t2, t2, t15);
+    sp_256_mont_sqr_n_order_4(t2, t2, 2);
+    sp_256_mont_mul_order_4(t2, t2, t3);
+    sp_256_mont_sqr_n_order_4(t2, t2, 5);
+    sp_256_mont_mul_order_4(t2, t2, t3);
+    sp_256_mont_sqr_n_order_4(t2, t2, 5);
+    sp_256_mont_mul_order_4(t2, t2, t3);
+    sp_256_mont_sqr_n_order_4(t2, t2, 3);
+    sp_256_mont_mul_order_4(t2, t2, a);
+    sp_256_mont_sqr_n_order_4(t2, t2, 5);
+    sp_256_mont_mul_order_4(t2, t2, t5);
+    sp_256_mont_sqr_n_order_4(t2, t2, 2);
+    sp_256_mont_mul_order_4(t2, t2, a);
+    sp_256_mont_sqr_n_order_4(t2, t2, 6);
+    sp_256_mont_mul_order_4(r, t2, t15);
+    /* Multiplications: 31 */
 #endif /* WOLFSSL_SP_SMALL */
 }
 
@@ -40526,7 +41163,7 @@ int sp_ecc_sign_256(const byte* hash, word32 hashLen, WC_RNG* rng,
     sp_digit* e = NULL;
     sp_point_256* point = NULL;
 #else
-    sp_digit e[7 * 2 * 4];
+    sp_digit e[10 * 2 * 4];
     sp_point_256 point[1];
 #endif
     sp_digit* x = NULL;
@@ -40548,7 +41185,7 @@ int sp_ecc_sign_256(const byte* hash, word32 hashLen, WC_RNG* rng,
             err = MEMORY_E;
     }
     if (err == MP_OKAY) {
-        e = (sp_digit*)XMALLOC(sizeof(sp_digit) * 7 * 2 * 4, heap,
+        e = (sp_digit*)XMALLOC(sizeof(sp_digit) * 10 * 2 * 4, heap,
                                DYNAMIC_TYPE_ECC);
         if (e == NULL)
             err = MEMORY_E;
@@ -40623,7 +41260,7 @@ int sp_ecc_sign_256(const byte* hash, word32 hashLen, WC_RNG* rng,
     if (e != NULL)
 #endif
     {
-        ForceZero(e, sizeof(sp_digit) * 7 * 2 * 4);
+        ForceZero(e, sizeof(sp_digit) * 10 * 2 * 4);
     #ifdef WOLFSSL_SP_SMALL_STACK
         XFREE(e, heap, DYNAMIC_TYPE_ECC);
     #endif
@@ -40652,7 +41289,7 @@ typedef struct sp_ecc_sign_256_ctx {
     sp_digit x[2*4];
     sp_digit k[2*4];
     sp_digit r[2*4];
-    sp_digit tmp[3 * 2*4];
+    sp_digit tmp[6 * 2*4];
     sp_point_256 point;
     sp_digit* s;
     sp_digit* kInv;
@@ -40797,7 +41434,7 @@ int sp_ecc_sign_256_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
         XMEMSET(ctx->x, 0, sizeof(sp_digit) * 2U * 4U);
         XMEMSET(ctx->k, 0, sizeof(sp_digit) * 2U * 4U);
         XMEMSET(ctx->r, 0, sizeof(sp_digit) * 2U * 4U);
-        XMEMSET(ctx->tmp, 0, sizeof(sp_digit) * 3U * 2U * 4U);
+        XMEMSET(ctx->tmp, 0, sizeof(sp_digit) * 6U * 2U * 4U);
     }
 
     return err;
@@ -41428,6 +42065,50 @@ int sp_ecc_verify_256_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
 #endif /* HAVE_ECC_VERIFY */
 
 #ifdef HAVE_ECC_CHECK_KEY
+/* Add two Montgomery form numbers (r = a + b % m).
+ *
+ * r   Result of addition.
+ * a   First number to add in Montgomery form.
+ * b   Second number to add in Montgomery form.
+ * m   Modulus (prime).
+ */
+static void sp_256_mont_add_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
+        const sp_digit* m)
+{
+    __asm__ __volatile__ (
+        "ldp	x4, x5, [%[a], 0]\n\t"
+        "ldp	x6, x7, [%[a], 16]\n\t"
+        "ldp	x8, x9, [%[b], 0]\n\t"
+        "ldp	x10, x11, [%[b], 16]\n\t"
+        "adds	x4, x4, x8\n\t"
+        "adcs	x5, x5, x9\n\t"
+        "adcs	x6, x6, x10\n\t"
+        "adcs	x7, x7, x11\n\t"
+        "csetm	x14, cs\n\t"
+        "subs	x4, x4, x14\n\t"
+        "lsr	x12, x14, 32\n\t"
+        "sbcs	x5, x5, x12\n\t"
+        "sub	x13, xzr, x12\n\t"
+        "sbcs	x6, x6, xzr\n\t"
+        "sbcs	x7, x7, x13\n\t"
+        "sbc	x13, xzr, xzr\n\t"
+        "sub	x14, x14, x13\n\t"
+        "subs	x4, x4, x14\n\t"
+        "lsr	x12, x14, 32\n\t"
+        "sbcs	x5, x5, x12\n\t"
+        "sub	x13, xzr, x12\n\t"
+        "sbcs	x6, x6, xzr\n\t"
+        "stp	x4, x5, [%[r],0]\n\t"
+        "sbc	x7, x7, x13\n\t"
+        "stp	x6, x7, [%[r],16]\n\t"
+        :
+        : [r] "r" (r), [a] "r" (a), [b] "r" (b)
+        : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "cc"
+    );
+
+    (void)m;
+}
+
 /* Check that the x and y oridinates are a valid point on the curve.
  *
  * point  EC point.
@@ -42443,87 +43124,87 @@ static void sp_384_sqr_6(sp_digit* r, const sp_digit* a)
         "ldp       x19, x20, [%[a], 16]\n\t"
         "ldp       x21, x22, [%[a], 32]\n\t"
         "#  A[0] * A[1]\n\t"
-        "mul	x6, x16, x17\n\t"
-        "umulh	x7, x16, x17\n\t"
+        "mul       x6, x16, x17\n\t"
+        "umulh     x7, x16, x17\n\t"
         "#  A[0] * A[2]\n\t"
-        "mul	x4, x16, x19\n\t"
-        "umulh	x5, x16, x19\n\t"
-        "adds	x7, x7, x4\n\t"
+        "mul       x4, x16, x19\n\t"
+        "umulh     x5, x16, x19\n\t"
+        "adds  x7, x7, x4\n\t"
         "#  A[0] * A[3]\n\t"
-        "mul	x4, x16, x20\n\t"
-        "adc	x8, xzr, x5\n\t"
-        "umulh	x5, x16, x20\n\t"
-        "adds	x8, x8, x4\n\t"
+        "mul       x4, x16, x20\n\t"
+        "adc   x8, xzr, x5\n\t"
+        "umulh     x5, x16, x20\n\t"
+        "adds  x8, x8, x4\n\t"
         "#  A[1] * A[2]\n\t"
-        "mul	x4, x17, x19\n\t"
-        "adc	x9, xzr, x5\n\t"
-        "umulh	x5, x17, x19\n\t"
-        "adds	x8, x8, x4\n\t"
+        "mul       x4, x17, x19\n\t"
+        "adc   x9, xzr, x5\n\t"
+        "umulh     x5, x17, x19\n\t"
+        "adds  x8, x8, x4\n\t"
         "#  A[0] * A[4]\n\t"
-        "mul	x4, x16, x21\n\t"
-        "adcs	x9, x9, x5\n\t"
-        "umulh	x5, x16, x21\n\t"
-        "adc	x10, xzr, xzr\n\t"
-        "adds	x9, x9, x4\n\t"
+        "mul       x4, x16, x21\n\t"
+        "adcs   x9, x9, x5\n\t"
+        "umulh     x5, x16, x21\n\t"
+        "adc     x10, xzr, xzr\n\t"
+        "adds  x9, x9, x4\n\t"
         "#  A[1] * A[3]\n\t"
-        "mul	x4, x17, x20\n\t"
-        "adc	x10, x10, x5\n\t"
-        "umulh	x5, x17, x20\n\t"
-        "adds	x9, x9, x4\n\t"
+        "mul       x4, x17, x20\n\t"
+        "adc   x10, x10, x5\n\t"
+        "umulh     x5, x17, x20\n\t"
+        "adds  x9, x9, x4\n\t"
         "#  A[0] * A[5]\n\t"
-        "mul	x4, x16, x22\n\t"
-        "adcs	x10, x10, x5\n\t"
-        "umulh	x5, x16, x22\n\t"
-        "adc	x11, xzr, xzr\n\t"
-        "adds	x10, x10, x4\n\t"
+        "mul       x4, x16, x22\n\t"
+        "adcs   x10, x10, x5\n\t"
+        "umulh     x5, x16, x22\n\t"
+        "adc     x11, xzr, xzr\n\t"
+        "adds  x10, x10, x4\n\t"
         "#  A[1] * A[4]\n\t"
-        "mul	x4, x17, x21\n\t"
-        "adc	x11, x11, x5\n\t"
-        "umulh	x5, x17, x21\n\t"
-        "adds	x10, x10, x4\n\t"
+        "mul       x4, x17, x21\n\t"
+        "adc   x11, x11, x5\n\t"
+        "umulh     x5, x17, x21\n\t"
+        "adds  x10, x10, x4\n\t"
         "#  A[2] * A[3]\n\t"
-        "mul	x4, x19, x20\n\t"
-        "adcs	x11, x11, x5\n\t"
-        "umulh	x5, x19, x20\n\t"
-        "adc	x12, xzr, xzr\n\t"
-        "adds	x10, x10, x4\n\t"
+        "mul       x4, x19, x20\n\t"
+        "adcs   x11, x11, x5\n\t"
+        "umulh     x5, x19, x20\n\t"
+        "adc     x12, xzr, xzr\n\t"
+        "adds  x10, x10, x4\n\t"
         "#  A[1] * A[5]\n\t"
-        "mul	x4, x17, x22\n\t"
-        "adcs	x11, x11, x5\n\t"
-        "umulh	x5, x17, x22\n\t"
-        "adc	x12, x12, xzr\n\t"
-        "adds	x11, x11, x4\n\t"
+        "mul       x4, x17, x22\n\t"
+        "adcs   x11, x11, x5\n\t"
+        "umulh     x5, x17, x22\n\t"
+        "adc     x12, x12, xzr\n\t"
+        "adds  x11, x11, x4\n\t"
         "#  A[2] * A[4]\n\t"
-        "mul	x4, x19, x21\n\t"
-        "adcs	x12, x12, x5\n\t"
-        "umulh	x5, x19, x21\n\t"
-        "adc	x13, xzr, xzr\n\t"
-        "adds	x11, x11, x4\n\t"
+        "mul       x4, x19, x21\n\t"
+        "adcs   x12, x12, x5\n\t"
+        "umulh     x5, x19, x21\n\t"
+        "adc     x13, xzr, xzr\n\t"
+        "adds  x11, x11, x4\n\t"
         "#  A[2] * A[5]\n\t"
-        "mul	x4, x19, x22\n\t"
-        "adcs	x12, x12, x5\n\t"
-        "umulh	x5, x19, x22\n\t"
-        "adc	x13, x13, xzr\n\t"
-        "adds	x12, x12, x4\n\t"
+        "mul       x4, x19, x22\n\t"
+        "adcs   x12, x12, x5\n\t"
+        "umulh     x5, x19, x22\n\t"
+        "adc     x13, x13, xzr\n\t"
+        "adds  x12, x12, x4\n\t"
         "#  A[3] * A[4]\n\t"
-        "mul	x4, x20, x21\n\t"
-        "adcs	x13, x13, x5\n\t"
-        "umulh	x5, x20, x21\n\t"
-        "adc	x14, xzr, xzr\n\t"
-        "adds	x12, x12, x4\n\t"
+        "mul       x4, x20, x21\n\t"
+        "adcs   x13, x13, x5\n\t"
+        "umulh     x5, x20, x21\n\t"
+        "adc     x14, xzr, xzr\n\t"
+        "adds  x12, x12, x4\n\t"
         "#  A[3] * A[5]\n\t"
-        "mul	x4, x20, x22\n\t"
-        "adcs	x13, x13, x5\n\t"
-        "umulh	x5, x20, x22\n\t"
-        "adc	x14, x14, xzr\n\t"
-        "adds	x13, x13, x4\n\t"
+        "mul       x4, x20, x22\n\t"
+        "adcs   x13, x13, x5\n\t"
+        "umulh     x5, x20, x22\n\t"
+        "adc     x14, x14, xzr\n\t"
+        "adds  x13, x13, x4\n\t"
         "#  A[4] * A[5]\n\t"
-        "mul	x4, x21, x22\n\t"
-        "adcs	x14, x14, x5\n\t"
-        "umulh	x5, x21, x22\n\t"
-        "adc	x15, xzr, xzr\n\t"
-        "adds	x14, x14, x4\n\t"
-        "adc	x15, x15, x5\n\t"
+        "mul       x4, x21, x22\n\t"
+        "adcs   x14, x14, x5\n\t"
+        "umulh     x5, x21, x22\n\t"
+        "adc     x15, xzr, xzr\n\t"
+        "adds  x14, x14, x4\n\t"
+        "adc   x15, x15, x5\n\t"
         "# Double\n\t"
         "adds	x6, x6, x6\n\t"
         "adcs	x7, x7, x7\n\t"
@@ -42535,34 +43216,34 @@ static void sp_384_sqr_6(sp_digit* r, const sp_digit* a)
         "adcs	x13, x13, x13\n\t"
         "adcs	x14, x14, x14\n\t"
         "#  A[0] * A[0]\n\t"
-        "mul	x5, x16, x16\n\t"
+        "mul       x5, x16, x16\n\t"
         "adcs	x15, x15, x15\n\t"
-        "umulh	x2, x16, x16\n\t"
+        "umulh     x2, x16, x16\n\t"
         "cset  x16, cs\n\t"
         "#  A[1] * A[1]\n\t"
-        "mul	x3, x17, x17\n\t"
+        "mul       x3, x17, x17\n\t"
         "adds	x6, x6, x2\n\t"
-        "umulh	x4, x17, x17\n\t"
+        "umulh     x4, x17, x17\n\t"
         "adcs	x7, x7, x3\n\t"
         "#  A[2] * A[2]\n\t"
-        "mul	x2, x19, x19\n\t"
+        "mul       x2, x19, x19\n\t"
         "adcs	x8, x8, x4\n\t"
-        "umulh	x3, x19, x19\n\t"
+        "umulh     x3, x19, x19\n\t"
         "adcs	x9, x9, x2\n\t"
         "#  A[3] * A[3]\n\t"
-        "mul	x4, x20, x20\n\t"
+        "mul       x4, x20, x20\n\t"
         "adcs	x10, x10, x3\n\t"
-        "umulh	x2, x20, x20\n\t"
+        "umulh     x2, x20, x20\n\t"
         "adcs	x11, x11, x4\n\t"
         "#  A[4] * A[4]\n\t"
-        "mul	x3, x21, x21\n\t"
+        "mul       x3, x21, x21\n\t"
         "adcs	x12, x12, x2\n\t"
-        "umulh	x4, x21, x21\n\t"
+        "umulh     x4, x21, x21\n\t"
         "adcs	x13, x13, x3\n\t"
         "#  A[5] * A[5]\n\t"
-        "mul	x2, x22, x22\n\t"
+        "mul       x2, x22, x22\n\t"
         "adcs	x14, x14, x4\n\t"
-        "umulh	x3, x22, x22\n\t"
+        "umulh     x3, x22, x22\n\t"
         "adcs	x15, x15, x2\n\t"
         "stp	x5, x6, [%[r], 0]\n\t"
         "adc	x16, x16, x3\n\t"
@@ -42606,7 +43287,7 @@ static sp_digit sp_384_add_6(sp_digit* r, const sp_digit* a,
         "adcs	x4, x4, x8\n\t"
         "str	x3, [%[r], 32]\n\t"
         "str	x4, [%[r], 40]\n\t"
-        "cset	%[r], cs\n\t"
+        "adc	%[r], xzr, xzr\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
         : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
@@ -42773,14 +43454,14 @@ static void sp_384_from_mp(sp_digit* r, int size, const mp_int* a)
 {
 #if DIGIT_BIT == 64
     int i;
-    int j = 0;
+    sp_digit j = (sp_digit)0 - (sp_digit)a->used;
+    int o = 0;
 
     for (i = 0; i < size; i++) {
-        sp_digit mask =
-            (((sp_digit)((int)a->used - i - 1)) >> (SP_WORD_SIZE - 1)) - 1;
-        r[i] = a->dp[j] & mask;
-        j += (int)(((sp_digit)1) -
-                   (((sp_digit)((int)a->used - i - 2)) >> (SP_WORD_SIZE - 1)));
+        sp_digit mask = (sp_digit)0 - (j >> 63);
+        r[i] = a->dp[o] & mask;
+        j++;
+        o += (int)(j >> 63);
     }
 #elif DIGIT_BIT > 64
     unsigned int i;
@@ -43193,7 +43874,7 @@ SP_NOINLINE static void sp_384_mont_reduce_order_6(sp_digit* a, const sp_digit* 
         "umulh	x8, x10, x9\n\t"
         "adds	x6, x6, x7\n\t"
         "adcs	x8, x8, x3\n\t"
-        "cset	x3, cs\n\t"
+        "adc	x3, xzr, xzr\n\t"
         "adds	x16, x17, x6\n\t"
         "ldr	x17, [%[a], 48]\n\t"
         "adcs	x17, x17, x8\n\t"
@@ -43695,7 +44376,6 @@ static void sp_384_mont_sub_6(sp_digit* r, const sp_digit* a, const sp_digit* b,
     sp_384_cond_add_6(r, r, m, o);
 }
 
-#define sp_384_mont_sub_lower_6 sp_384_mont_sub_6
 static void sp_384_rshift1_6(sp_digit* r, const sp_digit* a)
 {
     __asm__ __volatile__ (
@@ -43786,7 +44466,7 @@ static void sp_384_proj_point_dbl_6(sp_point_384* r, const sp_point_384* p,
     /* X = X - Y */
     sp_384_mont_sub_6(x, x, y, p384_mod);
     /* Y = Y - X */
-    sp_384_mont_sub_lower_6(y, y, x, p384_mod);
+    sp_384_mont_sub_6(y, y, x, p384_mod);
     /* Y = Y * T1 */
     sp_384_mont_mul_6(y, y, t1, p384_mod, p384_mp_mod);
     /* Y = Y - T2 */
@@ -43908,7 +44588,7 @@ static int sp_384_proj_point_dbl_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r, con
         break;
     case 16:
         /* Y = Y - X */
-        sp_384_mont_sub_lower_6(ctx->y, ctx->y, ctx->x, p384_mod);
+        sp_384_mont_sub_6(ctx->y, ctx->y, ctx->x, p384_mod);
         ctx->state = 17;
         break;
     case 17:
@@ -43933,8 +44613,6 @@ static int sp_384_proj_point_dbl_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r, con
     return err;
 }
 #endif /* WOLFSSL_SP_NONBLOCK */
-#define sp_384_mont_dbl_lower_6 sp_384_mont_dbl_6
-#define sp_384_mont_tpl_lower_6 sp_384_mont_tpl_6
 /* Double the Montgomery form projective point p a number of times.
  *
  * r  Result of repeated doubling of point.
@@ -43973,7 +44651,7 @@ static void sp_384_proj_point_dbl_n_6(sp_point_384* p, int i,
         /* A = 3*(X^2 - W) */
         sp_384_mont_sqr_6(t1, x, p384_mod, p384_mp_mod);
         sp_384_mont_sub_6(t1, t1, w, p384_mod);
-        sp_384_mont_tpl_lower_6(a, t1, p384_mod);
+        sp_384_mont_tpl_6(a, t1, p384_mod);
         /* B = X*Y^2 */
         sp_384_mont_sqr_6(t1, y, p384_mod, p384_mp_mod);
         sp_384_mont_mul_6(b, t1, x, p384_mod, p384_mp_mod);
@@ -43982,8 +44660,8 @@ static void sp_384_proj_point_dbl_n_6(sp_point_384* p, int i,
         sp_384_mont_dbl_6(t2, b, p384_mod);
         sp_384_mont_sub_6(x, x, t2, p384_mod);
         /* B = 2.(B - X) */
-        sp_384_mont_sub_lower_6(t2, b, x, p384_mod);
-        sp_384_mont_dbl_lower_6(b, t2, p384_mod);
+        sp_384_mont_sub_6(t2, b, x, p384_mod);
+        sp_384_mont_dbl_6(b, t2, p384_mod);
         /* Z = Z*Y */
         sp_384_mont_mul_6(z, z, y, p384_mod, p384_mp_mod);
         /* t1 = Y^4 */
@@ -44003,7 +44681,7 @@ static void sp_384_proj_point_dbl_n_6(sp_point_384* p, int i,
     /* A = 3*(X^2 - W) */
     sp_384_mont_sqr_6(t1, x, p384_mod, p384_mp_mod);
     sp_384_mont_sub_6(t1, t1, w, p384_mod);
-    sp_384_mont_tpl_lower_6(a, t1, p384_mod);
+    sp_384_mont_tpl_6(a, t1, p384_mod);
     /* B = X*Y^2 */
     sp_384_mont_sqr_6(t1, y, p384_mod, p384_mp_mod);
     sp_384_mont_mul_6(b, t1, x, p384_mod, p384_mp_mod);
@@ -44012,8 +44690,8 @@ static void sp_384_proj_point_dbl_n_6(sp_point_384* p, int i,
     sp_384_mont_dbl_6(t2, b, p384_mod);
     sp_384_mont_sub_6(x, x, t2, p384_mod);
     /* B = 2.(B - X) */
-    sp_384_mont_sub_lower_6(t2, b, x, p384_mod);
-    sp_384_mont_dbl_lower_6(b, t2, p384_mod);
+    sp_384_mont_sub_6(t2, b, x, p384_mod);
+    sp_384_mont_dbl_6(b, t2, p384_mod);
     /* Z = Z*Y */
     sp_384_mont_mul_6(z, z, y, p384_mod, p384_mp_mod);
     /* t1 = Y^4 */
@@ -44061,12 +44739,12 @@ static int sp_384_iszero_6(const sp_digit* a)
 static void sp_384_proj_point_add_6(sp_point_384* r,
         const sp_point_384* p, const sp_point_384* q, sp_digit* t)
 {
-    sp_digit* t1 = t;
-    sp_digit* t2 = t + 2*6;
-    sp_digit* t3 = t + 4*6;
-    sp_digit* t4 = t + 6*6;
-    sp_digit* t5 = t + 8*6;
-    sp_digit* t6 = t + 10*6;
+    sp_digit* t6 = t;
+    sp_digit* t1 = t + 2*6;
+    sp_digit* t2 = t + 4*6;
+    sp_digit* t3 = t + 6*6;
+    sp_digit* t4 = t + 8*6;
+    sp_digit* t5 = t + 10*6;
 
     /* U1 = X1*Z2^2 */
     sp_384_mont_sqr_6(t1, q->z, p384_mod, p384_mp_mod);
@@ -44088,17 +44766,9 @@ static void sp_384_proj_point_add_6(sp_point_384* r,
         sp_384_proj_point_dbl_6(r, p, t);
     }
     else {
-        sp_digit maskp;
-        sp_digit maskq;
-        sp_digit maskt;
         sp_digit* x = t6;
         sp_digit* y = t1;
         sp_digit* z = t2;
-        int i;
-
-        maskp = 0 - (q->infinity & (!p->infinity));
-        maskq = 0 - (p->infinity & (!q->infinity));
-        maskt = ~(maskp | maskq);
 
         /* H = U2 - U1 */
         sp_384_mont_sub_6(t2, t2, t1, p384_mod);
@@ -44117,20 +44787,31 @@ static void sp_384_proj_point_add_6(sp_point_384* r,
         sp_384_mont_dbl_6(t3, y, p384_mod);
         sp_384_mont_sub_6(x, x, t3, p384_mod);
         /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_384_mont_sub_lower_6(y, y, x, p384_mod);
+        sp_384_mont_sub_6(y, y, x, p384_mod);
         sp_384_mont_mul_6(y, y, t4, p384_mod, p384_mp_mod);
         sp_384_mont_sub_6(y, y, t5, p384_mod);
-        for (i = 0; i < 6; i++) {
-            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
+        {
+            int i;
+            sp_digit maskp = 0 - (q->infinity & (!p->infinity));
+            sp_digit maskq = 0 - (p->infinity & (!q->infinity));
+            sp_digit maskt = ~(maskp | maskq);
+            sp_digit inf = (sp_digit)(p->infinity & q->infinity);
+
+            for (i = 0; i < 6; i++) {
+                r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) |
+                          (x[i] & maskt);
+            }
+            for (i = 0; i < 6; i++) {
+                r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) |
+                          (y[i] & maskt);
+            }
+            for (i = 0; i < 6; i++) {
+                r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) |
+                          (z[i] & maskt);
+            }
+            r->z[0] |= inf;
+            r->infinity = (word32)inf;
         }
-        for (i = 0; i < 6; i++) {
-            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
-        }
-        for (i = 0; i < 6; i++) {
-            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
-        }
-        r->z[0] |= p->infinity & q->infinity;
-        r->infinity = p->infinity & q->infinity;
     }
 }
 
@@ -44176,12 +44857,12 @@ static int sp_384_proj_point_add_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
 
     switch (ctx->state) {
     case 0: /* INIT */
-        ctx->t1 = t;
-        ctx->t2 = t + 2*6;
-        ctx->t3 = t + 4*6;
-        ctx->t4 = t + 6*6;
-        ctx->t5 = t + 8*6;
-        ctx->t6 = t + 10*6;
+        ctx->t6 = t;
+        ctx->t1 = t + 2*6;
+        ctx->t2 = t + 4*6;
+        ctx->t3 = t + 6*6;
+        ctx->t4 = t + 8*6;
+        ctx->t5 = t + 10*6;
         ctx->x = ctx->t6;
         ctx->y = ctx->t1;
         ctx->z = ctx->t2;
@@ -44288,7 +44969,7 @@ static int sp_384_proj_point_add_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
         break;
     case 21:
         /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_384_mont_sub_lower_6(ctx->y, ctx->y, ctx->x, p384_mod);
+        sp_384_mont_sub_6(ctx->y, ctx->y, ctx->x, p384_mod);
         ctx->state = 22;
         break;
     case 22:
@@ -44301,22 +44982,28 @@ static int sp_384_proj_point_add_6_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
         break;
     case 24:
     {
-        int i;
-        sp_digit maskp = 0 - (q->infinity & (!p->infinity));
-        sp_digit maskq = 0 - (p->infinity & (!q->infinity));
-        sp_digit maskt = ~(maskp | maskq);
+        {
+            int i;
+            sp_digit maskp = 0 - (q->infinity & (!p->infinity));
+            sp_digit maskq = 0 - (p->infinity & (!q->infinity));
+            sp_digit maskt = ~(maskp | maskq);
+            sp_digit inf = (sp_digit)(p->infinity & q->infinity);
 
-        for (i = 0; i < 6; i++) {
-            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (ctx->x[i] & maskt);
+            for (i = 0; i < 6; i++) {
+                r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) |
+                          (ctx->x[i] & maskt);
+            }
+            for (i = 0; i < 6; i++) {
+                r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) |
+                          (ctx->y[i] & maskt);
+            }
+            for (i = 0; i < 6; i++) {
+                r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) |
+                          (ctx->z[i] & maskt);
+            }
+            r->z[0] |= inf;
+            r->infinity = (word32)inf;
         }
-        for (i = 0; i < 6; i++) {
-            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (ctx->y[i] & maskt);
-        }
-        for (i = 0; i < 6; i++) {
-            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (ctx->z[i] & maskt);
-        }
-        r->z[0] |= p->infinity & q->infinity;
-        r->infinity = p->infinity & q->infinity;
         ctx->state = 25;
         break;
     }
@@ -44375,7 +45062,7 @@ static void sp_384_proj_point_dbl_n_store_6(sp_point_384* r,
         /* A = 3*(X^2 - W) */
         sp_384_mont_sqr_6(t1, x, p384_mod, p384_mp_mod);
         sp_384_mont_sub_6(t1, t1, w, p384_mod);
-        sp_384_mont_tpl_lower_6(a, t1, p384_mod);
+        sp_384_mont_tpl_6(a, t1, p384_mod);
         /* B = X*Y^2 */
         sp_384_mont_sqr_6(t1, y, p384_mod, p384_mp_mod);
         sp_384_mont_mul_6(b, t1, x, p384_mod, p384_mp_mod);
@@ -44385,8 +45072,8 @@ static void sp_384_proj_point_dbl_n_store_6(sp_point_384* r,
         sp_384_mont_dbl_6(t2, b, p384_mod);
         sp_384_mont_sub_6(x, x, t2, p384_mod);
         /* B = 2.(B - X) */
-        sp_384_mont_sub_lower_6(t2, b, x, p384_mod);
-        sp_384_mont_dbl_lower_6(b, t2, p384_mod);
+        sp_384_mont_sub_6(t2, b, x, p384_mod);
+        sp_384_mont_dbl_6(b, t2, p384_mod);
         /* Z = Z*Y */
         sp_384_mont_mul_6(r[j].z, z, y, p384_mod, p384_mp_mod);
         z = r[j].z;
@@ -44474,8 +45161,8 @@ static void sp_384_proj_point_add_sub_6(sp_point_384* ra,
     sp_384_mont_sub_6(xs, xs, t1, p384_mod);
     /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
     /* YS = -RS*(U1*H^2 - XS) - S1*H^3 */
-    sp_384_mont_sub_lower_6(ys, ya, xs, p384_mod);
-    sp_384_mont_sub_lower_6(ya, ya, xa, p384_mod);
+    sp_384_mont_sub_6(ys, ya, xs, p384_mod);
+    sp_384_mont_sub_6(ya, ya, xa, p384_mod);
     sp_384_mont_mul_6(ya, ya, t4, p384_mod, p384_mp_mod);
     sp_384_sub_6(t6, p384_mod, t6);
     sp_384_mont_mul_6(ys, ys, t6, p384_mod, p384_mp_mod);
@@ -44567,46 +45254,65 @@ static void sp_384_get_point_33_6(sp_point_384* r, const sp_point_384* table,
 {
     int i;
     sp_digit mask;
+    sp_digit x0 = 0;
+    sp_digit x1 = 0;
+    sp_digit x2 = 0;
+    sp_digit x3 = 0;
+    sp_digit x4 = 0;
+    sp_digit x5 = 0;
+    sp_digit y0 = 0;
+    sp_digit y1 = 0;
+    sp_digit y2 = 0;
+    sp_digit y3 = 0;
+    sp_digit y4 = 0;
+    sp_digit y5 = 0;
+    sp_digit z0 = 0;
+    sp_digit z1 = 0;
+    sp_digit z2 = 0;
+    sp_digit z3 = 0;
+    sp_digit z4 = 0;
+    sp_digit z5 = 0;
 
-    r->x[0] = 0;
-    r->x[1] = 0;
-    r->x[2] = 0;
-    r->x[3] = 0;
-    r->x[4] = 0;
-    r->x[5] = 0;
-    r->y[0] = 0;
-    r->y[1] = 0;
-    r->y[2] = 0;
-    r->y[3] = 0;
-    r->y[4] = 0;
-    r->y[5] = 0;
-    r->z[0] = 0;
-    r->z[1] = 0;
-    r->z[2] = 0;
-    r->z[3] = 0;
-    r->z[4] = 0;
-    r->z[5] = 0;
     for (i = 1; i < 33; i++) {
         mask = 0 - (i == idx);
-        r->x[0] |= mask & table[i].x[0];
-        r->x[1] |= mask & table[i].x[1];
-        r->x[2] |= mask & table[i].x[2];
-        r->x[3] |= mask & table[i].x[3];
-        r->x[4] |= mask & table[i].x[4];
-        r->x[5] |= mask & table[i].x[5];
-        r->y[0] |= mask & table[i].y[0];
-        r->y[1] |= mask & table[i].y[1];
-        r->y[2] |= mask & table[i].y[2];
-        r->y[3] |= mask & table[i].y[3];
-        r->y[4] |= mask & table[i].y[4];
-        r->y[5] |= mask & table[i].y[5];
-        r->z[0] |= mask & table[i].z[0];
-        r->z[1] |= mask & table[i].z[1];
-        r->z[2] |= mask & table[i].z[2];
-        r->z[3] |= mask & table[i].z[3];
-        r->z[4] |= mask & table[i].z[4];
-        r->z[5] |= mask & table[i].z[5];
+        x0 |= mask & table[i].x[0];
+        x1 |= mask & table[i].x[1];
+        x2 |= mask & table[i].x[2];
+        x3 |= mask & table[i].x[3];
+        x4 |= mask & table[i].x[4];
+        x5 |= mask & table[i].x[5];
+        y0 |= mask & table[i].y[0];
+        y1 |= mask & table[i].y[1];
+        y2 |= mask & table[i].y[2];
+        y3 |= mask & table[i].y[3];
+        y4 |= mask & table[i].y[4];
+        y5 |= mask & table[i].y[5];
+        z0 |= mask & table[i].z[0];
+        z1 |= mask & table[i].z[1];
+        z2 |= mask & table[i].z[2];
+        z3 |= mask & table[i].z[3];
+        z4 |= mask & table[i].z[4];
+        z5 |= mask & table[i].z[5];
     }
+
+    r->x[0] = x0;
+    r->x[1] = x1;
+    r->x[2] = x2;
+    r->x[3] = x3;
+    r->x[4] = x4;
+    r->x[5] = x5;
+    r->y[0] = y0;
+    r->y[1] = y1;
+    r->y[2] = y2;
+    r->y[3] = y3;
+    r->y[4] = y4;
+    r->y[5] = y5;
+    r->z[0] = z0;
+    r->z[1] = z1;
+    r->z[2] = z2;
+    r->z[3] = z3;
+    r->z[4] = z4;
+    r->z[5] = z5;
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
 /* Multiply the point by the scalar and return the result.
@@ -44649,7 +45355,7 @@ static int sp_384_ecc_mulmod_win_add_sub_6(sp_point_384* r, const sp_point_384* 
     (void)heap;
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    t = (sp_point_384*)XMALLOC(sizeof(sp_point_384) * 
+    t = (sp_point_384*)XMALLOC(sizeof(sp_point_384) *
         (33+2), heap, DYNAMIC_TYPE_ECC);
     if (t == NULL)
         err = MEMORY_E;
@@ -44754,15 +45460,12 @@ static int sp_384_ecc_mulmod_win_add_sub_6(sp_point_384* r, const sp_point_384* 
     return err;
 }
 
-#ifndef WC_NO_CACHE_RESISTANT
 /* A table entry for pre-computed points. */
 typedef struct sp_table_entry_384 {
     sp_digit x[6];
     sp_digit y[6];
 } sp_table_entry_384;
 
-#if defined(FP_ECC) || defined(WOLFSSL_SP_SMALL)
-#endif /* FP_ECC | WOLFSSL_SP_SMALL */
 /* Add two Montgomery form projective points. The second point has a q value of
  * one.
  * Only the first point can be the same pointer as the result point.
@@ -44775,12 +45478,12 @@ typedef struct sp_table_entry_384 {
 static void sp_384_proj_point_add_qz1_6(sp_point_384* r,
     const sp_point_384* p, const sp_point_384* q, sp_digit* t)
 {
-    sp_digit* t1 = t;
-    sp_digit* t2 = t + 2*6;
-    sp_digit* t3 = t + 4*6;
-    sp_digit* t4 = t + 6*6;
-    sp_digit* t5 = t + 8*6;
-    sp_digit* t6 = t + 10*6;
+    sp_digit* t2 = t;
+    sp_digit* t3 = t + 2*6;
+    sp_digit* t6 = t + 4*6;
+    sp_digit* t1 = t + 6*6;
+    sp_digit* t4 = t + 8*6;
+    sp_digit* t5 = t + 10*6;
 
     /* Calculate values to subtract from P->x and P->y. */
     /* U2 = X2*Z1^2 */
@@ -44796,13 +45499,9 @@ static void sp_384_proj_point_add_qz1_6(sp_point_384* r,
         sp_384_proj_point_dbl_6(r, p, t);
     }
     else {
-        sp_digit maskp;
-        sp_digit maskq;
-        sp_digit maskt;
         sp_digit* x = t2;
-        sp_digit* y = t5;
+        sp_digit* y = t3;
         sp_digit* z = t6;
-        int i;
 
         /* H = U2 - X1 */
         sp_384_mont_sub_6(t2, t2, p->x, p384_mod);
@@ -44811,36 +45510,46 @@ static void sp_384_proj_point_add_qz1_6(sp_point_384* r,
         /* Z3 = H*Z1 */
         sp_384_mont_mul_6(z, p->z, t2, p384_mod, p384_mp_mod);
         /* X3 = R^2 - H^3 - 2*X1*H^2 */
-        sp_384_mont_sqr_6(t1, t4, p384_mod, p384_mp_mod);
-        sp_384_mont_sqr_6(t5, t2, p384_mod, p384_mp_mod);
-        sp_384_mont_mul_6(t3, p->x, t5, p384_mod, p384_mp_mod);
-        sp_384_mont_mul_6(t5, t5, t2, p384_mod, p384_mp_mod);
-        sp_384_mont_sub_6(x, t1, t5, p384_mod);
-        sp_384_mont_dbl_6(t1, t3, p384_mod);
-        sp_384_mont_sub_6(x, x, t1, p384_mod);
+        sp_384_mont_sqr_6(t1, t2, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(t3, p->x, t1, p384_mod, p384_mp_mod);
+        sp_384_mont_mul_6(t1, t1, t2, p384_mod, p384_mp_mod);
+        sp_384_mont_sqr_6(t2, t4, p384_mod, p384_mp_mod);
+        sp_384_mont_sub_6(t2, t2, t1, p384_mod);
+        sp_384_mont_dbl_6(t5, t3, p384_mod);
+        sp_384_mont_sub_6(x, t2, t5, p384_mod);
         /* Y3 = R*(X1*H^2 - X3) - Y1*H^3 */
-        sp_384_mont_sub_lower_6(t3, t3, x, p384_mod);
+        sp_384_mont_sub_6(t3, t3, x, p384_mod);
         sp_384_mont_mul_6(t3, t3, t4, p384_mod, p384_mp_mod);
-        sp_384_mont_mul_6(t5, t5, p->y, p384_mod, p384_mp_mod);
-        sp_384_mont_sub_6(y, t3, t5, p384_mod);
+        sp_384_mont_mul_6(t1, t1, p->y, p384_mod, p384_mp_mod);
+        sp_384_mont_sub_6(y, t3, t1, p384_mod);
+        {
+            int i;
+            sp_digit maskp = 0 - (q->infinity & (!p->infinity));
+            sp_digit maskq = 0 - (p->infinity & (!q->infinity));
+            sp_digit maskt = ~(maskp | maskq);
+            sp_digit inf = (sp_digit)(p->infinity & q->infinity);
 
-        maskp = 0 - (q->infinity & (!p->infinity));
-        maskq = 0 - (p->infinity & (!q->infinity));
-        maskt = ~(maskp | maskq);
-        for (i = 0; i < 6; i++) {
-            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
+            for (i = 0; i < 6; i++) {
+                r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) |
+                          (x[i] & maskt);
+            }
+            for (i = 0; i < 6; i++) {
+                r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) |
+                          (y[i] & maskt);
+            }
+            for (i = 0; i < 6; i++) {
+                r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) |
+                          (z[i] & maskt);
+            }
+            r->z[0] |= inf;
+            r->infinity = (word32)inf;
         }
-        for (i = 0; i < 6; i++) {
-            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
-        }
-        for (i = 0; i < 6; i++) {
-            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
-        }
-        r->z[0] |= p->infinity & q->infinity;
-        r->infinity = p->infinity & q->infinity;
     }
 }
 
+#ifndef WC_NO_CACHE_RESISTANT
+#if defined(FP_ECC) || defined(WOLFSSL_SP_SMALL)
+#endif /* FP_ECC | WOLFSSL_SP_SMALL */
 #ifdef FP_ECC
 /* Convert the projective point to affine.
  * Ordinates are in Montgomery form.
@@ -44968,34 +45677,47 @@ static void sp_384_get_entry_64_6(sp_point_384* r,
 {
     int i;
     sp_digit mask;
+    sp_digit x0 = 0;
+    sp_digit x1 = 0;
+    sp_digit x2 = 0;
+    sp_digit x3 = 0;
+    sp_digit x4 = 0;
+    sp_digit x5 = 0;
+    sp_digit y0 = 0;
+    sp_digit y1 = 0;
+    sp_digit y2 = 0;
+    sp_digit y3 = 0;
+    sp_digit y4 = 0;
+    sp_digit y5 = 0;
 
-    r->x[0] = 0;
-    r->x[1] = 0;
-    r->x[2] = 0;
-    r->x[3] = 0;
-    r->x[4] = 0;
-    r->x[5] = 0;
-    r->y[0] = 0;
-    r->y[1] = 0;
-    r->y[2] = 0;
-    r->y[3] = 0;
-    r->y[4] = 0;
-    r->y[5] = 0;
     for (i = 1; i < 64; i++) {
         mask = 0 - (i == idx);
-        r->x[0] |= mask & table[i].x[0];
-        r->x[1] |= mask & table[i].x[1];
-        r->x[2] |= mask & table[i].x[2];
-        r->x[3] |= mask & table[i].x[3];
-        r->x[4] |= mask & table[i].x[4];
-        r->x[5] |= mask & table[i].x[5];
-        r->y[0] |= mask & table[i].y[0];
-        r->y[1] |= mask & table[i].y[1];
-        r->y[2] |= mask & table[i].y[2];
-        r->y[3] |= mask & table[i].y[3];
-        r->y[4] |= mask & table[i].y[4];
-        r->y[5] |= mask & table[i].y[5];
+        x0 |= mask & table[i].x[0];
+        x1 |= mask & table[i].x[1];
+        x2 |= mask & table[i].x[2];
+        x3 |= mask & table[i].x[3];
+        x4 |= mask & table[i].x[4];
+        x5 |= mask & table[i].x[5];
+        y0 |= mask & table[i].y[0];
+        y1 |= mask & table[i].y[1];
+        y2 |= mask & table[i].y[2];
+        y3 |= mask & table[i].y[3];
+        y4 |= mask & table[i].y[4];
+        y5 |= mask & table[i].y[5];
     }
+
+    r->x[0] = x0;
+    r->x[1] = x1;
+    r->x[2] = x2;
+    r->x[3] = x3;
+    r->x[4] = x4;
+    r->x[5] = x5;
+    r->y[0] = y0;
+    r->y[1] = y1;
+    r->y[2] = y2;
+    r->y[3] = y3;
+    r->y[4] = y4;
+    r->y[5] = y5;
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
 /* Multiply the point by the scalar and return the result.
@@ -45384,34 +46106,47 @@ static void sp_384_get_entry_256_6(sp_point_384* r,
 {
     int i;
     sp_digit mask;
+    sp_digit x0 = 0;
+    sp_digit x1 = 0;
+    sp_digit x2 = 0;
+    sp_digit x3 = 0;
+    sp_digit x4 = 0;
+    sp_digit x5 = 0;
+    sp_digit y0 = 0;
+    sp_digit y1 = 0;
+    sp_digit y2 = 0;
+    sp_digit y3 = 0;
+    sp_digit y4 = 0;
+    sp_digit y5 = 0;
 
-    r->x[0] = 0;
-    r->x[1] = 0;
-    r->x[2] = 0;
-    r->x[3] = 0;
-    r->x[4] = 0;
-    r->x[5] = 0;
-    r->y[0] = 0;
-    r->y[1] = 0;
-    r->y[2] = 0;
-    r->y[3] = 0;
-    r->y[4] = 0;
-    r->y[5] = 0;
     for (i = 1; i < 256; i++) {
         mask = 0 - (i == idx);
-        r->x[0] |= mask & table[i].x[0];
-        r->x[1] |= mask & table[i].x[1];
-        r->x[2] |= mask & table[i].x[2];
-        r->x[3] |= mask & table[i].x[3];
-        r->x[4] |= mask & table[i].x[4];
-        r->x[5] |= mask & table[i].x[5];
-        r->y[0] |= mask & table[i].y[0];
-        r->y[1] |= mask & table[i].y[1];
-        r->y[2] |= mask & table[i].y[2];
-        r->y[3] |= mask & table[i].y[3];
-        r->y[4] |= mask & table[i].y[4];
-        r->y[5] |= mask & table[i].y[5];
+        x0 |= mask & table[i].x[0];
+        x1 |= mask & table[i].x[1];
+        x2 |= mask & table[i].x[2];
+        x3 |= mask & table[i].x[3];
+        x4 |= mask & table[i].x[4];
+        x5 |= mask & table[i].x[5];
+        y0 |= mask & table[i].y[0];
+        y1 |= mask & table[i].y[1];
+        y2 |= mask & table[i].y[2];
+        y3 |= mask & table[i].y[3];
+        y4 |= mask & table[i].y[4];
+        y5 |= mask & table[i].y[5];
     }
+
+    r->x[0] = x0;
+    r->x[1] = x1;
+    r->x[2] = x2;
+    r->x[3] = x3;
+    r->x[4] = x4;
+    r->x[5] = x5;
+    r->y[0] = y0;
+    r->y[1] = y1;
+    r->y[2] = y2;
+    r->y[3] = y3;
+    r->y[4] = y4;
+    r->y[5] = y5;
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
 /* Multiply the point by the scalar and return the result.
@@ -45764,7 +46499,7 @@ int sp_ecc_mulmod_add_384(const mp_int* km, const ecc_point* gm,
     const ecc_point* am, int inMont, ecc_point* r, int map, void* heap)
 {
 #ifdef WOLFSSL_SP_SMALL_STACK
-    sp_point_384* point = NULL;    
+    sp_point_384* point = NULL;
     sp_digit* k = NULL;
 #else
     sp_point_384 point[2];
@@ -47570,34 +48305,47 @@ static void sp_384_get_entry_65_6(sp_point_384* r,
 {
     int i;
     sp_digit mask;
+    sp_digit x0 = 0;
+    sp_digit x1 = 0;
+    sp_digit x2 = 0;
+    sp_digit x3 = 0;
+    sp_digit x4 = 0;
+    sp_digit x5 = 0;
+    sp_digit y0 = 0;
+    sp_digit y1 = 0;
+    sp_digit y2 = 0;
+    sp_digit y3 = 0;
+    sp_digit y4 = 0;
+    sp_digit y5 = 0;
 
-    r->x[0] = 0;
-    r->x[1] = 0;
-    r->x[2] = 0;
-    r->x[3] = 0;
-    r->x[4] = 0;
-    r->x[5] = 0;
-    r->y[0] = 0;
-    r->y[1] = 0;
-    r->y[2] = 0;
-    r->y[3] = 0;
-    r->y[4] = 0;
-    r->y[5] = 0;
     for (i = 1; i < 65; i++) {
         mask = 0 - (i == idx);
-        r->x[0] |= mask & table[i].x[0];
-        r->x[1] |= mask & table[i].x[1];
-        r->x[2] |= mask & table[i].x[2];
-        r->x[3] |= mask & table[i].x[3];
-        r->x[4] |= mask & table[i].x[4];
-        r->x[5] |= mask & table[i].x[5];
-        r->y[0] |= mask & table[i].y[0];
-        r->y[1] |= mask & table[i].y[1];
-        r->y[2] |= mask & table[i].y[2];
-        r->y[3] |= mask & table[i].y[3];
-        r->y[4] |= mask & table[i].y[4];
-        r->y[5] |= mask & table[i].y[5];
+        x0 |= mask & table[i].x[0];
+        x1 |= mask & table[i].x[1];
+        x2 |= mask & table[i].x[2];
+        x3 |= mask & table[i].x[3];
+        x4 |= mask & table[i].x[4];
+        x5 |= mask & table[i].x[5];
+        y0 |= mask & table[i].y[0];
+        y1 |= mask & table[i].y[1];
+        y2 |= mask & table[i].y[2];
+        y3 |= mask & table[i].y[3];
+        y4 |= mask & table[i].y[4];
+        y5 |= mask & table[i].y[5];
     }
+
+    r->x[0] = x0;
+    r->x[1] = x1;
+    r->x[2] = x2;
+    r->x[3] = x3;
+    r->x[4] = x4;
+    r->x[5] = x5;
+    r->y[0] = y0;
+    r->y[1] = y1;
+    r->y[2] = y2;
+    r->y[3] = y3;
+    r->y[4] = y4;
+    r->y[5] = y5;
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
 static const sp_table_entry_384 p384_table[3575] = {
@@ -65580,7 +66328,7 @@ int sp_ecc_mulmod_base_add_384(const mp_int* km, const ecc_point* am,
     int err = MP_OKAY;
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    point = (sp_point_384*)XMALLOC(sizeof(sp_point_384) * 2, heap, 
+    point = (sp_point_384*)XMALLOC(sizeof(sp_point_384) * 2, heap,
                                          DYNAMIC_TYPE_ECC);
     if (point == NULL)
         err = MEMORY_E;
@@ -65827,7 +66575,7 @@ int sp_ecc_make_key_384(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     sp_point_384* infinity = NULL;
 #endif
     int err = MP_OKAY;
-    
+
 
     (void)heap;
 
@@ -65835,7 +66583,7 @@ int sp_ecc_make_key_384(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     #ifdef WOLFSSL_VALIDATE_ECC_KEYGEN
     point = (sp_point_384*)XMALLOC(sizeof(sp_point_384) * 2, heap, DYNAMIC_TYPE_ECC);
     #else
-    point = (sp_point_384*)XMALLOC(sizeof(sp_point_384), heap, DYNAMIC_TYPE_ECC);    
+    point = (sp_point_384*)XMALLOC(sizeof(sp_point_384), heap, DYNAMIC_TYPE_ECC);
     #endif
     if (point == NULL)
         err = MEMORY_E;
@@ -66242,7 +66990,7 @@ static void sp_384_mul_d_6(sp_digit* r, const sp_digit* a,
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * Assumes divisor has higest bit set.
+ * Assumes divisor has highest bit set.
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
@@ -69156,7 +69904,7 @@ static sp_digit sp_521_add_9(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r]], #16\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r]], #16\n\t"
-        "cset	%[c], cs\n\t"
+        "adc	%[c], xzr, xzr\n\t"
         "cmp	%[a], x11\n\t"
         "b.ne	1b\n\t"
         "adds	%[c], %[c], #-1\n\t"
@@ -69164,7 +69912,7 @@ static sp_digit sp_521_add_9(sp_digit* r, const sp_digit* a,
         "ldr	x7, [%[b]], #8\n\t"
         "adcs	x3, x3, x7\n\t"
         "str	x3, [%[r]], #8\n\t"
-        "cset	%[c], cs\n\t"
+        "adc	%[c], xzr, xzr\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
         : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "cc"
@@ -69208,7 +69956,7 @@ static sp_digit sp_521_add_9(sp_digit* r, const sp_digit* a,
         "ldr	x7, [%[b], 64]\n\t"
         "adcs	x3, x3, x7\n\t"
         "str	x3, [%[r], 64]\n\t"
-        "cset	%[r], cs\n\t"
+        "adc	%[r], xzr, xzr\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
         : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
@@ -69828,7 +70576,7 @@ static void sp_521_mul_d_9(sp_digit* r, const sp_digit* a,
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * Assumes divisor has higest bit set.
+ * Assumes divisor has highest bit set.
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
@@ -70115,14 +70863,14 @@ static void sp_521_from_mp(sp_digit* r, int size, const mp_int* a)
 {
 #if DIGIT_BIT == 64
     int i;
-    int j = 0;
+    sp_digit j = (sp_digit)0 - (sp_digit)a->used;
+    int o = 0;
 
     for (i = 0; i < size; i++) {
-        sp_digit mask =
-            (((sp_digit)((int)a->used - i - 1)) >> (SP_WORD_SIZE - 1)) - 1;
-        r[i] = a->dp[j] & mask;
-        j += (int)(((sp_digit)1) -
-                   (((sp_digit)((int)a->used - i - 2)) >> (SP_WORD_SIZE - 1)));
+        sp_digit mask = (sp_digit)0 - (j >> 63);
+        r[i] = a->dp[o] & mask;
+        j++;
+        o += (int)(j >> 63);
     }
 #elif DIGIT_BIT > 64
     unsigned int i;
@@ -71584,7 +72332,7 @@ SP_NOINLINE static void sp_521_mont_reduce_9(sp_digit* a, const sp_digit* m,
         "umulh	x8, x11, x9\n\t"
         "adds	x5, x5, x7\n\t"
         "adcs	x8, x8, x3\n\t"
-        "cset	x3, cs\n\t"
+        "adc	x3, xzr, xzr\n\t"
         "adds	x21, x22, x5\n\t"
         "ldr	x22, [%[a], 72]\n\t"
         "adcs	x22, x22, x8\n\t"
@@ -71727,9 +72475,11 @@ static void sp_521_mont_add_9(sp_digit* r, const sp_digit* a, const sp_digit* b,
         "stp	x10, x11, [%[r], 48]\n\t"
         "str	x12, [%[r], 64]\n\t"
         :
-        : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
+        : [r] "r" (r), [a] "r" (a), [b] "r" (b)
         : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "cc"
     );
+
+    (void)m;
 }
 
 /* Double a Montgomery form number (r = a + a % m).
@@ -71772,9 +72522,11 @@ static void sp_521_mont_dbl_9(sp_digit* r, const sp_digit* a, const sp_digit* m)
         "stp	x10, x11, [%[r], 48]\n\t"
         "str	x12, [%[r], 64]\n\t"
         :
-        : [r] "r" (r), [a] "r" (a), [m] "r" (m)
+        : [r] "r" (r), [a] "r" (a)
         : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "cc"
     );
+
+    (void)m;
 }
 
 /* Triple a Montgomery form number (r = a + a + a % m).
@@ -71826,9 +72578,11 @@ static void sp_521_mont_tpl_9(sp_digit* r, const sp_digit* a, const sp_digit* m)
         "stp	x20, x21, [%[r], 48]\n\t"
         "str	x22, [%[r], 64]\n\t"
         :
-        : [r] "r" (r), [a] "r" (a), [m] "r" (m)
+        : [r] "r" (r), [a] "r" (a)
         : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "cc"
     );
+
+    (void)m;
 }
 
 /* Subtract two Montgomery form numbers (r = a - b % m).
@@ -71879,12 +72633,13 @@ static void sp_521_mont_sub_9(sp_digit* r, const sp_digit* a, const sp_digit* b,
         "stp	x10, x11, [%[r], 48]\n\t"
         "str	x12, [%[r], 64]\n\t"
         :
-        : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
+        : [r] "r" (r), [a] "r" (a), [b] "r" (b)
         : "memory", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "cc"
     );
+
+    (void)m;
 }
 
-#define sp_521_mont_sub_lower_9 sp_521_mont_sub_9
 #ifdef WOLFSSL_SP_SMALL
 /* Conditionally add a and b using the mask m.
  * m is -1 to add and 0 when not.
@@ -72082,7 +72837,7 @@ static void sp_521_proj_point_dbl_9(sp_point_521* r, const sp_point_521* p,
     /* X = X - Y */
     sp_521_mont_sub_9(x, x, y, p521_mod);
     /* Y = Y - X */
-    sp_521_mont_sub_lower_9(y, y, x, p521_mod);
+    sp_521_mont_sub_9(y, y, x, p521_mod);
     /* Y = Y * T1 */
     sp_521_mont_mul_9(y, y, t1, p521_mod, p521_mp_mod);
     /* Y = Y - T2 */
@@ -72204,7 +72959,7 @@ static int sp_521_proj_point_dbl_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r, con
         break;
     case 16:
         /* Y = Y - X */
-        sp_521_mont_sub_lower_9(ctx->y, ctx->y, ctx->x, p521_mod);
+        sp_521_mont_sub_9(ctx->y, ctx->y, ctx->x, p521_mod);
         ctx->state = 17;
         break;
     case 17:
@@ -72229,8 +72984,6 @@ static int sp_521_proj_point_dbl_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r, con
     return err;
 }
 #endif /* WOLFSSL_SP_NONBLOCK */
-#define sp_521_mont_dbl_lower_9 sp_521_mont_dbl_9
-#define sp_521_mont_tpl_lower_9 sp_521_mont_tpl_9
 /* Double the Montgomery form projective point p a number of times.
  *
  * r  Result of repeated doubling of point.
@@ -72269,7 +73022,7 @@ static void sp_521_proj_point_dbl_n_9(sp_point_521* p, int i,
         /* A = 3*(X^2 - W) */
         sp_521_mont_sqr_9(t1, x, p521_mod, p521_mp_mod);
         sp_521_mont_sub_9(t1, t1, w, p521_mod);
-        sp_521_mont_tpl_lower_9(a, t1, p521_mod);
+        sp_521_mont_tpl_9(a, t1, p521_mod);
         /* B = X*Y^2 */
         sp_521_mont_sqr_9(t1, y, p521_mod, p521_mp_mod);
         sp_521_mont_mul_9(b, t1, x, p521_mod, p521_mp_mod);
@@ -72278,8 +73031,8 @@ static void sp_521_proj_point_dbl_n_9(sp_point_521* p, int i,
         sp_521_mont_dbl_9(t2, b, p521_mod);
         sp_521_mont_sub_9(x, x, t2, p521_mod);
         /* B = 2.(B - X) */
-        sp_521_mont_sub_lower_9(t2, b, x, p521_mod);
-        sp_521_mont_dbl_lower_9(b, t2, p521_mod);
+        sp_521_mont_sub_9(t2, b, x, p521_mod);
+        sp_521_mont_dbl_9(b, t2, p521_mod);
         /* Z = Z*Y */
         sp_521_mont_mul_9(z, z, y, p521_mod, p521_mp_mod);
         /* t1 = Y^4 */
@@ -72299,7 +73052,7 @@ static void sp_521_proj_point_dbl_n_9(sp_point_521* p, int i,
     /* A = 3*(X^2 - W) */
     sp_521_mont_sqr_9(t1, x, p521_mod, p521_mp_mod);
     sp_521_mont_sub_9(t1, t1, w, p521_mod);
-    sp_521_mont_tpl_lower_9(a, t1, p521_mod);
+    sp_521_mont_tpl_9(a, t1, p521_mod);
     /* B = X*Y^2 */
     sp_521_mont_sqr_9(t1, y, p521_mod, p521_mp_mod);
     sp_521_mont_mul_9(b, t1, x, p521_mod, p521_mp_mod);
@@ -72308,8 +73061,8 @@ static void sp_521_proj_point_dbl_n_9(sp_point_521* p, int i,
     sp_521_mont_dbl_9(t2, b, p521_mod);
     sp_521_mont_sub_9(x, x, t2, p521_mod);
     /* B = 2.(B - X) */
-    sp_521_mont_sub_lower_9(t2, b, x, p521_mod);
-    sp_521_mont_dbl_lower_9(b, t2, p521_mod);
+    sp_521_mont_sub_9(t2, b, x, p521_mod);
+    sp_521_mont_dbl_9(b, t2, p521_mod);
     /* Z = Z*Y */
     sp_521_mont_mul_9(z, z, y, p521_mod, p521_mp_mod);
     /* t1 = Y^4 */
@@ -72359,12 +73112,12 @@ static int sp_521_iszero_9(const sp_digit* a)
 static void sp_521_proj_point_add_9(sp_point_521* r,
         const sp_point_521* p, const sp_point_521* q, sp_digit* t)
 {
-    sp_digit* t1 = t;
-    sp_digit* t2 = t + 2*9;
-    sp_digit* t3 = t + 4*9;
-    sp_digit* t4 = t + 6*9;
-    sp_digit* t5 = t + 8*9;
-    sp_digit* t6 = t + 10*9;
+    sp_digit* t6 = t;
+    sp_digit* t1 = t + 2*9;
+    sp_digit* t2 = t + 4*9;
+    sp_digit* t3 = t + 6*9;
+    sp_digit* t4 = t + 8*9;
+    sp_digit* t5 = t + 10*9;
 
     /* U1 = X1*Z2^2 */
     sp_521_mont_sqr_9(t1, q->z, p521_mod, p521_mp_mod);
@@ -72386,17 +73139,9 @@ static void sp_521_proj_point_add_9(sp_point_521* r,
         sp_521_proj_point_dbl_9(r, p, t);
     }
     else {
-        sp_digit maskp;
-        sp_digit maskq;
-        sp_digit maskt;
         sp_digit* x = t6;
         sp_digit* y = t1;
         sp_digit* z = t2;
-        int i;
-
-        maskp = 0 - (q->infinity & (!p->infinity));
-        maskq = 0 - (p->infinity & (!q->infinity));
-        maskt = ~(maskp | maskq);
 
         /* H = U2 - U1 */
         sp_521_mont_sub_9(t2, t2, t1, p521_mod);
@@ -72415,20 +73160,31 @@ static void sp_521_proj_point_add_9(sp_point_521* r,
         sp_521_mont_dbl_9(t3, y, p521_mod);
         sp_521_mont_sub_9(x, x, t3, p521_mod);
         /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_521_mont_sub_lower_9(y, y, x, p521_mod);
+        sp_521_mont_sub_9(y, y, x, p521_mod);
         sp_521_mont_mul_9(y, y, t4, p521_mod, p521_mp_mod);
         sp_521_mont_sub_9(y, y, t5, p521_mod);
-        for (i = 0; i < 9; i++) {
-            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
+        {
+            int i;
+            sp_digit maskp = 0 - (q->infinity & (!p->infinity));
+            sp_digit maskq = 0 - (p->infinity & (!q->infinity));
+            sp_digit maskt = ~(maskp | maskq);
+            sp_digit inf = (sp_digit)(p->infinity & q->infinity);
+
+            for (i = 0; i < 9; i++) {
+                r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) |
+                          (x[i] & maskt);
+            }
+            for (i = 0; i < 9; i++) {
+                r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) |
+                          (y[i] & maskt);
+            }
+            for (i = 0; i < 9; i++) {
+                r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) |
+                          (z[i] & maskt);
+            }
+            r->z[0] |= inf;
+            r->infinity = (word32)inf;
         }
-        for (i = 0; i < 9; i++) {
-            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
-        }
-        for (i = 0; i < 9; i++) {
-            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
-        }
-        r->z[0] |= p->infinity & q->infinity;
-        r->infinity = p->infinity & q->infinity;
     }
 }
 
@@ -72474,12 +73230,12 @@ static int sp_521_proj_point_add_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
 
     switch (ctx->state) {
     case 0: /* INIT */
-        ctx->t1 = t;
-        ctx->t2 = t + 2*9;
-        ctx->t3 = t + 4*9;
-        ctx->t4 = t + 6*9;
-        ctx->t5 = t + 8*9;
-        ctx->t6 = t + 10*9;
+        ctx->t6 = t;
+        ctx->t1 = t + 2*9;
+        ctx->t2 = t + 4*9;
+        ctx->t3 = t + 6*9;
+        ctx->t4 = t + 8*9;
+        ctx->t5 = t + 10*9;
         ctx->x = ctx->t6;
         ctx->y = ctx->t1;
         ctx->z = ctx->t2;
@@ -72586,7 +73342,7 @@ static int sp_521_proj_point_add_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
         break;
     case 21:
         /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_521_mont_sub_lower_9(ctx->y, ctx->y, ctx->x, p521_mod);
+        sp_521_mont_sub_9(ctx->y, ctx->y, ctx->x, p521_mod);
         ctx->state = 22;
         break;
     case 22:
@@ -72599,22 +73355,28 @@ static int sp_521_proj_point_add_9_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
         break;
     case 24:
     {
-        int i;
-        sp_digit maskp = 0 - (q->infinity & (!p->infinity));
-        sp_digit maskq = 0 - (p->infinity & (!q->infinity));
-        sp_digit maskt = ~(maskp | maskq);
+        {
+            int i;
+            sp_digit maskp = 0 - (q->infinity & (!p->infinity));
+            sp_digit maskq = 0 - (p->infinity & (!q->infinity));
+            sp_digit maskt = ~(maskp | maskq);
+            sp_digit inf = (sp_digit)(p->infinity & q->infinity);
 
-        for (i = 0; i < 9; i++) {
-            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (ctx->x[i] & maskt);
+            for (i = 0; i < 9; i++) {
+                r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) |
+                          (ctx->x[i] & maskt);
+            }
+            for (i = 0; i < 9; i++) {
+                r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) |
+                          (ctx->y[i] & maskt);
+            }
+            for (i = 0; i < 9; i++) {
+                r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) |
+                          (ctx->z[i] & maskt);
+            }
+            r->z[0] |= inf;
+            r->infinity = (word32)inf;
         }
-        for (i = 0; i < 9; i++) {
-            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (ctx->y[i] & maskt);
-        }
-        for (i = 0; i < 9; i++) {
-            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (ctx->z[i] & maskt);
-        }
-        r->z[0] |= p->infinity & q->infinity;
-        r->infinity = p->infinity & q->infinity;
         ctx->state = 25;
         break;
     }
@@ -72673,7 +73435,7 @@ static void sp_521_proj_point_dbl_n_store_9(sp_point_521* r,
         /* A = 3*(X^2 - W) */
         sp_521_mont_sqr_9(t1, x, p521_mod, p521_mp_mod);
         sp_521_mont_sub_9(t1, t1, w, p521_mod);
-        sp_521_mont_tpl_lower_9(a, t1, p521_mod);
+        sp_521_mont_tpl_9(a, t1, p521_mod);
         /* B = X*Y^2 */
         sp_521_mont_sqr_9(t1, y, p521_mod, p521_mp_mod);
         sp_521_mont_mul_9(b, t1, x, p521_mod, p521_mp_mod);
@@ -72683,8 +73445,8 @@ static void sp_521_proj_point_dbl_n_store_9(sp_point_521* r,
         sp_521_mont_dbl_9(t2, b, p521_mod);
         sp_521_mont_sub_9(x, x, t2, p521_mod);
         /* B = 2.(B - X) */
-        sp_521_mont_sub_lower_9(t2, b, x, p521_mod);
-        sp_521_mont_dbl_lower_9(b, t2, p521_mod);
+        sp_521_mont_sub_9(t2, b, x, p521_mod);
+        sp_521_mont_dbl_9(b, t2, p521_mod);
         /* Z = Z*Y */
         sp_521_mont_mul_9(r[j].z, z, y, p521_mod, p521_mp_mod);
         z = r[j].z;
@@ -72772,8 +73534,8 @@ static void sp_521_proj_point_add_sub_9(sp_point_521* ra,
     sp_521_mont_sub_9(xs, xs, t1, p521_mod);
     /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
     /* YS = -RS*(U1*H^2 - XS) - S1*H^3 */
-    sp_521_mont_sub_lower_9(ys, ya, xs, p521_mod);
-    sp_521_mont_sub_lower_9(ya, ya, xa, p521_mod);
+    sp_521_mont_sub_9(ys, ya, xs, p521_mod);
+    sp_521_mont_sub_9(ya, ya, xa, p521_mod);
     sp_521_mont_mul_9(ya, ya, t4, p521_mod, p521_mp_mod);
     sp_521_sub_9(t6, p521_mod, t6);
     sp_521_mont_mul_9(ys, ys, t6, p521_mod, p521_mp_mod);
@@ -72865,64 +73627,92 @@ static void sp_521_get_point_33_9(sp_point_521* r, const sp_point_521* table,
 {
     int i;
     sp_digit mask;
+    sp_digit x0 = 0;
+    sp_digit x1 = 0;
+    sp_digit x2 = 0;
+    sp_digit x3 = 0;
+    sp_digit x4 = 0;
+    sp_digit x5 = 0;
+    sp_digit x6 = 0;
+    sp_digit x7 = 0;
+    sp_digit x8 = 0;
+    sp_digit y0 = 0;
+    sp_digit y1 = 0;
+    sp_digit y2 = 0;
+    sp_digit y3 = 0;
+    sp_digit y4 = 0;
+    sp_digit y5 = 0;
+    sp_digit y6 = 0;
+    sp_digit y7 = 0;
+    sp_digit y8 = 0;
+    sp_digit z0 = 0;
+    sp_digit z1 = 0;
+    sp_digit z2 = 0;
+    sp_digit z3 = 0;
+    sp_digit z4 = 0;
+    sp_digit z5 = 0;
+    sp_digit z6 = 0;
+    sp_digit z7 = 0;
+    sp_digit z8 = 0;
 
-    r->x[0] = 0;
-    r->x[1] = 0;
-    r->x[2] = 0;
-    r->x[3] = 0;
-    r->x[4] = 0;
-    r->x[5] = 0;
-    r->x[6] = 0;
-    r->x[7] = 0;
-    r->x[8] = 0;
-    r->y[0] = 0;
-    r->y[1] = 0;
-    r->y[2] = 0;
-    r->y[3] = 0;
-    r->y[4] = 0;
-    r->y[5] = 0;
-    r->y[6] = 0;
-    r->y[7] = 0;
-    r->y[8] = 0;
-    r->z[0] = 0;
-    r->z[1] = 0;
-    r->z[2] = 0;
-    r->z[3] = 0;
-    r->z[4] = 0;
-    r->z[5] = 0;
-    r->z[6] = 0;
-    r->z[7] = 0;
-    r->z[8] = 0;
     for (i = 1; i < 33; i++) {
         mask = 0 - (i == idx);
-        r->x[0] |= mask & table[i].x[0];
-        r->x[1] |= mask & table[i].x[1];
-        r->x[2] |= mask & table[i].x[2];
-        r->x[3] |= mask & table[i].x[3];
-        r->x[4] |= mask & table[i].x[4];
-        r->x[5] |= mask & table[i].x[5];
-        r->x[6] |= mask & table[i].x[6];
-        r->x[7] |= mask & table[i].x[7];
-        r->x[8] |= mask & table[i].x[8];
-        r->y[0] |= mask & table[i].y[0];
-        r->y[1] |= mask & table[i].y[1];
-        r->y[2] |= mask & table[i].y[2];
-        r->y[3] |= mask & table[i].y[3];
-        r->y[4] |= mask & table[i].y[4];
-        r->y[5] |= mask & table[i].y[5];
-        r->y[6] |= mask & table[i].y[6];
-        r->y[7] |= mask & table[i].y[7];
-        r->y[8] |= mask & table[i].y[8];
-        r->z[0] |= mask & table[i].z[0];
-        r->z[1] |= mask & table[i].z[1];
-        r->z[2] |= mask & table[i].z[2];
-        r->z[3] |= mask & table[i].z[3];
-        r->z[4] |= mask & table[i].z[4];
-        r->z[5] |= mask & table[i].z[5];
-        r->z[6] |= mask & table[i].z[6];
-        r->z[7] |= mask & table[i].z[7];
-        r->z[8] |= mask & table[i].z[8];
+        x0 |= mask & table[i].x[0];
+        x1 |= mask & table[i].x[1];
+        x2 |= mask & table[i].x[2];
+        x3 |= mask & table[i].x[3];
+        x4 |= mask & table[i].x[4];
+        x5 |= mask & table[i].x[5];
+        x6 |= mask & table[i].x[6];
+        x7 |= mask & table[i].x[7];
+        x8 |= mask & table[i].x[8];
+        y0 |= mask & table[i].y[0];
+        y1 |= mask & table[i].y[1];
+        y2 |= mask & table[i].y[2];
+        y3 |= mask & table[i].y[3];
+        y4 |= mask & table[i].y[4];
+        y5 |= mask & table[i].y[5];
+        y6 |= mask & table[i].y[6];
+        y7 |= mask & table[i].y[7];
+        y8 |= mask & table[i].y[8];
+        z0 |= mask & table[i].z[0];
+        z1 |= mask & table[i].z[1];
+        z2 |= mask & table[i].z[2];
+        z3 |= mask & table[i].z[3];
+        z4 |= mask & table[i].z[4];
+        z5 |= mask & table[i].z[5];
+        z6 |= mask & table[i].z[6];
+        z7 |= mask & table[i].z[7];
+        z8 |= mask & table[i].z[8];
     }
+
+    r->x[0] = x0;
+    r->x[1] = x1;
+    r->x[2] = x2;
+    r->x[3] = x3;
+    r->x[4] = x4;
+    r->x[5] = x5;
+    r->x[6] = x6;
+    r->x[7] = x7;
+    r->x[8] = x8;
+    r->y[0] = y0;
+    r->y[1] = y1;
+    r->y[2] = y2;
+    r->y[3] = y3;
+    r->y[4] = y4;
+    r->y[5] = y5;
+    r->y[6] = y6;
+    r->y[7] = y7;
+    r->y[8] = y8;
+    r->z[0] = z0;
+    r->z[1] = z1;
+    r->z[2] = z2;
+    r->z[3] = z3;
+    r->z[4] = z4;
+    r->z[5] = z5;
+    r->z[6] = z6;
+    r->z[7] = z7;
+    r->z[8] = z8;
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
 /* Multiply the point by the scalar and return the result.
@@ -72965,7 +73755,7 @@ static int sp_521_ecc_mulmod_win_add_sub_9(sp_point_521* r, const sp_point_521* 
     (void)heap;
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    t = (sp_point_521*)XMALLOC(sizeof(sp_point_521) * 
+    t = (sp_point_521*)XMALLOC(sizeof(sp_point_521) *
         (33+2), heap, DYNAMIC_TYPE_ECC);
     if (t == NULL)
         err = MEMORY_E;
@@ -73070,15 +73860,12 @@ static int sp_521_ecc_mulmod_win_add_sub_9(sp_point_521* r, const sp_point_521* 
     return err;
 }
 
-#ifndef WC_NO_CACHE_RESISTANT
 /* A table entry for pre-computed points. */
 typedef struct sp_table_entry_521 {
     sp_digit x[9];
     sp_digit y[9];
 } sp_table_entry_521;
 
-#if defined(FP_ECC) || defined(WOLFSSL_SP_SMALL)
-#endif /* FP_ECC | WOLFSSL_SP_SMALL */
 /* Add two Montgomery form projective points. The second point has a q value of
  * one.
  * Only the first point can be the same pointer as the result point.
@@ -73091,12 +73878,12 @@ typedef struct sp_table_entry_521 {
 static void sp_521_proj_point_add_qz1_9(sp_point_521* r,
     const sp_point_521* p, const sp_point_521* q, sp_digit* t)
 {
-    sp_digit* t1 = t;
-    sp_digit* t2 = t + 2*9;
-    sp_digit* t3 = t + 4*9;
-    sp_digit* t4 = t + 6*9;
-    sp_digit* t5 = t + 8*9;
-    sp_digit* t6 = t + 10*9;
+    sp_digit* t2 = t;
+    sp_digit* t3 = t + 2*9;
+    sp_digit* t6 = t + 4*9;
+    sp_digit* t1 = t + 6*9;
+    sp_digit* t4 = t + 8*9;
+    sp_digit* t5 = t + 10*9;
 
     /* Calculate values to subtract from P->x and P->y. */
     /* U2 = X2*Z1^2 */
@@ -73112,13 +73899,9 @@ static void sp_521_proj_point_add_qz1_9(sp_point_521* r,
         sp_521_proj_point_dbl_9(r, p, t);
     }
     else {
-        sp_digit maskp;
-        sp_digit maskq;
-        sp_digit maskt;
         sp_digit* x = t2;
-        sp_digit* y = t5;
+        sp_digit* y = t3;
         sp_digit* z = t6;
-        int i;
 
         /* H = U2 - X1 */
         sp_521_mont_sub_9(t2, t2, p->x, p521_mod);
@@ -73127,36 +73910,46 @@ static void sp_521_proj_point_add_qz1_9(sp_point_521* r,
         /* Z3 = H*Z1 */
         sp_521_mont_mul_9(z, p->z, t2, p521_mod, p521_mp_mod);
         /* X3 = R^2 - H^3 - 2*X1*H^2 */
-        sp_521_mont_sqr_9(t1, t4, p521_mod, p521_mp_mod);
-        sp_521_mont_sqr_9(t5, t2, p521_mod, p521_mp_mod);
-        sp_521_mont_mul_9(t3, p->x, t5, p521_mod, p521_mp_mod);
-        sp_521_mont_mul_9(t5, t5, t2, p521_mod, p521_mp_mod);
-        sp_521_mont_sub_9(x, t1, t5, p521_mod);
-        sp_521_mont_dbl_9(t1, t3, p521_mod);
-        sp_521_mont_sub_9(x, x, t1, p521_mod);
+        sp_521_mont_sqr_9(t1, t2, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(t3, p->x, t1, p521_mod, p521_mp_mod);
+        sp_521_mont_mul_9(t1, t1, t2, p521_mod, p521_mp_mod);
+        sp_521_mont_sqr_9(t2, t4, p521_mod, p521_mp_mod);
+        sp_521_mont_sub_9(t2, t2, t1, p521_mod);
+        sp_521_mont_dbl_9(t5, t3, p521_mod);
+        sp_521_mont_sub_9(x, t2, t5, p521_mod);
         /* Y3 = R*(X1*H^2 - X3) - Y1*H^3 */
-        sp_521_mont_sub_lower_9(t3, t3, x, p521_mod);
+        sp_521_mont_sub_9(t3, t3, x, p521_mod);
         sp_521_mont_mul_9(t3, t3, t4, p521_mod, p521_mp_mod);
-        sp_521_mont_mul_9(t5, t5, p->y, p521_mod, p521_mp_mod);
-        sp_521_mont_sub_9(y, t3, t5, p521_mod);
+        sp_521_mont_mul_9(t1, t1, p->y, p521_mod, p521_mp_mod);
+        sp_521_mont_sub_9(y, t3, t1, p521_mod);
+        {
+            int i;
+            sp_digit maskp = 0 - (q->infinity & (!p->infinity));
+            sp_digit maskq = 0 - (p->infinity & (!q->infinity));
+            sp_digit maskt = ~(maskp | maskq);
+            sp_digit inf = (sp_digit)(p->infinity & q->infinity);
 
-        maskp = 0 - (q->infinity & (!p->infinity));
-        maskq = 0 - (p->infinity & (!q->infinity));
-        maskt = ~(maskp | maskq);
-        for (i = 0; i < 9; i++) {
-            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
+            for (i = 0; i < 9; i++) {
+                r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) |
+                          (x[i] & maskt);
+            }
+            for (i = 0; i < 9; i++) {
+                r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) |
+                          (y[i] & maskt);
+            }
+            for (i = 0; i < 9; i++) {
+                r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) |
+                          (z[i] & maskt);
+            }
+            r->z[0] |= inf;
+            r->infinity = (word32)inf;
         }
-        for (i = 0; i < 9; i++) {
-            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
-        }
-        for (i = 0; i < 9; i++) {
-            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
-        }
-        r->z[0] |= p->infinity & q->infinity;
-        r->infinity = p->infinity & q->infinity;
     }
 }
 
+#ifndef WC_NO_CACHE_RESISTANT
+#if defined(FP_ECC) || defined(WOLFSSL_SP_SMALL)
+#endif /* FP_ECC | WOLFSSL_SP_SMALL */
 #ifdef FP_ECC
 /* Convert the projective point to affine.
  * Ordinates are in Montgomery form.
@@ -73284,46 +74077,65 @@ static void sp_521_get_entry_64_9(sp_point_521* r,
 {
     int i;
     sp_digit mask;
+    sp_digit x0 = 0;
+    sp_digit x1 = 0;
+    sp_digit x2 = 0;
+    sp_digit x3 = 0;
+    sp_digit x4 = 0;
+    sp_digit x5 = 0;
+    sp_digit x6 = 0;
+    sp_digit x7 = 0;
+    sp_digit x8 = 0;
+    sp_digit y0 = 0;
+    sp_digit y1 = 0;
+    sp_digit y2 = 0;
+    sp_digit y3 = 0;
+    sp_digit y4 = 0;
+    sp_digit y5 = 0;
+    sp_digit y6 = 0;
+    sp_digit y7 = 0;
+    sp_digit y8 = 0;
 
-    r->x[0] = 0;
-    r->x[1] = 0;
-    r->x[2] = 0;
-    r->x[3] = 0;
-    r->x[4] = 0;
-    r->x[5] = 0;
-    r->x[6] = 0;
-    r->x[7] = 0;
-    r->x[8] = 0;
-    r->y[0] = 0;
-    r->y[1] = 0;
-    r->y[2] = 0;
-    r->y[3] = 0;
-    r->y[4] = 0;
-    r->y[5] = 0;
-    r->y[6] = 0;
-    r->y[7] = 0;
-    r->y[8] = 0;
     for (i = 1; i < 64; i++) {
         mask = 0 - (i == idx);
-        r->x[0] |= mask & table[i].x[0];
-        r->x[1] |= mask & table[i].x[1];
-        r->x[2] |= mask & table[i].x[2];
-        r->x[3] |= mask & table[i].x[3];
-        r->x[4] |= mask & table[i].x[4];
-        r->x[5] |= mask & table[i].x[5];
-        r->x[6] |= mask & table[i].x[6];
-        r->x[7] |= mask & table[i].x[7];
-        r->x[8] |= mask & table[i].x[8];
-        r->y[0] |= mask & table[i].y[0];
-        r->y[1] |= mask & table[i].y[1];
-        r->y[2] |= mask & table[i].y[2];
-        r->y[3] |= mask & table[i].y[3];
-        r->y[4] |= mask & table[i].y[4];
-        r->y[5] |= mask & table[i].y[5];
-        r->y[6] |= mask & table[i].y[6];
-        r->y[7] |= mask & table[i].y[7];
-        r->y[8] |= mask & table[i].y[8];
+        x0 |= mask & table[i].x[0];
+        x1 |= mask & table[i].x[1];
+        x2 |= mask & table[i].x[2];
+        x3 |= mask & table[i].x[3];
+        x4 |= mask & table[i].x[4];
+        x5 |= mask & table[i].x[5];
+        x6 |= mask & table[i].x[6];
+        x7 |= mask & table[i].x[7];
+        x8 |= mask & table[i].x[8];
+        y0 |= mask & table[i].y[0];
+        y1 |= mask & table[i].y[1];
+        y2 |= mask & table[i].y[2];
+        y3 |= mask & table[i].y[3];
+        y4 |= mask & table[i].y[4];
+        y5 |= mask & table[i].y[5];
+        y6 |= mask & table[i].y[6];
+        y7 |= mask & table[i].y[7];
+        y8 |= mask & table[i].y[8];
     }
+
+    r->x[0] = x0;
+    r->x[1] = x1;
+    r->x[2] = x2;
+    r->x[3] = x3;
+    r->x[4] = x4;
+    r->x[5] = x5;
+    r->x[6] = x6;
+    r->x[7] = x7;
+    r->x[8] = x8;
+    r->y[0] = y0;
+    r->y[1] = y1;
+    r->y[2] = y2;
+    r->y[3] = y3;
+    r->y[4] = y4;
+    r->y[5] = y5;
+    r->y[6] = y6;
+    r->y[7] = y7;
+    r->y[8] = y8;
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
 /* Multiply the point by the scalar and return the result.
@@ -73712,46 +74524,65 @@ static void sp_521_get_entry_256_9(sp_point_521* r,
 {
     int i;
     sp_digit mask;
+    sp_digit x0 = 0;
+    sp_digit x1 = 0;
+    sp_digit x2 = 0;
+    sp_digit x3 = 0;
+    sp_digit x4 = 0;
+    sp_digit x5 = 0;
+    sp_digit x6 = 0;
+    sp_digit x7 = 0;
+    sp_digit x8 = 0;
+    sp_digit y0 = 0;
+    sp_digit y1 = 0;
+    sp_digit y2 = 0;
+    sp_digit y3 = 0;
+    sp_digit y4 = 0;
+    sp_digit y5 = 0;
+    sp_digit y6 = 0;
+    sp_digit y7 = 0;
+    sp_digit y8 = 0;
 
-    r->x[0] = 0;
-    r->x[1] = 0;
-    r->x[2] = 0;
-    r->x[3] = 0;
-    r->x[4] = 0;
-    r->x[5] = 0;
-    r->x[6] = 0;
-    r->x[7] = 0;
-    r->x[8] = 0;
-    r->y[0] = 0;
-    r->y[1] = 0;
-    r->y[2] = 0;
-    r->y[3] = 0;
-    r->y[4] = 0;
-    r->y[5] = 0;
-    r->y[6] = 0;
-    r->y[7] = 0;
-    r->y[8] = 0;
     for (i = 1; i < 256; i++) {
         mask = 0 - (i == idx);
-        r->x[0] |= mask & table[i].x[0];
-        r->x[1] |= mask & table[i].x[1];
-        r->x[2] |= mask & table[i].x[2];
-        r->x[3] |= mask & table[i].x[3];
-        r->x[4] |= mask & table[i].x[4];
-        r->x[5] |= mask & table[i].x[5];
-        r->x[6] |= mask & table[i].x[6];
-        r->x[7] |= mask & table[i].x[7];
-        r->x[8] |= mask & table[i].x[8];
-        r->y[0] |= mask & table[i].y[0];
-        r->y[1] |= mask & table[i].y[1];
-        r->y[2] |= mask & table[i].y[2];
-        r->y[3] |= mask & table[i].y[3];
-        r->y[4] |= mask & table[i].y[4];
-        r->y[5] |= mask & table[i].y[5];
-        r->y[6] |= mask & table[i].y[6];
-        r->y[7] |= mask & table[i].y[7];
-        r->y[8] |= mask & table[i].y[8];
+        x0 |= mask & table[i].x[0];
+        x1 |= mask & table[i].x[1];
+        x2 |= mask & table[i].x[2];
+        x3 |= mask & table[i].x[3];
+        x4 |= mask & table[i].x[4];
+        x5 |= mask & table[i].x[5];
+        x6 |= mask & table[i].x[6];
+        x7 |= mask & table[i].x[7];
+        x8 |= mask & table[i].x[8];
+        y0 |= mask & table[i].y[0];
+        y1 |= mask & table[i].y[1];
+        y2 |= mask & table[i].y[2];
+        y3 |= mask & table[i].y[3];
+        y4 |= mask & table[i].y[4];
+        y5 |= mask & table[i].y[5];
+        y6 |= mask & table[i].y[6];
+        y7 |= mask & table[i].y[7];
+        y8 |= mask & table[i].y[8];
     }
+
+    r->x[0] = x0;
+    r->x[1] = x1;
+    r->x[2] = x2;
+    r->x[3] = x3;
+    r->x[4] = x4;
+    r->x[5] = x5;
+    r->x[6] = x6;
+    r->x[7] = x7;
+    r->x[8] = x8;
+    r->y[0] = y0;
+    r->y[1] = y1;
+    r->y[2] = y2;
+    r->y[3] = y3;
+    r->y[4] = y4;
+    r->y[5] = y5;
+    r->y[6] = y6;
+    r->y[7] = y7;
+    r->y[8] = y8;
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
 /* Multiply the point by the scalar and return the result.
@@ -74104,7 +74935,7 @@ int sp_ecc_mulmod_add_521(const mp_int* km, const ecc_point* gm,
     const ecc_point* am, int inMont, ecc_point* r, int map, void* heap)
 {
 #ifdef WOLFSSL_SP_SMALL_STACK
-    sp_point_521* point = NULL;    
+    sp_point_521* point = NULL;
     sp_digit* k = NULL;
 #else
     sp_point_521 point[2];
@@ -76546,46 +77377,65 @@ static void sp_521_get_entry_65_9(sp_point_521* r,
 {
     int i;
     sp_digit mask;
+    sp_digit x0 = 0;
+    sp_digit x1 = 0;
+    sp_digit x2 = 0;
+    sp_digit x3 = 0;
+    sp_digit x4 = 0;
+    sp_digit x5 = 0;
+    sp_digit x6 = 0;
+    sp_digit x7 = 0;
+    sp_digit x8 = 0;
+    sp_digit y0 = 0;
+    sp_digit y1 = 0;
+    sp_digit y2 = 0;
+    sp_digit y3 = 0;
+    sp_digit y4 = 0;
+    sp_digit y5 = 0;
+    sp_digit y6 = 0;
+    sp_digit y7 = 0;
+    sp_digit y8 = 0;
 
-    r->x[0] = 0;
-    r->x[1] = 0;
-    r->x[2] = 0;
-    r->x[3] = 0;
-    r->x[4] = 0;
-    r->x[5] = 0;
-    r->x[6] = 0;
-    r->x[7] = 0;
-    r->x[8] = 0;
-    r->y[0] = 0;
-    r->y[1] = 0;
-    r->y[2] = 0;
-    r->y[3] = 0;
-    r->y[4] = 0;
-    r->y[5] = 0;
-    r->y[6] = 0;
-    r->y[7] = 0;
-    r->y[8] = 0;
     for (i = 1; i < 65; i++) {
         mask = 0 - (i == idx);
-        r->x[0] |= mask & table[i].x[0];
-        r->x[1] |= mask & table[i].x[1];
-        r->x[2] |= mask & table[i].x[2];
-        r->x[3] |= mask & table[i].x[3];
-        r->x[4] |= mask & table[i].x[4];
-        r->x[5] |= mask & table[i].x[5];
-        r->x[6] |= mask & table[i].x[6];
-        r->x[7] |= mask & table[i].x[7];
-        r->x[8] |= mask & table[i].x[8];
-        r->y[0] |= mask & table[i].y[0];
-        r->y[1] |= mask & table[i].y[1];
-        r->y[2] |= mask & table[i].y[2];
-        r->y[3] |= mask & table[i].y[3];
-        r->y[4] |= mask & table[i].y[4];
-        r->y[5] |= mask & table[i].y[5];
-        r->y[6] |= mask & table[i].y[6];
-        r->y[7] |= mask & table[i].y[7];
-        r->y[8] |= mask & table[i].y[8];
+        x0 |= mask & table[i].x[0];
+        x1 |= mask & table[i].x[1];
+        x2 |= mask & table[i].x[2];
+        x3 |= mask & table[i].x[3];
+        x4 |= mask & table[i].x[4];
+        x5 |= mask & table[i].x[5];
+        x6 |= mask & table[i].x[6];
+        x7 |= mask & table[i].x[7];
+        x8 |= mask & table[i].x[8];
+        y0 |= mask & table[i].y[0];
+        y1 |= mask & table[i].y[1];
+        y2 |= mask & table[i].y[2];
+        y3 |= mask & table[i].y[3];
+        y4 |= mask & table[i].y[4];
+        y5 |= mask & table[i].y[5];
+        y6 |= mask & table[i].y[6];
+        y7 |= mask & table[i].y[7];
+        y8 |= mask & table[i].y[8];
     }
+
+    r->x[0] = x0;
+    r->x[1] = x1;
+    r->x[2] = x2;
+    r->x[3] = x3;
+    r->x[4] = x4;
+    r->x[5] = x5;
+    r->x[6] = x6;
+    r->x[7] = x7;
+    r->x[8] = x8;
+    r->y[0] = y0;
+    r->y[1] = y1;
+    r->y[2] = y2;
+    r->y[3] = y3;
+    r->y[4] = y4;
+    r->y[5] = y5;
+    r->y[6] = y6;
+    r->y[7] = y7;
+    r->y[8] = y8;
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
 static const sp_table_entry_521 p521_table[4875] = {
@@ -110628,7 +111478,7 @@ int sp_ecc_mulmod_base_add_521(const mp_int* km, const ecc_point* am,
     int err = MP_OKAY;
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    point = (sp_point_521*)XMALLOC(sizeof(sp_point_521) * 2, heap, 
+    point = (sp_point_521*)XMALLOC(sizeof(sp_point_521) * 2, heap,
                                          DYNAMIC_TYPE_ECC);
     if (point == NULL)
         err = MEMORY_E;
@@ -110884,7 +111734,7 @@ int sp_ecc_make_key_521(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     sp_point_521* infinity = NULL;
 #endif
     int err = MP_OKAY;
-    
+
 
     (void)heap;
 
@@ -110892,7 +111742,7 @@ int sp_ecc_make_key_521(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     #ifdef WOLFSSL_VALIDATE_ECC_KEYGEN
     point = (sp_point_521*)XMALLOC(sizeof(sp_point_521) * 2, heap, DYNAMIC_TYPE_ECC);
     #else
-    point = (sp_point_521*)XMALLOC(sizeof(sp_point_521), heap, DYNAMIC_TYPE_ECC);    
+    point = (sp_point_521*)XMALLOC(sizeof(sp_point_521), heap, DYNAMIC_TYPE_ECC);
     #endif
     if (point == NULL)
         err = MEMORY_E;
@@ -113256,165 +114106,165 @@ static void sp_1024_sqr_8(sp_digit* r, const sp_digit* a)
         "ldp       x25, x26, [%[a], 32]\n\t"
         "ldp       x27, x28, [%[a], 48]\n\t"
         "#  A[0] * A[1]\n\t"
-        "mul	x6, x21, x22\n\t"
-        "umulh	x7, x21, x22\n\t"
+        "mul       x6, x21, x22\n\t"
+        "umulh     x7, x21, x22\n\t"
         "#  A[0] * A[2]\n\t"
-        "mul	x4, x21, x23\n\t"
-        "umulh	x5, x21, x23\n\t"
-        "adds	x7, x7, x4\n\t"
+        "mul       x4, x21, x23\n\t"
+        "umulh     x5, x21, x23\n\t"
+        "adds  x7, x7, x4\n\t"
         "#  A[0] * A[3]\n\t"
-        "mul	x4, x21, x24\n\t"
-        "adc	x8, xzr, x5\n\t"
-        "umulh	x5, x21, x24\n\t"
-        "adds	x8, x8, x4\n\t"
+        "mul       x4, x21, x24\n\t"
+        "adc   x8, xzr, x5\n\t"
+        "umulh     x5, x21, x24\n\t"
+        "adds  x8, x8, x4\n\t"
         "#  A[1] * A[2]\n\t"
-        "mul	x4, x22, x23\n\t"
-        "adc	x9, xzr, x5\n\t"
-        "umulh	x5, x22, x23\n\t"
-        "adds	x8, x8, x4\n\t"
+        "mul       x4, x22, x23\n\t"
+        "adc   x9, xzr, x5\n\t"
+        "umulh     x5, x22, x23\n\t"
+        "adds  x8, x8, x4\n\t"
         "#  A[0] * A[4]\n\t"
-        "mul	x4, x21, x25\n\t"
-        "adcs	x9, x9, x5\n\t"
-        "umulh	x5, x21, x25\n\t"
-        "adc	x10, xzr, xzr\n\t"
-        "adds	x9, x9, x4\n\t"
+        "mul       x4, x21, x25\n\t"
+        "adcs   x9, x9, x5\n\t"
+        "umulh     x5, x21, x25\n\t"
+        "adc     x10, xzr, xzr\n\t"
+        "adds  x9, x9, x4\n\t"
         "#  A[1] * A[3]\n\t"
-        "mul	x4, x22, x24\n\t"
-        "adc	x10, x10, x5\n\t"
-        "umulh	x5, x22, x24\n\t"
-        "adds	x9, x9, x4\n\t"
+        "mul       x4, x22, x24\n\t"
+        "adc   x10, x10, x5\n\t"
+        "umulh     x5, x22, x24\n\t"
+        "adds  x9, x9, x4\n\t"
         "#  A[0] * A[5]\n\t"
-        "mul	x4, x21, x26\n\t"
-        "adcs	x10, x10, x5\n\t"
-        "umulh	x5, x21, x26\n\t"
-        "adc	x11, xzr, xzr\n\t"
-        "adds	x10, x10, x4\n\t"
+        "mul       x4, x21, x26\n\t"
+        "adcs   x10, x10, x5\n\t"
+        "umulh     x5, x21, x26\n\t"
+        "adc     x11, xzr, xzr\n\t"
+        "adds  x10, x10, x4\n\t"
         "#  A[1] * A[4]\n\t"
-        "mul	x4, x22, x25\n\t"
-        "adc	x11, x11, x5\n\t"
-        "umulh	x5, x22, x25\n\t"
-        "adds	x10, x10, x4\n\t"
+        "mul       x4, x22, x25\n\t"
+        "adc   x11, x11, x5\n\t"
+        "umulh     x5, x22, x25\n\t"
+        "adds  x10, x10, x4\n\t"
         "#  A[2] * A[3]\n\t"
-        "mul	x4, x23, x24\n\t"
-        "adcs	x11, x11, x5\n\t"
-        "umulh	x5, x23, x24\n\t"
-        "adc	x12, xzr, xzr\n\t"
-        "adds	x10, x10, x4\n\t"
+        "mul       x4, x23, x24\n\t"
+        "adcs   x11, x11, x5\n\t"
+        "umulh     x5, x23, x24\n\t"
+        "adc     x12, xzr, xzr\n\t"
+        "adds  x10, x10, x4\n\t"
         "#  A[0] * A[6]\n\t"
-        "mul	x4, x21, x27\n\t"
-        "adcs	x11, x11, x5\n\t"
-        "umulh	x5, x21, x27\n\t"
-        "adc	x12, x12, xzr\n\t"
-        "adds	x11, x11, x4\n\t"
+        "mul       x4, x21, x27\n\t"
+        "adcs   x11, x11, x5\n\t"
+        "umulh     x5, x21, x27\n\t"
+        "adc     x12, x12, xzr\n\t"
+        "adds  x11, x11, x4\n\t"
         "#  A[1] * A[5]\n\t"
-        "mul	x4, x22, x26\n\t"
-        "adcs	x12, x12, x5\n\t"
-        "umulh	x5, x22, x26\n\t"
-        "adc	x13, xzr, xzr\n\t"
-        "adds	x11, x11, x4\n\t"
+        "mul       x4, x22, x26\n\t"
+        "adcs   x12, x12, x5\n\t"
+        "umulh     x5, x22, x26\n\t"
+        "adc     x13, xzr, xzr\n\t"
+        "adds  x11, x11, x4\n\t"
         "#  A[2] * A[4]\n\t"
-        "mul	x4, x23, x25\n\t"
-        "adcs	x12, x12, x5\n\t"
-        "umulh	x5, x23, x25\n\t"
-        "adc	x13, x13, xzr\n\t"
-        "adds	x11, x11, x4\n\t"
+        "mul       x4, x23, x25\n\t"
+        "adcs   x12, x12, x5\n\t"
+        "umulh     x5, x23, x25\n\t"
+        "adc     x13, x13, xzr\n\t"
+        "adds  x11, x11, x4\n\t"
         "#  A[0] * A[7]\n\t"
-        "mul	x4, x21, x28\n\t"
-        "adcs	x12, x12, x5\n\t"
-        "umulh	x5, x21, x28\n\t"
-        "adc	x13, x13, xzr\n\t"
-        "adds	x12, x12, x4\n\t"
+        "mul       x4, x21, x28\n\t"
+        "adcs   x12, x12, x5\n\t"
+        "umulh     x5, x21, x28\n\t"
+        "adc     x13, x13, xzr\n\t"
+        "adds  x12, x12, x4\n\t"
         "#  A[1] * A[6]\n\t"
-        "mul	x4, x22, x27\n\t"
-        "adcs	x13, x13, x5\n\t"
-        "umulh	x5, x22, x27\n\t"
-        "adc	x14, xzr, xzr\n\t"
-        "adds	x12, x12, x4\n\t"
+        "mul       x4, x22, x27\n\t"
+        "adcs   x13, x13, x5\n\t"
+        "umulh     x5, x22, x27\n\t"
+        "adc     x14, xzr, xzr\n\t"
+        "adds  x12, x12, x4\n\t"
         "#  A[2] * A[5]\n\t"
-        "mul	x4, x23, x26\n\t"
-        "adcs	x13, x13, x5\n\t"
-        "umulh	x5, x23, x26\n\t"
-        "adc	x14, x14, xzr\n\t"
-        "adds	x12, x12, x4\n\t"
+        "mul       x4, x23, x26\n\t"
+        "adcs   x13, x13, x5\n\t"
+        "umulh     x5, x23, x26\n\t"
+        "adc     x14, x14, xzr\n\t"
+        "adds  x12, x12, x4\n\t"
         "#  A[3] * A[4]\n\t"
-        "mul	x4, x24, x25\n\t"
-        "adcs	x13, x13, x5\n\t"
-        "umulh	x5, x24, x25\n\t"
-        "adc	x14, x14, xzr\n\t"
-        "adds	x12, x12, x4\n\t"
+        "mul       x4, x24, x25\n\t"
+        "adcs   x13, x13, x5\n\t"
+        "umulh     x5, x24, x25\n\t"
+        "adc     x14, x14, xzr\n\t"
+        "adds  x12, x12, x4\n\t"
         "#  A[1] * A[7]\n\t"
-        "mul	x4, x22, x28\n\t"
-        "adcs	x13, x13, x5\n\t"
-        "umulh	x5, x22, x28\n\t"
-        "adc	x14, x14, xzr\n\t"
-        "adds	x13, x13, x4\n\t"
+        "mul       x4, x22, x28\n\t"
+        "adcs   x13, x13, x5\n\t"
+        "umulh     x5, x22, x28\n\t"
+        "adc     x14, x14, xzr\n\t"
+        "adds  x13, x13, x4\n\t"
         "#  A[2] * A[6]\n\t"
-        "mul	x4, x23, x27\n\t"
-        "adcs	x14, x14, x5\n\t"
-        "umulh	x5, x23, x27\n\t"
-        "adc	x15, xzr, xzr\n\t"
-        "adds	x13, x13, x4\n\t"
+        "mul       x4, x23, x27\n\t"
+        "adcs   x14, x14, x5\n\t"
+        "umulh     x5, x23, x27\n\t"
+        "adc     x15, xzr, xzr\n\t"
+        "adds  x13, x13, x4\n\t"
         "#  A[3] * A[5]\n\t"
-        "mul	x4, x24, x26\n\t"
-        "adcs	x14, x14, x5\n\t"
-        "umulh	x5, x24, x26\n\t"
-        "adc	x15, x15, xzr\n\t"
-        "adds	x13, x13, x4\n\t"
+        "mul       x4, x24, x26\n\t"
+        "adcs   x14, x14, x5\n\t"
+        "umulh     x5, x24, x26\n\t"
+        "adc     x15, x15, xzr\n\t"
+        "adds  x13, x13, x4\n\t"
         "#  A[2] * A[7]\n\t"
-        "mul	x4, x23, x28\n\t"
-        "adcs	x14, x14, x5\n\t"
-        "umulh	x5, x23, x28\n\t"
-        "adc	x15, x15, xzr\n\t"
-        "adds	x14, x14, x4\n\t"
+        "mul       x4, x23, x28\n\t"
+        "adcs   x14, x14, x5\n\t"
+        "umulh     x5, x23, x28\n\t"
+        "adc     x15, x15, xzr\n\t"
+        "adds  x14, x14, x4\n\t"
         "#  A[3] * A[6]\n\t"
-        "mul	x4, x24, x27\n\t"
-        "adcs	x15, x15, x5\n\t"
-        "umulh	x5, x24, x27\n\t"
-        "adc	x16, xzr, xzr\n\t"
-        "adds	x14, x14, x4\n\t"
+        "mul       x4, x24, x27\n\t"
+        "adcs   x15, x15, x5\n\t"
+        "umulh     x5, x24, x27\n\t"
+        "adc     x16, xzr, xzr\n\t"
+        "adds  x14, x14, x4\n\t"
         "#  A[4] * A[5]\n\t"
-        "mul	x4, x25, x26\n\t"
-        "adcs	x15, x15, x5\n\t"
-        "umulh	x5, x25, x26\n\t"
-        "adc	x16, x16, xzr\n\t"
-        "adds	x14, x14, x4\n\t"
+        "mul       x4, x25, x26\n\t"
+        "adcs   x15, x15, x5\n\t"
+        "umulh     x5, x25, x26\n\t"
+        "adc     x16, x16, xzr\n\t"
+        "adds  x14, x14, x4\n\t"
         "#  A[3] * A[7]\n\t"
-        "mul	x4, x24, x28\n\t"
-        "adcs	x15, x15, x5\n\t"
-        "umulh	x5, x24, x28\n\t"
-        "adc	x16, x16, xzr\n\t"
-        "adds	x15, x15, x4\n\t"
+        "mul       x4, x24, x28\n\t"
+        "adcs   x15, x15, x5\n\t"
+        "umulh     x5, x24, x28\n\t"
+        "adc     x16, x16, xzr\n\t"
+        "adds  x15, x15, x4\n\t"
         "#  A[4] * A[6]\n\t"
-        "mul	x4, x25, x27\n\t"
-        "adcs	x16, x16, x5\n\t"
-        "umulh	x5, x25, x27\n\t"
-        "adc	x17, xzr, xzr\n\t"
-        "adds	x15, x15, x4\n\t"
+        "mul       x4, x25, x27\n\t"
+        "adcs   x16, x16, x5\n\t"
+        "umulh     x5, x25, x27\n\t"
+        "adc     x17, xzr, xzr\n\t"
+        "adds  x15, x15, x4\n\t"
         "#  A[4] * A[7]\n\t"
-        "mul	x4, x25, x28\n\t"
-        "adcs	x16, x16, x5\n\t"
-        "umulh	x5, x25, x28\n\t"
-        "adc	x17, x17, xzr\n\t"
-        "adds	x16, x16, x4\n\t"
+        "mul       x4, x25, x28\n\t"
+        "adcs   x16, x16, x5\n\t"
+        "umulh     x5, x25, x28\n\t"
+        "adc     x17, x17, xzr\n\t"
+        "adds  x16, x16, x4\n\t"
         "#  A[5] * A[6]\n\t"
-        "mul	x4, x26, x27\n\t"
-        "adcs	x17, x17, x5\n\t"
-        "umulh	x5, x26, x27\n\t"
-        "adc	x19, xzr, xzr\n\t"
-        "adds	x16, x16, x4\n\t"
+        "mul       x4, x26, x27\n\t"
+        "adcs   x17, x17, x5\n\t"
+        "umulh     x5, x26, x27\n\t"
+        "adc     x19, xzr, xzr\n\t"
+        "adds  x16, x16, x4\n\t"
         "#  A[5] * A[7]\n\t"
-        "mul	x4, x26, x28\n\t"
-        "adcs	x17, x17, x5\n\t"
-        "umulh	x5, x26, x28\n\t"
-        "adc	x19, x19, xzr\n\t"
-        "adds	x17, x17, x4\n\t"
+        "mul       x4, x26, x28\n\t"
+        "adcs   x17, x17, x5\n\t"
+        "umulh     x5, x26, x28\n\t"
+        "adc     x19, x19, xzr\n\t"
+        "adds  x17, x17, x4\n\t"
         "#  A[6] * A[7]\n\t"
-        "mul	x4, x27, x28\n\t"
-        "adcs	x19, x19, x5\n\t"
-        "umulh	x5, x27, x28\n\t"
-        "adc	x20, xzr, xzr\n\t"
-        "adds	x19, x19, x4\n\t"
-        "adc	x20, x20, x5\n\t"
+        "mul       x4, x27, x28\n\t"
+        "adcs   x19, x19, x5\n\t"
+        "umulh     x5, x27, x28\n\t"
+        "adc     x20, xzr, xzr\n\t"
+        "adds  x19, x19, x4\n\t"
+        "adc   x20, x20, x5\n\t"
         "# Double\n\t"
         "adds	x6, x6, x6\n\t"
         "adcs	x7, x7, x7\n\t"
@@ -113430,44 +114280,44 @@ static void sp_1024_sqr_8(sp_digit* r, const sp_digit* a)
         "adcs	x17, x17, x17\n\t"
         "adcs	x19, x19, x19\n\t"
         "#  A[0] * A[0]\n\t"
-        "mul	x5, x21, x21\n\t"
+        "mul       x5, x21, x21\n\t"
         "adcs	x20, x20, x20\n\t"
-        "umulh	x2, x21, x21\n\t"
+        "umulh     x2, x21, x21\n\t"
         "cset  x21, cs\n\t"
         "#  A[1] * A[1]\n\t"
-        "mul	x3, x22, x22\n\t"
+        "mul       x3, x22, x22\n\t"
         "adds	x6, x6, x2\n\t"
-        "umulh	x4, x22, x22\n\t"
+        "umulh     x4, x22, x22\n\t"
         "adcs	x7, x7, x3\n\t"
         "#  A[2] * A[2]\n\t"
-        "mul	x2, x23, x23\n\t"
+        "mul       x2, x23, x23\n\t"
         "adcs	x8, x8, x4\n\t"
-        "umulh	x3, x23, x23\n\t"
+        "umulh     x3, x23, x23\n\t"
         "adcs	x9, x9, x2\n\t"
         "#  A[3] * A[3]\n\t"
-        "mul	x4, x24, x24\n\t"
+        "mul       x4, x24, x24\n\t"
         "adcs	x10, x10, x3\n\t"
-        "umulh	x2, x24, x24\n\t"
+        "umulh     x2, x24, x24\n\t"
         "adcs	x11, x11, x4\n\t"
         "#  A[4] * A[4]\n\t"
-        "mul	x3, x25, x25\n\t"
+        "mul       x3, x25, x25\n\t"
         "adcs	x12, x12, x2\n\t"
-        "umulh	x4, x25, x25\n\t"
+        "umulh     x4, x25, x25\n\t"
         "adcs	x13, x13, x3\n\t"
         "#  A[5] * A[5]\n\t"
-        "mul	x2, x26, x26\n\t"
+        "mul       x2, x26, x26\n\t"
         "adcs	x14, x14, x4\n\t"
-        "umulh	x3, x26, x26\n\t"
+        "umulh     x3, x26, x26\n\t"
         "adcs	x15, x15, x2\n\t"
         "#  A[6] * A[6]\n\t"
-        "mul	x4, x27, x27\n\t"
+        "mul       x4, x27, x27\n\t"
         "adcs	x16, x16, x3\n\t"
-        "umulh	x2, x27, x27\n\t"
+        "umulh     x2, x27, x27\n\t"
         "adcs	x17, x17, x4\n\t"
         "#  A[7] * A[7]\n\t"
-        "mul	x3, x28, x28\n\t"
+        "mul       x3, x28, x28\n\t"
         "adcs	x19, x19, x2\n\t"
-        "umulh	x4, x28, x28\n\t"
+        "umulh     x4, x28, x28\n\t"
         "adcs	x20, x20, x3\n\t"
         "stp	x5, x6, [%[r], 0]\n\t"
         "adc	x21, x21, x4\n\t"
@@ -113514,7 +114364,7 @@ static sp_digit sp_1024_add_8(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r], 32]\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r], 48]\n\t"
-        "cset	%[r], cs\n\t"
+        "adc	%[r], xzr, xzr\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
         : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
@@ -113662,7 +114512,7 @@ static sp_digit sp_1024_add_16(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r], 96]\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r], 112]\n\t"
-        "cset	%[r], cs\n\t"
+        "adc	%[r], xzr, xzr\n\t"
         : [r] "+r" (r)
         : [a] "r" (a), [b] "r" (b)
         : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "cc"
@@ -114189,7 +115039,7 @@ static sp_digit sp_1024_add_16(sp_digit* r, const sp_digit* a,
         "stp	x3, x4, [%[r]], #16\n\t"
         "adcs	x6, x6, x10\n\t"
         "stp	x5, x6, [%[r]], #16\n\t"
-        "cset	%[c], cs\n\t"
+        "adc	%[c], xzr, xzr\n\t"
         "cmp	%[a], x11\n\t"
         "b.ne	1b\n\t"
         : [c] "+r" (c), [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
@@ -114381,7 +115231,7 @@ static void sp_1024_mul_d_16(sp_digit* r, const sp_digit* a,
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * Assumes divisor has higest bit set.
+ * Assumes divisor has highest bit set.
  *
  * d1   The high order half of the number to divide.
  * d0   The low order half of the number to divide.
@@ -114763,14 +115613,14 @@ static void sp_1024_from_mp(sp_digit* r, int size, const mp_int* a)
 {
 #if DIGIT_BIT == 64
     int i;
-    int j = 0;
+    sp_digit j = (sp_digit)0 - (sp_digit)a->used;
+    int o = 0;
 
     for (i = 0; i < size; i++) {
-        sp_digit mask =
-            (((sp_digit)((int)a->used - i - 1)) >> (SP_WORD_SIZE - 1)) - 1;
-        r[i] = a->dp[j] & mask;
-        j += (int)(((sp_digit)1) -
-                   (((sp_digit)((int)a->used - i - 2)) >> (SP_WORD_SIZE - 1)));
+        sp_digit mask = (sp_digit)0 - (j >> 63);
+        r[i] = a->dp[o] & mask;
+        j++;
+        o += (int)(j >> 63);
     }
 #elif DIGIT_BIT > 64
     unsigned int i;
@@ -115177,7 +116027,7 @@ SP_NOINLINE static void sp_1024_mont_reduce_16(sp_digit* a, const sp_digit* m,
         "umulh	x8, x10, x9\n\t"
         "adds	x6, x6, x7\n\t"
         "adcs	x8, x8, x3\n\t"
-        "cset	x3, cs\n\t"
+        "adc	x3, xzr, xzr\n\t"
         "adds	x27, x28, x6\n\t"
         "ldr	x28, [%[a], 128]\n\t"
         "adcs	x28, x28, x8\n\t"
@@ -115838,7 +116688,6 @@ static void sp_1024_mont_sub_16(sp_digit* r, const sp_digit* a, const sp_digit* 
     );
 }
 
-#define sp_1024_mont_sub_lower_16 sp_1024_mont_sub_16
 #ifdef WOLFSSL_SP_SMALL
 /* Conditionally add a and b using the mask m.
  * m is -1 to add and 0 when not.
@@ -116080,7 +116929,7 @@ static void sp_1024_proj_point_dbl_16(sp_point_1024* r, const sp_point_1024* p,
     /* X = X - Y */
     sp_1024_mont_sub_16(x, x, y, p1024_mod);
     /* Y = Y - X */
-    sp_1024_mont_sub_lower_16(y, y, x, p1024_mod);
+    sp_1024_mont_sub_16(y, y, x, p1024_mod);
     /* Y = Y * T1 */
     sp_1024_mont_mul_16(y, y, t1, p1024_mod, p1024_mp_mod);
     /* Y = Y - T2 */
@@ -116202,7 +117051,7 @@ static int sp_1024_proj_point_dbl_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r, 
         break;
     case 16:
         /* Y = Y - X */
-        sp_1024_mont_sub_lower_16(ctx->y, ctx->y, ctx->x, p1024_mod);
+        sp_1024_mont_sub_16(ctx->y, ctx->y, ctx->x, p1024_mod);
         ctx->state = 17;
         break;
     case 17:
@@ -116227,8 +117076,6 @@ static int sp_1024_proj_point_dbl_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r, 
     return err;
 }
 #endif /* WOLFSSL_SP_NONBLOCK */
-#define sp_1024_mont_dbl_lower_16 sp_1024_mont_dbl_16
-#define sp_1024_mont_tpl_lower_16 sp_1024_mont_tpl_16
 /* Double the Montgomery form projective point p a number of times.
  *
  * r  Result of repeated doubling of point.
@@ -116267,7 +117114,7 @@ static void sp_1024_proj_point_dbl_n_16(sp_point_1024* p, int i,
         /* A = 3*(X^2 - W) */
         sp_1024_mont_sqr_16(t1, x, p1024_mod, p1024_mp_mod);
         sp_1024_mont_sub_16(t1, t1, w, p1024_mod);
-        sp_1024_mont_tpl_lower_16(a, t1, p1024_mod);
+        sp_1024_mont_tpl_16(a, t1, p1024_mod);
         /* B = X*Y^2 */
         sp_1024_mont_sqr_16(t1, y, p1024_mod, p1024_mp_mod);
         sp_1024_mont_mul_16(b, t1, x, p1024_mod, p1024_mp_mod);
@@ -116276,8 +117123,8 @@ static void sp_1024_proj_point_dbl_n_16(sp_point_1024* p, int i,
         sp_1024_mont_dbl_16(t2, b, p1024_mod);
         sp_1024_mont_sub_16(x, x, t2, p1024_mod);
         /* B = 2.(B - X) */
-        sp_1024_mont_sub_lower_16(t2, b, x, p1024_mod);
-        sp_1024_mont_dbl_lower_16(b, t2, p1024_mod);
+        sp_1024_mont_sub_16(t2, b, x, p1024_mod);
+        sp_1024_mont_dbl_16(b, t2, p1024_mod);
         /* Z = Z*Y */
         sp_1024_mont_mul_16(z, z, y, p1024_mod, p1024_mp_mod);
         /* t1 = Y^4 */
@@ -116297,7 +117144,7 @@ static void sp_1024_proj_point_dbl_n_16(sp_point_1024* p, int i,
     /* A = 3*(X^2 - W) */
     sp_1024_mont_sqr_16(t1, x, p1024_mod, p1024_mp_mod);
     sp_1024_mont_sub_16(t1, t1, w, p1024_mod);
-    sp_1024_mont_tpl_lower_16(a, t1, p1024_mod);
+    sp_1024_mont_tpl_16(a, t1, p1024_mod);
     /* B = X*Y^2 */
     sp_1024_mont_sqr_16(t1, y, p1024_mod, p1024_mp_mod);
     sp_1024_mont_mul_16(b, t1, x, p1024_mod, p1024_mp_mod);
@@ -116306,8 +117153,8 @@ static void sp_1024_proj_point_dbl_n_16(sp_point_1024* p, int i,
     sp_1024_mont_dbl_16(t2, b, p1024_mod);
     sp_1024_mont_sub_16(x, x, t2, p1024_mod);
     /* B = 2.(B - X) */
-    sp_1024_mont_sub_lower_16(t2, b, x, p1024_mod);
-    sp_1024_mont_dbl_lower_16(b, t2, p1024_mod);
+    sp_1024_mont_sub_16(t2, b, x, p1024_mod);
+    sp_1024_mont_dbl_16(b, t2, p1024_mod);
     /* Z = Z*Y */
     sp_1024_mont_mul_16(z, z, y, p1024_mod, p1024_mp_mod);
     /* t1 = Y^4 */
@@ -116458,12 +117305,12 @@ static int sp_1024_iszero_16(const sp_digit* a)
 static void sp_1024_proj_point_add_16(sp_point_1024* r,
         const sp_point_1024* p, const sp_point_1024* q, sp_digit* t)
 {
-    sp_digit* t1 = t;
-    sp_digit* t2 = t + 2*16;
-    sp_digit* t3 = t + 4*16;
-    sp_digit* t4 = t + 6*16;
-    sp_digit* t5 = t + 8*16;
-    sp_digit* t6 = t + 10*16;
+    sp_digit* t6 = t;
+    sp_digit* t1 = t + 2*16;
+    sp_digit* t2 = t + 4*16;
+    sp_digit* t3 = t + 6*16;
+    sp_digit* t4 = t + 8*16;
+    sp_digit* t5 = t + 10*16;
 
     /* U1 = X1*Z2^2 */
     sp_1024_mont_sqr_16(t1, q->z, p1024_mod, p1024_mp_mod);
@@ -116485,17 +117332,9 @@ static void sp_1024_proj_point_add_16(sp_point_1024* r,
         sp_1024_proj_point_dbl_16(r, p, t);
     }
     else {
-        sp_digit maskp;
-        sp_digit maskq;
-        sp_digit maskt;
         sp_digit* x = t6;
         sp_digit* y = t1;
         sp_digit* z = t2;
-        int i;
-
-        maskp = 0 - (q->infinity & (!p->infinity));
-        maskq = 0 - (p->infinity & (!q->infinity));
-        maskt = ~(maskp | maskq);
 
         /* H = U2 - U1 */
         sp_1024_mont_sub_16(t2, t2, t1, p1024_mod);
@@ -116514,20 +117353,31 @@ static void sp_1024_proj_point_add_16(sp_point_1024* r,
         sp_1024_mont_dbl_16(t3, y, p1024_mod);
         sp_1024_mont_sub_16(x, x, t3, p1024_mod);
         /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_1024_mont_sub_lower_16(y, y, x, p1024_mod);
+        sp_1024_mont_sub_16(y, y, x, p1024_mod);
         sp_1024_mont_mul_16(y, y, t4, p1024_mod, p1024_mp_mod);
         sp_1024_mont_sub_16(y, y, t5, p1024_mod);
-        for (i = 0; i < 16; i++) {
-            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
+        {
+            int i;
+            sp_digit maskp = 0 - (q->infinity & (!p->infinity));
+            sp_digit maskq = 0 - (p->infinity & (!q->infinity));
+            sp_digit maskt = ~(maskp | maskq);
+            sp_digit inf = (sp_digit)(p->infinity & q->infinity);
+
+            for (i = 0; i < 16; i++) {
+                r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) |
+                          (x[i] & maskt);
+            }
+            for (i = 0; i < 16; i++) {
+                r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) |
+                          (y[i] & maskt);
+            }
+            for (i = 0; i < 16; i++) {
+                r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) |
+                          (z[i] & maskt);
+            }
+            r->z[0] |= inf;
+            r->infinity = (word32)inf;
         }
-        for (i = 0; i < 16; i++) {
-            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
-        }
-        for (i = 0; i < 16; i++) {
-            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
-        }
-        r->z[0] |= p->infinity & q->infinity;
-        r->infinity = p->infinity & q->infinity;
     }
 }
 
@@ -116573,12 +117423,12 @@ static int sp_1024_proj_point_add_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
 
     switch (ctx->state) {
     case 0: /* INIT */
-        ctx->t1 = t;
-        ctx->t2 = t + 2*16;
-        ctx->t3 = t + 4*16;
-        ctx->t4 = t + 6*16;
-        ctx->t5 = t + 8*16;
-        ctx->t6 = t + 10*16;
+        ctx->t6 = t;
+        ctx->t1 = t + 2*16;
+        ctx->t2 = t + 4*16;
+        ctx->t3 = t + 6*16;
+        ctx->t4 = t + 8*16;
+        ctx->t5 = t + 10*16;
         ctx->x = ctx->t6;
         ctx->y = ctx->t1;
         ctx->z = ctx->t2;
@@ -116685,7 +117535,7 @@ static int sp_1024_proj_point_add_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
         break;
     case 21:
         /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_1024_mont_sub_lower_16(ctx->y, ctx->y, ctx->x, p1024_mod);
+        sp_1024_mont_sub_16(ctx->y, ctx->y, ctx->x, p1024_mod);
         ctx->state = 22;
         break;
     case 22:
@@ -116698,22 +117548,28 @@ static int sp_1024_proj_point_add_16_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
         break;
     case 24:
     {
-        int i;
-        sp_digit maskp = 0 - (q->infinity & (!p->infinity));
-        sp_digit maskq = 0 - (p->infinity & (!q->infinity));
-        sp_digit maskt = ~(maskp | maskq);
+        {
+            int i;
+            sp_digit maskp = 0 - (q->infinity & (!p->infinity));
+            sp_digit maskq = 0 - (p->infinity & (!q->infinity));
+            sp_digit maskt = ~(maskp | maskq);
+            sp_digit inf = (sp_digit)(p->infinity & q->infinity);
 
-        for (i = 0; i < 16; i++) {
-            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (ctx->x[i] & maskt);
+            for (i = 0; i < 16; i++) {
+                r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) |
+                          (ctx->x[i] & maskt);
+            }
+            for (i = 0; i < 16; i++) {
+                r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) |
+                          (ctx->y[i] & maskt);
+            }
+            for (i = 0; i < 16; i++) {
+                r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) |
+                          (ctx->z[i] & maskt);
+            }
+            r->z[0] |= inf;
+            r->infinity = (word32)inf;
         }
-        for (i = 0; i < 16; i++) {
-            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (ctx->y[i] & maskt);
-        }
-        for (i = 0; i < 16; i++) {
-            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (ctx->z[i] & maskt);
-        }
-        r->z[0] |= p->infinity & q->infinity;
-        r->infinity = p->infinity & q->infinity;
         ctx->state = 25;
         break;
     }
@@ -116772,7 +117628,7 @@ static void sp_1024_proj_point_dbl_n_store_16(sp_point_1024* r,
         /* A = 3*(X^2 - W) */
         sp_1024_mont_sqr_16(t1, x, p1024_mod, p1024_mp_mod);
         sp_1024_mont_sub_16(t1, t1, w, p1024_mod);
-        sp_1024_mont_tpl_lower_16(a, t1, p1024_mod);
+        sp_1024_mont_tpl_16(a, t1, p1024_mod);
         /* B = X*Y^2 */
         sp_1024_mont_sqr_16(t1, y, p1024_mod, p1024_mp_mod);
         sp_1024_mont_mul_16(b, t1, x, p1024_mod, p1024_mp_mod);
@@ -116782,8 +117638,8 @@ static void sp_1024_proj_point_dbl_n_store_16(sp_point_1024* r,
         sp_1024_mont_dbl_16(t2, b, p1024_mod);
         sp_1024_mont_sub_16(x, x, t2, p1024_mod);
         /* B = 2.(B - X) */
-        sp_1024_mont_sub_lower_16(t2, b, x, p1024_mod);
-        sp_1024_mont_dbl_lower_16(b, t2, p1024_mod);
+        sp_1024_mont_sub_16(t2, b, x, p1024_mod);
+        sp_1024_mont_dbl_16(b, t2, p1024_mod);
         /* Z = Z*Y */
         sp_1024_mont_mul_16(r[j].z, z, y, p1024_mod, p1024_mp_mod);
         z = r[j].z;
@@ -116871,8 +117727,8 @@ static void sp_1024_proj_point_add_sub_16(sp_point_1024* ra,
     sp_1024_mont_sub_16(xs, xs, t1, p1024_mod);
     /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
     /* YS = -RS*(U1*H^2 - XS) - S1*H^3 */
-    sp_1024_mont_sub_lower_16(ys, ya, xs, p1024_mod);
-    sp_1024_mont_sub_lower_16(ya, ya, xa, p1024_mod);
+    sp_1024_mont_sub_16(ys, ya, xs, p1024_mod);
+    sp_1024_mont_sub_16(ya, ya, xa, p1024_mod);
     sp_1024_mont_mul_16(ya, ya, t4, p1024_mod, p1024_mp_mod);
     sp_1024_mont_sub_16(t6, p1024_mod, t6, p1024_mod);
     sp_1024_mont_mul_16(ys, ys, t6, p1024_mod, p1024_mp_mod);
@@ -117000,7 +117856,7 @@ static int sp_1024_ecc_mulmod_win_add_sub_16(sp_point_1024* r, const sp_point_10
     (void)heap;
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    t = (sp_point_1024*)XMALLOC(sizeof(sp_point_1024) * 
+    t = (sp_point_1024*)XMALLOC(sizeof(sp_point_1024) *
         (65+2), heap, DYNAMIC_TYPE_ECC);
     if (t == NULL)
         err = MEMORY_E;
@@ -117129,12 +117985,12 @@ typedef struct sp_table_entry_1024 {
 static void sp_1024_proj_point_add_qz1_16(sp_point_1024* r,
     const sp_point_1024* p, const sp_point_1024* q, sp_digit* t)
 {
-    sp_digit* t1 = t;
-    sp_digit* t2 = t + 2*16;
-    sp_digit* t3 = t + 4*16;
-    sp_digit* t4 = t + 6*16;
-    sp_digit* t5 = t + 8*16;
-    sp_digit* t6 = t + 10*16;
+    sp_digit* t2 = t;
+    sp_digit* t3 = t + 2*16;
+    sp_digit* t6 = t + 4*16;
+    sp_digit* t1 = t + 6*16;
+    sp_digit* t4 = t + 8*16;
+    sp_digit* t5 = t + 10*16;
 
     /* Calculate values to subtract from P->x and P->y. */
     /* U2 = X2*Z1^2 */
@@ -117150,13 +118006,9 @@ static void sp_1024_proj_point_add_qz1_16(sp_point_1024* r,
         sp_1024_proj_point_dbl_16(r, p, t);
     }
     else {
-        sp_digit maskp;
-        sp_digit maskq;
-        sp_digit maskt;
         sp_digit* x = t2;
-        sp_digit* y = t5;
+        sp_digit* y = t3;
         sp_digit* z = t6;
-        int i;
 
         /* H = U2 - X1 */
         sp_1024_mont_sub_16(t2, t2, p->x, p1024_mod);
@@ -117165,33 +118017,40 @@ static void sp_1024_proj_point_add_qz1_16(sp_point_1024* r,
         /* Z3 = H*Z1 */
         sp_1024_mont_mul_16(z, p->z, t2, p1024_mod, p1024_mp_mod);
         /* X3 = R^2 - H^3 - 2*X1*H^2 */
-        sp_1024_mont_sqr_16(t1, t4, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_sqr_16(t5, t2, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_mul_16(t3, p->x, t5, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_mul_16(t5, t5, t2, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_sub_16(x, t1, t5, p1024_mod);
-        sp_1024_mont_dbl_16(t1, t3, p1024_mod);
-        sp_1024_mont_sub_16(x, x, t1, p1024_mod);
+        sp_1024_mont_sqr_16(t1, t2, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(t3, p->x, t1, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_mul_16(t1, t1, t2, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_sqr_16(t2, t4, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_sub_16(t2, t2, t1, p1024_mod);
+        sp_1024_mont_dbl_16(t5, t3, p1024_mod);
+        sp_1024_mont_sub_16(x, t2, t5, p1024_mod);
         /* Y3 = R*(X1*H^2 - X3) - Y1*H^3 */
-        sp_1024_mont_sub_lower_16(t3, t3, x, p1024_mod);
+        sp_1024_mont_sub_16(t3, t3, x, p1024_mod);
         sp_1024_mont_mul_16(t3, t3, t4, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_mul_16(t5, t5, p->y, p1024_mod, p1024_mp_mod);
-        sp_1024_mont_sub_16(y, t3, t5, p1024_mod);
+        sp_1024_mont_mul_16(t1, t1, p->y, p1024_mod, p1024_mp_mod);
+        sp_1024_mont_sub_16(y, t3, t1, p1024_mod);
+        {
+            int i;
+            sp_digit maskp = 0 - (q->infinity & (!p->infinity));
+            sp_digit maskq = 0 - (p->infinity & (!q->infinity));
+            sp_digit maskt = ~(maskp | maskq);
+            sp_digit inf = (sp_digit)(p->infinity & q->infinity);
 
-        maskp = 0 - (q->infinity & (!p->infinity));
-        maskq = 0 - (p->infinity & (!q->infinity));
-        maskt = ~(maskp | maskq);
-        for (i = 0; i < 16; i++) {
-            r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) | (x[i] & maskt);
+            for (i = 0; i < 16; i++) {
+                r->x[i] = (p->x[i] & maskp) | (q->x[i] & maskq) |
+                          (x[i] & maskt);
+            }
+            for (i = 0; i < 16; i++) {
+                r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) |
+                          (y[i] & maskt);
+            }
+            for (i = 0; i < 16; i++) {
+                r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) |
+                          (z[i] & maskt);
+            }
+            r->z[0] |= inf;
+            r->infinity = (word32)inf;
         }
-        for (i = 0; i < 16; i++) {
-            r->y[i] = (p->y[i] & maskp) | (q->y[i] & maskq) | (y[i] & maskt);
-        }
-        for (i = 0; i < 16; i++) {
-            r->z[i] = (p->z[i] & maskp) | (q->z[i] & maskq) | (z[i] & maskt);
-        }
-        r->z[0] |= p->infinity & q->infinity;
-        r->infinity = p->infinity & q->infinity;
     }
 }
 
@@ -121053,7 +121912,7 @@ int sp_ecc_mulmod_base_add_1024(const mp_int* km, const ecc_point* am,
     int err = MP_OKAY;
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    point = (sp_point_1024*)XMALLOC(sizeof(sp_point_1024) * 2, heap, 
+    point = (sp_point_1024*)XMALLOC(sizeof(sp_point_1024) * 2, heap,
                                          DYNAMIC_TYPE_ECC);
     if (point == NULL)
         err = MEMORY_E;
