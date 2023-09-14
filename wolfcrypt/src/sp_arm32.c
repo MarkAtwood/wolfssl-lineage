@@ -2234,7 +2234,7 @@ static void sp_2048_mul_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_
     );
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Multiply a and b into r. (r = a * b)
  *
  * r  A single precision integer.
@@ -4683,7 +4683,7 @@ static void sp_2048_sqr_8(sp_digit* r_p, const sp_digit* a_p)
     );
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Square a and put result in r. (r = a * a)
  *
  * r  A single precision integer.
@@ -9305,7 +9305,7 @@ static SP_NOINLINE void sp_2048_mont_reduce_32(sp_digit* a_p, const sp_digit* m_
     sp_2048_cond_sub_32(a - 32, a, m, (sp_digit)0 - mp);
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Reduce the number back to 2048 bits using Montgomery reduction.
  *
  * a   A single precision number to reduce in place.
@@ -14167,7 +14167,7 @@ static SP_NOINLINE void sp_2048_mont_reduce_64(sp_digit* a_p, const sp_digit* m_
     sp_2048_cond_sub_64(a - 64, a, m, (sp_digit)0 - mp);
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Reduce the number back to 2048 bits using Montgomery reduction.
  *
  * a   A single precision number to reduce in place.
@@ -33531,7 +33531,7 @@ static SP_NOINLINE void sp_3072_mont_reduce_48(sp_digit* a_p, const sp_digit* m_
     sp_3072_cond_sub_48(a - 48, a, m, (sp_digit)0 - mp);
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Reduce the number back to 3072 bits using Montgomery reduction.
  *
  * a   A single precision number to reduce in place.
@@ -40329,7 +40329,7 @@ static SP_NOINLINE void sp_3072_mont_reduce_96(sp_digit* a_p, const sp_digit* m_
     sp_3072_cond_sub_96(a - 96, a, m, (sp_digit)0 - mp);
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Reduce the number back to 3072 bits using Montgomery reduction.
  *
  * a   A single precision number to reduce in place.
@@ -54796,7 +54796,7 @@ static SP_NOINLINE void sp_4096_mont_reduce_128(sp_digit* a_p, const sp_digit* m
     sp_4096_cond_sub_128(a - 128, a, m, (sp_digit)0 - mp);
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Reduce the number back to 4096 bits using Montgomery reduction.
  *
  * a   A single precision number to reduce in place.
@@ -62896,7 +62896,7 @@ static void sp_256_mul_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p
     );
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Multiply a and b into r. (r = a * b)
  *
  * r  A single precision integer.
@@ -64733,7 +64733,7 @@ static void sp_256_sqr_8(sp_digit* r_p, const sp_digit* a_p)
     );
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Square a and put result in r. (r = a * a)
  *
  * r  A single precision integer.
@@ -67796,7 +67796,7 @@ static SP_NOINLINE void sp_256_mont_mul_8(sp_digit* r_p, const sp_digit* a_p, co
     (void)mp_p;
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
@@ -69729,7 +69729,7 @@ static SP_NOINLINE void sp_256_mont_sqr_8(sp_digit* r_p, const sp_digit* a_p, co
     (void)mp_p;
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Square the Montgomery form number mod the modulus (prime). (r = a * a mod m)
  *
  * r   Result of squaring.
@@ -70956,7 +70956,7 @@ static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a_p, const sp_digit* m_p,
     sp_256_cond_sub_8(a - 8, a, m, (sp_digit)0 - mp);
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Reduce the number back to 256 bits using Montgomery reduction.
  *
  * a   A single precision number to reduce in place.
@@ -71535,7 +71535,7 @@ static SP_NOINLINE void sp_256_mont_reduce_order_8(sp_digit* a_p, const sp_digit
     sp_256_cond_sub_8(a - 8, a, m, (sp_digit)0 - mp);
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Reduce the number back to 256 bits using Montgomery reduction.
  *
  * a   A single precision number to reduce in place.
@@ -88721,7 +88721,7 @@ static SP_NOINLINE void sp_384_mont_reduce_12(sp_digit* a_p, const sp_digit* m_p
     sp_384_cond_sub_12(a - 12, a, m, (sp_digit)0 - mp);
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Reduce the number back to 384 bits using Montgomery reduction.
  *
  * a   A single precision number to reduce in place.
@@ -115365,7 +115365,7 @@ static SP_NOINLINE void sp_521_mont_reduce_order_17(sp_digit* a_p, const sp_digi
     sp_521_cond_sub_17(a - 17, a, m, (sp_digit)0 - mp);
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Reduce the number back to 521 bits using Montgomery reduction.
  *
  * a   A single precision number to reduce in place.
@@ -144632,7 +144632,7 @@ static SP_NOINLINE void sp_1024_mont_reduce_32(sp_digit* a_p, const sp_digit* m_
     sp_1024_cond_sub_32(a - 32, a, m, mp);
 }
 
-#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 6)
+#elif defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
 /* Reduce the number back to 1024 bits using Montgomery reduction.
  *
  * a   A single precision number to reduce in place.
@@ -145130,10 +145130,10 @@ static SP_NOINLINE void sp_1024_mont_reduce_32(sp_digit* a_p, const sp_digit* m_
         "str	r7, [%[a], #12]\n\t"
         "str	r8, [%[a], #16]\n\t"
         "ldr	r10, [%[m], #124]\n\t"
-        "subs	r9, r10, r9\n\t"
+        "subs	r3, r10, r3\n\t"
         "neg	lr, lr\n\t"
-        "sbc	r9, r9, r9\n\t"
-        "orr	lr, lr, r9\n\t"
+        "sbc	r3, r3, r3\n\t"
+        "orr	lr, lr, r3\n\t"
         "mov	%[mp], lr\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
