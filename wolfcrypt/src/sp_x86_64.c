@@ -8607,7 +8607,7 @@ extern void sp_256_div2_4(sp_digit* r, const sp_digit* a, const sp_digit* m);
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern void sp_256_mont_sub_dbl_4(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
+extern void sp_256_mont_rsb_sub_dbl_4(sp_digit* r, const sp_digit* a, sp_digit* b, const sp_digit* m);
 #ifdef __cplusplus
 }
 #endif
@@ -8661,9 +8661,8 @@ static void sp_256_proj_point_dbl_4(sp_point_256* r, const sp_point_256* p,
     /* X = T1 * T1 */
     sp_256_mont_sqr_4(x, t1, p256_mod, p256_mp_mod);
     /* X = X - 2*Y */
-    sp_256_mont_sub_dbl_4(x, x, y, p256_mod);
     /* Y = Y - X */
-    sp_256_mont_sub_4(y, y, x, p256_mod);
+    sp_256_mont_rsb_sub_dbl_4(x, x, y, p256_mod);
     /* Y = Y * T1 */
     sp_256_mont_mul_4(y, y, t1, p256_mod, p256_mp_mod);
     /* Y = Y - T2 */
@@ -8775,15 +8774,14 @@ static int sp_256_proj_point_dbl_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r, con
         break;
     case 14:
         /* X = X - 2*Y */
-        sp_256_mont_sub_dbl_4(ctx->x, ctx->x, ctx->y, p256_mod);
+        /* Y = Y - X */
+        sp_256_mont_rsb_sub_dbl_4(ctx->x, ctx->x, ctx->y, p256_mod);
         ctx->state = 15;
         break;
     case 15:
         ctx->state = 16;
         break;
     case 16:
-        /* Y = Y - X */
-        sp_256_mont_sub_4(ctx->y, ctx->y, ctx->x, p256_mod);
         ctx->state = 17;
         break;
     case 17:
@@ -8808,13 +8806,6 @@ static int sp_256_proj_point_dbl_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r, con
     return err;
 }
 #endif /* WOLFSSL_SP_NONBLOCK */
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern void sp_256_mont_dbl_sub_4(sp_digit* r, const sp_digit* a, const sp_digit* b, const sp_digit* m);
-#ifdef __cplusplus
-}
-#endif
 /* Double the Montgomery form projective point p a number of times.
  *
  * r  Result of repeated doubling of point.
@@ -8858,9 +8849,9 @@ static void sp_256_proj_point_dbl_n_4(sp_point_256* p, int i,
         sp_256_mont_mul_4(b, t1, x, p256_mod, p256_mp_mod);
         /* X = A^2 - 2B */
         sp_256_mont_sqr_4(x, a, p256_mod, p256_mp_mod);
-        sp_256_mont_sub_dbl_4(x, x, b, p256_mod);
+        sp_256_mont_rsb_sub_dbl_4(x, x, b, p256_mod);
         /* B = 2.(B - X) */
-        sp_256_mont_dbl_sub_4(b, b, x, p256_mod);
+        sp_256_mont_dbl_4(b, b, p256_mod);
         /* Z = Z*Y */
         sp_256_mont_mul_4(z, z, y, p256_mod, p256_mp_mod);
         /* t1 = Y^4 */
@@ -8886,9 +8877,9 @@ static void sp_256_proj_point_dbl_n_4(sp_point_256* p, int i,
     sp_256_mont_mul_4(b, t1, x, p256_mod, p256_mp_mod);
     /* X = A^2 - 2B */
     sp_256_mont_sqr_4(x, a, p256_mod, p256_mp_mod);
-    sp_256_mont_sub_dbl_4(x, x, b, p256_mod);
+    sp_256_mont_rsb_sub_dbl_4(x, x, b, p256_mod);
     /* B = 2.(B - X) */
-    sp_256_mont_dbl_sub_4(b, b, x, p256_mod);
+    sp_256_mont_dbl_4(b, b, p256_mod);
     /* Z = Z*Y */
     sp_256_mont_mul_4(z, z, y, p256_mod, p256_mp_mod);
     /* t1 = Y^4 */
@@ -8981,9 +8972,8 @@ static void sp_256_proj_point_add_4(sp_point_256* r,
         sp_256_mont_sqr_4(x, t4, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(x, x, t5, p256_mod);
         sp_256_mont_mul_4(t5, t5, t3, p256_mod, p256_mp_mod);
-        sp_256_mont_sub_dbl_4(x, x, y, p256_mod);
         /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_256_mont_sub_4(y, y, x, p256_mod);
+        sp_256_mont_rsb_sub_dbl_4(x, x, y, p256_mod);
         sp_256_mont_mul_4(y, y, t4, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(y, y, t5, p256_mod);
         {
@@ -9159,12 +9149,11 @@ static int sp_256_proj_point_add_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
         ctx->state = 20;
         break;
     case 20:
-        sp_256_mont_sub_dbl_4(ctx->x, ctx->x, ctx->y, p256_mod);
+        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
+        sp_256_mont_rsb_sub_dbl_4(ctx->x, ctx->x, ctx->y, p256_mod);
         ctx->state = 21;
         break;
     case 21:
-        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_256_mont_sub_4(ctx->y, ctx->y, ctx->x, p256_mod);
         ctx->state = 22;
         break;
     case 22:
@@ -9263,9 +9252,9 @@ static void sp_256_proj_point_dbl_n_store_4(sp_point_256* r,
         x = r[j].x;
         /* X = A^2 - 2B */
         sp_256_mont_sqr_4(x, a, p256_mod, p256_mp_mod);
-        sp_256_mont_sub_dbl_4(x, x, b, p256_mod);
+        sp_256_mont_rsb_sub_dbl_4(x, x, b, p256_mod);
         /* B = 2.(B - X) */
-        sp_256_mont_dbl_sub_4(b, b, x, p256_mod);
+        sp_256_mont_dbl_4(b, b, p256_mod);
         /* Z = Z*Y */
         sp_256_mont_mul_4(r[j].z, z, y, p256_mod, p256_mp_mod);
         z = r[j].z;
@@ -9764,7 +9753,7 @@ extern void sp_256_div2_avx2_4(sp_digit* r, const sp_digit* a, const sp_digit* m
 #ifdef __cplusplus
 }
 #endif
-#define sp_256_mont_sub_dbl_avx2_4 sp_256_mont_sub_dbl_4
+#define sp_256_mont_rsb_sub_dbl_avx2_4 sp_256_mont_rsb_sub_dbl_4
 /* Double the Montgomery form projective point p.
  *
  * r  Result of doubling point.
@@ -9815,9 +9804,8 @@ static void sp_256_proj_point_dbl_avx2_4(sp_point_256* r, const sp_point_256* p,
     /* X = T1 * T1 */
     sp_256_mont_sqr_avx2_4(x, t1, p256_mod, p256_mp_mod);
     /* X = X - 2*Y */
-    sp_256_mont_sub_dbl_avx2_4(x, x, y, p256_mod);
     /* Y = Y - X */
-    sp_256_mont_sub_avx2_4(y, y, x, p256_mod);
+    sp_256_mont_rsb_sub_dbl_avx2_4(x, x, y, p256_mod);
     /* Y = Y * T1 */
     sp_256_mont_mul_avx2_4(y, y, t1, p256_mod, p256_mp_mod);
     /* Y = Y - T2 */
@@ -9929,15 +9917,14 @@ static int sp_256_proj_point_dbl_avx2_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r
         break;
     case 14:
         /* X = X - 2*Y */
-        sp_256_mont_sub_dbl_avx2_4(ctx->x, ctx->x, ctx->y, p256_mod);
+        /* Y = Y - X */
+        sp_256_mont_rsb_sub_dbl_avx2_4(ctx->x, ctx->x, ctx->y, p256_mod);
         ctx->state = 15;
         break;
     case 15:
         ctx->state = 16;
         break;
     case 16:
-        /* Y = Y - X */
-        sp_256_mont_sub_avx2_4(ctx->y, ctx->y, ctx->x, p256_mod);
         ctx->state = 17;
         break;
     case 17:
@@ -9962,7 +9949,6 @@ static int sp_256_proj_point_dbl_avx2_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r
     return err;
 }
 #endif /* WOLFSSL_SP_NONBLOCK */
-#define sp_256_mont_dbl_sub_avx2_4 sp_256_mont_dbl_sub_4
 /* Double the Montgomery form projective point p a number of times.
  *
  * r  Result of repeated doubling of point.
@@ -10006,9 +9992,9 @@ static void sp_256_proj_point_dbl_n_avx2_4(sp_point_256* p, int i,
         sp_256_mont_mul_avx2_4(b, t1, x, p256_mod, p256_mp_mod);
         /* X = A^2 - 2B */
         sp_256_mont_sqr_avx2_4(x, a, p256_mod, p256_mp_mod);
-        sp_256_mont_sub_dbl_avx2_4(x, x, b, p256_mod);
+        sp_256_mont_rsb_sub_dbl_avx2_4(x, x, b, p256_mod);
         /* B = 2.(B - X) */
-        sp_256_mont_dbl_sub_avx2_4(b, b, x, p256_mod);
+        sp_256_mont_dbl_avx2_4(b, b, p256_mod);
         /* Z = Z*Y */
         sp_256_mont_mul_avx2_4(z, z, y, p256_mod, p256_mp_mod);
         /* t1 = Y^4 */
@@ -10034,9 +10020,9 @@ static void sp_256_proj_point_dbl_n_avx2_4(sp_point_256* p, int i,
     sp_256_mont_mul_avx2_4(b, t1, x, p256_mod, p256_mp_mod);
     /* X = A^2 - 2B */
     sp_256_mont_sqr_avx2_4(x, a, p256_mod, p256_mp_mod);
-    sp_256_mont_sub_dbl_avx2_4(x, x, b, p256_mod);
+    sp_256_mont_rsb_sub_dbl_avx2_4(x, x, b, p256_mod);
     /* B = 2.(B - X) */
-    sp_256_mont_dbl_sub_avx2_4(b, b, x, p256_mod);
+    sp_256_mont_dbl_avx2_4(b, b, p256_mod);
     /* Z = Z*Y */
     sp_256_mont_mul_avx2_4(z, z, y, p256_mod, p256_mp_mod);
     /* t1 = Y^4 */
@@ -10105,9 +10091,8 @@ static void sp_256_proj_point_add_avx2_4(sp_point_256* r,
         sp_256_mont_sqr_avx2_4(x, t4, p256_mod, p256_mp_mod);
         sp_256_mont_sub_avx2_4(x, x, t5, p256_mod);
         sp_256_mont_mul_avx2_4(t5, t5, t3, p256_mod, p256_mp_mod);
-        sp_256_mont_sub_dbl_avx2_4(x, x, y, p256_mod);
         /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_256_mont_sub_avx2_4(y, y, x, p256_mod);
+        sp_256_mont_rsb_sub_dbl_avx2_4(x, x, y, p256_mod);
         sp_256_mont_mul_avx2_4(y, y, t4, p256_mod, p256_mp_mod);
         sp_256_mont_sub_avx2_4(y, y, t5, p256_mod);
         {
@@ -10283,12 +10268,11 @@ static int sp_256_proj_point_add_avx2_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r
         ctx->state = 20;
         break;
     case 20:
-        sp_256_mont_sub_dbl_avx2_4(ctx->x, ctx->x, ctx->y, p256_mod);
+        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
+        sp_256_mont_rsb_sub_dbl_avx2_4(ctx->x, ctx->x, ctx->y, p256_mod);
         ctx->state = 21;
         break;
     case 21:
-        /* Y3 = R*(U1*H^2 - X3) - S1*H^3 */
-        sp_256_mont_sub_avx2_4(ctx->y, ctx->y, ctx->x, p256_mod);
         ctx->state = 22;
         break;
     case 22:
@@ -10387,9 +10371,9 @@ static void sp_256_proj_point_dbl_n_store_avx2_4(sp_point_256* r,
         x = r[j].x;
         /* X = A^2 - 2B */
         sp_256_mont_sqr_avx2_4(x, a, p256_mod, p256_mp_mod);
-        sp_256_mont_sub_dbl_avx2_4(x, x, b, p256_mod);
+        sp_256_mont_rsb_sub_dbl_avx2_4(x, x, b, p256_mod);
         /* B = 2.(B - X) */
-        sp_256_mont_dbl_sub_avx2_4(b, b, x, p256_mod);
+        sp_256_mont_dbl_avx2_4(b, b, p256_mod);
         /* Z = Z*Y */
         sp_256_mont_mul_avx2_4(r[j].z, z, y, p256_mod, p256_mp_mod);
         z = r[j].z;
@@ -10689,9 +10673,8 @@ static void sp_256_proj_point_add_qz1_4(sp_point_256* r,
         sp_256_mont_mul_4(t1, t1, t2, p256_mod, p256_mp_mod);
         sp_256_mont_sqr_4(t2, t4, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(t2, t2, t1, p256_mod);
-        sp_256_mont_sub_dbl_4(x, t2, t3, p256_mod);
+        sp_256_mont_rsb_sub_dbl_4(x, t2, t3, p256_mod);
         /* Y3 = R*(X1*H^2 - X3) - Y1*H^3 */
-        sp_256_mont_sub_4(t3, t3, x, p256_mod);
         sp_256_mont_mul_4(t3, t3, t4, p256_mod, p256_mp_mod);
         sp_256_mont_mul_4(t1, t1, p->y, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(y, t3, t1, p256_mod);
@@ -11178,9 +11161,8 @@ static void sp_256_proj_point_add_qz1_avx2_4(sp_point_256* r,
         sp_256_mont_mul_avx2_4(t1, t1, t2, p256_mod, p256_mp_mod);
         sp_256_mont_sqr_avx2_4(t2, t4, p256_mod, p256_mp_mod);
         sp_256_mont_sub_avx2_4(t2, t2, t1, p256_mod);
-        sp_256_mont_sub_dbl_avx2_4(x, t2, t3, p256_mod);
+        sp_256_mont_rsb_sub_dbl_avx2_4(x, t2, t3, p256_mod);
         /* Y3 = R*(X1*H^2 - X3) - Y1*H^3 */
-        sp_256_mont_sub_avx2_4(t3, t3, x, p256_mod);
         sp_256_mont_mul_avx2_4(t3, t3, t4, p256_mod, p256_mp_mod);
         sp_256_mont_mul_avx2_4(t1, t1, p->y, p256_mod, p256_mp_mod);
         sp_256_mont_sub_avx2_4(y, t3, t1, p256_mod);
