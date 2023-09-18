@@ -23108,7 +23108,7 @@ static void sp_256_mont_dbl_4(sp_digit* r, const sp_digit* a, const sp_digit* m)
         "stp	x11, x12, [%[r],16]\n\t"
         :
         : [r] "r" (r), [a] "r" (a)
-        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x13", "cc"
+        : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x13", "x9", "x10", "x11", "x12", "cc"
     );
 
     (void)m;
