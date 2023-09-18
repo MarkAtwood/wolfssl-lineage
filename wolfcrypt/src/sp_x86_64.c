@@ -1928,9 +1928,9 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
 #else
     sp_digit a[32 * 5];
 #endif
-    sp_digit* ah;
-    sp_digit* m;
-    sp_digit* r;
+    sp_digit* ah = NULL;
+    sp_digit* m = NULL;
+    sp_digit* r = NULL;
     sp_digit  e = 0;
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
@@ -2139,9 +2139,9 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
 #else
     sp_digit d[32 * 4];
 #endif
-    sp_digit* a;
-    sp_digit* m;
-    sp_digit* r;
+    sp_digit* a = NULL;
+    sp_digit* m = NULL;
+    sp_digit* r = NULL;
     int err = MP_OKAY;
 
     ASSERT_SAVED_VECTOR_REGISTERS();
@@ -2252,14 +2252,14 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
 #else
     sp_digit a[16 * 11];
 #endif
-    sp_digit* p;
-    sp_digit* q;
-    sp_digit* dp;
-    sp_digit* dq;
-    sp_digit* qi;
-    sp_digit* tmpa;
-    sp_digit* tmpb;
-    sp_digit* r;
+    sp_digit* p = NULL;
+    sp_digit* q = NULL;
+    sp_digit* dp = NULL;
+    sp_digit* dq = NULL;
+    sp_digit* qi = NULL;
+    sp_digit* tmpa = NULL;
+    sp_digit* tmpb = NULL;
+    sp_digit* r = NULL;
     sp_digit c;
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
@@ -4826,9 +4826,9 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
 #else
     sp_digit a[48 * 5];
 #endif
-    sp_digit* ah;
-    sp_digit* m;
-    sp_digit* r;
+    sp_digit* ah = NULL;
+    sp_digit* m = NULL;
+    sp_digit* r = NULL;
     sp_digit  e = 0;
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
@@ -5037,9 +5037,9 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
 #else
     sp_digit d[48 * 4];
 #endif
-    sp_digit* a;
-    sp_digit* m;
-    sp_digit* r;
+    sp_digit* a = NULL;
+    sp_digit* m = NULL;
+    sp_digit* r = NULL;
     int err = MP_OKAY;
 
     ASSERT_SAVED_VECTOR_REGISTERS();
@@ -5150,14 +5150,14 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
 #else
     sp_digit a[24 * 11];
 #endif
-    sp_digit* p;
-    sp_digit* q;
-    sp_digit* dp;
-    sp_digit* dq;
-    sp_digit* qi;
-    sp_digit* tmpa;
-    sp_digit* tmpb;
-    sp_digit* r;
+    sp_digit* p = NULL;
+    sp_digit* q = NULL;
+    sp_digit* dp = NULL;
+    sp_digit* dq = NULL;
+    sp_digit* qi = NULL;
+    sp_digit* tmpa = NULL;
+    sp_digit* tmpb = NULL;
+    sp_digit* r = NULL;
     sp_digit c;
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
@@ -6950,9 +6950,9 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
 #else
     sp_digit a[64 * 5];
 #endif
-    sp_digit* ah;
-    sp_digit* m;
-    sp_digit* r;
+    sp_digit* ah = NULL;
+    sp_digit* m = NULL;
+    sp_digit* r = NULL;
     sp_digit  e = 0;
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
@@ -7161,9 +7161,9 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
 #else
     sp_digit d[64 * 4];
 #endif
-    sp_digit* a;
-    sp_digit* m;
-    sp_digit* r;
+    sp_digit* a = NULL;
+    sp_digit* m = NULL;
+    sp_digit* r = NULL;
     int err = MP_OKAY;
 
     ASSERT_SAVED_VECTOR_REGISTERS();
@@ -7274,14 +7274,14 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
 #else
     sp_digit a[32 * 11];
 #endif
-    sp_digit* p;
-    sp_digit* q;
-    sp_digit* dp;
-    sp_digit* dq;
-    sp_digit* qi;
-    sp_digit* tmpa;
-    sp_digit* tmpb;
-    sp_digit* r;
+    sp_digit* p = NULL;
+    sp_digit* q = NULL;
+    sp_digit* dp = NULL;
+    sp_digit* dq = NULL;
+    sp_digit* qi = NULL;
+    sp_digit* tmpa = NULL;
+    sp_digit* tmpb = NULL;
+    sp_digit* r = NULL;
     sp_digit c;
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
