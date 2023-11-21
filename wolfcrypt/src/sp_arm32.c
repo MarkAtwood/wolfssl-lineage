@@ -71032,8 +71032,8 @@ static SP_NOINLINE void sp_256_mont_sqr_8(sp_digit* r_p, const sp_digit* a_p, co
  * m   Modulus (prime).
  * mp  Montgomery multiplier.
  */
-static void sp_256_mont_sqr_n_8(sp_digit* r, const sp_digit* a, int n,
-        const sp_digit* m, sp_digit mp)
+SP_NOINLINE static void sp_256_mont_sqr_n_8(sp_digit* r,
+    const sp_digit* a, int n, const sp_digit* m, sp_digit mp)
 {
     sp_256_mont_sqr_8(r, a, m, mp);
     for (; n > 1; n--) {
@@ -89861,8 +89861,8 @@ SP_NOINLINE static void sp_384_mont_sqr_12(sp_digit* r, const sp_digit* a,
  * m   Modulus (prime).
  * mp  Montgomery multiplier.
  */
-static void sp_384_mont_sqr_n_12(sp_digit* r, const sp_digit* a, int n,
-        const sp_digit* m, sp_digit mp)
+SP_NOINLINE static void sp_384_mont_sqr_n_12(sp_digit* r,
+    const sp_digit* a, int n, const sp_digit* m, sp_digit mp)
 {
     sp_384_mont_sqr_12(r, a, m, mp);
     for (; n > 1; n--) {
@@ -116850,8 +116850,8 @@ SP_NOINLINE static void sp_521_mont_sqr_17(sp_digit* r, const sp_digit* a,
  * m   Modulus (prime).
  * mp  Montgomery multiplier.
  */
-static void sp_521_mont_sqr_n_17(sp_digit* r, const sp_digit* a, int n,
-        const sp_digit* m, sp_digit mp)
+SP_NOINLINE static void sp_521_mont_sqr_n_17(sp_digit* r,
+    const sp_digit* a, int n, const sp_digit* m, sp_digit mp)
 {
     sp_521_mont_sqr_17(r, a, m, mp);
     for (; n > 1; n--) {
