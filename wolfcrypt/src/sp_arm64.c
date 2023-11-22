@@ -99,7 +99,7 @@ static void sp_2048_from_bin(sp_digit* r, int size, const byte* a, int n)
         "subs	x6, %[n], 8\n\t"
         "mov	x7, xzr\n\t"
         "blt	2f\n\t"
-        /* Put in mulitples of 8 bytes. */
+        /* Put in multiples of 8 bytes. */
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
@@ -6992,7 +6992,7 @@ static void sp_3072_from_bin(sp_digit* r, int size, const byte* a, int n)
         "subs	x6, %[n], 8\n\t"
         "mov	x7, xzr\n\t"
         "blt	2f\n\t"
-        /* Put in mulitples of 8 bytes. */
+        /* Put in multiples of 8 bytes. */
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
@@ -16595,7 +16595,7 @@ static void sp_4096_from_bin(sp_digit* r, int size, const byte* a, int n)
         "subs	x6, %[n], 8\n\t"
         "mov	x7, xzr\n\t"
         "blt	2f\n\t"
-        /* Put in mulitples of 8 bytes. */
+        /* Put in multiples of 8 bytes. */
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
@@ -39685,7 +39685,7 @@ static void sp_256_from_bin(sp_digit* r, int size, const byte* a, int n)
         "subs	x6, %[n], 8\n\t"
         "mov	x7, xzr\n\t"
         "blt	2f\n\t"
-        /* Put in mulitples of 8 bytes. */
+        /* Put in multiples of 8 bytes. */
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
@@ -42127,7 +42127,7 @@ SP_NOINLINE static void sp_256_mont_add_4(sp_digit* r, const sp_digit* a,
     (void)m;
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * point  EC point.
  * heap   Heap to use if dynamically allocating.
@@ -42183,7 +42183,7 @@ static int sp_256_ecc_is_point_4(const sp_point_256* point,
     return err;
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * pX  X ordinate of EC point.
  * pY  Y ordinate of EC point.
@@ -66452,7 +66452,7 @@ static void sp_384_from_bin(sp_digit* r, int size, const byte* a, int n)
         "subs	x6, %[n], 8\n\t"
         "mov	x7, xzr\n\t"
         "blt	2f\n\t"
-        /* Put in mulitples of 8 bytes. */
+        /* Put in multiples of 8 bytes. */
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
@@ -68207,7 +68207,7 @@ int sp_ecc_verify_384_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
 #endif /* HAVE_ECC_VERIFY */
 
 #ifdef HAVE_ECC_CHECK_KEY
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * point  EC point.
  * heap   Heap to use if dynamically allocating.
@@ -68263,7 +68263,7 @@ static int sp_384_ecc_is_point_6(const sp_point_384* point,
     return err;
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * pX  X ordinate of EC point.
  * pY  Y ordinate of EC point.
@@ -111616,7 +111616,7 @@ static void sp_521_from_bin(sp_digit* r, int size, const byte* a, int n)
         "subs	x6, %[n], 8\n\t"
         "mov	x7, xzr\n\t"
         "blt	2f\n\t"
-        /* Put in mulitples of 8 bytes. */
+        /* Put in multiples of 8 bytes. */
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
@@ -113151,7 +113151,7 @@ int sp_ecc_verify_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
 #endif /* HAVE_ECC_VERIFY */
 
 #ifdef HAVE_ECC_CHECK_KEY
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * point  EC point.
  * heap   Heap to use if dynamically allocating.
@@ -113207,7 +113207,7 @@ static int sp_521_ecc_is_point_9(const sp_point_521* point,
     return err;
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * pX  X ordinate of EC point.
  * pY  Y ordinate of EC point.
@@ -125240,7 +125240,7 @@ static void sp_1024_from_bin(sp_digit* r, int size, const byte* a, int n)
         "subs	x6, %[n], 8\n\t"
         "mov	x7, xzr\n\t"
         "blt	2f\n\t"
-        /* Put in mulitples of 8 bytes. */
+        /* Put in multiples of 8 bytes. */
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
@@ -125334,7 +125334,7 @@ static void sp_1024_from_bin(sp_digit* r, int size, const byte* a, int n)
     );
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * point  EC point.
  * heap   Heap to use if dynamically allocating.
@@ -125394,7 +125394,7 @@ static int sp_1024_ecc_is_point_16(const sp_point_1024* point,
     return err;
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * pX  X ordinate of EC point.
  * pY  Y ordinate of EC point.
