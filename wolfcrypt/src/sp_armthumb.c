@@ -107674,7 +107674,7 @@ int sp_ecc_verify_256_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
 #endif /* HAVE_ECC_VERIFY */
 
 #ifdef HAVE_ECC_CHECK_KEY
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * point  EC point.
  * heap   Heap to use if dynamically allocating.
@@ -107730,7 +107730,7 @@ static int sp_256_ecc_is_point_8(const sp_point_256* point,
     return err;
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * pX  X ordinate of EC point.
  * pY  Y ordinate of EC point.
@@ -118870,7 +118870,7 @@ int sp_ecc_verify_384_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
 #endif /* HAVE_ECC_VERIFY */
 
 #ifdef HAVE_ECC_CHECK_KEY
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * point  EC point.
  * heap   Heap to use if dynamically allocating.
@@ -118926,7 +118926,7 @@ static int sp_384_ecc_is_point_12(const sp_point_384* point,
     return err;
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * pX  X ordinate of EC point.
  * pY  Y ordinate of EC point.
@@ -135812,7 +135812,7 @@ int sp_ecc_verify_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
 #endif /* HAVE_ECC_VERIFY */
 
 #ifdef HAVE_ECC_CHECK_KEY
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * point  EC point.
  * heap   Heap to use if dynamically allocating.
@@ -135868,7 +135868,7 @@ static int sp_521_ecc_is_point_17(const sp_point_521* point,
     return err;
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * pX  X ordinate of EC point.
  * pY  Y ordinate of EC point.
@@ -218581,7 +218581,7 @@ static void sp_1024_from_bin(sp_digit* r, int size, const byte* a, int n)
     }
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * point  EC point.
  * heap   Heap to use if dynamically allocating.
@@ -218641,7 +218641,7 @@ static int sp_1024_ecc_is_point_32(const sp_point_1024* point,
     return err;
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * pX  X ordinate of EC point.
  * pY  Y ordinate of EC point.
