@@ -55,6 +55,7 @@
 #ifdef __IAR_SYSTEMS_ICC__
 #define __asm__        asm
 #define __volatile__   volatile
+#define WOLFSSL_NO_VAR_ASSIGN_REG
 #endif /* __IAR_SYSTEMS_ICC__ */
 #ifdef __KEIL__
 #define __asm__        __asm
@@ -98,7 +99,7 @@ static void sp_2048_from_bin(sp_digit* r, int size, const byte* a, int n)
         "subs	x6, %[n], 8\n\t"
         "mov	x7, xzr\n\t"
         "blt	2f\n\t"
-        /* Put in mulitples of 8 bytes. */
+        /* Put in multiples of 8 bytes. */
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
@@ -6991,7 +6992,7 @@ static void sp_3072_from_bin(sp_digit* r, int size, const byte* a, int n)
         "subs	x6, %[n], 8\n\t"
         "mov	x7, xzr\n\t"
         "blt	2f\n\t"
-        /* Put in mulitples of 8 bytes. */
+        /* Put in multiples of 8 bytes. */
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
@@ -16594,7 +16595,7 @@ static void sp_4096_from_bin(sp_digit* r, int size, const byte* a, int n)
         "subs	x6, %[n], 8\n\t"
         "mov	x7, xzr\n\t"
         "blt	2f\n\t"
-        /* Put in mulitples of 8 bytes. */
+        /* Put in multiples of 8 bytes. */
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
@@ -21871,7 +21872,8 @@ static void sp_256_mul_4(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-static void sp_256_mul_4(sp_digit* r, const sp_digit* a, const sp_digit* b)
+SP_NOINLINE static void sp_256_mul_4(sp_digit* r, const sp_digit* a,
+    const sp_digit* b)
 {
     __asm__ __volatile__ (
         "ldp	x13, x14, [%[a], 0]\n\t"
@@ -21977,7 +21979,7 @@ static void sp_256_mul_4(sp_digit* r, const sp_digit* a, const sp_digit* b)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_256_sqr_4(sp_digit* r, const sp_digit* a)
+SP_NOINLINE static void sp_256_sqr_4(sp_digit* r, const sp_digit* a)
 {
     __asm__ __volatile__ (
         "ldp	x12, x13, [%[a], 0]\n\t"
@@ -22420,8 +22422,8 @@ static void sp_256_cond_copy_4(sp_digit* r, const sp_digit* a, sp_digit m)
  * m   Modulus (prime).
  * mp  Montgomery multiplier.
  */
-static void sp_256_mont_mul_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
-        const sp_digit* m, sp_digit mp)
+SP_NOINLINE static void sp_256_mont_mul_4(sp_digit* r, const sp_digit* a,
+    const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
     (void)m;
     (void)mp;
@@ -22595,8 +22597,8 @@ static void sp_256_mont_mul_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
  * m   Modulus (prime).
  * mp  Montgomery multiplier.
  */
-static void sp_256_mont_sqr_4(sp_digit* r, const sp_digit* a, const sp_digit* m,
-        sp_digit mp)
+SP_NOINLINE static void sp_256_mont_sqr_4(sp_digit* r, const sp_digit* a,
+    const sp_digit* m, sp_digit mp)
 {
     (void)m;
     (void)mp;
@@ -22740,8 +22742,8 @@ static void sp_256_mont_sqr_4(sp_digit* r, const sp_digit* a, const sp_digit* m,
  * m   Modulus (prime).
  * mp  Montgomery multiplier.
  */
-static void sp_256_mont_sqr_n_4(sp_digit* r, const sp_digit* a, int n,
-        const sp_digit* m, sp_digit mp)
+SP_NOINLINE static void sp_256_mont_sqr_n_4(sp_digit* r,
+    const sp_digit* a, int n, const sp_digit* m, sp_digit mp)
 {
     sp_256_mont_sqr_4(r, a, m, mp);
     for (; n > 1; n--) {
@@ -23080,7 +23082,8 @@ static void sp_256_map_4(sp_point_256* r, const sp_point_256* p,
  * a   Number to double in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_256_mont_dbl_4(sp_digit* r, const sp_digit* a, const sp_digit* m)
+SP_NOINLINE static void sp_256_mont_dbl_4(sp_digit* r, const sp_digit* a,
+    const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp	x3, x4, [%[a]]\n\t"
@@ -23120,7 +23123,8 @@ static void sp_256_mont_dbl_4(sp_digit* r, const sp_digit* a, const sp_digit* m)
  * a   Number to triple in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_256_mont_tpl_4(sp_digit* r, const sp_digit* a, const sp_digit* m)
+SP_NOINLINE static void sp_256_mont_tpl_4(sp_digit* r, const sp_digit* a,
+    const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp	x9, x10, [%[a]]\n\t"
@@ -23175,8 +23179,8 @@ static void sp_256_mont_tpl_4(sp_digit* r, const sp_digit* a, const sp_digit* m)
  * b   Number to subtract with in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_256_mont_sub_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
-        const sp_digit* m)
+SP_NOINLINE static void sp_256_mont_sub_4(sp_digit* r, const sp_digit* a,
+    const sp_digit* b, const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp	x4, x5, [%[a], 0]\n\t"
@@ -23217,7 +23221,8 @@ static void sp_256_mont_sub_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
  * a  Number to divide.
  * m  Modulus (prime).
  */
-static void sp_256_mont_div2_4(sp_digit* r, const sp_digit* a, const sp_digit* m)
+SP_NOINLINE static void sp_256_mont_div2_4(sp_digit* r, const sp_digit* a,
+    const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp   x3, x4, [%[a], 0]\n\t"
@@ -23249,8 +23254,8 @@ static void sp_256_mont_div2_4(sp_digit* r, const sp_digit* a, const sp_digit* m
  * b   Number to subtract with in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_256_mont_rsb_sub_dbl_4(sp_digit* r, const sp_digit* a,
-        sp_digit* b, const sp_digit* m)
+SP_NOINLINE static void sp_256_mont_rsb_sub_dbl_4(sp_digit* r,
+    const sp_digit* a, sp_digit* b, const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp	x8, x9, [%[b]]\n\t"
@@ -23326,8 +23331,8 @@ static void sp_256_mont_rsb_sub_dbl_4(sp_digit* r, const sp_digit* a,
  * b   Number to subtract with in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_256_mont_add_sub_4(sp_digit* ra, sp_digit* rs, const sp_digit* a,
-        const sp_digit* b, const sp_digit* m)
+SP_NOINLINE static void sp_256_mont_add_sub_4(sp_digit* ra,
+    sp_digit* rs, const sp_digit* a, const sp_digit* b, const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp	x4, x5, [%[a], 0]\n\t"
@@ -23806,7 +23811,8 @@ static void sp_256_proj_point_add_4(sp_point_256* r,
         : [r] "r" (r), [p] "r" (p), [q] "r" (q), [x] "r" (x),
           [y] "r" (y), [z] "r" (z)
         : "memory", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17",
-          "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28"
+          "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28",
+          "cc"
     );
 }
     }
@@ -24038,7 +24044,8 @@ static int sp_256_proj_point_add_4_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
         : [r] "r" (r), [p] "r" (p), [q] "r" (q), [x] "r" (ctx->x),
           [y] "r" (ctx->y), [z] "r" (ctx->z)
         : "memory", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17",
-          "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28"
+          "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28",
+          "cc"
     );
 }
         ctx->state = 25;
@@ -24281,8 +24288,8 @@ static void sp_256_ecc_recode_6_4(const sp_digit* k, ecc_recode_256* v)
  * table  Table - start of the entries to access
  * idx    Index of entry to retrieve.
  */
-static void sp_256_get_point_33_4(sp_point_256* r, const sp_point_256* table,
-    int idx)
+SP_NOINLINE static void sp_256_get_point_33_4(sp_point_256* r,
+    const sp_point_256* table, int idx)
 {
     __asm__ __volatile__ (
         "mov	w30, #1\n\t"
@@ -24339,7 +24346,7 @@ static void sp_256_get_point_33_4(sp_point_256* r, const sp_point_256* table,
         "stp	x13, x14, [%[r], #144]\n\t"
        : [table] "+r" (table)
        : [r] "r" (r), [idx] "r" (idx)
-       : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "w30"
+       : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "w30", "cc"
     );
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
@@ -24608,7 +24615,8 @@ static void sp_256_proj_point_add_qz1_4(sp_point_256* r,
         : [r] "r" (r), [p] "r" (p), [q] "r" (q), [x] "r" (x),
           [y] "r" (y), [z] "r" (z)
         : "memory", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17",
-          "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28"
+          "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28",
+          "cc"
     );
 }
     }
@@ -24739,7 +24747,7 @@ static int sp_256_gen_stripe_table_4(const sp_point_256* a,
  * table  Table - start of the entries to access
  * idx    Index of entry to retrieve.
  */
-static void sp_256_get_entry_64_4(sp_point_256* r,
+SP_NOINLINE static void sp_256_get_entry_64_4(sp_point_256* r,
     const sp_table_entry_256* table, int idx)
 {
     __asm__ __volatile__ (
@@ -24783,7 +24791,7 @@ static void sp_256_get_entry_64_4(sp_point_256* r,
         "stp	x9, x10, [%[r], #80]\n\t"
        : [table] "+r" (table)
        : [r] "r" (r), [idx] "r" (idx)
-       : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "w30"
+       : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "w30", "cc"
     );
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
@@ -25168,7 +25176,7 @@ static int sp_256_gen_stripe_table_4(const sp_point_256* a,
  * table  Table - start of the entries to access
  * idx    Index of entry to retrieve.
  */
-static void sp_256_get_entry_256_4(sp_point_256* r,
+SP_NOINLINE static void sp_256_get_entry_256_4(sp_point_256* r,
     const sp_table_entry_256* table, int idx)
 {
     __asm__ __volatile__ (
@@ -25212,7 +25220,7 @@ static void sp_256_get_entry_256_4(sp_point_256* r,
         "stp	x9, x10, [%[r], #80]\n\t"
        : [table] "+r" (table)
        : [r] "r" (r), [idx] "r" (idx)
-       : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "w30"
+       : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "w30", "cc"
     );
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
@@ -27367,7 +27375,7 @@ static void sp_256_ecc_recode_7_4(const sp_digit* k, ecc_recode_256* v)
  * table  Table - start of the entries to access
  * idx    Index of entry to retrieve.
  */
-static void sp_256_get_entry_65_4(sp_point_256* r,
+SP_NOINLINE static void sp_256_get_entry_65_4(sp_point_256* r,
     const sp_table_entry_256* table, int idx)
 {
     __asm__ __volatile__ (
@@ -27411,7 +27419,7 @@ static void sp_256_get_entry_65_4(sp_point_256* r,
         "stp	x9, x10, [%[r], #80]\n\t"
        : [table] "+r" (table)
        : [r] "r" (r), [idx] "r" (idx)
-       : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "w30"
+       : "memory", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x19", "w30", "cc"
     );
 }
 #endif /* !WC_NO_CACHE_RESISTANT */
@@ -39677,7 +39685,7 @@ static void sp_256_from_bin(sp_digit* r, int size, const byte* a, int n)
         "subs	x6, %[n], 8\n\t"
         "mov	x7, xzr\n\t"
         "blt	2f\n\t"
-        /* Put in mulitples of 8 bytes. */
+        /* Put in multiples of 8 bytes. */
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
@@ -40320,7 +40328,8 @@ static WC_INLINE int sp_256_mod_4(sp_digit* r, const sp_digit* a, const sp_digit
  * a  First operand of the multiplication.
  * b  Second operand of the multiplication.
  */
-static void sp_256_mont_mul_order_4(sp_digit* r, const sp_digit* a, const sp_digit* b)
+SP_NOINLINE static void sp_256_mont_mul_order_4(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
     __asm__ __volatile__ (
         "ldp	x13, x14, [%[a], 0]\n\t"
@@ -40545,7 +40554,8 @@ static const uint64_t p256_order_minus_2[4] = {
  * r  Result of the squaring.
  * a  Number to square.
  */
-static void sp_256_mont_sqr_order_4(sp_digit* r, const sp_digit* a)
+SP_NOINLINE static void sp_256_mont_sqr_order_4(sp_digit* r,
+    const sp_digit* a)
 {
     __asm__ __volatile__ (
         "ldp	x12, x13, [%[a], 0]\n\t"
@@ -40731,7 +40741,8 @@ static void sp_256_mont_sqr_order_4(sp_digit* r, const sp_digit* a)
  * r  Result of the squaring.
  * a  Number to square.
  */
-static void sp_256_mont_sqr_n_order_4(sp_digit* r, const sp_digit* a, int n)
+SP_NOINLINE static void sp_256_mont_sqr_n_order_4(sp_digit* r,
+    const sp_digit* a, int n)
 {
 
     __asm__ __volatile__ (
@@ -42079,8 +42090,8 @@ int sp_ecc_verify_256_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
  * b   Second number to add in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_256_mont_add_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
-        const sp_digit* m)
+SP_NOINLINE static void sp_256_mont_add_4(sp_digit* r, const sp_digit* a,
+    const sp_digit* b, const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp	x4, x5, [%[a], 0]\n\t"
@@ -42116,7 +42127,7 @@ static void sp_256_mont_add_4(sp_digit* r, const sp_digit* a, const sp_digit* b,
     (void)m;
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * point  EC point.
  * heap   Heap to use if dynamically allocating.
@@ -42172,7 +42183,7 @@ static int sp_256_ecc_is_point_4(const sp_point_256* point,
     return err;
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * pX  X ordinate of EC point.
  * pY  Y ordinate of EC point.
@@ -43960,8 +43971,8 @@ SP_NOINLINE static void sp_384_mont_sqr_6(sp_digit* r, const sp_digit* a,
  * m   Modulus (prime).
  * mp  Montgomery multiplier.
  */
-static void sp_384_mont_sqr_n_6(sp_digit* r, const sp_digit* a, int n,
-        const sp_digit* m, sp_digit mp)
+SP_NOINLINE static void sp_384_mont_sqr_n_6(sp_digit* r,
+    const sp_digit* a, int n, const sp_digit* m, sp_digit mp)
 {
     sp_384_mont_sqr_6(r, a, m, mp);
     for (; n > 1; n--) {
@@ -44249,8 +44260,8 @@ static void sp_384_map_6(sp_point_384* r, const sp_point_384* p,
  * b   Second number to add in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_384_mont_add_6(sp_digit* r, const sp_digit* a, const sp_digit* b,
-        const sp_digit* m)
+SP_NOINLINE static void sp_384_mont_add_6(sp_digit* r, const sp_digit* a,
+    const sp_digit* b, const sp_digit* m)
 {
     sp_digit o;
 
@@ -44264,7 +44275,8 @@ static void sp_384_mont_add_6(sp_digit* r, const sp_digit* a, const sp_digit* b,
  * a   Number to double in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_384_mont_dbl_6(sp_digit* r, const sp_digit* a, const sp_digit* m)
+SP_NOINLINE static void sp_384_mont_dbl_6(sp_digit* r, const sp_digit* a,
+    const sp_digit* m)
 {
     sp_digit o;
 
@@ -44278,7 +44290,8 @@ static void sp_384_mont_dbl_6(sp_digit* r, const sp_digit* a, const sp_digit* m)
  * a   Number to triple in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_384_mont_tpl_6(sp_digit* r, const sp_digit* a, const sp_digit* m)
+SP_NOINLINE static void sp_384_mont_tpl_6(sp_digit* r, const sp_digit* a,
+    const sp_digit* m)
 {
     sp_digit o;
 
@@ -44376,8 +44389,8 @@ static sp_digit sp_384_cond_add_6(sp_digit* r, const sp_digit* a, const sp_digit
  * b   Number to subtract with in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_384_mont_sub_6(sp_digit* r, const sp_digit* a, const sp_digit* b,
-        const sp_digit* m)
+SP_NOINLINE static void sp_384_mont_sub_6(sp_digit* r, const sp_digit* a,
+    const sp_digit* b, const sp_digit* m)
 {
     sp_digit o;
 
@@ -44412,7 +44425,8 @@ static void sp_384_rshift1_6(sp_digit* r, const sp_digit* a)
  * a  Number to divide.
  * m  Modulus (prime).
  */
-static void sp_384_mont_div2_6(sp_digit* r, const sp_digit* a, const sp_digit* m)
+SP_NOINLINE static void sp_384_mont_div2_6(sp_digit* r, const sp_digit* a,
+    const sp_digit* m)
 {
     sp_digit o;
 
@@ -45259,8 +45273,8 @@ static void sp_384_ecc_recode_6_6(const sp_digit* k, ecc_recode_384* v)
  * table  Table - start of the entries to access
  * idx    Index of entry to retrieve.
  */
-static void sp_384_get_point_33_6(sp_point_384* r, const sp_point_384* table,
-    int idx)
+SP_NOINLINE static void sp_384_get_point_33_6(sp_point_384* r,
+    const sp_point_384* table, int idx)
 {
     int i;
     sp_digit mask;
@@ -66438,7 +66452,7 @@ static void sp_384_from_bin(sp_digit* r, int size, const byte* a, int n)
         "subs	x6, %[n], 8\n\t"
         "mov	x7, xzr\n\t"
         "blt	2f\n\t"
-        /* Put in mulitples of 8 bytes. */
+        /* Put in multiples of 8 bytes. */
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
@@ -68193,7 +68207,7 @@ int sp_ecc_verify_384_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
 #endif /* HAVE_ECC_VERIFY */
 
 #ifdef HAVE_ECC_CHECK_KEY
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * point  EC point.
  * heap   Heap to use if dynamically allocating.
@@ -68249,7 +68263,7 @@ static int sp_384_ecc_is_point_6(const sp_point_384* point,
     return err;
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * pX  X ordinate of EC point.
  * pY  Y ordinate of EC point.
@@ -72147,8 +72161,8 @@ SP_NOINLINE static void sp_521_mont_sqr_9(sp_digit* r, const sp_digit* a, const 
  * m   Modulus (prime).
  * mp  Montgomery multiplier.
  */
-static void sp_521_mont_sqr_n_9(sp_digit* r, const sp_digit* a, int n,
-        const sp_digit* m, sp_digit mp)
+SP_NOINLINE static void sp_521_mont_sqr_n_9(sp_digit* r,
+    const sp_digit* a, int n, const sp_digit* m, sp_digit mp)
 {
     sp_521_mont_sqr_9(r, a, m, mp);
     for (; n > 1; n--) {
@@ -72447,8 +72461,8 @@ static void sp_521_map_9(sp_point_521* r, const sp_point_521* p,
  * b   Second number to add in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_521_mont_add_9(sp_digit* r, const sp_digit* a, const sp_digit* b,
-        const sp_digit* m)
+SP_NOINLINE static void sp_521_mont_add_9(sp_digit* r, const sp_digit* a,
+    const sp_digit* b, const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp	x4, x5, [%[a], 0]\n\t"
@@ -72500,7 +72514,8 @@ static void sp_521_mont_add_9(sp_digit* r, const sp_digit* a, const sp_digit* b,
  * a   Number to double in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_521_mont_dbl_9(sp_digit* r, const sp_digit* a, const sp_digit* m)
+SP_NOINLINE static void sp_521_mont_dbl_9(sp_digit* r, const sp_digit* a,
+    const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp	x4, x5, [%[a], 0]\n\t"
@@ -72547,7 +72562,8 @@ static void sp_521_mont_dbl_9(sp_digit* r, const sp_digit* a, const sp_digit* m)
  * a   Number to triple in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_521_mont_tpl_9(sp_digit* r, const sp_digit* a, const sp_digit* m)
+SP_NOINLINE static void sp_521_mont_tpl_9(sp_digit* r, const sp_digit* a,
+    const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp	x4, x5, [%[a], 0]\n\t"
@@ -72604,8 +72620,8 @@ static void sp_521_mont_tpl_9(sp_digit* r, const sp_digit* a, const sp_digit* m)
  * b   Number to subtract with in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_521_mont_sub_9(sp_digit* r, const sp_digit* a, const sp_digit* b,
-        const sp_digit* m)
+SP_NOINLINE static void sp_521_mont_sub_9(sp_digit* r, const sp_digit* a,
+    const sp_digit* b, const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp	x4, x5, [%[a], 0]\n\t"
@@ -72786,7 +72802,8 @@ static void sp_521_rshift1_9(sp_digit* r, const sp_digit* a)
  * a  Number to divide.
  * m  Modulus (prime).
  */
-static void sp_521_mont_div2_9(sp_digit* r, const sp_digit* a, const sp_digit* m)
+SP_NOINLINE static void sp_521_mont_div2_9(sp_digit* r, const sp_digit* a,
+    const sp_digit* m)
 {
     sp_digit o;
 
@@ -73635,8 +73652,8 @@ static void sp_521_ecc_recode_6_9(const sp_digit* k, ecc_recode_521* v)
  * table  Table - start of the entries to access
  * idx    Index of entry to retrieve.
  */
-static void sp_521_get_point_33_9(sp_point_521* r, const sp_point_521* table,
-    int idx)
+SP_NOINLINE static void sp_521_get_point_33_9(sp_point_521* r,
+    const sp_point_521* table, int idx)
 {
     int i;
     sp_digit mask;
@@ -111599,7 +111616,7 @@ static void sp_521_from_bin(sp_digit* r, int size, const byte* a, int n)
         "subs	x6, %[n], 8\n\t"
         "mov	x7, xzr\n\t"
         "blt	2f\n\t"
-        /* Put in mulitples of 8 bytes. */
+        /* Put in multiples of 8 bytes. */
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
@@ -113134,7 +113151,7 @@ int sp_ecc_verify_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
 #endif /* HAVE_ECC_VERIFY */
 
 #ifdef HAVE_ECC_CHECK_KEY
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * point  EC point.
  * heap   Heap to use if dynamically allocating.
@@ -113190,7 +113207,7 @@ static int sp_521_ecc_is_point_9(const sp_point_521* point,
     return err;
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * pX  X ordinate of EC point.
  * pY  Y ordinate of EC point.
@@ -116257,8 +116274,8 @@ static void sp_1024_map_16(sp_point_1024* r, const sp_point_1024* p,
  * b   Second number to add in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_1024_mont_add_16(sp_digit* r, const sp_digit* a, const sp_digit* b,
-        const sp_digit* m)
+SP_NOINLINE static void sp_1024_mont_add_16(sp_digit* r, const sp_digit* a,
+    const sp_digit* b, const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp       x4, x5, [%[a], 0]\n\t"
@@ -116358,7 +116375,8 @@ static void sp_1024_mont_add_16(sp_digit* r, const sp_digit* a, const sp_digit* 
  * a   Number to double in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_1024_mont_dbl_16(sp_digit* r, const sp_digit* a, const sp_digit* m)
+SP_NOINLINE static void sp_1024_mont_dbl_16(sp_digit* r, const sp_digit* a,
+    const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp       x4, x5, [%[a], 0]\n\t"
@@ -116450,7 +116468,8 @@ static void sp_1024_mont_dbl_16(sp_digit* r, const sp_digit* a, const sp_digit* 
  * a   Number to triple in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_1024_mont_tpl_16(sp_digit* r, const sp_digit* a, const sp_digit* m)
+SP_NOINLINE static void sp_1024_mont_tpl_16(sp_digit* r, const sp_digit* a,
+    const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp       x4, x5, [%[a], 0]\n\t"
@@ -116612,8 +116631,8 @@ static void sp_1024_mont_tpl_16(sp_digit* r, const sp_digit* a, const sp_digit* 
  * b   Number to subtract with in Montgomery form.
  * m   Modulus (prime).
  */
-static void sp_1024_mont_sub_16(sp_digit* r, const sp_digit* a, const sp_digit* b,
-        const sp_digit* m)
+SP_NOINLINE static void sp_1024_mont_sub_16(sp_digit* r, const sp_digit* a,
+    const sp_digit* b, const sp_digit* m)
 {
     __asm__ __volatile__ (
         "ldp       x4, x5, [%[a], 0]\n\t"
@@ -116881,7 +116900,8 @@ static void sp_1024_rshift1_16(sp_digit* r, const sp_digit* a)
  * a  Number to divide.
  * m  Modulus (prime).
  */
-static void sp_1024_mont_div2_16(sp_digit* r, const sp_digit* a, const sp_digit* m)
+SP_NOINLINE static void sp_1024_mont_div2_16(sp_digit* r, const sp_digit* a,
+    const sp_digit* m)
 {
     sp_digit o;
 
@@ -125220,7 +125240,7 @@ static void sp_1024_from_bin(sp_digit* r, int size, const byte* a, int n)
         "subs	x6, %[n], 8\n\t"
         "mov	x7, xzr\n\t"
         "blt	2f\n\t"
-        /* Put in mulitples of 8 bytes. */
+        /* Put in multiples of 8 bytes. */
         "1:\n\t"
         "ldr	x8, [x4], -8\n\t"
         "subs	x6, x6, 8\n\t"
@@ -125314,7 +125334,7 @@ static void sp_1024_from_bin(sp_digit* r, int size, const byte* a, int n)
     );
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * point  EC point.
  * heap   Heap to use if dynamically allocating.
@@ -125374,7 +125394,7 @@ static int sp_1024_ecc_is_point_16(const sp_point_1024* point,
     return err;
 }
 
-/* Check that the x and y oridinates are a valid point on the curve.
+/* Check that the x and y ordinates are a valid point on the curve.
  *
  * pX  X ordinate of EC point.
  * pY  Y ordinate of EC point.
