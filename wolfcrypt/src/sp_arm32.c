@@ -2231,7 +2231,7 @@ static void sp_2048_mul_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_
         "stm	%[r]!, {r3, r4, r5, r6}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r11", "r12"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r11", "r12", "cc"
     );
 }
 
@@ -2584,7 +2584,7 @@ static void sp_2048_mul_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_
         "add	sp, sp, #36\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
     );
 }
 
@@ -2715,7 +2715,7 @@ static void sp_2048_mul_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_
         "add	sp, sp, #44\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r10", "r11", "r12", "r7", "r8", "r9", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r10", "r11", "r12", "r7", "r8", "r9", "lr", "cc"
     );
 }
 
@@ -2751,7 +2751,7 @@ static sp_digit sp_2048_add_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "adc	%[r], %[r], #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -2798,7 +2798,7 @@ static sp_digit sp_2048_sub_in_place_16(sp_digit* a_p, const sp_digit* b_p)
         "sbc	%[a], r9, r9\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -2848,7 +2848,7 @@ static sp_digit sp_2048_add_16(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "adc	%[r], %[r], #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -2988,7 +2988,7 @@ static sp_digit sp_2048_sub_in_place_32(sp_digit* a_p, const sp_digit* b_p)
         "sbc	%[a], r9, r9\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -3066,7 +3066,7 @@ static sp_digit sp_2048_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "adc	%[r], %[r], #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -3266,7 +3266,7 @@ static sp_digit sp_2048_sub_in_place_64(sp_digit* a_p, const sp_digit* b_p)
         "sbc	%[a], r9, r9\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -3400,7 +3400,7 @@ static sp_digit sp_2048_add_64(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "adc	%[r], %[r], #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -4680,7 +4680,7 @@ static void sp_2048_sqr_8(sp_digit* r_p, const sp_digit* a_p)
         "stm	%[r]!, {r2, r3, r4, r8}\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "cc"
     );
 }
 
@@ -4923,7 +4923,7 @@ static void sp_2048_sqr_8(sp_digit* r_p, const sp_digit* a_p)
         "add	sp, sp, #0x44\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
     );
 }
 
@@ -5039,7 +5039,7 @@ static void sp_2048_sqr_8(sp_digit* r_p, const sp_digit* a_p)
         "add	sp, sp, #32\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
     );
 }
 
@@ -5074,7 +5074,7 @@ static sp_digit sp_2048_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "sbc	%[r], r6, r6\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -5159,7 +5159,7 @@ static sp_digit sp_2048_sub_16(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "sbc	%[r], r6, r6\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -5272,7 +5272,7 @@ static sp_digit sp_2048_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "sbc	%[r], r6, r6\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -5347,7 +5347,7 @@ static sp_digit sp_2048_add_64(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "mov	%[r], r3\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -5383,7 +5383,7 @@ static sp_digit sp_2048_sub_in_place_64(sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r12\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -5585,7 +5585,7 @@ static void sp_2048_mul_64(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b
         "bgt	L_sp_2048_mul_64_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -5742,7 +5742,7 @@ static void sp_2048_sqr_64(sp_digit* r_p, const sp_digit* a_p)
         "bgt	L_sp_2048_sqr_64_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -5798,7 +5798,7 @@ static sp_digit sp_2048_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "mov	%[r], r3\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -5834,7 +5834,7 @@ static sp_digit sp_2048_sub_in_place_32(sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r12\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -6036,7 +6036,7 @@ static void sp_2048_mul_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b
         "bgt	L_sp_2048_mul_32_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -6193,7 +6193,7 @@ static void sp_2048_sqr_32(sp_digit* r_p, const sp_digit* a_p)
         "bgt	L_sp_2048_sqr_32_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -6314,7 +6314,7 @@ static void sp_2048_mul_d_64(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r3, [%[r], #256]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
 }
 
@@ -8379,7 +8379,7 @@ static void sp_2048_mul_d_64(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r4, [%[r]]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "cc"
     );
 }
 
@@ -8434,7 +8434,7 @@ static sp_digit sp_2048_cond_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp
         "mov	%[r], r12\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -8572,7 +8572,7 @@ static sp_digit sp_2048_cond_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp
         "sbc	%[r], lr, lr\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6", "r7"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -9553,7 +9553,7 @@ static SP_NOINLINE void sp_2048_mont_reduce_32(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_2048_cond_sub_32(a - 32, a, m, (sp_digit)0 - mp);
 }
@@ -9848,7 +9848,7 @@ static SP_NOINLINE void sp_2048_mont_reduce_32(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_2048_cond_sub_32(a - 32, a, m, (sp_digit)0 - mp);
 }
@@ -10053,7 +10053,7 @@ static SP_NOINLINE void sp_2048_mont_reduce_32(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], lr\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_2048_cond_sub_32(a - 32, a, m, (sp_digit)0 - mp);
 }
@@ -10183,7 +10183,7 @@ static void sp_2048_mul_d_32(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r3, [%[r], #128]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
 }
 
@@ -11224,7 +11224,7 @@ static void sp_2048_mul_d_32(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r5, [%[r]]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "cc"
     );
 }
 
@@ -11283,7 +11283,7 @@ static sp_digit div_2048_word_32(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "add	%[d1], r4, r3\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -11421,7 +11421,7 @@ static sp_digit div_2048_word_32(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "sub	%[d1], r3, r6\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -11820,7 +11820,7 @@ static sp_int32 sp_2048_cmp_32(const sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r2\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -12257,7 +12257,7 @@ static sp_digit sp_2048_cond_sub_64(sp_digit* r_p, const sp_digit* a_p, const sp
         "mov	%[r], r12\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -12507,7 +12507,7 @@ static sp_digit sp_2048_cond_sub_64(sp_digit* r_p, const sp_digit* a_p, const sp
         "sbc	%[r], lr, lr\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6", "r7"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -14416,7 +14416,7 @@ static SP_NOINLINE void sp_2048_mont_reduce_64(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_2048_cond_sub_64(a - 64, a, m, (sp_digit)0 - mp);
 }
@@ -14967,7 +14967,7 @@ static SP_NOINLINE void sp_2048_mont_reduce_64(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_2048_cond_sub_64(a - 64, a, m, (sp_digit)0 - mp);
 }
@@ -15332,7 +15332,7 @@ static SP_NOINLINE void sp_2048_mont_reduce_64(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], lr\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_2048_cond_sub_64(a - 64, a, m, (sp_digit)0 - mp);
 }
@@ -15400,7 +15400,7 @@ static sp_digit sp_2048_sub_64(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "mov	%[r], r12\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -15534,7 +15534,7 @@ static sp_digit sp_2048_sub_64(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "sbc	%[r], r6, r6\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -15594,7 +15594,7 @@ static sp_digit div_2048_word_64(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "add	%[d1], r4, r3\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -15732,7 +15732,7 @@ static sp_digit div_2048_word_64(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "sub	%[d1], r3, r6\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -16587,7 +16587,7 @@ static sp_int32 sp_2048_cmp_64(const sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r2\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -17147,7 +17147,7 @@ static sp_digit sp_2048_cond_add_32(sp_digit* r_p, const sp_digit* a_p, const sp
         "mov	%[r], lr\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -17285,7 +17285,7 @@ static sp_digit sp_2048_cond_add_32(sp_digit* r_p, const sp_digit* a_p, const sp
         "adc	%[r], r8, r8\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -17999,7 +17999,7 @@ static void sp_2048_lshift_64(sp_digit* r_p, const sp_digit* a_p, byte n_p)
         "str	r6, [%[r], #4]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [n] "+r" (n)
         :
-        : "memory", "r4", "r5", "r6", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r3", "r12", "cc"
     );
 }
 
@@ -23905,7 +23905,7 @@ static void sp_3072_mul_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b
         "stm	%[r]!, {r3, r4, r5, r6}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r11", "r12"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r11", "r12", "cc"
     );
 }
 
@@ -23947,7 +23947,7 @@ static sp_digit sp_3072_add_12(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "adc	%[r], %[r], #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -24008,7 +24008,7 @@ static sp_digit sp_3072_sub_in_place_24(sp_digit* a_p, const sp_digit* b_p)
         "sbc	%[a], r9, r9\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -24072,7 +24072,7 @@ static sp_digit sp_3072_add_24(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "adc	%[r], %[r], #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -24244,7 +24244,7 @@ static sp_digit sp_3072_sub_in_place_48(sp_digit* a_p, const sp_digit* b_p)
         "sbc	%[a], r9, r9\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -24350,7 +24350,7 @@ static sp_digit sp_3072_add_48(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "adc	%[r], %[r], #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -24606,7 +24606,7 @@ static sp_digit sp_3072_sub_in_place_96(sp_digit* a_p, const sp_digit* b_p)
         "sbc	%[a], r9, r9\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -24796,7 +24796,7 @@ static sp_digit sp_3072_add_96(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "adc	%[r], %[r], #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -27928,7 +27928,7 @@ static void sp_3072_sqr_12(sp_digit* r_p, const sp_digit* a_p)
         "stm	%[r]!, {r2, r3, r4, r8}\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "cc"
     );
 }
 
@@ -27969,7 +27969,7 @@ static sp_digit sp_3072_sub_12(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "sbc	%[r], r6, r6\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -28068,7 +28068,7 @@ static sp_digit sp_3072_sub_24(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "sbc	%[r], r6, r6\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -28209,7 +28209,7 @@ static sp_digit sp_3072_sub_48(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "sbc	%[r], r6, r6\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -28284,7 +28284,7 @@ static sp_digit sp_3072_add_96(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "mov	%[r], r3\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -28320,7 +28320,7 @@ static sp_digit sp_3072_sub_in_place_96(sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r12\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -28522,7 +28522,7 @@ static void sp_3072_mul_96(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b
         "bgt	L_sp_3072_mul_96_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -28679,7 +28679,7 @@ static void sp_3072_sqr_96(sp_digit* r_p, const sp_digit* a_p)
         "bgt	L_sp_3072_sqr_96_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -28735,7 +28735,7 @@ static sp_digit sp_3072_add_48(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "mov	%[r], r3\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -28771,7 +28771,7 @@ static sp_digit sp_3072_sub_in_place_48(sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r12\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -28973,7 +28973,7 @@ static void sp_3072_mul_48(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b
         "bgt	L_sp_3072_mul_48_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -29130,7 +29130,7 @@ static void sp_3072_sqr_48(sp_digit* r_p, const sp_digit* a_p)
         "bgt	L_sp_3072_sqr_48_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -29251,7 +29251,7 @@ static void sp_3072_mul_d_96(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r3, [%[r], #384]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
 }
 
@@ -32340,7 +32340,7 @@ static void sp_3072_mul_d_96(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r3, [%[r]]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "cc"
     );
 }
 
@@ -32395,7 +32395,7 @@ static sp_digit sp_3072_cond_sub_48(sp_digit* r_p, const sp_digit* a_p, const sp
         "mov	%[r], r12\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -32589,7 +32589,7 @@ static sp_digit sp_3072_cond_sub_48(sp_digit* r_p, const sp_digit* a_p, const sp
         "sbc	%[r], lr, lr\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6", "r7"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -34034,7 +34034,7 @@ static SP_NOINLINE void sp_3072_mont_reduce_48(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_3072_cond_sub_48(a - 48, a, m, (sp_digit)0 - mp);
 }
@@ -34457,7 +34457,7 @@ static SP_NOINLINE void sp_3072_mont_reduce_48(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_3072_cond_sub_48(a - 48, a, m, (sp_digit)0 - mp);
 }
@@ -34742,7 +34742,7 @@ static SP_NOINLINE void sp_3072_mont_reduce_48(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], lr\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_3072_cond_sub_48(a - 48, a, m, (sp_digit)0 - mp);
 }
@@ -34872,7 +34872,7 @@ static void sp_3072_mul_d_48(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r3, [%[r], #192]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
 }
 
@@ -36425,7 +36425,7 @@ static void sp_3072_mul_d_48(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r3, [%[r]]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "cc"
     );
 }
 
@@ -36484,7 +36484,7 @@ static sp_digit div_3072_word_48(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "add	%[d1], r4, r3\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -36622,7 +36622,7 @@ static sp_digit div_3072_word_48(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "sub	%[d1], r3, r6\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -37197,7 +37197,7 @@ static sp_int32 sp_3072_cmp_48(const sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r2\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -37634,7 +37634,7 @@ static sp_digit sp_3072_cond_sub_96(sp_digit* r_p, const sp_digit* a_p, const sp
         "mov	%[r], r12\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -37996,7 +37996,7 @@ static sp_digit sp_3072_cond_sub_96(sp_digit* r_p, const sp_digit* a_p, const sp
         "sbc	%[r], lr, lr\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6", "r7"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -40833,7 +40833,7 @@ static SP_NOINLINE void sp_3072_mont_reduce_96(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_3072_cond_sub_96(a - 96, a, m, (sp_digit)0 - mp);
 }
@@ -41640,7 +41640,7 @@ static SP_NOINLINE void sp_3072_mont_reduce_96(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_3072_cond_sub_96(a - 96, a, m, (sp_digit)0 - mp);
 }
@@ -42165,7 +42165,7 @@ static SP_NOINLINE void sp_3072_mont_reduce_96(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], lr\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_3072_cond_sub_96(a - 96, a, m, (sp_digit)0 - mp);
 }
@@ -42233,7 +42233,7 @@ static sp_digit sp_3072_sub_96(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "mov	%[r], r12\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -42423,7 +42423,7 @@ static sp_digit sp_3072_sub_96(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "sbc	%[r], r6, r6\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -42483,7 +42483,7 @@ static sp_digit div_3072_word_96(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "add	%[d1], r4, r3\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -42621,7 +42621,7 @@ static sp_digit div_3072_word_96(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "sub	%[d1], r3, r6\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -43834,7 +43834,7 @@ static sp_int32 sp_3072_cmp_96(const sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r2\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -44394,7 +44394,7 @@ static sp_digit sp_3072_cond_add_48(sp_digit* r_p, const sp_digit* a_p, const sp
         "mov	%[r], lr\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -44588,7 +44588,7 @@ static sp_digit sp_3072_cond_add_48(sp_digit* r_p, const sp_digit* a_p, const sp
         "adc	%[r], r8, r8\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -45494,7 +45494,7 @@ static void sp_3072_lshift_96(sp_digit* r_p, const sp_digit* a_p, byte n_p)
         "str	r4, [%[r], #4]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [n] "+r" (n)
         :
-        : "memory", "r4", "r5", "r6", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r3", "r12", "cc"
     );
 }
 
@@ -46146,7 +46146,7 @@ static sp_digit sp_4096_sub_in_place_128(sp_digit* a_p, const sp_digit* b_p)
         "sbc	%[a], r9, r9\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -46392,7 +46392,7 @@ static sp_digit sp_4096_add_128(sp_digit* r_p, const sp_digit* a_p, const sp_dig
         "adc	%[r], %[r], #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -46506,7 +46506,7 @@ static sp_digit sp_4096_add_128(sp_digit* r_p, const sp_digit* a_p, const sp_dig
         "mov	%[r], r3\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -46542,7 +46542,7 @@ static sp_digit sp_4096_sub_in_place_128(sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r12\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -46744,7 +46744,7 @@ static void sp_4096_mul_128(sp_digit* r_p, const sp_digit* a_p, const sp_digit* 
         "bgt	L_sp_4096_mul_128_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -46901,7 +46901,7 @@ static void sp_4096_sqr_128(sp_digit* r_p, const sp_digit* a_p)
         "bgt	L_sp_4096_sqr_128_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -47020,7 +47020,7 @@ static void sp_4096_mul_d_128(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r3, [%[r], #512]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
 }
 
@@ -51133,7 +51133,7 @@ static void sp_4096_mul_d_128(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r5, [%[r]]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "cc"
     );
 }
 
@@ -51189,7 +51189,7 @@ static sp_digit sp_4096_cond_sub_128(sp_digit* r_p, const sp_digit* a_p, const s
         "mov	%[r], r12\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -51663,7 +51663,7 @@ static sp_digit sp_4096_cond_sub_128(sp_digit* r_p, const sp_digit* a_p, const s
         "sbc	%[r], lr, lr\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6", "r7"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -55428,7 +55428,7 @@ static SP_NOINLINE void sp_4096_mont_reduce_128(sp_digit* a_p, const sp_digit* m
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_4096_cond_sub_128(a - 128, a, m, (sp_digit)0 - mp);
 }
@@ -56491,7 +56491,7 @@ static SP_NOINLINE void sp_4096_mont_reduce_128(sp_digit* a_p, const sp_digit* m
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_4096_cond_sub_128(a - 128, a, m, (sp_digit)0 - mp);
 }
@@ -57176,7 +57176,7 @@ static SP_NOINLINE void sp_4096_mont_reduce_128(sp_digit* a_p, const sp_digit* m
         "mov	%[mp], lr\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_4096_cond_sub_128(a - 128, a, m, (sp_digit)0 - mp);
 }
@@ -57244,7 +57244,7 @@ static sp_digit sp_4096_sub_128(sp_digit* r_p, const sp_digit* a_p, const sp_dig
         "mov	%[r], r12\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -57490,7 +57490,7 @@ static sp_digit sp_4096_sub_128(sp_digit* r_p, const sp_digit* a_p, const sp_dig
         "sbc	%[r], r6, r6\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -57550,7 +57550,7 @@ static sp_digit div_4096_word_128(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "add	%[d1], r4, r3\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -57688,7 +57688,7 @@ static sp_digit div_4096_word_128(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "sub	%[d1], r3, r6\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -59253,7 +59253,7 @@ static sp_int32 sp_4096_cmp_128(const sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r2\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -59813,7 +59813,7 @@ static sp_digit sp_4096_cond_add_64(sp_digit* r_p, const sp_digit* a_p, const sp
         "mov	%[r], lr\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -60063,7 +60063,7 @@ static sp_digit sp_4096_cond_add_64(sp_digit* r_p, const sp_digit* a_p, const sp
         "adc	%[r], r8, r8\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -61161,7 +61161,7 @@ static void sp_4096_lshift_128(sp_digit* r_p, const sp_digit* a_p, byte n_p)
         "str	r5, [%[r], #4]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [n] "+r" (n)
         :
-        : "memory", "r4", "r5", "r6", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r3", "r12", "cc"
     );
 }
 
@@ -61643,7 +61643,7 @@ static void sp_256_mul_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p
         "bgt	L_sp_256_mul_8_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -63639,7 +63639,7 @@ static void sp_256_mul_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p
         "stm	%[r]!, {r3, r4, r5, r6}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r11", "r12"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r11", "r12", "cc"
     );
 }
 
@@ -63992,7 +63992,7 @@ static void sp_256_mul_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p
         "add	sp, sp, #36\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
     );
 }
 
@@ -64123,7 +64123,7 @@ static void sp_256_mul_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_p
         "add	sp, sp, #44\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r10", "r11", "r12", "r7", "r8", "r9", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r10", "r11", "r12", "r7", "r8", "r9", "lr", "cc"
     );
 }
 
@@ -64283,7 +64283,7 @@ static void sp_256_sqr_8(sp_digit* r_p, const sp_digit* a_p)
         "bgt	L_sp_256_sqr_8_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -65494,7 +65494,7 @@ static void sp_256_sqr_8(sp_digit* r_p, const sp_digit* a_p)
         "stm	%[r]!, {r2, r3, r4, r8}\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "cc"
     );
 }
 
@@ -65737,7 +65737,7 @@ static void sp_256_sqr_8(sp_digit* r_p, const sp_digit* a_p)
         "add	sp, sp, #0x44\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
     );
 }
 
@@ -65853,7 +65853,7 @@ static void sp_256_sqr_8(sp_digit* r_p, const sp_digit* a_p)
         "add	sp, sp, #32\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
     );
 }
 
@@ -65892,7 +65892,7 @@ static sp_digit sp_256_add_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit*
         "mov	%[r], r3\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -65929,7 +65929,7 @@ static sp_digit sp_256_add_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit*
         "adc	%[r], %[r], #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -66165,7 +66165,7 @@ static int sp_256_mod_mul_norm_8(sp_digit* r_p, const sp_digit* a_p, const sp_di
         "add	sp, sp, #24\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr", "r10"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr", "r10", "cc"
     );
     (void)m_p;
     return (uint32_t)(size_t)r;
@@ -68480,7 +68480,7 @@ static SP_NOINLINE void sp_256_mont_mul_8(sp_digit* r_p, const sp_digit* a_p, co
         "add	sp, sp, #0x44\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r12"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r12", "cc"
     );
     (void)m_p;
     (void)mp_p;
@@ -68957,7 +68957,7 @@ static SP_NOINLINE void sp_256_mont_mul_8(sp_digit* r_p, const sp_digit* a_p, co
         "add	sp, sp, #0x44\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
     );
     (void)m_p;
     (void)mp_p;
@@ -69212,7 +69212,7 @@ static SP_NOINLINE void sp_256_mont_mul_8(sp_digit* r_p, const sp_digit* a_p, co
         "add	sp, sp, #0x4c\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r10", "r11", "r12", "r7", "r8", "r9", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r10", "r11", "r12", "r7", "r8", "r9", "lr", "cc"
     );
     (void)m_p;
     (void)mp_p;
@@ -70410,7 +70410,7 @@ static SP_NOINLINE void sp_256_mont_sqr_8(sp_digit* r_p, const sp_digit* a_p, co
         "add	sp, sp, #0x44\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r12", "r8", "r9", "r10", "lr"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r12", "r8", "r9", "r10", "lr", "cc"
     );
     (void)m_p;
     (void)mp_p;
@@ -70776,7 +70776,7 @@ static SP_NOINLINE void sp_256_mont_sqr_8(sp_digit* r_p, const sp_digit* a_p, co
         "add	sp, sp, #0x44\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
     );
     (void)m_p;
     (void)mp_p;
@@ -71016,7 +71016,7 @@ static SP_NOINLINE void sp_256_mont_sqr_8(sp_digit* r_p, const sp_digit* a_p, co
         "add	sp, sp, #0x44\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
     );
     (void)m_p;
     (void)mp_p;
@@ -71248,7 +71248,7 @@ static sp_int32 sp_256_cmp_8(const sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r2\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -71294,7 +71294,7 @@ static sp_digit sp_256_cond_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_d
         "mov	%[r], r12\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -71348,7 +71348,7 @@ static sp_digit sp_256_cond_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_d
         "sbc	%[r], lr, lr\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6", "r7"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -71636,7 +71636,7 @@ static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a_p, const sp_digit* m_p,
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_256_cond_sub_8(a - 8, a, m, (sp_digit)0 - mp);
 }
@@ -71739,7 +71739,7 @@ static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a_p, const sp_digit* m_p,
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_256_cond_sub_8(a - 8, a, m, (sp_digit)0 - mp);
 }
@@ -71824,7 +71824,7 @@ static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a_p, const sp_digit* m_p,
         "mov	%[mp], lr\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_256_cond_sub_8(a - 8, a, m, (sp_digit)0 - mp);
 }
@@ -71975,7 +71975,7 @@ static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a_p, const sp_digit* m_p,
         "add	sp, sp, #0x44\n\t"
         : [a] "+r" (a)
         :
-        : "memory", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr"
+        : "memory", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
     );
     (void)m_p;
     (void)mp_p;
@@ -72260,7 +72260,7 @@ static SP_NOINLINE void sp_256_mont_reduce_order_8(sp_digit* a_p, const sp_digit
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_256_cond_sub_8(a - 8, a, m, (sp_digit)0 - mp);
 }
@@ -72363,7 +72363,7 @@ static SP_NOINLINE void sp_256_mont_reduce_order_8(sp_digit* a_p, const sp_digit
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_256_cond_sub_8(a - 8, a, m, (sp_digit)0 - mp);
 }
@@ -72448,7 +72448,7 @@ static SP_NOINLINE void sp_256_mont_reduce_order_8(sp_digit* a_p, const sp_digit
         "mov	%[mp], lr\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_256_cond_sub_8(a - 8, a, m, (sp_digit)0 - mp);
 }
@@ -72546,7 +72546,7 @@ static void sp_256_mont_add_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "stm	%[r], {r5, r6, r7, r8, r9, r10, r11, r12}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
     );
     (void)m_p;
 }
@@ -72596,7 +72596,7 @@ static void sp_256_mont_dbl_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "stm	%[r], {r4, r5, r6, r7, r8, r9, r10, r11}\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r2"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r2", "cc"
     );
     (void)m_p;
 }
@@ -72678,7 +72678,7 @@ static void sp_256_mont_tpl_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "stm	%[r], {r4, r5, r6, r7, r8, r9, r10, r11}\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r2", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r2", "r3", "r12", "cc"
     );
     (void)m_p;
 }
@@ -72732,7 +72732,7 @@ static void sp_256_mont_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "stm	%[r], {r5, r6, r7, r8, r9, r10, r11, r12}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
     );
     (void)m_p;
 }
@@ -72809,7 +72809,7 @@ static void sp_256_mont_div2_8(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "stm	%[r], {r8, r9, r10, r11}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [m] "+r" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "cc"
     );
 }
 
@@ -76340,7 +76340,7 @@ static void sp_256_add_one_8(sp_digit* a_p)
         "stm	%[a]!, {r1, r2, r3, r4}\n\t"
         : [a] "+r" (a)
         :
-        : "memory", "r1", "r2", "r3", "r4"
+        : "memory", "r1", "r2", "r3", "r4", "cc"
     );
 }
 
@@ -76743,7 +76743,7 @@ static sp_digit sp_256_sub_in_place_8(sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r12\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -76777,7 +76777,7 @@ static sp_digit sp_256_sub_in_place_8(sp_digit* a_p, const sp_digit* b_p)
         "sbc	%[a], r9, r9\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -76877,7 +76877,7 @@ static void sp_256_mul_d_8(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r3, [%[r], #32]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
 }
 
@@ -77150,7 +77150,7 @@ static void sp_256_mul_d_8(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r5, [%[r]]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "cc"
     );
 }
 
@@ -77209,7 +77209,7 @@ static sp_digit div_256_word_8(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "add	%[d1], r4, r3\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -77347,7 +77347,7 @@ static sp_digit div_256_word_8(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "sub	%[d1], r3, r6\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -78031,7 +78031,7 @@ static sp_digit sp_256_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit*
         "mov	%[r], r12\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -78067,7 +78067,7 @@ static sp_digit sp_256_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit*
         "sbc	%[r], r6, r6\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -78147,7 +78147,7 @@ static void sp_256_rshift1_8(sp_digit* r_p, const sp_digit* a_p)
 #endif
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr", "r10"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr", "r10", "cc"
     );
 }
 
@@ -78233,7 +78233,7 @@ static void sp_256_div2_mod_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "stm	%[r], {r8, r9, r10, r11}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [m] "+r" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12", "cc"
     );
 }
 
@@ -78590,7 +78590,7 @@ static int sp_256_num_bits_8(const sp_digit* a_p)
         "mov	%[a], r12\n\t"
         : [a] "+r" (a), [L_sp_256_num_bits_8_table] "+r" (L_sp_256_num_bits_8_table_c)
         :
-        : "memory", "r2", "r3", "r12", "lr"
+        : "memory", "r2", "r3", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -78679,7 +78679,7 @@ static int sp_256_num_bits_8(const sp_digit* a_p)
         "mov	%[a], r12\n\t"
         : [a] "+r" (a)
         :
-        : "memory", "r1", "r2", "r3", "r12", "lr"
+        : "memory", "r1", "r2", "r3", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -79966,7 +79966,7 @@ static void sp_384_mul_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_
         "bgt	L_sp_384_mul_12_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -85463,7 +85463,7 @@ static void sp_384_mul_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_
         "stm	%[r]!, {r3, r4, r5, r6}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r11", "r12"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r11", "r12", "cc"
     );
 }
 
@@ -85622,7 +85622,7 @@ static void sp_384_sqr_12(sp_digit* r_p, const sp_digit* a_p)
         "bgt	L_sp_384_sqr_12_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -88685,7 +88685,7 @@ static void sp_384_sqr_12(sp_digit* r_p, const sp_digit* a_p)
         "stm	%[r]!, {r2, r3, r4, r8}\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "cc"
     );
 }
 
@@ -88723,7 +88723,7 @@ static sp_digit sp_384_add_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "mov	%[r], r3\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -88767,7 +88767,7 @@ static sp_digit sp_384_add_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "adc	%[r], %[r], #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -89105,7 +89105,7 @@ static sp_digit sp_384_cond_sub_12(sp_digit* r_p, const sp_digit* a_p, const sp_
         "mov	%[r], r12\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -89173,7 +89173,7 @@ static sp_digit sp_384_cond_sub_12(sp_digit* r_p, const sp_digit* a_p, const sp_
         "sbc	%[r], lr, lr\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6", "r7"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -89576,7 +89576,7 @@ static SP_NOINLINE void sp_384_mont_reduce_12(sp_digit* a_p, const sp_digit* m_p
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_384_cond_sub_12(a - 12, a, m, (sp_digit)0 - mp);
 }
@@ -89711,7 +89711,7 @@ static SP_NOINLINE void sp_384_mont_reduce_12(sp_digit* a_p, const sp_digit* m_p
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_384_cond_sub_12(a - 12, a, m, (sp_digit)0 - mp);
 }
@@ -89816,7 +89816,7 @@ static SP_NOINLINE void sp_384_mont_reduce_12(sp_digit* a_p, const sp_digit* m_p
         "mov	%[mp], lr\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_384_cond_sub_12(a - 12, a, m, (sp_digit)0 - mp);
 }
@@ -90137,7 +90137,7 @@ static sp_int32 sp_384_cmp_12(const sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r2\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -90278,7 +90278,7 @@ static sp_digit sp_384_sub_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "mov	%[r], r12\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -90321,7 +90321,7 @@ static sp_digit sp_384_sub_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "sbc	%[r], r6, r6\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -90362,7 +90362,7 @@ static sp_digit sp_384_cond_add_12(sp_digit* r_p, const sp_digit* a_p, const sp_
         "mov	%[r], lr\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -90430,7 +90430,7 @@ static sp_digit sp_384_cond_add_12(sp_digit* r_p, const sp_digit* a_p, const sp_
         "adc	%[r], r8, r8\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -90513,7 +90513,7 @@ static void sp_384_rshift1_12(sp_digit* r_p, const sp_digit* a_p)
         "str	r4, [%[r], #44]\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4"
+        : "memory", "r2", "r3", "r4", "cc"
     );
 }
 
@@ -94123,7 +94123,7 @@ static void sp_384_add_one_12(sp_digit* a_p)
         "stm	%[a]!, {r1, r2, r3, r4}\n\t"
         : [a] "+r" (a)
         :
-        : "memory", "r1", "r2", "r3", "r4"
+        : "memory", "r1", "r2", "r3", "r4", "cc"
     );
 }
 
@@ -94526,7 +94526,7 @@ static sp_digit sp_384_sub_in_place_12(sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r12\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -94567,7 +94567,7 @@ static sp_digit sp_384_sub_in_place_12(sp_digit* a_p, const sp_digit* b_p)
         "sbc	%[a], r9, r9\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -94667,7 +94667,7 @@ static void sp_384_mul_d_12(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r3, [%[r], #48]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
 }
 
@@ -95068,7 +95068,7 @@ static void sp_384_mul_d_12(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r3, [%[r]]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "cc"
     );
 }
 
@@ -95127,7 +95127,7 @@ static sp_digit div_384_word_12(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "add	%[d1], r4, r3\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -95265,7 +95265,7 @@ static sp_digit div_384_word_12(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "sub	%[d1], r3, r6\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -95993,7 +95993,7 @@ static void sp_384_div2_mod_12(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "str	r10, [%[r], #44]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [m] "+r" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12", "cc"
     );
 }
 
@@ -96602,7 +96602,7 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "mov	%[a], r12\n\t"
         : [a] "+r" (a), [L_sp_384_num_bits_12_table] "+r" (L_sp_384_num_bits_12_table_c)
         :
-        : "memory", "r2", "r3", "r12", "lr"
+        : "memory", "r2", "r3", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -96751,7 +96751,7 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "mov	%[a], r12\n\t"
         : [a] "+r" (a)
         :
-        : "memory", "r1", "r2", "r3", "r12", "lr"
+        : "memory", "r1", "r2", "r3", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -98087,7 +98087,7 @@ static void sp_521_mul_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_
         "bgt	L_sp_521_mul_17_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -109103,7 +109103,7 @@ static void sp_521_mul_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b_
         "stm	%[r]!, {r3}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r11", "r12"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r11", "r12", "cc"
     );
 }
 
@@ -109265,7 +109265,7 @@ static void sp_521_sqr_17(sp_digit* r_p, const sp_digit* a_p)
         "bgt	L_sp_521_sqr_17_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -115137,7 +115137,7 @@ static void sp_521_sqr_17(sp_digit* r_p, const sp_digit* a_p)
         "stm	%[r]!, {r2}\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "cc"
     );
 }
 
@@ -115181,7 +115181,7 @@ static sp_digit sp_521_add_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "adc	%[r], r4, #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -115236,7 +115236,7 @@ static sp_digit sp_521_add_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "adc	%[r], %[r], #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -115490,7 +115490,7 @@ static sp_digit sp_521_cond_sub_17(sp_digit* r_p, const sp_digit* a_p, const sp_
         "mov	%[r], r12\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -115577,7 +115577,7 @@ static sp_digit sp_521_cond_sub_17(sp_digit* r_p, const sp_digit* a_p, const sp_
         "sbc	%[r], lr, lr\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6", "r7"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -115705,7 +115705,7 @@ static SP_NOINLINE void sp_521_mont_reduce_17(sp_digit* a_p, const sp_digit* m_p
         "stm	%[a]!, {r1, r2, r3, r4, r5, r6, r7, r8}\n\t"
         : [a] "+r" (a)
         :
-        : "memory", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr"
+        : "memory", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
     );
     (void)m_p;
     (void)mp_p;
@@ -116334,7 +116334,7 @@ static SP_NOINLINE void sp_521_mont_reduce_order_17(sp_digit* a_p, const sp_digi
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_521_cond_sub_17(a - 17, a, m, (sp_digit)0 - mp);
 }
@@ -116592,7 +116592,7 @@ static SP_NOINLINE void sp_521_mont_reduce_order_17(sp_digit* a_p, const sp_digi
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_521_cond_sub_17(a - 17, a, m, (sp_digit)0 - mp);
 }
@@ -116805,7 +116805,7 @@ static SP_NOINLINE void sp_521_mont_reduce_order_17(sp_digit* a_p, const sp_digi
         "mov	%[mp], lr\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_521_cond_sub_17(a - 17, a, m, (sp_digit)0 - mp);
 }
@@ -117178,7 +117178,7 @@ static sp_int32 sp_521_cmp_17(const sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r2\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -117311,7 +117311,7 @@ static void sp_521_mont_add_17(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "stm	%[r]!, {r4}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12", "cc"
     );
     (void)m_p;
 }
@@ -117387,7 +117387,7 @@ static void sp_521_mont_dbl_17(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "stm	%[r]!, {r4}\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r2", "r3"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r2", "r3", "cc"
     );
     (void)m_p;
 }
@@ -117483,7 +117483,7 @@ static void sp_521_mont_tpl_17(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "stm	%[r]!, {r4}\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r2", "r3"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r2", "r3", "cc"
     );
     (void)m_p;
 }
@@ -117571,7 +117571,7 @@ static void sp_521_mont_sub_17(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "stm	%[r]!, {r4}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12", "cc"
     );
     (void)m_p;
 }
@@ -117650,7 +117650,7 @@ static void sp_521_rshift1_17(sp_digit* r_p, const sp_digit* a_p)
         "str	r3, [%[r], #64]\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4"
+        : "memory", "r2", "r3", "r4", "cc"
     );
 }
 
@@ -121891,7 +121891,7 @@ static void sp_521_add_one_17(sp_digit* a_p)
         "stm	%[a]!, {r1}\n\t"
         : [a] "+r" (a)
         :
-        : "memory", "r1", "r2", "r3", "r4"
+        : "memory", "r1", "r2", "r3", "r4", "cc"
     );
 }
 
@@ -122364,7 +122364,7 @@ static void sp_521_rshift_17(sp_digit* r_p, const sp_digit* a_p, byte n_p)
 #endif
         : [r] "+r" (r), [a] "+r" (a), [n] "+r" (n)
         :
-        : "memory", "r4", "r5", "r6", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r3", "r12", "cc"
     );
 }
 
@@ -122484,7 +122484,7 @@ static void sp_521_lshift_17(sp_digit* r_p, const sp_digit* a_p, byte n_p)
         "str	r5, [%[r], #4]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [n] "+r" (n)
         :
-        : "memory", "r4", "r5", "r6", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r3", "r12", "cc"
     );
 }
 
@@ -122702,7 +122702,7 @@ static void sp_521_lshift_34(sp_digit* r_p, const sp_digit* a_p, byte n_p)
         "str	r6, [%[r], #4]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [n] "+r" (n)
         :
-        : "memory", "r4", "r5", "r6", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r3", "r12", "cc"
     );
 }
 
@@ -122741,7 +122741,7 @@ static sp_digit sp_521_sub_in_place_17(sp_digit* a_p, const sp_digit* b_p)
         "sbc	%[a], %[a], %[a]\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -122793,7 +122793,7 @@ static sp_digit sp_521_sub_in_place_17(sp_digit* a_p, const sp_digit* b_p)
         "sbc	%[a], r9, r9\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -122893,7 +122893,7 @@ static void sp_521_mul_d_17(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r3, [%[r], #68]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
 }
 
@@ -123454,7 +123454,7 @@ static void sp_521_mul_d_17(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r5, [%[r]]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "cc"
     );
 }
 
@@ -123513,7 +123513,7 @@ static sp_digit div_521_word_17(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "add	%[d1], r4, r3\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -123651,7 +123651,7 @@ static sp_digit div_521_word_17(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "sub	%[d1], r3, r6\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -124341,7 +124341,7 @@ static sp_digit sp_521_sub_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "sbc	%[r], r6, r6\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "lr"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -124395,7 +124395,7 @@ static sp_digit sp_521_sub_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         "sbc	%[r], r6, r6\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -124541,7 +124541,7 @@ static void sp_521_div2_mod_17(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "str	r9, [%[r], #64]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [m] "+r" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12", "cc"
     );
 }
 
@@ -125465,7 +125465,7 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "mov	%[a], r12\n\t"
         : [a] "+r" (a), [L_sp_521_num_bits_17_table] "+r" (L_sp_521_num_bits_17_table_c)
         :
-        : "memory", "r2", "r3", "r12", "lr"
+        : "memory", "r2", "r3", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -125689,7 +125689,7 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "mov	%[a], r12\n\t"
         : [a] "+r" (a)
         :
-        : "memory", "r1", "r2", "r3", "r12", "lr"
+        : "memory", "r1", "r2", "r3", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -136464,7 +136464,7 @@ static void sp_1024_mul_16(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b
         "stm	%[r]!, {r3, r4, r5, r6}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r11", "r12"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r11", "r12", "cc"
     );
 }
 
@@ -141696,7 +141696,7 @@ static void sp_1024_sqr_16(sp_digit* r_p, const sp_digit* a_p)
         "stm	%[r]!, {r2, r3, r4, r8}\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "cc"
     );
 }
 
@@ -141745,7 +141745,7 @@ static sp_digit sp_1024_add_16(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "adc	%[r], %[r], #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -141820,7 +141820,7 @@ static sp_digit sp_1024_sub_in_place_32(sp_digit* a_p, const sp_digit* b_p)
         "sbc	%[a], r9, r9\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -141898,7 +141898,7 @@ static sp_digit sp_1024_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "adc	%[r], %[r], #0\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -142016,7 +142016,7 @@ static sp_digit sp_1024_sub_16(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "sbc	%[r], r6, r6\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -142253,7 +142253,7 @@ static void sp_1024_mul_32(sp_digit* r_p, const sp_digit* a_p, const sp_digit* b
         "bgt	L_sp_1024_mul_32_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -142410,7 +142410,7 @@ static void sp_1024_sqr_32(sp_digit* r_p, const sp_digit* a_p)
         "bgt	L_sp_1024_sqr_32_store_%=\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "lr", "r11", "cc"
     );
 }
 
@@ -142530,7 +142530,7 @@ static sp_digit sp_1024_sub_in_place_32(sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r12\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr"
+        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12", "lr", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -142571,7 +142571,7 @@ static sp_digit sp_1024_cond_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp
         "mov	%[r], r12\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -142709,7 +142709,7 @@ static sp_digit sp_1024_cond_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp
         "sbc	%[r], lr, lr\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6", "r7"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -142748,7 +142748,7 @@ static sp_digit sp_1024_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "mov	%[r], r3\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r3", "r12", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -142848,7 +142848,7 @@ static void sp_1024_mul_d_32(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r3, [%[r], #128]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
     );
 }
 
@@ -143889,7 +143889,7 @@ static void sp_1024_mul_d_32(sp_digit* r_p, const sp_digit* a_p, sp_digit b_p)
         "str	r5, [%[r]]\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "cc"
     );
 }
 
@@ -143948,7 +143948,7 @@ static sp_digit div_1024_word_32(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "add	%[d1], r4, r3\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -144086,7 +144086,7 @@ static sp_digit div_1024_word_32(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         "sub	%[d1], r3, r6\n\t"
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)d1;
 }
@@ -144515,7 +144515,7 @@ static sp_int32 sp_1024_cmp_32(const sp_digit* a_p, const sp_digit* b_p)
         "mov	%[a], r2\n\t"
         : [a] "+r" (a), [b] "+r" (b)
         :
-        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r2", "r3", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)a;
 }
@@ -145829,7 +145829,7 @@ static SP_NOINLINE void sp_1024_mont_reduce_32(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_1024_cond_sub_32(a - 32, a, m, mp);
 }
@@ -146129,7 +146129,7 @@ static SP_NOINLINE void sp_1024_mont_reduce_32(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], r3\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_1024_cond_sub_32(a - 32, a, m, mp);
 }
@@ -146339,7 +146339,7 @@ static SP_NOINLINE void sp_1024_mont_reduce_32(sp_digit* a_p, const sp_digit* m_
         "mov	%[mp], lr\n\t"
         : [a] "+r" (a), [m] "+r" (m), [mp] "+r" (mp)
         :
-        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"
+        : "memory", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
     );
     sp_1024_cond_sub_32(a - 32, a, m, mp);
 }
@@ -146651,7 +146651,7 @@ static void sp_1024_mont_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_dig
         "stm	%[r]!, {r4, r5, r6, r7}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
     );
 }
 
@@ -146806,7 +146806,7 @@ static void sp_1024_mont_dbl_32(sp_digit* r_p, const sp_digit* a_p, const sp_dig
         "stm	%[r]!, {r4, r5, r6, r7}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [m] "+r" (m)
         :
-        : "memory", "r8", "r9", "r10", "r11", "r4", "r5", "r6", "r7", "r12"
+        : "memory", "r8", "r9", "r10", "r11", "r4", "r5", "r6", "r7", "r12", "cc"
     );
 }
 
@@ -147116,7 +147116,7 @@ static void sp_1024_mont_tpl_32(sp_digit* r_p, const sp_digit* a_p, const sp_dig
         "stm	%[r]!, {r4, r5, r6, r7}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [m] "+r" (m)
         :
-        : "memory", "r8", "r9", "r10", "r11", "r4", "r5", "r6", "r7", "r12"
+        : "memory", "r8", "r9", "r10", "r11", "r4", "r5", "r6", "r7", "r12", "cc"
     );
 }
 
@@ -147283,7 +147283,7 @@ static void sp_1024_mont_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp_dig
         "stm	%[r]!, {r4, r5, r6, r7}\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12"
+        : "memory", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
     );
 }
 
@@ -147322,7 +147322,7 @@ static sp_digit sp_1024_cond_add_32(sp_digit* r_p, const sp_digit* a_p, const sp
         "mov	%[r], lr\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -147460,7 +147460,7 @@ static sp_digit sp_1024_cond_add_32(sp_digit* r_p, const sp_digit* a_p, const sp
         "adc	%[r], r8, r8\n\t"
         : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
         :
-        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
+        : "memory", "r12", "lr", "r4", "r5", "r6", "r7", "r8", "cc"
     );
     return (uint32_t)(size_t)r;
 }
@@ -147600,7 +147600,7 @@ static void sp_1024_rshift1_32(sp_digit* r_p, const sp_digit* a_p)
         "str	r3, [%[r], #124]\n\t"
         : [r] "+r" (r), [a] "+r" (a)
         :
-        : "memory", "r2", "r3", "r4"
+        : "memory", "r2", "r3", "r4", "cc"
     );
 }
 
