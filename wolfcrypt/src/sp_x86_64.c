@@ -811,8 +811,7 @@ static int sp_2048_mod_exp_16(sp_digit* r, const sp_digit* a, const sp_digit* e,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -1052,8 +1051,7 @@ static int sp_2048_mod_exp_avx2_16(sp_digit* r, const sp_digit* a, const sp_digi
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -1623,8 +1621,7 @@ static int sp_2048_mod_exp_32(sp_digit* r, const sp_digit* a, const sp_digit* e,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -1899,8 +1896,7 @@ static int sp_2048_mod_exp_avx2_32(sp_digit* r, const sp_digit* a, const sp_digi
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -2105,8 +2101,7 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (a != NULL)
-        XFREE(a, NULL, DYNAMIC_TYPE_RSA);
+    XFREE(a, NULL, DYNAMIC_TYPE_RSA);
 #endif
 
     return err;
@@ -2531,14 +2526,12 @@ int sp_ModExp_2048(const mp_int* base, const mp_int* exp, const mp_int* mod,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (b != NULL)
-        XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     if (e != NULL) {
         XMEMSET(e, 0, 32);
         XFREE(e, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     }
-    if (m != NULL)
-        XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #else
     XMEMSET(e, 0, sizeof(e));
 #endif
@@ -2687,8 +2680,7 @@ static int sp_2048_mod_exp_2_avx2_32(sp_digit* r, const sp_digit* e, int bits,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -2826,8 +2818,7 @@ static int sp_2048_mod_exp_2_32(sp_digit* r, const sp_digit* e, int bits,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -2932,14 +2923,12 @@ int sp_DhExp_2048(const mp_int* base, const byte* exp, word32 expLen,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (b != NULL)
-        XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     if (e != NULL) {
         XMEMSET(e, 0, 32);
         XFREE(e, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     }
-    if (m != NULL)
-        XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #else
     XMEMSET(e, 0, sizeof(e));
 #endif
@@ -3023,14 +3012,12 @@ int sp_ModExp_1024(const mp_int* base, const mp_int* exp, const mp_int* mod,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (b != NULL)
-        XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     if (e != NULL) {
         XMEMSET(e, 0, 16);
         XFREE(e, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     }
-    if (m != NULL)
-        XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #else
     XMEMSET(e, 0, sizeof(e));
 #endif
@@ -3813,8 +3800,7 @@ static int sp_3072_mod_exp_24(sp_digit* r, const sp_digit* a, const sp_digit* e,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -4054,8 +4040,7 @@ static int sp_3072_mod_exp_avx2_24(sp_digit* r, const sp_digit* a, const sp_digi
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -4573,8 +4558,7 @@ static int sp_3072_mod_exp_48(sp_digit* r, const sp_digit* a, const sp_digit* e,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -4797,8 +4781,7 @@ static int sp_3072_mod_exp_avx2_48(sp_digit* r, const sp_digit* a, const sp_digi
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -5003,8 +4986,7 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (a != NULL)
-        XFREE(a, NULL, DYNAMIC_TYPE_RSA);
+    XFREE(a, NULL, DYNAMIC_TYPE_RSA);
 #endif
 
     return err;
@@ -5429,14 +5411,12 @@ int sp_ModExp_3072(const mp_int* base, const mp_int* exp, const mp_int* mod,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (b != NULL)
-        XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     if (e != NULL) {
         XMEMSET(e, 0, 48);
         XFREE(e, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     }
-    if (m != NULL)
-        XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #else
     XMEMSET(e, 0, sizeof(e));
 #endif
@@ -5585,8 +5565,7 @@ static int sp_3072_mod_exp_2_avx2_48(sp_digit* r, const sp_digit* e, int bits,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -5724,8 +5703,7 @@ static int sp_3072_mod_exp_2_48(sp_digit* r, const sp_digit* e, int bits,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -5830,14 +5808,12 @@ int sp_DhExp_3072(const mp_int* base, const byte* exp, word32 expLen,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (b != NULL)
-        XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     if (e != NULL) {
         XMEMSET(e, 0, 48);
         XFREE(e, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     }
-    if (m != NULL)
-        XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #else
     XMEMSET(e, 0, sizeof(e));
 #endif
@@ -5921,14 +5897,12 @@ int sp_ModExp_1536(const mp_int* base, const mp_int* exp, const mp_int* mod,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (b != NULL)
-        XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     if (e != NULL) {
         XMEMSET(e, 0, 24);
         XFREE(e, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     }
-    if (m != NULL)
-        XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #else
     XMEMSET(e, 0, sizeof(e));
 #endif
@@ -6697,8 +6671,7 @@ static int sp_4096_mod_exp_64(sp_digit* r, const sp_digit* a, const sp_digit* e,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -6921,8 +6894,7 @@ static int sp_4096_mod_exp_avx2_64(sp_digit* r, const sp_digit* a, const sp_digi
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -7127,8 +7099,7 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (a != NULL)
-        XFREE(a, NULL, DYNAMIC_TYPE_RSA);
+    XFREE(a, NULL, DYNAMIC_TYPE_RSA);
 #endif
 
     return err;
@@ -7553,14 +7524,12 @@ int sp_ModExp_4096(const mp_int* base, const mp_int* exp, const mp_int* mod,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (b != NULL)
-        XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     if (e != NULL) {
         XMEMSET(e, 0, 64);
         XFREE(e, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     }
-    if (m != NULL)
-        XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #else
     XMEMSET(e, 0, sizeof(e));
 #endif
@@ -7709,8 +7678,7 @@ static int sp_4096_mod_exp_2_avx2_64(sp_digit* r, const sp_digit* e, int bits,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -7848,8 +7816,7 @@ static int sp_4096_mod_exp_2_64(sp_digit* r, const sp_digit* e, int bits,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (td != NULL)
-        XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(td, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #endif
 
     return err;
@@ -7954,14 +7921,12 @@ int sp_DhExp_4096(const mp_int* base, const byte* exp, word32 expLen,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (b != NULL)
-        XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(b, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     if (e != NULL) {
         XMEMSET(e, 0, 64);
         XFREE(e, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     }
-    if (m != NULL)
-        XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(m, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 #else
     XMEMSET(e, 0, sizeof(e));
 #endif
@@ -9575,10 +9540,8 @@ static int sp_256_ecc_mulmod_win_add_sub_4(sp_point_256* r, const sp_point_256* 
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (tmp != NULL)
-        XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -10610,10 +10573,8 @@ static int sp_256_ecc_mulmod_win_add_sub_avx2_4(sp_point_256* r, const sp_point_
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (tmp != NULL)
-        XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -10812,8 +10773,7 @@ static int sp_256_gen_stripe_table_4(const sp_point_256* a,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -10942,10 +10902,8 @@ static int sp_256_ecc_mulmod_stripe_4(sp_point_256* r, const sp_point_256* g,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (rt != NULL)
-        XFREE(rt, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -11304,8 +11262,7 @@ static int sp_256_gen_stripe_table_avx2_4(const sp_point_256* a,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -11420,10 +11377,8 @@ static int sp_256_ecc_mulmod_stripe_avx2_4(sp_point_256* r, const sp_point_256* 
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (rt != NULL)
-        XFREE(rt, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -11555,10 +11510,8 @@ int sp_ecc_mulmod_256(const mp_int* km, const ecc_point* gm, ecc_point* r,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -11653,10 +11606,8 @@ int sp_ecc_mulmod_add_256(const mp_int* km, const ecc_point* gm,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -24183,8 +24134,7 @@ static int sp_256_ecc_mulmod_add_only_4(sp_point_256* r, const sp_point_256* g,
     #endif
     }
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (rt != NULL)
-        XFREE(rt, heap, DYNAMIC_TYPE_ECC);
+    XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -24317,8 +24267,7 @@ static int sp_256_ecc_mulmod_add_only_avx2_4(sp_point_256* r, const sp_point_256
     #endif
     }
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (rt != NULL)
-        XFREE(rt, heap, DYNAMIC_TYPE_ECC);
+    XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -24394,10 +24343,8 @@ int sp_ecc_mulmod_base_256(const mp_int* km, ecc_point* r, int map, void* heap)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -24490,10 +24437,8 @@ int sp_ecc_mulmod_base_add_256(const mp_int* km, const ecc_point* am,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -24663,8 +24608,7 @@ int sp_ecc_make_key_256(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
     if (point != NULL) {
         /* point is not sensitive, so no need to zeroize */
         XFREE(point, heap, DYNAMIC_TYPE_ECC);
@@ -24850,10 +24794,8 @@ int sp_ecc_secret_gen_256(const mp_int* priv, const ecc_point* pub, byte* out,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -26237,10 +26179,8 @@ int sp_ecc_verify_256(const byte* hash, word32 hashLen, const mp_int* pX,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (u1 != NULL)
-        XFREE(u1, heap, DYNAMIC_TYPE_ECC);
-    if (p1 != NULL)
-        XFREE(p1, heap, DYNAMIC_TYPE_ECC);
+    XFREE(u1, heap, DYNAMIC_TYPE_ECC);
+    XFREE(p1, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -26447,8 +26387,7 @@ static int sp_256_ecc_is_point_4(const sp_point_256* point,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t1 != NULL)
-        XFREE(t1, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t1, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -26487,8 +26426,7 @@ int sp_ecc_is_point_256(const mp_int* pX, const mp_int* pY)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (pub != NULL)
-        XFREE(pub, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(pub, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -26609,10 +26547,8 @@ int sp_ecc_check_key_256(const mp_int* pX, const mp_int* pY,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (pub != NULL)
-        XFREE(pub, heap, DYNAMIC_TYPE_ECC);
-    if (priv != NULL)
-        XFREE(priv, heap, DYNAMIC_TYPE_ECC);
+    XFREE(pub, heap, DYNAMIC_TYPE_ECC);
+    XFREE(priv, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -26699,10 +26635,8 @@ int sp_ecc_proj_add_point_256(mp_int* pX, mp_int* pY, mp_int* pZ,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (tmp != NULL)
-        XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
-    if (p != NULL)
-        XFREE(p, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(p, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -26775,10 +26709,8 @@ int sp_ecc_proj_dbl_point_256(mp_int* pX, mp_int* pY, mp_int* pZ,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (tmp != NULL)
-        XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
-    if (p != NULL)
-        XFREE(p, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(p, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -26847,10 +26779,8 @@ int sp_ecc_map_256(mp_int* pX, mp_int* pY, mp_int* pZ)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (tmp != NULL)
-        XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
-    if (p != NULL)
-        XFREE(p, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(p, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -26953,8 +26883,7 @@ static int sp_256_mont_sqrt_4(sp_digit* y)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t1 != NULL)
-        XFREE(t1, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(t1, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -27029,8 +26958,7 @@ int sp_ecc_uncompress_256(mp_int* xm, int odd, mp_int* ym)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (x != NULL)
-        XFREE(x, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(x, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -27272,8 +27200,7 @@ static int sp_384_mod_mul_norm_6(sp_digit* r, const sp_digit* a, const sp_digit*
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(t, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -28713,10 +28640,8 @@ static int sp_384_ecc_mulmod_win_add_sub_6(sp_point_384* r, const sp_point_384* 
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (tmp != NULL)
-        XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -29801,10 +29726,8 @@ static int sp_384_ecc_mulmod_win_add_sub_avx2_6(sp_point_384* r, const sp_point_
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (tmp != NULL)
-        XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -30006,8 +29929,7 @@ static int sp_384_gen_stripe_table_6(const sp_point_384* a,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -30136,10 +30058,8 @@ static int sp_384_ecc_mulmod_stripe_6(sp_point_384* r, const sp_point_384* g,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (rt != NULL)
-        XFREE(rt, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -30501,8 +30421,7 @@ static int sp_384_gen_stripe_table_avx2_6(const sp_point_384* a,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -30617,10 +30536,8 @@ static int sp_384_ecc_mulmod_stripe_avx2_6(sp_point_384* r, const sp_point_384* 
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (rt != NULL)
-        XFREE(rt, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -30752,10 +30669,8 @@ int sp_ecc_mulmod_384(const mp_int* km, const ecc_point* gm, ecc_point* r,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -30850,10 +30765,8 @@ int sp_ecc_mulmod_add_384(const mp_int* km, const ecc_point* gm,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -49194,8 +49107,7 @@ static int sp_384_ecc_mulmod_add_only_6(sp_point_384* r, const sp_point_384* g,
     #endif
     }
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (rt != NULL)
-        XFREE(rt, heap, DYNAMIC_TYPE_ECC);
+    XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -49328,8 +49240,7 @@ static int sp_384_ecc_mulmod_add_only_avx2_6(sp_point_384* r, const sp_point_384
     #endif
     }
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (rt != NULL)
-        XFREE(rt, heap, DYNAMIC_TYPE_ECC);
+    XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -49405,10 +49316,8 @@ int sp_ecc_mulmod_base_384(const mp_int* km, ecc_point* r, int map, void* heap)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -49501,10 +49410,8 @@ int sp_ecc_mulmod_base_add_384(const mp_int* km, const ecc_point* am,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -49674,8 +49581,7 @@ int sp_ecc_make_key_384(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
     if (point != NULL) {
         /* point is not sensitive, so no need to zeroize */
         XFREE(point, heap, DYNAMIC_TYPE_ECC);
@@ -49861,10 +49767,8 @@ int sp_ecc_secret_gen_384(const mp_int* priv, const ecc_point* pub, byte* out,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -51190,10 +51094,8 @@ int sp_ecc_verify_384(const byte* hash, word32 hashLen, const mp_int* pX,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (u1 != NULL)
-        XFREE(u1, heap, DYNAMIC_TYPE_ECC);
-    if (p1 != NULL)
-        XFREE(p1, heap, DYNAMIC_TYPE_ECC);
+    XFREE(u1, heap, DYNAMIC_TYPE_ECC);
+    XFREE(p1, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -51400,8 +51302,7 @@ static int sp_384_ecc_is_point_6(const sp_point_384* point,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t1 != NULL)
-        XFREE(t1, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t1, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -51440,8 +51341,7 @@ int sp_ecc_is_point_384(const mp_int* pX, const mp_int* pY)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (pub != NULL)
-        XFREE(pub, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(pub, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -51562,10 +51462,8 @@ int sp_ecc_check_key_384(const mp_int* pX, const mp_int* pY,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (pub != NULL)
-        XFREE(pub, heap, DYNAMIC_TYPE_ECC);
-    if (priv != NULL)
-        XFREE(priv, heap, DYNAMIC_TYPE_ECC);
+    XFREE(pub, heap, DYNAMIC_TYPE_ECC);
+    XFREE(priv, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -51652,10 +51550,8 @@ int sp_ecc_proj_add_point_384(mp_int* pX, mp_int* pY, mp_int* pZ,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (tmp != NULL)
-        XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
-    if (p != NULL)
-        XFREE(p, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(p, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -51728,10 +51624,8 @@ int sp_ecc_proj_dbl_point_384(mp_int* pX, mp_int* pY, mp_int* pZ,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (tmp != NULL)
-        XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
-    if (p != NULL)
-        XFREE(p, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(p, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -51800,10 +51694,8 @@ int sp_ecc_map_384(mp_int* pX, mp_int* pY, mp_int* pZ)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (tmp != NULL)
-        XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
-    if (p != NULL)
-        XFREE(p, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(p, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -51961,8 +51853,7 @@ static int sp_384_mont_sqrt_6(sp_digit* y)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t1 != NULL)
-        XFREE(t1, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(t1, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -52037,8 +51928,7 @@ int sp_ecc_uncompress_384(mp_int* xm, int odd, mp_int* ym)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (x != NULL)
-        XFREE(x, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(x, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -53620,10 +53510,8 @@ static int sp_521_ecc_mulmod_win_add_sub_9(sp_point_521* r, const sp_point_521* 
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (tmp != NULL)
-        XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -54685,10 +54573,8 @@ static int sp_521_ecc_mulmod_win_add_sub_avx2_9(sp_point_521* r, const sp_point_
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (tmp != NULL)
-        XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -54890,8 +54776,7 @@ static int sp_521_gen_stripe_table_9(const sp_point_521* a,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -55020,10 +54905,8 @@ static int sp_521_ecc_mulmod_stripe_9(sp_point_521* r, const sp_point_521* g,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (rt != NULL)
-        XFREE(rt, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -55385,8 +55268,7 @@ static int sp_521_gen_stripe_table_avx2_9(const sp_point_521* a,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -55501,10 +55383,8 @@ static int sp_521_ecc_mulmod_stripe_avx2_9(sp_point_521* r, const sp_point_521* 
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (rt != NULL)
-        XFREE(rt, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -55636,10 +55516,8 @@ int sp_ecc_mulmod_521(const mp_int* km, const ecc_point* gm, ecc_point* r,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -55734,10 +55612,8 @@ int sp_ecc_mulmod_add_521(const mp_int* km, const ecc_point* gm,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -90264,8 +90140,7 @@ static int sp_521_ecc_mulmod_add_only_9(sp_point_521* r, const sp_point_521* g,
     #endif
     }
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (rt != NULL)
-        XFREE(rt, heap, DYNAMIC_TYPE_ECC);
+    XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -90398,8 +90273,7 @@ static int sp_521_ecc_mulmod_add_only_avx2_9(sp_point_521* r, const sp_point_521
     #endif
     }
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (rt != NULL)
-        XFREE(rt, heap, DYNAMIC_TYPE_ECC);
+    XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -90475,10 +90349,8 @@ int sp_ecc_mulmod_base_521(const mp_int* km, ecc_point* r, int map, void* heap)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -90571,10 +90443,8 @@ int sp_ecc_mulmod_base_add_521(const mp_int* km, const ecc_point* am,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -90745,8 +90615,7 @@ int sp_ecc_make_key_521(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
     if (point != NULL) {
         /* point is not sensitive, so no need to zeroize */
         XFREE(point, heap, DYNAMIC_TYPE_ECC);
@@ -90932,10 +90801,8 @@ int sp_ecc_secret_gen_521(const mp_int* priv, const ecc_point* pub, byte* out,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -92331,10 +92198,8 @@ int sp_ecc_verify_521(const byte* hash, word32 hashLen, const mp_int* pX,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (u1 != NULL)
-        XFREE(u1, heap, DYNAMIC_TYPE_ECC);
-    if (p1 != NULL)
-        XFREE(p1, heap, DYNAMIC_TYPE_ECC);
+    XFREE(u1, heap, DYNAMIC_TYPE_ECC);
+    XFREE(p1, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -92544,8 +92409,7 @@ static int sp_521_ecc_is_point_9(const sp_point_521* point,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t1 != NULL)
-        XFREE(t1, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t1, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -92584,8 +92448,7 @@ int sp_ecc_is_point_521(const mp_int* pX, const mp_int* pY)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (pub != NULL)
-        XFREE(pub, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(pub, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -92706,10 +92569,8 @@ int sp_ecc_check_key_521(const mp_int* pX, const mp_int* pY,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (pub != NULL)
-        XFREE(pub, heap, DYNAMIC_TYPE_ECC);
-    if (priv != NULL)
-        XFREE(priv, heap, DYNAMIC_TYPE_ECC);
+    XFREE(pub, heap, DYNAMIC_TYPE_ECC);
+    XFREE(priv, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -92796,10 +92657,8 @@ int sp_ecc_proj_add_point_521(mp_int* pX, mp_int* pY, mp_int* pZ,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (tmp != NULL)
-        XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
-    if (p != NULL)
-        XFREE(p, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(p, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -92872,10 +92731,8 @@ int sp_ecc_proj_dbl_point_521(mp_int* pX, mp_int* pY, mp_int* pZ,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (tmp != NULL)
-        XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
-    if (p != NULL)
-        XFREE(p, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(p, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -92944,10 +92801,8 @@ int sp_ecc_map_521(mp_int* pX, mp_int* pY, mp_int* pZ)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (tmp != NULL)
-        XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
-    if (p != NULL)
-        XFREE(p, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(p, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -93014,8 +92869,7 @@ static int sp_521_mont_sqrt_9(sp_digit* y)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(t, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -93090,8 +92944,7 @@ int sp_ecc_uncompress_521(mp_int* xm, int odd, mp_int* ym)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (x != NULL)
-        XFREE(x, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(x, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -94881,10 +94734,8 @@ static int sp_1024_ecc_mulmod_win_add_sub_16(sp_point_1024* r, const sp_point_10
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (tmp != NULL)
-        XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -95922,10 +95773,8 @@ static int sp_1024_ecc_mulmod_win_add_sub_avx2_16(sp_point_1024* r, const sp_poi
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (tmp != NULL)
-        XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(tmp, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -96127,8 +95976,7 @@ static int sp_1024_gen_stripe_table_16(const sp_point_1024* a,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -96227,10 +96075,8 @@ static int sp_1024_ecc_mulmod_stripe_16(sp_point_1024* r, const sp_point_1024* g
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (rt != NULL)
-        XFREE(rt, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -96591,8 +96437,7 @@ static int sp_1024_gen_stripe_table_avx2_16(const sp_point_1024* a,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -96691,10 +96536,8 @@ static int sp_1024_ecc_mulmod_stripe_avx2_16(sp_point_1024* r, const sp_point_10
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (rt != NULL)
-        XFREE(rt, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(rt, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -96825,10 +96668,8 @@ int sp_ecc_mulmod_1024(const mp_int* km, const ecc_point* gm, ecc_point* r,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -100258,10 +100099,8 @@ int sp_ecc_mulmod_base_1024(const mp_int* km, ecc_point* r, int map, void* heap)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -100354,10 +100193,8 @@ int sp_ecc_mulmod_base_add_1024(const mp_int* km, const ecc_point* am,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -100431,10 +100268,8 @@ int sp_ecc_gen_table_1024(const ecc_point* gm, byte* table, word32* len,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t != NULL)
-        XFREE(t, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -100536,10 +100371,8 @@ int sp_ecc_mulmod_table_1024(const mp_int* km, const ecc_point* gm, byte* table,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (k != NULL)
-        XFREE(k, heap, DYNAMIC_TYPE_ECC);
-    if (point != NULL)
-        XFREE(point, heap, DYNAMIC_TYPE_ECC);
+    XFREE(k, heap, DYNAMIC_TYPE_ECC);
+    XFREE(point, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -105485,8 +105318,7 @@ static int sp_1024_ecc_is_point_16(const sp_point_1024* point,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (t1 != NULL)
-        XFREE(t1, heap, DYNAMIC_TYPE_ECC);
+    XFREE(t1, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -105525,8 +105357,7 @@ int sp_ecc_is_point_1024(const mp_int* pX, const mp_int* pY)
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (pub != NULL)
-        XFREE(pub, NULL, DYNAMIC_TYPE_ECC);
+    XFREE(pub, NULL, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
@@ -105647,10 +105478,8 @@ int sp_ecc_check_key_1024(const mp_int* pX, const mp_int* pY,
     }
 
 #ifdef WOLFSSL_SP_SMALL_STACK
-    if (pub != NULL)
-        XFREE(pub, heap, DYNAMIC_TYPE_ECC);
-    if (priv != NULL)
-        XFREE(priv, heap, DYNAMIC_TYPE_ECC);
+    XFREE(pub, heap, DYNAMIC_TYPE_ECC);
+    XFREE(priv, heap, DYNAMIC_TYPE_ECC);
 #endif
 
     return err;
