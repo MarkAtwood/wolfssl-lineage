@@ -1989,7 +1989,8 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
             if (err == MP_OKAY) {
                 /* r = a ^ 0x10000 => r = a squared 16 times */
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                        IS_INTEL_AVX2(cpuid_flags)) {
                     for (i = 15; i >= 0; i--) {
                         sp_2048_mont_sqr_avx2_32(r, r, m, mp);
                     }
@@ -2020,7 +2021,8 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
         }
         else if (e == 0x3) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 if (err == MP_OKAY) {
                     sp_2048_sqr_avx2_32(r, ah);
                     err = sp_2048_mod_32_cond(r, r, m);
@@ -2062,7 +2064,8 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
 
                 XMEMCPY(r, a, sizeof(sp_digit) * 32);
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                        IS_INTEL_AVX2(cpuid_flags)) {
                     for (i--; i>=0; i--) {
                         sp_2048_mont_sqr_avx2_32(r, r, m, mp);
                         if (((e >> i) & 1) == 1) {
@@ -2306,8 +2309,10 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
         sp_2048_from_mp(dp, 16, dpm);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_2048_mod_exp_avx2_16(tmpa, a, dp, 1024, p, 1);
+        }
         else
 #endif
             err = sp_2048_mod_exp_16(tmpa, a, dp, 1024, p, 1);
@@ -2315,8 +2320,10 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
     if (err == MP_OKAY) {
         sp_2048_from_mp(dq, 16, dqm);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_2048_mod_exp_avx2_16(tmpb, a, dq, 1024, q, 1);
+       }
        else
 #endif
             err = sp_2048_mod_exp_16(tmpb, a, dq, 1024, q, 1);
@@ -2325,7 +2332,8 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
     if (err == MP_OKAY) {
         c = sp_2048_sub_in_place_16(tmpa, tmpb);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             c += sp_2048_cond_add_avx2_16(tmpa, tmpa, p, c);
             sp_2048_cond_add_avx2_16(tmpa, tmpa, p, c);
         }
@@ -2338,7 +2346,8 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
 
         sp_2048_from_mp(qi, 16, qim);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_2048_mul_avx2_16(tmpa, tmpa, qi);
         }
         else
@@ -2351,7 +2360,8 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
 
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_2048_mul_avx2_16(tmpa, q, tmpa);
         }
         else
@@ -2514,8 +2524,10 @@ int sp_ModExp_2048(const mp_int* base, const mp_int* exp, const mp_int* mod,
         sp_2048_from_mp(m, 32, mod);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_2048_mod_exp_avx2_32(r, b, e, expBits, m, 0);
+        }
         else
 #endif
             err = sp_2048_mod_exp_32(r, b, e, expBits, m, 0);
@@ -2894,8 +2906,10 @@ int sp_DhExp_2048(const mp_int* base, const byte* exp, word32 expLen,
     #ifdef HAVE_FFDHE_2048
         if (base->used == 1 && base->dp[0] == 2 && m[31] == (sp_digit)-1) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 err = sp_2048_mod_exp_2_avx2_32(r, e, (int)expLen * 8, m);
+            }
             else
 #endif
                 err = sp_2048_mod_exp_2_32(r, e, (int)expLen * 8, m);
@@ -2904,8 +2918,10 @@ int sp_DhExp_2048(const mp_int* base, const byte* exp, word32 expLen,
     #endif
         {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 err = sp_2048_mod_exp_avx2_32(r, b, e, (int)expLen * 8, m, 0);
+            }
             else
 #endif
                 err = sp_2048_mod_exp_32(r, b, e, (int)expLen * 8, m, 0);
@@ -2999,8 +3015,10 @@ int sp_ModExp_1024(const mp_int* base, const mp_int* exp, const mp_int* mod,
         sp_2048_from_mp(m, 16, mod);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_2048_mod_exp_avx2_16(r, b, e, expBits, m, 0);
+        }
         else
 #endif
             err = sp_2048_mod_exp_16(r, b, e, expBits, m, 0);
@@ -4874,7 +4892,8 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
             if (err == MP_OKAY) {
                 /* r = a ^ 0x10000 => r = a squared 16 times */
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                        IS_INTEL_AVX2(cpuid_flags)) {
                     for (i = 15; i >= 0; i--) {
                         sp_3072_mont_sqr_avx2_48(r, r, m, mp);
                     }
@@ -4905,7 +4924,8 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
         }
         else if (e == 0x3) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 if (err == MP_OKAY) {
                     sp_3072_sqr_avx2_48(r, ah);
                     err = sp_3072_mod_48_cond(r, r, m);
@@ -4947,7 +4967,8 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
 
                 XMEMCPY(r, a, sizeof(sp_digit) * 48);
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                        IS_INTEL_AVX2(cpuid_flags)) {
                     for (i--; i>=0; i--) {
                         sp_3072_mont_sqr_avx2_48(r, r, m, mp);
                         if (((e >> i) & 1) == 1) {
@@ -5191,8 +5212,10 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
         sp_3072_from_mp(dp, 24, dpm);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_3072_mod_exp_avx2_24(tmpa, a, dp, 1536, p, 1);
+        }
         else
 #endif
             err = sp_3072_mod_exp_24(tmpa, a, dp, 1536, p, 1);
@@ -5200,8 +5223,10 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
     if (err == MP_OKAY) {
         sp_3072_from_mp(dq, 24, dqm);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_3072_mod_exp_avx2_24(tmpb, a, dq, 1536, q, 1);
+       }
        else
 #endif
             err = sp_3072_mod_exp_24(tmpb, a, dq, 1536, q, 1);
@@ -5210,7 +5235,8 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
     if (err == MP_OKAY) {
         c = sp_3072_sub_in_place_24(tmpa, tmpb);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             c += sp_3072_cond_add_avx2_24(tmpa, tmpa, p, c);
             sp_3072_cond_add_avx2_24(tmpa, tmpa, p, c);
         }
@@ -5223,7 +5249,8 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
 
         sp_3072_from_mp(qi, 24, qim);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_3072_mul_avx2_24(tmpa, tmpa, qi);
         }
         else
@@ -5236,7 +5263,8 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
 
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_3072_mul_avx2_24(tmpa, q, tmpa);
         }
         else
@@ -5399,8 +5427,10 @@ int sp_ModExp_3072(const mp_int* base, const mp_int* exp, const mp_int* mod,
         sp_3072_from_mp(m, 48, mod);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_3072_mod_exp_avx2_48(r, b, e, expBits, m, 0);
+        }
         else
 #endif
             err = sp_3072_mod_exp_48(r, b, e, expBits, m, 0);
@@ -5779,8 +5809,10 @@ int sp_DhExp_3072(const mp_int* base, const byte* exp, word32 expLen,
     #ifdef HAVE_FFDHE_3072
         if (base->used == 1 && base->dp[0] == 2 && m[47] == (sp_digit)-1) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 err = sp_3072_mod_exp_2_avx2_48(r, e, (int)expLen * 8, m);
+            }
             else
 #endif
                 err = sp_3072_mod_exp_2_48(r, e, (int)expLen * 8, m);
@@ -5789,8 +5821,10 @@ int sp_DhExp_3072(const mp_int* base, const byte* exp, word32 expLen,
     #endif
         {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 err = sp_3072_mod_exp_avx2_48(r, b, e, (int)expLen * 8, m, 0);
+            }
             else
 #endif
                 err = sp_3072_mod_exp_48(r, b, e, (int)expLen * 8, m, 0);
@@ -5884,8 +5918,10 @@ int sp_ModExp_1536(const mp_int* base, const mp_int* exp, const mp_int* mod,
         sp_3072_from_mp(m, 24, mod);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_3072_mod_exp_avx2_24(r, b, e, expBits, m, 0);
+        }
         else
 #endif
             err = sp_3072_mod_exp_24(r, b, e, expBits, m, 0);
@@ -6987,7 +7023,8 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
             if (err == MP_OKAY) {
                 /* r = a ^ 0x10000 => r = a squared 16 times */
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                        IS_INTEL_AVX2(cpuid_flags)) {
                     for (i = 15; i >= 0; i--) {
                         sp_4096_mont_sqr_avx2_64(r, r, m, mp);
                     }
@@ -7018,7 +7055,8 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
         }
         else if (e == 0x3) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 if (err == MP_OKAY) {
                     sp_4096_sqr_avx2_64(r, ah);
                     err = sp_4096_mod_64_cond(r, r, m);
@@ -7060,7 +7098,8 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
 
                 XMEMCPY(r, a, sizeof(sp_digit) * 64);
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                        IS_INTEL_AVX2(cpuid_flags)) {
                     for (i--; i>=0; i--) {
                         sp_4096_mont_sqr_avx2_64(r, r, m, mp);
                         if (((e >> i) & 1) == 1) {
@@ -7304,8 +7343,10 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
         sp_4096_from_mp(dp, 32, dpm);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_2048_mod_exp_avx2_32(tmpa, a, dp, 2048, p, 1);
+        }
         else
 #endif
             err = sp_2048_mod_exp_32(tmpa, a, dp, 2048, p, 1);
@@ -7313,8 +7354,10 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
     if (err == MP_OKAY) {
         sp_4096_from_mp(dq, 32, dqm);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_2048_mod_exp_avx2_32(tmpb, a, dq, 2048, q, 1);
+       }
        else
 #endif
             err = sp_2048_mod_exp_32(tmpb, a, dq, 2048, q, 1);
@@ -7323,7 +7366,8 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
     if (err == MP_OKAY) {
         c = sp_2048_sub_in_place_32(tmpa, tmpb);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             c += sp_4096_cond_add_avx2_32(tmpa, tmpa, p, c);
             sp_4096_cond_add_avx2_32(tmpa, tmpa, p, c);
         }
@@ -7336,7 +7380,8 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
 
         sp_2048_from_mp(qi, 32, qim);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_2048_mul_avx2_32(tmpa, tmpa, qi);
         }
         else
@@ -7349,7 +7394,8 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
 
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_2048_mul_avx2_32(tmpa, q, tmpa);
         }
         else
@@ -7512,8 +7558,10 @@ int sp_ModExp_4096(const mp_int* base, const mp_int* exp, const mp_int* mod,
         sp_4096_from_mp(m, 64, mod);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_4096_mod_exp_avx2_64(r, b, e, expBits, m, 0);
+        }
         else
 #endif
             err = sp_4096_mod_exp_64(r, b, e, expBits, m, 0);
@@ -7892,8 +7940,10 @@ int sp_DhExp_4096(const mp_int* base, const byte* exp, word32 expLen,
     #ifdef HAVE_FFDHE_4096
         if (base->used == 1 && base->dp[0] == 2 && m[63] == (sp_digit)-1) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 err = sp_4096_mod_exp_2_avx2_64(r, e, (int)expLen * 8, m);
+            }
             else
 #endif
                 err = sp_4096_mod_exp_2_64(r, e, (int)expLen * 8, m);
@@ -7902,8 +7952,10 @@ int sp_DhExp_4096(const mp_int* base, const byte* exp, word32 expLen,
     #endif
         {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 err = sp_4096_mod_exp_avx2_64(r, b, e, (int)expLen * 8, m, 0);
+            }
             else
 #endif
                 err = sp_4096_mod_exp_64(r, b, e, (int)expLen * 8, m, 0);
@@ -11499,8 +11551,10 @@ int sp_ecc_mulmod_256(const mp_int* km, const ecc_point* gm, ecc_point* r,
         sp_256_point_from_ecc_point_4(point, gm);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_256_ecc_mulmod_avx2_4(point, point, k, map, 1, heap);
+        }
         else
 #endif
             err = sp_256_ecc_mulmod_4(point, point, k, map, 1, heap);
@@ -11579,24 +11633,30 @@ int sp_ecc_mulmod_add_256(const mp_int* km, const ecc_point* gm,
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_256_ecc_mulmod_avx2_4(point, point, k, 0, 0, heap);
+        }
         else
 #endif
             err = sp_256_ecc_mulmod_4(point, point, k, 0, 0, heap);
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_256_proj_point_add_avx2_4(point, point, addP, tmp);
+        }
         else
 #endif
             sp_256_proj_point_add_4(point, point, addP, tmp);
 
         if (map) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 sp_256_map_avx2_4(point, point, tmp);
+            }
             else
 #endif
                 sp_256_map_4(point, point, tmp);
@@ -24332,8 +24392,10 @@ int sp_ecc_mulmod_base_256(const mp_int* km, ecc_point* r, int map, void* heap)
         sp_256_from_mp(k, 4, km);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_256_ecc_mulmod_base_avx2_4(point, k, map, 1, heap);
+        }
         else
 #endif
             err = sp_256_ecc_mulmod_base_4(point, k, map, 1, heap);
@@ -24410,24 +24472,30 @@ int sp_ecc_mulmod_base_add_256(const mp_int* km, const ecc_point* am,
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_256_ecc_mulmod_base_avx2_4(point, k, 0, 0, heap);
+        }
         else
 #endif
             err = sp_256_ecc_mulmod_base_4(point, k, 0, 0, heap);
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_256_proj_point_add_avx2_4(point, point, addP, tmp);
+        }
         else
 #endif
             sp_256_proj_point_add_4(point, point, addP, tmp);
 
         if (map) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 sp_256_map_avx2_4(point, point, tmp);
+            }
             else
 #endif
                 sp_256_map_4(point, point, tmp);
@@ -24581,8 +24649,10 @@ int sp_ecc_make_key_256(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_256_ecc_mulmod_base_avx2_4(point, k, 1, 1, NULL);
+       }
         else
 #endif
             err = sp_256_ecc_mulmod_base_4(point, k, 1, 1, NULL);
@@ -24591,7 +24661,8 @@ int sp_ecc_make_key_256(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 #ifdef WOLFSSL_VALIDATE_ECC_KEYGEN
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_256_ecc_mulmod_avx2_4(infinity, point, p256_order, 1, 1,
                                                                           NULL);
         }
@@ -24786,8 +24857,10 @@ int sp_ecc_secret_gen_256(const mp_int* priv, const ecc_point* pub, byte* out,
         sp_256_from_mp(k, 4, priv);
         sp_256_point_from_ecc_point_4(point, pub);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_256_ecc_mulmod_avx2_4(point, point, k, 1, 1, heap);
+        }
         else
 #endif
             err = sp_256_ecc_mulmod_4(point, point, k, 1, 1, heap);
@@ -25532,8 +25605,10 @@ static int sp_256_calc_s_4(sp_digit* s, const sp_digit* r, sp_digit* k,
 
     /* Conv k to Montgomery form (mod order) */
 #ifdef HAVE_INTEL_AVX2
-     if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+            IS_INTEL_AVX2(cpuid_flags)) {
         sp_256_mul_avx2_4(k, k, p256_norm_order);
+    }
     else
 #endif
         sp_256_mul_4(k, k, p256_norm_order);
@@ -25543,8 +25618,10 @@ static int sp_256_calc_s_4(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* kInv = 1/k mod order */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_256_mont_inv_order_avx2_4(kInv, k, tmp);
+        }
         else
 #endif
             sp_256_mont_inv_order_4(kInv, k, tmp);
@@ -25552,8 +25629,10 @@ static int sp_256_calc_s_4(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* s = r * x + e */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_256_mul_avx2_4(x, x, r);
+        }
         else
 #endif
             sp_256_mul_4(x, x, r);
@@ -25571,8 +25650,10 @@ static int sp_256_calc_s_4(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* s = s * k^-1 mod order */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_256_mont_mul_order_avx2_4(s, s, kInv);
+        }
         else
 #endif
             sp_256_mont_mul_order_4(s, s, kInv);
@@ -25660,8 +25741,10 @@ int sp_ecc_sign_256(const byte* hash, word32 hashLen, WC_RNG* rng,
         }
         if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 err = sp_256_ecc_mulmod_base_avx2_4(point, k, 1, 1, heap);
+            }
             else
 #endif
                 err = sp_256_ecc_mulmod_base_4(point, k, 1, 1, heap);
@@ -25923,7 +26006,8 @@ static void sp_256_add_points_4(sp_point_256* p1, const sp_point_256* p2,
 #endif
 
 #ifdef HAVE_INTEL_AVX2
-    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+            IS_INTEL_AVX2(cpuid_flags)) {
         sp_256_proj_point_add_avx2_4(p1, p1, p2, tmp);
     }
     else
@@ -25932,7 +26016,8 @@ static void sp_256_add_points_4(sp_point_256* p1, const sp_point_256* p2,
     if (sp_256_iszero_4(p1->z)) {
         if (sp_256_iszero_4(p1->x) && sp_256_iszero_4(p1->y)) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 sp_256_proj_point_dbl_avx2_4(p1, p2, tmp);
             }
             else
@@ -25970,7 +26055,8 @@ static int sp_256_calc_vfy_point_4(sp_point_256* p1, sp_point_256* p2,
 
 #ifndef WOLFSSL_SP_SMALL
 #ifdef HAVE_INTEL_AVX2
-    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+            IS_INTEL_AVX2(cpuid_flags)) {
         sp_256_mod_inv_avx2_4(s, s, p256_order);
     }
     else
@@ -25981,7 +26067,8 @@ static int sp_256_calc_vfy_point_4(sp_point_256* p1, sp_point_256* p2,
 #endif /* !WOLFSSL_SP_SMALL */
     {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_256_mul_avx2_4(s, s, p256_norm_order);
         }
         else
@@ -25995,7 +26082,8 @@ static int sp_256_calc_vfy_point_4(sp_point_256* p1, sp_point_256* p2,
         sp_256_norm_4(s);
 #ifdef WOLFSSL_SP_SMALL
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_256_mont_inv_order_avx2_4(s, s, tmp);
             sp_256_mont_mul_order_avx2_4(u1, u1, s);
             sp_256_mont_mul_order_avx2_4(u2, u2, s);
@@ -26009,7 +26097,8 @@ static int sp_256_calc_vfy_point_4(sp_point_256* p1, sp_point_256* p2,
         }
 #else
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_256_mont_mul_order_avx2_4(u1, u1, s);
             sp_256_mont_mul_order_avx2_4(u2, u2, s);
         }
@@ -26021,7 +26110,8 @@ static int sp_256_calc_vfy_point_4(sp_point_256* p1, sp_point_256* p2,
         }
 #endif /* WOLFSSL_SP_SMALL */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_256_ecc_mulmod_base_avx2_4(p1, u1, 0, 0, heap);
         }
         else
@@ -26035,8 +26125,10 @@ static int sp_256_calc_vfy_point_4(sp_point_256* p1, sp_point_256* p2,
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_256_ecc_mulmod_avx2_4(p2, p2, u2, 0, 0, heap);
+        }
         else
 #endif
             err = sp_256_ecc_mulmod_4(p2, p2, u2, 0, 0, heap);
@@ -26138,14 +26230,18 @@ int sp_ecc_verify_256(const byte* hash, word32 hashLen, const mp_int* pX,
     if (err == MP_OKAY) {
         /* u1 = r.z'.z' mod prime */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_256_mont_sqr_avx2_4(p1->z, p1->z, p256_mod, p256_mp_mod);
+        }
         else
 #endif
             sp_256_mont_sqr_4(p1->z, p1->z, p256_mod, p256_mp_mod);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_256_mont_mul_avx2_4(u1, u2, p1->z, p256_mod, p256_mp_mod);
+        }
         else
 #endif
             sp_256_mont_mul_4(u1, u2, p1->z, p256_mod, p256_mp_mod);
@@ -26168,7 +26264,8 @@ int sp_ecc_verify_256(const byte* hash, word32 hashLen, const mp_int* pX,
             if (err == MP_OKAY) {
                 /* u1 = (r + 1*order).z'.z' mod prime */
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                        IS_INTEL_AVX2(cpuid_flags)) {
                     sp_256_mont_mul_avx2_4(u1, u2, p1->z, p256_mod,
                         p256_mp_mod);
                 }
@@ -26520,8 +26617,10 @@ int sp_ecc_check_key_256(const mp_int* pX, const mp_int* pY,
     if (err == MP_OKAY) {
         /* Point * order = infinity */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_256_ecc_mulmod_avx2_4(p, pub, p256_order, 1, 1, heap);
+        }
         else
 #endif
             err = sp_256_ecc_mulmod_4(p, pub, p256_order, 1, 1, heap);
@@ -26536,8 +26635,10 @@ int sp_ecc_check_key_256(const mp_int* pX, const mp_int* pY,
         if (err == MP_OKAY) {
             /* Base * private = point */
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 err = sp_256_ecc_mulmod_base_avx2_4(p, priv, 1, 1, heap);
+            }
             else
 #endif
                 err = sp_256_ecc_mulmod_base_4(p, priv, 1, 1, heap);
@@ -26621,8 +26722,10 @@ int sp_ecc_proj_add_point_256(mp_int* pX, mp_int* pY, mp_int* pZ,
                       sp_256_iszero_4(q->y);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_256_proj_point_add_avx2_4(p, p, q, tmp);
+        }
         else
 #endif
             sp_256_proj_point_add_4(p, p, q, tmp);
@@ -26695,8 +26798,10 @@ int sp_ecc_proj_dbl_point_256(mp_int* pX, mp_int* pY, mp_int* pZ,
                       sp_256_iszero_4(p->y);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_256_proj_point_dbl_avx2_4(p, p, tmp);
+        }
         else
 #endif
             sp_256_proj_point_dbl_4(p, p, tmp);
@@ -26765,8 +26870,10 @@ int sp_ecc_map_256(mp_int* pX, mp_int* pY, mp_int* pZ)
                       sp_256_iszero_4(p->y);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_256_map_avx2_4(p, p, tmp);
+        }
         else
 #endif
             sp_256_map_4(p, p, tmp);
@@ -26820,7 +26927,8 @@ static int sp_256_mont_sqrt_4(sp_digit* y)
         t2 = t1 + 2 * 4;
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             /* t2 = y ^ 0x2 */
             sp_256_mont_sqr_avx2_4(t2, y, p256_mod, p256_mp_mod);
             /* t1 = y ^ 0x3 */
@@ -26929,7 +27037,8 @@ int sp_ecc_uncompress_256(mp_int* xm, int odd, mp_int* ym)
     if (err == MP_OKAY) {
         /* y = x^3 */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_256_mont_sqr_avx2_4(y, x, p256_mod, p256_mp_mod);
             sp_256_mont_mul_avx2_4(y, y, x, p256_mod, p256_mp_mod);
         }
@@ -30662,8 +30771,10 @@ int sp_ecc_mulmod_384(const mp_int* km, const ecc_point* gm, ecc_point* r,
         sp_384_point_from_ecc_point_6(point, gm);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_384_ecc_mulmod_avx2_6(point, point, k, map, 1, heap);
+        }
         else
 #endif
             err = sp_384_ecc_mulmod_6(point, point, k, map, 1, heap);
@@ -30742,24 +30853,30 @@ int sp_ecc_mulmod_add_384(const mp_int* km, const ecc_point* gm,
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_384_ecc_mulmod_avx2_6(point, point, k, 0, 0, heap);
+        }
         else
 #endif
             err = sp_384_ecc_mulmod_6(point, point, k, 0, 0, heap);
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_384_proj_point_add_avx2_6(point, point, addP, tmp);
+        }
         else
 #endif
             sp_384_proj_point_add_6(point, point, addP, tmp);
 
         if (map) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 sp_384_map_avx2_6(point, point, tmp);
+            }
             else
 #endif
                 sp_384_map_6(point, point, tmp);
@@ -49309,8 +49426,10 @@ int sp_ecc_mulmod_base_384(const mp_int* km, ecc_point* r, int map, void* heap)
         sp_384_from_mp(k, 6, km);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_384_ecc_mulmod_base_avx2_6(point, k, map, 1, heap);
+        }
         else
 #endif
             err = sp_384_ecc_mulmod_base_6(point, k, map, 1, heap);
@@ -49387,24 +49506,30 @@ int sp_ecc_mulmod_base_add_384(const mp_int* km, const ecc_point* am,
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_384_ecc_mulmod_base_avx2_6(point, k, 0, 0, heap);
+        }
         else
 #endif
             err = sp_384_ecc_mulmod_base_6(point, k, 0, 0, heap);
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_384_proj_point_add_avx2_6(point, point, addP, tmp);
+        }
         else
 #endif
             sp_384_proj_point_add_6(point, point, addP, tmp);
 
         if (map) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 sp_384_map_avx2_6(point, point, tmp);
+            }
             else
 #endif
                 sp_384_map_6(point, point, tmp);
@@ -49558,8 +49683,10 @@ int sp_ecc_make_key_384(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_384_ecc_mulmod_base_avx2_6(point, k, 1, 1, NULL);
+       }
         else
 #endif
             err = sp_384_ecc_mulmod_base_6(point, k, 1, 1, NULL);
@@ -49568,7 +49695,8 @@ int sp_ecc_make_key_384(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 #ifdef WOLFSSL_VALIDATE_ECC_KEYGEN
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_384_ecc_mulmod_avx2_6(infinity, point, p384_order, 1, 1,
                                                                           NULL);
         }
@@ -49763,8 +49891,10 @@ int sp_ecc_secret_gen_384(const mp_int* priv, const ecc_point* pub, byte* out,
         sp_384_from_mp(k, 6, priv);
         sp_384_point_from_ecc_point_6(point, pub);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_384_ecc_mulmod_avx2_6(point, point, k, 1, 1, heap);
+        }
         else
 #endif
             err = sp_384_ecc_mulmod_6(point, point, k, 1, 1, heap);
@@ -50367,8 +50497,10 @@ static int sp_384_calc_s_6(sp_digit* s, const sp_digit* r, sp_digit* k,
 
     /* Conv k to Montgomery form (mod order) */
 #ifdef HAVE_INTEL_AVX2
-     if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+            IS_INTEL_AVX2(cpuid_flags)) {
         sp_384_mul_avx2_6(k, k, p384_norm_order);
+    }
     else
 #endif
         sp_384_mul_6(k, k, p384_norm_order);
@@ -50378,8 +50510,10 @@ static int sp_384_calc_s_6(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* kInv = 1/k mod order */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_384_mont_inv_order_avx2_6(kInv, k, tmp);
+        }
         else
 #endif
             sp_384_mont_inv_order_6(kInv, k, tmp);
@@ -50387,8 +50521,10 @@ static int sp_384_calc_s_6(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* s = r * x + e */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_384_mul_avx2_6(x, x, r);
+        }
         else
 #endif
             sp_384_mul_6(x, x, r);
@@ -50406,8 +50542,10 @@ static int sp_384_calc_s_6(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* s = s * k^-1 mod order */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_384_mont_mul_order_avx2_6(s, s, kInv);
+        }
         else
 #endif
             sp_384_mont_mul_order_6(s, s, kInv);
@@ -50495,8 +50633,10 @@ int sp_ecc_sign_384(const byte* hash, word32 hashLen, WC_RNG* rng,
         }
         if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 err = sp_384_ecc_mulmod_base_avx2_6(point, k, 1, 1, heap);
+            }
             else
 #endif
                 err = sp_384_ecc_mulmod_base_6(point, k, 1, 1, heap);
@@ -50847,7 +50987,8 @@ static void sp_384_add_points_6(sp_point_384* p1, const sp_point_384* p2,
 #endif
 
 #ifdef HAVE_INTEL_AVX2
-    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+            IS_INTEL_AVX2(cpuid_flags)) {
         sp_384_proj_point_add_avx2_6(p1, p1, p2, tmp);
     }
     else
@@ -50856,7 +50997,8 @@ static void sp_384_add_points_6(sp_point_384* p1, const sp_point_384* p2,
     if (sp_384_iszero_6(p1->z)) {
         if (sp_384_iszero_6(p1->x) && sp_384_iszero_6(p1->y)) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 sp_384_proj_point_dbl_avx2_6(p1, p2, tmp);
             }
             else
@@ -50900,7 +51042,8 @@ static int sp_384_calc_vfy_point_6(sp_point_384* p1, sp_point_384* p2,
 #endif /* !WOLFSSL_SP_SMALL */
     {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_384_mul_avx2_6(s, s, p384_norm_order);
         }
         else
@@ -50914,7 +51057,8 @@ static int sp_384_calc_vfy_point_6(sp_point_384* p1, sp_point_384* p2,
         sp_384_norm_6(s);
 #ifdef WOLFSSL_SP_SMALL
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_384_mont_inv_order_avx2_6(s, s, tmp);
             sp_384_mont_mul_order_avx2_6(u1, u1, s);
             sp_384_mont_mul_order_avx2_6(u2, u2, s);
@@ -50928,7 +51072,8 @@ static int sp_384_calc_vfy_point_6(sp_point_384* p1, sp_point_384* p2,
         }
 #else
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_384_mont_mul_order_avx2_6(u1, u1, s);
             sp_384_mont_mul_order_avx2_6(u2, u2, s);
         }
@@ -50940,7 +51085,8 @@ static int sp_384_calc_vfy_point_6(sp_point_384* p1, sp_point_384* p2,
         }
 #endif /* WOLFSSL_SP_SMALL */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_384_ecc_mulmod_base_avx2_6(p1, u1, 0, 0, heap);
         }
         else
@@ -50954,8 +51100,10 @@ static int sp_384_calc_vfy_point_6(sp_point_384* p1, sp_point_384* p2,
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_384_ecc_mulmod_avx2_6(p2, p2, u2, 0, 0, heap);
+        }
         else
 #endif
             err = sp_384_ecc_mulmod_6(p2, p2, u2, 0, 0, heap);
@@ -51057,14 +51205,18 @@ int sp_ecc_verify_384(const byte* hash, word32 hashLen, const mp_int* pX,
     if (err == MP_OKAY) {
         /* u1 = r.z'.z' mod prime */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_384_mont_sqr_avx2_6(p1->z, p1->z, p384_mod, p384_mp_mod);
+        }
         else
 #endif
             sp_384_mont_sqr_6(p1->z, p1->z, p384_mod, p384_mp_mod);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_384_mont_mul_avx2_6(u1, u2, p1->z, p384_mod, p384_mp_mod);
+        }
         else
 #endif
             sp_384_mont_mul_6(u1, u2, p1->z, p384_mod, p384_mp_mod);
@@ -51087,7 +51239,8 @@ int sp_ecc_verify_384(const byte* hash, word32 hashLen, const mp_int* pX,
             if (err == MP_OKAY) {
                 /* u1 = (r + 1*order).z'.z' mod prime */
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                        IS_INTEL_AVX2(cpuid_flags)) {
                     sp_384_mont_mul_avx2_6(u1, u2, p1->z, p384_mod,
                         p384_mp_mod);
                 }
@@ -51439,8 +51592,10 @@ int sp_ecc_check_key_384(const mp_int* pX, const mp_int* pY,
     if (err == MP_OKAY) {
         /* Point * order = infinity */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_384_ecc_mulmod_avx2_6(p, pub, p384_order, 1, 1, heap);
+        }
         else
 #endif
             err = sp_384_ecc_mulmod_6(p, pub, p384_order, 1, 1, heap);
@@ -51455,8 +51610,10 @@ int sp_ecc_check_key_384(const mp_int* pX, const mp_int* pY,
         if (err == MP_OKAY) {
             /* Base * private = point */
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 err = sp_384_ecc_mulmod_base_avx2_6(p, priv, 1, 1, heap);
+            }
             else
 #endif
                 err = sp_384_ecc_mulmod_base_6(p, priv, 1, 1, heap);
@@ -51540,8 +51697,10 @@ int sp_ecc_proj_add_point_384(mp_int* pX, mp_int* pY, mp_int* pZ,
                       sp_384_iszero_6(q->y);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_384_proj_point_add_avx2_6(p, p, q, tmp);
+        }
         else
 #endif
             sp_384_proj_point_add_6(p, p, q, tmp);
@@ -51614,8 +51773,10 @@ int sp_ecc_proj_dbl_point_384(mp_int* pX, mp_int* pY, mp_int* pZ,
                       sp_384_iszero_6(p->y);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_384_proj_point_dbl_avx2_6(p, p, tmp);
+        }
         else
 #endif
             sp_384_proj_point_dbl_6(p, p, tmp);
@@ -51684,8 +51845,10 @@ int sp_ecc_map_384(mp_int* pX, mp_int* pY, mp_int* pZ)
                       sp_384_iszero_6(p->y);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_384_map_avx2_6(p, p, tmp);
+        }
         else
 #endif
             sp_384_map_6(p, p, tmp);
@@ -51744,7 +51907,8 @@ static int sp_384_mont_sqrt_6(sp_digit* y)
         t5 = t1 + 8 * 6;
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             /* t2 = y ^ 0x2 */
             sp_384_mont_sqr_avx2_6(t2, y, p384_mod, p384_mp_mod);
             /* t1 = y ^ 0x3 */
@@ -51903,7 +52067,8 @@ int sp_ecc_uncompress_384(mp_int* xm, int odd, mp_int* ym)
     if (err == MP_OKAY) {
         /* y = x^3 */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_384_mont_sqr_avx2_6(y, x, p384_mod, p384_mp_mod);
             sp_384_mont_mul_avx2_6(y, y, x, p384_mod, p384_mp_mod);
         }
@@ -55513,8 +55678,10 @@ int sp_ecc_mulmod_521(const mp_int* km, const ecc_point* gm, ecc_point* r,
         sp_521_point_from_ecc_point_9(point, gm);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_521_ecc_mulmod_avx2_9(point, point, k, map, 1, heap);
+        }
         else
 #endif
             err = sp_521_ecc_mulmod_9(point, point, k, map, 1, heap);
@@ -55593,24 +55760,30 @@ int sp_ecc_mulmod_add_521(const mp_int* km, const ecc_point* gm,
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_521_ecc_mulmod_avx2_9(point, point, k, 0, 0, heap);
+        }
         else
 #endif
             err = sp_521_ecc_mulmod_9(point, point, k, 0, 0, heap);
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_521_proj_point_add_avx2_9(point, point, addP, tmp);
+        }
         else
 #endif
             sp_521_proj_point_add_9(point, point, addP, tmp);
 
         if (map) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 sp_521_map_avx2_9(point, point, tmp);
+            }
             else
 #endif
                 sp_521_map_9(point, point, tmp);
@@ -90346,8 +90519,10 @@ int sp_ecc_mulmod_base_521(const mp_int* km, ecc_point* r, int map, void* heap)
         sp_521_from_mp(k, 9, km);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_521_ecc_mulmod_base_avx2_9(point, k, map, 1, heap);
+        }
         else
 #endif
             err = sp_521_ecc_mulmod_base_9(point, k, map, 1, heap);
@@ -90424,24 +90599,30 @@ int sp_ecc_mulmod_base_add_521(const mp_int* km, const ecc_point* am,
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_521_ecc_mulmod_base_avx2_9(point, k, 0, 0, heap);
+        }
         else
 #endif
             err = sp_521_ecc_mulmod_base_9(point, k, 0, 0, heap);
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_521_proj_point_add_avx2_9(point, point, addP, tmp);
+        }
         else
 #endif
             sp_521_proj_point_add_9(point, point, addP, tmp);
 
         if (map) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 sp_521_map_avx2_9(point, point, tmp);
+            }
             else
 #endif
                 sp_521_map_9(point, point, tmp);
@@ -90596,8 +90777,10 @@ int sp_ecc_make_key_521(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_521_ecc_mulmod_base_avx2_9(point, k, 1, 1, NULL);
+       }
         else
 #endif
             err = sp_521_ecc_mulmod_base_9(point, k, 1, 1, NULL);
@@ -90606,7 +90789,8 @@ int sp_ecc_make_key_521(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 #ifdef WOLFSSL_VALIDATE_ECC_KEYGEN
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_521_ecc_mulmod_avx2_9(infinity, point, p521_order, 1, 1,
                                                                           NULL);
         }
@@ -90801,8 +90985,10 @@ int sp_ecc_secret_gen_521(const mp_int* priv, const ecc_point* pub, byte* out,
         sp_521_from_mp(k, 9, priv);
         sp_521_point_from_ecc_point_9(point, pub);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_521_ecc_mulmod_avx2_9(point, point, k, 1, 1, heap);
+        }
         else
 #endif
             err = sp_521_ecc_mulmod_9(point, point, k, 1, 1, heap);
@@ -91460,8 +91646,10 @@ static int sp_521_calc_s_9(sp_digit* s, const sp_digit* r, sp_digit* k,
 
     /* Conv k to Montgomery form (mod order) */
 #ifdef HAVE_INTEL_AVX2
-     if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+            IS_INTEL_AVX2(cpuid_flags)) {
         sp_521_mul_avx2_9(k, k, p521_norm_order);
+    }
     else
 #endif
         sp_521_mul_9(k, k, p521_norm_order);
@@ -91471,8 +91659,10 @@ static int sp_521_calc_s_9(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* kInv = 1/k mod order */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_521_mont_inv_order_avx2_9(kInv, k, tmp);
+        }
         else
 #endif
             sp_521_mont_inv_order_9(kInv, k, tmp);
@@ -91480,8 +91670,10 @@ static int sp_521_calc_s_9(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* s = r * x + e */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_521_mul_avx2_9(x, x, r);
+        }
         else
 #endif
             sp_521_mul_9(x, x, r);
@@ -91499,8 +91691,10 @@ static int sp_521_calc_s_9(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* s = s * k^-1 mod order */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_521_mont_mul_order_avx2_9(s, s, kInv);
+        }
         else
 #endif
             sp_521_mont_mul_order_9(s, s, kInv);
@@ -91588,8 +91782,10 @@ int sp_ecc_sign_521(const byte* hash, word32 hashLen, WC_RNG* rng,
         }
         if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 err = sp_521_ecc_mulmod_base_avx2_9(point, k, 1, 1, heap);
+            }
             else
 #endif
                 err = sp_521_ecc_mulmod_base_9(point, k, 1, 1, heap);
@@ -91948,7 +92144,8 @@ static void sp_521_add_points_9(sp_point_521* p1, const sp_point_521* p2,
 #endif
 
 #ifdef HAVE_INTEL_AVX2
-    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+            IS_INTEL_AVX2(cpuid_flags)) {
         sp_521_proj_point_add_avx2_9(p1, p1, p2, tmp);
     }
     else
@@ -91957,7 +92154,8 @@ static void sp_521_add_points_9(sp_point_521* p1, const sp_point_521* p2,
     if (sp_521_iszero_9(p1->z)) {
         if (sp_521_iszero_9(p1->x) && sp_521_iszero_9(p1->y)) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 sp_521_proj_point_dbl_avx2_9(p1, p2, tmp);
             }
             else
@@ -92004,7 +92202,8 @@ static int sp_521_calc_vfy_point_9(sp_point_521* p1, sp_point_521* p2,
 #endif /* !WOLFSSL_SP_SMALL */
     {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_521_mul_avx2_9(s, s, p521_norm_order);
         }
         else
@@ -92018,7 +92217,8 @@ static int sp_521_calc_vfy_point_9(sp_point_521* p1, sp_point_521* p2,
         sp_521_norm_9(s);
 #ifdef WOLFSSL_SP_SMALL
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_521_mont_inv_order_avx2_9(s, s, tmp);
             sp_521_mont_mul_order_avx2_9(u1, u1, s);
             sp_521_mont_mul_order_avx2_9(u2, u2, s);
@@ -92032,7 +92232,8 @@ static int sp_521_calc_vfy_point_9(sp_point_521* p1, sp_point_521* p2,
         }
 #else
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_521_mont_mul_order_avx2_9(u1, u1, s);
             sp_521_mont_mul_order_avx2_9(u2, u2, s);
         }
@@ -92044,7 +92245,8 @@ static int sp_521_calc_vfy_point_9(sp_point_521* p1, sp_point_521* p2,
         }
 #endif /* WOLFSSL_SP_SMALL */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_521_ecc_mulmod_base_avx2_9(p1, u1, 0, 0, heap);
         }
         else
@@ -92058,8 +92260,10 @@ static int sp_521_calc_vfy_point_9(sp_point_521* p1, sp_point_521* p2,
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_521_ecc_mulmod_avx2_9(p2, p2, u2, 0, 0, heap);
+        }
         else
 #endif
             err = sp_521_ecc_mulmod_9(p2, p2, u2, 0, 0, heap);
@@ -92165,14 +92369,18 @@ int sp_ecc_verify_521(const byte* hash, word32 hashLen, const mp_int* pX,
     if (err == MP_OKAY) {
         /* u1 = r.z'.z' mod prime */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_521_mont_sqr_avx2_9(p1->z, p1->z, p521_mod, p521_mp_mod);
+        }
         else
 #endif
             sp_521_mont_sqr_9(p1->z, p1->z, p521_mod, p521_mp_mod);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_521_mont_mul_avx2_9(u1, u2, p1->z, p521_mod, p521_mp_mod);
+        }
         else
 #endif
             sp_521_mont_mul_9(u1, u2, p1->z, p521_mod, p521_mp_mod);
@@ -92195,7 +92403,8 @@ int sp_ecc_verify_521(const byte* hash, word32 hashLen, const mp_int* pX,
             if (err == MP_OKAY) {
                 /* u1 = (r + 1*order).z'.z' mod prime */
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                        IS_INTEL_AVX2(cpuid_flags)) {
                     sp_521_mont_mul_avx2_9(u1, u2, p1->z, p521_mod,
                         p521_mp_mod);
                 }
@@ -92550,8 +92759,10 @@ int sp_ecc_check_key_521(const mp_int* pX, const mp_int* pY,
     if (err == MP_OKAY) {
         /* Point * order = infinity */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_521_ecc_mulmod_avx2_9(p, pub, p521_order, 1, 1, heap);
+        }
         else
 #endif
             err = sp_521_ecc_mulmod_9(p, pub, p521_order, 1, 1, heap);
@@ -92566,8 +92777,10 @@ int sp_ecc_check_key_521(const mp_int* pX, const mp_int* pY,
         if (err == MP_OKAY) {
             /* Base * private = point */
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 err = sp_521_ecc_mulmod_base_avx2_9(p, priv, 1, 1, heap);
+            }
             else
 #endif
                 err = sp_521_ecc_mulmod_base_9(p, priv, 1, 1, heap);
@@ -92651,8 +92864,10 @@ int sp_ecc_proj_add_point_521(mp_int* pX, mp_int* pY, mp_int* pZ,
                       sp_521_iszero_9(q->y);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_521_proj_point_add_avx2_9(p, p, q, tmp);
+        }
         else
 #endif
             sp_521_proj_point_add_9(p, p, q, tmp);
@@ -92725,8 +92940,10 @@ int sp_ecc_proj_dbl_point_521(mp_int* pX, mp_int* pY, mp_int* pZ,
                       sp_521_iszero_9(p->y);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_521_proj_point_dbl_avx2_9(p, p, tmp);
+        }
         else
 #endif
             sp_521_proj_point_dbl_9(p, p, tmp);
@@ -92795,8 +93012,10 @@ int sp_ecc_map_521(mp_int* pX, mp_int* pY, mp_int* pZ)
                       sp_521_iszero_9(p->y);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_521_map_avx2_9(p, p, tmp);
+        }
         else
 #endif
             sp_521_map_9(p, p, tmp);
@@ -92854,7 +93073,8 @@ static int sp_521_mont_sqrt_9(sp_digit* y)
     if (err == MP_OKAY) {
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             int i;
 
             XMEMCPY(t, y, sizeof(sp_digit) * 9);
@@ -92923,7 +93143,8 @@ int sp_ecc_uncompress_521(mp_int* xm, int odd, mp_int* ym)
     if (err == MP_OKAY) {
         /* y = x^3 */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_521_mont_sqr_avx2_9(y, x, p521_mod, p521_mp_mod);
             sp_521_mont_mul_avx2_9(y, y, x, p521_mod, p521_mp_mod);
         }
@@ -96669,8 +96890,10 @@ int sp_ecc_mulmod_1024(const mp_int* km, const ecc_point* gm, ecc_point* r,
         sp_1024_point_from_ecc_point_16(point, gm);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_1024_ecc_mulmod_avx2_16(point, point, k, map, 1, heap);
+        }
         else
 #endif
             err = sp_1024_ecc_mulmod_16(point, point, k, map, 1, heap);
@@ -100100,8 +100323,10 @@ int sp_ecc_mulmod_base_1024(const mp_int* km, ecc_point* r, int map, void* heap)
         sp_1024_from_mp(k, 16, km);
 
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_1024_ecc_mulmod_base_avx2_16(point, k, map, 1, heap);
+        }
         else
 #endif
             err = sp_1024_ecc_mulmod_base_16(point, k, map, 1, heap);
@@ -100178,24 +100403,30 @@ int sp_ecc_mulmod_base_add_1024(const mp_int* km, const ecc_point* am,
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_1024_ecc_mulmod_base_avx2_16(point, k, 0, 0, heap);
+        }
         else
 #endif
             err = sp_1024_ecc_mulmod_base_16(point, k, 0, 0, heap);
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             sp_1024_proj_point_add_avx2_16(point, point, addP, tmp);
+        }
         else
 #endif
             sp_1024_proj_point_add_16(point, point, addP, tmp);
 
         if (map) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 sp_1024_map_avx2_16(point, point, tmp);
+            }
             else
 #endif
                 sp_1024_map_16(point, point, tmp);
@@ -100267,9 +100498,11 @@ int sp_ecc_gen_table_1024(const ecc_point* gm, byte* table, word32* len,
     if (err == MP_OKAY) {
         sp_1024_point_from_ecc_point_16(point, gm);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_1024_gen_stripe_table_avx2_16(point,
                 (sp_table_entry_1024*)table, t, heap);
+        }
         else
 #endif
             err = sp_1024_gen_stripe_table_16(point,
@@ -100366,9 +100599,11 @@ int sp_ecc_mulmod_table_1024(const mp_int* km, const ecc_point* gm, byte* table,
 
 #ifndef WOLFSSL_SP_SMALL
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_1024_ecc_mulmod_stripe_avx2_16(point, point,
                 (const sp_table_entry_1024*)table, k, map, 0, heap);
+        }
         else
 #endif
             err = sp_1024_ecc_mulmod_stripe_16(point, point,
@@ -105435,8 +105670,10 @@ int sp_ecc_check_key_1024(const mp_int* pX, const mp_int* pY,
     if (err == MP_OKAY) {
         /* Point * order = infinity */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                IS_INTEL_AVX2(cpuid_flags)) {
             err = sp_1024_ecc_mulmod_avx2_16(p, pub, p1024_order, 1, 1, heap);
+        }
         else
 #endif
             err = sp_1024_ecc_mulmod_16(p, pub, p1024_order, 1, 1, heap);
@@ -105451,8 +105688,10 @@ int sp_ecc_check_key_1024(const mp_int* pX, const mp_int* pY,
         if (err == MP_OKAY) {
             /* Base * private = point */
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags))
+            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+                    IS_INTEL_AVX2(cpuid_flags)) {
                 err = sp_1024_ecc_mulmod_base_avx2_16(p, priv, 1, 1, heap);
+            }
             else
 #endif
                 err = sp_1024_ecc_mulmod_base_16(p, priv, 1, 1, heap);
