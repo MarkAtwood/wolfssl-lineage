@@ -2756,7 +2756,7 @@ static sp_digit sp_2048_add_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* Sub b from a into a. (a -= b)
@@ -2803,7 +2803,7 @@ static sp_digit sp_2048_sub_in_place_16(sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Add b to a into r. (r = a + b)
@@ -2853,7 +2853,7 @@ static sp_digit sp_2048_add_16(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* AND m into each word of a and store in r.
@@ -2993,7 +2993,7 @@ static sp_digit sp_2048_sub_in_place_32(sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Add b to a into r. (r = a + b)
@@ -3071,7 +3071,7 @@ static sp_digit sp_2048_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* AND m into each word of a and store in r.
@@ -3271,7 +3271,7 @@ static sp_digit sp_2048_sub_in_place_64(sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Add b to a into r. (r = a + b)
@@ -3405,7 +3405,7 @@ static sp_digit sp_2048_add_64(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* AND m into each word of a and store in r.
@@ -5082,7 +5082,7 @@ static sp_digit sp_2048_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* Square a and put result in r. (r = a * a)
@@ -5167,7 +5167,7 @@ static sp_digit sp_2048_sub_16(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* Square a and put result in r. (r = a * a)
@@ -5280,7 +5280,7 @@ static sp_digit sp_2048_sub_32(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* Square a and put result in r. (r = a * a)
@@ -5356,7 +5356,7 @@ static sp_digit sp_2048_add_64(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         : "memory", "cc", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
             "r3", "r12"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -5393,7 +5393,7 @@ static sp_digit sp_2048_sub_in_place_64(sp_digit* a_p, const sp_digit* b_p)
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12",
             "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -5811,7 +5811,7 @@ static sp_digit sp_2048_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         : "memory", "cc", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
             "r3", "r12"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -5848,7 +5848,7 @@ static sp_digit sp_2048_sub_in_place_32(sp_digit* a_p, const sp_digit* b_p)
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12",
             "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -8451,7 +8451,7 @@ static sp_digit sp_2048_cond_sub_32(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -8590,7 +8590,7 @@ static sp_digit sp_2048_cond_sub_32(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6", "r7"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -11304,7 +11304,7 @@ static sp_digit div_2048_word_32(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #else
@@ -11442,7 +11442,7 @@ static sp_digit div_2048_word_32(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #endif
@@ -11841,7 +11841,7 @@ static sp_int32 sp_2048_cmp_32(const sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Divide d in a and put remainder into r (m*d + r = a)
@@ -12277,7 +12277,7 @@ static sp_digit sp_2048_cond_sub_64(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -12528,7 +12528,7 @@ static sp_digit sp_2048_cond_sub_64(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6", "r7"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -15425,7 +15425,7 @@ static sp_digit sp_2048_sub_64(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
             "r12", "lr"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -15559,7 +15559,7 @@ static sp_digit sp_2048_sub_64(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -15619,7 +15619,7 @@ static sp_digit div_2048_word_64(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #else
@@ -15757,7 +15757,7 @@ static sp_digit div_2048_word_64(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #endif
@@ -16612,7 +16612,7 @@ static sp_int32 sp_2048_cmp_64(const sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Divide d in a and put remainder into r (m*d + r = a)
@@ -17170,7 +17170,7 @@ static sp_digit sp_2048_cond_add_32(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -17309,7 +17309,7 @@ static sp_digit sp_2048_cond_add_32(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -23971,7 +23971,7 @@ static sp_digit sp_3072_add_12(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* Sub b from a into a. (a -= b)
@@ -24032,7 +24032,7 @@ static sp_digit sp_3072_sub_in_place_24(sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Add b to a into r. (r = a + b)
@@ -24096,7 +24096,7 @@ static sp_digit sp_3072_add_24(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* AND m into each word of a and store in r.
@@ -24268,7 +24268,7 @@ static sp_digit sp_3072_sub_in_place_48(sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Add b to a into r. (r = a + b)
@@ -24374,7 +24374,7 @@ static sp_digit sp_3072_add_48(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* AND m into each word of a and store in r.
@@ -24630,7 +24630,7 @@ static sp_digit sp_3072_sub_in_place_96(sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Add b to a into r. (r = a + b)
@@ -24820,7 +24820,7 @@ static sp_digit sp_3072_add_96(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* AND m into each word of a and store in r.
@@ -27994,7 +27994,7 @@ static sp_digit sp_3072_sub_12(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* Square a and put result in r. (r = a * a)
@@ -28093,7 +28093,7 @@ static sp_digit sp_3072_sub_24(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* Square a and put result in r. (r = a * a)
@@ -28234,7 +28234,7 @@ static sp_digit sp_3072_sub_48(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* Square a and put result in r. (r = a * a)
@@ -28310,7 +28310,7 @@ static sp_digit sp_3072_add_96(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         : "memory", "cc", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
             "r3", "r12"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -28347,7 +28347,7 @@ static sp_digit sp_3072_sub_in_place_96(sp_digit* a_p, const sp_digit* b_p)
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12",
             "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -28765,7 +28765,7 @@ static sp_digit sp_3072_add_48(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         : "memory", "cc", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
             "r3", "r12"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -28802,7 +28802,7 @@ static sp_digit sp_3072_sub_in_place_48(sp_digit* a_p, const sp_digit* b_p)
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12",
             "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -32429,7 +32429,7 @@ static sp_digit sp_3072_cond_sub_48(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -32624,7 +32624,7 @@ static sp_digit sp_3072_cond_sub_48(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6", "r7"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -36522,7 +36522,7 @@ static sp_digit div_3072_word_48(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #else
@@ -36660,7 +36660,7 @@ static sp_digit div_3072_word_48(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #endif
@@ -37235,7 +37235,7 @@ static sp_int32 sp_3072_cmp_48(const sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Divide d in a and put remainder into r (m*d + r = a)
@@ -37671,7 +37671,7 @@ static sp_digit sp_3072_cond_sub_96(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -38034,7 +38034,7 @@ static sp_digit sp_3072_cond_sub_96(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6", "r7"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -42275,7 +42275,7 @@ static sp_digit sp_3072_sub_96(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
             "r12", "lr"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -42465,7 +42465,7 @@ static sp_digit sp_3072_sub_96(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -42525,7 +42525,7 @@ static sp_digit div_3072_word_96(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #else
@@ -42663,7 +42663,7 @@ static sp_digit div_3072_word_96(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #endif
@@ -43876,7 +43876,7 @@ static sp_int32 sp_3072_cmp_96(const sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Divide d in a and put remainder into r (m*d + r = a)
@@ -44434,7 +44434,7 @@ static sp_digit sp_3072_cond_add_48(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -44629,7 +44629,7 @@ static sp_digit sp_3072_cond_add_48(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -46186,7 +46186,7 @@ static sp_digit sp_4096_sub_in_place_128(sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Add b to a into r. (r = a + b)
@@ -46433,7 +46433,7 @@ static sp_digit sp_4096_add_128(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* Multiply a and b into r. (r = a * b)
@@ -46549,7 +46549,7 @@ static sp_digit sp_4096_add_128(sp_digit* r_p, const sp_digit* a_p,
         : "memory", "cc", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
             "r3", "r12"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -46586,7 +46586,7 @@ static sp_digit sp_4096_sub_in_place_128(sp_digit* a_p, const sp_digit* b_p)
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12",
             "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -51236,7 +51236,7 @@ static sp_digit sp_4096_cond_sub_128(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -51711,7 +51711,7 @@ static sp_digit sp_4096_cond_sub_128(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6", "r7"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -57297,7 +57297,7 @@ static sp_digit sp_4096_sub_128(sp_digit* r_p, const sp_digit* a_p,
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
             "r12", "lr"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -57544,7 +57544,7 @@ static sp_digit sp_4096_sub_128(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -57604,7 +57604,7 @@ static sp_digit div_4096_word_128(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #else
@@ -57742,7 +57742,7 @@ static sp_digit div_4096_word_128(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #endif
@@ -59307,7 +59307,7 @@ static sp_int32 sp_4096_cmp_128(const sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Divide d in a and put remainder into r (m*d + r = a)
@@ -59865,7 +59865,7 @@ static sp_digit sp_4096_cond_add_64(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -60116,7 +60116,7 @@ static sp_digit sp_4096_cond_add_64(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -65953,7 +65953,7 @@ static sp_digit sp_256_add_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit*
         : "memory", "cc", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
             "r3", "r12"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -65990,7 +65990,7 @@ static sp_digit sp_256_add_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit*
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -66229,7 +66229,7 @@ static int sp_256_mod_mul_norm_8(sp_digit* r_p, const sp_digit* a_p,
             "lr", "r10"
     );
     (void)m_p;
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* Convert an mp_int to an array of sp_digit.
@@ -71323,7 +71323,7 @@ static sp_int32 sp_256_cmp_8(const sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Normalize the values in each word to 32.
@@ -71370,7 +71370,7 @@ static sp_digit sp_256_cond_sub_8(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -71425,7 +71425,7 @@ static sp_digit sp_256_cond_sub_8(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6", "r7"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -74152,7 +74152,7 @@ typedef struct sp_cache_256_t {
     /* Precomputation table for point. */
     sp_table_entry_256 table[16];
     /* Count of entries in table. */
-    uint32_t cnt;
+    word32 cnt;
     /* Point and table set in entry. */
     int set;
 } sp_cache_256_t;
@@ -74180,7 +74180,7 @@ static void sp_ecc_get_cache_256(const sp_point_256* g, sp_cache_256_t** cache)
 {
     int i;
     int j;
-    uint32_t least;
+    word32 least;
 
     if (sp_cache_256_inited == 0) {
         for (i=0; i<FP_ENTRIES; i++) {
@@ -74573,7 +74573,7 @@ typedef struct sp_cache_256_t {
     /* Precomputation table for point. */
     sp_table_entry_256 table[256];
     /* Count of entries in table. */
-    uint32_t cnt;
+    word32 cnt;
     /* Point and table set in entry. */
     int set;
 } sp_cache_256_t;
@@ -74601,7 +74601,7 @@ static void sp_ecc_get_cache_256(const sp_point_256* g, sp_cache_256_t** cache)
 {
     int i;
     int j;
-    uint32_t least;
+    word32 least;
 
     if (sp_cache_256_inited == 0) {
         for (i=0; i<FP_ENTRIES; i++) {
@@ -76833,7 +76833,7 @@ static sp_digit sp_256_sub_in_place_8(sp_digit* a_p, const sp_digit* b_p)
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12",
             "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #else
@@ -76867,7 +76867,7 @@ static sp_digit sp_256_sub_in_place_8(sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -77299,7 +77299,7 @@ static sp_digit div_256_word_8(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #else
@@ -77437,7 +77437,7 @@ static sp_digit div_256_word_8(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #endif
@@ -78122,7 +78122,7 @@ static sp_digit sp_256_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit*
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
             "r12", "lr"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -78158,7 +78158,7 @@ static sp_digit sp_256_sub_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit*
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -78329,7 +78329,7 @@ static void sp_256_div2_mod_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit
 }
 
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-static const byte L_sp_256_num_bits_8_table[] = {
+static const unsigned char L_sp_256_num_bits_8_table[] = {
     0x00, 0x01, 0x02, 0x02, 0x03, 0x03, 0x03, 0x03,
     0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
     0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05,
@@ -78367,8 +78367,8 @@ static const byte L_sp_256_num_bits_8_table[] = {
 static int sp_256_num_bits_8(const sp_digit* a_p)
 {
     register const sp_digit* a asm ("r0") = (const sp_digit*)a_p;
-    register byte* L_sp_256_num_bits_8_table_c asm ("r1") =
-        (byte*)&L_sp_256_num_bits_8_table;
+    register unsigned char* L_sp_256_num_bits_8_table_c asm ("r1") =
+        (unsigned char*)&L_sp_256_num_bits_8_table;
 
     __asm__ __volatile__ (
         "mov	lr, %[L_sp_256_num_bits_8_table]\n\t"
@@ -78685,7 +78685,7 @@ static int sp_256_num_bits_8(const sp_digit* a_p)
         :
         : "memory", "cc", "r2", "r3", "r12", "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #else
@@ -78774,7 +78774,7 @@ static int sp_256_num_bits_8(const sp_digit* a_p)
         :
         : "memory", "cc", "r1", "r2", "r3", "r12", "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #endif /* WOLFSSL_ARM_ARCH && (WOLFSSL_ARM_ARCH < 7) */
@@ -88809,7 +88809,7 @@ static sp_digit sp_384_add_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         : "memory", "cc", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
             "r3", "r12"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -88853,7 +88853,7 @@ static sp_digit sp_384_add_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -89191,7 +89191,7 @@ static sp_digit sp_384_cond_sub_12(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -89260,7 +89260,7 @@ static sp_digit sp_384_cond_sub_12(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6", "r7"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -90227,7 +90227,7 @@ static sp_int32 sp_384_cmp_12(const sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Normalize the values in each word to 32.
@@ -90370,7 +90370,7 @@ static sp_digit sp_384_sub_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
             "r12", "lr"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -90413,7 +90413,7 @@ static sp_digit sp_384_sub_12(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -90455,7 +90455,7 @@ static sp_digit sp_384_cond_add_12(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -90524,7 +90524,7 @@ static sp_digit sp_384_cond_add_12(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -91914,7 +91914,7 @@ typedef struct sp_cache_384_t {
     /* Precomputation table for point. */
     sp_table_entry_384 table[16];
     /* Count of entries in table. */
-    uint32_t cnt;
+    word32 cnt;
     /* Point and table set in entry. */
     int set;
 } sp_cache_384_t;
@@ -91942,7 +91942,7 @@ static void sp_ecc_get_cache_384(const sp_point_384* g, sp_cache_384_t** cache)
 {
     int i;
     int j;
-    uint32_t least;
+    word32 least;
 
     if (sp_cache_384_inited == 0) {
         for (i=0; i<FP_ENTRIES; i++) {
@@ -92351,7 +92351,7 @@ typedef struct sp_cache_384_t {
     /* Precomputation table for point. */
     sp_table_entry_384 table[256];
     /* Count of entries in table. */
-    uint32_t cnt;
+    word32 cnt;
     /* Point and table set in entry. */
     int set;
 } sp_cache_384_t;
@@ -92379,7 +92379,7 @@ static void sp_ecc_get_cache_384(const sp_point_384* g, sp_cache_384_t** cache)
 {
     int i;
     int j;
-    uint32_t least;
+    word32 least;
 
     if (sp_cache_384_inited == 0) {
         for (i=0; i<FP_ENTRIES; i++) {
@@ -94617,7 +94617,7 @@ static sp_digit sp_384_sub_in_place_12(sp_digit* a_p, const sp_digit* b_p)
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12",
             "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #else
@@ -94658,7 +94658,7 @@ static sp_digit sp_384_sub_in_place_12(sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -95218,7 +95218,7 @@ static sp_digit div_384_word_12(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #else
@@ -95356,7 +95356,7 @@ static sp_digit div_384_word_12(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #endif
@@ -96088,7 +96088,7 @@ static void sp_384_div2_mod_12(sp_digit* r_p, const sp_digit* a_p, const sp_digi
 }
 
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-static const byte L_sp_384_num_bits_12_table[] = {
+static const unsigned char L_sp_384_num_bits_12_table[] = {
     0x00, 0x01, 0x02, 0x02, 0x03, 0x03, 0x03, 0x03,
     0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
     0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05,
@@ -96126,8 +96126,8 @@ static const byte L_sp_384_num_bits_12_table[] = {
 static int sp_384_num_bits_12(const sp_digit* a_p)
 {
     register const sp_digit* a asm ("r0") = (const sp_digit*)a_p;
-    register byte* L_sp_384_num_bits_12_table_c asm ("r1") =
-        (byte*)&L_sp_384_num_bits_12_table;
+    register unsigned char* L_sp_384_num_bits_12_table_c asm ("r1") =
+        (unsigned char*)&L_sp_384_num_bits_12_table;
 
     __asm__ __volatile__ (
         "mov	lr, %[L_sp_384_num_bits_12_table]\n\t"
@@ -96696,7 +96696,7 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         :
         : "memory", "cc", "r2", "r3", "r12", "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #else
@@ -96845,7 +96845,7 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         :
         : "memory", "cc", "r1", "r2", "r3", "r12", "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #endif /* WOLFSSL_ARM_ARCH && (WOLFSSL_ARM_ARCH < 7) */
@@ -115266,7 +115266,7 @@ static sp_digit sp_521_add_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         : "memory", "cc", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
             "r3", "r12"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -115321,7 +115321,7 @@ static sp_digit sp_521_add_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -115576,7 +115576,7 @@ static sp_digit sp_521_cond_sub_17(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -115664,7 +115664,7 @@ static sp_digit sp_521_cond_sub_17(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6", "r7"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -117272,7 +117272,7 @@ static sp_int32 sp_521_cmp_17(const sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Normalize the values in each word to 32.
@@ -119114,7 +119114,7 @@ typedef struct sp_cache_521_t {
     /* Precomputation table for point. */
     sp_table_entry_521 table[16];
     /* Count of entries in table. */
-    uint32_t cnt;
+    word32 cnt;
     /* Point and table set in entry. */
     int set;
 } sp_cache_521_t;
@@ -119142,7 +119142,7 @@ static void sp_ecc_get_cache_521(const sp_point_521* g, sp_cache_521_t** cache)
 {
     int i;
     int j;
-    uint32_t least;
+    word32 least;
 
     if (sp_cache_521_inited == 0) {
         for (i=0; i<FP_ENTRIES; i++) {
@@ -119571,7 +119571,7 @@ typedef struct sp_cache_521_t {
     /* Precomputation table for point. */
     sp_table_entry_521 table[256];
     /* Count of entries in table. */
-    uint32_t cnt;
+    word32 cnt;
     /* Point and table set in entry. */
     int set;
 } sp_cache_521_t;
@@ -119599,7 +119599,7 @@ static void sp_ecc_get_cache_521(const sp_point_521* g, sp_cache_521_t** cache)
 {
     int i;
     int j;
-    uint32_t least;
+    word32 least;
 
     if (sp_cache_521_inited == 0) {
         for (i=0; i<FP_ENTRIES; i++) {
@@ -122837,7 +122837,7 @@ static sp_digit sp_521_sub_in_place_17(sp_digit* a_p, const sp_digit* b_p)
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12",
             "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #else
@@ -122889,7 +122889,7 @@ static sp_digit sp_521_sub_in_place_17(sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -123609,7 +123609,7 @@ static sp_digit div_521_word_17(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #else
@@ -123747,7 +123747,7 @@ static sp_digit div_521_word_17(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #endif
@@ -124438,7 +124438,7 @@ static sp_digit sp_521_sub_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
             "r12", "lr"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -124492,7 +124492,7 @@ static sp_digit sp_521_sub_17(sp_digit* r_p, const sp_digit* a_p, const sp_digit
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -124642,7 +124642,7 @@ static void sp_521_div2_mod_17(sp_digit* r_p, const sp_digit* a_p, const sp_digi
 }
 
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-static const byte L_sp_521_num_bits_17_table[] = {
+static const unsigned char L_sp_521_num_bits_17_table[] = {
     0x00, 0x01, 0x02, 0x02, 0x03, 0x03, 0x03, 0x03,
     0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
     0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05,
@@ -124680,8 +124680,8 @@ static const byte L_sp_521_num_bits_17_table[] = {
 static int sp_521_num_bits_17(const sp_digit* a_p)
 {
     register const sp_digit* a asm ("r0") = (const sp_digit*)a_p;
-    register byte* L_sp_521_num_bits_17_table_c asm ("r1") =
-        (byte*)&L_sp_521_num_bits_17_table;
+    register unsigned char* L_sp_521_num_bits_17_table_c asm ("r1") =
+        (unsigned char*)&L_sp_521_num_bits_17_table;
 
     __asm__ __volatile__ (
         "mov	lr, %[L_sp_521_num_bits_17_table]\n\t"
@@ -125565,7 +125565,7 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         :
         : "memory", "cc", "r2", "r3", "r12", "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #else
@@ -125789,7 +125789,7 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         :
         : "memory", "cc", "r1", "r2", "r3", "r12", "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #endif /* WOLFSSL_ARM_ARCH && (WOLFSSL_ARM_ARCH < 7) */
@@ -141833,7 +141833,7 @@ static sp_digit sp_1024_add_16(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* Sub b from a into a. (a -= b)
@@ -141908,7 +141908,7 @@ static sp_digit sp_1024_sub_in_place_32(sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Add b to a into r. (r = a + b)
@@ -141986,7 +141986,7 @@ static sp_digit sp_1024_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* AND m into each word of a and store in r.
@@ -142104,7 +142104,7 @@ static sp_digit sp_1024_sub_16(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         :
         : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 /* Square a and put result in r. (r = a * a)
@@ -142621,7 +142621,7 @@ static sp_digit sp_1024_sub_in_place_32(sp_digit* a_p, const sp_digit* b_p)
         : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r12",
             "lr"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -142663,7 +142663,7 @@ static sp_digit sp_1024_cond_sub_32(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -142802,7 +142802,7 @@ static sp_digit sp_1024_cond_sub_32(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6", "r7"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -142842,7 +142842,7 @@ static sp_digit sp_1024_add_32(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         : "memory", "cc", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
             "r3", "r12"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -144042,7 +144042,7 @@ static sp_digit div_1024_word_32(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #else
@@ -144180,7 +144180,7 @@ static sp_digit div_1024_word_32(sp_digit d1_p, sp_digit d0_p, sp_digit div_p)
         :
         : "memory", "cc", "r3", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)d1;
+    return (word32)(size_t)d1;
 }
 
 #endif
@@ -144609,7 +144609,7 @@ static sp_int32 sp_1024_cmp_32(const sp_digit* a_p, const sp_digit* b_p)
         :
         : "memory", "cc", "r2", "r3", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)a;
+    return (word32)(size_t)a;
 }
 
 /* Divide d in a and put remainder into r (m*d + r = a)
@@ -146471,7 +146471,7 @@ SP_NOINLINE static void sp_1024_mont_sqr_32(sp_digit* r, const sp_digit* a,
 }
 
 /* Mod-2 for the P1024 curve. */
-static const uint8_t p1024_mod_minus_2[] = {
+static const word8 p1024_mod_minus_2[] = {
      6,0x06,  7,0x0f,  7,0x0b,  6,0x0c,  7,0x1e,  9,0x09,  7,0x0c,  7,0x1f,
      6,0x16,  6,0x06,  7,0x0e,  8,0x10,  6,0x03,  8,0x11,  6,0x0d,  7,0x14,
      9,0x12,  6,0x0f,  7,0x04,  9,0x0d,  6,0x00,  7,0x13,  6,0x01,  6,0x07,
@@ -147428,7 +147428,7 @@ static sp_digit sp_1024_cond_add_32(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #else
@@ -147567,7 +147567,7 @@ static sp_digit sp_1024_cond_add_32(sp_digit* r_p, const sp_digit* a_p,
         :
         : "memory", "cc", "r12", "lr", "r4", "r5", "r6", "r7", "r8"
     );
-    return (uint32_t)(size_t)r;
+    return (word32)(size_t)r;
 }
 
 #endif /* WOLFSSL_SP_SMALL */
@@ -148805,7 +148805,7 @@ typedef struct sp_cache_1024_t {
     /* Precomputation table for point. */
     sp_table_entry_1024 table[16];
     /* Count of entries in table. */
-    uint32_t cnt;
+    word32 cnt;
     /* Point and table set in entry. */
     int set;
 } sp_cache_1024_t;
@@ -148833,7 +148833,7 @@ static void sp_ecc_get_cache_1024(const sp_point_1024* g, sp_cache_1024_t** cach
 {
     int i;
     int j;
-    uint32_t least;
+    word32 least;
 
     if (sp_cache_1024_inited == 0) {
         for (i=0; i<FP_ENTRIES; i++) {
@@ -149161,7 +149161,7 @@ typedef struct sp_cache_1024_t {
     /* Precomputation table for point. */
     sp_table_entry_1024 table[256];
     /* Count of entries in table. */
-    uint32_t cnt;
+    word32 cnt;
     /* Point and table set in entry. */
     int set;
 } sp_cache_1024_t;
@@ -149189,7 +149189,7 @@ static void sp_ecc_get_cache_1024(const sp_point_1024* g, sp_cache_1024_t** cach
 {
     int i;
     int j;
-    uint32_t least;
+    word32 least;
 
     if (sp_cache_1024_inited == 0) {
         for (i=0; i<FP_ENTRIES; i++) {
