@@ -78329,7 +78329,7 @@ static void sp_256_div2_mod_8(sp_digit* r_p, const sp_digit* a_p, const sp_digit
 }
 
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-static const unsigned char L_sp_256_num_bits_8_table[] = {
+static const byte L_sp_256_num_bits_8_table[] = {
     0x00, 0x01, 0x02, 0x02, 0x03, 0x03, 0x03, 0x03,
     0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
     0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05,
@@ -78367,8 +78367,8 @@ static const unsigned char L_sp_256_num_bits_8_table[] = {
 static int sp_256_num_bits_8(const sp_digit* a_p)
 {
     register const sp_digit* a asm ("r0") = (const sp_digit*)a_p;
-    register unsigned char* L_sp_256_num_bits_8_table_c asm ("r1") =
-        (unsigned char*)&L_sp_256_num_bits_8_table;
+    register byte* L_sp_256_num_bits_8_table_c asm ("r1") =
+        (byte*)&L_sp_256_num_bits_8_table;
 
     __asm__ __volatile__ (
         "mov	lr, %[L_sp_256_num_bits_8_table]\n\t"
@@ -96088,7 +96088,7 @@ static void sp_384_div2_mod_12(sp_digit* r_p, const sp_digit* a_p, const sp_digi
 }
 
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-static const unsigned char L_sp_384_num_bits_12_table[] = {
+static const byte L_sp_384_num_bits_12_table[] = {
     0x00, 0x01, 0x02, 0x02, 0x03, 0x03, 0x03, 0x03,
     0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
     0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05,
@@ -96126,8 +96126,8 @@ static const unsigned char L_sp_384_num_bits_12_table[] = {
 static int sp_384_num_bits_12(const sp_digit* a_p)
 {
     register const sp_digit* a asm ("r0") = (const sp_digit*)a_p;
-    register unsigned char* L_sp_384_num_bits_12_table_c asm ("r1") =
-        (unsigned char*)&L_sp_384_num_bits_12_table;
+    register byte* L_sp_384_num_bits_12_table_c asm ("r1") =
+        (byte*)&L_sp_384_num_bits_12_table;
 
     __asm__ __volatile__ (
         "mov	lr, %[L_sp_384_num_bits_12_table]\n\t"
@@ -124642,7 +124642,7 @@ static void sp_521_div2_mod_17(sp_digit* r_p, const sp_digit* a_p, const sp_digi
 }
 
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-static const unsigned char L_sp_521_num_bits_17_table[] = {
+static const byte L_sp_521_num_bits_17_table[] = {
     0x00, 0x01, 0x02, 0x02, 0x03, 0x03, 0x03, 0x03,
     0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
     0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05,
@@ -124680,8 +124680,8 @@ static const unsigned char L_sp_521_num_bits_17_table[] = {
 static int sp_521_num_bits_17(const sp_digit* a_p)
 {
     register const sp_digit* a asm ("r0") = (const sp_digit*)a_p;
-    register unsigned char* L_sp_521_num_bits_17_table_c asm ("r1") =
-        (unsigned char*)&L_sp_521_num_bits_17_table;
+    register byte* L_sp_521_num_bits_17_table_c asm ("r1") =
+        (byte*)&L_sp_521_num_bits_17_table;
 
     __asm__ __volatile__ (
         "mov	lr, %[L_sp_521_num_bits_17_table]\n\t"
