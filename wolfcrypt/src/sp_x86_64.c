@@ -9435,7 +9435,7 @@ static void sp_256_ecc_recode_6_4(const sp_digit* k, ecc_recode_256* v)
             n >>= o;
         }
 
-        y += (word8)carry;
+        y = (word8)(y + carry);
         v[i].i = recode_index_4_6[y];
         v[i].neg = recode_neg_4_6[y];
         carry = (y >> 6) + v[i].neg;
@@ -12110,7 +12110,7 @@ static void sp_256_ecc_recode_7_4(const sp_digit* k, ecc_recode_256* v)
             n >>= o;
         }
 
-        y += (word8)carry;
+        y = (word8)(y + carry);
         v[i].i = recode_index_4_7[y];
         v[i].neg = recode_neg_4_7[y];
         carry = (y >> 7) + v[i].neg;
@@ -24173,7 +24173,7 @@ static int sp_256_ecc_mulmod_add_only_4(sp_point_256* r, const sp_point_256* g,
             p->infinity = !v[i].i;
             sp_256_sub_4(negy, p256_mod, p->y);
             sp_256_norm_4(negy);
-            sp_256_cond_copy_4(p->y, negy, 0 - v[i].neg);
+            sp_256_cond_copy_4(p->y, negy, (sp_digit)(0 - v[i].neg));
             sp_256_proj_point_add_qz1_4(rt, rt, p, tmp);
         }
         if (map != 0) {
@@ -24306,7 +24306,7 @@ static int sp_256_ecc_mulmod_add_only_avx2_4(sp_point_256* r, const sp_point_256
             p->infinity = !v[i].i;
             sp_256_sub_4(negy, p256_mod, p->y);
             sp_256_norm_4(negy);
-            sp_256_cond_copy_4(p->y, negy, 0 - v[i].neg);
+            sp_256_cond_copy_4(p->y, negy, (sp_digit)(0 - v[i].neg));
             sp_256_proj_point_add_qz1_avx2_4(rt, rt, p, tmp);
         }
         if (map != 0) {
@@ -28596,7 +28596,7 @@ static void sp_384_ecc_recode_6_6(const sp_digit* k, ecc_recode_384* v)
             n >>= o;
         }
 
-        y += (word8)carry;
+        y = (word8)(y + carry);
         v[i].i = recode_index_6_6[y];
         v[i].neg = recode_neg_6_6[y];
         carry = (y >> 6) + v[i].neg;
@@ -31330,7 +31330,7 @@ static void sp_384_ecc_recode_7_6(const sp_digit* k, ecc_recode_384* v)
             n >>= o;
         }
 
-        y += (word8)carry;
+        y = (word8)(y + carry);
         v[i].i = recode_index_6_7[y];
         v[i].neg = recode_neg_6_7[y];
         carry = (y >> 7) + v[i].neg;
@@ -49207,7 +49207,7 @@ static int sp_384_ecc_mulmod_add_only_6(sp_point_384* r, const sp_point_384* g,
             p->infinity = !v[i].i;
             sp_384_sub_6(negy, p384_mod, p->y);
             sp_384_norm_6(negy);
-            sp_384_cond_copy_6(p->y, negy, 0 - v[i].neg);
+            sp_384_cond_copy_6(p->y, negy, (sp_digit)(0 - v[i].neg));
             sp_384_proj_point_add_qz1_6(rt, rt, p, tmp);
         }
         if (map != 0) {
@@ -49340,7 +49340,7 @@ static int sp_384_ecc_mulmod_add_only_avx2_6(sp_point_384* r, const sp_point_384
             p->infinity = !v[i].i;
             sp_384_sub_6(negy, p384_mod, p->y);
             sp_384_norm_6(negy);
-            sp_384_cond_copy_6(p->y, negy, 0 - v[i].neg);
+            sp_384_cond_copy_6(p->y, negy, (sp_digit)(0 - v[i].neg));
             sp_384_proj_point_add_qz1_avx2_6(rt, rt, p, tmp);
         }
         if (map != 0) {
@@ -53526,7 +53526,7 @@ static void sp_521_ecc_recode_6_9(const sp_digit* k, ecc_recode_521* v)
             n >>= o;
         }
 
-        y += (word8)carry;
+        y = (word8)(y + carry);
         v[i].i = recode_index_9_6[y];
         v[i].neg = recode_neg_9_6[y];
         carry = (y >> 6) + v[i].neg;
@@ -56363,7 +56363,7 @@ static void sp_521_ecc_recode_7_9(const sp_digit* k, ecc_recode_521* v)
             n >>= o;
         }
 
-        y += (word8)carry;
+        y = (word8)(y + carry);
         v[i].i = recode_index_9_7[y];
         v[i].neg = recode_neg_9_7[y];
         carry = (y >> 7) + v[i].neg;
@@ -90300,7 +90300,7 @@ static int sp_521_ecc_mulmod_add_only_9(sp_point_521* r, const sp_point_521* g,
             p->infinity = !v[i].i;
             sp_521_sub_9(negy, p521_mod, p->y);
             sp_521_norm_9(negy);
-            sp_521_cond_copy_9(p->y, negy, 0 - v[i].neg);
+            sp_521_cond_copy_9(p->y, negy, (sp_digit)(0 - v[i].neg));
             sp_521_proj_point_add_qz1_9(rt, rt, p, tmp);
         }
         if (map != 0) {
@@ -90433,7 +90433,7 @@ static int sp_521_ecc_mulmod_add_only_avx2_9(sp_point_521* r, const sp_point_521
             p->infinity = !v[i].i;
             sp_521_sub_9(negy, p521_mod, p->y);
             sp_521_norm_9(negy);
-            sp_521_cond_copy_9(p->y, negy, 0 - v[i].neg);
+            sp_521_cond_copy_9(p->y, negy, (sp_digit)(0 - v[i].neg));
             sp_521_proj_point_add_qz1_avx2_9(rt, rt, p, tmp);
         }
         if (map != 0) {
@@ -94820,7 +94820,7 @@ static void sp_1024_ecc_recode_7_16(const sp_digit* k, ecc_recode_1024* v)
             n >>= o;
         }
 
-        y += (word8)carry;
+        y = (word8)(y + carry);
         v[i].i = recode_index_16_7[y];
         v[i].neg = recode_neg_16_7[y];
         carry = (y >> 7) + v[i].neg;
