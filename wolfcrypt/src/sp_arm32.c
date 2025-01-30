@@ -42808,9 +42808,8 @@ static sp_int32 sp_3072_cmp_96(const sp_digit* a_p, const sp_digit* b_p)
         "mov	r3, #-1\n\t"
 #ifdef WOLFSSL_SP_SMALL
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r4, #0x1\n\t"
-        "lsl	r4, r4, #8\n\t"
-        "add	r4, r4, #0x7c\n\t"
+        "mov	r4, #0x7c\n\t"
+        "orr	r4, r4, #0x100\n\t"
 #else
         "mov	r4, #0x17c\n\t"
 #endif
@@ -57896,9 +57895,8 @@ static sp_int32 sp_4096_cmp_128(const sp_digit* a_p, const sp_digit* b_p)
         "mov	r3, #-1\n\t"
 #ifdef WOLFSSL_SP_SMALL
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r4, #0x1\n\t"
-        "lsl	r4, r4, #8\n\t"
-        "add	r4, r4, #0xfc\n\t"
+        "mov	r4, #0xfc\n\t"
+        "orr	r4, r4, #0x100\n\t"
 #else
         "mov	r4, #0x1fc\n\t"
 #endif
@@ -78239,8 +78237,7 @@ static void sp_256_rshift1_8(sp_digit* r_p, const sp_digit* a_p)
         "strd	r8, r9, [%[r], #24]\n\t"
 #endif
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "ldr	r2, [%[a]]\n\t"
-        "ldr	r3, [%[a], #4]\n\t"
+        "ldm	r1, {r2, r3}\n\t"
 #else
         "ldrd	r2, r3, [%[a]]\n\t"
 #endif
@@ -78259,8 +78256,7 @@ static void sp_256_rshift1_8(sp_digit* r_p, const sp_digit* a_p)
         "orr	r8, r8, r5, lsl #31\n\t"
         "orr	r9, r9, r12, lsl #31\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "str	r6, [%[r]]\n\t"
-        "str	r7, [%[r], #4]\n\t"
+        "stm	r0, {r6, r7}\n\t"
 #else
         "strd	r6, r7, [%[r]]\n\t"
 #endif
@@ -78733,13 +78729,7 @@ static int sp_256_num_bits_8(const sp_digit* a_p)
         "ldr	r1, [%[a], #28]\n\t"
         "cmp	r1, #0\n\t"
         "beq	L_sp_256_num_bits_8_7_%=\n\t"
-#if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x0\n\t"
-#else
         "mov	r2, #0x100\n\t"
-#endif
         "clz	r12, r1\n\t"
         "sub	r12, r2, r12\n\t"
         "b	L_sp_256_num_bits_8_9_%=\n\t"
@@ -96074,8 +96064,7 @@ static void sp_384_div2_mod_12(sp_digit* r_p, const sp_digit* a_p, const sp_digi
     "L_sp_384_div2_mod_12_div2_%=: \n\t"
         "sub	%[r], %[r], #48\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "ldr	r8, [%[r]]\n\t"
-        "ldr	r9, [%[r], #4]\n\t"
+        "ldm	r0, {r8, r9}\n\t"
 #else
         "ldrd	r8, r9, [%[r]]\n\t"
 #endif
@@ -96183,9 +96172,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_384_num_bits_12_11_3_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x78\n\t"
+        "mov	r2, #0x78\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x178\n\t"
 #endif
@@ -96199,9 +96187,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_384_num_bits_12_11_2_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x70\n\t"
+        "mov	r2, #0x70\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x170\n\t"
 #endif
@@ -96215,9 +96202,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_384_num_bits_12_11_1_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x68\n\t"
+        "mov	r2, #0x68\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x168\n\t"
 #endif
@@ -96228,9 +96214,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
     "L_sp_384_num_bits_12_11_1_%=: \n\t"
         "and	r3, r1, #0xff\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x60\n\t"
+        "mov	r2, #0x60\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x160\n\t"
 #endif
@@ -96246,9 +96231,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_384_num_bits_12_10_3_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x58\n\t"
+        "mov	r2, #0x58\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x158\n\t"
 #endif
@@ -96262,9 +96246,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_384_num_bits_12_10_2_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x50\n\t"
+        "mov	r2, #0x50\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x150\n\t"
 #endif
@@ -96278,9 +96261,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_384_num_bits_12_10_1_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x48\n\t"
+        "mov	r2, #0x48\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x148\n\t"
 #endif
@@ -96291,9 +96273,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
     "L_sp_384_num_bits_12_10_1_%=: \n\t"
         "and	r3, r1, #0xff\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x40\n\t"
+        "mov	r2, #0x40\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x140\n\t"
 #endif
@@ -96309,9 +96290,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_384_num_bits_12_9_3_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x38\n\t"
+        "mov	r2, #0x38\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x138\n\t"
 #endif
@@ -96325,9 +96305,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_384_num_bits_12_9_2_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x30\n\t"
+        "mov	r2, #0x30\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x130\n\t"
 #endif
@@ -96341,9 +96320,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_384_num_bits_12_9_1_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x28\n\t"
+        "mov	r2, #0x28\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x128\n\t"
 #endif
@@ -96354,9 +96332,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
     "L_sp_384_num_bits_12_9_1_%=: \n\t"
         "and	r3, r1, #0xff\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x20\n\t"
+        "mov	r2, #0x20\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x120\n\t"
 #endif
@@ -96372,9 +96349,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_384_num_bits_12_8_3_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x18\n\t"
+        "mov	r2, #0x18\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x118\n\t"
 #endif
@@ -96388,9 +96364,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_384_num_bits_12_8_2_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x10\n\t"
+        "mov	r2, #0x10\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x110\n\t"
 #endif
@@ -96404,9 +96379,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_384_num_bits_12_8_1_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x8\n\t"
+        "mov	r2, #0x8\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x108\n\t"
 #endif
@@ -96416,13 +96390,7 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "\n"
     "L_sp_384_num_bits_12_8_1_%=: \n\t"
         "and	r3, r1, #0xff\n\t"
-#if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x0\n\t"
-#else
         "mov	r2, #0x100\n\t"
-#endif
         "ldrb	r12, [lr, r3]\n\t"
         "add	r12, r2, r12\n\t"
         "b	L_sp_384_num_bits_12_13_%=\n\t"
@@ -96754,9 +96722,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r1, #0\n\t"
         "beq	L_sp_384_num_bits_12_11_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x80\n\t"
+        "mov	r2, #0x80\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x180\n\t"
 #endif
@@ -96769,9 +96736,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r1, #0\n\t"
         "beq	L_sp_384_num_bits_12_10_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x60\n\t"
+        "mov	r2, #0x60\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x160\n\t"
 #endif
@@ -96784,9 +96750,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r1, #0\n\t"
         "beq	L_sp_384_num_bits_12_9_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x40\n\t"
+        "mov	r2, #0x40\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x140\n\t"
 #endif
@@ -96799,9 +96764,8 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "cmp	r1, #0\n\t"
         "beq	L_sp_384_num_bits_12_8_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x20\n\t"
+        "mov	r2, #0x20\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x120\n\t"
 #endif
@@ -96813,13 +96777,7 @@ static int sp_384_num_bits_12(const sp_digit* a_p)
         "ldr	r1, [%[a], #28]\n\t"
         "cmp	r1, #0\n\t"
         "beq	L_sp_384_num_bits_12_7_%=\n\t"
-#if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x0\n\t"
-#else
         "mov	r2, #0x100\n\t"
-#endif
         "clz	r12, r1\n\t"
         "sub	r12, r2, r12\n\t"
         "b	L_sp_384_num_bits_12_13_%=\n\t"
@@ -115793,9 +115751,8 @@ static SP_NOINLINE void sp_521_mont_reduce_17(sp_digit* a_p, const sp_digit* m_p
         "ldm	%[a], {r1, r2, r3, r4, r5}\n\t"
         "ldm	sp!, {r7, r8, r9, r10, r11}\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	lr, #0x1\n\t"
-        "lsl	lr, lr, #8\n\t"
-        "add	lr, lr, #0xff\n\t"
+        "mov	lr, #0xff\n\t"
+        "orr	lr, lr, #0x100\n\t"
 #else
         "mov	lr, #0x1ff\n\t"
 #endif
@@ -115872,9 +115829,8 @@ static SP_NOINLINE void sp_521_mont_reduce_order_17(sp_digit* a_p, const sp_digi
         "cmp	r9, #0x40\n\t"
         "bne	L_sp_521_mont_reduce_order_17_nomask_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r7, #0x1\n\t"
-        "lsl	r7, r7, #8\n\t"
-        "add	r7, r7, #0xff\n\t"
+        "mov	r7, #0xff\n\t"
+        "orr	r7, r7, #0x100\n\t"
 #else
         "mov	r7, #0x1ff\n\t"
 #endif
@@ -116500,9 +116456,8 @@ static SP_NOINLINE void sp_521_mont_reduce_order_17(sp_digit* a_p, const sp_digi
         "cmp	r9, #0x40\n\t"
         "bne	L_sp_521_mont_reduce_order_17_nomask_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r7, #0x1\n\t"
-        "lsl	r7, r7, #8\n\t"
-        "add	r7, r7, #0xff\n\t"
+        "mov	r7, #0xff\n\t"
+        "orr	r7, r7, #0x100\n\t"
 #else
         "mov	r7, #0x1ff\n\t"
 #endif
@@ -116762,9 +116717,8 @@ static SP_NOINLINE void sp_521_mont_reduce_order_17(sp_digit* a_p, const sp_digi
         "cmp	r12, #0x40\n\t"
         "bne	L_sp_521_mont_reduce_order_17_nomask_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r10, #0x1\n\t"
-        "lsl	r10, r10, #8\n\t"
-        "add	r10, r10, #0xff\n\t"
+        "mov	r10, #0xff\n\t"
+        "orr	r10, r10, #0x100\n\t"
 #else
         "mov	r10, #0x1ff\n\t"
 #endif
@@ -117414,9 +117368,8 @@ static void sp_521_mont_add_17(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "ldm	%[b]!, {r4}\n\t"
         "adcs	r8, r8, r4\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r12, #0x1\n\t"
-        "lsl	r12, r12, #8\n\t"
-        "add	r12, r12, #0xff\n\t"
+        "mov	r12, #0xff\n\t"
+        "orr	r12, r12, #0x100\n\t"
 #else
         "mov	r12, #0x1ff\n\t"
 #endif
@@ -117491,9 +117444,8 @@ static void sp_521_mont_dbl_17(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "ldm	%[a]!, {r4}\n\t"
         "adcs	r4, r4, r4\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r3, #0x1\n\t"
-        "lsl	r3, r3, #8\n\t"
-        "add	r3, r3, #0xff\n\t"
+        "mov	r3, #0xff\n\t"
+        "orr	r3, r3, #0x100\n\t"
 #else
         "mov	r3, #0x1ff\n\t"
 #endif
@@ -117602,9 +117554,8 @@ static void sp_521_mont_tpl_17(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "ldm	%[a]!, {r8}\n\t"
         "adcs	r4, r4, r8\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r3, #0x1\n\t"
-        "lsl	r3, r3, #8\n\t"
-        "add	r3, r3, #0xff\n\t"
+        "mov	r3, #0xff\n\t"
+        "orr	r3, r3, #0x100\n\t"
 #else
         "mov	r3, #0x1ff\n\t"
 #endif
@@ -117677,9 +117628,8 @@ static void sp_521_mont_sub_17(sp_digit* r_p, const sp_digit* a_p, const sp_digi
         "ldm	%[b]!, {r4}\n\t"
         "sbcs	r8, r8, r4\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r12, #0x1\n\t"
-        "lsl	r12, r12, #8\n\t"
-        "add	r12, r12, #0xff\n\t"
+        "mov	r12, #0xff\n\t"
+        "orr	r12, r12, #0x100\n\t"
 #else
         "mov	r12, #0x1ff\n\t"
 #endif
@@ -122419,8 +122369,7 @@ static void sp_521_rshift_17(sp_digit* r_p, const sp_digit* a_p, byte n_p)
     __asm__ __volatile__ (
         "rsb	r12, %[n], #32\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "ldr	r4, [%[a]]\n\t"
-        "ldr	r5, [%[a], #4]\n\t"
+        "ldm	r1, {r4, r5}\n\t"
 #else
         "ldrd	r4, r5, [%[a]]\n\t"
 #endif
@@ -124617,8 +124566,7 @@ static void sp_521_div2_mod_17(sp_digit* r_p, const sp_digit* a_p, const sp_digi
     "L_sp_521_div2_mod_17_div2_%=: \n\t"
         "sub	%[r], %[r], #0x44\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "ldr	r8, [%[r]]\n\t"
-        "ldr	r9, [%[r], #4]\n\t"
+        "ldm	r0, {r8, r9}\n\t"
 #else
         "ldrd	r8, r9, [%[r]]\n\t"
 #endif
@@ -124746,9 +124694,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_16_3_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x2\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x18\n\t"
+        "mov	r2, #0x18\n\t"
+        "orr	r2, r2, #0x200\n\t"
 #else
         "mov	r2, #0x218\n\t"
 #endif
@@ -124762,9 +124709,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_16_2_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x2\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x10\n\t"
+        "mov	r2, #0x10\n\t"
+        "orr	r2, r2, #0x200\n\t"
 #else
         "mov	r2, #0x210\n\t"
 #endif
@@ -124778,9 +124724,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_16_1_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x2\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x8\n\t"
+        "mov	r2, #0x8\n\t"
+        "orr	r2, r2, #0x200\n\t"
 #else
         "mov	r2, #0x208\n\t"
 #endif
@@ -124790,13 +124735,7 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "\n"
     "L_sp_521_num_bits_17_16_1_%=: \n\t"
         "and	r3, r1, #0xff\n\t"
-#if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x2\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x0\n\t"
-#else
         "mov	r2, #0x200\n\t"
-#endif
         "ldrb	r12, [lr, r3]\n\t"
         "add	r12, r2, r12\n\t"
         "b	L_sp_521_num_bits_17_18_%=\n\t"
@@ -124809,9 +124748,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_15_3_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xf8\n\t"
+        "mov	r2, #0xf8\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1f8\n\t"
 #endif
@@ -124825,9 +124763,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_15_2_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xf0\n\t"
+        "mov	r2, #0xf0\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1f0\n\t"
 #endif
@@ -124841,9 +124778,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_15_1_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xe8\n\t"
+        "mov	r2, #0xe8\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1e8\n\t"
 #endif
@@ -124854,9 +124790,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
     "L_sp_521_num_bits_17_15_1_%=: \n\t"
         "and	r3, r1, #0xff\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xe0\n\t"
+        "mov	r2, #0xe0\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1e0\n\t"
 #endif
@@ -124872,9 +124807,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_14_3_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xd8\n\t"
+        "mov	r2, #0xd8\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1d8\n\t"
 #endif
@@ -124888,9 +124822,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_14_2_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xd0\n\t"
+        "mov	r2, #0xd0\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1d0\n\t"
 #endif
@@ -124904,9 +124837,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_14_1_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xc8\n\t"
+        "mov	r2, #0xc8\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1c8\n\t"
 #endif
@@ -124917,9 +124849,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
     "L_sp_521_num_bits_17_14_1_%=: \n\t"
         "and	r3, r1, #0xff\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xc0\n\t"
+        "mov	r2, #0xc0\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1c0\n\t"
 #endif
@@ -124935,9 +124866,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_13_3_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xb8\n\t"
+        "mov	r2, #0xb8\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1b8\n\t"
 #endif
@@ -124951,9 +124881,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_13_2_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xb0\n\t"
+        "mov	r2, #0xb0\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1b0\n\t"
 #endif
@@ -124967,9 +124896,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_13_1_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xa8\n\t"
+        "mov	r2, #0xa8\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1a8\n\t"
 #endif
@@ -124980,9 +124908,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
     "L_sp_521_num_bits_17_13_1_%=: \n\t"
         "and	r3, r1, #0xff\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xa0\n\t"
+        "mov	r2, #0xa0\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1a0\n\t"
 #endif
@@ -124998,9 +124925,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_12_3_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x98\n\t"
+        "mov	r2, #0x98\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x198\n\t"
 #endif
@@ -125014,9 +124940,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_12_2_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x90\n\t"
+        "mov	r2, #0x90\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x190\n\t"
 #endif
@@ -125030,9 +124955,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_12_1_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x88\n\t"
+        "mov	r2, #0x88\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x188\n\t"
 #endif
@@ -125043,9 +124967,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
     "L_sp_521_num_bits_17_12_1_%=: \n\t"
         "and	r3, r1, #0xff\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x80\n\t"
+        "mov	r2, #0x80\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x180\n\t"
 #endif
@@ -125061,9 +124984,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_11_3_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x78\n\t"
+        "mov	r2, #0x78\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x178\n\t"
 #endif
@@ -125077,9 +124999,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_11_2_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x70\n\t"
+        "mov	r2, #0x70\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x170\n\t"
 #endif
@@ -125093,9 +125014,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_11_1_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x68\n\t"
+        "mov	r2, #0x68\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x168\n\t"
 #endif
@@ -125106,9 +125026,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
     "L_sp_521_num_bits_17_11_1_%=: \n\t"
         "and	r3, r1, #0xff\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x60\n\t"
+        "mov	r2, #0x60\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x160\n\t"
 #endif
@@ -125124,9 +125043,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_10_3_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x58\n\t"
+        "mov	r2, #0x58\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x158\n\t"
 #endif
@@ -125140,9 +125058,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_10_2_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x50\n\t"
+        "mov	r2, #0x50\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x150\n\t"
 #endif
@@ -125156,9 +125073,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_10_1_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x48\n\t"
+        "mov	r2, #0x48\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x148\n\t"
 #endif
@@ -125169,9 +125085,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
     "L_sp_521_num_bits_17_10_1_%=: \n\t"
         "and	r3, r1, #0xff\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x40\n\t"
+        "mov	r2, #0x40\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x140\n\t"
 #endif
@@ -125187,9 +125102,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_9_3_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x38\n\t"
+        "mov	r2, #0x38\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x138\n\t"
 #endif
@@ -125203,9 +125117,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_9_2_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x30\n\t"
+        "mov	r2, #0x30\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x130\n\t"
 #endif
@@ -125219,9 +125132,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_9_1_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x28\n\t"
+        "mov	r2, #0x28\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x128\n\t"
 #endif
@@ -125232,9 +125144,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
     "L_sp_521_num_bits_17_9_1_%=: \n\t"
         "and	r3, r1, #0xff\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x20\n\t"
+        "mov	r2, #0x20\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x120\n\t"
 #endif
@@ -125250,9 +125161,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_8_3_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x18\n\t"
+        "mov	r2, #0x18\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x118\n\t"
 #endif
@@ -125266,9 +125176,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_8_2_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x10\n\t"
+        "mov	r2, #0x10\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x110\n\t"
 #endif
@@ -125282,9 +125191,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r3, #0\n\t"
         "beq	L_sp_521_num_bits_17_8_1_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x8\n\t"
+        "mov	r2, #0x8\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x108\n\t"
 #endif
@@ -125294,13 +125202,7 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "\n"
     "L_sp_521_num_bits_17_8_1_%=: \n\t"
         "and	r3, r1, #0xff\n\t"
-#if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x0\n\t"
-#else
         "mov	r2, #0x100\n\t"
-#endif
         "ldrb	r12, [lr, r3]\n\t"
         "add	r12, r2, r12\n\t"
         "b	L_sp_521_num_bits_17_18_%=\n\t"
@@ -125632,9 +125534,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r1, #0\n\t"
         "beq	L_sp_521_num_bits_17_16_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x2\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x20\n\t"
+        "mov	r2, #0x20\n\t"
+        "orr	r2, r2, #0x200\n\t"
 #else
         "mov	r2, #0x220\n\t"
 #endif
@@ -125646,13 +125547,7 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "ldr	r1, [%[a], #60]\n\t"
         "cmp	r1, #0\n\t"
         "beq	L_sp_521_num_bits_17_15_%=\n\t"
-#if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x2\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x0\n\t"
-#else
         "mov	r2, #0x200\n\t"
-#endif
         "clz	r12, r1\n\t"
         "sub	r12, r2, r12\n\t"
         "b	L_sp_521_num_bits_17_18_%=\n\t"
@@ -125662,9 +125557,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r1, #0\n\t"
         "beq	L_sp_521_num_bits_17_14_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xe0\n\t"
+        "mov	r2, #0xe0\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1e0\n\t"
 #endif
@@ -125677,9 +125571,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r1, #0\n\t"
         "beq	L_sp_521_num_bits_17_13_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xc0\n\t"
+        "mov	r2, #0xc0\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1c0\n\t"
 #endif
@@ -125692,9 +125585,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r1, #0\n\t"
         "beq	L_sp_521_num_bits_17_12_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0xa0\n\t"
+        "mov	r2, #0xa0\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x1a0\n\t"
 #endif
@@ -125707,9 +125599,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r1, #0\n\t"
         "beq	L_sp_521_num_bits_17_11_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x80\n\t"
+        "mov	r2, #0x80\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x180\n\t"
 #endif
@@ -125722,9 +125613,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r1, #0\n\t"
         "beq	L_sp_521_num_bits_17_10_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x60\n\t"
+        "mov	r2, #0x60\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x160\n\t"
 #endif
@@ -125737,9 +125627,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r1, #0\n\t"
         "beq	L_sp_521_num_bits_17_9_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x40\n\t"
+        "mov	r2, #0x40\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x140\n\t"
 #endif
@@ -125752,9 +125641,8 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "cmp	r1, #0\n\t"
         "beq	L_sp_521_num_bits_17_8_%=\n\t"
 #if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x20\n\t"
+        "mov	r2, #0x20\n\t"
+        "orr	r2, r2, #0x100\n\t"
 #else
         "mov	r2, #0x120\n\t"
 #endif
@@ -125766,13 +125654,7 @@ static int sp_521_num_bits_17(const sp_digit* a_p)
         "ldr	r1, [%[a], #28]\n\t"
         "cmp	r1, #0\n\t"
         "beq	L_sp_521_num_bits_17_7_%=\n\t"
-#if defined(WOLFSSL_ARM_ARCH) && (WOLFSSL_ARM_ARCH < 7)
-        "mov	r2, #0x1\n\t"
-        "lsl	r2, r2, #8\n\t"
-        "add	r2, r2, #0x0\n\t"
-#else
         "mov	r2, #0x100\n\t"
-#endif
         "clz	r12, r1\n\t"
         "sub	r12, r2, r12\n\t"
         "b	L_sp_521_num_bits_17_18_%=\n\t"
