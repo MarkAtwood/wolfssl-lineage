@@ -109,9 +109,9 @@ static void sp_2048_from_bin(sp_digit* r, int size, const byte* a, int n)
         }
 #else
         switch (i) {
-            case 2: d[2] = a[2]; //fallthrough
-            case 1: d[1] = a[1]; //fallthrough
-            case 0: d[0] = a[0]; //fallthrough
+            case 2: d[i-2] = a[2]; //fallthrough
+            case 1: d[i-1] = a[1]; //fallthrough
+            case 0: d[i-0] = a[0]; //fallthrough
         }
 #endif
         j++;
@@ -30300,9 +30300,9 @@ static void sp_3072_from_bin(sp_digit* r, int size, const byte* a, int n)
         }
 #else
         switch (i) {
-            case 2: d[2] = a[2]; //fallthrough
-            case 1: d[1] = a[1]; //fallthrough
-            case 0: d[0] = a[0]; //fallthrough
+            case 2: d[i-2] = a[2]; //fallthrough
+            case 1: d[i-1] = a[1]; //fallthrough
+            case 0: d[i-0] = a[0]; //fallthrough
         }
 #endif
         j++;
@@ -83394,9 +83394,9 @@ static void sp_4096_from_bin(sp_digit* r, int size, const byte* a, int n)
         }
 #else
         switch (i) {
-            case 2: d[2] = a[2]; //fallthrough
-            case 1: d[1] = a[1]; //fallthrough
-            case 0: d[0] = a[0]; //fallthrough
+            case 2: d[i-2] = a[2]; //fallthrough
+            case 1: d[i-1] = a[1]; //fallthrough
+            case 0: d[i-0] = a[0]; //fallthrough
         }
 #endif
         j++;
@@ -103938,9 +103938,9 @@ static void sp_256_from_bin(sp_digit* r, int size, const byte* a, int n)
         }
 #else
         switch (i) {
-            case 2: d[2] = a[2]; //fallthrough
-            case 1: d[1] = a[1]; //fallthrough
-            case 0: d[0] = a[0]; //fallthrough
+            case 2: d[i-2] = a[2]; //fallthrough
+            case 1: d[i-1] = a[1]; //fallthrough
+            case 0: d[i-0] = a[0]; //fallthrough
         }
 #endif
         j++;
@@ -114847,9 +114847,9 @@ static void sp_384_from_bin(sp_digit* r, int size, const byte* a, int n)
         }
 #else
         switch (i) {
-            case 2: d[2] = a[2]; //fallthrough
-            case 1: d[1] = a[1]; //fallthrough
-            case 0: d[0] = a[0]; //fallthrough
+            case 2: d[i-2] = a[2]; //fallthrough
+            case 1: d[i-1] = a[1]; //fallthrough
+            case 0: d[i-0] = a[0]; //fallthrough
         }
 #endif
         j++;
@@ -129089,9 +129089,9 @@ static void sp_521_from_bin(sp_digit* r, int size, const byte* a, int n)
         }
 #else
         switch (i) {
-            case 2: d[2] = a[2]; //fallthrough
-            case 1: d[1] = a[1]; //fallthrough
-            case 0: d[0] = a[0]; //fallthrough
+            case 2: d[i-2] = a[2]; //fallthrough
+            case 1: d[i-1] = a[1]; //fallthrough
+            case 0: d[i-0] = a[0]; //fallthrough
         }
 #endif
         j++;
@@ -218532,9 +218532,9 @@ static void sp_1024_from_bin(sp_digit* r, int size, const byte* a, int n)
         }
 #else
         switch (i) {
-            case 2: d[2] = a[2]; //fallthrough
-            case 1: d[1] = a[1]; //fallthrough
-            case 0: d[0] = a[0]; //fallthrough
+            case 2: d[i-2] = a[2]; //fallthrough
+            case 1: d[i-1] = a[1]; //fallthrough
+            case 0: d[i-0] = a[0]; //fallthrough
         }
 #endif
         j++;
