@@ -487,7 +487,7 @@ static WC_INLINE sp_digit div_2048_word_16(sp_digit d1, sp_digit d0,
 static WC_INLINE sp_digit div_2048_word_16(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    register sp_digit r asm("rax");
+    register sp_digit r __asm__("rax");
     ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
@@ -1169,7 +1169,7 @@ static WC_INLINE sp_digit div_2048_word_32(sp_digit d1, sp_digit d0,
 static WC_INLINE sp_digit div_2048_word_32(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    register sp_digit r asm("rax");
+    register sp_digit r __asm__("rax");
     ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
@@ -3494,7 +3494,7 @@ static WC_INLINE sp_digit div_3072_word_24(sp_digit d1, sp_digit d0,
 static WC_INLINE sp_digit div_3072_word_24(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    register sp_digit r asm("rax");
+    register sp_digit r __asm__("rax");
     ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
@@ -4176,7 +4176,7 @@ static WC_INLINE sp_digit div_3072_word_48(sp_digit d1, sp_digit d0,
 static WC_INLINE sp_digit div_3072_word_48(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    register sp_digit r asm("rax");
+    register sp_digit r __asm__("rax");
     ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
@@ -6307,7 +6307,7 @@ static WC_INLINE sp_digit div_4096_word_64(sp_digit d1, sp_digit d0,
 static WC_INLINE sp_digit div_4096_word_64(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    register sp_digit r asm("rax");
+    register sp_digit r __asm__("rax");
     ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
@@ -24991,7 +24991,7 @@ static WC_INLINE sp_digit div_256_word_4(sp_digit d1, sp_digit d0,
 static WC_INLINE sp_digit div_256_word_4(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    register sp_digit r asm("rax");
+    register sp_digit r __asm__("rax");
     ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
@@ -50030,7 +50030,7 @@ static WC_INLINE sp_digit div_384_word_6(sp_digit d1, sp_digit d0,
 static WC_INLINE sp_digit div_384_word_6(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    register sp_digit r asm("rax");
+    register sp_digit r __asm__("rax");
     ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
@@ -91150,7 +91150,7 @@ static WC_INLINE sp_digit div_521_word_9(sp_digit d1, sp_digit d0,
 static WC_INLINE sp_digit div_521_word_9(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    register sp_digit r asm("rax");
+    register sp_digit r __asm__("rax");
     ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
@@ -93393,7 +93393,7 @@ static WC_INLINE sp_digit div_1024_word_16(sp_digit d1, sp_digit d0,
 static WC_INLINE sp_digit div_1024_word_16(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    register sp_digit r asm("rax");
+    register sp_digit r __asm__("rax");
     ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
