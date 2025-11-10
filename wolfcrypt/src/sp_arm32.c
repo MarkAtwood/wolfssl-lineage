@@ -79921,7 +79921,6 @@ WC_OMIT_FRAME_POINTER static int sp_256_num_bits_8(const sp_digit* a)
 #else
     register byte* L_sp_256_num_bits_8_table_c =
         (byte*)&L_sp_256_num_bits_8_table;
-
 #endif /* !WOLFSSL_NO_VAR_ASSIGN_REG */
 
     __asm__ __volatile__ (
@@ -97962,7 +97961,6 @@ WC_OMIT_FRAME_POINTER static int sp_384_num_bits_12(const sp_digit* a)
 #else
     register byte* L_sp_384_num_bits_12_table_c =
         (byte*)&L_sp_384_num_bits_12_table;
-
 #endif /* !WOLFSSL_NO_VAR_ASSIGN_REG */
 
     __asm__ __volatile__ (
@@ -126513,7 +126511,6 @@ WC_OMIT_FRAME_POINTER static int sp_521_num_bits_17(const sp_digit* a)
 #else
     register byte* L_sp_521_num_bits_17_table_c =
         (byte*)&L_sp_521_num_bits_17_table;
-
 #endif /* !WOLFSSL_NO_VAR_ASSIGN_REG */
 
     __asm__ __volatile__ (
