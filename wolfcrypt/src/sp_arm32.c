@@ -91860,10 +91860,83 @@ WC_OMIT_FRAME_POINTER static void sp_384_mont_add_12(sp_digit* r,
     register const sp_digit* m asm ("r3") = (const sp_digit*)m_p;
 #endif /* !WOLFSSL_NO_VAR_ASSIGN_REG */
 
-    sp_digit o;
-
-    o = sp_384_add_12(r, a, b);
-    sp_384_cond_sub_12(r, r, m, 0 - o);
+    __asm__ __volatile__ (
+        "mov	r3, #0\n\t"
+        "ldm	%[a]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[b]!, {r4, r5, r6, r7}\n\t"
+        "adds	r8, r8, r4\n\t"
+        "adcs	r9, r9, r5\n\t"
+        "adcs	r10, r10, r6\n\t"
+        "adcs	r11, r11, r7\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[a]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[b]!, {r4, r5, r6, r7}\n\t"
+        "adcs	r8, r8, r4\n\t"
+        "adcs	r9, r9, r5\n\t"
+        "adcs	r10, r10, r6\n\t"
+        "adcs	r11, r11, r7\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[a]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[b]!, {r4, r5, r6, r7}\n\t"
+        "adcs	r8, r8, r4\n\t"
+        "adcs	r9, r9, r5\n\t"
+        "adcs	r10, r10, r6\n\t"
+        "adcs	r11, r11, r7\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "adc	r3, r3, #0\n\t"
+        "sub	%[r], %[r], #48\n\t"
+        "rsb	r3, r3, #0\n\t"
+        "lsr	r12, r3, #1\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "subs	r8, r8, r3\n\t"
+        "sbcs	r9, r9, #0\n\t"
+        "sbcs	r10, r10, #0\n\t"
+        "sbcs	r11, r11, r3\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "sbcs	r8, r8, r12, LSL #1\n\t"
+        "sbcs	r9, r9, r3\n\t"
+        "sbcs	r10, r10, r3\n\t"
+        "sbcs	r11, r11, r3\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "sbcs	r8, r8, r3\n\t"
+        "sbcs	r9, r9, r3\n\t"
+        "sbcs	r10, r10, r3\n\t"
+        "sbcs	r11, r11, r3\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "sbc	%[b], %[b], %[b]\n\t"
+        "sub	%[r], %[r], #48\n\t"
+        "sub	r3, r3, %[b]\n\t"
+        "lsr	r12, r3, #1\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "subs	r8, r8, r3\n\t"
+        "sbcs	r9, r9, #0\n\t"
+        "sbcs	r10, r10, #0\n\t"
+        "sbcs	r11, r11, r3\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "sbcs	r8, r8, r12, LSL #1\n\t"
+        "sbcs	r9, r9, r3\n\t"
+        "sbcs	r10, r10, r3\n\t"
+        "sbcs	r11, r11, r3\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "sbcs	r8, r8, r3\n\t"
+        "sbcs	r9, r9, r3\n\t"
+        "sbcs	r10, r10, r3\n\t"
+        "sbc	r11, r11, r3\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+#ifndef WOLFSSL_NO_VAR_ASSIGN_REG
+        : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
+        :
+#else
+        :
+        : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
+#endif /* !WOLFSSL_NO_VAR_ASSIGN_REG */
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
+            "r12"
+    );
 }
 
 /* Double a Montgomery form number (r = a + a % m).
@@ -91886,10 +91959,73 @@ WC_OMIT_FRAME_POINTER static void sp_384_mont_dbl_12(sp_digit* r,
     register const sp_digit* m asm ("r2") = (const sp_digit*)m_p;
 #endif /* !WOLFSSL_NO_VAR_ASSIGN_REG */
 
-    sp_digit o;
-
-    o = sp_384_add_12(r, a, a);
-    sp_384_cond_sub_12(r, r, m, 0 - o);
+    __asm__ __volatile__ (
+        "mov	r2, #0\n\t"
+        "ldm	%[a]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "adds	r4, r4, r4\n\t"
+        "adcs	r5, r5, r5\n\t"
+        "adcs	r6, r6, r6\n\t"
+        "adcs	r7, r7, r7\n\t"
+        "adcs	r8, r8, r8\n\t"
+        "adcs	r9, r9, r9\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "ldm	%[a]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "adcs	r4, r4, r4\n\t"
+        "adcs	r5, r5, r5\n\t"
+        "adcs	r6, r6, r6\n\t"
+        "adcs	r7, r7, r7\n\t"
+        "adcs	r8, r8, r8\n\t"
+        "adcs	r9, r9, r9\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "adc	r2, r2, #0\n\t"
+        "sub	%[r], %[r], #48\n\t"
+        "rsb	r2, r2, #0\n\t"
+        "lsr	r3, r2, #1\n\t"
+        "ldm	%[r], {r4, r5, r6, r7, r8, r9}\n\t"
+        "subs	r4, r4, r2\n\t"
+        "sbcs	r5, r5, #0\n\t"
+        "sbcs	r6, r6, #0\n\t"
+        "sbcs	r7, r7, r2\n\t"
+        "sbcs	r8, r8, r3, LSL #1\n\t"
+        "sbcs	r9, r9, r2\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "ldm	%[r], {r4, r5, r6, r7, r8, r9}\n\t"
+        "sbcs	r4, r4, r2\n\t"
+        "sbcs	r5, r5, r2\n\t"
+        "sbcs	r6, r6, r2\n\t"
+        "sbcs	r7, r7, r2\n\t"
+        "sbcs	r8, r8, r2\n\t"
+        "sbcs	r9, r9, r2\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "sbc	%[a], %[a], %[a]\n\t"
+        "sub	%[r], %[r], #48\n\t"
+        "sub	r2, r2, %[a]\n\t"
+        "lsr	r3, r2, #1\n\t"
+        "ldm	%[r], {r4, r5, r6, r7, r8, r9}\n\t"
+        "subs	r4, r4, r2\n\t"
+        "sbcs	r5, r5, #0\n\t"
+        "sbcs	r6, r6, #0\n\t"
+        "sbcs	r7, r7, r2\n\t"
+        "sbcs	r8, r8, r3, LSL #1\n\t"
+        "sbcs	r9, r9, r2\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "ldm	%[r], {r4, r5, r6, r7, r8, r9}\n\t"
+        "sbcs	r4, r4, r2\n\t"
+        "sbcs	r5, r5, r2\n\t"
+        "sbcs	r6, r6, r2\n\t"
+        "sbcs	r7, r7, r2\n\t"
+        "sbcs	r8, r8, r2\n\t"
+        "sbc	r9, r9, r2\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+#ifndef WOLFSSL_NO_VAR_ASSIGN_REG
+        : [r] "+r" (r), [a] "+r" (a), [m] "+r" (m)
+        :
+#else
+        :
+        : [r] "r" (r), [a] "r" (a), [m] "r" (m)
+#endif /* !WOLFSSL_NO_VAR_ASSIGN_REG */
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8", "r9", "r3"
+    );
 }
 
 /* Triple a Montgomery form number (r = a + a + a % m).
@@ -91912,12 +92048,138 @@ WC_OMIT_FRAME_POINTER static void sp_384_mont_tpl_12(sp_digit* r,
     register const sp_digit* m asm ("r2") = (const sp_digit*)m_p;
 #endif /* !WOLFSSL_NO_VAR_ASSIGN_REG */
 
-    sp_digit o;
-
-    o = sp_384_add_12(r, a, a);
-    sp_384_cond_sub_12(r, r, m, 0 - o);
-    o = sp_384_add_12(r, r, a);
-    sp_384_cond_sub_12(r, r, m, 0 - o);
+    __asm__ __volatile__ (
+        "mov	r2, #0\n\t"
+        "ldm	%[a]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "adds	r4, r4, r4\n\t"
+        "adcs	r5, r5, r5\n\t"
+        "adcs	r6, r6, r6\n\t"
+        "adcs	r7, r7, r7\n\t"
+        "adcs	r8, r8, r8\n\t"
+        "adcs	r9, r9, r9\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "ldm	%[a]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "adcs	r4, r4, r4\n\t"
+        "adcs	r5, r5, r5\n\t"
+        "adcs	r6, r6, r6\n\t"
+        "adcs	r7, r7, r7\n\t"
+        "adcs	r8, r8, r8\n\t"
+        "adcs	r9, r9, r9\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "adc	r2, r2, #0\n\t"
+        "sub	%[r], %[r], #48\n\t"
+        "rsb	r2, r2, #0\n\t"
+        "lsr	r3, r2, #1\n\t"
+        "ldm	%[r], {r4, r5, r6, r7, r8, r9}\n\t"
+        "subs	r4, r4, r2\n\t"
+        "sbcs	r5, r5, #0\n\t"
+        "sbcs	r6, r6, #0\n\t"
+        "sbcs	r7, r7, r2\n\t"
+        "sbcs	r8, r8, r3, LSL #1\n\t"
+        "sbcs	r9, r9, r2\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "ldm	%[r], {r4, r5, r6, r7, r8, r9}\n\t"
+        "sbcs	r4, r4, r2\n\t"
+        "sbcs	r5, r5, r2\n\t"
+        "sbcs	r6, r6, r2\n\t"
+        "sbcs	r7, r7, r2\n\t"
+        "sbcs	r8, r8, r2\n\t"
+        "sbcs	r9, r9, r2\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "sbc	r12, r12, r12\n\t"
+        "sub	%[r], %[r], #48\n\t"
+        "sub	r2, r2, r12\n\t"
+        "lsr	r3, r2, #1\n\t"
+        "ldm	%[r], {r4, r5, r6, r7, r8, r9}\n\t"
+        "subs	r4, r4, r2\n\t"
+        "sbcs	r5, r5, #0\n\t"
+        "sbcs	r6, r6, #0\n\t"
+        "sbcs	r7, r7, r2\n\t"
+        "sbcs	r8, r8, r3, LSL #1\n\t"
+        "sbcs	r9, r9, r2\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "ldm	%[r], {r4, r5, r6, r7, r8, r9}\n\t"
+        "sbcs	r4, r4, r2\n\t"
+        "sbcs	r5, r5, r2\n\t"
+        "sbcs	r6, r6, r2\n\t"
+        "sbcs	r7, r7, r2\n\t"
+        "sbcs	r8, r8, r2\n\t"
+        "sbc	r9, r9, r2\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "sub	%[r], %[r], #48\n\t"
+        "sub	%[a], %[a], #48\n\t"
+        "mov	r2, #0\n\t"
+        "ldm	%[a]!, {r4, r5, r6, r7}\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "adds	r8, r8, r4\n\t"
+        "adcs	r9, r9, r5\n\t"
+        "adcs	r10, r10, r6\n\t"
+        "adcs	r11, r11, r7\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[a]!, {r4, r5, r6, r7}\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "adcs	r8, r8, r4\n\t"
+        "adcs	r9, r9, r5\n\t"
+        "adcs	r10, r10, r6\n\t"
+        "adcs	r11, r11, r7\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[a]!, {r4, r5, r6, r7}\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "adcs	r8, r8, r4\n\t"
+        "adcs	r9, r9, r5\n\t"
+        "adcs	r10, r10, r6\n\t"
+        "adcs	r11, r11, r7\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "adc	r2, r2, #0\n\t"
+        "sub	%[r], %[r], #48\n\t"
+        "rsb	r2, r2, #0\n\t"
+        "lsr	r3, r2, #1\n\t"
+        "ldm	%[r], {r4, r5, r6, r7, r8, r9}\n\t"
+        "subs	r4, r4, r2\n\t"
+        "sbcs	r5, r5, #0\n\t"
+        "sbcs	r6, r6, #0\n\t"
+        "sbcs	r7, r7, r2\n\t"
+        "sbcs	r8, r8, r3, LSL #1\n\t"
+        "sbcs	r9, r9, r2\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "ldm	%[r], {r4, r5, r6, r7, r8, r9}\n\t"
+        "sbcs	r4, r4, r2\n\t"
+        "sbcs	r5, r5, r2\n\t"
+        "sbcs	r6, r6, r2\n\t"
+        "sbcs	r7, r7, r2\n\t"
+        "sbcs	r8, r8, r2\n\t"
+        "sbcs	r9, r9, r2\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "sbc	r12, r12, r12\n\t"
+        "sub	%[r], %[r], #48\n\t"
+        "sub	r2, r2, r12\n\t"
+        "lsr	r3, r2, #1\n\t"
+        "ldm	%[r], {r4, r5, r6, r7, r8, r9}\n\t"
+        "subs	r4, r4, r2\n\t"
+        "sbcs	r5, r5, #0\n\t"
+        "sbcs	r6, r6, #0\n\t"
+        "sbcs	r7, r7, r2\n\t"
+        "sbcs	r8, r8, r3, LSL #1\n\t"
+        "sbcs	r9, r9, r2\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+        "ldm	%[r], {r4, r5, r6, r7, r8, r9}\n\t"
+        "sbcs	r4, r4, r2\n\t"
+        "sbcs	r5, r5, r2\n\t"
+        "sbcs	r6, r6, r2\n\t"
+        "sbcs	r7, r7, r2\n\t"
+        "sbcs	r8, r8, r2\n\t"
+        "sbc	r9, r9, r2\n\t"
+        "stm	%[r]!, {r4, r5, r6, r7, r8, r9}\n\t"
+#ifndef WOLFSSL_NO_VAR_ASSIGN_REG
+        : [r] "+r" (r), [a] "+r" (a), [m] "+r" (m)
+        :
+#else
+        :
+        : [r] "r" (r), [a] "r" (a), [m] "r" (m)
+#endif /* !WOLFSSL_NO_VAR_ASSIGN_REG */
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
+            "r3", "r12"
+    );
 }
 
 #ifdef WOLFSSL_SP_SMALL
@@ -92185,10 +92447,81 @@ WC_OMIT_FRAME_POINTER static void sp_384_mont_sub_12(sp_digit* r,
     register const sp_digit* m asm ("r3") = (const sp_digit*)m_p;
 #endif /* !WOLFSSL_NO_VAR_ASSIGN_REG */
 
-    sp_digit o;
-
-    o = sp_384_sub_12(r, a, b);
-    sp_384_cond_add_12(r, r, m, o);
+    __asm__ __volatile__ (
+        "mov	r3, #0\n\t"
+        "ldm	%[a]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[b]!, {r4, r5, r6, r7}\n\t"
+        "subs	r8, r8, r4\n\t"
+        "sbcs	r9, r9, r5\n\t"
+        "sbcs	r10, r10, r6\n\t"
+        "sbcs	r11, r11, r7\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[a]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[b]!, {r4, r5, r6, r7}\n\t"
+        "sbcs	r8, r8, r4\n\t"
+        "sbcs	r9, r9, r5\n\t"
+        "sbcs	r10, r10, r6\n\t"
+        "sbcs	r11, r11, r7\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[a]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[b]!, {r4, r5, r6, r7}\n\t"
+        "sbcs	r8, r8, r4\n\t"
+        "sbcs	r9, r9, r5\n\t"
+        "sbcs	r10, r10, r6\n\t"
+        "sbcs	r11, r11, r7\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "sbc	r3, r3, #0\n\t"
+        "sub	%[r], %[r], #48\n\t"
+        "lsr	r12, r3, #1\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "adds	r8, r8, r3\n\t"
+        "adcs	r9, r9, #0\n\t"
+        "adcs	r10, r10, #0\n\t"
+        "adcs	r11, r11, r3\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "adcs	r8, r8, r12, LSL #1\n\t"
+        "adcs	r9, r9, r3\n\t"
+        "adcs	r10, r10, r3\n\t"
+        "adcs	r11, r11, r3\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "adcs	r8, r8, r3\n\t"
+        "adcs	r9, r9, r3\n\t"
+        "adcs	r10, r10, r3\n\t"
+        "adcs	r11, r11, r3\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "adc	r3, r3, #0\n\t"
+        "sub	%[r], %[r], #48\n\t"
+        "lsr	r12, r3, #1\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "adds	r8, r8, r3\n\t"
+        "adcs	r9, r9, #0\n\t"
+        "adcs	r10, r10, #0\n\t"
+        "adcs	r11, r11, r3\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "adcs	r8, r8, r12, LSL #1\n\t"
+        "adcs	r9, r9, r3\n\t"
+        "adcs	r10, r10, r3\n\t"
+        "adcs	r11, r11, r3\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+        "ldm	%[r], {r8, r9, r10, r11}\n\t"
+        "adcs	r8, r8, r3\n\t"
+        "adcs	r9, r9, r3\n\t"
+        "adcs	r10, r10, r3\n\t"
+        "adc	r11, r11, r3\n\t"
+        "stm	%[r]!, {r8, r9, r10, r11}\n\t"
+#ifndef WOLFSSL_NO_VAR_ASSIGN_REG
+        : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b), [m] "+r" (m)
+        :
+#else
+        :
+        : [r] "r" (r), [a] "r" (a), [b] "r" (b), [m] "r" (m)
+#endif /* !WOLFSSL_NO_VAR_ASSIGN_REG */
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
+            "r12"
+    );
 }
 
 #ifdef WOLFSSL_SP_SMALL
