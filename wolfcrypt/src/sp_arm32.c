@@ -92181,58 +92181,7 @@ WC_OMIT_FRAME_POINTER static void sp_384_mont_tpl_12(sp_digit* r,
     );
 }
 
-#ifdef WOLFSSL_SP_SMALL
-/* Sub b from a into r. (r = a - b)
- *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
- */
-#ifndef WOLFSSL_NO_VAR_ASSIGN_REG
-WC_OMIT_FRAME_POINTER static sp_digit sp_384_sub_12(sp_digit* r_p,
-    const sp_digit* a_p, const sp_digit* b_p)
-#else
-WC_OMIT_FRAME_POINTER static sp_digit sp_384_sub_12(sp_digit* r,
-    const sp_digit* a, const sp_digit* b)
-#endif /* WOLFSSL_NO_VAR_ASSIGN_REG */
-{
-#ifndef WOLFSSL_NO_VAR_ASSIGN_REG
-    register sp_digit* r asm ("r0") = (sp_digit*)r_p;
-    register const sp_digit* a asm ("r1") = (const sp_digit*)a_p;
-    register const sp_digit* b asm ("r2") = (const sp_digit*)b_p;
-#endif /* !WOLFSSL_NO_VAR_ASSIGN_REG */
-
-    __asm__ __volatile__ (
-        "mov	r12, #0\n\t"
-        "add	lr, %[a], #48\n\t"
-        "\n"
-    "L_sp_384_sub_12_word_%=: \n\t"
-        "rsbs	r12, r12, #0\n\t"
-        "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
-        "ldm	%[b]!, {r7, r8, r9, r10}\n\t"
-        "sbcs	r3, r3, r7\n\t"
-        "sbcs	r4, r4, r8\n\t"
-        "sbcs	r5, r5, r9\n\t"
-        "sbcs	r6, r6, r10\n\t"
-        "stm	%[r]!, {r3, r4, r5, r6}\n\t"
-        "sbc	r12, r3, r3\n\t"
-        "cmp	%[a], lr\n\t"
-        "bne	L_sp_384_sub_12_word_%=\n\t"
-        "mov	%[r], r12\n\t"
-#ifndef WOLFSSL_NO_VAR_ASSIGN_REG
-        : [r] "+r" (r), [a] "+r" (a), [b] "+r" (b)
-        :
-#else
-        :
-        : [r] "r" (r), [a] "r" (a), [b] "r" (b)
-#endif /* !WOLFSSL_NO_VAR_ASSIGN_REG */
-        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
-            "r12", "lr"
-    );
-    return (word32)(size_t)r;
-}
-
-#else
+#ifndef WOLFSSL_SP_SMALL
 /* Sub b from a into r. (r = a - b)
  *
  * r  A single precision integer.
@@ -92288,7 +92237,7 @@ WC_OMIT_FRAME_POINTER static sp_digit sp_384_sub_12(sp_digit* r,
     return (word32)(size_t)r;
 }
 
-#endif /* WOLFSSL_SP_SMALL */
+#endif /* !WOLFSSL_SP_SMALL */
 #ifdef WOLFSSL_SP_SMALL
 /* Conditionally add a and b using the mask m.
  * m is -1 to add and 0 when not.
