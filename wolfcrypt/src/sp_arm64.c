@@ -23280,7 +23280,7 @@ static void sp_256_proj_point_dbl_n_4(sp_point_256* p, int i,
     sp_digit* x;
     sp_digit* y;
     sp_digit* z;
-    volatile int n = i;
+    volatile int n = i - 1;
 
     x = p->x;
     y = p->y;
@@ -23292,9 +23292,9 @@ static void sp_256_proj_point_dbl_n_4(sp_point_256* p, int i,
     sp_256_mont_sqr_4(w, z, p256_mod, p256_mp_mod);
     sp_256_mont_sqr_4(w, w, p256_mod, p256_mp_mod);
 #ifndef WOLFSSL_SP_SMALL
-    while (--n > 0)
+    while (n > 0)
 #else
-    while (--n >= 0)
+    while (n >= 0)
 #endif
     {
         /* A = 3*(X^2 - W) */
@@ -23323,6 +23323,7 @@ static void sp_256_proj_point_dbl_n_4(sp_point_256* p, int i,
         /* y = 2*A*(B - X) - Y^4 */
         sp_256_mont_mul_4(y, b, a, p256_mod, p256_mp_mod);
         sp_256_mont_sub_4(y, y, t1, p256_mod);
+        n = n - 1;
     }
 #ifndef WOLFSSL_SP_SMALL
     /* A = 3*(X^2 - W) */
@@ -43892,7 +43893,7 @@ static void sp_384_proj_point_dbl_n_6(sp_point_384* p, int i,
     sp_digit* x;
     sp_digit* y;
     sp_digit* z;
-    volatile int n = i;
+    volatile int n = i - 1;
 
     x = p->x;
     y = p->y;
@@ -43904,9 +43905,9 @@ static void sp_384_proj_point_dbl_n_6(sp_point_384* p, int i,
     sp_384_mont_sqr_6(w, z, p384_mod, p384_mp_mod);
     sp_384_mont_sqr_6(w, w, p384_mod, p384_mp_mod);
 #ifndef WOLFSSL_SP_SMALL
-    while (--n > 0)
+    while (n > 0)
 #else
-    while (--n >= 0)
+    while (n >= 0)
 #endif
     {
         /* A = 3*(X^2 - W) */
@@ -43937,6 +43938,7 @@ static void sp_384_proj_point_dbl_n_6(sp_point_384* p, int i,
         /* y = 2*A*(B - X) - Y^4 */
         sp_384_mont_mul_6(y, b, a, p384_mod, p384_mp_mod);
         sp_384_mont_sub_6(y, y, t1, p384_mod);
+        n = n - 1;
     }
 #ifndef WOLFSSL_SP_SMALL
     /* A = 3*(X^2 - W) */
@@ -71836,7 +71838,7 @@ static void sp_521_proj_point_dbl_n_9(sp_point_521* p, int i,
     sp_digit* x;
     sp_digit* y;
     sp_digit* z;
-    volatile int n = i;
+    volatile int n = i - 1;
 
     x = p->x;
     y = p->y;
@@ -71848,9 +71850,9 @@ static void sp_521_proj_point_dbl_n_9(sp_point_521* p, int i,
     sp_521_mont_sqr_9(w, z, p521_mod, p521_mp_mod);
     sp_521_mont_sqr_9(w, w, p521_mod, p521_mp_mod);
 #ifndef WOLFSSL_SP_SMALL
-    while (--n > 0)
+    while (n > 0)
 #else
-    while (--n >= 0)
+    while (n >= 0)
 #endif
     {
         /* A = 3*(X^2 - W) */
@@ -71881,6 +71883,7 @@ static void sp_521_proj_point_dbl_n_9(sp_point_521* p, int i,
         /* y = 2*A*(B - X) - Y^4 */
         sp_521_mont_mul_9(y, b, a, p521_mod, p521_mp_mod);
         sp_521_mont_sub_9(y, y, t1, p521_mod);
+        n = n - 1;
     }
 #ifndef WOLFSSL_SP_SMALL
     /* A = 3*(X^2 - W) */
@@ -115498,7 +115501,7 @@ static void sp_1024_proj_point_dbl_n_16(sp_point_1024* p, int i,
     sp_digit* x;
     sp_digit* y;
     sp_digit* z;
-    volatile int n = i;
+    volatile int n = i - 1;
 
     x = p->x;
     y = p->y;
@@ -115510,9 +115513,9 @@ static void sp_1024_proj_point_dbl_n_16(sp_point_1024* p, int i,
     sp_1024_mont_sqr_16(w, z, p1024_mod, p1024_mp_mod);
     sp_1024_mont_sqr_16(w, w, p1024_mod, p1024_mp_mod);
 #ifndef WOLFSSL_SP_SMALL
-    while (--n > 0)
+    while (n > 0)
 #else
-    while (--n >= 0)
+    while (n >= 0)
 #endif
     {
         /* A = 3*(X^2 - W) */
@@ -115543,6 +115546,7 @@ static void sp_1024_proj_point_dbl_n_16(sp_point_1024* p, int i,
         /* y = 2*A*(B - X) - Y^4 */
         sp_1024_mont_mul_16(y, b, a, p1024_mod, p1024_mp_mod);
         sp_1024_mont_sub_16(y, y, t1, p1024_mod);
+        n = n - 1;
     }
 #ifndef WOLFSSL_SP_SMALL
     /* A = 3*(X^2 - W) */
