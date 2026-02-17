@@ -6176,7 +6176,6 @@ static sp_digit sp_2048_cond_add_16(sp_digit* r, const sp_digit* a, const sp_dig
     return c;
 }
 #endif /* WOLFSSL_SP_SMALL */
-#endif /* !SP_RSA_PRIVATE_EXP_D && !RSA_LOW_MEM */
 
 #endif /* !SP_RSA_PRIVATE_EXP_D && !RSA_LOW_MEM */
 /* RSA private key operation.
@@ -15554,7 +15553,6 @@ static sp_digit sp_3072_cond_add_24(sp_digit* r, const sp_digit* a, const sp_dig
     return c;
 }
 #endif /* WOLFSSL_SP_SMALL */
-#endif /* !SP_RSA_PRIVATE_EXP_D && !RSA_LOW_MEM */
 
 #endif /* !SP_RSA_PRIVATE_EXP_D && !RSA_LOW_MEM */
 /* RSA private key operation.
@@ -20566,7 +20564,6 @@ static sp_digit sp_4096_cond_add_32(sp_digit* r, const sp_digit* a, const sp_dig
     return c;
 }
 #endif /* WOLFSSL_SP_SMALL */
-#endif /* !SP_RSA_PRIVATE_EXP_D && !RSA_LOW_MEM */
 
 #endif /* !SP_RSA_PRIVATE_EXP_D && !RSA_LOW_MEM */
 /* RSA private key operation.
