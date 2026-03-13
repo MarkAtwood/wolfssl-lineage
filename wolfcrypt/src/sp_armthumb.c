@@ -24132,9 +24132,9 @@ static int sp_2048_mod_exp_32(sp_digit* r, const sp_digit* a, const sp_digit* e,
             c = -c;
             y = (byte)(n << c);
             n = e[i--];
-            y |= (byte)(n >> (64 - c));
+            y |= (byte)(n >> (32 - c));
             n <<= c;
-            c = 64 - c;
+            c = 32 - c;
         }
         else if (c == 0) {
             /* All bits in top word used. */
@@ -24285,9 +24285,9 @@ static int sp_2048_mod_exp_32(sp_digit* r, const sp_digit* a, const sp_digit* e,
             c = -c;
             y = (byte)(n << c);
             n = e[i--];
-            y |= (byte)(n >> (64 - c));
+            y |= (byte)(n >> (32 - c));
             n <<= c;
-            c = 64 - c;
+            c = 32 - c;
         }
         else if (c == 0) {
             /* All bits in top word used. */
@@ -27684,9 +27684,9 @@ static int sp_2048_mod_exp_64(sp_digit* r, const sp_digit* a, const sp_digit* e,
             c = -c;
             y = (byte)(n << c);
             n = e[i--];
-            y |= (byte)(n >> (64 - c));
+            y |= (byte)(n >> (32 - c));
             n <<= c;
-            c = 64 - c;
+            c = 32 - c;
         }
         else if (c == 0) {
             /* All bits in top word used. */
@@ -27820,9 +27820,9 @@ static int sp_2048_mod_exp_64(sp_digit* r, const sp_digit* a, const sp_digit* e,
             c = -c;
             y = (byte)(n << c);
             n = e[i--];
-            y |= (byte)(n >> (64 - c));
+            y |= (byte)(n >> (32 - c));
             n <<= c;
-            c = 64 - c;
+            c = 32 - c;
         }
         else if (c == 0) {
             /* All bits in top word used. */
@@ -30010,9 +30010,9 @@ static int sp_2048_mod_exp_2_64(sp_digit* r, const sp_digit* e, int bits,
             c = -c;
             y = (byte)(n << c);
             n = e[i--];
-            y |= (byte)(n >> (64 - c));
+            y |= (byte)(n >> (32 - c));
             n <<= c;
-            c = 64 - c;
+            c = 32 - c;
         }
         else if (c == 0) {
             /* All bits in top word used. */
@@ -75473,9 +75473,9 @@ static int sp_3072_mod_exp_48(sp_digit* r, const sp_digit* a, const sp_digit* e,
             c = -c;
             y = (byte)(n << c);
             n = e[i--];
-            y |= (byte)(n >> (64 - c));
+            y |= (byte)(n >> (32 - c));
             n <<= c;
-            c = 64 - c;
+            c = 32 - c;
         }
         else if (c == 0) {
             /* All bits in top word used. */
@@ -75626,9 +75626,9 @@ static int sp_3072_mod_exp_48(sp_digit* r, const sp_digit* a, const sp_digit* e,
             c = -c;
             y = (byte)(n << c);
             n = e[i--];
-            y |= (byte)(n >> (64 - c));
+            y |= (byte)(n >> (32 - c));
             n <<= c;
-            c = 64 - c;
+            c = 32 - c;
         }
         else if (c == 0) {
             /* All bits in top word used. */
@@ -79856,9 +79856,9 @@ static int sp_3072_mod_exp_96(sp_digit* r, const sp_digit* a, const sp_digit* e,
             c = -c;
             y = (byte)(n << c);
             n = e[i--];
-            y |= (byte)(n >> (64 - c));
+            y |= (byte)(n >> (32 - c));
             n <<= c;
-            c = 64 - c;
+            c = 32 - c;
         }
         else if (c == 0) {
             /* All bits in top word used. */
@@ -79992,9 +79992,9 @@ static int sp_3072_mod_exp_96(sp_digit* r, const sp_digit* a, const sp_digit* e,
             c = -c;
             y = (byte)(n << c);
             n = e[i--];
-            y |= (byte)(n >> (64 - c));
+            y |= (byte)(n >> (32 - c));
             n <<= c;
-            c = 64 - c;
+            c = 32 - c;
         }
         else if (c == 0) {
             /* All bits in top word used. */
@@ -82980,9 +82980,9 @@ static int sp_3072_mod_exp_2_96(sp_digit* r, const sp_digit* e, int bits,
             c = -c;
             y = (byte)(n << c);
             n = e[i--];
-            y |= (byte)(n >> (64 - c));
+            y |= (byte)(n >> (32 - c));
             n <<= c;
-            c = 64 - c;
+            c = 32 - c;
         }
         else if (c == 0) {
             /* All bits in top word used. */
@@ -92314,9 +92314,9 @@ static int sp_4096_mod_exp_128(sp_digit* r, const sp_digit* a, const sp_digit* e
             c = -c;
             y = (byte)(n << c);
             n = e[i--];
-            y |= (byte)(n >> (64 - c));
+            y |= (byte)(n >> (32 - c));
             n <<= c;
-            c = 64 - c;
+            c = 32 - c;
         }
         else if (c == 0) {
             /* All bits in top word used. */
@@ -92450,9 +92450,9 @@ static int sp_4096_mod_exp_128(sp_digit* r, const sp_digit* a, const sp_digit* e
             c = -c;
             y = (byte)(n << c);
             n = e[i--];
-            y |= (byte)(n >> (64 - c));
+            y |= (byte)(n >> (32 - c));
             n <<= c;
-            c = 64 - c;
+            c = 32 - c;
         }
         else if (c == 0) {
             /* All bits in top word used. */
@@ -96231,9 +96231,9 @@ static int sp_4096_mod_exp_2_128(sp_digit* r, const sp_digit* e, int bits,
             c = -c;
             y = (byte)(n << c);
             n = e[i--];
-            y |= (byte)(n >> (64 - c));
+            y |= (byte)(n >> (32 - c));
             n <<= c;
-            c = 64 - c;
+            c = 32 - c;
         }
         else if (c == 0) {
             /* All bits in top word used. */
@@ -124360,7 +124360,17 @@ static int sp_521_ecc_mulmod_fast_17(sp_point_521* r, const sp_point_521* g, con
         }
         y = k[0] & 0x1;
         sp_521_proj_point_dbl_17(rt, rt, tmp);
-        sp_521_proj_point_add_17(rt, rt, &t[y], tmp);
+    #ifndef WC_NO_CACHE_RESISTANT
+        if (ct) {
+            sp_521_get_point_16_17(p, t, y);
+            p->infinity = !y;
+            sp_521_proj_point_add_17(rt, rt, p, tmp);
+        }
+        else
+    #endif
+        {
+            sp_521_proj_point_add_17(rt, rt, &t[y], tmp);
+        }
 
         if (map != 0) {
             sp_521_map_17(r, rt, tmp);
