@@ -40410,7 +40410,7 @@ static int sp_256_mont_inv_order_4_nb(sp_ecc_ctx_t* sp_ctx, sp_digit* r, const s
             sp_256_mont_mul_order_4(t, t, a);
         }
         ctx->i--;
-        ctx->state = (ctx->i == 0) ? 3 : 1;
+        ctx->state = (ctx->i >= 0) ? 1 : 3;
         break;
     case 3:
         XMEMCPY(r, t, sizeof(sp_digit) * 4U);
@@ -66248,7 +66248,7 @@ static int sp_384_mont_inv_order_6_nb(sp_ecc_ctx_t* sp_ctx, sp_digit* r, const s
             sp_384_mont_mul_order_6(t, t, a);
         }
         ctx->i--;
-        ctx->state = (ctx->i == 0) ? 3 : 1;
+        ctx->state = (ctx->i >= 0) ? 1 : 3;
         break;
     case 3:
         XMEMCPY(r, t, sizeof(sp_digit) * 6U);
@@ -110714,7 +110714,7 @@ static int sp_521_mont_inv_order_9_nb(sp_ecc_ctx_t* sp_ctx, sp_digit* r, const s
             sp_521_mont_mul_order_9(t, t, a);
         }
         ctx->i--;
-        ctx->state = (ctx->i == 0) ? 3 : 1;
+        ctx->state = (ctx->i >= 0) ? 1 : 3;
         break;
     case 3:
         XMEMCPY(r, t, sizeof(sp_digit) * 9U);
