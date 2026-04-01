@@ -75874,10 +75874,6 @@ static int sp_256_ecc_mulmod_8(sp_point_256* r, const sp_point_256* g,
         if (cache->cnt == 2)
             sp_256_gen_stripe_table_8(g, cache->table, tmp, heap);
 
-#ifndef HAVE_THREAD_LS
-        wc_UnLockMutex(&sp_cache_256_lock);
-#endif /* HAVE_THREAD_LS */
-
         if (cache->cnt < 2) {
             err = sp_256_ecc_mulmod_fast_8(r, g, k, map, ct, heap);
         }
@@ -75885,6 +75881,9 @@ static int sp_256_ecc_mulmod_8(sp_point_256* r, const sp_point_256* g,
             err = sp_256_ecc_mulmod_stripe_8(r, g, cache->table, k,
                     map, ct, heap);
         }
+#ifndef HAVE_THREAD_LS
+        wc_UnLockMutex(&sp_cache_256_lock);
+#endif /* HAVE_THREAD_LS */
     }
 
     SP_FREE_VAR(tmp, heap, DYNAMIC_TYPE_ECC);
@@ -76256,10 +76255,6 @@ static int sp_256_ecc_mulmod_8(sp_point_256* r, const sp_point_256* g,
         if (cache->cnt == 2)
             sp_256_gen_stripe_table_8(g, cache->table, tmp, heap);
 
-#ifndef HAVE_THREAD_LS
-        wc_UnLockMutex(&sp_cache_256_lock);
-#endif /* HAVE_THREAD_LS */
-
         if (cache->cnt < 2) {
             err = sp_256_ecc_mulmod_fast_8(r, g, k, map, ct, heap);
         }
@@ -76267,6 +76262,9 @@ static int sp_256_ecc_mulmod_8(sp_point_256* r, const sp_point_256* g,
             err = sp_256_ecc_mulmod_stripe_8(r, g, cache->table, k,
                     map, ct, heap);
         }
+#ifndef HAVE_THREAD_LS
+        wc_UnLockMutex(&sp_cache_256_lock);
+#endif /* HAVE_THREAD_LS */
     }
 
     SP_FREE_VAR(tmp, heap, DYNAMIC_TYPE_ECC);
@@ -93909,10 +93907,6 @@ static int sp_384_ecc_mulmod_12(sp_point_384* r, const sp_point_384* g,
         if (cache->cnt == 2)
             sp_384_gen_stripe_table_12(g, cache->table, tmp, heap);
 
-#ifndef HAVE_THREAD_LS
-        wc_UnLockMutex(&sp_cache_384_lock);
-#endif /* HAVE_THREAD_LS */
-
         if (cache->cnt < 2) {
             err = sp_384_ecc_mulmod_fast_12(r, g, k, map, ct, heap);
         }
@@ -93920,6 +93914,9 @@ static int sp_384_ecc_mulmod_12(sp_point_384* r, const sp_point_384* g,
             err = sp_384_ecc_mulmod_stripe_12(r, g, cache->table, k,
                     map, ct, heap);
         }
+#ifndef HAVE_THREAD_LS
+        wc_UnLockMutex(&sp_cache_384_lock);
+#endif /* HAVE_THREAD_LS */
     }
 
     SP_FREE_VAR(tmp, heap, DYNAMIC_TYPE_ECC);
@@ -94307,10 +94304,6 @@ static int sp_384_ecc_mulmod_12(sp_point_384* r, const sp_point_384* g,
         if (cache->cnt == 2)
             sp_384_gen_stripe_table_12(g, cache->table, tmp, heap);
 
-#ifndef HAVE_THREAD_LS
-        wc_UnLockMutex(&sp_cache_384_lock);
-#endif /* HAVE_THREAD_LS */
-
         if (cache->cnt < 2) {
             err = sp_384_ecc_mulmod_fast_12(r, g, k, map, ct, heap);
         }
@@ -94318,6 +94311,9 @@ static int sp_384_ecc_mulmod_12(sp_point_384* r, const sp_point_384* g,
             err = sp_384_ecc_mulmod_stripe_12(r, g, cache->table, k,
                     map, ct, heap);
         }
+#ifndef HAVE_THREAD_LS
+        wc_UnLockMutex(&sp_cache_384_lock);
+#endif /* HAVE_THREAD_LS */
     }
 
     SP_FREE_VAR(tmp, heap, DYNAMIC_TYPE_ECC);
@@ -121070,10 +121066,6 @@ static int sp_521_ecc_mulmod_17(sp_point_521* r, const sp_point_521* g,
         if (cache->cnt == 2)
             sp_521_gen_stripe_table_17(g, cache->table, tmp, heap);
 
-#ifndef HAVE_THREAD_LS
-        wc_UnLockMutex(&sp_cache_521_lock);
-#endif /* HAVE_THREAD_LS */
-
         if (cache->cnt < 2) {
             err = sp_521_ecc_mulmod_fast_17(r, g, k, map, ct, heap);
         }
@@ -121081,6 +121073,9 @@ static int sp_521_ecc_mulmod_17(sp_point_521* r, const sp_point_521* g,
             err = sp_521_ecc_mulmod_stripe_17(r, g, cache->table, k,
                     map, ct, heap);
         }
+#ifndef HAVE_THREAD_LS
+        wc_UnLockMutex(&sp_cache_521_lock);
+#endif /* HAVE_THREAD_LS */
     }
 
     SP_FREE_VAR(tmp, heap, DYNAMIC_TYPE_ECC);
@@ -121488,10 +121483,6 @@ static int sp_521_ecc_mulmod_17(sp_point_521* r, const sp_point_521* g,
         if (cache->cnt == 2)
             sp_521_gen_stripe_table_17(g, cache->table, tmp, heap);
 
-#ifndef HAVE_THREAD_LS
-        wc_UnLockMutex(&sp_cache_521_lock);
-#endif /* HAVE_THREAD_LS */
-
         if (cache->cnt < 2) {
             err = sp_521_ecc_mulmod_fast_17(r, g, k, map, ct, heap);
         }
@@ -121499,6 +121490,9 @@ static int sp_521_ecc_mulmod_17(sp_point_521* r, const sp_point_521* g,
             err = sp_521_ecc_mulmod_stripe_17(r, g, cache->table, k,
                     map, ct, heap);
         }
+#ifndef HAVE_THREAD_LS
+        wc_UnLockMutex(&sp_cache_521_lock);
+#endif /* HAVE_THREAD_LS */
     }
 
     SP_FREE_VAR(tmp, heap, DYNAMIC_TYPE_ECC);
@@ -150839,10 +150833,6 @@ static int sp_1024_ecc_mulmod_32(sp_point_1024* r, const sp_point_1024* g,
         if (cache->cnt == 2)
             sp_1024_gen_stripe_table_32(g, cache->table, tmp, heap);
 
-#ifndef HAVE_THREAD_LS
-        wc_UnLockMutex(&sp_cache_1024_lock);
-#endif /* HAVE_THREAD_LS */
-
         if (cache->cnt < 2) {
             err = sp_1024_ecc_mulmod_fast_32(r, g, k, map, ct, heap);
         }
@@ -150850,6 +150840,9 @@ static int sp_1024_ecc_mulmod_32(sp_point_1024* r, const sp_point_1024* g,
             err = sp_1024_ecc_mulmod_stripe_32(r, g, cache->table, k,
                     map, ct, heap);
         }
+#ifndef HAVE_THREAD_LS
+        wc_UnLockMutex(&sp_cache_1024_lock);
+#endif /* HAVE_THREAD_LS */
     }
 
     SP_FREE_VAR(tmp, heap, DYNAMIC_TYPE_ECC);
@@ -151154,10 +151147,6 @@ static int sp_1024_ecc_mulmod_32(sp_point_1024* r, const sp_point_1024* g,
         if (cache->cnt == 2)
             sp_1024_gen_stripe_table_32(g, cache->table, tmp, heap);
 
-#ifndef HAVE_THREAD_LS
-        wc_UnLockMutex(&sp_cache_1024_lock);
-#endif /* HAVE_THREAD_LS */
-
         if (cache->cnt < 2) {
             err = sp_1024_ecc_mulmod_fast_32(r, g, k, map, ct, heap);
         }
@@ -151165,6 +151154,9 @@ static int sp_1024_ecc_mulmod_32(sp_point_1024* r, const sp_point_1024* g,
             err = sp_1024_ecc_mulmod_stripe_32(r, g, cache->table, k,
                     map, ct, heap);
         }
+#ifndef HAVE_THREAD_LS
+        wc_UnLockMutex(&sp_cache_1024_lock);
+#endif /* HAVE_THREAD_LS */
     }
 
     SP_FREE_VAR(tmp, heap, DYNAMIC_TYPE_ECC);
