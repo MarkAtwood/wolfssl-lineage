@@ -302,9 +302,10 @@ static void sp_2048_to_bin_64(sp_digit* r, byte* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_2048_mul_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     sp_digit t[8 * 2];
     sp_digit* tmp = t;
     __asm__ __volatile__ (
@@ -534,8 +535,10 @@ SP_NOINLINE static void sp_2048_mul_8(sp_digit* r, const sp_digit* a,
         "mov	%[b], r10\n\t"
         : [a] "+l" (a), [b] "+l" (b), [tmp] "+l" (tmp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
+    (void)r;
 
     XMEMCPY(r, t, sizeof(t));
 }
@@ -547,9 +550,10 @@ SP_NOINLINE static void sp_2048_mul_8(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_2048_mul_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "sub	sp, sp, #32\n\t"
         "mov	r8, %[r]\n\t"
@@ -9490,7 +9494,7 @@ SP_NOINLINE static void sp_2048_mul_8(sp_digit* r, const sp_digit* a,
         "stm	%[r]!, {r3, r4, r5, r6}\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
 }
 
@@ -9501,9 +9505,10 @@ SP_NOINLINE static void sp_2048_mul_8(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_add_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -9581,7 +9586,7 @@ SP_NOINLINE static sp_digit sp_2048_add_8(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -9592,9 +9597,10 @@ SP_NOINLINE static sp_digit sp_2048_add_8(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_add_word_8(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_word_8(
+    sp_digit* r, const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r5, #0\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -9669,7 +9675,7 @@ SP_NOINLINE static sp_digit sp_2048_add_word_8(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r3", "r4", "r5"
     );
     return (word32)(size_t)r;
 }
@@ -9679,9 +9685,10 @@ SP_NOINLINE static sp_digit sp_2048_add_word_8(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_sub_in_place_16(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_16(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r4, r5}\n\t"
         "ldr	r2, [%[a]]\n\t"
@@ -9834,7 +9841,7 @@ SP_NOINLINE static sp_digit sp_2048_sub_in_place_16(sp_digit* a,
 #endif
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
     return (word32)(size_t)a;
 }
@@ -9845,9 +9852,10 @@ SP_NOINLINE static sp_digit sp_2048_sub_in_place_16(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_add_16(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_16(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -9993,7 +10001,7 @@ SP_NOINLINE static sp_digit sp_2048_add_16(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -10067,9 +10075,10 @@ SP_NOINLINE static void sp_2048_mul_16(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_add_word_16(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_word_16(
+    sp_digit* r, const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r5, #0\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -10208,7 +10217,7 @@ SP_NOINLINE static sp_digit sp_2048_add_word_16(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r3", "r4", "r5"
     );
     return (word32)(size_t)r;
 }
@@ -10218,9 +10227,10 @@ SP_NOINLINE static sp_digit sp_2048_add_word_16(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_sub_in_place_32(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_32(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r4, r5}\n\t"
         "ldr	r2, [%[a]]\n\t"
@@ -10517,7 +10527,7 @@ SP_NOINLINE static sp_digit sp_2048_sub_in_place_32(sp_digit* a,
 #endif
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
     return (word32)(size_t)a;
 }
@@ -10528,9 +10538,10 @@ SP_NOINLINE static sp_digit sp_2048_sub_in_place_32(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_32(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -10812,7 +10823,7 @@ SP_NOINLINE static sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -10890,9 +10901,10 @@ SP_NOINLINE static void sp_2048_mul_32(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_add_word_32(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_word_32(
+    sp_digit* r, const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r5, #0\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -11159,7 +11171,7 @@ SP_NOINLINE static sp_digit sp_2048_add_word_32(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r3", "r4", "r5"
     );
     return (word32)(size_t)r;
 }
@@ -11169,9 +11181,10 @@ SP_NOINLINE static sp_digit sp_2048_add_word_32(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_sub_in_place_64(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_64(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r4, r5}\n\t"
         "ldr	r2, [%[a]]\n\t"
@@ -11756,7 +11769,7 @@ SP_NOINLINE static sp_digit sp_2048_sub_in_place_64(sp_digit* a,
 #endif
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
     return (word32)(size_t)a;
 }
@@ -11767,9 +11780,10 @@ SP_NOINLINE static sp_digit sp_2048_sub_in_place_64(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_add_64(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_64(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -12323,7 +12337,7 @@ SP_NOINLINE static sp_digit sp_2048_add_64(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -12401,8 +12415,10 @@ SP_NOINLINE static void sp_2048_mul_64(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_2048_sqr_8(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_sqr_8(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
         "movs	r4, #0\n\t"
@@ -12815,7 +12831,8 @@ SP_NOINLINE static void sp_2048_sqr_8(sp_digit* r, const sp_digit* a)
         "add	sp, sp, r6\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
 }
 
@@ -12825,8 +12842,10 @@ SP_NOINLINE static void sp_2048_sqr_8(sp_digit* r, const sp_digit* a)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_2048_sqr_8(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_sqr_8(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "sub	sp, sp, #32\n\t"
         "mov	r8, %[r]\n\t"
@@ -19330,7 +19349,8 @@ SP_NOINLINE static void sp_2048_sqr_8(sp_digit* r, const sp_digit* a)
         "stm	%[r]!, {r2, r3, r4, r5}\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12", "lr"
     );
 }
 
@@ -19341,9 +19361,10 @@ SP_NOINLINE static void sp_2048_sqr_8(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_sub_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -19420,7 +19441,7 @@ SP_NOINLINE static sp_digit sp_2048_sub_8(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -19466,9 +19487,10 @@ SP_NOINLINE static void sp_2048_sqr_16(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_sub_16(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_16(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -19613,7 +19635,7 @@ SP_NOINLINE static sp_digit sp_2048_sub_16(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -19659,9 +19681,10 @@ SP_NOINLINE static void sp_2048_sqr_32(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_sub_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_32(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -19942,7 +19965,7 @@ SP_NOINLINE static sp_digit sp_2048_sub_32(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -19990,9 +20013,10 @@ SP_NOINLINE static void sp_2048_sqr_64(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_add_64(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_64(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r7, #0\n\t"
@@ -20058,7 +20082,7 @@ SP_NOINLINE static sp_digit sp_2048_add_64(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)r;
 }
@@ -20070,9 +20094,10 @@ SP_NOINLINE static sp_digit sp_2048_add_64(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_sub_in_place_64(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_64(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r7, %[a]\n\t"
         "movs	r2, #0\n\t"
@@ -20137,7 +20162,7 @@ SP_NOINLINE static sp_digit sp_2048_sub_in_place_64(sp_digit* a,
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -20150,9 +20175,10 @@ SP_NOINLINE static sp_digit sp_2048_sub_in_place_64(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_2048_mul_64(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_64(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     sp_digit t[64 * 2];
     sp_digit* tmp = t;
     __asm__ __volatile__ (
@@ -20392,8 +20418,10 @@ SP_NOINLINE static void sp_2048_mul_64(sp_digit* r, const sp_digit* a,
         "mov	%[b], r10\n\t"
         : [a] "+l" (a), [b] "+l" (b), [tmp] "+l" (tmp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
+    (void)r;
 
     XMEMCPY(r, t, sizeof(t));
 }
@@ -20403,8 +20431,10 @@ SP_NOINLINE static void sp_2048_mul_64(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_2048_sqr_64(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_sqr_64(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
         "movs	r4, #0\n\t"
@@ -20842,7 +20872,8 @@ SP_NOINLINE static void sp_2048_sqr_64(sp_digit* r, const sp_digit* a)
         "add	sp, sp, r6\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
 }
 
@@ -20872,9 +20903,10 @@ static void sp_2048_mask_32(sp_digit* r, const sp_digit* a, sp_digit m)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_32(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r7, #0\n\t"
@@ -20934,7 +20966,7 @@ SP_NOINLINE static sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)r;
 }
@@ -20946,9 +20978,10 @@ SP_NOINLINE static sp_digit sp_2048_add_32(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_sub_in_place_32(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_32(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r7, %[a]\n\t"
         "movs	r2, #0\n\t"
@@ -21007,7 +21040,7 @@ SP_NOINLINE static sp_digit sp_2048_sub_in_place_32(sp_digit* a,
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -21020,9 +21053,10 @@ SP_NOINLINE static sp_digit sp_2048_sub_in_place_32(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_2048_mul_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_32(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     sp_digit t[32 * 2];
     sp_digit* tmp = t;
     __asm__ __volatile__ (
@@ -21252,8 +21286,10 @@ SP_NOINLINE static void sp_2048_mul_32(sp_digit* r, const sp_digit* a,
         "mov	%[b], r10\n\t"
         : [a] "+l" (a), [b] "+l" (b), [tmp] "+l" (tmp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
+    (void)r;
 
     XMEMCPY(r, t, sizeof(t));
 }
@@ -21263,8 +21299,10 @@ SP_NOINLINE static void sp_2048_mul_32(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_2048_sqr_32(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_sqr_32(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
         "movs	r4, #0\n\t"
@@ -21687,7 +21725,8 @@ SP_NOINLINE static void sp_2048_sqr_32(sp_digit* r, const sp_digit* a)
         "add	sp, sp, r6\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
 }
 
@@ -21720,9 +21759,10 @@ static void sp_2048_mont_setup(const sp_digit* a, sp_digit* rho)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-SP_NOINLINE static void sp_2048_mul_d_64(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_d_64(sp_digit* r,
+    const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, #0xff\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -21901,7 +21941,7 @@ SP_NOINLINE static void sp_2048_mul_d_64(sp_digit* r, const sp_digit* a,
         "str	r3, [%[r]]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
 }
 
@@ -21928,9 +21968,10 @@ static void sp_2048_mont_norm_32(sp_digit* r, const sp_digit* m)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_2048_cond_sub_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_cond_sub_32(
+    sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #0x80\n\t"
@@ -21978,7 +22019,7 @@ SP_NOINLINE static sp_digit sp_2048_cond_sub_32(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -21990,9 +22031,10 @@ SP_NOINLINE static sp_digit sp_2048_cond_sub_32(sp_digit* r, const sp_digit* a,
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-SP_NOINLINE static void sp_2048_mont_reduce_32(sp_digit* a, const sp_digit* m,
-        sp_digit mp)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mont_reduce_32(
+    sp_digit* a, const sp_digit* m, sp_digit mp)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #0\n\t"
         "mov	r8, %[mp]\n\t"
@@ -23046,7 +23088,8 @@ SP_NOINLINE static void sp_2048_mont_reduce_32(sp_digit* a, const sp_digit* m,
 #endif /* WOLFSSL_SP_LARGE_CODE */
         : [a] "+l" (a), [m] "+l" (m), [mp] "+l" (mp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12", "lr"
     );
 }
 
@@ -23086,9 +23129,10 @@ SP_NOINLINE static void sp_2048_mont_sqr_32(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision digit.
  */
-SP_NOINLINE static void sp_2048_mul_d_32(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_d_32(sp_digit* r,
+    const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, #0x80\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -23262,7 +23306,7 @@ SP_NOINLINE static void sp_2048_mul_d_32(sp_digit* r, const sp_digit* a,
         "str	r3, [%[r]]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
 }
 
@@ -23275,9 +23319,10 @@ SP_NOINLINE static void sp_2048_mul_d_32(sp_digit* r, const sp_digit* a,
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-SP_NOINLINE static sp_digit div_2048_word_32(sp_digit d1, sp_digit d0,
-        sp_digit div)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_2048_word_32(sp_digit d1,
+    sp_digit d0, sp_digit div)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -23877,7 +23922,7 @@ SP_NOINLINE static sp_digit div_2048_word_32(sp_digit d1, sp_digit d0,
         "movs	%[d1], r3\n\t"
         : [d1] "+l" (d1), [d0] "+l" (d0), [div] "+l" (div)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
     return (word32)(size_t)d1;
 }
@@ -23889,8 +23934,10 @@ SP_NOINLINE static sp_digit div_2048_word_32(sp_digit d1, sp_digit d0,
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-SP_NOINLINE static sp_int32 sp_2048_cmp_32(const sp_digit* a, const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_2048_cmp_32(
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r2, #0\n\t"
         "movs	r3, #0\n\t"
@@ -23986,7 +24033,7 @@ SP_NOINLINE static sp_int32 sp_2048_cmp_32(const sp_digit* a, const sp_digit* b)
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -24367,9 +24414,10 @@ static void sp_2048_mont_norm_64(sp_digit* r, const sp_digit* m)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_2048_cond_sub_64(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_cond_sub_64(
+    sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #0xff\n\t"
@@ -24422,7 +24470,7 @@ SP_NOINLINE static sp_digit sp_2048_cond_sub_64(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -24434,9 +24482,10 @@ SP_NOINLINE static sp_digit sp_2048_cond_sub_64(sp_digit* r, const sp_digit* a,
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-SP_NOINLINE static void sp_2048_mont_reduce_64(sp_digit* a, const sp_digit* m,
-        sp_digit mp)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mont_reduce_64(
+    sp_digit* a, const sp_digit* m, sp_digit mp)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #0\n\t"
         "mov	r8, %[mp]\n\t"
@@ -26044,7 +26093,8 @@ SP_NOINLINE static void sp_2048_mont_reduce_64(sp_digit* a, const sp_digit* m,
 #endif /* WOLFSSL_SP_LARGE_CODE */
         : [a] "+l" (a), [m] "+l" (m), [mp] "+l" (mp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12", "lr"
     );
 }
 
@@ -26085,9 +26135,10 @@ SP_NOINLINE static void sp_2048_mont_sqr_64(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_sub_64(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_64(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r3, #0\n\t"
@@ -26147,7 +26198,7 @@ SP_NOINLINE static sp_digit sp_2048_sub_64(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -26159,9 +26210,10 @@ SP_NOINLINE static sp_digit sp_2048_sub_64(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_2048_sub_64(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_64(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -26714,7 +26766,7 @@ SP_NOINLINE static sp_digit sp_2048_sub_64(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -26729,9 +26781,10 @@ SP_NOINLINE static sp_digit sp_2048_sub_64(sp_digit* r, const sp_digit* a,
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-SP_NOINLINE static sp_digit div_2048_word_64(sp_digit d1, sp_digit d0,
-        sp_digit div)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_2048_word_64(sp_digit d1,
+    sp_digit d0, sp_digit div)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -27331,7 +27384,7 @@ SP_NOINLINE static sp_digit div_2048_word_64(sp_digit d1, sp_digit d0,
         "movs	%[d1], r3\n\t"
         : [d1] "+l" (d1), [d0] "+l" (d0), [div] "+l" (div)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
     return (word32)(size_t)d1;
 }
@@ -27447,8 +27500,10 @@ static void sp_2048_mask_64(sp_digit* r, const sp_digit* a, sp_digit m)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-SP_NOINLINE static sp_int32 sp_2048_cmp_64(const sp_digit* a, const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_2048_cmp_64(
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r2, #0\n\t"
         "movs	r3, #0\n\t"
@@ -27544,7 +27599,7 @@ SP_NOINLINE static sp_int32 sp_2048_cmp_64(const sp_digit* a, const sp_digit* b)
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -28033,9 +28088,10 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_2048_cond_add_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_cond_add_32(
+    sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #0x80\n\t"
@@ -28089,7 +28145,7 @@ SP_NOINLINE static sp_digit sp_2048_cond_add_32(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -28373,8 +28429,10 @@ int sp_ModExp_2048(const mp_int* base, const mp_int* exp, const mp_int* mod,
  * a  A single precision integer.
  * n  Integer representing number of bits to shift.
  */
-static void sp_2048_lshift_64(sp_digit* r, const sp_digit* a, byte n)
+WC_OMIT_FRAME_POINTER static void sp_2048_lshift_64(sp_digit* r,
+    const sp_digit* a, byte n)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #31\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -29954,7 +30012,7 @@ static void sp_2048_lshift_64(sp_digit* r, const sp_digit* a, byte n)
         "str	r5, [%[r], #4]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [n] "+l" (n)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
 }
 
@@ -30369,9 +30427,10 @@ static void sp_3072_to_bin_96(sp_digit* r, byte* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_3072_mul_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     sp_digit t[12 * 2];
     sp_digit* tmp = t;
     __asm__ __volatile__ (
@@ -30601,8 +30660,10 @@ SP_NOINLINE static void sp_3072_mul_12(sp_digit* r, const sp_digit* a,
         "mov	%[b], r10\n\t"
         : [a] "+l" (a), [b] "+l" (b), [tmp] "+l" (tmp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
+    (void)r;
 
     XMEMCPY(r, t, sizeof(t));
 }
@@ -30614,9 +30675,10 @@ SP_NOINLINE static void sp_3072_mul_12(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_3072_mul_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "sub	sp, sp, #48\n\t"
         "mov	r8, %[r]\n\t"
@@ -50783,7 +50845,7 @@ SP_NOINLINE static void sp_3072_mul_12(sp_digit* r, const sp_digit* a,
         "stm	%[r]!, {r3, r4, r5, r6}\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
 }
 
@@ -50794,9 +50856,10 @@ SP_NOINLINE static void sp_3072_mul_12(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_add_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -50908,7 +50971,7 @@ SP_NOINLINE static sp_digit sp_3072_add_12(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -50919,9 +50982,10 @@ SP_NOINLINE static sp_digit sp_3072_add_12(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_add_word_12(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_word_12(
+    sp_digit* r, const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r5, #0\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -51028,7 +51092,7 @@ SP_NOINLINE static sp_digit sp_3072_add_word_12(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r3", "r4", "r5"
     );
     return (word32)(size_t)r;
 }
@@ -51038,9 +51102,10 @@ SP_NOINLINE static sp_digit sp_3072_add_word_12(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_sub_in_place_24(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_24(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r4, r5}\n\t"
         "ldr	r2, [%[a]]\n\t"
@@ -51265,7 +51330,7 @@ SP_NOINLINE static sp_digit sp_3072_sub_in_place_24(sp_digit* a,
 #endif
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
     return (word32)(size_t)a;
 }
@@ -51276,9 +51341,10 @@ SP_NOINLINE static sp_digit sp_3072_sub_in_place_24(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_add_24(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_24(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -51492,7 +51558,7 @@ SP_NOINLINE static sp_digit sp_3072_add_24(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -51570,9 +51636,10 @@ SP_NOINLINE static void sp_3072_mul_24(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_add_word_24(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_word_24(
+    sp_digit* r, const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r5, #0\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -51775,7 +51842,7 @@ SP_NOINLINE static sp_digit sp_3072_add_word_24(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r3", "r4", "r5"
     );
     return (word32)(size_t)r;
 }
@@ -51785,9 +51852,10 @@ SP_NOINLINE static sp_digit sp_3072_add_word_24(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_sub_in_place_48(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_48(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r4, r5}\n\t"
         "ldr	r2, [%[a]]\n\t"
@@ -52228,7 +52296,7 @@ SP_NOINLINE static sp_digit sp_3072_sub_in_place_48(sp_digit* a,
 #endif
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
     return (word32)(size_t)a;
 }
@@ -52239,9 +52307,10 @@ SP_NOINLINE static sp_digit sp_3072_sub_in_place_48(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_48(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -52659,7 +52728,7 @@ SP_NOINLINE static sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -52737,9 +52806,10 @@ SP_NOINLINE static void sp_3072_mul_48(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_add_word_48(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_word_48(
+    sp_digit* r, const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r5, #0\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -53134,7 +53204,7 @@ SP_NOINLINE static sp_digit sp_3072_add_word_48(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r3", "r4", "r5"
     );
     return (word32)(size_t)r;
 }
@@ -53144,9 +53214,10 @@ SP_NOINLINE static sp_digit sp_3072_add_word_48(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_sub_in_place_96(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_96(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r4, r5}\n\t"
         "ldr	r2, [%[a]]\n\t"
@@ -54019,7 +54090,7 @@ SP_NOINLINE static sp_digit sp_3072_sub_in_place_96(sp_digit* a,
 #endif
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
     return (word32)(size_t)a;
 }
@@ -54030,9 +54101,10 @@ SP_NOINLINE static sp_digit sp_3072_sub_in_place_96(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_add_96(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_96(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -54858,7 +54930,7 @@ SP_NOINLINE static sp_digit sp_3072_add_96(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -54936,8 +55008,10 @@ SP_NOINLINE static void sp_3072_mul_96(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_3072_sqr_12(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_sqr_12(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
         "movs	r4, #0\n\t"
@@ -55350,7 +55424,8 @@ SP_NOINLINE static void sp_3072_sqr_12(sp_digit* r, const sp_digit* a)
         "add	sp, sp, r6\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
 }
 
@@ -55360,8 +55435,10 @@ SP_NOINLINE static void sp_3072_sqr_12(sp_digit* r, const sp_digit* a)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_3072_sqr_12(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_sqr_12(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "sub	sp, sp, #48\n\t"
         "mov	r8, %[r]\n\t"
@@ -70121,7 +70198,8 @@ SP_NOINLINE static void sp_3072_sqr_12(sp_digit* r, const sp_digit* a)
         "stm	%[r]!, {r2, r3, r4, r5}\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12", "lr"
     );
 }
 
@@ -70132,9 +70210,10 @@ SP_NOINLINE static void sp_3072_sqr_12(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_sub_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -70245,7 +70324,7 @@ SP_NOINLINE static sp_digit sp_3072_sub_12(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -70291,9 +70370,10 @@ SP_NOINLINE static void sp_3072_sqr_24(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_sub_24(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_24(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -70506,7 +70586,7 @@ SP_NOINLINE static sp_digit sp_3072_sub_24(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -70552,9 +70632,10 @@ SP_NOINLINE static void sp_3072_sqr_48(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_sub_48(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_48(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -70971,7 +71052,7 @@ SP_NOINLINE static sp_digit sp_3072_sub_48(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -71019,9 +71100,10 @@ SP_NOINLINE static void sp_3072_sqr_96(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_add_96(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_96(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r7, #0\n\t"
@@ -71087,7 +71169,7 @@ SP_NOINLINE static sp_digit sp_3072_add_96(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)r;
 }
@@ -71099,9 +71181,10 @@ SP_NOINLINE static sp_digit sp_3072_add_96(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_sub_in_place_96(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_96(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r7, %[a]\n\t"
         "movs	r2, #0\n\t"
@@ -71166,7 +71249,7 @@ SP_NOINLINE static sp_digit sp_3072_sub_in_place_96(sp_digit* a,
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -71179,9 +71262,10 @@ SP_NOINLINE static sp_digit sp_3072_sub_in_place_96(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_3072_mul_96(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_96(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     sp_digit t[96 * 2];
     sp_digit* tmp = t;
     __asm__ __volatile__ (
@@ -71431,8 +71515,10 @@ SP_NOINLINE static void sp_3072_mul_96(sp_digit* r, const sp_digit* a,
         "mov	%[b], r10\n\t"
         : [a] "+l" (a), [b] "+l" (b), [tmp] "+l" (tmp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
+    (void)r;
 
     XMEMCPY(r, t, sizeof(t));
 }
@@ -71442,8 +71528,10 @@ SP_NOINLINE static void sp_3072_mul_96(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_3072_sqr_96(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_sqr_96(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
         "movs	r4, #0\n\t"
@@ -71896,7 +71984,8 @@ SP_NOINLINE static void sp_3072_sqr_96(sp_digit* r, const sp_digit* a)
         "add	sp, sp, r6\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
 }
 
@@ -71926,9 +72015,10 @@ static void sp_3072_mask_48(sp_digit* r, const sp_digit* a, sp_digit m)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_48(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r7, #0\n\t"
@@ -71988,7 +72078,7 @@ SP_NOINLINE static sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)r;
 }
@@ -72000,9 +72090,10 @@ SP_NOINLINE static sp_digit sp_3072_add_48(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_sub_in_place_48(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_48(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r7, %[a]\n\t"
         "movs	r2, #0\n\t"
@@ -72061,7 +72152,7 @@ SP_NOINLINE static sp_digit sp_3072_sub_in_place_48(sp_digit* a,
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -72074,9 +72165,10 @@ SP_NOINLINE static sp_digit sp_3072_sub_in_place_48(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_3072_mul_48(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_48(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     sp_digit t[48 * 2];
     sp_digit* tmp = t;
     __asm__ __volatile__ (
@@ -72311,8 +72403,10 @@ SP_NOINLINE static void sp_3072_mul_48(sp_digit* r, const sp_digit* a,
         "mov	%[b], r10\n\t"
         : [a] "+l" (a), [b] "+l" (b), [tmp] "+l" (tmp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
+    (void)r;
 
     XMEMCPY(r, t, sizeof(t));
 }
@@ -72322,8 +72416,10 @@ SP_NOINLINE static void sp_3072_mul_48(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_3072_sqr_48(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_sqr_48(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
         "movs	r4, #0\n\t"
@@ -72756,7 +72852,8 @@ SP_NOINLINE static void sp_3072_sqr_48(sp_digit* r, const sp_digit* a)
         "add	sp, sp, r6\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
 }
 
@@ -72789,9 +72886,10 @@ static void sp_3072_mont_setup(const sp_digit* a, sp_digit* rho)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-SP_NOINLINE static void sp_3072_mul_d_96(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_d_96(sp_digit* r,
+    const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, #0xff\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -72970,7 +73068,7 @@ SP_NOINLINE static void sp_3072_mul_d_96(sp_digit* r, const sp_digit* a,
         "str	r3, [%[r]]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
 }
 
@@ -72997,9 +73095,10 @@ static void sp_3072_mont_norm_48(sp_digit* r, const sp_digit* m)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_3072_cond_sub_48(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_cond_sub_48(
+    sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #0xc0\n\t"
@@ -73047,7 +73146,7 @@ SP_NOINLINE static sp_digit sp_3072_cond_sub_48(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -73059,9 +73158,10 @@ SP_NOINLINE static sp_digit sp_3072_cond_sub_48(sp_digit* r, const sp_digit* a,
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-SP_NOINLINE static void sp_3072_mont_reduce_48(sp_digit* a, const sp_digit* m,
-        sp_digit mp)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mont_reduce_48(
+    sp_digit* a, const sp_digit* m, sp_digit mp)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #0\n\t"
         "mov	r8, %[mp]\n\t"
@@ -74387,7 +74487,8 @@ SP_NOINLINE static void sp_3072_mont_reduce_48(sp_digit* a, const sp_digit* m,
 #endif /* WOLFSSL_SP_LARGE_CODE */
         : [a] "+l" (a), [m] "+l" (m), [mp] "+l" (mp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12", "lr"
     );
 }
 
@@ -74427,9 +74528,10 @@ SP_NOINLINE static void sp_3072_mont_sqr_48(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision digit.
  */
-SP_NOINLINE static void sp_3072_mul_d_48(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_d_48(sp_digit* r,
+    const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, #0xc0\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -74603,7 +74705,7 @@ SP_NOINLINE static void sp_3072_mul_d_48(sp_digit* r, const sp_digit* a,
         "str	r3, [%[r]]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
 }
 
@@ -74616,9 +74718,10 @@ SP_NOINLINE static void sp_3072_mul_d_48(sp_digit* r, const sp_digit* a,
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-SP_NOINLINE static sp_digit div_3072_word_48(sp_digit d1, sp_digit d0,
-        sp_digit div)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_3072_word_48(sp_digit d1,
+    sp_digit d0, sp_digit div)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -75218,7 +75321,7 @@ SP_NOINLINE static sp_digit div_3072_word_48(sp_digit d1, sp_digit d0,
         "movs	%[d1], r3\n\t"
         : [d1] "+l" (d1), [d0] "+l" (d0), [div] "+l" (div)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
     return (word32)(size_t)d1;
 }
@@ -75230,8 +75333,10 @@ SP_NOINLINE static sp_digit div_3072_word_48(sp_digit d1, sp_digit d0,
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-SP_NOINLINE static sp_int32 sp_3072_cmp_48(const sp_digit* a, const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_3072_cmp_48(
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r2, #0\n\t"
         "movs	r3, #0\n\t"
@@ -75327,7 +75432,7 @@ SP_NOINLINE static sp_int32 sp_3072_cmp_48(const sp_digit* a, const sp_digit* b)
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -75708,9 +75813,10 @@ static void sp_3072_mont_norm_96(sp_digit* r, const sp_digit* m)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_3072_cond_sub_96(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_cond_sub_96(
+    sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #0xff\n\t"
@@ -75763,7 +75869,7 @@ SP_NOINLINE static sp_digit sp_3072_cond_sub_96(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -75775,9 +75881,10 @@ SP_NOINLINE static sp_digit sp_3072_cond_sub_96(sp_digit* r, const sp_digit* a,
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-SP_NOINLINE static void sp_3072_mont_reduce_96(sp_digit* a, const sp_digit* m,
-        sp_digit mp)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mont_reduce_96(
+    sp_digit* a, const sp_digit* m, sp_digit mp)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #0\n\t"
         "mov	r8, %[mp]\n\t"
@@ -77939,7 +78046,8 @@ SP_NOINLINE static void sp_3072_mont_reduce_96(sp_digit* a, const sp_digit* m,
 #endif /* WOLFSSL_SP_LARGE_CODE */
         : [a] "+l" (a), [m] "+l" (m), [mp] "+l" (mp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12", "lr"
     );
 }
 
@@ -77980,9 +78088,10 @@ SP_NOINLINE static void sp_3072_mont_sqr_96(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_sub_96(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_96(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r3, #0\n\t"
@@ -78042,7 +78151,7 @@ SP_NOINLINE static sp_digit sp_3072_sub_96(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -78054,9 +78163,10 @@ SP_NOINLINE static sp_digit sp_3072_sub_96(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_3072_sub_96(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_96(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -78881,7 +78991,7 @@ SP_NOINLINE static sp_digit sp_3072_sub_96(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -78896,9 +79006,10 @@ SP_NOINLINE static sp_digit sp_3072_sub_96(sp_digit* r, const sp_digit* a,
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-SP_NOINLINE static sp_digit div_3072_word_96(sp_digit d1, sp_digit d0,
-        sp_digit div)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_3072_word_96(sp_digit d1,
+    sp_digit d0, sp_digit div)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -79498,7 +79609,7 @@ SP_NOINLINE static sp_digit div_3072_word_96(sp_digit d1, sp_digit d0,
         "movs	%[d1], r3\n\t"
         : [d1] "+l" (d1), [d0] "+l" (d0), [div] "+l" (div)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
     return (word32)(size_t)d1;
 }
@@ -79614,8 +79725,10 @@ static void sp_3072_mask_96(sp_digit* r, const sp_digit* a, sp_digit m)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-SP_NOINLINE static sp_int32 sp_3072_cmp_96(const sp_digit* a, const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_3072_cmp_96(
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r2, #0\n\t"
         "movs	r3, #0\n\t"
@@ -79716,7 +79829,7 @@ SP_NOINLINE static sp_int32 sp_3072_cmp_96(const sp_digit* a, const sp_digit* b)
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -80205,9 +80318,10 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_3072_cond_add_48(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_cond_add_48(
+    sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #0xc0\n\t"
@@ -80261,7 +80375,7 @@ SP_NOINLINE static sp_digit sp_3072_cond_add_48(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -80545,8 +80659,10 @@ int sp_ModExp_3072(const mp_int* base, const mp_int* exp, const mp_int* mod,
  * a  A single precision integer.
  * n  Integer representing number of bits to shift.
  */
-static void sp_3072_lshift_96(sp_digit* r, const sp_digit* a, byte n)
+WC_OMIT_FRAME_POINTER static void sp_3072_lshift_96(sp_digit* r,
+    const sp_digit* a, byte n)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #31\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -82924,7 +83040,7 @@ static void sp_3072_lshift_96(sp_digit* r, const sp_digit* a, byte n)
         "str	r3, [%[r], #4]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [n] "+l" (n)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
 }
 
@@ -83338,9 +83454,10 @@ static void sp_4096_to_bin_128(sp_digit* r, byte* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_4096_add_word_64(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_add_word_64(
+    sp_digit* r, const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r5, #0\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -83863,7 +83980,7 @@ SP_NOINLINE static sp_digit sp_4096_add_word_64(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r3", "r4", "r5"
     );
     return (word32)(size_t)r;
 }
@@ -83873,9 +83990,10 @@ SP_NOINLINE static sp_digit sp_4096_add_word_64(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_4096_sub_in_place_128(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_sub_in_place_128(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r4, r5}\n\t"
         "ldr	r2, [%[a]]\n\t"
@@ -85036,7 +85154,7 @@ SP_NOINLINE static sp_digit sp_4096_sub_in_place_128(sp_digit* a,
 #endif
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
     return (word32)(size_t)a;
 }
@@ -85047,9 +85165,10 @@ SP_NOINLINE static sp_digit sp_4096_sub_in_place_128(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_4096_add_128(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_add_128(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -86147,7 +86266,7 @@ SP_NOINLINE static sp_digit sp_4096_add_128(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -86232,9 +86351,10 @@ SP_NOINLINE static void sp_4096_sqr_128(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_4096_add_128(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_add_128(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r7, #0\n\t"
@@ -86300,7 +86420,7 @@ SP_NOINLINE static sp_digit sp_4096_add_128(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)r;
 }
@@ -86312,9 +86432,10 @@ SP_NOINLINE static sp_digit sp_4096_add_128(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_4096_sub_in_place_128(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_sub_in_place_128(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r7, %[a]\n\t"
         "movs	r2, #0\n\t"
@@ -86379,7 +86500,7 @@ SP_NOINLINE static sp_digit sp_4096_sub_in_place_128(sp_digit* a,
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -86392,9 +86513,10 @@ SP_NOINLINE static sp_digit sp_4096_sub_in_place_128(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_4096_mul_128(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_4096_mul_128(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     sp_digit t[128 * 2];
     sp_digit* tmp = t;
     __asm__ __volatile__ (
@@ -86644,8 +86766,10 @@ SP_NOINLINE static void sp_4096_mul_128(sp_digit* r, const sp_digit* a,
         "mov	%[b], r10\n\t"
         : [a] "+l" (a), [b] "+l" (b), [tmp] "+l" (tmp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
+    (void)r;
 
     XMEMCPY(r, t, sizeof(t));
 }
@@ -86655,8 +86779,10 @@ SP_NOINLINE static void sp_4096_mul_128(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_4096_sqr_128(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_4096_sqr_128(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
         "movs	r4, #0\n\t"
@@ -87109,7 +87235,8 @@ SP_NOINLINE static void sp_4096_sqr_128(sp_digit* r, const sp_digit* a)
         "add	sp, sp, r6\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
 }
 
@@ -87140,9 +87267,10 @@ static void sp_4096_mont_setup(const sp_digit* a, sp_digit* rho)
  * a  A single precision integer.
  * b  A single precision digit.
  */
-SP_NOINLINE static void sp_4096_mul_d_128(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_4096_mul_d_128(sp_digit* r,
+    const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, #2\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -87321,7 +87449,7 @@ SP_NOINLINE static void sp_4096_mul_d_128(sp_digit* r, const sp_digit* a,
         "str	r3, [%[r]]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
 }
 
@@ -87349,9 +87477,10 @@ static void sp_4096_mont_norm_128(sp_digit* r, const sp_digit* m)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_4096_cond_sub_128(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_cond_sub_128(
+    sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #2\n\t"
@@ -87404,7 +87533,7 @@ SP_NOINLINE static sp_digit sp_4096_cond_sub_128(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -87416,9 +87545,10 @@ SP_NOINLINE static sp_digit sp_4096_cond_sub_128(sp_digit* r, const sp_digit* a,
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-SP_NOINLINE static void sp_4096_mont_reduce_128(sp_digit* a, const sp_digit* m,
-        sp_digit mp)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_4096_mont_reduce_128(
+    sp_digit* a, const sp_digit* m, sp_digit mp)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #0\n\t"
         "mov	r8, %[mp]\n\t"
@@ -90124,7 +90254,8 @@ SP_NOINLINE static void sp_4096_mont_reduce_128(sp_digit* a, const sp_digit* m,
 #endif /* WOLFSSL_SP_LARGE_CODE */
         : [a] "+l" (a), [m] "+l" (m), [mp] "+l" (mp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12", "lr"
     );
 }
 
@@ -90165,9 +90296,10 @@ SP_NOINLINE static void sp_4096_mont_sqr_128(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_4096_sub_128(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_sub_128(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r3, #0\n\t"
@@ -90227,7 +90359,7 @@ SP_NOINLINE static sp_digit sp_4096_sub_128(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -90239,9 +90371,10 @@ SP_NOINLINE static sp_digit sp_4096_sub_128(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_4096_sub_128(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_sub_128(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -91338,7 +91471,7 @@ SP_NOINLINE static sp_digit sp_4096_sub_128(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -91353,9 +91486,10 @@ SP_NOINLINE static sp_digit sp_4096_sub_128(sp_digit* r, const sp_digit* a,
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-SP_NOINLINE static sp_digit div_4096_word_128(sp_digit d1, sp_digit d0,
-        sp_digit div)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_4096_word_128(sp_digit d1,
+    sp_digit d0, sp_digit div)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -91955,7 +92089,7 @@ SP_NOINLINE static sp_digit div_4096_word_128(sp_digit d1, sp_digit d0,
         "movs	%[d1], r3\n\t"
         : [d1] "+l" (d1), [d0] "+l" (d0), [div] "+l" (div)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
     return (word32)(size_t)d1;
 }
@@ -92071,9 +92205,10 @@ static void sp_4096_mask_128(sp_digit* r, const sp_digit* a, sp_digit m)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-SP_NOINLINE static sp_int32 sp_4096_cmp_128(const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_4096_cmp_128(
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r2, #0\n\t"
         "movs	r3, #0\n\t"
@@ -92174,7 +92309,7 @@ SP_NOINLINE static sp_int32 sp_4096_cmp_128(const sp_digit* a,
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -92663,9 +92798,10 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_4096_cond_add_64(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_cond_add_64(
+    sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #0xff\n\t"
@@ -92724,7 +92860,7 @@ SP_NOINLINE static sp_digit sp_4096_cond_add_64(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -93008,8 +93144,10 @@ int sp_ModExp_4096(const mp_int* base, const mp_int* exp, const mp_int* mod,
  * a  A single precision integer.
  * n  Integer representing number of bits to shift.
  */
-static void sp_4096_lshift_128(sp_digit* r, const sp_digit* a, byte n)
+WC_OMIT_FRAME_POINTER static void sp_4096_lshift_128(sp_digit* r,
+    const sp_digit* a, byte n)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #31\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -96175,7 +96313,7 @@ static void sp_4096_lshift_128(sp_digit* r, const sp_digit* a, byte n)
         "str	r4, [%[r], #4]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [n] "+l" (n)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
 }
 
@@ -96455,9 +96593,10 @@ static const sp_digit p256_b[8] = {
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_256_mul_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mul_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     sp_digit t[8 * 2];
     sp_digit* tmp = t;
     __asm__ __volatile__ (
@@ -96687,8 +96826,10 @@ SP_NOINLINE static void sp_256_mul_8(sp_digit* r, const sp_digit* a,
         "mov	%[b], r10\n\t"
         : [a] "+l" (a), [b] "+l" (b), [tmp] "+l" (tmp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
+    (void)r;
 
     XMEMCPY(r, t, sizeof(t));
 }
@@ -96698,8 +96839,10 @@ SP_NOINLINE static void sp_256_mul_8(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_256_sqr_8(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_sqr_8(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
         "movs	r4, #0\n\t"
@@ -97112,7 +97255,8 @@ SP_NOINLINE static void sp_256_sqr_8(sp_digit* r, const sp_digit* a)
         "add	sp, sp, r6\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
 }
 
@@ -97123,9 +97267,10 @@ SP_NOINLINE static void sp_256_sqr_8(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_256_add_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_add_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r7, #0\n\t"
@@ -97185,7 +97330,7 @@ SP_NOINLINE static sp_digit sp_256_add_8(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)r;
 }
@@ -97197,9 +97342,10 @@ SP_NOINLINE static sp_digit sp_256_add_8(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_256_add_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_add_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -97277,7 +97423,7 @@ SP_NOINLINE static sp_digit sp_256_add_8(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -97567,9 +97713,10 @@ static int sp_256_point_to_ecc_point_8(const sp_point_256* p, ecc_point* pm)
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-SP_NOINLINE static void sp_256_mont_reduce_8(sp_digit* a, const sp_digit* m,
-        sp_digit mp)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a,
+    const sp_digit* m, sp_digit mp)
 {
+
     (void)mp;
     (void)m;
 
@@ -97877,8 +98024,10 @@ SP_NOINLINE static void sp_256_mont_reduce_8(sp_digit* a, const sp_digit* m,
         "str	r7, [%[a], #28]\n\t"
         : [a] "+l" (a)
         :
-        : "memory", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"
     );
+    (void)m;
+    (void)mp;
 }
 
 /* Reduce the number back to 256 bits using Montgomery reduction.
@@ -97887,9 +98036,10 @@ SP_NOINLINE static void sp_256_mont_reduce_8(sp_digit* a, const sp_digit* m,
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-SP_NOINLINE static void sp_256_mont_reduce_order_8(sp_digit* a,
-        const sp_digit* m, sp_digit mp)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_reduce_order_8(
+    sp_digit* a, const sp_digit* m, sp_digit mp)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #0\n\t"
         "mov	r8, %[mp]\n\t"
@@ -98535,7 +98685,8 @@ SP_NOINLINE static void sp_256_mont_reduce_order_8(sp_digit* a,
 #endif /* WOLFSSL_SP_LARGE_CODE */
         : [a] "+l" (a), [m] "+l" (m), [mp] "+l" (mp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12", "lr"
     );
 }
 
@@ -98672,8 +98823,10 @@ static void sp_256_mont_inv_8(sp_digit* r, const sp_digit* a, sp_digit* td)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-SP_NOINLINE static sp_int32 sp_256_cmp_8(const sp_digit* a, const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_256_cmp_8(
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r2, #0\n\t"
         "movs	r3, #0\n\t"
@@ -98769,7 +98922,7 @@ SP_NOINLINE static sp_int32 sp_256_cmp_8(const sp_digit* a, const sp_digit* b)
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -98788,9 +98941,10 @@ SP_NOINLINE static sp_int32 sp_256_cmp_8(const sp_digit* a, const sp_digit* b)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_256_cond_sub_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_cond_sub_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #32\n\t"
@@ -98838,7 +98992,7 @@ SP_NOINLINE static sp_digit sp_256_cond_sub_8(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -98890,9 +99044,10 @@ static void sp_256_map_8(sp_point_256* r, const sp_point_256* p,
  * b   Second number to add in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_256_mont_add_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_add_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* b, const sp_digit* m)
 {
+
     (void)m;
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
@@ -99065,8 +99220,10 @@ SP_NOINLINE static void sp_256_mont_add_8(sp_digit* r, const sp_digit* a,
         "str	r5, [%[r], #28]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11"
     );
+    (void)m;
 }
 
 /* Double a Montgomery form number (r = a + a % m).
@@ -99075,9 +99232,10 @@ SP_NOINLINE static void sp_256_mont_add_8(sp_digit* r, const sp_digit* a,
  * a   Number to double in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_256_mont_dbl_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_dbl_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     (void)m;
     __asm__ __volatile__ (
         "ldr	r4, [%[a]]\n\t"
@@ -99242,8 +99400,10 @@ SP_NOINLINE static void sp_256_mont_dbl_8(sp_digit* r, const sp_digit* a,
         "str	r5, [%[r], #28]\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11"
     );
+    (void)m;
 }
 
 /* Triple a Montgomery form number (r = a + a + a % m).
@@ -99252,9 +99412,10 @@ SP_NOINLINE static void sp_256_mont_dbl_8(sp_digit* r, const sp_digit* a,
  * a   Number to triple in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_256_mont_tpl_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_tpl_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     (void)m;
     __asm__ __volatile__ (
         "ldr	r6, [%[a]]\n\t"
@@ -99575,8 +99736,10 @@ SP_NOINLINE static void sp_256_mont_tpl_8(sp_digit* r, const sp_digit* a,
         "str	r2, [%[r], #28]\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12", "lr"
     );
+    (void)m;
 }
 
 /* Subtract two Montgomery form numbers (r = a - b % m).
@@ -99586,9 +99749,10 @@ SP_NOINLINE static void sp_256_mont_tpl_8(sp_digit* r, const sp_digit* a,
  * b   Number to subtract with in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_256_mont_sub_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_sub_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* b, const sp_digit* m)
 {
+
     (void)m;
     __asm__ __volatile__ (
         "ldr	r4, [%[a]]\n\t"
@@ -99754,8 +99918,10 @@ SP_NOINLINE static void sp_256_mont_sub_8(sp_digit* r, const sp_digit* a,
         "str	r5, [%[r], #28]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11"
     );
+    (void)m;
 }
 
 /* Divide the number by 2 mod the modulus (prime). (r = a / 2 % m)
@@ -99764,9 +99930,10 @@ SP_NOINLINE static void sp_256_mont_sub_8(sp_digit* r, const sp_digit* a,
  * a  Number to divide.
  * m  Modulus (prime).
  */
-SP_NOINLINE static void sp_256_mont_div2_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_div2_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     (void)m;
     __asm__ __volatile__ (
         "ldr	r6, [%[a]]\n\t"
@@ -100027,8 +100194,9 @@ SP_NOINLINE static void sp_256_mont_div2_8(sp_digit* r, const sp_digit* a,
         "str	r5, [%[r], #4]\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6"
     );
+    (void)m;
 }
 
 /* Double the Montgomery form projective point p.
@@ -103334,8 +103502,9 @@ int sp_ecc_mulmod_base_add_256(const mp_int* km, const ecc_point* am,
  *
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_256_add_one_8(sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_add_one_8(sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r2, #1\n\t"
         "ldr	r1, [%[a]]\n\t"
@@ -103411,7 +103580,7 @@ SP_NOINLINE static void sp_256_add_one_8(sp_digit* a)
         "str	r1, [%[a], #28]\n\t"
         : [a] "+l" (a)
         :
-        : "memory", "r1", "r2", "cc"
+        : "memory", "cc", "r1", "r2"
     );
 }
 
@@ -103764,9 +103933,10 @@ int sp_ecc_secret_gen_256_nb(sp_ecc_ctx_t* sp_ctx, const mp_int* priv,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_256_sub_in_place_8(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_sub_in_place_8(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r7, %[a]\n\t"
         "movs	r2, #0\n\t"
@@ -103825,7 +103995,7 @@ SP_NOINLINE static sp_digit sp_256_sub_in_place_8(sp_digit* a,
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -103836,9 +104006,10 @@ SP_NOINLINE static sp_digit sp_256_sub_in_place_8(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_256_sub_in_place_8(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_sub_in_place_8(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r4, r5}\n\t"
         "ldr	r2, [%[a]]\n\t"
@@ -103919,7 +104090,7 @@ SP_NOINLINE static sp_digit sp_256_sub_in_place_8(sp_digit* a,
 #endif
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
     return (word32)(size_t)a;
 }
@@ -103931,9 +104102,10 @@ SP_NOINLINE static sp_digit sp_256_sub_in_place_8(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision digit.
  */
-SP_NOINLINE static void sp_256_mul_d_8(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mul_d_8(sp_digit* r,
+    const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, #32\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -104107,7 +104279,7 @@ SP_NOINLINE static void sp_256_mul_d_8(sp_digit* r, const sp_digit* a,
         "str	r3, [%[r]]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
 }
 
@@ -104120,9 +104292,10 @@ SP_NOINLINE static void sp_256_mul_d_8(sp_digit* r, const sp_digit* a,
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-SP_NOINLINE static sp_digit div_256_word_8(sp_digit d1, sp_digit d0,
-        sp_digit div)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_256_word_8(sp_digit d1,
+    sp_digit d0, sp_digit div)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -104722,7 +104895,7 @@ SP_NOINLINE static sp_digit div_256_word_8(sp_digit d1, sp_digit d0,
         "movs	%[d1], r3\n\t"
         : [d1] "+l" (d1), [d0] "+l" (d0), [div] "+l" (div)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
     return (word32)(size_t)d1;
 }
@@ -105347,9 +105520,10 @@ int sp_ecc_sign_256_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_256_sub_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_sub_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r3, #0\n\t"
@@ -105403,7 +105577,7 @@ SP_NOINLINE static sp_digit sp_256_sub_8(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -105415,9 +105589,10 @@ SP_NOINLINE static sp_digit sp_256_sub_8(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_256_sub_8(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_sub_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -105494,7 +105669,7 @@ SP_NOINLINE static sp_digit sp_256_sub_8(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -105505,8 +105680,10 @@ SP_NOINLINE static sp_digit sp_256_sub_8(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_256_rshift1_8(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static void sp_256_rshift1_8(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "ldr	r2, [%[a]]\n\t"
         "ldr	r3, [%[a], #4]\n\t"
@@ -105650,7 +105827,7 @@ static void sp_256_rshift1_8(sp_digit* r, const sp_digit* a)
         "str	r3, [%[r], #28]\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
 }
 
@@ -105660,8 +105837,10 @@ static void sp_256_rshift1_8(sp_digit* r, const sp_digit* a)
  * a  Number to divide.
  * m  Modulus.
  */
-static void sp_256_div2_mod_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
+WC_OMIT_FRAME_POINTER static void sp_256_div2_mod_8(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     __asm__ __volatile__ (
         "ldr	r7, [%[a]]\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -105921,12 +106100,13 @@ static void sp_256_div2_mod_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
         "str	r6, [%[r], #4]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [m] "+l" (m)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8"
     );
 }
 
-static int sp_256_num_bits_8(sp_digit* a)
+WC_OMIT_FRAME_POINTER static int sp_256_num_bits_8(sp_digit* a)
 {
+
     static const byte sp_num_bits_table[256] = {
         0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
         5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -106676,7 +106856,7 @@ static int sp_256_num_bits_8(sp_digit* a)
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [table] "+l" (table)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)a;
 }
@@ -107615,9 +107795,10 @@ static const sp_digit p384_b[12] = {
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_384_mul_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mul_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     sp_digit t[12 * 2];
     sp_digit* tmp = t;
     __asm__ __volatile__ (
@@ -107847,8 +108028,10 @@ SP_NOINLINE static void sp_384_mul_12(sp_digit* r, const sp_digit* a,
         "mov	%[b], r10\n\t"
         : [a] "+l" (a), [b] "+l" (b), [tmp] "+l" (tmp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
+    (void)r;
 
     XMEMCPY(r, t, sizeof(t));
 }
@@ -107858,8 +108041,10 @@ SP_NOINLINE static void sp_384_mul_12(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_384_sqr_12(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_sqr_12(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
         "movs	r4, #0\n\t"
@@ -108272,7 +108457,8 @@ SP_NOINLINE static void sp_384_sqr_12(sp_digit* r, const sp_digit* a)
         "add	sp, sp, r6\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
 }
 
@@ -108283,9 +108469,10 @@ SP_NOINLINE static void sp_384_sqr_12(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_384_add_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_add_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r7, #0\n\t"
@@ -108345,7 +108532,7 @@ SP_NOINLINE static sp_digit sp_384_add_12(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)r;
 }
@@ -108357,9 +108544,10 @@ SP_NOINLINE static sp_digit sp_384_add_12(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_384_add_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_add_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -108471,7 +108659,7 @@ SP_NOINLINE static sp_digit sp_384_add_12(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -108769,9 +108957,10 @@ static int sp_384_point_to_ecc_point_12(const sp_point_384* p, ecc_point* pm)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_384_cond_sub_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_cond_sub_12(
+    sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #48\n\t"
@@ -108819,7 +109008,7 @@ SP_NOINLINE static sp_digit sp_384_cond_sub_12(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -108832,9 +109021,10 @@ SP_NOINLINE static sp_digit sp_384_cond_sub_12(sp_digit* r, const sp_digit* a,
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-SP_NOINLINE static void sp_384_mont_reduce_12(sp_digit* a, const sp_digit* m,
-        sp_digit mp)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_reduce_12(sp_digit* a,
+    const sp_digit* m, sp_digit mp)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #0\n\t"
         "mov	r8, %[mp]\n\t"
@@ -109548,7 +109738,8 @@ SP_NOINLINE static void sp_384_mont_reduce_12(sp_digit* a, const sp_digit* m,
 #endif /* WOLFSSL_SP_LARGE_CODE */
         : [a] "+l" (a), [m] "+l" (m), [mp] "+l" (mp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12", "lr"
     );
 }
 
@@ -109701,8 +109892,10 @@ static void sp_384_mont_inv_12(sp_digit* r, const sp_digit* a, sp_digit* td)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-SP_NOINLINE static sp_int32 sp_384_cmp_12(const sp_digit* a, const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_384_cmp_12(
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r2, #0\n\t"
         "movs	r3, #0\n\t"
@@ -109798,7 +109991,7 @@ SP_NOINLINE static sp_int32 sp_384_cmp_12(const sp_digit* a, const sp_digit* b)
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -109856,9 +110049,10 @@ static void sp_384_map_12(sp_point_384* r, const sp_point_384* p,
  * b   Second number to add in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_384_mont_add_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_add_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* b, const sp_digit* m)
 {
+
     sp_digit o;
 
     o = sp_384_add_12(r, a, b);
@@ -109871,9 +110065,10 @@ SP_NOINLINE static void sp_384_mont_add_12(sp_digit* r, const sp_digit* a,
  * a   Number to double in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_384_mont_dbl_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_dbl_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     sp_digit o;
 
     o = sp_384_add_12(r, a, a);
@@ -109886,9 +110081,10 @@ SP_NOINLINE static void sp_384_mont_dbl_12(sp_digit* r, const sp_digit* a,
  * a   Number to triple in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_384_mont_tpl_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_tpl_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     sp_digit o;
 
     o = sp_384_add_12(r, a, a);
@@ -109904,9 +110100,10 @@ SP_NOINLINE static void sp_384_mont_tpl_12(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_384_sub_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_sub_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r3, #0\n\t"
@@ -109960,7 +110157,7 @@ SP_NOINLINE static sp_digit sp_384_sub_12(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -109972,9 +110169,10 @@ SP_NOINLINE static sp_digit sp_384_sub_12(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_384_sub_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_sub_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -110085,7 +110283,7 @@ SP_NOINLINE static sp_digit sp_384_sub_12(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -110099,9 +110297,10 @@ SP_NOINLINE static sp_digit sp_384_sub_12(sp_digit* r, const sp_digit* a,
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_384_cond_add_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_cond_add_12(
+    sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #48\n\t"
@@ -110155,7 +110354,7 @@ SP_NOINLINE static sp_digit sp_384_cond_add_12(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -110167,9 +110366,10 @@ SP_NOINLINE static sp_digit sp_384_cond_add_12(sp_digit* r, const sp_digit* a,
  * b   Number to subtract with in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_384_mont_sub_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_sub_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* b, const sp_digit* m)
 {
+
     sp_digit o;
 
     o = sp_384_sub_12(r, a, b);
@@ -110181,8 +110381,10 @@ SP_NOINLINE static void sp_384_mont_sub_12(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_384_rshift1_12(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static void sp_384_rshift1_12(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "ldr	r2, [%[a]]\n\t"
         "ldr	r3, [%[a], #4]\n\t"
@@ -110402,7 +110604,7 @@ static void sp_384_rshift1_12(sp_digit* r, const sp_digit* a)
         "str	r4, [%[r], #44]\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
 }
 
@@ -110412,9 +110614,10 @@ static void sp_384_rshift1_12(sp_digit* r, const sp_digit* a)
  * a  Number to divide.
  * m  Modulus (prime).
  */
-SP_NOINLINE static void sp_384_mont_div2_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_div2_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     sp_digit o;
 
     o = sp_384_cond_add_12(r, a, m, 0 - (a[0] & 1));
@@ -113783,8 +113986,9 @@ int sp_ecc_mulmod_base_add_384(const mp_int* km, const ecc_point* am,
  *
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_384_add_one_12(sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_add_one_12(sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r2, #1\n\t"
         "ldr	r1, [%[a]]\n\t"
@@ -113896,7 +114100,7 @@ SP_NOINLINE static void sp_384_add_one_12(sp_digit* a)
         "str	r1, [%[a], #44]\n\t"
         : [a] "+l" (a)
         :
-        : "memory", "r1", "r2", "cc"
+        : "memory", "cc", "r1", "r2"
     );
 }
 
@@ -114249,9 +114453,10 @@ int sp_ecc_secret_gen_384_nb(sp_ecc_ctx_t* sp_ctx, const mp_int* priv,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_384_sub_in_place_12(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_sub_in_place_12(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r7, %[a]\n\t"
         "movs	r2, #0\n\t"
@@ -114310,7 +114515,7 @@ SP_NOINLINE static sp_digit sp_384_sub_in_place_12(sp_digit* a,
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -114321,9 +114526,10 @@ SP_NOINLINE static sp_digit sp_384_sub_in_place_12(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_384_sub_in_place_12(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_sub_in_place_12(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r4, r5}\n\t"
         "ldr	r2, [%[a]]\n\t"
@@ -114440,7 +114646,7 @@ SP_NOINLINE static sp_digit sp_384_sub_in_place_12(sp_digit* a,
 #endif
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
     return (word32)(size_t)a;
 }
@@ -114452,9 +114658,10 @@ SP_NOINLINE static sp_digit sp_384_sub_in_place_12(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision digit.
  */
-SP_NOINLINE static void sp_384_mul_d_12(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mul_d_12(sp_digit* r,
+    const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, #48\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -114628,7 +114835,7 @@ SP_NOINLINE static void sp_384_mul_d_12(sp_digit* r, const sp_digit* a,
         "str	r3, [%[r]]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
 }
 
@@ -114641,9 +114848,10 @@ SP_NOINLINE static void sp_384_mul_d_12(sp_digit* r, const sp_digit* a,
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-SP_NOINLINE static sp_digit div_384_word_12(sp_digit d1, sp_digit d0,
-        sp_digit div)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_384_word_12(sp_digit d1,
+    sp_digit d0, sp_digit div)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -115243,7 +115451,7 @@ SP_NOINLINE static sp_digit div_384_word_12(sp_digit d1, sp_digit d0,
         "movs	%[d1], r3\n\t"
         : [d1] "+l" (d1), [d0] "+l" (d0), [div] "+l" (div)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
     return (word32)(size_t)d1;
 }
@@ -115838,9 +116046,10 @@ int sp_ecc_sign_384_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
  * a  Number to divide.
  * m  Modulus.
  */
-static void sp_384_div2_mod_12(sp_digit* r, const sp_digit* a,
-        const sp_digit* m)
+WC_OMIT_FRAME_POINTER static void sp_384_div2_mod_12(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     __asm__ __volatile__ (
         "ldr	r3, [%[a]]\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -116234,12 +116443,13 @@ static void sp_384_div2_mod_12(sp_digit* r, const sp_digit* a,
         "str	r7, [%[r], #44]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [m] "+l" (m)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
 }
 
-static int sp_384_num_bits_12(sp_digit* a)
+WC_OMIT_FRAME_POINTER static int sp_384_num_bits_12(sp_digit* a)
 {
+
     static const byte sp_num_bits_table[256] = {
         0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
         5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -117433,7 +117643,7 @@ static int sp_384_num_bits_12(sp_digit* a)
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [table] "+l" (table)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)a;
 }
@@ -118419,9 +118629,10 @@ static const sp_digit p521_b[17] = {
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_521_mul_17(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mul_17(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     sp_digit t[17 * 2];
     sp_digit* tmp = t;
     __asm__ __volatile__ (
@@ -118651,8 +118862,10 @@ SP_NOINLINE static void sp_521_mul_17(sp_digit* r, const sp_digit* a,
         "mov	%[b], r10\n\t"
         : [a] "+l" (a), [b] "+l" (b), [tmp] "+l" (tmp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
+    (void)r;
 
     XMEMCPY(r, t, sizeof(t));
 }
@@ -118662,8 +118875,10 @@ SP_NOINLINE static void sp_521_mul_17(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_521_sqr_17(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_sqr_17(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
         "movs	r4, #0\n\t"
@@ -119076,7 +119291,8 @@ SP_NOINLINE static void sp_521_sqr_17(sp_digit* r, const sp_digit* a)
         "add	sp, sp, r6\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
 }
 
@@ -119087,9 +119303,10 @@ SP_NOINLINE static void sp_521_sqr_17(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_521_add_17(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_add_17(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r7, #0\n\t"
@@ -119149,7 +119366,7 @@ SP_NOINLINE static sp_digit sp_521_add_17(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)r;
 }
@@ -119161,9 +119378,10 @@ SP_NOINLINE static sp_digit sp_521_add_17(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_521_add_17(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_add_17(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -119319,7 +119537,7 @@ SP_NOINLINE static sp_digit sp_521_add_17(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -119546,9 +119764,10 @@ static int sp_521_point_to_ecc_point_17(const sp_point_521* p, ecc_point* pm)
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_521_cond_sub_17(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_cond_sub_17(
+    sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #0x44\n\t"
@@ -119596,7 +119815,7 @@ SP_NOINLINE static sp_digit sp_521_cond_sub_17(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -119607,9 +119826,10 @@ SP_NOINLINE static sp_digit sp_521_cond_sub_17(sp_digit* r, const sp_digit* a,
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-SP_NOINLINE static void sp_521_mont_reduce_17(sp_digit* a, const sp_digit* m,
-        sp_digit mp)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_reduce_17(sp_digit* a,
+    const sp_digit* m, sp_digit mp)
 {
+
     (void)mp;
     (void)m;
 
@@ -120244,8 +120464,10 @@ SP_NOINLINE static void sp_521_mont_reduce_17(sp_digit* a, const sp_digit* m,
         "add	sp, sp, #0x44\n\t"
         : [a] "+l" (a)
         :
-        : "memory", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"
     );
+    (void)m;
+    (void)mp;
 }
 
 /* Reduce the number back to 521 bits using Montgomery reduction.
@@ -120254,9 +120476,10 @@ SP_NOINLINE static void sp_521_mont_reduce_17(sp_digit* a, const sp_digit* m,
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-SP_NOINLINE static void sp_521_mont_reduce_order_17(sp_digit* a,
-        const sp_digit* m, sp_digit mp)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_reduce_order_17(
+    sp_digit* a, const sp_digit* m, sp_digit mp)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #0\n\t"
         "mov	r8, %[mp]\n\t"
@@ -121411,7 +121634,8 @@ SP_NOINLINE static void sp_521_mont_reduce_order_17(sp_digit* a,
 #endif /* WOLFSSL_SP_LARGE_CODE */
         : [a] "+l" (a), [m] "+l" (m), [mp] "+l" (mp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12", "lr"
     );
 }
 
@@ -121561,8 +121785,10 @@ static void sp_521_mont_inv_17(sp_digit* r, const sp_digit* a, sp_digit* td)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-SP_NOINLINE static sp_int32 sp_521_cmp_17(const sp_digit* a, const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_521_cmp_17(
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r2, #0\n\t"
         "movs	r3, #0\n\t"
@@ -121658,7 +121884,7 @@ SP_NOINLINE static sp_int32 sp_521_cmp_17(const sp_digit* a, const sp_digit* b)
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -121716,9 +121942,10 @@ static void sp_521_map_17(sp_point_521* r, const sp_point_521* p,
  * b   Second number to add in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_521_mont_add_17(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_add_17(sp_digit* r,
+    const sp_digit* a, const sp_digit* b, const sp_digit* m)
 {
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r4, r5}\n\t"
         "ldm	%[b]!, {r6, r7}\n\t"
@@ -122039,7 +122266,7 @@ SP_NOINLINE static void sp_521_mont_add_17(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7"
     );
 }
 
@@ -122049,9 +122276,10 @@ SP_NOINLINE static void sp_521_mont_add_17(sp_digit* r, const sp_digit* a,
  * a   Number to double in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_521_mont_dbl_17(sp_digit* r, const sp_digit* a,
-        const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_dbl_17(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -122355,7 +122583,7 @@ SP_NOINLINE static void sp_521_mont_dbl_17(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [m] "+l" (m)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
 }
 
@@ -122365,9 +122593,10 @@ SP_NOINLINE static void sp_521_mont_dbl_17(sp_digit* r, const sp_digit* a,
  * a   Number to triple in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_521_mont_tpl_17(sp_digit* r, const sp_digit* a,
-        const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_tpl_17(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r3, r4, r5, r6}\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -122833,7 +123062,7 @@ SP_NOINLINE static void sp_521_mont_tpl_17(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [m] "+l" (m)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
 }
 
@@ -122844,9 +123073,10 @@ SP_NOINLINE static void sp_521_mont_tpl_17(sp_digit* r, const sp_digit* a,
  * b   Number to subtract with in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_521_mont_sub_17(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_sub_17(sp_digit* r,
+    const sp_digit* a, const sp_digit* b, const sp_digit* m)
 {
+
     __asm__ __volatile__ (
         "ldm	%[a]!, {r4, r5}\n\t"
         "ldm	%[b]!, {r6, r7}\n\t"
@@ -123173,7 +123403,7 @@ SP_NOINLINE static void sp_521_mont_sub_17(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7"
     );
 }
 
@@ -123185,9 +123415,10 @@ SP_NOINLINE static void sp_521_mont_sub_17(sp_digit* r, const sp_digit* a,
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_521_cond_add_17(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_cond_add_17(
+    sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #0x44\n\t"
@@ -123241,7 +123472,7 @@ SP_NOINLINE static sp_digit sp_521_cond_add_17(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -123251,8 +123482,10 @@ SP_NOINLINE static sp_digit sp_521_cond_add_17(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_521_rshift1_17(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static void sp_521_rshift1_17(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "ldr	r2, [%[a]]\n\t"
         "ldr	r3, [%[a], #4]\n\t"
@@ -123567,7 +123800,7 @@ static void sp_521_rshift1_17(sp_digit* r, const sp_digit* a)
         "str	r3, [%[r], #64]\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
 }
 
@@ -123577,9 +123810,10 @@ static void sp_521_rshift1_17(sp_digit* r, const sp_digit* a)
  * a  Number to divide.
  * m  Modulus (prime).
  */
-SP_NOINLINE static void sp_521_mont_div2_17(sp_digit* r, const sp_digit* a,
-        const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_div2_17(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     sp_digit o;
 
     o = sp_521_cond_add_17(r, a, m, 0 - (a[0] & 1));
@@ -127579,8 +127813,9 @@ int sp_ecc_mulmod_base_add_521(const mp_int* km, const ecc_point* am,
  *
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_521_add_one_17(sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_add_one_17(sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r2, #1\n\t"
         "ldr	r1, [%[a]]\n\t"
@@ -127737,7 +127972,7 @@ SP_NOINLINE static void sp_521_add_one_17(sp_digit* a)
         "str	r1, [%[a], #64]\n\t"
         : [a] "+l" (a)
         :
-        : "memory", "r1", "r2", "cc"
+        : "memory", "cc", "r1", "r2"
     );
 }
 
@@ -128089,8 +128324,10 @@ int sp_ecc_secret_gen_521_nb(sp_ecc_ctx_t* sp_ctx, const mp_int* priv,
  * a  A single precision integer.
  * n  Integer representing number of bits to shift.
  */
-static void sp_521_rshift_17(sp_digit* r, const sp_digit* a, byte n)
+WC_OMIT_FRAME_POINTER static void sp_521_rshift_17(sp_digit* r,
+    const sp_digit* a, byte n)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #32\n\t"
 #ifdef WOLFSSL_KEIL
@@ -128431,7 +128668,7 @@ static void sp_521_rshift_17(sp_digit* r, const sp_digit* a, byte n)
         "str	r4, [%[r], #64]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [n] "+l" (n)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
 }
 
@@ -128445,8 +128682,10 @@ static void sp_521_rshift_17(sp_digit* r, const sp_digit* a, byte n)
  * a  A single precision integer.
  * n  Integer representing number of bits to shift.
  */
-static void sp_521_lshift_17(sp_digit* r, const sp_digit* a, byte n)
+WC_OMIT_FRAME_POINTER static void sp_521_lshift_17(sp_digit* r,
+    const sp_digit* a, byte n)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #31\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -128858,7 +129097,7 @@ static void sp_521_lshift_17(sp_digit* r, const sp_digit* a, byte n)
         "str	r4, [%[r], #4]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [n] "+l" (n)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
 }
 
@@ -128868,8 +129107,10 @@ static void sp_521_lshift_17(sp_digit* r, const sp_digit* a, byte n)
  * a  A single precision integer.
  * n  Integer representing number of bits to shift.
  */
-static void sp_521_lshift_34(sp_digit* r, const sp_digit* a, byte n)
+WC_OMIT_FRAME_POINTER static void sp_521_lshift_34(sp_digit* r,
+    const sp_digit* a, byte n)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #31\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -129719,7 +129960,7 @@ static void sp_521_lshift_34(sp_digit* r, const sp_digit* a, byte n)
         "str	r5, [%[r], #4]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [n] "+l" (n)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
 }
 
@@ -129729,9 +129970,10 @@ static void sp_521_lshift_34(sp_digit* r, const sp_digit* a, byte n)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_521_sub_in_place_17(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_sub_in_place_17(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r7, %[a]\n\t"
         "movs	r2, #0\n\t"
@@ -129790,7 +130032,7 @@ SP_NOINLINE static sp_digit sp_521_sub_in_place_17(sp_digit* a,
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -129801,9 +130043,10 @@ SP_NOINLINE static sp_digit sp_521_sub_in_place_17(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_521_sub_in_place_17(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_sub_in_place_17(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r4, r5}\n\t"
         "ldr	r2, [%[a]]\n\t"
@@ -129966,7 +130209,7 @@ SP_NOINLINE static sp_digit sp_521_sub_in_place_17(sp_digit* a,
 #endif
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
     return (word32)(size_t)a;
 }
@@ -129978,9 +130221,10 @@ SP_NOINLINE static sp_digit sp_521_sub_in_place_17(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision digit.
  */
-SP_NOINLINE static void sp_521_mul_d_17(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mul_d_17(sp_digit* r,
+    const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, #0x44\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -130154,7 +130398,7 @@ SP_NOINLINE static void sp_521_mul_d_17(sp_digit* r, const sp_digit* a,
         "str	r3, [%[r]]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
 }
 
@@ -130167,9 +130411,10 @@ SP_NOINLINE static void sp_521_mul_d_17(sp_digit* r, const sp_digit* a,
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-SP_NOINLINE static sp_digit div_521_word_17(sp_digit d1, sp_digit d0,
-        sp_digit div)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_521_word_17(sp_digit d1,
+    sp_digit d0, sp_digit div)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -130769,7 +131014,7 @@ SP_NOINLINE static sp_digit div_521_word_17(sp_digit d1, sp_digit d0,
         "movs	%[d1], r3\n\t"
         : [d1] "+l" (d1), [d0] "+l" (d0), [div] "+l" (div)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
     return (word32)(size_t)d1;
 }
@@ -131395,9 +131640,10 @@ int sp_ecc_sign_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_521_sub_17(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_sub_17(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r3, #0\n\t"
@@ -131451,7 +131697,7 @@ SP_NOINLINE static sp_digit sp_521_sub_17(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -131463,9 +131709,10 @@ SP_NOINLINE static sp_digit sp_521_sub_17(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_521_sub_17(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_sub_17(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -131620,7 +131867,7 @@ SP_NOINLINE static sp_digit sp_521_sub_17(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -131632,9 +131879,10 @@ SP_NOINLINE static sp_digit sp_521_sub_17(sp_digit* r, const sp_digit* a,
  * a  Number to divide.
  * m  Modulus.
  */
-static void sp_521_div2_mod_17(sp_digit* r, const sp_digit* a,
-        const sp_digit* m)
+WC_OMIT_FRAME_POINTER static void sp_521_div2_mod_17(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     __asm__ __volatile__ (
         "ldr	r3, [%[a]]\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -132183,12 +132431,13 @@ static void sp_521_div2_mod_17(sp_digit* r, const sp_digit* a,
         "str	r5, [%[r], #64]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [m] "+l" (m)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
 }
 
-static int sp_521_num_bits_17(sp_digit* a)
+WC_OMIT_FRAME_POINTER static int sp_521_num_bits_17(sp_digit* a)
 {
+
     static const byte sp_num_bits_table[256] = {
         0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
         5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -133952,7 +134201,7 @@ static int sp_521_num_bits_17(sp_digit* a)
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [table] "+l" (table)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)a;
 }
@@ -134820,9 +135069,10 @@ typedef struct sp_point_1024 {
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_1024_mul_16(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mul_16(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     sp_digit t[16 * 2];
     sp_digit* tmp = t;
     __asm__ __volatile__ (
@@ -135052,8 +135302,10 @@ SP_NOINLINE static void sp_1024_mul_16(sp_digit* r, const sp_digit* a,
         "mov	%[b], r10\n\t"
         : [a] "+l" (a), [b] "+l" (b), [tmp] "+l" (tmp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
+    (void)r;
 
     XMEMCPY(r, t, sizeof(t));
 }
@@ -135065,9 +135317,10 @@ SP_NOINLINE static void sp_1024_mul_16(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_1024_mul_16(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mul_16(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x40\n\t"
         "mov	r8, %[r]\n\t"
@@ -170940,7 +171193,7 @@ SP_NOINLINE static void sp_1024_mul_16(sp_digit* r, const sp_digit* a,
         "stm	%[r]!, {r3, r4, r5, r6}\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"
     );
 }
 
@@ -170951,8 +171204,10 @@ SP_NOINLINE static void sp_1024_mul_16(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_1024_sqr_16(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_sqr_16(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
         "movs	r4, #0\n\t"
@@ -171365,7 +171620,8 @@ SP_NOINLINE static void sp_1024_sqr_16(sp_digit* r, const sp_digit* a)
         "add	sp, sp, r6\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
 }
 
@@ -171375,8 +171631,10 @@ SP_NOINLINE static void sp_1024_sqr_16(sp_digit* r, const sp_digit* a)
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_1024_sqr_16(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_sqr_16(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "sub	sp, sp, #0x40\n\t"
         "mov	r8, %[r]\n\t"
@@ -197720,7 +197978,8 @@ SP_NOINLINE static void sp_1024_sqr_16(sp_digit* r, const sp_digit* a)
         "stm	%[r]!, {r2, r3, r4, r5}\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12", "lr"
     );
 }
 
@@ -197731,9 +197990,10 @@ SP_NOINLINE static void sp_1024_sqr_16(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_1024_add_16(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_add_16(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -197879,7 +198139,7 @@ SP_NOINLINE static sp_digit sp_1024_add_16(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -197890,9 +198150,10 @@ SP_NOINLINE static sp_digit sp_1024_add_16(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_1024_add_word_16(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_add_word_16(
+    sp_digit* r, const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r5, #0\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -198031,7 +198292,7 @@ SP_NOINLINE static sp_digit sp_1024_add_word_16(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r3", "r4", "r5"
     );
     return (word32)(size_t)r;
 }
@@ -198041,9 +198302,10 @@ SP_NOINLINE static sp_digit sp_1024_add_word_16(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_1024_sub_in_place_32(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_sub_in_place_32(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r4, r5}\n\t"
         "ldr	r2, [%[a]]\n\t"
@@ -198340,7 +198602,7 @@ SP_NOINLINE static sp_digit sp_1024_sub_in_place_32(sp_digit* a,
 #endif
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
     return (word32)(size_t)a;
 }
@@ -198351,9 +198613,10 @@ SP_NOINLINE static sp_digit sp_1024_sub_in_place_32(sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_1024_add_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_add_32(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -198635,7 +198898,7 @@ SP_NOINLINE static sp_digit sp_1024_add_32(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -198713,9 +198976,10 @@ SP_NOINLINE static void sp_1024_mul_32(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_1024_sub_16(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_sub_16(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "ldm	%[b]!, {r5, r6}\n\t"
         "ldm	%[a]!, {r3, r4}\n\t"
@@ -198860,7 +199124,7 @@ SP_NOINLINE static sp_digit sp_1024_sub_16(sp_digit* r, const sp_digit* a,
 #endif
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6"
     );
     return (word32)(size_t)r;
 }
@@ -198907,9 +199171,10 @@ SP_NOINLINE static void sp_1024_sqr_32(sp_digit* r, const sp_digit* a)
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static void sp_1024_mul_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mul_32(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     sp_digit t[32 * 2];
     sp_digit* tmp = t;
     __asm__ __volatile__ (
@@ -199139,8 +199404,10 @@ SP_NOINLINE static void sp_1024_mul_32(sp_digit* r, const sp_digit* a,
         "mov	%[b], r10\n\t"
         : [a] "+l" (a), [b] "+l" (b), [tmp] "+l" (tmp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
+    (void)r;
 
     XMEMCPY(r, t, sizeof(t));
 }
@@ -199150,8 +199417,10 @@ SP_NOINLINE static void sp_1024_mul_32(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-SP_NOINLINE static void sp_1024_sqr_32(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_sqr_32(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
         "movs	r4, #0\n\t"
@@ -199574,7 +199843,8 @@ SP_NOINLINE static void sp_1024_sqr_32(sp_digit* r, const sp_digit* a)
         "add	sp, sp, r6\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12"
     );
 }
 
@@ -199670,9 +199940,10 @@ static const sp_point_1024 p1024_base = {
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_1024_sub_in_place_32(sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_sub_in_place_32(
+    sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r7, %[a]\n\t"
         "movs	r2, #0\n\t"
@@ -199731,7 +200002,7 @@ SP_NOINLINE static sp_digit sp_1024_sub_in_place_32(sp_digit* a,
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -199745,9 +200016,10 @@ SP_NOINLINE static sp_digit sp_1024_sub_in_place_32(sp_digit* a,
  * b  A single precision number to subtract.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_1024_cond_sub_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_cond_sub_32(
+    sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #0x80\n\t"
@@ -199795,7 +200067,7 @@ SP_NOINLINE static sp_digit sp_1024_cond_sub_32(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -199807,9 +200079,10 @@ SP_NOINLINE static sp_digit sp_1024_cond_sub_32(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision integer.
  */
-SP_NOINLINE static sp_digit sp_1024_add_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_add_32(sp_digit* r,
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, %[a]\n\t"
         "movs	r7, #0\n\t"
@@ -199869,7 +200142,7 @@ SP_NOINLINE static sp_digit sp_1024_add_32(sp_digit* r, const sp_digit* a,
         "movs	%[r], r3\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)r;
 }
@@ -199881,9 +200154,10 @@ SP_NOINLINE static sp_digit sp_1024_add_32(sp_digit* r, const sp_digit* a,
  * a  A single precision integer.
  * b  A single precision digit.
  */
-SP_NOINLINE static void sp_1024_mul_d_32(sp_digit* r, const sp_digit* a,
-        sp_digit b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mul_d_32(sp_digit* r,
+    const sp_digit* a, sp_digit b)
 {
+
     __asm__ __volatile__ (
         "movs	r6, #0x80\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -200057,7 +200331,7 @@ SP_NOINLINE static void sp_1024_mul_d_32(sp_digit* r, const sp_digit* a,
         "str	r3, [%[r]]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
 }
 
@@ -200070,9 +200344,10 @@ SP_NOINLINE static void sp_1024_mul_d_32(sp_digit* r, const sp_digit* a,
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
-SP_NOINLINE static sp_digit div_1024_word_32(sp_digit d1, sp_digit d0,
-        sp_digit div)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_1024_word_32(sp_digit d1,
+    sp_digit d0, sp_digit div)
 {
+
     __asm__ __volatile__ (
         "movs	r3, #0\n\t"
 #if defined(__clang__) || defined(WOLFSSL_KEIL)
@@ -200672,7 +200947,7 @@ SP_NOINLINE static sp_digit div_1024_word_32(sp_digit d1, sp_digit d0,
         "movs	%[d1], r3\n\t"
         : [d1] "+l" (d1), [d0] "+l" (d0), [div] "+l" (div)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9"
     );
     return (word32)(size_t)d1;
 }
@@ -200714,8 +200989,10 @@ static void sp_1024_mask_32(sp_digit* r, const sp_digit* a, sp_digit m)
  * return -ve, 0 or +ve if a is less than, equal to or greater than b
  * respectively.
  */
-SP_NOINLINE static sp_int32 sp_1024_cmp_32(const sp_digit* a, const sp_digit* b)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_1024_cmp_32(
+    const sp_digit* a, const sp_digit* b)
 {
+
     __asm__ __volatile__ (
         "movs	r2, #0\n\t"
         "movs	r3, #0\n\t"
@@ -200811,7 +201088,7 @@ SP_NOINLINE static sp_int32 sp_1024_cmp_32(const sp_digit* a, const sp_digit* b)
         "movs	%[a], r2\n\t"
         : [a] "+l" (a), [b] "+l" (b)
         :
-        : "memory", "r2", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5", "r6", "r7"
     );
     return (word32)(size_t)a;
 }
@@ -201153,9 +201430,10 @@ static int sp_1024_point_to_ecc_point_32(const sp_point_1024* p, ecc_point* pm)
  * m   The single precision number representing the modulus.
  * mp  The digit representing the negative inverse of m mod 2^n.
  */
-SP_NOINLINE static void sp_1024_mont_reduce_32(sp_digit* a, const sp_digit* m,
-        sp_digit mp)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_reduce_32(
+    sp_digit* a, const sp_digit* m, sp_digit mp)
 {
+
     __asm__ __volatile__ (
         "movs	r7, #0\n\t"
         "mov	r8, %[mp]\n\t"
@@ -202229,7 +202507,8 @@ SP_NOINLINE static void sp_1024_mont_reduce_32(sp_digit* a, const sp_digit* m,
 #endif /* WOLFSSL_SP_LARGE_CODE */
         : [a] "+l" (a), [m] "+l" (m), [mp] "+l" (mp)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "lr", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",
+            "r11", "r12", "lr"
     );
 }
 
@@ -202377,9 +202656,10 @@ static void sp_1024_map_32(sp_point_1024* r, const sp_point_1024* p,
  * b   Second number to add in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_1024_mont_add_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_add_32(sp_digit* r,
+    const sp_digit* a, const sp_digit* b, const sp_digit* m)
 {
+
     __asm__ __volatile__ (
         "ldr	r4, [%[a]]\n\t"
         "ldr	r5, [%[a], #4]\n\t"
@@ -203276,7 +203556,7 @@ SP_NOINLINE static void sp_1024_mont_add_32(sp_digit* r, const sp_digit* a,
         "str	r5, [%[r], #124]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7"
     );
 }
 
@@ -203286,9 +203566,10 @@ SP_NOINLINE static void sp_1024_mont_add_32(sp_digit* r, const sp_digit* a,
  * a   Number to double in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_1024_mont_dbl_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_dbl_32(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     __asm__ __volatile__ (
         "ldr	r4, [%[a]]\n\t"
         "ldr	r5, [%[a], #4]\n\t"
@@ -204153,7 +204434,7 @@ SP_NOINLINE static void sp_1024_mont_dbl_32(sp_digit* r, const sp_digit* a,
         "str	r5, [%[r], #124]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [m] "+l" (m)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
 }
 
@@ -204163,9 +204444,10 @@ SP_NOINLINE static void sp_1024_mont_dbl_32(sp_digit* r, const sp_digit* a,
  * a   Number to triple in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_1024_mont_tpl_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_tpl_32(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     __asm__ __volatile__ (
         "ldr	r4, [%[a]]\n\t"
         "ldr	r5, [%[a], #4]\n\t"
@@ -205923,7 +206205,7 @@ SP_NOINLINE static void sp_1024_mont_tpl_32(sp_digit* r, const sp_digit* a,
         "str	r7, [%[r], #124]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [m] "+l" (m)
         :
-        : "memory", "r3", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r3", "r4", "r5", "r6", "r7"
     );
 }
 
@@ -205934,9 +206216,10 @@ SP_NOINLINE static void sp_1024_mont_tpl_32(sp_digit* r, const sp_digit* a,
  * b   Number to subtract with in Montgomery form.
  * m   Modulus (prime).
  */
-SP_NOINLINE static void sp_1024_mont_sub_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_sub_32(sp_digit* r,
+    const sp_digit* a, const sp_digit* b, const sp_digit* m)
 {
+
     __asm__ __volatile__ (
         "ldr	r4, [%[a]]\n\t"
         "ldr	r5, [%[a], #4]\n\t"
@@ -207357,7 +207640,7 @@ SP_NOINLINE static void sp_1024_mont_sub_32(sp_digit* r, const sp_digit* a,
         "str	r5, [%[r], #124]\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7"
     );
 }
 
@@ -207369,9 +207652,10 @@ SP_NOINLINE static void sp_1024_mont_sub_32(sp_digit* r, const sp_digit* a,
  * b  A single precision number to add.
  * m  Mask value to apply.
  */
-SP_NOINLINE static sp_digit sp_1024_cond_add_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* b, sp_digit m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_cond_add_32(
+    sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
 {
+
     __asm__ __volatile__ (
         "movs	r4, #0\n\t"
         "movs	r5, #0x80\n\t"
@@ -207425,7 +207709,7 @@ SP_NOINLINE static sp_digit sp_1024_cond_add_32(sp_digit* r, const sp_digit* a,
         "movs	%[r], r4\n\t"
         : [r] "+l" (r), [a] "+l" (a), [b] "+l" (b), [m] "+l" (m)
         :
-        : "memory", "r4", "r5", "r6", "r7", "r8", "cc"
+        : "memory", "cc", "r4", "r5", "r6", "r7", "r8"
     );
     return (word32)(size_t)r;
 }
@@ -207435,8 +207719,10 @@ SP_NOINLINE static sp_digit sp_1024_cond_add_32(sp_digit* r, const sp_digit* a,
  * r  A single precision integer.
  * a  A single precision integer.
  */
-static void sp_1024_rshift1_32(sp_digit* r, const sp_digit* a)
+WC_OMIT_FRAME_POINTER static void sp_1024_rshift1_32(sp_digit* r,
+    const sp_digit* a)
 {
+
     __asm__ __volatile__ (
         "ldr	r2, [%[a]]\n\t"
         "ldr	r3, [%[a], #4]\n\t"
@@ -208036,7 +208322,7 @@ static void sp_1024_rshift1_32(sp_digit* r, const sp_digit* a)
         "str	r3, [%[r], #124]\n\t"
         : [r] "+l" (r), [a] "+l" (a)
         :
-        : "memory", "r2", "r3", "r4", "r5", "cc"
+        : "memory", "cc", "r2", "r3", "r4", "r5"
     );
 }
 
@@ -208046,9 +208332,10 @@ static void sp_1024_rshift1_32(sp_digit* r, const sp_digit* a)
  * a  Number to divide.
  * m  Modulus (prime).
  */
-SP_NOINLINE static void sp_1024_mont_div2_32(sp_digit* r, const sp_digit* a,
-        const sp_digit* m)
+WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_div2_32(sp_digit* r,
+    const sp_digit* a, const sp_digit* m)
 {
+
     sp_digit o;
 
     o = sp_1024_cond_add_32(r, a, m, 0 - (a[0] & 1));
