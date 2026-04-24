@@ -16331,12 +16331,15 @@ static int TLSX_EchRestoreSNI(WOLFSSL* ssl, char* serverName,
 
 /* Returns 1 if the extension may be encoded into ech_outer_extensions,
  * 0 otherwise */
-static int TLSX_ECH_IsEncodeable(word16 type)
+static int TLSX_ECH_IsEncodable(word16 type)
 {
+    /* supported_versions being here prevents the inner hello from advertising
+     * a version less than TLS1.3 */
     switch (type) {
         case TLSX_SERVER_NAME:
-        case TLSX_ECH:
         case TLSX_APPLICATION_LAYER_PROTOCOL:
+        case TLSX_SUPPORTED_VERSIONS:
+        case TLSX_ECH:
 #if defined(HAVE_SESSION_TICKET) || !defined(NO_PSK)
         case TLSX_PRE_SHARED_KEY:
 #endif
@@ -16395,7 +16398,7 @@ static int TLSX_ECH_BuildOuterExtensions(WOLFSSL* ssl, const byte* semaphore,
             if (!IS_OFF(seen, semIdx))
                 continue;
             TURN_ON(seen, semIdx);
-            if (type == TLSX_ECH || !TLSX_ECH_IsEncodeable(type))
+            if (!TLSX_ECH_IsEncodable(type))
                 continue;
 
             if (typesStart != NULL)
@@ -16450,7 +16453,7 @@ static int TLSX_GetSizeWithEch(WOLFSSL* ssl, byte* semaphore, byte msgType,
         ech = (WOLFSSL_ECH*)echX->data;
 
     /* If ECH won't be written exclude it from the size calculation */
-    if (r == 0 !ssl->options.echAccepted && ech != NULL &&
+    if (r == 0 && !ssl->options.echAccepted && ech != NULL &&
             ech->innerCount != 0) {
         TURN_ON(semaphore, TLSX_ToSemaphore(echX->type));
     }
@@ -16661,7 +16664,7 @@ static int TLSX_WriteWithEch(WOLFSSL* ssl, byte* output, byte* semaphore,
                          msgType, pOffset);
     }
 
-    /* only write ECH if have a shot at acceptance */
+    /* only write ECH if there is a shot at acceptance */
     if (ret == 0 && echX != NULL &&
         (ssl->options.echAccepted ||
         ((WOLFSSL_ECH*)echX->data)->innerCount == 0)) {

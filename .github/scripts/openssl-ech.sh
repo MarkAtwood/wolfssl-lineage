@@ -11,12 +11,14 @@ cleanup() {
 trap cleanup EXIT
 
 usage() {
-    echo "Usage: $0 <client|server> [--suite <KEM,KDF,AEAD>] [--workspace <path>]"
+    echo "Usage: $0 <client|server> [--suite <KEM,KDF,AEAD>] [--pqc <group>] [--hrr] [--workspace <path>]"
     exit 1
 }
 
 MODE=""
 SUITE=""
+PQC=""
+FORCE_HRR=0
 
 WORKSPACE=${GITHUB_WORKSPACE:-"."}
 
@@ -40,14 +42,28 @@ while [ $# -gt 0 ]; do
             echo "Using suite: $SUITE"
             echo ""
             ;;
+        --pqc)
+            [ -z "$2" ] && { echo "ERROR: --pqc requires a value"; exit 1; }
+            PQC="$2"
+            shift 2
+            ;;
         --workspace)
             [ -z "$2" ] && { echo "ERROR: --workspace requires a value"; exit 1; }
             WORKSPACE="$2"
             shift 2
             ;;
+        --hrr)
+            FORCE_HRR=1
+            shift
+            ;;
         *) echo "Unknown argument: $1"; usage ;;
     esac
 done
+
+if [ "$FORCE_HRR" -ne 0 ] && [ -n "$PQC" ]; then
+    echo "ERROR: --hrr and --pqc are mutually exclusive"
+    exit 1
+fi
 
 OPENSSL=${OPENSSL:-"openssl"}
 WOLFSSL_CLIENT=${WOLFSSL_CLIENT:-"$WORKSPACE/examples/client/client"}
@@ -63,6 +79,15 @@ openssl_server(){
     local ech_file="$WORKSPACE/ech_config.pem"
     local ech_config=""
     local port=""
+    local groups_arg=""
+
+    # restrict group based on arguments
+    if [ "$FORCE_HRR" -eq 0 ]; then
+        groups_arg="-groups secp256r1"
+        if [ -n "$PQC" ]; then
+            groups_arg="-groups ${PQC#--pqc }"
+        fi
+    fi
 
     rm -f "$ech_file"
 
@@ -82,6 +107,7 @@ openssl_server(){
         -key2 "$CERT_DIR/server-key.pem" \
         -ech_key "$ech_file" \
         -servername "$PRIV_NAME" \
+        $groups_arg \
         -accept 0 \
         -naccept 1 \
         &>> "$TMP_LOG" <<< "wolfssl!" &
@@ -104,6 +130,7 @@ openssl_server(){
         -p "$port" \
         -S "$PRIV_NAME" \
         --ech "$ech_config" \
+        $PQC \
         &>> "$TMP_LOG"
 
     rm -f "$ech_file"
@@ -127,6 +154,7 @@ openssl_client(){
                 -S "$PRIV_NAME" \
                 --ech "$PUB_NAME" \
                 $SUITE \
+                $PQC \
                 &>> "$TMP_LOG" &
 
     # wait for server to be ready, then get port
@@ -157,7 +185,15 @@ openssl_client(){
     done
     echo "parsed ech config: $ech_config" &>> "$TMP_LOG"
 
-    # Test with OpenSSL s_client using ECH
+    # restrict group based on arguments
+    local groups_arg="-groups secp256r1"
+    if [ -n "$PQC" ]; then
+        groups_arg="-groups ${PQC#--pqc }"
+    elif [ "$FORCE_HRR" -ne 0 ]; then
+        groups_arg=""
+    fi
+
+    # test with OpenSSL s_client using ECH
     echo "wolfssl" | $OPENSSL s_client \
         -tls1_3 \
         -connect "localhost:$port" \
@@ -166,6 +202,7 @@ openssl_client(){
         -CAfile "$CERT_DIR/ca-cert.pem" \
         -servername "$PRIV_NAME" \
         -ech_config_list "$ech_config" \
+        $groups_arg \
         &>> "$TMP_LOG"
 
     grep -q "ECH: success: 1" "$TMP_LOG"
@@ -178,11 +215,17 @@ case "$MODE" in
         if [ -n "$SUITE" ]; then
             SUITE="-suite $SUITE"
         fi
+        if [ -n "$PQC" ]; then
+            PQC="--pqc $PQC"
+        fi
         openssl_server
         ;;
     client)
         if [ -n "$SUITE" ]; then
             SUITE="--ech-suite $SUITE"
+        fi
+        if [ -n "$PQC" ]; then
+            PQC="--pqc $PQC"
         fi
         openssl_client
         ;;
