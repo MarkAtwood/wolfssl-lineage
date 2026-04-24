@@ -17831,6 +17831,20 @@ int TLSX_Parse(WOLFSSL* ssl, const byte* input, word16 length, byte msgType,
 #ifdef WOLFSSL_SRTP
             case TLSX_USE_SRTP:
                 WOLFSSL_MSG("Use SRTP extension received");
+
+#if defined(WOLFSSL_TLS13)
+                if (IsAtLeastTLSv1_3(ssl->version)) {
+                    if (msgType != client_hello &&
+                        msgType != encrypted_extensions)
+                        return EXT_NOT_ALLOWED;
+                }
+                else
+#endif
+                {
+                    if (msgType != client_hello &&
+                        msgType != server_hello)
+                        return EXT_NOT_ALLOWED;
+                }
                 ret = SRTP_PARSE(ssl, input + offset, size, isRequest);
                 break;
 #endif
@@ -17925,6 +17939,15 @@ int TLSX_Parse(WOLFSSL* ssl, const byte* input, word16 length, byte msgType,
 #if defined(WOLFSSL_TLS13) && defined(HAVE_ECH)
             case TLSX_ECH:
                 WOLFSSL_MSG("ECH extension received");
+                if (!IsAtLeastTLSv1_3(ssl->version))
+                    break;
+
+                if (msgType != client_hello &&
+                    msgType != encrypted_extensions &&
+                    msgType != hello_retry_request) {
+                    return EXT_NOT_ALLOWED;
+                }
+
                 ret = ECH_PARSE(ssl, input + offset, size, msgType);
                 break;
             case TLSXT_ECH_OUTER_EXTENSIONS:
