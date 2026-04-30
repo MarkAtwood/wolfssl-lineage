@@ -6050,11 +6050,6 @@ void test_wolfSSL_client_server_nofail_ex(callback_functions* client_cb,
     StartTCP();
     InitTcpReady(&ready);
 
-#if defined(USE_WINDOWS_API)
-    /* use RNG to get random port if using windows */
-    ready.port = GetRandomPort();
-#endif
-
     server_args.signal = &ready;
     server_args.callbacks = server_cb;
     client_args.signal = &ready;
@@ -6748,11 +6743,6 @@ static int test_wolfSSL_read_write(void)
     StartTCP();
     InitTcpReady(&ready);
 
-#if defined(USE_WINDOWS_API)
-    /* use RNG to get random port if using windows */
-    ready.port = GetRandomPort();
-#endif
-
     server_args.signal = &ready;
     client_args.signal = &ready;
 
@@ -6840,11 +6830,6 @@ static int test_wolfSSL_reuse_WOLFSSLobj(void)
 
     StartTCP();
     InitTcpReady(&ready);
-
-#if defined(USE_WINDOWS_API)
-    /* use RNG to get random port if using windows */
-    ready.port = GetRandomPort();
-#endif
 
     client_cbf.method = wolfTLSv1_2_client_method;
     server_cbf.method = wolfTLSv1_2_server_method;
@@ -8119,11 +8104,6 @@ static int test_wolfSSL_dtls_export(void)
 
     InitTcpReady(&ready);
 
-#if defined(USE_WINDOWS_API)
-    /* use RNG to get random port if using windows */
-    ready.port = GetRandomPort();
-#endif
-
     /* set using dtls */
     XMEMSET(&client_args, 0, sizeof(func_args));
     XMEMSET(&server_args, 0, sizeof(func_args));
@@ -8193,11 +8173,6 @@ static int test_wolfSSL_dtls_export(void)
 #endif
 
     InitTcpReady(&ready);
-
-#if defined(USE_WINDOWS_API)
-    /* use RNG to get random port if using windows */
-    ready.port = GetRandomPort();
-#endif
 
     /* set using dtls */
     XMEMSET(&server_args, 0, sizeof(func_args));
@@ -8675,11 +8650,6 @@ static int test_wolfSSL_tls_export_run(method_provider server_method,
 
     InitTcpReady(&ready);
 
-#if defined(USE_WINDOWS_API)
-    /* use RNG to get random port if using windows */
-    ready.port = GetRandomPort();
-#endif
-
     XMEMSET(&server_args, 0, sizeof(func_args));
     XMEMSET(&server_cbf, 0, sizeof(callback_functions));
     server_cbf.method = server_method;
@@ -8794,11 +8764,6 @@ static void test_wolfSSL_client_server(callback_functions* client_callbacks,
 
     /* RUN Server side */
     InitTcpReady(&ready);
-
-#if defined(USE_WINDOWS_API)
-    /* use RNG to get random port if using windows */
-    ready.port = GetRandomPort();
-#endif
 
     server_args.signal = &ready;
     client_args.signal = &ready;
@@ -18350,11 +18315,6 @@ static int test_wolfSSL_SESSION(void)
     StartTCP();
     InitTcpReady(&ready);
 
-#if defined(USE_WINDOWS_API)
-    /* use RNG to get random port if using windows */
-    ready.port = GetRandomPort();
-#endif
-
     server_args.signal = &ready;
     start_thread(test_server_nofail, &server_args, &serverThread);
     wait_tcp_ready(&server_args);
@@ -26887,11 +26847,6 @@ static int test_wolfSSL_read_detect_TCP_disconnect(void)
 #endif
     StartTCP();
     InitTcpReady(&ready);
-
-#if defined(USE_WINDOWS_API)
-    /* use RNG to get random port if using windows */
-    ready.port = GetRandomPort();
-#endif
 
     XMEMSET(&client_args, 0, sizeof(func_args));
     XMEMSET(&server_args, 0, sizeof(func_args));

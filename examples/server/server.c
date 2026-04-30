@@ -3231,13 +3231,6 @@ THREAD_RETURN WOLFSSL_THREAD server_test(void* args)
     }
 #endif
 
-#ifdef USE_WINDOWS_API
-    if (port == 0) {
-        /* Generate random port for testing */
-        port = GetRandomPort();
-    }
-#endif /* USE_WINDOWS_API */
-
 #ifdef WOLFSSL_ASYNC_CRYPT
     ret = wolfAsync_DevOpen(&devId);
     if (ret < 0) {
