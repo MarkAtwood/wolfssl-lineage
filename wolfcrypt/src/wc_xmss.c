@@ -28,6 +28,7 @@
     #define FIPS_NO_WRAPPERS
 #endif
 #include <wolfssl/wolfcrypt/wc_xmss.h>
+#include <wolfssl/wolfcrypt/hash.h>
 
 #ifdef NO_INLINE
     #include <wolfssl/wolfcrypt/misc.h>
@@ -35,6 +36,99 @@
     #define WOLFSSL_MISC_INCLUDED
     #include <wolfcrypt/src/misc.c>
 #endif
+
+#ifdef WOLF_CRYPTO_CB
+    #include <wolfssl/wolfcrypt/cryptocb.h>
+#endif
+
+/* Compute the digest of msg using the hash function dictated by the XMSS
+ * parameter set. Crypto-callback / HSM backends that follow PKCS#11 v3.2
+ * CKM_XMSS / CKM_XMSSMT semantics (pre-computed digest input, see section
+ * 6.66.8 "XMSS and XMSSMT without hashing") can call this from within
+ * their callback; backends that take the raw message (e.g. wolfHSM) can
+ * ignore it. *hashSz is in/out: it must be at least params->n on entry
+ * and is set to the actual digest length on success.
+ *
+ * @param [in]      key     XMSS key (must have a parameter set bound).
+ * @param [in]      msg     Message to hash.
+ * @param [in]      msgSz   Length of msg in bytes.
+ * @param [out]     hash    Buffer receiving the digest.
+ * @param [in,out]  hashSz  On entry, size of hash buffer. On success,
+ *                          the digest length.
+ * @return  0 on success.
+ * @return  BAD_FUNC_ARG when an argument is NULL or the buffer is too
+ *          small for the digest.
+ * @return  NOT_COMPILED_IN when the param set's hash family is disabled.
+ */
+int wc_XmssKey_HashMsg(const XmssKey* key, const byte* msg, word32 msgSz,
+    byte* hash, word32* hashSz)
+{
+    int ret = 0;
+    word32 needSz;
+
+    if ((key == NULL) || (msg == NULL) || (hash == NULL) || (hashSz == NULL))
+        return BAD_FUNC_ARG;
+    if (key->params == NULL)
+        return BAD_FUNC_ARG;
+    needSz = (word32)key->params->n;
+    if (*hashSz < needSz)
+        return BAD_FUNC_ARG;
+
+    switch (key->params->hash) {
+    #ifdef WC_XMSS_SHA256
+        case WC_HASH_TYPE_SHA256: {
+            /* SHA2_*_192 variants set n=24, but wc_Hash rejects an output
+             * smaller than WC_SHA256_DIGEST_SIZE. Hash to a full buffer and
+             * copy the requested prefix, mirroring LMS_SHA256_192. */
+            byte full[WC_SHA256_DIGEST_SIZE];
+            ret = wc_Sha256Hash(msg, msgSz, full);
+            if (ret == 0)
+                XMEMCPY(hash, full, needSz);
+            break;
+        }
+    #endif
+    #ifdef WC_XMSS_SHA512
+        case WC_HASH_TYPE_SHA512:
+            ret = wc_Hash(WC_HASH_TYPE_SHA512, msg, msgSz, hash, needSz);
+            break;
+    #endif
+    #ifdef WC_XMSS_SHAKE128
+        case WC_HASH_TYPE_SHAKE128: {
+            wc_Shake shake;
+            ret = wc_InitShake128(&shake, NULL, INVALID_DEVID);
+            if (ret == 0) {
+                ret = wc_Shake128_Update(&shake, msg, msgSz);
+                if (ret == 0)
+                    ret = wc_Shake128_Final(&shake, hash, needSz);
+                wc_Shake128_Free(&shake);
+            }
+            break;
+        }
+    #endif
+    #ifdef WC_XMSS_SHAKE256
+        case WC_HASH_TYPE_SHAKE256: {
+            wc_Shake shake;
+            ret = wc_InitShake256(&shake, NULL, INVALID_DEVID);
+            if (ret == 0) {
+                ret = wc_Shake256_Update(&shake, msg, msgSz);
+                if (ret == 0)
+                    ret = wc_Shake256_Final(&shake, hash, needSz);
+                wc_Shake256_Free(&shake);
+            }
+            break;
+        }
+    #endif
+        default:
+            WOLFSSL_MSG("XMSS: unsupported hash for HashMsg");
+            ret = NOT_COMPILED_IN;
+            break;
+    }
+
+    if (ret == 0)
+        *hashSz = needSz;
+
+    return ret;
+}
 
 
 /***************************
@@ -812,7 +906,7 @@ static WC_INLINE int wc_xmsskey_signupdate(XmssKey* key, byte* sig,
  *
  * @param [in] key    The XMSS key to init.
  * @param [in] heap   Dynamic memory hint used by subsequent allocations.
- * @param [in] devId  Unused.
+ * @param [in] devId  Device identifier (used with WOLF_CRYPTO_CB).
  *
  * @return  0 on success.
  * @return  BAD_FUNC_ARG when a parameter is NULL.
@@ -821,7 +915,9 @@ int wc_XmssKey_Init(XmssKey* key, void* heap, int devId)
 {
     int ret = 0;
 
+#ifndef WOLF_CRYPTO_CB
     (void) devId;
+#endif
 
     /* Validate parameters. */
     if (key == NULL) {
@@ -832,11 +928,81 @@ int wc_XmssKey_Init(XmssKey* key, void* heap, int devId)
         /* Zeroize key and set state to initialized. */
         ForceZero(key, sizeof(XmssKey));
         key->heap = heap;
+    #ifdef WOLF_CRYPTO_CB
+        key->devId = devId;
+    #endif
         key->state = WC_XMSS_STATE_INITED;
     }
 
     return ret;
 }
+
+#ifdef WOLF_PRIVATE_KEY_ID
+/* Initialize an XmssKey and bind it to a device-side key identifier.
+ *
+ * @param [in,out] key    XmssKey to initialize.
+ * @param [in]     id     Identifier bytes (may be NULL when len is 0).
+ * @param [in]     len    Length of id; must be in [0, XMSS_MAX_ID_LEN].
+ * @param [in]     heap   Heap hint forwarded to wc_XmssKey_Init.
+ * @param [in]     devId  Device identifier.
+ *
+ * @return  0 on success.
+ * @return  BAD_FUNC_ARG when key is NULL.
+ * @return  BUFFER_E when len is negative or exceeds XMSS_MAX_ID_LEN.
+ */
+int wc_XmssKey_InitId(XmssKey* key, const unsigned char* id, int len,
+    void* heap, int devId)
+{
+    int ret = 0;
+
+    if (key == NULL)
+        ret = BAD_FUNC_ARG;
+    if (ret == 0 && (len < 0 || len > XMSS_MAX_ID_LEN))
+        ret = BUFFER_E;
+    if (ret == 0)
+        ret = wc_XmssKey_Init(key, heap, devId);
+    if (ret == 0 && id != NULL && len != 0) {
+        XMEMCPY(key->id, id, (size_t)len);
+        key->idLen = len;
+    }
+
+    return ret;
+}
+
+/* Initialize an XmssKey and bind it to a device-side key label.
+ *
+ * @param [in,out] key    XmssKey to initialize.
+ * @param [in]     label  NUL-terminated label string (must be non-empty).
+ * @param [in]     heap   Heap hint forwarded to wc_XmssKey_Init.
+ * @param [in]     devId  Device identifier.
+ *
+ * @return  0 on success.
+ * @return  BAD_FUNC_ARG when key or label is NULL.
+ * @return  BUFFER_E when label is empty or longer than XMSS_MAX_LABEL_LEN.
+ */
+int wc_XmssKey_InitLabel(XmssKey* key, const char* label, void* heap,
+    int devId)
+{
+    int ret = 0;
+    int labelLen = 0;
+
+    if (key == NULL || label == NULL)
+        ret = BAD_FUNC_ARG;
+    if (ret == 0) {
+        labelLen = (int)XSTRLEN(label);
+        if (labelLen == 0 || labelLen > XMSS_MAX_LABEL_LEN)
+            ret = BUFFER_E;
+    }
+    if (ret == 0)
+        ret = wc_XmssKey_Init(key, heap, devId);
+    if (ret == 0) {
+        XMEMCPY(key->label, label, (size_t)labelLen);
+        key->labelLen = labelLen;
+    }
+
+    return ret;
+}
+#endif /* WOLF_PRIVATE_KEY_ID */
 
 /* Set the XMSS key parameter string.
  *
@@ -892,6 +1058,62 @@ int wc_XmssKey_SetParamStr(XmssKey* key, const char* str)
         key->oid = oid;
         key->is_xmssmt = is_xmssmt;
         key->state = WC_XMSS_STATE_PARMSET;
+    }
+
+    return ret;
+}
+
+/* Get the XMSS key parameter string for a key whose params have been set.
+ *
+ * Performs a reverse lookup from key->oid (and key->is_xmssmt) into the
+ * supported algorithm tables and returns a pointer to the static parameter
+ * string (e.g. "XMSS-SHA2_10_256" or "XMSSMT-SHA2_20/4_256"). The returned
+ * pointer remains valid for the lifetime of the program.
+ *
+ * @param [in]  key  XMSS key with params set via wc_XmssKey_SetParamStr.
+ * @param [out] str  On success, set to the algorithm name.
+ *
+ * @return  0 on success.
+ * @return  BAD_FUNC_ARG when a parameter is NULL.
+ * @return  BAD_STATE_E when params have not been set.
+ * @return  NOT_COMPILED_IN when the OID is not in the supported tables.
+ */
+int wc_XmssKey_GetParamStr(const XmssKey* key, const char** str)
+{
+    int          ret = NOT_COMPILED_IN;
+    unsigned int i;
+
+    if ((key == NULL) || (str == NULL)) {
+        return BAD_FUNC_ARG;
+    }
+    if (key->state != WC_XMSS_STATE_PARMSET &&
+        key->state != WC_XMSS_STATE_OK &&
+        key->state != WC_XMSS_STATE_VERIFYONLY &&
+        key->state != WC_XMSS_STATE_NOSIGS) {
+        return BAD_STATE_E;
+    }
+
+    if (key->is_xmssmt) {
+#if WOLFSSL_XMSS_MAX_HEIGHT >= 20
+        for (i = 0; i < WC_XMSSMT_ALG_LEN; i++) {
+            if (wc_xmssmt_alg[i].oid == key->oid) {
+                *str = wc_xmssmt_alg[i].str;
+                ret = 0;
+                break;
+            }
+        }
+#endif
+    }
+    else {
+#if WOLFSSL_XMSS_MIN_HEIGHT <= 20
+        for (i = 0; i < WC_XMSS_ALG_LEN; i++) {
+            if (wc_xmss_alg[i].oid == key->oid) {
+                *str = wc_xmss_alg[i].str;
+                ret = 0;
+                break;
+            }
+        }
+#endif
     }
 
     return ret;
@@ -1009,8 +1231,10 @@ int wc_XmssKey_SetContext(XmssKey* key, void* context)
 {
     int ret = 0;
 
-    /* Validate parameters. */
-    if ((key == NULL) || (context == NULL)) {
+    /* Validate parameters. NULL context is allowed: callers with stub
+     * read/write callbacks (e.g. HSM-backed keys whose private state lives
+     * in the device) have no meaningful context to pass. */
+    if (key == NULL) {
         ret = BAD_FUNC_ARG;
     }
     /* Setting context of an already working key is forbidden. */
@@ -1068,16 +1292,33 @@ int wc_XmssKey_MakeKey(XmssKey* key, WC_RNG* rng)
         WOLFSSL_MSG("error: XmssKey not ready for generation");
         ret = BAD_STATE_E;
     }
+#ifdef WOLF_CRYPTO_CB
+    /* HSM-backed keys skip the software write/context callbacks because the
+     * device owns the private state. On CRYPTOCB_UNAVAILABLE fall-through the
+     * software checks below still run. */
+    if ((ret == 0) && (key->devId != INVALID_DEVID)) {
+        ret = wc_CryptoCb_PqcStatefulSigKeyGen(WC_PQC_STATEFUL_SIG_TYPE_XMSS,
+            key, rng);
+        if (ret != WC_NO_ERR_TRACE(CRYPTOCB_UNAVAILABLE)) {
+            /* On success, mirror the software path's terminal state so
+             * subsequent Sign/Verify calls don't fail with BAD_STATE_E. */
+            if (ret == 0) {
+                key->state = WC_XMSS_STATE_OK;
+            }
+            return ret;
+        }
+        ret = 0; /* fall through to software path */
+    }
+#endif
+
     /* Ensure write callback available. */
     if ((ret == 0) && (key->write_private_key == NULL)) {
         WOLFSSL_MSG("error: XmssKey write callback is not set");
         ret = BAD_FUNC_ARG;
     }
-    /* Ensure read/write callback context available. */
-    if ((ret == 0) && (key->context == NULL)) {
-        WOLFSSL_MSG("error: XmssKey context is not set");
-        ret = BAD_FUNC_ARG;
-    }
+    /* Callback context is opaque to wolfCrypt and may legitimately be NULL
+     * (e.g. callbacks that read/write a static buffer or HSM-backed keys
+     * with stub callbacks); no check needed here. */
 
     if (ret == 0) {
         /* Allocate sk array. */
@@ -1193,17 +1434,23 @@ int wc_XmssKey_Reload(XmssKey* key)
         WOLFSSL_MSG("error: XmssKey not ready for reload");
         ret = BAD_STATE_E;
     }
+
+#ifdef WOLF_CRYPTO_CB
+    /* State for HSM-backed keys lives in the device; no software reload. */
+    if ((ret == 0) && (key->devId != INVALID_DEVID)) {
+        WOLFSSL_MSG("wc_XmssKey_Reload is a no-op for HSM-backed keys");
+        key->state = WC_XMSS_STATE_OK;
+        return 0;
+    }
+#endif
+
     /* Ensure read and write callbacks are available. */
     if ((ret == 0) && ((key->write_private_key == NULL) ||
             (key->read_private_key == NULL))) {
         WOLFSSL_MSG("error: XmssKey write/read callbacks are not set");
         ret = BAD_FUNC_ARG;
     }
-    /* Ensure read and write callback context is available. */
-    if ((ret == 0) && (key->context == NULL)) {
-        WOLFSSL_MSG("error: XmssKey context is not set");
-        ret = BAD_FUNC_ARG;
-    }
+    /* Callback context is opaque; NULL is allowed. */
 
     if (ret == 0) {
         /* Allocate sk array. */
@@ -1315,17 +1562,27 @@ int wc_XmssKey_Sign(XmssKey* key, byte* sig, word32* sigLen, const byte* msg,
         WOLFSSL_MSG("error: XMSS sig buffer too small");
         ret = BUFFER_E;
     }
+
+#ifdef WOLF_CRYPTO_CB
+    /* HSM-backed keys skip the software write/context callbacks because the
+     * device owns the private state. On CRYPTOCB_UNAVAILABLE fall-through the
+     * software checks below still run. */
+    if ((ret == 0) && (key->devId != INVALID_DEVID)) {
+        ret = wc_CryptoCb_PqcStatefulSigSign(msg, (word32)msgLen, sig, sigLen,
+            WC_PQC_STATEFUL_SIG_TYPE_XMSS, key);
+        if (ret != WC_NO_ERR_TRACE(CRYPTOCB_UNAVAILABLE))
+            return ret;
+        ret = 0; /* fall through to software path */
+    }
+#endif
+
     /* Check read and write callbacks available. */
     if ((ret == 0) && ((key->write_private_key == NULL) ||
             (key->read_private_key == NULL))) {
         WOLFSSL_MSG("error: XmssKey write/read callbacks are not set");
         ret = BAD_FUNC_ARG;
     }
-    /* Check read/write callback context available. */
-    if ((ret == 0) && (key->context == NULL)) {
-        WOLFSSL_MSG("error: XmssKey context is not set");
-        ret = BAD_FUNC_ARG;
-    }
+    /* Callback context is opaque; NULL is allowed. */
 
     if (ret == 0) {
         *sigLen = key->params->sig_len;
@@ -1344,14 +1601,36 @@ int wc_XmssKey_Sign(XmssKey* key, byte* sig, word32* sigLen, const byte* msg,
  */
 int  wc_XmssKey_SigsLeft(XmssKey* key)
 {
-    int ret;
+    int ret = 0;
 
     /* Validate parameter. */
-    if (key == NULL) {
-        ret = 0;
+    if (key == NULL)
+        return 0;
+
+#ifdef WOLF_CRYPTO_CB
+    if (key->devId != INVALID_DEVID) {
+        word32 sigsLeft = 0;
+        int cbRet = wc_CryptoCb_PqcStatefulSigSigsLeft(
+            WC_PQC_STATEFUL_SIG_TYPE_XMSS, key, &sigsLeft);
+        if (cbRet == 0) {
+            /* Clamp to int range; callers treat 0 as "exhausted". */
+            return (sigsLeft > (word32)0x7FFFFFFF)
+                ? 0x7FFFFFFF : (int)sigsLeft;
+        }
+        /* The device owns the private state; no safe software fallback
+         * exists because key->sk does not reflect HSM state. */
+        if (cbRet != WC_NO_ERR_TRACE(CRYPTOCB_UNAVAILABLE)) {
+            WOLFSSL_MSG("PqcStatefulSigSigsLeft returned an error");
+        }
+        else {
+            WOLFSSL_MSG("XMSS SigsLeft not supported by device");
+        }
+        return 0;
     }
+#endif
+
     /* Validate state. */
-    else if (key->state == WC_XMSS_STATE_NOSIGS) {
+    if (key->state == WC_XMSS_STATE_NOSIGS) {
         WOLFSSL_MSG("error: XMSS signatures exhausted");
         ret = 0;
     }
@@ -1412,9 +1691,14 @@ int wc_XmssKey_GetPubLen(const XmssKey* key, word32* len)
  * @return  BAD_FUNC_ARG when a key is NULL.
  * @return  Other negative when digest algorithm initialization failed.
  */
-int wc_XmssKey_ExportPub(XmssKey* keyDst, const XmssKey* keySrc)
+int wc_XmssKey_ExportPub_ex(XmssKey* keyDst, const XmssKey* keySrc,
+                            void* heap, int devId)
 {
     int ret = 0;
+
+#ifndef WOLF_CRYPTO_CB
+    (void)devId;
+#endif
 
     /* Validate parameters. */
     if ((keyDst == NULL) || (keySrc == NULL)) {
@@ -1432,14 +1716,23 @@ int wc_XmssKey_ExportPub(XmssKey* keyDst, const XmssKey* keySrc)
         keyDst->oid = keySrc->oid;
         keyDst->is_xmssmt = keySrc->is_xmssmt;
         keyDst->params = keySrc->params;
-        keyDst->heap = keySrc->heap;
-    }
-    if (ret == 0) {
+        keyDst->heap = heap;
+
+    #ifdef WOLF_CRYPTO_CB
+        keyDst->devId = devId;
+    #endif
+
         /* Mark keyDst as verify only, to prevent misuse. */
         keyDst->state = WC_XMSS_STATE_VERIFYONLY;
     }
 
-    return 0;
+    return ret;
+}
+
+int wc_XmssKey_ExportPub(XmssKey* keyDst, const XmssKey* keySrc)
+{
+    return wc_XmssKey_ExportPub_ex(keyDst, keySrc,
+        (keySrc != NULL) ? keySrc->heap : NULL, INVALID_DEVID);
 }
 
 /* Exports the raw XMSS public key buffer from key to out buffer.
@@ -1609,6 +1902,9 @@ int wc_XmssKey_Verify(XmssKey* key, const byte* sig, word32 sigLen,
     if ((key == NULL) || (sig == NULL) || (m == NULL)) {
         ret = BAD_FUNC_ARG;
     }
+    if ((ret == 0) && (mLen <= 0)) {
+        ret = BAD_FUNC_ARG;
+    }
     /* Validate state. */
     if ((ret == 0) && (key->state != WC_XMSS_STATE_OK) &&
             (key->state != WC_XMSS_STATE_VERIFYONLY)) {
@@ -1622,6 +1918,20 @@ int wc_XmssKey_Verify(XmssKey* key, const byte* sig, word32 sigLen,
         /* Signature buffer too small. */
         ret = BUFFER_E;
     }
+
+#ifdef WOLF_CRYPTO_CB
+    if ((ret == 0) && (key->devId != INVALID_DEVID)) {
+        int res = 0;
+        ret = wc_CryptoCb_PqcStatefulSigVerify(sig, sigLen, m, (word32)mLen,
+            &res, WC_PQC_STATEFUL_SIG_TYPE_XMSS, key);
+        if (ret != WC_NO_ERR_TRACE(CRYPTOCB_UNAVAILABLE)) {
+            if (ret == 0 && res != 1)
+                ret = SIG_VERIFY_E;
+            return ret;
+        }
+        ret = 0; /* fall through to software path */
+    }
+#endif
 
     if (ret == 0) {
         WC_DECLARE_VAR(state, XmssState, 1, 0);
