@@ -1881,9 +1881,9 @@ static WC_INLINE int Transform_Sha256_Len(wc_Sha256* sha256, const byte* data,
         }
 
         if (SHA256_UPDATE_REV_BYTES(&sha256->ctx)) {
-            ByteReverseWords(sha256->buffer, (word32*)data,
+            ByteReverseWords(sha256->buffer, (const word32*)data,
                 WC_SHA256_BLOCK_SIZE);
-            data = (unsigned char*)sha256->buffer;
+            data = (const unsigned char*)sha256->buffer;
         }
         ret = XTRANSFORM(sha256, data);
 
