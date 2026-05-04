@@ -971,6 +971,9 @@ int wc_curve25519_export_private_raw_ex(curve25519_key* key, byte* out,
     if (key == NULL || out == NULL || outLen == NULL)
         return BAD_FUNC_ARG;
 
+    if (!key->privSet)
+        return ECC_BAD_ARG_E;
+
     /* check size of outgoing buffer */
     if (*outLen < CURVE25519_KEYSIZE) {
         *outLen = CURVE25519_KEYSIZE;
