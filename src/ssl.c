@@ -17545,7 +17545,10 @@ int wolfSSL_set_alpn_protos(WOLFSSL* ssl,
     unsigned int ptIdx;
     unsigned int sz;
     unsigned int idx = 0;
-    int alpn_opt = WOLFSSL_ALPN_CONTINUE_ON_MISMATCH;
+    /* RFC 7301: a server that does not select any of the client's offered
+     * protocols MUST send no_application_protocol. Match that contract on
+     * the OpenSSL-compat surface rather than silently continuing. */
+    int alpn_opt = WOLFSSL_ALPN_FAILED_ON_MISMATCH;
     int ret;
 
     WOLFSSL_ENTER("wolfSSL_set_alpn_protos");
