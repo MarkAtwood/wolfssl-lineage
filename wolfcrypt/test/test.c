@@ -66406,6 +66406,52 @@ static wc_test_ret_t mp_test_mont(mp_int* a, mp_int* m, mp_int* n, mp_int* r, WC
 }
 #endif
 
+/* mp_cond_swap_ct resolves to sp_cond_swap_ct in SP-math builds, which is only
+ * compiled when HAVE_ECC && ECC_TIMING_RESISTANT && !WC_NO_CACHE_RESISTANT.
+ * Gate the test to match. */
+#if !defined(WOLFSSL_SP_MATH) && !defined(WOLFSSL_SP_MATH_ALL)
+    #define MP_TEST_COND_SWAP_AVAILABLE
+#elif defined(HAVE_ECC) && defined(ECC_TIMING_RESISTANT) && \
+      !defined(WC_NO_CACHE_RESISTANT)
+    #define MP_TEST_COND_SWAP_AVAILABLE
+#endif
+
+#ifdef MP_TEST_COND_SWAP_AVAILABLE
+static wc_test_ret_t mp_test_cond_swap(mp_int* a, mp_int* b)
+{
+    int ret;
+    int c;
+
+    mp_zero(a);
+    mp_zero(b);
+    ret = mp_set_int(a, 0x12345678);
+    if (ret != 0) return WC_TEST_RET_ENC_EC(ret);
+    ret = mp_set_int(b, 0x9abcdef0);
+    if (ret != 0) return WC_TEST_RET_ENC_EC(ret);
+    c = (a->used > b->used) ? a->used : b->used;
+
+    /* m == 0: no swap. */
+    ret = mp_cond_swap_ct(a, b, c, 0);
+    if (ret != 0) return WC_TEST_RET_ENC_EC(ret);
+    if (a->dp[0] != 0x12345678 || b->dp[0] != 0x9abcdef0)
+        return WC_TEST_RET_ENC_NC;
+
+    /* m == 1: swap. */
+    ret = mp_cond_swap_ct(a, b, c, 1);
+    if (ret != 0) return WC_TEST_RET_ENC_EC(ret);
+    if (a->dp[0] != 0x9abcdef0 || b->dp[0] != 0x12345678)
+        return WC_TEST_RET_ENC_NC;
+
+    /* m == 1 again: swap back. */
+    ret = mp_cond_swap_ct(a, b, c, 1);
+    if (ret != 0) return WC_TEST_RET_ENC_EC(ret);
+    if (a->dp[0] != 0x12345678 || b->dp[0] != 0x9abcdef0)
+        return WC_TEST_RET_ENC_NC;
+
+    return 0;
+}
+#endif /* MP_TEST_COND_SWAP_AVAILABLE */
+
 WOLFSSL_TEST_SUBROUTINE wc_test_ret_t mp_test(void)
 {
     WC_RNG rng;
@@ -66717,6 +66763,10 @@ WOLFSSL_TEST_SUBROUTINE wc_test_ret_t mp_test(void)
 #if defined(HAVE_ECC) || \
     (!defined(NO_RSA) && !defined(WOLFSSL_RSA_VERIFY_ONLY))
     if ((ret = mp_test_mont(a, b, r1, r2, &rng)) != 0)
+        goto done;
+#endif
+#ifdef MP_TEST_COND_SWAP_AVAILABLE
+    if ((ret = mp_test_cond_swap(a, b)) != 0)
         goto done;
 #endif
 
