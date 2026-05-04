@@ -2303,6 +2303,83 @@ static int test_wolfSSL_set_cipher_list_tls13_with_version(void)
     return EXPECT_RESULT();
 }
 
+static int test_wolfSSL_set_alpn_protos_default_fails(void)
+{
+    EXPECT_DECLS;
+#if defined(HAVE_ALPN) && defined(OPENSSL_EXTRA) && !defined(NO_BIO) && \
+    !defined(NO_WOLFSSL_CLIENT)
+    {
+        WOLFSSL_CTX* ctx = NULL;
+        WOLFSSL* ssl = NULL;
+        unsigned char p[] = { 6, 's', 'p', 'd', 'y', '/', '3' };
+        TLSX* ext = NULL;
+        ALPN* alpn = NULL;
+
+        ExpectNotNull(ctx = wolfSSL_CTX_new(wolfSSLv23_client_method()));
+        ExpectNotNull(ssl = wolfSSL_new(ctx));
+#ifdef WOLFSSL_ERROR_CODE_OPENSSL
+        ExpectIntEQ(wolfSSL_set_alpn_protos(ssl, p, sizeof(p)), 0);
+#else
+        ExpectIntEQ(wolfSSL_set_alpn_protos(ssl, p, sizeof(p)),
+            WOLFSSL_SUCCESS);
+#endif
+        if (ssl != NULL) {
+            ext = TLSX_Find(ssl->extensions,
+                TLSX_APPLICATION_LAYER_PROTOCOL);
+            ExpectNotNull(ext);
+            if (ext != NULL) {
+                alpn = (ALPN*)ext->data;
+                ExpectNotNull(alpn);
+                if (alpn != NULL) {
+                    ExpectTrue((alpn->options
+                        & WOLFSSL_ALPN_FAILED_ON_MISMATCH) != 0);
+                    ExpectIntEQ(alpn->options
+                        & WOLFSSL_ALPN_CONTINUE_ON_MISMATCH, 0);
+                }
+            }
+        }
+        wolfSSL_free(ssl);
+        wolfSSL_CTX_free(ctx);
+    }
+#if !defined(NO_WOLFSSL_SERVER) && !defined(WOLFSSL_NO_TLS12) && \
+    !defined(SINGLE_THREADED) && defined(HAVE_MANUAL_MEMIO_TESTS_DEPENDENCIES)
+    {
+        struct test_memio_ctx test_ctx;
+        WOLFSSL_CTX *ctx_c = NULL, *ctx_s = NULL;
+        WOLFSSL *ssl_c = NULL, *ssl_s = NULL;
+        unsigned char client_protos[] = { 6, 's', 'p', 'd', 'y', '/', '3' };
+        const char* server_protos = "http/2";
+        WOLFSSL_ALERT_HISTORY h;
+
+        XMEMSET(&test_ctx, 0, sizeof(test_ctx));
+        ExpectIntEQ(test_memio_setup(&test_ctx, &ctx_c, &ctx_s, &ssl_c, &ssl_s,
+            wolfTLSv1_2_client_method, wolfTLSv1_2_server_method), 0);
+
+#ifdef WOLFSSL_ERROR_CODE_OPENSSL
+        ExpectIntEQ(wolfSSL_set_alpn_protos(ssl_c, client_protos,
+            sizeof(client_protos)), 0);
+#else
+        ExpectIntEQ(wolfSSL_set_alpn_protos(ssl_c, client_protos,
+            sizeof(client_protos)), WOLFSSL_SUCCESS);
+#endif
+        ExpectIntEQ(wolfSSL_UseALPN(ssl_s, (char*)server_protos,
+            (word32)XSTRLEN(server_protos),
+            WOLFSSL_ALPN_FAILED_ON_MISMATCH), WOLFSSL_SUCCESS);
+
+        ExpectIntNE(test_memio_do_handshake(ssl_c, ssl_s, 10, NULL), 0);
+        ExpectIntEQ(wolfSSL_get_alert_history(ssl_s, &h), WOLFSSL_SUCCESS);
+        ExpectIntEQ(h.last_tx.code, no_application_protocol);
+        ExpectIntEQ(h.last_tx.level, alert_fatal);
+
+        wolfSSL_free(ssl_c);
+        wolfSSL_free(ssl_s);
+        wolfSSL_CTX_free(ctx_c);
+        wolfSSL_CTX_free(ctx_s);
+    }
+#endif
+#endif
+    return EXPECT_RESULT();
+}
 
 static int test_wolfSSL_CTX_use_certificate(void)
 {
@@ -39568,6 +39645,7 @@ TEST_CASE testCases[] = {
     TEST_DECL(test_wolfSSL_set_cipher_list_tls13_keeps_tls12),
     TEST_DECL(test_wolfSSL_set_cipher_list_tls12_with_version),
     TEST_DECL(test_wolfSSL_set_cipher_list_tls13_with_version),
+    TEST_DECL(test_wolfSSL_set_alpn_protos_default_fails),
     TEST_DECL(test_wolfSSL_CTX_use_certificate),
     TEST_DECL(test_wolfSSL_CTX_use_certificate_file),
     TEST_DECL(test_wolfSSL_CTX_use_certificate_buffer),
