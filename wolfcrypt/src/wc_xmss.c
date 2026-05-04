@@ -751,13 +751,15 @@ static WC_INLINE int wc_xmsskey_signupdate(XmssKey* key, byte* sig,
                  */
             #ifndef WOLFSSL_WC_XMSS_SMALL
                 if (key->is_xmssmt) {
-                    ret = wc_xmssmt_sign(state, msg, msgLen, key->sk, sig);
+                    ret = wc_xmssmt_sign(state, msg, (word32)msgLen, key->sk,
+                        sig);
                 }
                 else {
-                    ret = wc_xmss_sign(state, msg, msgLen, key->sk, sig);
+                    ret = wc_xmss_sign(state, msg, (word32)msgLen, key->sk,
+                        sig);
                 }
             #else
-                ret = wc_xmssmt_sign(state, msg, msgLen, key->sk, sig);
+                ret = wc_xmssmt_sign(state, msg, (word32)msgLen, key->sk, sig);
             #endif
                 if (ret == WC_NO_ERR_TRACE(KEY_EXHAUSTED_E)) {
                     /* Signature space exhausted. */
@@ -1085,7 +1087,7 @@ int wc_XmssKey_MakeKey(XmssKey* key, WC_RNG* rng)
     }
 #ifdef WOLFSSL_SMALL_STACK
     if (ret == 0) {
-        seed = (unsigned char*)XMALLOC(3 * key->params->n, key->heap,
+        seed = (unsigned char*)XMALLOC(3U * key->params->n, key->heap,
             DYNAMIC_TYPE_TMP_BUFFER);
         if (seed == NULL) {
             ret = MEMORY_E;
@@ -1095,7 +1097,7 @@ int wc_XmssKey_MakeKey(XmssKey* key, WC_RNG* rng)
 
     if (ret == 0) {
         /* Generate three random seeds. */
-        ret = wc_RNG_GenerateBlock(rng, seed, 3 * key->params->n);
+        ret = wc_RNG_GenerateBlock(rng, seed, 3U * key->params->n);
     }
 
     if (ret == 0) {
@@ -1476,10 +1478,11 @@ int wc_XmssKey_ExportPubRaw(const XmssKey* key, byte* out, word32* outLen)
     }
 
     if (ret == 0) {
-        int i = 0;
+        word32 i = 0;
         /* First copy the oid into buffer. */
         for (; i < XMSS_OID_LEN; i++) {
-            out[XMSS_OID_LEN - i - 1] = (key->oid >> (8 * i)) & 0xFF;
+            out[XMSS_OID_LEN - i - 1U] =
+                (byte)((key->oid >> (8U * i)) & 0xFFU);
         }
         /* Copy the public key data into buffer after oid. */
         XMEMCPY(out + XMSS_OID_LEN, key->pk, pubLen - XMSS_OID_LEN);
@@ -1606,7 +1609,7 @@ int wc_XmssKey_Verify(XmssKey* key, const byte* sig, word32 sigLen,
     int            ret = 0;
 
     /* Validate parameters. */
-    if ((key == NULL) || (sig == NULL) || (m == NULL)) {
+    if ((key == NULL) || (sig == NULL) || (m == NULL) || (mLen <= 0)) {
         ret = BAD_FUNC_ARG;
     }
     /* Validate state. */
@@ -1634,7 +1637,7 @@ int wc_XmssKey_Verify(XmssKey* key, const byte* sig, word32 sigLen,
             ret = wc_xmss_state_init(state, key->params, key->heap);
             if (ret == 0) {
                 /* Verify using either XMSS^MT function as it works for both. */
-                ret = wc_xmssmt_verify(state, m, mLen, sig, key->pk);
+                ret = wc_xmssmt_verify(state, m, (word32)mLen, sig, key->pk);
                 /* Free state after use. */
                 wc_xmss_state_free(state);
             }

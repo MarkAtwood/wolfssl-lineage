@@ -178,43 +178,45 @@ typedef enum wc_XmssRc (*wc_xmss_read_private_key_cb)(byte* priv, word32 privSz,
 
 #if (defined(WC_XMSS_SHA512) || defined(WC_XMSS_SHAKE256)) && \
         (WOLFSSL_WC_XMSS_MAX_HASH_SIZE >= 512)
-    #define WC_XMSS_MAX_N               64
-    #define WC_XMSS_MAX_PADDING_LEN     64
+    #define WC_XMSS_MAX_N               64U
+    #define WC_XMSS_MAX_PADDING_LEN     64U
 #else
-    #define WC_XMSS_MAX_N               32
-    #define WC_XMSS_MAX_PADDING_LEN     32
+    #define WC_XMSS_MAX_N               32U
+    #define WC_XMSS_MAX_PADDING_LEN     32U
 #endif
 #define WC_XMSS_MAX_MSG_PRE_LEN     \
-    (WC_XMSS_MAX_PADDING_LEN + 3 * WC_XMSS_MAX_N)
-#define WC_XMSS_MAX_TREE_HEIGHT     20
-#define WC_XMSS_MAX_CSUM_BYTES       4
-#define WC_XMSS_MAX_WOTS_LEN        (8 * WC_XMSS_MAX_N / 4 + 3)
+    (WC_XMSS_MAX_PADDING_LEN + 3U * WC_XMSS_MAX_N)
+#define WC_XMSS_MAX_TREE_HEIGHT     20U
+#define WC_XMSS_MAX_CSUM_BYTES       4U
+#define WC_XMSS_MAX_WOTS_LEN        (8U * WC_XMSS_MAX_N / 4U + 3U)
 #define WC_XMSS_MAX_WOTS_SIG_LEN    (WC_XMSS_MAX_WOTS_LEN * WC_XMSS_MAX_N)
 #define WC_XMSS_MAX_STACK_LEN       \
-    ((WC_XMSS_MAX_TREE_HEIGHT + 1) * WC_XMSS_MAX_N)
-#define WC_XMSS_MAX_D               12
-#define WC_XMSS_MAX_BDS_STATES      (2 * WC_XMSS_MAX_D - 1)
+    ((WC_XMSS_MAX_TREE_HEIGHT + 1U) * WC_XMSS_MAX_N)
+#define WC_XMSS_MAX_D               12U
+#define WC_XMSS_MAX_BDS_STATES      (2U * WC_XMSS_MAX_D - 1U)
 #define WC_XMSS_MAX_TREE_HASH       \
-    ((2 * WC_XMSS_MAX_D - 1) * WC_XMSS_MAX_TREE_HEIGHT)
-#define WC_XMSS_MAX_BDS_K           0
+    ((2U * WC_XMSS_MAX_D - 1U) * WC_XMSS_MAX_TREE_HEIGHT)
+#define WC_XMSS_MAX_BDS_K           0U
 
-#define WC_XMSS_ADDR_LEN            32
+#define WC_XMSS_ADDR_LEN            32U
 
 #define WC_XMSS_HASH_PRF_MAX_DATA_LEN               \
-    (WC_XMSS_MAX_PADDING_LEN + 2 * WC_XMSS_MAX_N + WC_XMSS_ADDR_LEN)
+    (WC_XMSS_MAX_PADDING_LEN + 2U * WC_XMSS_MAX_N + WC_XMSS_ADDR_LEN)
 #define WC_XMSS_HASH_MAX_DATA_LEN                   \
-    (WC_XMSS_MAX_PADDING_LEN + 3 * WC_XMSS_MAX_N)
+    (WC_XMSS_MAX_PADDING_LEN + 3U * WC_XMSS_MAX_N)
 
 
-#define WC_XMSS_SHA256_N            32
-#define WC_XMSS_SHA256_PADDING_LEN  32
-#define WC_XMSS_SHA256_WOTS_LEN     67
+#define WC_XMSS_SHA256_N            32U
+#define WC_XMSS_SHA256_PADDING_LEN  32U
+#define WC_XMSS_SHA256_WOTS_LEN     67U
 
-#define XMSS_OID_LEN                   4
+#define XMSS_OID_LEN                   4U
 
 #define XMSS_MAX_HASH_LEN              WC_SHA256_DIGEST_SIZE
 
-#define XMSS_RETAIN_LEN(k, n)   ((!!(k)) * ((1 << (k)) - (k) - 1) * (n))
+#define XMSS_RETAIN_LEN(k, n)   \
+    (((word32)((k) != 0)) * (((word32)1U << (k)) - (word32)(k) - 1U) *  \
+     (word32)(n))
 
 /* XMMS Algorithm OIDs
  * Note: values are used in mathematical calculations in OID to parames. */
