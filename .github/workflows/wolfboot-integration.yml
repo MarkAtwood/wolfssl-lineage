@@ -27,15 +27,25 @@ jobs:
       - name: Checkout wolfSSL
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
-      - name: Clone wolfBoot and link tested wolfSSL
+      - name: Clone wolfBoot and stage tested wolfSSL
         run: |
           set -euxo pipefail
 
           git clone --depth 1 --branch "${WOLFBOOT_BRANCH}" "${WOLFBOOT_REPO}" wolfboot
+
+          # Materialize the wolfSSL checkout as real files under
+          # wolfboot/lib/wolfssl. A symlink to ${GITHUB_WORKSPACE} would
+          # resolve on the host but breaks inside the Renode docker
+          # container, which only bind-mounts the wolfboot tree. Exclude
+          # the cloned wolfboot subdir (self-recursion) and .git/ (size).
           rm -rf wolfboot/lib/wolfssl
-          ln -s "${GITHUB_WORKSPACE}" wolfboot/lib/wolfssl
-          test -L wolfboot/lib/wolfssl
-          test "$(realpath wolfboot/lib/wolfssl)" = "${GITHUB_WORKSPACE}"
+          mkdir -p wolfboot/lib/wolfssl
+          rsync -a \
+            --exclude=/wolfboot/ \
+            --exclude=/.git/ \
+            "${GITHUB_WORKSPACE}/" wolfboot/lib/wolfssl/
+          test -f wolfboot/lib/wolfssl/wolfssl/wolfcrypt/settings.h
+          test -f wolfboot/lib/wolfssl/wolfcrypt/src/asn.c
 
       - name: Run wolfBoot keytools integration flow
         working-directory: wolfboot
@@ -118,15 +128,25 @@ jobs:
       - name: Checkout wolfSSL
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
-      - name: Clone wolfBoot and link tested wolfSSL
+      - name: Clone wolfBoot and stage tested wolfSSL
         run: |
           set -euxo pipefail
 
           git clone --depth 1 --branch "${WOLFBOOT_BRANCH}" "${WOLFBOOT_REPO}" wolfboot
+
+          # Materialize the wolfSSL checkout as real files under
+          # wolfboot/lib/wolfssl. A symlink to ${GITHUB_WORKSPACE} would
+          # resolve on the host but breaks inside the Renode docker
+          # container, which only bind-mounts the wolfboot tree. Exclude
+          # the cloned wolfboot subdir (self-recursion) and .git/ (size).
           rm -rf wolfboot/lib/wolfssl
-          ln -s "${GITHUB_WORKSPACE}" wolfboot/lib/wolfssl
-          test -L wolfboot/lib/wolfssl
-          test "$(realpath wolfboot/lib/wolfssl)" = "${GITHUB_WORKSPACE}"
+          mkdir -p wolfboot/lib/wolfssl
+          rsync -a \
+            --exclude=/wolfboot/ \
+            --exclude=/.git/ \
+            "${GITHUB_WORKSPACE}/" wolfboot/lib/wolfssl/
+          test -f wolfboot/lib/wolfssl/wolfssl/wolfcrypt/settings.h
+          test -f wolfboot/lib/wolfssl/wolfcrypt/src/asn.c
 
       - name: Build and exercise host-side smoke test
         working-directory: wolfboot
@@ -186,15 +206,25 @@ jobs:
       - name: Checkout wolfSSL
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
-      - name: Clone wolfBoot and link tested wolfSSL
+      - name: Clone wolfBoot and stage tested wolfSSL
         run: |
           set -euxo pipefail
 
           git clone --depth 1 --branch "${WOLFBOOT_BRANCH}" "${WOLFBOOT_REPO}" wolfboot
+
+          # Materialize the wolfSSL checkout as real files under
+          # wolfboot/lib/wolfssl. A symlink to ${GITHUB_WORKSPACE} would
+          # resolve on the host but breaks inside the Renode docker
+          # container, which only bind-mounts the wolfboot tree. Exclude
+          # the cloned wolfboot subdir (self-recursion) and .git/ (size).
           rm -rf wolfboot/lib/wolfssl
-          ln -s "${GITHUB_WORKSPACE}" wolfboot/lib/wolfssl
-          test -L wolfboot/lib/wolfssl
-          test "$(realpath wolfboot/lib/wolfssl)" = "${GITHUB_WORKSPACE}"
+          mkdir -p wolfboot/lib/wolfssl
+          rsync -a \
+            --exclude=/wolfboot/ \
+            --exclude=/.git/ \
+            "${GITHUB_WORKSPACE}/" wolfboot/lib/wolfssl/
+          test -f wolfboot/lib/wolfssl/wolfssl/wolfcrypt/settings.h
+          test -f wolfboot/lib/wolfssl/wolfcrypt/src/asn.c
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -302,15 +332,25 @@ jobs:
       - name: Checkout wolfSSL
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
-      - name: Clone wolfBoot and link tested wolfSSL
+      - name: Clone wolfBoot and stage tested wolfSSL
         run: |
           set -euxo pipefail
 
           git clone --depth 1 --branch "${WOLFBOOT_BRANCH}" "${WOLFBOOT_REPO}" wolfboot
+
+          # Materialize the wolfSSL checkout as real files under
+          # wolfboot/lib/wolfssl. A symlink to ${GITHUB_WORKSPACE} would
+          # resolve on the host but breaks inside the Renode docker
+          # container, which only bind-mounts the wolfboot tree. Exclude
+          # the cloned wolfboot subdir (self-recursion) and .git/ (size).
           rm -rf wolfboot/lib/wolfssl
-          ln -s "${GITHUB_WORKSPACE}" wolfboot/lib/wolfssl
-          test -L wolfboot/lib/wolfssl
-          test "$(realpath wolfboot/lib/wolfssl)" = "${GITHUB_WORKSPACE}"
+          mkdir -p wolfboot/lib/wolfssl
+          rsync -a \
+            --exclude=/wolfboot/ \
+            --exclude=/.git/ \
+            "${GITHUB_WORKSPACE}/" wolfboot/lib/wolfssl/
+          test -f wolfboot/lib/wolfssl/wolfssl/wolfcrypt/settings.h
+          test -f wolfboot/lib/wolfssl/wolfcrypt/src/asn.c
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -400,15 +440,25 @@ jobs:
       - name: Checkout wolfSSL
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
-      - name: Clone wolfBoot and link tested wolfSSL
+      - name: Clone wolfBoot and stage tested wolfSSL
         run: |
           set -euxo pipefail
 
           git clone --depth 1 --branch "${WOLFBOOT_BRANCH}" "${WOLFBOOT_REPO}" wolfboot
+
+          # Materialize the wolfSSL checkout as real files under
+          # wolfboot/lib/wolfssl. A symlink to ${GITHUB_WORKSPACE} would
+          # resolve on the host but breaks inside the Renode docker
+          # container, which only bind-mounts the wolfboot tree. Exclude
+          # the cloned wolfboot subdir (self-recursion) and .git/ (size).
           rm -rf wolfboot/lib/wolfssl
-          ln -s "${GITHUB_WORKSPACE}" wolfboot/lib/wolfssl
-          test -L wolfboot/lib/wolfssl
-          test "$(realpath wolfboot/lib/wolfssl)" = "${GITHUB_WORKSPACE}"
+          mkdir -p wolfboot/lib/wolfssl
+          rsync -a \
+            --exclude=/wolfboot/ \
+            --exclude=/.git/ \
+            "${GITHUB_WORKSPACE}/" wolfboot/lib/wolfssl/
+          test -f wolfboot/lib/wolfssl/wolfssl/wolfcrypt/settings.h
+          test -f wolfboot/lib/wolfssl/wolfcrypt/src/asn.c
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
