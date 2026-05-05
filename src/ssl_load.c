@@ -825,16 +825,57 @@ static int ProcessBufferTryDecodeFalcon(WOLFSSL_CTX* ctx, WOLFSSL* ssl,
     /* Initialize Falcon key. */
     ret = wc_falcon_init(key);
     if (ret == 0) {
-        /* Set up key to parse the format specified. */
-        if ((*keyFormat == FALCON_LEVEL1k) || ((*keyFormat == 0) &&
-                ((der->length == FALCON_LEVEL1_KEY_SIZE) ||
-                 (der->length == FALCON_LEVEL1_PRV_KEY_SIZE)))) {
-            ret = wc_falcon_set_level(key, 1);
+        byte level = 0;
+        word32 idx;
+
+        if (*keyFormat == FALCON_LEVEL1k) {
+            level = 1;
         }
-        else if ((*keyFormat == FALCON_LEVEL5k) || ((*keyFormat == 0) &&
-                 ((der->length == FALCON_LEVEL5_KEY_SIZE) ||
-                  (der->length == FALCON_LEVEL5_PRV_KEY_SIZE)))) {
-            ret = wc_falcon_set_level(key, 5);
+        else if (*keyFormat == FALCON_LEVEL5k) {
+            level = 5;
+        }
+
+        if (level != 0) {
+            /* Caller told us the level via the OID sum. */
+            ret = wc_falcon_set_level(key, level);
+            if (ret == 0) {
+                idx = 0;
+                ret = wc_Falcon_PrivateKeyDecode(der->buffer, &idx, key,
+                                                  der->length);
+            }
+        }
+        else if (*keyFormat == 0) {
+            /* Key format unknown. Try both levels; the expected OID inside
+             * wc_Falcon_PrivateKeyDecode rejects non-matching DER. Re-init
+             * between attempts so a partial first decode can't leave stale
+             * bytes in key->k / key->p. */
+            idx = 0;
+            if (wc_falcon_set_level(key, 1) == 0 &&
+                wc_Falcon_PrivateKeyDecode(der->buffer, &idx, key,
+                                           der->length) == 0) {
+                level = 1;
+            }
+            else {
+                wc_falcon_free(key);
+                if (wc_falcon_init(key) != 0) {
+                    XFREE(key, heap, DYNAMIC_TYPE_FALCON);
+                    return MEMORY_E;
+                }
+                idx = 0;
+                if (wc_falcon_set_level(key, 5) == 0 &&
+                    wc_Falcon_PrivateKeyDecode(der->buffer, &idx, key,
+                                               der->length) == 0) {
+                    level = 5;
+                }
+            }
+            if (level == 0) {
+                /* Not a Falcon key; let caller try another algorithm. */
+                WOLFSSL_MSG("Not a Falcon key");
+                wc_falcon_free(key);
+                XFREE(key, heap, DYNAMIC_TYPE_FALCON);
+                return 0;
+            }
+            ret = 0;
         }
         else {
             wc_falcon_free(key);
@@ -843,38 +884,27 @@ static int ProcessBufferTryDecodeFalcon(WOLFSSL_CTX* ctx, WOLFSSL* ssl,
     }
 
     if (ret == 0) {
-        /* Decode as a Falcon private key. */
-        ret = wc_falcon_import_private_only(der->buffer, der->length, key);
-        if (ret == 0) {
-            /* Get the minimum Falcon key size from SSL or SSL context object.
-             */
-            int minKeySz = ssl ? ssl->options.minFalconKeySz :
-                                 ctx->minFalconKeySz;
+        /* Get the minimum Falcon key size from SSL or SSL context object. */
+        int minKeySz = ssl ? ssl->options.minFalconKeySz :
+                             ctx->minFalconKeySz;
 
-            /* Format is known. */
-            if (*keyFormat == FALCON_LEVEL1k) {
-                *keyType = falcon_level1_sa_algo;
-                *keySize = FALCON_LEVEL1_KEY_SIZE;
-            }
-            else {
-                *keyType = falcon_level5_sa_algo;
-                *keySize = FALCON_LEVEL5_KEY_SIZE;
-            }
-
-            /* Check that the size of the Falcon key is enough. */
-            if (*keySize < minKeySz) {
-                WOLFSSL_MSG("Falcon private key too small");
-                ret = FALCON_KEY_SIZE_E;
-            }
+        if (key->level == 1) {
+            *keyFormat = FALCON_LEVEL1k;
+            *keyType = falcon_level1_sa_algo;
+            *keySize = FALCON_LEVEL1_KEY_SIZE;
         }
-        /* Not a Falcon key but check whether we know what it is. */
-        else if (*keyFormat == 0) {
-            WOLFSSL_MSG("Not a Falcon key");
-            /* Format unknown so keep trying. */
-            ret = 0;
+        else {
+            *keyFormat = FALCON_LEVEL5k;
+            *keyType = falcon_level5_sa_algo;
+            *keySize = FALCON_LEVEL5_KEY_SIZE;
         }
 
-        /* Free dynamically allocated data in key. */
+        /* Check that the size of the Falcon key is enough. */
+        if (*keySize < minKeySz) {
+            WOLFSSL_MSG("Falcon private key too small");
+            ret = FALCON_KEY_SIZE_E;
+        }
+
         wc_falcon_free(key);
     }
     else if ((ret == WC_NO_ERR_TRACE(ALGO_ID_E)) && (*keyFormat == 0)) {
@@ -4159,6 +4189,10 @@ int wolfSSL_CTX_use_PrivateKey_Id(WOLFSSL_CTX* ctx, const unsigned char* id,
 
     WOLFSSL_ENTER("wolfSSL_CTX_use_PrivateKey_Id");
 
+    if (ctx == NULL || id == NULL || sz < 0) {
+        return 0;
+    }
+
     /* Dispose of old private key and allocate and copy in id. */
     FreeDer(&ctx->privateKey);
     if (AllocCopyDer(&ctx->privateKey, id, (word32)sz, PRIVATEKEY_TYPE,
@@ -4227,9 +4261,15 @@ int wolfSSL_CTX_use_PrivateKey_Label(WOLFSSL_CTX* ctx, const char* label,
     int devId)
 {
     int ret = 1;
-    word32 sz = (word32)XSTRLEN(label) + 1;
+    word32 sz;
 
     WOLFSSL_ENTER("wolfSSL_CTX_use_PrivateKey_Label");
+
+    if (ctx == NULL || label == NULL) {
+        return 0;
+    }
+
+    sz = (word32)XSTRLEN(label) + 1;
 
     /* Dispose of old private key and allocate and copy in label. */
     FreeDer(&ctx->privateKey);
@@ -4268,7 +4308,7 @@ int wolfSSL_CTX_use_AltPrivateKey_Id(WOLFSSL_CTX* ctx, const unsigned char* id,
 
     WOLFSSL_ENTER("wolfSSL_CTX_use_AltPrivateKey_Id");
 
-    if ((ctx == NULL) || (id == NULL)) {
+    if ((ctx == NULL) || (id == NULL) || (sz < 0)) {
         ret = 0;
     }
 
@@ -4280,7 +4320,7 @@ int wolfSSL_CTX_use_AltPrivateKey_Id(WOLFSSL_CTX* ctx, const unsigned char* id,
         }
     }
     if (ret == 1) {
-        XMEMCPY(ctx->altPrivateKey->buffer, id, sz);
+        XMEMCPY(ctx->altPrivateKey->buffer, id, (word32)sz);
         ctx->altPrivateKeyId = 1;
         if (devId != INVALID_DEVID) {
             ctx->altPrivateKeyDevId = devId;
@@ -4561,6 +4601,10 @@ int wolfSSL_use_PrivateKey_Id(WOLFSSL* ssl, const unsigned char* id,
 {
     int ret = 1;
 
+    if (ssl == NULL || id == NULL || sz < 0) {
+        return 0;
+    }
+
     /* Dispose of old private key if owned and allocate and copy in id. */
     if (ssl->buffers.weOwnKey) {
         FreeDer(&ssl->buffers.key);
@@ -4629,7 +4673,13 @@ int wolfSSL_use_PrivateKey_Id_ex(WOLFSSL* ssl, const unsigned char* id,
 int wolfSSL_use_PrivateKey_Label(WOLFSSL* ssl, const char* label, int devId)
 {
     int ret = 1;
-    word32 sz = (word32)XSTRLEN(label) + 1;
+    word32 sz;
+
+    if (ssl == NULL || label == NULL) {
+        return 0;
+    }
+
+    sz = (word32)XSTRLEN(label) + 1;
 
     /* Dispose of old private key if owned and allocate and copy in label. */
     if (ssl->buffers.weOwnKey) {
@@ -4672,7 +4722,7 @@ int wolfSSL_use_AltPrivateKey_Id(WOLFSSL* ssl, const unsigned char* id, long sz,
 {
     int ret = 1;
 
-    if ((ssl == NULL) || (id == NULL)) {
+    if ((ssl == NULL) || (id == NULL) || (sz < 0)) {
         ret = 0;
     }
 
@@ -4689,7 +4739,7 @@ int wolfSSL_use_AltPrivateKey_Id(WOLFSSL* ssl, const unsigned char* id, long sz,
         }
     }
     if (ret == 1) {
-        XMEMCPY(ssl->buffers.altKey->buffer, id, sz);
+        XMEMCPY(ssl->buffers.altKey->buffer, id, (word32)sz);
         ssl->buffers.weOwnAltKey = 1;
         ssl->buffers.altKeyId = 1;
         if (devId != INVALID_DEVID) {
@@ -5257,6 +5307,18 @@ int wolfSSL_CTX_use_PrivateKey(WOLFSSL_CTX *ctx, WOLFSSL_EVP_PKEY *pkey)
             ret = ECC_populate_EVP_PKEY(pkey, pkey->ecc);
             break;
     #endif
+    #ifdef HAVE_ED25519
+        case WC_EVP_PKEY_ED25519:
+            /* DER is already stored in pkey->pkey.ptr by d2i_evp_pkey. */
+            WOLFSSL_MSG("populating Ed25519 key");
+            break;
+    #endif
+    #ifdef HAVE_ED448
+        case WC_EVP_PKEY_ED448:
+            /* DER is already stored in pkey->pkey.ptr by d2i_evp_pkey. */
+            WOLFSSL_MSG("populating Ed448 key");
+            break;
+    #endif
         default:
             ret = 0;
         }
@@ -5365,6 +5427,9 @@ int wolfSSL_CTX_use_RSAPrivateKey(WOLFSSL_CTX* ctx, WOLFSSL_RSA* rsa)
     }
 
     /* Dispos of dynamically allocated data. */
+    if (der != NULL) {
+        ForceZero(der, (word32)derSize);
+    }
     XFREE(der, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     return ret;
 }
@@ -5662,9 +5727,14 @@ static int wolfssl_ctx_set_tmp_dh(WOLFSSL_CTX* ctx, unsigned char* p, int pSz,
 
     WOLFSSL_ENTER("wolfSSL_CTX_SetTmpDH");
 
+    if ((ctx == NULL) || (p == NULL) || (g == NULL))
+        ret = BAD_FUNC_ARG;
+
     /* Check the size of the prime meets the requirements of the SSL context. */
-    if (((word16)pSz < ctx->minDhKeySz) || ((word16)pSz > ctx->maxDhKeySz)) {
-        ret = DH_KEY_SIZE_E;
+    if (ret == 1) {
+        if (((word16)pSz < ctx->minDhKeySz) || ((word16)pSz > ctx->maxDhKeySz)) {
+            ret = DH_KEY_SIZE_E;
+        }
     }
 
 #if !defined(WOLFSSL_OLD_PRIME_CHECK) && !defined(HAVE_FIPS) && \

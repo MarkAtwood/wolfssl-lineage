@@ -133,6 +133,21 @@ extern "C" {
     #define NO_SESSION_CACHE /* disable session resumption */
 #endif
 
+/* Session export (external session cache) */
+#if defined(CONFIG_WOLFSSL_SESSION_EXPORT)
+    #define HAVE_EXT_CACHE
+#endif
+
+/* Keep peer certificate after handshake */
+#if defined(CONFIG_WOLFSSL_KEEP_PEER_CERT)
+    #define KEEP_PEER_CERT
+#endif
+
+/* Always invoke verify callback (on success as well as failure) */
+#if defined(CONFIG_WOLFSSL_ALWAYS_VERIFY_CB)
+    #define WOLFSSL_ALWAYS_VERIFY_CB
+#endif
+
 /* DTLS */
 #if defined(CONFIG_WOLFSSL_DTLS)
     #define WOLFSSL_DTLS
@@ -337,7 +352,6 @@ extern "C" {
 /* PQC ML-KEM */
 #if defined(CONFIG_WOLFSSL_MLKEM)
     #define WOLFSSL_HAVE_MLKEM
-    #define WOLFSSL_WC_MLKEM
     #define WOLFSSL_MLKEM_NO_LARGE_CODE
     #define WOLFSSL_MLKEM_SMALL
     #define WOLFSSL_MLKEM_MAKEKEY_SMALL_MEM

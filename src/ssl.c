@@ -118,9 +118,6 @@
     #if defined(HAVE_DILITHIUM)
         #include <wolfssl/wolfcrypt/dilithium.h>
     #endif /* HAVE_DILITHIUM */
-    #if defined(HAVE_SPHINCS)
-        #include <wolfssl/wolfcrypt/sphincs.h>
-    #endif /* HAVE_SPHINCS */
     #if defined(OPENSSL_ALL) || defined(HAVE_STUNNEL)
         #ifdef HAVE_OCSP
             #include <wolfssl/openssl/ocsp.h>
@@ -3231,26 +3228,23 @@ static int isValidCurveGroup(word16 name)
         case WOLFSSL_ML_KEM_768:
         case WOLFSSL_ML_KEM_1024:
     #endif /* !WOLFSSL_TLS_NO_MLKEM_STANDALONE */
-    #if defined(WOLFSSL_WC_MLKEM) || defined(HAVE_LIBOQS)
-        #ifdef WOLFSSL_PQC_HYBRIDS
+    #ifdef WOLFSSL_PQC_HYBRIDS
         case WOLFSSL_SECP384R1MLKEM1024:
         case WOLFSSL_X25519MLKEM768:
         case WOLFSSL_SECP256R1MLKEM768:
-        #endif /* WOLFSSL_PQC_HYBRIDS */
-        #ifdef WOLFSSL_EXTRA_PQC_HYBRIDS
+    #endif /* WOLFSSL_PQC_HYBRIDS */
+    #ifdef WOLFSSL_EXTRA_PQC_HYBRIDS
         case WOLFSSL_SECP256R1MLKEM512:
         case WOLFSSL_SECP384R1MLKEM768:
         case WOLFSSL_SECP521R1MLKEM1024:
         case WOLFSSL_X25519MLKEM512:
         case WOLFSSL_X448MLKEM768:
-        #endif /* WOLFSSL_EXTRA_PQC_HYBRIDS */
-    #endif
+    #endif /* WOLFSSL_EXTRA_PQC_HYBRIDS */
 #endif /* !WOLFSSL_NO_ML_KEM */
 #ifdef WOLFSSL_MLKEM_KYBER
         case WOLFSSL_KYBER_LEVEL1:
         case WOLFSSL_KYBER_LEVEL3:
         case WOLFSSL_KYBER_LEVEL5:
-    #if defined(WOLFSSL_WC_MLKEM) || defined(HAVE_LIBOQS)
         case WOLFSSL_P256_KYBER_LEVEL1:
         case WOLFSSL_P384_KYBER_LEVEL3:
         case WOLFSSL_P521_KYBER_LEVEL5:
@@ -3258,7 +3252,6 @@ static int isValidCurveGroup(word16 name)
         case WOLFSSL_X448_KYBER_LEVEL3:
         case WOLFSSL_X25519_KYBER_LEVEL3:
         case WOLFSSL_P256_KYBER_LEVEL3:
-    #endif
 #endif /* WOLFSSL_MLKEM_KYBER */
 #endif
             return 1;
@@ -10072,6 +10065,10 @@ size_t wolfSSL_get_client_random(const WOLFSSL* ssl, unsigned char* out,
     #if defined(HAVE_TLS_EXTENSIONS) && !defined(NO_TLS)
         TLSX_FreeAll(ssl->extensions, ssl->heap);
         ssl->extensions = NULL;
+      #if defined(HAVE_SECURE_RENEGOTIATION) \
+       || defined(HAVE_SERVER_RENEGOTIATION_INFO)
+        ssl->secure_renegotiation = NULL;
+      #endif
     #endif
 
         if (ssl->keys.encryptionOn) {
@@ -10888,7 +10885,7 @@ const WOLFSSL_CIPHER* wolfSSL_get_cipher_by_value(word16 value)
 
 
 #if defined(HAVE_ECC) || defined(HAVE_CURVE25519) || defined(HAVE_CURVE448) || \
-                                                                 !defined(NO_DH)
+    !defined(NO_DH) || (defined(WOLFSSL_TLS13) && defined(WOLFSSL_HAVE_MLKEM))
 #ifdef HAVE_FFDHE
 static const char* wolfssl_ffdhe_name(word16 group)
 {
@@ -10935,7 +10932,6 @@ const char* wolfSSL_get_curve_name(WOLFSSL* ssl)
     if (IsAtLeastTLSv1_3(ssl->version)) {
         switch (ssl->namedGroup) {
 #ifndef WOLFSSL_NO_ML_KEM
-#if defined(WOLFSSL_WC_MLKEM)
     #ifndef WOLFSSL_NO_ML_KEM_512
         case WOLFSSL_ML_KEM_512:
             return "ML_KEM_512";
@@ -10992,37 +10988,8 @@ const char* wolfSSL_get_curve_name(WOLFSSL* ssl)
             return "SecP521r1MLKEM1024";
         #endif /* WOLFSSL_EXTRA_PQC_HYBRIDS */
     #endif /* WOLFSSL_NO_ML_KEM_1024 */
-#elif defined(HAVE_LIBOQS)
-        case WOLFSSL_ML_KEM_512:
-            return "ML_KEM_512";
-        case WOLFSSL_ML_KEM_768:
-            return "ML_KEM_768";
-        case WOLFSSL_ML_KEM_1024:
-            return "ML_KEM_1024";
-        case WOLFSSL_SECP256R1MLKEM512:
-            return "SecP256r1MLKEM512";
-        case WOLFSSL_SECP384R1MLKEM768:
-            return "SecP384r1MLKEM768";
-        case WOLFSSL_SECP256R1MLKEM768:
-            return "SecP256r1MLKEM768";
-        case WOLFSSL_SECP521R1MLKEM1024:
-            return "SecP521r1MLKEM1024";
-        case WOLFSSL_SECP384R1MLKEM1024:
-            return "SecP384r1MLKEM1024";
-    #ifdef HAVE_CURVE25519
-        case WOLFSSL_X25519MLKEM512:
-            return "X25519MLKEM512";
-        case WOLFSSL_X25519MLKEM768:
-            return "X25519MLKEM768";
-    #endif
-    #ifdef HAVE_CURVE448
-        case WOLFSSL_X448MLKEM768:
-            return "X448MLKEM768";
-    #endif
-#endif /* WOLFSSL_WC_MLKEM */
 #endif /* WOLFSSL_NO_ML_KEM */
 #ifdef WOLFSSL_MLKEM_KYBER
-#if defined(WOLFSSL_WC_MLKEM)
     #ifndef WOLFSSL_NO_KYBER512
         case WOLFSSL_KYBER_LEVEL1:
             return "KYBER_LEVEL1";
@@ -11055,32 +11022,6 @@ const char* wolfSSL_get_curve_name(WOLFSSL* ssl)
         case WOLFSSL_P521_KYBER_LEVEL5:
             return "P521_KYBER_LEVEL5";
     #endif
-#elif defined (HAVE_LIBOQS)
-        case WOLFSSL_KYBER_LEVEL1:
-            return "KYBER_LEVEL1";
-        case WOLFSSL_KYBER_LEVEL3:
-            return "KYBER_LEVEL3";
-        case WOLFSSL_KYBER_LEVEL5:
-            return "KYBER_LEVEL5";
-        case WOLFSSL_P256_KYBER_LEVEL1:
-            return "P256_KYBER_LEVEL1";
-        case WOLFSSL_P384_KYBER_LEVEL3:
-            return "P384_KYBER_LEVEL3";
-        case WOLFSSL_P256_KYBER_LEVEL3:
-            return "P256_KYBER_LEVEL3";
-        case WOLFSSL_P521_KYBER_LEVEL5:
-            return "P521_KYBER_LEVEL5";
-    #ifdef HAVE_CURVE25519
-        case WOLFSSL_X25519_KYBER_LEVEL1:
-            return "X25519_KYBER_LEVEL1";
-        case WOLFSSL_X25519_KYBER_LEVEL3:
-            return "X25519_KYBER_LEVEL3";
-    #endif
-    #ifdef HAVE_CURVE448
-        case WOLFSSL_X448_KYBER_LEVEL3:
-            return "X448_KYBER_LEVEL3";
-    #endif
-#endif /* WOLFSSL_WC_MLKEM */
 #endif /* WOLFSSL_MLKEM_KYBER */
         }
     }
@@ -14571,8 +14512,14 @@ void* wolfSSL_GetHKDFExtractCtx(WOLFSSL* ssl)
         }
         else if (a->type == WOLFSSL_GEN_DNS || a->type == WOLFSSL_GEN_EMAIL ||
                  a->type == WOLFSSL_GEN_URI) {
-            bufSz = (int)XSTRLEN((const char*)a->obj);
-            XMEMCPY(buf, a->obj, min((word32)bufSz, (word32)bufLen));
+            size_t objLen = XSTRLEN((const char*)a->obj);
+            if (objLen >= (size_t)bufLen) {
+                bufSz = bufLen - 1;
+            }
+            else {
+                bufSz = (int)objLen;
+            }
+            XMEMCPY(buf, a->obj, (size_t)bufSz);
         }
         else if ((bufSz = wolfssl_obj2txt_numeric(buf, bufLen, a)) > 0) {
             if ((desc = oid_translate_num_to_str(buf))) {
@@ -17197,7 +17144,7 @@ const WOLF_EC_NIST_NAME kNistCurves[] = {
     {CURVE_NAME("ML_KEM_512"), WOLFSSL_ML_KEM_512, WOLFSSL_ML_KEM_512},
     {CURVE_NAME("ML_KEM_768"), WOLFSSL_ML_KEM_768, WOLFSSL_ML_KEM_768},
     {CURVE_NAME("ML_KEM_1024"), WOLFSSL_ML_KEM_1024, WOLFSSL_ML_KEM_1024},
-#if (defined(WOLFSSL_WC_MLKEM) || defined(HAVE_LIBOQS)) && defined(HAVE_ECC)
+#if defined(HAVE_ECC)
     #ifdef WOLFSSL_PQC_HYBRIDS
     {CURVE_NAME("SecP256r1MLKEM768"), WOLFSSL_SECP256R1MLKEM768,
      WOLFSSL_SECP256R1MLKEM768},
@@ -17224,7 +17171,7 @@ const WOLF_EC_NIST_NAME kNistCurves[] = {
     {CURVE_NAME("KYBER_LEVEL1"), WOLFSSL_KYBER_LEVEL1, WOLFSSL_KYBER_LEVEL1},
     {CURVE_NAME("KYBER_LEVEL3"), WOLFSSL_KYBER_LEVEL3, WOLFSSL_KYBER_LEVEL3},
     {CURVE_NAME("KYBER_LEVEL5"), WOLFSSL_KYBER_LEVEL5, WOLFSSL_KYBER_LEVEL5},
-#if (defined(WOLFSSL_WC_MLKEM) || defined(HAVE_LIBOQS)) && defined(HAVE_ECC)
+#if defined(HAVE_ECC)
     {CURVE_NAME("P256_KYBER_LEVEL1"), WOLFSSL_P256_KYBER_LEVEL1,
      WOLFSSL_P256_KYBER_LEVEL1},
     {CURVE_NAME("P384_KYBER_LEVEL3"), WOLFSSL_P384_KYBER_LEVEL3,
@@ -17525,7 +17472,7 @@ int wolfSSL_CTX_set_alpn_protos(WOLFSSL_CTX *ctx, const unsigned char *p,
                             unsigned int p_len)
 {
     WOLFSSL_ENTER("wolfSSL_CTX_set_alpn_protos");
-    if (ctx == NULL)
+    if (ctx == NULL || p == NULL)
         return BAD_FUNC_ARG;
     if (ctx->alpn_cli_protos != NULL) {
         XFREE((void*)ctx->alpn_cli_protos, ctx->heap, DYNAMIC_TYPE_OPENSSL);
@@ -17579,7 +17526,7 @@ int wolfSSL_set_alpn_protos(WOLFSSL* ssl,
 
     WOLFSSL_ENTER("wolfSSL_set_alpn_protos");
 
-    if (ssl == NULL || p_len <= 1) {
+    if (ssl == NULL || p_len <= 1 || p == NULL) {
 #if defined(WOLFSSL_ERROR_CODE_OPENSSL)
         /* 0 on success in OpenSSL, non-0 on failure in OpenSSL
          * the function reverses the return value convention.
@@ -17774,6 +17721,14 @@ word32 nid2oid(int nid, int grp)
                     return CTC_SHA3_512wECDSA;
                 #endif
             #endif /* HAVE_ECC */
+            #ifdef HAVE_ED25519
+                case WC_NID_ED25519:
+                    return CTC_ED25519;
+            #endif /* HAVE_ED25519 */
+            #ifdef HAVE_ED448
+                case WC_NID_ED448:
+                    return CTC_ED448;
+            #endif /* HAVE_ED448 */
             }
             break;
 
@@ -17792,6 +17747,14 @@ word32 nid2oid(int nid, int grp)
                 case WC_NID_X9_62_id_ecPublicKey:
                     return ECDSAk;
             #endif /* HAVE_ECC */
+            #ifdef HAVE_ED25519
+                case WC_NID_ED25519:
+                    return ED25519k;
+            #endif /* HAVE_ED25519 */
+            #ifdef HAVE_ED448
+                case WC_NID_ED448:
+                    return ED448k;
+            #endif /* HAVE_ED448 */
             }
             break;
 
@@ -18150,6 +18113,14 @@ int oid2nid(word32 oid, int grp)
                     return WC_NID_ecdsa_with_SHA3_512;
                 #endif
             #endif /* HAVE_ECC */
+            #ifdef HAVE_ED25519
+                case CTC_ED25519:
+                    return WC_NID_ED25519;
+            #endif /* HAVE_ED25519 */
+            #ifdef HAVE_ED448
+                case CTC_ED448:
+                    return WC_NID_ED448;
+            #endif /* HAVE_ED448 */
             }
             break;
 
@@ -18172,6 +18143,14 @@ int oid2nid(word32 oid, int grp)
                 case ECDSAk:
                     return WC_NID_X9_62_id_ecPublicKey;
             #endif /* HAVE_ECC */
+            #ifdef HAVE_ED25519
+                case ED25519k:
+                    return WC_NID_ED25519;
+            #endif /* HAVE_ED25519 */
+            #ifdef HAVE_ED448
+                case ED448k:
+                    return WC_NID_ED448;
+            #endif /* HAVE_ED448 */
             }
             break;
 
@@ -18692,6 +18671,7 @@ static int SetStaticEphemeralKey(WOLFSSL_CTX* ctx,
 #ifndef NO_FILESYSTEM
     /* done with keyFile buffer */
     if (keyFile && keyBuf) {
+        ForceZero(keyBuf, keySz);
         XFREE(keyBuf, heap, DYNAMIC_TYPE_TMP_BUFFER);
     }
 #endif
@@ -19648,7 +19628,7 @@ int wolfSSL_RAND_egd(const char* nm)
         return WOLFSSL_FATAL_ERROR;
     }
 
-    fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    fd = wc_socket_cloexec(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) {
         WOLFSSL_MSG("Error creating socket");
         WC_FREE_VAR_EX(buf, NULL, DYNAMIC_TYPE_TMP_BUFFER);
