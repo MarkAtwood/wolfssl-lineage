@@ -3917,6 +3917,11 @@ extern void uITRON4_free(void *p) ;
     #if defined(__aarch64__) && !defined(WOLFSSL_AARCH64_PRIVILEGE_MODE)
         #define WOLFSSL_AARCH64_PRIVILEGE_MODE
     #endif
+
+    /* USE_INTEL_SPEEDUP currently gives wrong results for ML-KEM in linuxkm. */
+    #if !defined(WC_MLKEM_NO_ASM) && !defined(WC_MLKEM_KERNEL_ASM)
+        #define WC_MLKEM_NO_ASM
+    #endif
 #endif /* WOLFSSL_LINUXKM */
 
 /* FreeBSD Kernel Module */
@@ -4050,14 +4055,6 @@ extern void uITRON4_free(void *p) ;
     #if WOLFSSL_GENERAL_ALIGNMENT < SIZEOF_LONG
         #undef WOLFSSL_GENERAL_ALIGNMENT
         #define WOLFSSL_GENERAL_ALIGNMENT SIZEOF_LONG
-    #endif
-
-    /* SLH-DSA signature generation is too computationally intensive to be
-     * appropriate in typical kernel deployments.
-     */
-    #if !defined(WOLFSSL_SLHDSA_VERIFY_ONLY) && \
-        !defined(WOLFSSL_SLHDSA_NO_VERIFY_ONLY)
-        #define WOLFSSL_SLHDSA_VERIFY_ONLY
     #endif
 #endif /* WOLFSSL_KERNEL_MODE */
 
