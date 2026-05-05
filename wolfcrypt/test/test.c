@@ -52574,15 +52574,20 @@ static wc_test_ret_t dilithium_sign_cache_alloc_test(int param, WC_RNG* rng)
 
     key = (dilithium_key*)XMALLOC(sizeof(*key), HEAP_HINT,
         DYNAMIC_TYPE_TMP_BUFFER);
-    sig = (byte*)XMALLOC(DILITHIUM_MAX_SIG_SIZE, HEAP_HINT,
-        DYNAMIC_TYPE_TMP_BUFFER);
-    if (key == NULL || sig == NULL) {
+    if (key == NULL) {
         ERROR_OUT(WC_TEST_RET_ENC_ERRNO, out);
     }
-
+    /* Init before further allocations so wc_dilithium_free() in the cleanup
+     * path operates on a zeroed struct, not garbage cached-pointer fields. */
     ret = wc_dilithium_init_ex(key, NULL, devId);
     if (ret != 0)
         ERROR_OUT(WC_TEST_RET_ENC_EC(ret), out);
+
+    sig = (byte*)XMALLOC(DILITHIUM_MAX_SIG_SIZE, HEAP_HINT,
+        DYNAMIC_TYPE_TMP_BUFFER);
+    if (sig == NULL) {
+        ERROR_OUT(WC_TEST_RET_ENC_ERRNO, out);
+    }
 
     ret = wc_dilithium_set_level(key, param);
     if (ret != 0)
