@@ -163,34 +163,31 @@ jobs:
           ./tools/keytools/sign --ed25519 --sha256 test.bin wolfboot_signing_private_key.der 1
 
           make test-lib SIGN=ED25519 HASH=SHA256
-          set +e
+
+          # test-lib (hal/library.c) always returns 0; success vs failure is
+          # signalled by stdout: "Firmware Valid" on the golden path,
+          # "Failure %d: Hdr %d, Hash %d, Sig %d" when verification rejects
+          # the image. Assert on output, not on exit status.
+
           success_output=$(./test-lib test_v1_signed.bin 2>&1)
-          success_status=$?
-          set -e
           printf '%s\n' "$success_output"
-          if [ "$success_status" -ne 0 ]; then
-            echo "Expected success, but test-lib failed"
+          if ! printf '%s\n' "$success_output" | grep -qF "Firmware Valid"; then
+            echo "Expected golden-path success, but test-lib did not print \"Firmware Valid\""
             exit 1
           fi
-          printf '%s\n' "$success_output" | grep -F "Firmware Valid" >/dev/null
 
           truncate -s -1 test_v1_signed.bin
           printf 'A' >> test_v1_signed.bin
 
-          set +e
-          output=$(./test-lib test_v1_signed.bin 2>&1)
-          status=$?
-          set -e
-
-          printf '%s\n' "$output"
-
-          if [ "$status" -eq 0 ]; then
-            echo "Expected failure, but test-lib succeeded"
+          tamper_output=$(./test-lib test_v1_signed.bin 2>&1)
+          printf '%s\n' "$tamper_output"
+          if printf '%s\n' "$tamper_output" | grep -qF "Firmware Valid"; then
+            echo "Expected tamper rejection, but test-lib reported \"Firmware Valid\""
             exit 1
           fi
-
-          if ! printf '%s\n' "$output" | grep -F "Failure" >/dev/null; then
-            echo "test-lib failed as expected, but did not print the legacy \"Failure\" marker"
+          if ! printf '%s\n' "$tamper_output" | grep -qE "^Failure -?[0-9]+: Hdr [0-9]+, Hash [0-9]+, Sig [0-9]+"; then
+            echo "Expected tamper rejection marker (\"Failure N: Hdr X, Hash Y, Sig Z\"), but test-lib output did not contain it"
+            exit 1
           fi
 
   renode_multimem_smallstack:
