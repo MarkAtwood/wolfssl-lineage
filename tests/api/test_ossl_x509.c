@@ -1662,7 +1662,8 @@ int test_wolfssl_local_IsValidFQDN(void) {
                         test_cases[i].is_FQDN);
         if (! EXPECT_SUCCESS()) {
             fprintf(stderr, "wolfssl_local_IsValidFQDN() wrong result for "
-                    "case %d \"%s\"\n", i, test_cases[i].str);
+                    "case %d \"%s\"\n", i,
+                    test_cases[i].str ? test_cases[i].str : "(null)");
             break;
         }
     }
@@ -1709,12 +1710,12 @@ int test_wolfssl_local_IsValidFQDN(void) {
 /* Verify that MatchDomainName() refuses to expand wildcards across IDNA
  * A-labels (xn-- prefix) per RFC 6125 sec. 6.4.3 / RFC 9525 sec. 6.3.
  *
- * MatchDomainName() is WOLFSSL_LOCAL but visible to the test binary because
- * tests link against the in-tree library. */
+ * MatchDomainName() is exposed for testing via the visibility mechanism
+ * declared in wolfssl/internal.h. */
 int test_wolfSSL_MatchDomainName_idn(void)
 {
     EXPECT_DECLS;
-#if !defined(NO_CERTS)
+#if !defined(NO_ASN) && !defined(WOLFCRYPT_ONLY) && !defined(NO_CERTS)
     static const struct {
         const char* pattern;
         const char* host;
@@ -1790,7 +1791,7 @@ int test_wolfSSL_MatchDomainName_idn(void)
             break;
         }
     }
-#endif /* !NO_CERTS */
+#endif /* !NO_ASN && !WOLFCRYPT_ONLY && !NO_CERTS */
     return EXPECT_RESULT();
 }
 
