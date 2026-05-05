@@ -1351,7 +1351,7 @@ static int slhdsa_der_roundtrip_one(enum SlhDsaParam param)
     byte* derBuf = NULL;
     byte* sig = NULL;
     const word32 derBufSz = 16 * 1024;
-    word32 derLen;
+    word32 derLen = 0; /* initialize to suppress false -Wmaybe-uninitialized */
     word32 idx;
     word32 sigLen;
     enum SlhDsaParam placeholder = param;

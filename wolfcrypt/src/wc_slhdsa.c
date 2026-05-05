@@ -47,6 +47,12 @@
     #include <wolfssl/wolfcrypt/hmac.h>
 #endif
 
+#ifdef WC_SLHDSA_NO_ASM
+    #undef USE_INTEL_SPEEDUP
+    #undef WOLFSSL_ARMASM
+    #undef WOLFSSL_RISCV_ASM
+#endif
+
 #if defined(USE_INTEL_SPEEDUP)
 /* CPU information for Intel. */
 static cpuid_flags_t cpuid_flags = WC_CPUID_INITIALIZER;
@@ -682,7 +688,7 @@ static void HA_Encode_Compressed(const word32* adrs, byte* address)
  */
 static int slhdsakey_precompute_sha2_midstates(SlhDsaKey* key)
 {
-    int ret;
+    int ret = 0;
     byte n = key->params->n;
     const byte* pk_seed = key->sk + 2 * n;
     byte block[WC_SHA512_BLOCK_SIZE];
@@ -690,8 +696,13 @@ static int slhdsakey_precompute_sha2_midstates(SlhDsaKey* key)
     /* SHA-256 midstate: PK.seed || zeros to fill 64-byte block. */
     XMEMSET(block, 0, WC_SHA256_BLOCK_SIZE);
     XMEMCPY(block, pk_seed, n);
+    if (key->hash.sha2.sha256_mid_inited) {
+        wc_Sha256Free(&key->hash.sha2.sha256_mid);
+        key->hash.sha2.sha256_mid_inited = 0;
+    }
     ret = wc_InitSha256(&key->hash.sha2.sha256_mid);
     if (ret == 0) {
+        key->hash.sha2.sha256_mid_inited = 1;
         ret = wc_Sha256Update(&key->hash.sha2.sha256_mid, block,
             WC_SHA256_BLOCK_SIZE);
     }
@@ -701,8 +712,13 @@ static int slhdsakey_precompute_sha2_midstates(SlhDsaKey* key)
     if ((ret == 0) && (n > 16)) {
         XMEMSET(block, 0, WC_SHA512_BLOCK_SIZE);
         XMEMCPY(block, pk_seed, n);
+        if (key->hash.sha2.sha512_mid_inited) {
+            wc_Sha512Free(&key->hash.sha2.sha512_mid);
+            key->hash.sha2.sha512_mid_inited = 0;
+        }
         ret = wc_InitSha512(&key->hash.sha2.sha512_mid);
         if (ret == 0) {
+            key->hash.sha2.sha512_mid_inited = 1;
             ret = wc_Sha512Update(&key->hash.sha2.sha512_mid, block,
                 WC_SHA512_BLOCK_SIZE);
         }
@@ -732,7 +748,6 @@ static int slhdsakey_hash_f_sha2(SlhDsaKey* key, const byte* pk_seed,
     int ret;
     byte address[SLHDSA_HAC_SZ];
     byte digest[WC_SHA256_DIGEST_SIZE];
-    int copy_succeeded = 0;
 
     (void)pk_seed;
 
@@ -741,9 +756,13 @@ static int slhdsakey_hash_f_sha2(SlhDsaKey* key, const byte* pk_seed,
 
     /* Restore SHA-256 midstate. */
 
+    if (key->hash.sha2.sha256_inited) {
+        wc_Sha256Free(&key->hash.sha2.sha256);
+        key->hash.sha2.sha256_inited = 0;
+    }
     ret = wc_Sha256Copy(&key->hash.sha2.sha256_mid, &key->hash.sha2.sha256);
     if (ret == 0) {
-        copy_succeeded = 1;
+        key->hash.sha2.sha256_inited = 1;
         /* Update with compressed ADRS and message. */
         ret = wc_Sha256Update(&key->hash.sha2.sha256, address, SLHDSA_HAC_SZ);
     }
@@ -756,9 +775,6 @@ static int slhdsakey_hash_f_sha2(SlhDsaKey* key, const byte* pk_seed,
     if (ret == 0) {
         /* Truncate to n bytes. */
         XMEMCPY(hash, digest, n);
-    }
-    if (copy_succeeded) {
-        wc_Sha256Free(&key->hash.sha2.sha256);
     }
 
     return ret;
@@ -793,12 +809,15 @@ static int slhdsakey_hash_h_sha2(SlhDsaKey* key, const byte* pk_seed,
     if (n == WC_SLHDSA_N_128) {
         /* Category 1: use SHA-256. */
         byte digest[WC_SHA256_DIGEST_SIZE];
-        int copy_succeeded = 0;
 
+        if (key->hash.sha2.sha256_inited) {
+            wc_Sha256Free(&key->hash.sha2.sha256);
+            key->hash.sha2.sha256_inited = 0;
+        }
         ret = wc_Sha256Copy(&key->hash.sha2.sha256_mid,
             &key->hash.sha2.sha256);
         if (ret == 0) {
-            copy_succeeded = 1;
+            key->hash.sha2.sha256_inited = 1;
             ret = wc_Sha256Update(&key->hash.sha2.sha256, address,
                 SLHDSA_HAC_SZ);
         }
@@ -811,19 +830,19 @@ static int slhdsakey_hash_h_sha2(SlhDsaKey* key, const byte* pk_seed,
         if (ret == 0) {
             XMEMCPY(hash, digest, n);
         }
-        if (copy_succeeded) {
-            wc_Sha256Free(&key->hash.sha2.sha256);
-        }
     }
     else {
         /* Categories 3, 5: use SHA-512. */
         byte digest[WC_SHA512_DIGEST_SIZE];
-        int copy_succeeded = 0;
 
+        if (key->hash.sha2.sha512_inited) {
+            wc_Sha512Free(&key->hash.sha2.sha512);
+            key->hash.sha2.sha512_inited = 0;
+        }
         ret = wc_Sha512Copy(&key->hash.sha2.sha512_mid,
             &key->hash.sha2.sha512);
         if (ret == 0) {
-            copy_succeeded = 1;
+            key->hash.sha2.sha512_inited = 1;
             ret = wc_Sha512Update(&key->hash.sha2.sha512, address,
                 SLHDSA_HAC_SZ);
         }
@@ -835,9 +854,6 @@ static int slhdsakey_hash_h_sha2(SlhDsaKey* key, const byte* pk_seed,
         }
         if (ret == 0) {
             XMEMCPY(hash, digest, n);
-        }
-        if (copy_succeeded) {
-            wc_Sha512Free(&key->hash.sha2.sha512);
         }
     }
 
@@ -872,12 +888,15 @@ static int slhdsakey_hash_h_2_sha2(SlhDsaKey* key, const byte* pk_seed,
     if (n == WC_SLHDSA_N_128) {
         /* Category 1: use SHA-256. */
         byte digest[WC_SHA256_DIGEST_SIZE];
-        int copy_succeeded = 0;
 
+        if (key->hash.sha2.sha256_inited) {
+            wc_Sha256Free(&key->hash.sha2.sha256);
+            key->hash.sha2.sha256_inited = 0;
+        }
         ret = wc_Sha256Copy(&key->hash.sha2.sha256_mid,
             &key->hash.sha2.sha256);
         if (ret == 0) {
-            copy_succeeded = 1;
+            key->hash.sha2.sha256_inited = 1;
             ret = wc_Sha256Update(&key->hash.sha2.sha256, address,
                 SLHDSA_HAC_SZ);
         }
@@ -893,19 +912,19 @@ static int slhdsakey_hash_h_2_sha2(SlhDsaKey* key, const byte* pk_seed,
         if (ret == 0) {
             XMEMCPY(hash, digest, n);
         }
-        if (copy_succeeded) {
-            wc_Sha256Free(&key->hash.sha2.sha256);
-        }
     }
     else {
         /* Categories 3, 5: use SHA-512. */
         byte digest[WC_SHA512_DIGEST_SIZE];
-        int copy_succeeded = 0;
 
+        if (key->hash.sha2.sha512_inited) {
+            wc_Sha512Free(&key->hash.sha2.sha512);
+            key->hash.sha2.sha512_inited = 0;
+        }
         ret = wc_Sha512Copy(&key->hash.sha2.sha512_mid,
             &key->hash.sha2.sha512);
         if (ret == 0) {
-            copy_succeeded = 1;
+            key->hash.sha2.sha512_inited = 1;
             ret = wc_Sha512Update(&key->hash.sha2.sha512, address,
                 SLHDSA_HAC_SZ);
         }
@@ -920,9 +939,6 @@ static int slhdsakey_hash_h_2_sha2(SlhDsaKey* key, const byte* pk_seed,
         }
         if (ret == 0) {
             XMEMCPY(hash, digest, n);
-        }
-        if (copy_succeeded) {
-            wc_Sha512Free(&key->hash.sha2.sha512);
         }
     }
 
@@ -950,7 +966,6 @@ static int slhdsakey_hash_prf_sha2(SlhDsaKey* key, const byte* pk_seed,
     int ret;
     byte address[SLHDSA_HAC_SZ];
     byte digest[WC_SHA256_DIGEST_SIZE];
-    int copy_succeeded = 0;
 
     (void)pk_seed;
 
@@ -958,9 +973,13 @@ static int slhdsakey_hash_prf_sha2(SlhDsaKey* key, const byte* pk_seed,
     HA_Encode_Compressed(adrs, address);
 
     /* Restore SHA-256 midstate. */
+    if (key->hash.sha2.sha256_inited) {
+        wc_Sha256Free(&key->hash.sha2.sha256);
+        key->hash.sha2.sha256_inited = 0;
+    }
     ret = wc_Sha256Copy(&key->hash.sha2.sha256_mid, &key->hash.sha2.sha256);
     if (ret == 0) {
-        copy_succeeded = 1;
+        key->hash.sha2.sha256_inited = 1;
         ret = wc_Sha256Update(&key->hash.sha2.sha256, address, SLHDSA_HAC_SZ);
     }
     if (ret == 0) {
@@ -971,9 +990,6 @@ static int slhdsakey_hash_prf_sha2(SlhDsaKey* key, const byte* pk_seed,
     }
     if (ret == 0) {
         XMEMCPY(hash, digest, n);
-    }
-    if (copy_succeeded) {
-        wc_Sha256Free(&key->hash.sha2.sha256);
     }
 
     return ret;
@@ -1003,9 +1019,14 @@ static int slhdsakey_hash_start_addr_sha2(SlhDsaKey* key,
     if (n == WC_SLHDSA_N_128) {
         /* Category 1: SHA-256 -- use sha256_2 (T_l must not collide with
          * sha256 which is used by F and H). */
+        if (key->hash.sha2.sha256_2_inited) {
+            wc_Sha256Free(&key->hash.sha2.sha256_2);
+            key->hash.sha2.sha256_2_inited = 0;
+        }
         ret = wc_Sha256Copy(&key->hash.sha2.sha256_mid,
             &key->hash.sha2.sha256_2);
         if (ret == 0) {
+            key->hash.sha2.sha256_2_inited = 1;
             ret = wc_Sha256Update(&key->hash.sha2.sha256_2, address,
                 SLHDSA_HAC_SZ);
         }
@@ -1013,9 +1034,14 @@ static int slhdsakey_hash_start_addr_sha2(SlhDsaKey* key,
     else {
         /* Categories 3, 5: SHA-512 -- use sha512_2 (T_l must not collide
          * with sha512 which is used by H). */
+        if (key->hash.sha2.sha512_2_inited) {
+            wc_Sha512Free(&key->hash.sha2.sha512_2);
+            key->hash.sha2.sha512_2_inited = 0;
+        }
         ret = wc_Sha512Copy(&key->hash.sha2.sha512_mid,
             &key->hash.sha2.sha512_2);
         if (ret == 0) {
+            key->hash.sha2.sha512_2_inited = 1;
             ret = wc_Sha512Update(&key->hash.sha2.sha512_2, address,
                 SLHDSA_HAC_SZ);
         }
@@ -1082,9 +1108,11 @@ static void slhdsakey_hash_free_sha2(SlhDsaKey* key)
 
     if (n == WC_SLHDSA_N_128) {
         wc_Sha256Free(&key->hash.sha2.sha256_2);
+        key->hash.sha2.sha256_2_inited = 0;
     }
     else {
         wc_Sha512Free(&key->hash.sha2.sha512_2);
+        key->hash.sha2.sha512_2_inited = 0;
     }
 
     return;
@@ -1122,11 +1150,13 @@ static int slhdsakey_mgf1_sha2(SlhDsaKey* key, const byte* seed,
             byte digest[WC_SHA256_DIGEST_SIZE];
             word32 cpLen = (left < WC_SHA256_DIGEST_SIZE) ?
                 left : WC_SHA256_DIGEST_SIZE;
-            int hash_inited = 0;
 
-            ret = wc_InitSha256(&key->hash.sha2.sha256_2);
+            if (! key->hash.sha2.sha256_2_inited) {
+                ret = wc_InitSha256(&key->hash.sha2.sha256_2);
+                if (ret == 0)
+                    key->hash.sha2.sha256_2_inited = 1;
+            }
             if (ret == 0) {
-                hash_inited = 1;
                 ret = wc_Sha256Update(&key->hash.sha2.sha256_2, seed, seedLen);
             }
             if (ret == 0) {
@@ -1134,9 +1164,6 @@ static int slhdsakey_mgf1_sha2(SlhDsaKey* key, const byte* seed,
             }
             if (ret == 0) {
                 ret = wc_Sha256Final(&key->hash.sha2.sha256_2, digest);
-            }
-            if (hash_inited) {
-                wc_Sha256Free(&key->hash.sha2.sha256_2);
             }
             if (ret == 0) {
                 XMEMCPY(out + done, digest, cpLen);
@@ -1148,11 +1175,13 @@ static int slhdsakey_mgf1_sha2(SlhDsaKey* key, const byte* seed,
             byte digest[WC_SHA512_DIGEST_SIZE];
             word32 cpLen = (left < WC_SHA512_DIGEST_SIZE) ?
                 left : WC_SHA512_DIGEST_SIZE;
-            int hash_inited = 0;
 
-            ret = wc_InitSha512(&key->hash.sha2.sha512_2);
+            if (! key->hash.sha2.sha512_2_inited) {
+                ret = wc_InitSha512(&key->hash.sha2.sha512_2);
+                if (ret == 0)
+                    key->hash.sha2.sha512_2_inited = 1;
+            }
             if (ret == 0) {
-                hash_inited = 1;
                 ret = wc_Sha512Update(&key->hash.sha2.sha512_2, seed, seedLen);
             }
             if (ret == 0) {
@@ -1160,9 +1189,6 @@ static int slhdsakey_mgf1_sha2(SlhDsaKey* key, const byte* seed,
             }
             if (ret == 0) {
                 ret = wc_Sha512Final(&key->hash.sha2.sha512_2, digest);
-            }
-            if (hash_inited) {
-                wc_Sha512Free(&key->hash.sha2.sha512_2);
             }
             if (ret == 0) {
                 XMEMCPY(out + done, digest, cpLen);
@@ -1260,7 +1286,7 @@ static int slhdsakey_h_msg_sha2(SlhDsaKey* key, const byte* r,
     const byte* hdr, const byte* ctx, byte ctxSz, const byte* msg,
     word32 msgSz, byte* md, word32 mdLen)
 {
-    int ret;
+    int ret = 0;
     byte n = key->params->n;
     const byte* pk_seed = key->sk + 2 * n;
     const byte* pk_root = key->sk + 3 * n;
@@ -1270,12 +1296,14 @@ static int slhdsakey_h_msg_sha2(SlhDsaKey* key, const byte* r,
         byte innerHash[WC_SHA256_DIGEST_SIZE];
         /* Seed for MGF1: R || PK.seed || innerHash. */
         byte mgfSeed[32 + 16 + WC_SHA256_DIGEST_SIZE];
-        int sha_inited = 0;
 
         /* Step 1: innerHash = SHA-256(R || PK.seed || PK.root || M). */
-        ret = wc_InitSha256(&key->hash.sha2.sha256_2);
+        if (! key->hash.sha2.sha256_2_inited) {
+            ret = wc_InitSha256(&key->hash.sha2.sha256_2);
+            if (ret == 0)
+                key->hash.sha2.sha256_2_inited = 1;
+        }
         if (ret == 0) {
-            sha_inited = 1;
             ret = wc_Sha256Update(&key->hash.sha2.sha256_2, r, n);
         }
         if (ret == 0) {
@@ -1296,9 +1324,6 @@ static int slhdsakey_h_msg_sha2(SlhDsaKey* key, const byte* r,
         if (ret == 0) {
             ret = wc_Sha256Final(&key->hash.sha2.sha256_2, innerHash);
         }
-        if (sha_inited) {
-            wc_Sha256Free(&key->hash.sha2.sha256_2);
-        }
 
         /* Step 2: MGF1-SHA-256(R || PK.seed || innerHash, mdLen). */
         if (ret == 0) {
@@ -1314,12 +1339,14 @@ static int slhdsakey_h_msg_sha2(SlhDsaKey* key, const byte* r,
         byte innerHash[WC_SHA512_DIGEST_SIZE];
         /* Seed for MGF1: R || PK.seed || innerHash. */
         byte mgfSeed[32 + 32 + WC_SHA512_DIGEST_SIZE];
-        int sha_inited = 0;
 
         /* Step 1: innerHash = SHA-512(R || PK.seed || PK.root || M). */
-        ret = wc_InitSha512(&key->hash.sha2.sha512_2);
+        if (! key->hash.sha2.sha512_2_inited) {
+            ret = wc_InitSha512(&key->hash.sha2.sha512_2);
+            if (ret == 0)
+                key->hash.sha2.sha512_2_inited = 1;
+        }
         if (ret == 0) {
-            sha_inited = 1;
             ret = wc_Sha512Update(&key->hash.sha2.sha512_2, r, n);
         }
         if (ret == 0) {
@@ -1339,9 +1366,6 @@ static int slhdsakey_h_msg_sha2(SlhDsaKey* key, const byte* r,
         }
         if (ret == 0) {
             ret = wc_Sha512Final(&key->hash.sha2.sha512_2, innerHash);
-        }
-        if (sha_inited) {
-            wc_Sha512Free(&key->hash.sha2.sha512_2);
         }
 
         /* Step 2: MGF1-SHA-512(R || PK.seed || innerHash, mdLen). */
@@ -6541,8 +6565,12 @@ int wc_SlhDsaKey_Init(SlhDsaKey* key, enum SlhDsaParam param, void* heap,
         if (SLHDSA_IS_SHA2(param)) {
             /* Initialize SHA2 hash objects. */
             ret = wc_InitSha256(&key->hash.sha2.sha256);
+            if (ret == 0)
+                key->hash.sha2.sha256_inited = 1;
             if ((ret == 0) && (key->params->n > 16)) {
                 ret = wc_InitSha512(&key->hash.sha2.sha512);
+                if (ret == 0)
+                    key->hash.sha2.sha512_inited = 1;
             }
         }
         else
@@ -6580,13 +6608,29 @@ void wc_SlhDsaKey_Free(SlhDsaKey* key)
 #ifdef WOLFSSL_SLHDSA_SHA2
         if (SLHDSA_IS_SHA2(key->params->param)) {
             /* Dispose of the SHA2 hash objects. */
-            wc_Sha256Free(&key->hash.sha2.sha256);
-            wc_Sha256Free(&key->hash.sha2.sha256_2);
-            wc_Sha256Free(&key->hash.sha2.sha256_mid);
-            if (key->params->n > 16) {
+            if (key->hash.sha2.sha256_inited) {
+                wc_Sha256Free(&key->hash.sha2.sha256);
+                key->hash.sha2.sha256_inited = 0;
+            }
+            if (key->hash.sha2.sha256_2_inited) {
+                wc_Sha256Free(&key->hash.sha2.sha256_2);
+                key->hash.sha2.sha256_2_inited = 0;
+            }
+            if (key->hash.sha2.sha256_mid_inited) {
+                wc_Sha256Free(&key->hash.sha2.sha256_mid);
+                key->hash.sha2.sha256_mid_inited = 0;
+            }
+            if (key->hash.sha2.sha512_inited) {
                 wc_Sha512Free(&key->hash.sha2.sha512);
+                key->hash.sha2.sha512_inited = 0;
+            }
+            if (key->hash.sha2.sha512_2_inited) {
                 wc_Sha512Free(&key->hash.sha2.sha512_2);
+                key->hash.sha2.sha512_2_inited = 0;
+            }
+            if (key->hash.sha2.sha512_mid_inited) {
                 wc_Sha512Free(&key->hash.sha2.sha512_mid);
+                key->hash.sha2.sha512_mid_inited = 0;
             }
         }
         else
@@ -9070,4 +9114,3 @@ int wc_SlhDsaKey_PrivateKeyToDer(SlhDsaKey* key, byte* output, word32 inLen)
 #endif /* WC_ENABLE_ASYM_KEY_EXPORT */
 
 #endif /* WOLFSSL_HAVE_SLHDSA */
-

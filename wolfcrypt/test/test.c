@@ -1231,40 +1231,23 @@ typedef struct func_args {
 /* Kernel modules implement and install their own FIPS callback with similar
  * functionality.
  */
-#ifdef REALLY_LONG_DRBG_CONTINUOUS_TEST
-    int only_run_cb_once = 1;
-#endif
 #if defined(HAVE_FIPS) && !defined(WOLFSSL_KERNEL_MODE)
 static void myFipsCb(int ok, int err, const char* hash)
 {
-#ifdef REALLY_LONG_DRBG_CONTINUOUS_TEST
-    if (only_run_cb_once == 1) {
-#endif
-    printf("in my Fips callback, ok = %d, err = %d\n", ok, err);
-    printf("message = %s\n", wc_GetErrorString(err));
-    printf("hash = %s\n", hash);
+    static int rendered_fips_message = 0;
 
-    if (err == WC_NO_ERR_TRACE(IN_CORE_FIPS_E)) {
-        printf("In core integrity hash check failure, copy above hash\n");
-        printf("into verifyCore[] in fips_test.c and rebuild\n");
-#ifdef TEST_ALWAYS_RUN_TO_END
-        /* When TEST_ALWAYS_RUN_TO_END is defined, testwolfcrypt tries to
-         * run every test even after failures. But with a wrong integrity
-         * hash the FIPS module is in FAILED state and every API call will
-         * fail, fire this callback, and produce millions of lines of
-         * redundant output. Exit now -- the hash has been printed for
-         * fips-hash.sh to extract, and no test can possibly pass. */
-        exit(IN_CORE_FIPS_E); /* NOLINT(concurrency-mt-unsafe) */
-#endif
+    if (rendered_fips_message == 0) {
+        rendered_fips_message = 1;
+
+        printf("in my Fips callback, ok = %d, err = %d\n", ok, err);
+        printf("message = %s\n", wc_GetErrorString(err));
+        printf("hash = %s\n", hash);
+
+        if (err == WC_NO_ERR_TRACE(IN_CORE_FIPS_E)) {
+            printf("In core integrity hash check failure, copy above hash\n");
+            printf("into verifyCore[] in fips_test.c and rebuild\n");
+        }
     }
-#ifdef REALLY_LONG_DRBG_CONTINUOUS_TEST
-        only_run_cb_once = 0;
-    } else {
-        (void) ok;
-        (void) err;
-        (void) hash;
-    }
-#endif
 }
 #endif /* HAVE_FIPS && !WOLFSSL_KERNEL_MODE */
 
@@ -2387,6 +2370,14 @@ options: [-s max_relative_stack_bytes] [-m max_relative_heap_memory_bytes]\n\
         TEST_FAIL("CAVP selftest failed!\n", ret);
     else
         TEST_PASS("CAVP selftest passed!\n");
+#endif
+
+#if defined(HAVE_FIPS) && FIPS_VERSION3_GT(5,2,0)
+    ret = wc_RunAllCast_fips();
+    if (ret != 0)
+        TEST_FAIL("wc_RunAllCast_fips failed.\n", ret);
+    else
+        TEST_PASS("wc_RunAllCast_fips passed.\n");
 #endif
 
     if ( (ret = macro_test()) != 0)
@@ -54132,6 +54123,16 @@ WOLFSSL_TEST_SUBROUTINE wc_test_ret_t lms_test_verify_only(void)
 #endif /* if defined(WOLFSSL_HAVE_LMS) && !defined(WOLFSSL_SMALL_STACK) */
 
 #if defined(WOLFSSL_HAVE_SLHDSA)
+
+/* If kernel or embedded, test with verify-only so that overly lengthy keygen
+ * and siggen tests are omitted, leaning on the FIPS KATs.
+ */
+#if (defined(WOLFSSL_KERNEL_MODE) || \
+     defined(BENCH_EMBEDDED)) && \
+    !defined(WOLFSSL_SLHDSA_FORCE_FULL_TESTS) && \
+    !defined(WOLFSSL_SLHDSA_VERIFY_ONLY)
+    #define WOLFSSL_SLHDSA_VERIFY_ONLY
+#endif
 
 #ifndef WOLFSSL_SLHDSA_VERIFY_ONLY
 /* KeyGen KAT: deterministic key generation cross-validated against NIST CAVP
