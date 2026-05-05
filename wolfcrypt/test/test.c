@@ -52545,6 +52545,101 @@ out:
 }
 #endif
 
+#if defined(WC_DILITHIUM_CACHE_MATRIX_A) && \
+    !defined(WC_DILITHIUM_FIXED_ARRAY) && \
+    !defined(WOLFSSL_DILITHIUM_NO_MAKE_KEY) && \
+    !defined(WOLFSSL_DILITHIUM_NO_SIGN) && \
+    !defined(WOLFSSL_DILITHIUM_NO_VERIFY)
+/* Regression test for sign path matrix A cache allocation.
+ *
+ * dilithium_sign_with_seed_mu() previously stored the result of XMALLOC for
+ * the matrix A cache into a local variable instead of key->a. The local was
+ * then immediately overwritten by `a = key->a` (still NULL), so the just-
+ * allocated buffer was leaked and a NULL pointer was passed to
+ * dilithium_expand_a().
+ *
+ * This test exercises that exact code path by clearing the cache state on a
+ * key after make_key, then signing. The post-condition asserts that key->a
+ * was populated (proving the allocation made it into the key, not the local)
+ * and that signing produces a verifiable signature.
+ */
+static wc_test_ret_t dilithium_sign_cache_alloc_test(int param, WC_RNG* rng)
+{
+    wc_test_ret_t ret;
+    dilithium_key* key = NULL;
+    byte* sig = NULL;
+    word32 sigLen;
+    byte msg[] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+    int res = 0;
+
+    key = (dilithium_key*)XMALLOC(sizeof(*key), HEAP_HINT,
+        DYNAMIC_TYPE_TMP_BUFFER);
+    sig = (byte*)XMALLOC(DILITHIUM_MAX_SIG_SIZE, HEAP_HINT,
+        DYNAMIC_TYPE_TMP_BUFFER);
+    if (key == NULL || sig == NULL) {
+        ERROR_OUT(WC_TEST_RET_ENC_ERRNO, out);
+    }
+
+    ret = wc_dilithium_init_ex(key, NULL, devId);
+    if (ret != 0)
+        ERROR_OUT(WC_TEST_RET_ENC_EC(ret), out);
+
+    ret = wc_dilithium_set_level(key, param);
+    if (ret != 0)
+        ERROR_OUT(WC_TEST_RET_ENC_EC(ret), out);
+
+    ret = wc_dilithium_make_key(key, rng);
+    if (ret != 0)
+        ERROR_OUT(WC_TEST_RET_ENC_EC(ret), out);
+
+    /* Drop the cached matrix A so the next sign exercises the allocation
+     * branch in dilithium_sign_with_seed_mu(). */
+    XFREE(key->a, key->heap, DYNAMIC_TYPE_DILITHIUM);
+    key->a = NULL;
+    key->aSet = 0;
+#ifdef WC_DILITHIUM_CACHE_PRIV_VECTORS
+    XFREE(key->s1, key->heap, DYNAMIC_TYPE_DILITHIUM);
+    key->s1 = NULL;
+    key->s2 = NULL;
+    key->t0 = NULL;
+    key->privVecsSet = 0;
+#endif
+
+    sigLen = wc_dilithium_sig_size(key);
+    if (sigLen <= 0)
+        ERROR_OUT(WC_TEST_RET_ENC_EC(ret), out);
+
+    ret = wc_dilithium_sign_ctx_msg(NULL, 0, msg, (word32)sizeof(msg), sig,
+        &sigLen, key, rng);
+    if (ret != 0)
+        ERROR_OUT(WC_TEST_RET_ENC_EC(ret), out);
+
+    /* With the fix, signing must populate key->a (allocated buffer is owned
+     * by the key, not leaked to a local). Without the fix, key->a remains
+     * NULL because the XMALLOC result was assigned to a local variable. */
+    if (key->a == NULL)
+        ERROR_OUT(WC_TEST_RET_ENC_NC, out);
+    if (key->aSet != 1)
+        ERROR_OUT(WC_TEST_RET_ENC_NC, out);
+
+    ret = wc_dilithium_verify_ctx_msg(sig, sigLen, NULL, 0, msg,
+        (word32)sizeof(msg), &res, key);
+    if (ret != 0)
+        ERROR_OUT(WC_TEST_RET_ENC_EC(ret), out);
+    if (res != 1)
+        ERROR_OUT(WC_TEST_RET_ENC_EC(res), out);
+
+out:
+    if (key != NULL)
+        wc_dilithium_free(key);
+    XFREE(sig, HEAP_HINT, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(key, HEAP_HINT, DYNAMIC_TYPE_TMP_BUFFER);
+    return ret;
+}
+#endif /* WC_DILITHIUM_CACHE_MATRIX_A && !WC_DILITHIUM_FIXED_ARRAY &&
+        * !WOLFSSL_DILITHIUM_NO_MAKE_KEY && !WOLFSSL_DILITHIUM_NO_SIGN &&
+        * !WOLFSSL_DILITHIUM_NO_VERIFY */
+
 
 #if (defined(WOLFSSL_DILITHIUM_PRIVATE_KEY) && \
      !defined(WOLFSSL_DILITHIUM_NO_SIGN)) || \
@@ -52830,6 +52925,28 @@ WOLFSSL_TEST_SUBROUTINE wc_test_ret_t dilithium_test(void)
 #endif
 #ifndef WOLFSSL_DILITHIUM_NO_MAKE_KEY
     ret = dilithium_param_test(WC_ML_DSA_87, &rng);
+    if (ret != 0)
+        ERROR_OUT(ret, out);
+#endif
+#endif
+
+#if defined(WC_DILITHIUM_CACHE_MATRIX_A) && \
+    !defined(WC_DILITHIUM_FIXED_ARRAY) && \
+    !defined(WOLFSSL_DILITHIUM_NO_MAKE_KEY) && \
+    !defined(WOLFSSL_DILITHIUM_NO_SIGN) && \
+    !defined(WOLFSSL_DILITHIUM_NO_VERIFY)
+#ifndef WOLFSSL_NO_ML_DSA_44
+    ret = dilithium_sign_cache_alloc_test(WC_ML_DSA_44, &rng);
+    if (ret != 0)
+        ERROR_OUT(ret, out);
+#endif
+#ifndef WOLFSSL_NO_ML_DSA_65
+    ret = dilithium_sign_cache_alloc_test(WC_ML_DSA_65, &rng);
+    if (ret != 0)
+        ERROR_OUT(ret, out);
+#endif
+#ifndef WOLFSSL_NO_ML_DSA_87
+    ret = dilithium_sign_cache_alloc_test(WC_ML_DSA_87, &rng);
     if (ret != 0)
         ERROR_OUT(ret, out);
 #endif
