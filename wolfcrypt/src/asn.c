@@ -17097,7 +17097,7 @@ int ConfirmSignature(SignatureCtx* sigCtx,
                 case SLH_DSA_SHAKE_192Sk:
                 case SLH_DSA_SHAKE_256Sk:
                 {
-                    int slhDsaParam = wc_SlhDsaOidToParam(keyOID);
+                    int slhDsaParam = wc_SlhDsaOidToParam((int)keyOID);
                     sigCtx->verify = 0;
 
                     /* Mirror PrivateKeyDecode/PublicKeyDecode: a recognised
@@ -27824,7 +27824,7 @@ static int MakeSignature(CertSignCtx* certSignCtx, const byte* buf, word32 sz,
         word32 outSz = sigSz;
         ret = wc_SlhDsaKey_Sign(slhDsaKey, NULL, 0, buf, sz, sig, &outSz, rng);
         if (ret == 0)
-            ret = outSz;
+            ret = (int)outSz;
     }
 #endif /* WOLFSSL_HAVE_SLHDSA && !WOLFSSL_SLHDSA_VERIFY_ONLY */
 
