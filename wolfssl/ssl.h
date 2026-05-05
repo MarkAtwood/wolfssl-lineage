@@ -4779,9 +4779,8 @@ enum {
     WOLFSSL_FFDHE_8192    = 260,
     WOLFSSL_FFDHE_END     = 511,
 
-#ifdef WOLFSSL_HAVE_MLKEM
+    /* Post Quantum KEM code points */
 
-#ifdef WOLFSSL_MLKEM_KYBER
     /* Old code points to keep compatibility with Kyber Round 3.
      * Taken from OQS's openssl provider, see:
      * https://github.com/open-quantum-safe/oqs-provider/blob/main/oqs-template/
@@ -4798,8 +4797,7 @@ enum {
     WOLFSSL_X448_KYBER_LEVEL3     = 12176,
     WOLFSSL_X25519_KYBER_LEVEL3   = 25497,
     WOLFSSL_P256_KYBER_LEVEL3     = 25498,
-#endif /* WOLFSSL_MLKEM_KYBER */
-#ifndef WOLFSSL_NO_ML_KEM
+
     /* Taken from draft-ietf-tls-mlkem, see:
      * https://datatracker.ietf.org/doc/draft-ietf-tls-mlkem/
      */
@@ -4828,8 +4826,6 @@ enum {
     WOLFSSL_SECP521R1MLKEM1024    = 12109,
     WOLFSSL_X25519MLKEM512        = 12214,
     WOLFSSL_X448MLKEM768          = 12215,
-#endif /* WOLFSSL_NO_ML_KEM */
-#endif /* WOLFSSL_HAVE_MLKEM */
     WOLF_ENUM_DUMMY_LAST_ELEMENT(SSL_H)
 };
 
