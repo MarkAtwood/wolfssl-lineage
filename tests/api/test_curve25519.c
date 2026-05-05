@@ -444,14 +444,17 @@ int test_wc_curve25519_export_private_raw_ex(void)
     EXPECT_DECLS;
 #if defined(HAVE_CURVE25519)
     curve25519_key key;
+    WC_RNG         rng;
     byte           out[CURVE25519_KEYSIZE];
     word32         outLen = sizeof(out);
     int            endian = EC25519_BIG_ENDIAN;
 
+    XMEMSET(&rng, 0, sizeof(WC_RNG));
     ExpectIntEQ(wc_curve25519_init(&key), 0);
 
+    /* Reject export when private key not set (privSet == 0). */
     ExpectIntEQ(wc_curve25519_export_private_raw_ex(&key, out, &outLen, endian),
-        0);
+        WC_NO_ERR_TRACE(ECC_BAD_ARG_E));
     /* test bad cases */
     ExpectIntEQ(wc_curve25519_export_private_raw_ex(NULL, NULL, NULL, endian),
         WC_NO_ERR_TRACE(BAD_FUNC_ARG));
@@ -461,12 +464,15 @@ int test_wc_curve25519_export_private_raw_ex(void)
         endian), WC_NO_ERR_TRACE(BAD_FUNC_ARG));
     ExpectIntEQ(wc_curve25519_export_private_raw_ex(&key, out, NULL, endian),
         WC_NO_ERR_TRACE(BAD_FUNC_ARG));
-    ExpectIntEQ(wc_curve25519_export_private_raw_ex(&key, out, &outLen,
-        EC25519_LITTLE_ENDIAN), 0);
-    outLen = outLen - 2;
+
+    /* Populate the key, then exercise the buffer-too-small path. */
+    ExpectIntEQ(wc_InitRng(&rng), 0);
+    ExpectIntEQ(wc_curve25519_make_key(&rng, CURVE25519_KEYSIZE, &key), 0);
+    outLen = CURVE25519_KEYSIZE - 1;
     ExpectIntEQ(wc_curve25519_export_private_raw_ex(&key, out, &outLen, endian),
         WC_NO_ERR_TRACE(ECC_BAD_ARG_E));
 
+    DoExpectIntEQ(wc_FreeRng(&rng), 0);
     wc_curve25519_free(&key);
 #endif
     return EXPECT_RESULT();

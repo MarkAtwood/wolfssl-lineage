@@ -2633,7 +2633,7 @@ int wc_hash2sz(int hType)
     case WC_HASH_TYPE_SHA:
         return 20;
     case WC_HASH_TYPE_SHA224:
-        return 24;
+        return 28;
     case WC_HASH_TYPE_SHA256:
         return 32;
     case WC_HASH_TYPE_SHA384:
