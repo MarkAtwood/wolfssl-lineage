@@ -41,96 +41,6 @@
     #include <wolfssl/wolfcrypt/cryptocb.h>
 #endif
 
-/* Compute the digest of msg using the hash function dictated by the XMSS
- * parameter set. Crypto-callback / HSM backends that follow PKCS#11 v3.2
- * CKM_XMSS / CKM_XMSSMT semantics (pre-computed digest input, see section
- * 6.66.8 "XMSS and XMSSMT without hashing") can call this from within
- * their callback; backends that take the raw message (e.g. wolfHSM) can
- * ignore it. *hashSz is in/out: it must be at least params->n on entry
- * and is set to the actual digest length on success.
- *
- * @param [in]      key     XMSS key (must have a parameter set bound).
- * @param [in]      msg     Message to hash.
- * @param [in]      msgSz   Length of msg in bytes.
- * @param [out]     hash    Buffer receiving the digest.
- * @param [in,out]  hashSz  On entry, size of hash buffer. On success,
- *                          the digest length.
- * @return  0 on success.
- * @return  BAD_FUNC_ARG when an argument is NULL or the buffer is too
- *          small for the digest.
- * @return  NOT_COMPILED_IN when the param set's hash family is disabled.
- */
-int wc_XmssKey_HashMsg(const XmssKey* key, const byte* msg, word32 msgSz,
-    byte* hash, word32* hashSz)
-{
-    int ret = 0;
-    word32 needSz;
-
-    if ((key == NULL) || (msg == NULL) || (hash == NULL) || (hashSz == NULL))
-        return BAD_FUNC_ARG;
-    if (key->params == NULL)
-        return BAD_FUNC_ARG;
-    needSz = (word32)key->params->n;
-    if (*hashSz < needSz)
-        return BAD_FUNC_ARG;
-
-    switch (key->params->hash) {
-    #ifdef WC_XMSS_SHA256
-        case WC_HASH_TYPE_SHA256: {
-            /* SHA2_*_192 variants set n=24, but wc_Hash rejects an output
-             * smaller than WC_SHA256_DIGEST_SIZE. Hash to a full buffer and
-             * copy the requested prefix, mirroring LMS_SHA256_192. */
-            byte full[WC_SHA256_DIGEST_SIZE];
-            ret = wc_Sha256Hash(msg, msgSz, full);
-            if (ret == 0)
-                XMEMCPY(hash, full, needSz);
-            break;
-        }
-    #endif
-    #ifdef WC_XMSS_SHA512
-        case WC_HASH_TYPE_SHA512:
-            ret = wc_Hash(WC_HASH_TYPE_SHA512, msg, msgSz, hash, needSz);
-            break;
-    #endif
-    #ifdef WC_XMSS_SHAKE128
-        case WC_HASH_TYPE_SHAKE128: {
-            wc_Shake shake;
-            ret = wc_InitShake128(&shake, NULL, INVALID_DEVID);
-            if (ret == 0) {
-                ret = wc_Shake128_Update(&shake, msg, msgSz);
-                if (ret == 0)
-                    ret = wc_Shake128_Final(&shake, hash, needSz);
-                wc_Shake128_Free(&shake);
-            }
-            break;
-        }
-    #endif
-    #ifdef WC_XMSS_SHAKE256
-        case WC_HASH_TYPE_SHAKE256: {
-            wc_Shake shake;
-            ret = wc_InitShake256(&shake, NULL, INVALID_DEVID);
-            if (ret == 0) {
-                ret = wc_Shake256_Update(&shake, msg, msgSz);
-                if (ret == 0)
-                    ret = wc_Shake256_Final(&shake, hash, needSz);
-                wc_Shake256_Free(&shake);
-            }
-            break;
-        }
-    #endif
-        default:
-            WOLFSSL_MSG("XMSS: unsupported hash for HashMsg");
-            ret = NOT_COMPILED_IN;
-            break;
-    }
-
-    if (ret == 0)
-        *hashSz = needSz;
-
-    return ret;
-}
-
-
 /***************************
  * DIGEST init and free.
  ***************************/
@@ -1316,10 +1226,6 @@ int wc_XmssKey_MakeKey(XmssKey* key, WC_RNG* rng)
         WOLFSSL_MSG("error: XmssKey write callback is not set");
         ret = BAD_FUNC_ARG;
     }
-    /* Callback context is opaque to wolfCrypt and may legitimately be NULL
-     * (e.g. callbacks that read/write a static buffer or HSM-backed keys
-     * with stub callbacks); no check needed here. */
-
     if (ret == 0) {
         /* Allocate sk array. */
         ret = wc_xmsskey_alloc_sk(key);
@@ -1450,7 +1356,6 @@ int wc_XmssKey_Reload(XmssKey* key)
         WOLFSSL_MSG("error: XmssKey write/read callbacks are not set");
         ret = BAD_FUNC_ARG;
     }
-    /* Callback context is opaque; NULL is allowed. */
 
     if (ret == 0) {
         /* Allocate sk array. */
@@ -1512,6 +1417,79 @@ int wc_XmssKey_GetPrivLen(const XmssKey* key, word32* len)
         /* Calculate private key length: OID + private key bytes. */
         *len = XMSS_OID_LEN + (word32)key->params->sk_len;
     }
+
+    return ret;
+}
+
+/* Compute the digest of msg using the hash function dictated by the XMSS
+ * parameter set. Crypto-callback / HSM backends that follow PKCS#11 v3.2
+ * CKM_XMSS / CKM_XMSSMT semantics (pre-computed digest input, see section
+ * 6.66.8 "XMSS and XMSSMT without hashing") can call this from within
+ * their callback; backends that take the raw message (e.g. wolfHSM) can
+ * ignore it. *hashSz is in/out: it must be at least params->n on entry
+ * and is set to the actual digest length on success.
+ *
+ * @param [in]      key     XMSS key (must have a parameter set bound).
+ * @param [in]      msg     Message to hash.
+ * @param [in]      msgSz   Length of msg in bytes.
+ * @param [out]     hash    Buffer receiving the digest.
+ * @param [in,out]  hashSz  On entry, size of hash buffer. On success,
+ *                          the digest length.
+ * @return  0 on success.
+ * @return  BAD_FUNC_ARG when an argument is NULL or the buffer is too
+ *          small for the digest.
+ * @return  NOT_COMPILED_IN when the param set's hash family is disabled.
+ */
+int wc_XmssKey_HashMsg(const XmssKey* key, const byte* msg, word32 msgSz,
+    byte* hash, word32* hashSz)
+{
+    int ret = 0;
+    word32 needSz;
+
+    if ((key == NULL) || (msg == NULL) || (hash == NULL) || (hashSz == NULL))
+        return BAD_FUNC_ARG;
+    if (key->params == NULL)
+        return BAD_FUNC_ARG;
+    needSz = (word32)key->params->n;
+    if (*hashSz < needSz)
+        return BAD_FUNC_ARG;
+
+    switch (key->params->hash) {
+    #ifdef WC_XMSS_SHA256
+        case WC_HASH_TYPE_SHA256: {
+            /* SHA2_*_192 variants set n=24, but wc_Hash rejects an output
+             * smaller than WC_SHA256_DIGEST_SIZE. Hash to a full buffer and
+             * copy the requested prefix. */
+            byte full[WC_SHA256_DIGEST_SIZE];
+            ret = wc_Sha256Hash(msg, msgSz, full);
+            if (ret == 0)
+                XMEMCPY(hash, full, needSz);
+            break;
+        }
+    #endif
+    #ifdef WC_XMSS_SHA512
+        case WC_HASH_TYPE_SHA512:
+            ret = wc_Hash(WC_HASH_TYPE_SHA512, msg, msgSz, hash, needSz);
+            break;
+    #endif
+    #ifdef WC_XMSS_SHAKE128
+        case WC_HASH_TYPE_SHAKE128:
+            ret = wc_Shake128Hash(msg, msgSz, hash, needSz);
+            break;
+    #endif
+    #ifdef WC_XMSS_SHAKE256
+        case WC_HASH_TYPE_SHAKE256:
+            ret = wc_Shake256Hash(msg, msgSz, hash, needSz);
+            break;
+    #endif
+        default:
+            WOLFSSL_MSG("XMSS: unsupported hash for HashMsg");
+            ret = NOT_COMPILED_IN;
+            break;
+    }
+
+    if (ret == 0)
+        *hashSz = needSz;
 
     return ret;
 }
@@ -1582,7 +1560,6 @@ int wc_XmssKey_Sign(XmssKey* key, byte* sig, word32* sigLen, const byte* msg,
         WOLFSSL_MSG("error: XmssKey write/read callbacks are not set");
         ret = BAD_FUNC_ARG;
     }
-    /* Callback context is opaque; NULL is allowed. */
 
     if (ret == 0) {
         *sigLen = key->params->sig_len;
@@ -1613,9 +1590,7 @@ int  wc_XmssKey_SigsLeft(XmssKey* key)
         int cbRet = wc_CryptoCb_PqcStatefulSigSigsLeft(
             WC_PQC_STATEFUL_SIG_TYPE_XMSS, key, &sigsLeft);
         if (cbRet == 0) {
-            /* Clamp to int range; callers treat 0 as "exhausted". */
-            return (sigsLeft > (word32)0x7FFFFFFF)
-                ? 0x7FFFFFFF : (int)sigsLeft;
+            return (sigsLeft != 0) ? 1 : 0;
         }
         /* The device owns the private state; no safe software fallback
          * exists because key->sk does not reflect HSM state. */
