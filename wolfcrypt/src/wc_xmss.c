@@ -990,7 +990,7 @@ int wc_XmssKey_SetParamStr(XmssKey* key, const char* str)
  */
 int wc_XmssKey_GetParamStr(const XmssKey* key, const char** str)
 {
-    int          ret = NOT_COMPILED_IN;
+    int          ret = WC_NO_ERR_TRACE(NOT_COMPILED_IN);
     unsigned int i;
 
     if ((key == NULL) || (str == NULL)) {
