@@ -14986,7 +14986,7 @@ static int TLSX_GetSize(TLSX* list, byte* semaphore, byte msgType,
             case TLSX_CERTIFICATE_AUTHORITIES: {
                 word16 canSz = CAN_GET_SIZE(extension->data);
                 /* 0 on non-empty list means 16-bit overflow. */
-                if (canSz == 0 && extension->data != NULL) {
+                if (canSz == 0) {
                     ret = LENGTH_ERROR;
                     break;
                 }
