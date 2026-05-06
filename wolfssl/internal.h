@@ -2228,6 +2228,9 @@ WOLFSSL_LOCAL void FreeAsyncCtx(WOLFSSL* ssl, byte freeAsync);
 WOLFSSL_LOCAL void FreeKeyExchange(WOLFSSL* ssl);
 WOLFSSL_LOCAL void FreeSuites(WOLFSSL* ssl);
 WOLFSSL_LOCAL int  ProcessPeerCerts(WOLFSSL* ssl, byte* input, word32* inOutIdx, word32 totalSz);
+#ifdef WOLFSSL_API_PREFIX_MAP
+    #define MatchDomainName wolfSSL_MatchDomainName
+#endif
 WOLFSSL_TEST_VIS int  MatchDomainName(const char* pattern, int len,
                                       const char* str, word32 strLen,
                                       unsigned int flags);
