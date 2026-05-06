@@ -12119,6 +12119,19 @@ static int test_wc_PemToDer(void)
             XFREE(cert_buf, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     }
 #endif
+    /* NULL buff, zero size, and negative size must be rejected up front. The
+     * pre-fix code cast longSz to word32, so a negative value drove an
+     * over-read inside PemToDer. */
+    {
+        const byte stub[] = "x";
+        DerBuffer* badDer = NULL;
+        ExpectIntEQ(wc_PemToDer(NULL, 100, CERT_TYPE, &badDer, NULL, &info,
+            &eccKey), WC_NO_ERR_TRACE(BAD_FUNC_ARG));
+        ExpectIntEQ(wc_PemToDer(stub, 0, CERT_TYPE, &badDer, NULL, &info,
+            &eccKey), WC_NO_ERR_TRACE(BAD_FUNC_ARG));
+        ExpectIntEQ(wc_PemToDer(stub, -1, CERT_TYPE, &badDer, NULL, &info,
+            &eccKey), WC_NO_ERR_TRACE(BAD_FUNC_ARG));
+    }
 #endif
     return EXPECT_RESULT();
 }
