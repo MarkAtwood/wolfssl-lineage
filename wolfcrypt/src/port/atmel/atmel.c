@@ -467,6 +467,16 @@ int atmel_ecc_create_key(int slotId, byte* peerKey)
 int atmel_ecc_sign(int slotId, const byte* message, byte* signature)
 {
     int ret;
+#ifndef WC_ALLOW_ECC_ZERO_HASH
+    byte hashIsZero = 0;
+    word32 zIdx;
+
+    /* defensive sanity check on all 0's hash */
+    for (zIdx = 0; zIdx < ATECC_KEY_SIZE; zIdx++)
+        hashIsZero |= message[zIdx];
+    if (hashIsZero == 0)
+        return ECC_BAD_ARG_E;
+#endif
 
     ret = atcab_sign(slotId, message, signature);
     ret = atmel_ecc_translate_err(ret);
