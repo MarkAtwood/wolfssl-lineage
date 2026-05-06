@@ -11317,6 +11317,10 @@ int wolfSSL_EVP_MD_type(const WOLFSSL_EVP_MD* type)
                                unsigned int* s)
     {
         enum wc_HashType macType;
+    #if defined(WOLFSSL_SHA3) && (defined(WOLFSSL_SHAKE128) || \
+        defined(WOLFSSL_SHAKE256))
+        unsigned int defaultSz = 0;
+    #endif
 
         WOLFSSL_ENTER("wolfSSL_EVP_DigestFinal");
 
@@ -11345,18 +11349,21 @@ int wolfSSL_EVP_MD_type(const WOLFSSL_EVP_MD* type)
 
             case WC_HASH_TYPE_SHAKE128:
         #if defined(WOLFSSL_SHA3) && defined(WOLFSSL_SHAKE128)
-                if (s != NULL)
-                    *s = 16; /* if mixing up XOF with plain digest 128 bit is
-                              * default for SHAKE128 */
+                if (s == NULL)
+                    s = &defaultSz;
+                *s = 16; /* if mixing up XOF with plain digest 128 bit is
+                            * default for SHAKE128 */
+
         #else
                 return WOLFSSL_FAILURE;
         #endif
                 break;
             case WC_HASH_TYPE_SHAKE256:
         #if defined(WOLFSSL_SHA3) && defined(WOLFSSL_SHAKE256)
-                if (s != NULL)
-                    *s = 32; /* if mixing up XOF with plain digest 256 bit is
-                              * default for SHAKE256 */
+                if (s == NULL)
+                    s = &defaultSz;
+                *s = 32; /* if mixing up XOF with plain digest 256 bit is
+                            * default for SHAKE256 */
         #else
                 return WOLFSSL_FAILURE;
         #endif
