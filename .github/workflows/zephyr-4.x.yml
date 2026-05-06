@@ -47,8 +47,9 @@ jobs:
         id: src
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "repo=${{ github.event.pull_request.head.repo.clone_url }}" >> "$GITHUB_OUTPUT"
-            echo "branch=${{ github.event.pull_request.head.ref }}" >> "$GITHUB_OUTPUT"
+            # Fetch via upstream PR ref so renames, deletes, or visibility changes on the fork do not break us
+            echo "repo=https://github.com/${{ github.repository }}" >> "$GITHUB_OUTPUT"
+            echo "branch=refs/pull/${{ github.event.pull_request.number }}/head" >> "$GITHUB_OUTPUT"
           else
             echo "repo=https://github.com/${{ github.repository }}" >> "$GITHUB_OUTPUT"
             echo "branch=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"

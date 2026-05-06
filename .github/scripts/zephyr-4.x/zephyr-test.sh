@@ -111,8 +111,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_DIR="${SCRIPT_DIR}/logs"
 mkdir -p "${LOG_DIR}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-ZVER="${ZEPHYR_VERSION#v}"
-LOG_FILE="${LOG_DIR}/${ZVER}_${WOLFSSL_BRANCH}_${BOARD_TARGET//\//-}_${TIMESTAMP}.log"
+LOG_FILE="${LOG_DIR}/${BOARD_SLUG}_${TIMESTAMP}.log"
 
 echo "==> wolfSSL repo:   ${WOLFSSL_REPO}"
 echo "==> wolfSSL branch: ${WOLFSSL_BRANCH}"
@@ -175,6 +174,7 @@ cd ..
 
 # --- 3. Update all modules (including wolfSSL) ---
 echo "==> [container] Running west update..."
+export GIT_TERMINAL_PROMPT=0
 west update -n -o=--depth=1
 
 # --- 3b. Checkout specific commit if requested ---
