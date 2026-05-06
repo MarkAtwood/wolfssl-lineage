@@ -825,8 +825,6 @@ WOLFSSL_API int  wc_LmsKey_ImportPubRaw(LmsKey * key, const byte * in,
     word32 inLen);
 WOLFSSL_API int  wc_LmsKey_Verify(LmsKey * key, const byte * sig, word32 sigSz,
     const byte * msg, int msgSz);
-WOLFSSL_API int  wc_LmsKey_HashMsg(const LmsKey * key, const byte * msg,
-    word32 msgSz, byte * hash, word32 * hashSz);
 WOLFSSL_API const char * wc_LmsKey_ParmToStr(enum wc_LmsParm lmsParm);
 WOLFSSL_API const char * wc_LmsKey_RcToStr(enum wc_LmsRc lmsRc);
 

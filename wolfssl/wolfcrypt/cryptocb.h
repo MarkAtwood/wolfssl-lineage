@@ -357,11 +357,6 @@ typedef struct wc_CryptoInfo {
                 int         type; /* enum wc_PqcStatefulSignatureType */
             } pqc_stateful_sig_kg;
             struct {
-                /* Raw message. Backends following the PKCS#11 v3.2
-                 * CKM_HSS / CKM_XMSS convention of operating on a
-                 * pre-computed digest can call wc_LmsKey_HashMsg /
-                 * wc_XmssKey_HashMsg from inside the callback to obtain
-                 * the algorithm-dictated digest of msg. */
                 const byte* msg;
                 word32      msgSz;
                 byte*       out;
@@ -372,7 +367,6 @@ typedef struct wc_CryptoInfo {
             struct {
                 const byte* sig;
                 word32      sigSz;
-                /* Raw message. See sign note. */
                 const byte* msg;
                 word32      msgSz;
                 int*        res;
@@ -757,9 +751,6 @@ WOLFSSL_LOCAL int wc_CryptoCb_PqcStatefulSigGetDevId(int type, void* key);
 
 WOLFSSL_LOCAL int wc_CryptoCb_PqcStatefulSigKeyGen(int type, void* key,
     WC_RNG* rng);
-/* The raw message is forwarded to the callback. Backends that follow the
- * PKCS#11 v3.2 CKM_HSS / CKM_XMSS convention (digest input) can call
- * wc_LmsKey_HashMsg / wc_XmssKey_HashMsg from inside the callback. */
 WOLFSSL_LOCAL int wc_CryptoCb_PqcStatefulSigSign(const byte* msg,
     word32 msgSz, byte* out, word32* outSz, int type, void* key);
 WOLFSSL_LOCAL int wc_CryptoCb_PqcStatefulSigVerify(const byte* sig,

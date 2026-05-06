@@ -457,12 +457,6 @@ WOLFSSL_API int  wc_XmssKey_ImportPubRaw(XmssKey* key, const byte* in,
     word32 inLen);
 WOLFSSL_API int  wc_XmssKey_Verify(XmssKey* key, const byte* sig, word32 sigSz,
     const byte* msg, int msgSz);
-/* Compute the digest of a message with the hash function dictated by the
- * XMSS parameter set. Useful for crypto-callback / HSM backends that follow
- * the PKCS#11 v3.2 CKM_XMSS / CKM_XMSSMT convention of taking a
- * pre-computed digest. */
-WOLFSSL_API int  wc_XmssKey_HashMsg(const XmssKey* key, const byte* msg,
-    word32 msgSz, byte* hash, word32* hashSz);
 
 WOLFSSL_LOCAL int wc_xmssmt_keygen(XmssState *state, const unsigned char* seed,
     unsigned char *sk, unsigned char *pk);

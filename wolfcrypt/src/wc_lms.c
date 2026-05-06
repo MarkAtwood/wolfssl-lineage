@@ -1282,66 +1282,6 @@ int wc_LmsKey_GetPrivLen(const LmsKey* key, word32* len)
     return ret;
 }
 
-/* Compute the digest of msg using the hash function dictated by the LMS
- * parameter set. Crypto-callback / HSM backends that follow PKCS#11 v3.2
- * CKM_HSS semantics (pre-computed digest input) can call this from within
- * their callback; backends that take the raw message (e.g. wolfHSM) can
- * ignore it. *hashSz is in/out: it must be at least params->hash_len on
- * entry and is set to the actual digest length on success.
- *
- * @param [in]      key     LMS key (must have a parameter set bound).
- * @param [in]      msg     Message to hash.
- * @param [in]      msgSz   Length of msg in bytes.
- * @param [out]     hash    Buffer receiving the digest.
- * @param [in,out]  hashSz  On entry, size of hash buffer. On success,
- *                          the digest length.
- * @return  0 on success.
- * @return  BAD_FUNC_ARG when an argument is NULL or the buffer is too
- *          small for the digest.
- * @return  NOT_COMPILED_IN when the param set's hash family is disabled.
- */
-int wc_LmsKey_HashMsg(const LmsKey* key, const byte* msg, word32 msgSz,
-    byte* hash, word32* hashSz)
-{
-    int ret = 0;
-    word32 needSz;
-
-    if ((key == NULL) || (msg == NULL) || (hash == NULL) || (hashSz == NULL))
-        return BAD_FUNC_ARG;
-    if (key->params == NULL)
-        return BAD_FUNC_ARG;
-    needSz = (word32)key->params->hash_len;
-    if (*hashSz < needSz)
-        return BAD_FUNC_ARG;
-
-    switch (key->params->lmsType & LMS_HASH_MASK) {
-        case LMS_SHA256:      /* 32-byte SHA-256 */
-        case LMS_SHA256_192:  /* SHA-256 truncated to 24 bytes */ {
-            byte full[WC_SHA256_DIGEST_SIZE];
-            ret = wc_Sha256Hash(msg, msgSz, full);
-            if (ret == 0)
-                XMEMCPY(hash, full, needSz);
-            break;
-        }
-    #ifdef WOLFSSL_LMS_SHAKE256
-        case LMS_SHAKE256:      /* SHAKE256 with 32-byte output */
-        case LMS_SHAKE256_192:  /* SHAKE256 with 24-byte output */ {
-            ret = wc_Shake256Hash(msg, msgSz, hash, needSz);
-            break;
-        }
-    #endif
-        default:
-            WOLFSSL_MSG("LMS: unsupported hash family for HashMsg");
-            ret = NOT_COMPILED_IN;
-            break;
-    }
-
-    if (ret == 0)
-        *hashSz = needSz;
-
-    return ret;
-}
-
 /* Sign a message.
  *
  * @param [in, out] key    LMS key to sign with.
