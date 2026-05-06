@@ -3016,6 +3016,9 @@ int wolfSSL_EVP_PKEY_CTX_set1_hkdf_key(WOLFSSL_EVP_PKEY_CTX* ctx,
     }
 
     if (ret == WOLFSSL_SUCCESS) {
+        if (ctx->pkey->hkdfKey != NULL && ctx->pkey->hkdfKeySz > 0) {
+            ForceZero(ctx->pkey->hkdfKey, ctx->pkey->hkdfKeySz);
+        }
         XFREE(ctx->pkey->hkdfKey, NULL, DYNAMIC_TYPE_KEY);
         ctx->pkey->hkdfKey = (byte*)XMALLOC((size_t)keySz, NULL,
             DYNAMIC_TYPE_KEY);
@@ -11778,6 +11781,9 @@ void wolfSSL_EVP_PKEY_free(WOLFSSL_EVP_PKEY* key)
                 case WC_EVP_PKEY_HKDF:
                     XFREE(key->hkdfSalt, NULL, DYNAMIC_TYPE_SALT);
                     key->hkdfSalt = NULL;
+                    if (key->hkdfKey != NULL && key->hkdfKeySz > 0) {
+                        ForceZero(key->hkdfKey, key->hkdfKeySz);
+                    }
                     XFREE(key->hkdfKey, NULL, DYNAMIC_TYPE_KEY);
                     key->hkdfKey = NULL;
                     XFREE(key->hkdfInfo, NULL, DYNAMIC_TYPE_INFO);

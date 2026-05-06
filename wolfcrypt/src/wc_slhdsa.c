@@ -7261,6 +7261,8 @@ int wc_SlhDsaKey_Sign(SlhDsaKey* key, const byte* ctx, byte ctxSz,
             sigSz, addRnd);
     }
 
+    ForceZero(addRnd, sizeof(addRnd));
+
     return ret;
 }
 
@@ -8055,6 +8057,8 @@ int wc_SlhDsaKey_SignHash(SlhDsaKey* key, const byte* ctx, byte ctxSz,
         ret = wc_SlhDsaKey_SignHashWithRandom(key, ctx, ctxSz, msg, msgSz,
             hashType, sig, sigSz, addRnd);
     }
+
+    ForceZero(addRnd, sizeof(addRnd));
 
     return ret;
 }
