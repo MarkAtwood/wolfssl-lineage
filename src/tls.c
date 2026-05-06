@@ -17064,11 +17064,6 @@ int TLSX_WriteResponse(WOLFSSL *ssl, byte* output, byte msgType, word16* pOffset
                     TURN_OFF(semaphore, TLSX_ToSemaphore(TLSX_KEY_SHARE));
                 }
         #endif
-#ifdef HAVE_ECH
-                /* send the special confirmation */
-                TURN_OFF(semaphore, TLSX_ToSemaphore(TLSX_ECH));
-#endif
-                /* Cookie is written below as last extension. */
                 break;
     #endif
 
@@ -17145,6 +17140,18 @@ int TLSX_WriteResponse(WOLFSSL *ssl, byte* output, byte msgType, word16* pOffset
         if (msgType == hello_retry_request) {
             XMEMSET(semaphore, 0xff, SEMAPHORE_SIZE);
             TURN_OFF(semaphore, TLSX_ToSemaphore(TLSX_COOKIE));
+            ret = TLSX_Write(ssl->extensions, output + offset, semaphore,
+                             msgType, &offset);
+            if (ret != 0)
+                return ret;
+        }
+#endif
+
+#if defined(WOLFSSL_TLS13) && defined(HAVE_ECH)
+        /* write ECH last to promote interop with other implementations */
+        if (msgType == hello_retry_request) {
+            XMEMSET(semaphore, 0xff, SEMAPHORE_SIZE);
+            TURN_OFF(semaphore, TLSX_ToSemaphore(TLSX_ECH));
             ret = TLSX_Write(ssl->extensions, output + offset, semaphore,
                              msgType, &offset);
             if (ret != 0)
