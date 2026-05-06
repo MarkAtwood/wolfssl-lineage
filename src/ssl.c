@@ -7718,10 +7718,21 @@ int wolfSSL_Cleanup(void)
 WOLFSSL_ABI
 int wolfSSL_check_domain_name(WOLFSSL* ssl, const char* dn)
 {
+    size_t dn_len;
+
     WOLFSSL_ENTER("wolfSSL_check_domain_name");
 
     if (ssl == NULL || dn == NULL) {
         WOLFSSL_MSG("Bad function argument: NULL");
+        return WOLFSSL_FAILURE;
+    }
+
+    dn_len = XSTRLEN(dn);
+
+    if ((! wolfssl_local_IsValidFQDN(dn, (word32)dn_len)) &&
+        (strcmp(dn, "localhost") != 0))
+    {
+        WOLFSSL_MSG("Bad function argument: fails wolfssl_local_IsValidFQDN");
         return WOLFSSL_FAILURE;
     }
 
