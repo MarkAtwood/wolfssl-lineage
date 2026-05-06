@@ -8860,7 +8860,7 @@ void wolfSSL_EVP_init(void)
 #endif
 #ifdef WOLFSSL_SM4_CTR
             case WC_SM4_CTR_TYPE :
-                WOLFSSL_MSG("AES CTR");
+                WOLFSSL_MSG("Sm4 CTR");
                 ret = wc_Sm4CtrEncrypt(&ctx->cipher.sm4, dst, src, len);
                 if (ret == 0)
                     ret = (int)len;
