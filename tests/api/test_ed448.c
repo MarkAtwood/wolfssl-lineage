@@ -324,6 +324,8 @@ int test_wc_ed448_export(void)
     XMEMSET(&rng, 0, sizeof(WC_RNG));
 
     ExpectIntEQ(wc_ed448_init(&key), 0);
+
+#if !defined(HAVE_FIPS) || FIPS_VERSION3_GE(7,0,0)
     /* Reject export when private key not set. */
     PRIVATE_KEY_UNLOCK();
     ExpectIntEQ(wc_ed448_export_private_only(&key, priv, &privSz),
@@ -331,6 +333,8 @@ int test_wc_ed448_export(void)
     ExpectIntEQ(wc_ed448_export_private(&key, priv, &privSz),
         WC_NO_ERR_TRACE(BAD_FUNC_ARG));
     PRIVATE_KEY_LOCK();
+#endif /* !HAVE_FIPS || FIPS_VERSION3_GE(7,0,0) */
+
     ExpectIntEQ(wc_InitRng(&rng), 0);
     ExpectIntEQ(wc_ed448_make_key(&rng, ED448_KEY_SIZE, &key), 0);
 
@@ -364,12 +368,16 @@ int test_wc_ed448_export(void)
     wc_ed448_free(&key);
     ExpectIntEQ(wc_ed448_init(&key), 0);
     ExpectIntEQ(wc_ed448_import_public(pub, pubSz, &key), 0);
+
+#if !defined(HAVE_FIPS) || FIPS_VERSION3_GE(7,0,0)
     PRIVATE_KEY_UNLOCK();
     ExpectIntEQ(wc_ed448_export_private_only(&key, priv, &privSz),
         WC_NO_ERR_TRACE(BAD_FUNC_ARG));
     ExpectIntEQ(wc_ed448_export_private(&key, priv, &privSz),
         WC_NO_ERR_TRACE(BAD_FUNC_ARG));
     PRIVATE_KEY_LOCK();
+#endif /* !HAVE_FIPS || FIPS_VERSION3_GE(7,0,0) */
+
 #endif
 
     DoExpectIntEQ(wc_FreeRng(&rng), 0);
