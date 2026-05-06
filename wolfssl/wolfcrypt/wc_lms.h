@@ -322,21 +322,21 @@ enum wc_LmsState {
 #endif
 
 /* Length of I in bytes. */
-#define LMS_I_LEN                   16
+#define LMS_I_LEN                   16U
 /* Length of L in bytes. */
-#define LMS_L_LEN                   4
+#define LMS_L_LEN                   4U
 /* Length of Q for a level. */
-#define LMS_Q_LEN                   4
+#define LMS_Q_LEN                   4U
 /* Length of P in bytes. */
-#define LMS_P_LEN                   2
+#define LMS_P_LEN                   2U
 /* Length of W in bytes. */
-#define LMS_W_LEN                   1
+#define LMS_W_LEN                   1U
 
 /* Length of numeric types when encoding. */
-#define LMS_TYPE_LEN                4
+#define LMS_TYPE_LEN                4U
 
 /* Size of digest output when truncatint SHA-256 to 192 bits. */
-#define WC_SHA256_192_DIGEST_SIZE   24
+#define WC_SHA256_192_DIGEST_SIZE   24U
 
 /* Maximum size of a node hash. */
 #define LMS_MAX_NODE_LEN            WC_SHA256_DIGEST_SIZE
@@ -383,33 +383,34 @@ enum wc_LmsState {
 #define LMS_LEAF_CACHE              (1 << LMS_CACHE_BITS)
 
 /* Maximum number of levels of trees described in private key. */
-#define HSS_MAX_LEVELS              8
+#define HSS_MAX_LEVELS              8U
 /* Length of full Q in bytes. Q from all levels combined. */
-#define HSS_Q_LEN                   8
+#define HSS_Q_LEN                   8U
 
 /* Compressed parameter set length in bytes. */
-#define HSS_COMPRESS_PARAM_SET_LEN  1
+#define HSS_COMPRESS_PARAM_SET_LEN  1U
 /* Total compressed parameter set length for private key in bytes. */
 #define HSS_PRIV_KEY_PARAM_SET_LEN  \
     (HSS_COMPRESS_PARAM_SET_LEN * HSS_MAX_LEVELS)
 
 /* Private key length for one level. */
 #define LMS_PRIV_LEN(hLen)          \
-    (LMS_Q_LEN + (hLen) + LMS_I_LEN)
+    (LMS_Q_LEN + (word32)(hLen) + LMS_I_LEN)
 /* Public key length in signature. */
 #define LMS_PUBKEY_LEN(hLen)        \
-    (LMS_TYPE_LEN + LMS_TYPE_LEN + LMS_I_LEN + (hLen))
+    (LMS_TYPE_LEN + LMS_TYPE_LEN + LMS_I_LEN + (word32)(hLen))
 
 /* LMS signature data length. */
 #define LMS_SIG_LEN(h, p, hLen)                                                \
-    (LMS_Q_LEN + LMS_TYPE_LEN + (hLen) + (p) * (hLen) + LMS_TYPE_LEN +         \
-     (h) * (hLen))
+    (LMS_Q_LEN + LMS_TYPE_LEN + (word32)(hLen) +                               \
+     (word32)(p) * (word32)(hLen) + LMS_TYPE_LEN +                             \
+     (word32)(h) * (word32)(hLen))
 
 /* Length of public key. */
 #define HSS_PUBLIC_KEY_LEN(hLen)        (LMS_L_LEN + LMS_PUBKEY_LEN(hLen))
 /* Length of private key. */
 #define HSS_PRIVATE_KEY_LEN(hLen)   \
-    (HSS_Q_LEN + HSS_PRIV_KEY_PARAM_SET_LEN + (hLen) + LMS_I_LEN)
+    (HSS_Q_LEN + HSS_PRIV_KEY_PARAM_SET_LEN + (word32)(hLen) + LMS_I_LEN)
 /* Maximum public key length - length is constant for all parameters. */
 #define HSS_MAX_PRIVATE_KEY_LEN     HSS_PRIVATE_KEY_LEN(LMS_MAX_NODE_LEN)
 /* Maximum private key length - length is constant for all parameters. */
@@ -431,19 +432,19 @@ enum wc_LmsState {
  * HSSPrivKey.priv
  */
 #define LMS_PRIV_KEY_LEN(l, hLen)           \
-    ((l) * LMS_PRIV_LEN(hLen))
+    ((word32)(l) * LMS_PRIV_LEN(hLen))
 
 /* Stack of nodes. */
 #define LMS_STACK_CACHE_LEN(h, hLen)        \
-     (((h) + 1) * (hLen))
+     (((word32)(h) + 1U) * (word32)(hLen))
 
 /* Root cache length. */
 #define LMS_ROOT_CACHE_LEN(rl, hLen)        \
-    (((1 << (rl)) - 1) * (hLen))
+    (((1U << (rl)) - 1U) * (word32)(hLen))
 
 /* Leaf cache length. */
 #define LMS_LEAF_CACHE_LEN(cb, hLen)        \
-    ((1 << (cb)) * (hLen))
+    ((1U << (cb)) * (word32)(hLen))
 
 /* Length of LMS private key state.
  *
@@ -454,39 +455,43 @@ enum wc_LmsState {
  *   cache.leaf + cache.index + cache.offset
  */
 #define LMS_PRIV_STATE_LEN(h, rl, cb, hLen)     \
-    (((h) * (hLen)) +                           \
-     LMS_STACK_CACHE_LEN(h, hLen) + 4 +         \
+    (((word32)(h) * (word32)(hLen)) +           \
+     LMS_STACK_CACHE_LEN(h, hLen) + 4U +        \
      LMS_ROOT_CACHE_LEN(rl, hLen) +             \
-     LMS_LEAF_CACHE_LEN(cb, hLen) + 4 + 4)
+     LMS_LEAF_CACHE_LEN(cb, hLen) + 4U + 4U)
 
 #ifndef WOLFSSL_WC_LMS_SMALL
     /* Private key data state for all levels. */
     #define LMS_PRIV_STATE_ALL_LEN(l, h, rl, cb, hLen)  \
-         ((l) * LMS_PRIV_STATE_LEN(h, rl, cb, hLen))
+         ((word32)(l) * LMS_PRIV_STATE_LEN(h, rl, cb, hLen))
 #else
     /* Private key data state for all levels. */
-    #define LMS_PRIV_STATE_ALL_LEN(l, h, rl, cb, hLen)  0
+    #define LMS_PRIV_STATE_ALL_LEN(l, h, rl, cb, hLen)  0U
 #endif
 
 #ifndef WOLFSSL_LMS_NO_SIGN_SMOOTHING
     /* Extra private key data for smoothing. */
-    #define LMS_PRIV_SMOOTH_LEN(l, h, rl, cb, hLen)         \
-        (LMS_PRIV_KEY_LEN(l, hLen) +                        \
-         ((l) - 1) * LMS_PRIV_STATE_LEN(h, rl, cb, hLen))
+    #define LMS_PRIV_SMOOTH_LEN(l, h, rl, cb, hLen)             \
+        (LMS_PRIV_KEY_LEN(l, hLen) +                            \
+         ((word32)(l) - 1U) * LMS_PRIV_STATE_LEN(h, rl, cb, hLen))
 #else
     /* Extra private key data for smoothing. */
-    #define LMS_PRIV_SMOOTH_LEN(l, h, rl, cb, hLen)     0
+    #define LMS_PRIV_SMOOTH_LEN(l, h, rl, cb, hLen)     0U
 #endif
 
+/* Length of one LM-OTS y[]: the C randomizer plus p hashes. */
+#define LMOTS_Y_LEN(p, hLen)                                        \
+    ((word32)(hLen) + (word32)(p) * (word32)(hLen))
+
 #ifndef WOLFSSL_LMS_NO_SIG_CACHE
-    #define LMS_PRIV_Y_TREE_LEN(p, hLen)                            \
-        ((hLen) + (p) * (hLen))
+    /* Length of one LM-OTS y[] when stored in the per-level y cache. */
+    #define LMS_PRIV_Y_TREE_LEN(p, hLen)    LMOTS_Y_LEN(p, hLen)
     /* Length of the y data cached in private key data. */
     #define LMS_PRIV_Y_LEN(l, p, hLen)                              \
-        (((l) - 1) * ((hLen) + (p) * (hLen)))
+        (((word32)(l) - 1U) * LMS_PRIV_Y_TREE_LEN(p, hLen))
 #else
     /* Length of the y data cached in private key data. */
-    #define LMS_PRIV_Y_LEN(l, p, hLen)      0
+    #define LMS_PRIV_Y_LEN(l, p, hLen)      0U
 #endif
 
 #ifndef WOLFSSL_WC_LMS_SMALL
