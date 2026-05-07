@@ -33,6 +33,7 @@ int test_wc_dilithium_sign_vfy(void);
 int test_wc_dilithium_check_key(void);
 int test_wc_dilithium_public_der_decode(void);
 int test_wc_dilithium_der(void);
+int test_wc_dilithium_oneasymkey_version(void);
 int test_wc_dilithium_make_key_from_seed(void);
 int test_wc_dilithium_sig_kats(void);
 int test_wc_dilithium_sign_ctx_kats(void);
@@ -57,6 +58,7 @@ int test_mldsa_x509_pubkey_sigtype(void);
     TEST_DECL_GROUP("mldsa", test_wc_dilithium_check_key),                     \
     TEST_DECL_GROUP("mldsa", test_wc_dilithium_public_der_decode),             \
     TEST_DECL_GROUP("mldsa", test_wc_dilithium_der),                           \
+    TEST_DECL_GROUP("mldsa", test_wc_dilithium_oneasymkey_version),            \
     TEST_DECL_GROUP("mldsa", test_wc_dilithium_make_key_from_seed),            \
     TEST_DECL_GROUP("mldsa", test_wc_dilithium_sig_kats),                      \
     TEST_DECL_GROUP("mldsa", test_wc_dilithium_sign_ctx_kats),                 \

@@ -2982,13 +2982,18 @@ int test_wc_dilithium_public_der_decode(void)
     return EXPECT_RESULT();
 }
 
+#if defined(HAVE_DILITHIUM) && \
+    !defined(WOLFSSL_DILITHIUM_NO_ASN1) && \
+    !defined(WOLFSSL_DILITHIUM_NO_MAKE_KEY)
+#define DILITHIUM_MAX_DER_SIZE    8192
+#endif
+
 int test_wc_dilithium_der(void)
 {
     EXPECT_DECLS;
 #if defined(HAVE_DILITHIUM) && \
     !defined(WOLFSSL_DILITHIUM_NO_ASN1) && \
     !defined(WOLFSSL_DILITHIUM_NO_MAKE_KEY)
-#define DILITHIUM_MAX_DER_SIZE    8192
     dilithium_key* key;
     WC_RNG rng;
     byte* der = NULL;
@@ -3191,6 +3196,93 @@ int test_wc_dilithium_der(void)
 
     XFREE(der, NULL, DYNAMIC_TYPE_TMP_BUFFER);
     XFREE(key, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+#endif
+    return EXPECT_RESULT();
+}
+
+#if defined(HAVE_DILITHIUM) && !defined(WOLFSSL_DILITHIUM_NO_ASN1) && \
+    !defined(WOLFSSL_DILITHIUM_NO_MAKE_KEY)
+
+/* Decode, re-export, byte-compare. Asserts version=1 on the bundled form and
+ * version=0 on the private only form. */
+static int dilithium_oneasymkey_version_check(int level)
+{
+    EXPECT_DECLS;
+    dilithium_key key;
+    dilithium_key key2;
+    WC_RNG rng;
+    byte* ref = NULL;
+    byte* rt = NULL;
+    int  refSz = 0;
+    int  rtSz = 0;
+    word32 idx;
+
+    XMEMSET(&key,  0, sizeof(key));
+    XMEMSET(&key2, 0, sizeof(key2));
+    XMEMSET(&rng,  0, sizeof(rng));
+
+    ExpectNotNull(ref = (byte*)XMALLOC(DILITHIUM_MAX_DER_SIZE, NULL,
+        DYNAMIC_TYPE_TMP_BUFFER));
+    ExpectNotNull(rt  = (byte*)XMALLOC(DILITHIUM_MAX_DER_SIZE, NULL,
+        DYNAMIC_TYPE_TMP_BUFFER));
+
+    ExpectIntEQ(wc_InitRng(&rng), 0);
+    ExpectIntEQ(wc_dilithium_init(&key), 0);
+    ExpectIntEQ(wc_dilithium_init(&key2), 0);
+    ExpectIntEQ(wc_dilithium_set_level(&key, level), 0);
+    ExpectIntEQ(wc_dilithium_set_level(&key2, level), 0);
+    ExpectIntEQ(wc_dilithium_make_key(&key, &rng), 0);
+
+    /* Bundled (v=1) */
+    PRIVATE_KEY_UNLOCK();
+    ExpectIntGT(refSz = wc_Dilithium_KeyToDer(&key, ref,
+        DILITHIUM_MAX_DER_SIZE), 0);
+    PRIVATE_KEY_LOCK();
+    ExpectIntEQ(test_pkcs8_get_version_byte(ref, (word32)refSz), 1);
+
+    idx = 0;
+    ExpectIntEQ(wc_Dilithium_PrivateKeyDecode(ref, &idx, &key2,
+        (word32)refSz), 0);
+    PRIVATE_KEY_UNLOCK();
+    ExpectIntEQ(rtSz = wc_Dilithium_KeyToDer(&key2, rt,
+        DILITHIUM_MAX_DER_SIZE), refSz);
+    PRIVATE_KEY_LOCK();
+    ExpectIntEQ(XMEMCMP(ref, rt, (size_t)refSz), 0);
+
+    /* Private only (v=0). Reuse ref. */
+    PRIVATE_KEY_UNLOCK();
+    ExpectIntGT(refSz = wc_Dilithium_PrivateKeyToDer(&key, ref,
+        DILITHIUM_MAX_DER_SIZE), 0);
+    PRIVATE_KEY_LOCK();
+    ExpectIntEQ(test_pkcs8_get_version_byte(ref, (word32)refSz), 0);
+
+    wc_dilithium_free(&key);
+    wc_dilithium_free(&key2);
+    wc_FreeRng(&rng);
+    XFREE(rt,  NULL, DYNAMIC_TYPE_TMP_BUFFER);
+    XFREE(ref, NULL, DYNAMIC_TYPE_TMP_BUFFER);
+
+    return EXPECT_RESULT();
+}
+#endif
+
+int test_wc_dilithium_oneasymkey_version(void)
+{
+    EXPECT_DECLS;
+#if defined(HAVE_DILITHIUM) && !defined(WOLFSSL_DILITHIUM_NO_ASN1) && \
+    !defined(WOLFSSL_DILITHIUM_NO_MAKE_KEY)
+    #ifndef WOLFSSL_NO_ML_DSA_44
+        ExpectIntEQ(dilithium_oneasymkey_version_check(WC_ML_DSA_44),
+            TEST_SUCCESS);
+    #endif
+    #ifndef WOLFSSL_NO_ML_DSA_65
+        ExpectIntEQ(dilithium_oneasymkey_version_check(WC_ML_DSA_65),
+            TEST_SUCCESS);
+    #endif
+    #ifndef WOLFSSL_NO_ML_DSA_87
+        ExpectIntEQ(dilithium_oneasymkey_version_check(WC_ML_DSA_87),
+            TEST_SUCCESS);
+    #endif
 #endif
     return EXPECT_RESULT();
 }
