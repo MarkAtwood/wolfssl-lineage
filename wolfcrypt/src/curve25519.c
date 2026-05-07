@@ -250,7 +250,7 @@ static int curve25519_smul_blind(byte* rp, const byte* n, const byte* p,
     for (cnt = 0; cnt < WOLFSSL_CURVE25519_BLINDING_RAND_CNT; cnt++) {
         ret = wc_RNG_GenerateBlock(rng, rz, sizeof(rz));
         if (ret < 0) {
-            return ret;
+            goto cleanup;
         }
         for (i = CURVE25519_KEYSIZE - 1; i >= 0; i--) {
             if (rz[i] != 0xff)
@@ -261,13 +261,14 @@ static int curve25519_smul_blind(byte* rp, const byte* n, const byte* p,
         }
     }
     if (cnt == WOLFSSL_CURVE25519_BLINDING_RAND_CNT) {
-        return RNG_FAILURE_E;
+        ret = RNG_FAILURE_E;
+        goto cleanup;
     }
 
     /* Generate 253 random bits. */
     ret = wc_RNG_GenerateBlock(rng, a, sizeof(a));
     if (ret != 0)
-        return ret;
+        goto cleanup;
     a[CURVE25519_KEYSIZE-1] &= 0x7f;
     /* k' = k ^ 2k ^ a */
     n_a[0] = n[0] ^ (byte)(n[0] << 1) ^ a[0];
@@ -280,6 +281,11 @@ static int curve25519_smul_blind(byte* rp, const byte* n, const byte* p,
     }
     /* Scalar multiple blinded scalar with blinding value. */
     ret = curve25519_blind(rp, n_a, a, p, rz);
+
+cleanup:
+    ForceZero(a, sizeof(a));
+    ForceZero(n_a, sizeof(n_a));
+    ForceZero(rz, sizeof(rz));
 
     RESTORE_VECTOR_REGISTERS();
 

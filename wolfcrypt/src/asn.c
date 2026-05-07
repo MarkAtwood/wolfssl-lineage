@@ -24806,7 +24806,14 @@ int PemToDer(const unsigned char* buff, long longSz, int type,
 int wc_PemToDer(const unsigned char* buff, long longSz, int type,
               DerBuffer** pDer, void* heap, EncryptedInfo* info, int* keyFormat)
 {
-    int ret = PemToDer(buff, longSz, type, pDer, heap, info, keyFormat);
+    int ret;
+
+    if (buff == NULL || longSz <= 0) {
+        WOLFSSL_MSG("Bad pem der args");
+        return BAD_FUNC_ARG;
+    }
+
+    ret = PemToDer(buff, longSz, type, pDer, heap, info, keyFormat);
 #if defined(HAVE_PKCS8) || defined(HAVE_PKCS12)
     if (ret == 0 && type == PRIVATEKEY_TYPE) {
         DerBuffer* der = *pDer;
