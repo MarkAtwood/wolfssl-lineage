@@ -31485,7 +31485,9 @@ int DecodeAsymKey_Assign(const byte* input, word32* inOutIdx, word32 inSz,
 
         if (GetMyVersion(input, inOutIdx, &version, inSz) < 0)
             return ASN_PARSE_E;
-        if (version != 0) {
+
+        /* RFC 5958: v1 (0) for privateKey only, v2 (1) when publicKey added. */
+        if (version != 0 && version != 1) {
             WOLFSSL_MSG("Unrecognized version of private key");
             return ASN_PARSE_E;
         }
@@ -32008,8 +32010,8 @@ int SetAsymKeyDer(const byte* privKey, word32 privKeyLen,
         /* seq */
         seqSz = SetSequence(verSz + algoSz + privSz + pubSz, output);
         idx = seqSz;
-        /* ver */
-        SetMyVersion(0, output + idx, FALSE);
+        /* ver: RFC 5958 requires v2 (1) iff publicKey present, else v1 (0). */
+        SetMyVersion((word32)(pubKey ? PKCS8v1 : PKCS8v0), output + idx, FALSE);
         idx += verSz;
         /* algo */
         algoSz = SetAlgoID(keyType, output + idx, oidKeyType, 0);
@@ -32037,8 +32039,9 @@ int SetAsymKeyDer(const byte* privKey, word32 privKeyLen,
     CALLOC_ASNSETDATA(dataASN, privateKeyASN_Length, ret, NULL);
 
     if (ret == 0) {
-        /* Set version = 0 */
-        SetASN_Int8Bit(&dataASN[PRIVKEYASN_IDX_VER], 0);
+        /* RFC 5958: v2 (1) iff publicKey present, else v1 (0). */
+        SetASN_Int8Bit(&dataASN[PRIVKEYASN_IDX_VER],
+            (byte)(pubKey ? PKCS8v1 : PKCS8v0));
         /* Set OID. */
         SetASN_OID(&dataASN[PRIVKEYASN_IDX_PKEYALGO_OID], (word32)keyType,
                    oidKeyType);

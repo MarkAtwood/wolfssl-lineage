@@ -608,3 +608,61 @@ int test_wc_curve25519_priv_clamp_check(void)
     return EXPECT_RESULT();
 } /* END test_wc_curve25519_priv_clamp_check */
 
+/*
+ * RFC 5958 OneAsymmetricKey: version=v2 (1) when publicKey is bundled,
+ * version=v1 (0) for private only.
+ */
+int test_wc_Curve25519KeyToDer_oneasymkey_version(void)
+{
+    EXPECT_DECLS;
+#if defined(HAVE_CURVE25519) && defined(HAVE_CURVE25519_KEY_EXPORT) && \
+    defined(HAVE_CURVE25519_KEY_IMPORT)
+    curve25519_key key;
+    curve25519_key key2;
+    WC_RNG rng;
+    byte ref[256];   /* reference DER (bundled, then private only) */
+    byte rt[256];    /* re-export target for memcmp */
+    int  refSz = 0;
+    int  rtSz = 0;
+    word32 idx;
+
+    XMEMSET(&key,  0, sizeof(key));
+    XMEMSET(&key2, 0, sizeof(key2));
+    XMEMSET(&rng,  0, sizeof(rng));
+
+    ExpectIntEQ(wc_InitRng(&rng), 0);
+    ExpectIntEQ(wc_curve25519_init(&key), 0);
+    ExpectIntEQ(wc_curve25519_init(&key2), 0);
+    ExpectIntEQ(wc_curve25519_make_key(&rng, CURVE25519_KEYSIZE, &key), 0);
+
+    /* make_key sets both priv and pub: KeyToDer bundles both (v=1).
+     * Use wc_Curve25519KeyDecode so the publicKey field is preserved in key2 */
+    ExpectIntGT(refSz = wc_Curve25519KeyToDer(&key, ref,
+        (word32)sizeof(ref), 1), 0);
+    ExpectIntEQ(test_pkcs8_get_version_byte(ref, (word32)refSz), 1);
+    idx = 0;
+    ExpectIntEQ(wc_Curve25519KeyDecode(ref, &idx, &key2, (word32)refSz), 0);
+    ExpectIntEQ(rtSz = wc_Curve25519KeyToDer(&key2, rt, (word32)sizeof(rt), 1),
+        refSz);
+    ExpectIntEQ(XMEMCMP(ref, rt, (size_t)refSz), 0);
+
+    /* Private only creates v=0. Reuse ref/rt. */
+    XMEMSET(&key2, 0, sizeof(key2));
+    ExpectIntEQ(wc_curve25519_init(&key2), 0);
+    ExpectIntGT(refSz = wc_Curve25519PrivateKeyToDer(&key, ref,
+        (word32)sizeof(ref)), 0);
+    ExpectIntEQ(test_pkcs8_get_version_byte(ref, (word32)refSz), 0);
+    idx = 0;
+    ExpectIntEQ(wc_Curve25519PrivateKeyDecode(ref, &idx, &key2,
+        (word32)refSz), 0);
+    ExpectIntEQ(rtSz = wc_Curve25519PrivateKeyToDer(&key2, rt,
+        (word32)sizeof(rt)), refSz);
+    ExpectIntEQ(XMEMCMP(ref, rt, (size_t)refSz), 0);
+
+    wc_curve25519_free(&key);
+    wc_curve25519_free(&key2);
+    wc_FreeRng(&rng);
+#endif
+    return EXPECT_RESULT();
+}
+
