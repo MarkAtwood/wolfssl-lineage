@@ -24565,6 +24565,7 @@ int test_wc_dilithium_sign_mu_kats(void)
      * convention, so passing zeroSeed reproduces them byte-for-byte. */
     static const byte zeroSeed[DILITHIUM_RND_SZ] = { 0 };
 
+#ifndef WOLFSSL_NO_ML_DSA_44
     /* ML-DSA-44 externalMu: deterministic, tcId 91
      * Source: kh-fork-fips/wolfACVP/v7.0.0-known/
      *   ML-DSA-sigGen-request.json. Deterministic mode
@@ -25206,7 +25207,9 @@ int test_wc_dilithium_sign_mu_kats(void)
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x12, 0x1f, 0x28, 0x39
     };
+#endif
 
+#ifndef WOLFSSL_NO_ML_DSA_65
     /* ML-DSA-65 externalMu: deterministic, tcId 121
      * Source: kh-fork-fips/wolfACVP/v7.0.0-known/
      *   ML-DSA-sigGen-request.json. Deterministic mode
@@ -26143,7 +26146,9 @@ int test_wc_dilithium_sign_mu_kats(void)
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07,
         0x0c, 0x10, 0x18, 0x1c, 0x1f
     };
+#endif
 
+#ifndef WOLFSSL_NO_ML_DSA_87
     /* ML-DSA-87 externalMu: deterministic, tcId 151
      * Source: kh-fork-fips/wolfACVP/v7.0.0-known/
      *   ML-DSA-sigGen-request.json. Deterministic mode
@@ -27353,6 +27358,7 @@ int test_wc_dilithium_sign_mu_kats(void)
         0x00, 0x00, 0x00, 0x01, 0x08, 0x0e, 0x16, 0x1e,
         0x22, 0x2a, 0x30
     };
+#endif
 
 
     ExpectNotNull(key = (dilithium_key*)XMALLOC(sizeof(*key), NULL,
@@ -27423,6 +27429,7 @@ int test_wc_dilithium_verify_mu_kats(void)
     byte muBuf[DILITHIUM_MU_SZ];
     int res;
 
+#ifndef WOLFSSL_NO_ML_DSA_44
     /* ML-DSA-44 externalMu: deterministic, tcId 91
      * Source: kh-fork-fips/wolfACVP/v7.0.0-known/
      *   ML-DSA-sigGen-request.json. Deterministic mode
@@ -27908,7 +27915,9 @@ int test_wc_dilithium_verify_mu_kats(void)
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x12, 0x1f, 0x28, 0x39
     };
+#endif
 
+#ifndef WOLFSSL_NO_ML_DSA_65
     /* ML-DSA-65 externalMu: deterministic, tcId 121
      * Source: kh-fork-fips/wolfACVP/v7.0.0-known/
      *   ML-DSA-sigGen-request.json. Deterministic mode
@@ -28585,7 +28594,9 @@ int test_wc_dilithium_verify_mu_kats(void)
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07,
         0x0c, 0x10, 0x18, 0x1c, 0x1f
     };
+#endif
 
+#ifndef WOLFSSL_NO_ML_DSA_87
     /* ML-DSA-87 externalMu: deterministic, tcId 151
      * Source: kh-fork-fips/wolfACVP/v7.0.0-known/
      *   ML-DSA-sigGen-request.json. Deterministic mode
@@ -29507,7 +29518,7 @@ int test_wc_dilithium_verify_mu_kats(void)
         0x00, 0x00, 0x00, 0x01, 0x08, 0x0e, 0x16, 0x1e,
         0x22, 0x2a, 0x30
     };
-
+#endif
 
     ExpectNotNull(key = (dilithium_key*)XMALLOC(sizeof(*key), NULL,
         DYNAMIC_TYPE_TMP_BUFFER));
