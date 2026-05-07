@@ -868,9 +868,6 @@ int SizeASN_Items(const ASNItem* asn, ASNSetData *data, int count,
                     return ASN_PARSE_E;
                 }
                 length += mp_leading_bit(data[i].data.mp) ? 1 : 0;
-                if (length < 0) {
-                    return ASN_PARSE_E;
-                }
                 len = (word32)SizeASNHeader((word32)length) + (word32)length;
                 /* Check for overflow: header + length must not wrap word32. */
                 if (len < (word32)length) {

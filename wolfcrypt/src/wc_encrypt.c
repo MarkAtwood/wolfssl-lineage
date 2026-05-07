@@ -468,8 +468,8 @@ int wc_CryptKey(const char* password, int passwordSz, const byte* salt,
                 byte unicodePasswd[MAX_UNICODE_SZ];
 
                 if (passwordSz < 0 ||
-                    passwordSz >= (int)sizeof(unicodePasswd) ||
-                   (passwordSz * 2 + 2) > (int)sizeof(unicodePasswd)) {
+                    passwordSz >= MAX_UNICODE_SZ ||
+                   (passwordSz * 2 + 2) > MAX_UNICODE_SZ) {
                     ret = UNICODE_SIZE_E;
                     break;
                 }
