@@ -85,7 +85,9 @@ trap restore_file_system EXIT
 TMP_DIR=$(mktemp -d) || exit $?
 SRC_DIR="$PWD"
 pushd "$TMP_DIR" || exit $?
-cp -r --symbolic-link "${SRC_DIR}/certs" . || exit $?
+if ! cp -R --symbolic-link "${SRC_DIR}/certs" . 2>/dev/null; then
+    cp -pR "${SRC_DIR}/certs" . || exit $?
+fi
 popd || exit $?
 CERT_DIR="${TMP_DIR}/certs"
 
