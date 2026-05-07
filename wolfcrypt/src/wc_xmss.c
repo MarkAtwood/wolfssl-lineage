@@ -1798,13 +1798,10 @@ int wc_XmssKey_GetSigLen(const XmssKey* key, word32* len)
 int wc_XmssKey_Verify(XmssKey* key, const byte* sig, word32 sigLen,
     const byte* m, int mLen)
 {
-    int            ret = 0;
+    int ret = 0;
 
     /* Validate parameters. */
     if ((key == NULL) || (sig == NULL) || (m == NULL)) {
-        ret = BAD_FUNC_ARG;
-    }
-    if ((ret == 0) && (mLen <= 0)) {
         ret = BAD_FUNC_ARG;
     }
     /* Validate state. */

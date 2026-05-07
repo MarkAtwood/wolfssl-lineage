@@ -1529,7 +1529,13 @@ int wc_LmsKey_ExportPub_ex(LmsKey* keyDst, const LmsKey* keySrc,
  */
 int wc_LmsKey_ExportPub(LmsKey* keyDst, const LmsKey* keySrc)
 {
-    return wc_LmsKey_ExportPub_ex(keyDst, keySrc, NULL, INVALID_DEVID);
+    return wc_LmsKey_ExportPub_ex(keyDst, keySrc,
+    #ifndef WOLFSSL_LMS_VERIFY_ONLY
+        (keySrc != NULL) ? keySrc->heap : NULL,
+    #else
+        NULL,
+    #endif
+        INVALID_DEVID);
 }
 
 /* Exports the raw LMS public key buffer from key to out buffer.
