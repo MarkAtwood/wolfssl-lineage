@@ -9294,6 +9294,14 @@ static int TLSX_KeyShare_ProcessDh(WOLFSSL* ssl, KeyShareEntry* keyShareEntry)
     }
 #endif
 
+    /* RFC 8446 Section 4.2.8.1: FFDHE key_exchange values are left-padded with
+     * zeros to the size of the named-group prime. Reject any peer key share
+     * whose byte length does not match the expected prime size. */
+    if (keyShareEntry->keLen != pSz) {
+        WOLFSSL_ERROR_VERBOSE(PEER_KEY_ERROR);
+        return PEER_KEY_ERROR;
+    }
+
     /* if DhKey is not setup, do it now */
     if (keyShareEntry->key == NULL) {
         keyShareEntry->key = (DhKey*)XMALLOC(sizeof(DhKey), ssl->heap,

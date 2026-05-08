@@ -1270,7 +1270,8 @@ static int ImportKeyState(WOLFSSL* ssl, const byte* exp, word32 len, byte ver,
     }
 
     sz = exp[idx++];
-    if (sz > sizeof(keys->client_write_IV) || (sz * 2) + idx > len) {
+    if (sz > sizeof(keys->client_write_IV) ||
+            (sz * 2) + idx + AEAD_MAX_EXP_SZ + OPAQUE8_LEN > len) {
         WOLFSSL_MSG("Buffer not large enough for write IV import");
         return BUFFER_E;
     }
@@ -16977,10 +16978,15 @@ int ProcessPeerCerts(WOLFSSL* ssl, byte* input, word32* inOutIdx,
                         ret = KEYUSE_ENCIPHER_E;
                         WOLFSSL_ERROR_VERBOSE(ret);
                     }
-                    if ((ssl->specs.kea != rsa_kea) &&
-                        (ssl->specs.sig_algo == rsa_sa_algo ||
-                            (ssl->specs.sig_algo == ecc_dsa_sa_algo &&
-                                 !ssl->specs.static_ecdh)) &&
+                    /* TLS 1.3 decouples sig algorithm from cipher suite, so
+                     * specs.sig_algo is any_sa_algo. RFC 8446 4.4.2.4 still
+                     * requires digital_signature when keyUsage is present on
+                     * the cert that drives CertificateVerify. */
+                    if (((ssl->specs.kea != rsa_kea) &&
+                            (IsAtLeastTLSv1_3(ssl->version) ||
+                             ssl->specs.sig_algo == rsa_sa_algo ||
+                                (ssl->specs.sig_algo == ecc_dsa_sa_algo &&
+                                     !ssl->specs.static_ecdh))) &&
                         (args->dCert->extKeyUsage & KEYUSE_DIGITAL_SIG) == 0) {
                         WOLFSSL_MSG("KeyUse Digital Sig not set");
                         ret = KEYUSE_SIGNATURE_E;
@@ -24319,6 +24325,8 @@ static int BuildMD5_CertVerify(const WOLFSSL* ssl, byte* digest)
 #ifdef WOLFSSL_SMALL_STACK
     wc_Md5* md5 = (wc_Md5*)XMALLOC(sizeof(wc_Md5), ssl->heap,
         DYNAMIC_TYPE_HASHCTX);
+    if (md5 == NULL)
+        return MEMORY_E;
 #else
     wc_Md5  md5[1];
 #endif
@@ -24363,6 +24371,8 @@ static int BuildSHA_CertVerify(const WOLFSSL* ssl, byte* digest)
 #ifdef WOLFSSL_SMALL_STACK
     wc_Sha* sha = (wc_Sha*)XMALLOC(sizeof(wc_Sha), ssl->heap,
         DYNAMIC_TYPE_HASHCTX);
+    if (sha == NULL)
+        return MEMORY_E;
 #else
     wc_Sha  sha[1];
 #endif
