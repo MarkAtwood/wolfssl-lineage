@@ -1578,39 +1578,127 @@ int wc_LmsKey_ExportPubRaw(const LmsKey* key, byte* out, word32* outLen)
 
 /* Imports a raw public key buffer from in array to LmsKey key.
  *
- * The LMS parameters must be set first with wc_LmsKey_SetLmsParm or
- * wc_LmsKey_SetParameters, and inLen must match the length returned
- * by wc_LmsKey_GetPubLen.
+ * If the LMS parameters have already been configured (via
+ * wc_LmsKey_SetLmsParm or wc_LmsKey_SetParameters), the levels /
+ * lms_algorithm_type / lmots_algorithm_type encoded in the raw key are
+ * checked for consistency and inLen must match wc_LmsKey_GetPubLen.
  *
- * Call wc_LmsKey_GetPubLen beforehand to determine pubLen.
+ * If the parameters have not yet been set (key->params == NULL), they
+ * are derived from the raw public key prefix (RFC 8554 sec 3.3 / sec
+ * 6.1: u32str(L) || lms_algorithm_type || lmots_algorithm_type) and
+ * matched against the static parameter map. The candidate is held in
+ * a local until the length check passes, so a length mismatch leaves
+ * key->params NULL.
+ *
+ * Accepts a key in INITED, PARMSET or VERIFYONLY state. WC_LMS_STATE_OK
+ * is rejected because the key already has private material loaded and
+ * silently overwriting key->pub would create an inconsistent priv/pub
+ * pair.
  *
  * @param [in, out] key    LMS key to put public key in.
  * @param [in]      in     Buffer holding encoded public key.
  * @param [in]      inLen  Length of encoded public key in bytes.
  * @return  0 on success.
- * @return  BAD_FUNC_ARG when key or in is NULL.
- * @return  BUFFER_E when inLen does not match public key length by parameters.
+ * @return  BAD_FUNC_ARG when key or in is NULL, or when the raw key's
+ *          levels / lmsType / lmOtsType disagree with pre-set params.
+ * @return  BAD_STATE_E when wrong state for operation.
+ * @return  BUFFER_E when inLen is too small to contain the LMS type
+ *          fields, or doesn't match the public key length determined
+ *          by parameters.
+ * @return  NOT_COMPILED_IN when the derived parameter set isn't built in.
  */
 int wc_LmsKey_ImportPubRaw(LmsKey* key, const byte* in, word32 inLen)
 {
-    int ret = 0;
+    int              ret = 0;
+    const LmsParams* matched = NULL;
 
     /* Validate parameters. */
     if ((key == NULL) || (in == NULL)) {
         ret = BAD_FUNC_ARG;
     }
+    /* Reject states where re-importing the public bytes would desync
+     * the key. INITED (params unset, will derive), PARMSET (params set
+     * but no private material) and VERIFYONLY (already a pub-only key)
+     * are all safe. OK means a private key is loaded; silently
+     * overwriting key->pub would create a priv/pub mismatch. Mirrors
+     * the wc_XmssKey_ImportPubRaw_ex post-condition added in the same
+     * RFC 9802 series. */
     if ((ret == 0) &&
-            (inLen != (word32)HSS_PUBLIC_KEY_LEN(key->params->hash_len))) {
-        /* Something inconsistent. Parameters weren't set, or input
-         * pub key is wrong.*/
-        return BUFFER_E;
+            (key->state != WC_LMS_STATE_INITED) &&
+            (key->state != WC_LMS_STATE_PARMSET) &&
+            (key->state != WC_LMS_STATE_VERIFYONLY)) {
+        WOLFSSL_MSG("error: LMS key not ready for import");
+        ret = BAD_STATE_E;
+    }
+    /* Need at least L || lmsType || lmOtsType to derive or validate. */
+    if ((ret == 0) && (inLen < (word32)(LMS_L_LEN + 2 * LMS_TYPE_LEN))) {
+        ret = BUFFER_E;
     }
 
     if (ret == 0) {
-        XMEMCPY(key->pub, in, inLen);
+        word32 levels = 0;
+        word32 lmsType = 0;
+        word32 lmOtsType = 0;
 
-        if (key->state != WC_LMS_STATE_OK)
-            key->state = WC_LMS_STATE_VERIFYONLY;
+        /* RFC 8554 sec 3.3 / sec 6.1: HSS public key = u32str(L) || pub[0],
+         * where pub[0] starts with lms_algorithm_type || lmots_algorithm_type.
+         */
+        ato32(in + 0,                   &levels);
+        ato32(in + LMS_L_LEN,           &lmsType);
+        ato32(in + LMS_L_LEN + LMS_TYPE_LEN, &lmOtsType);
+
+        /* The wire format carries only the RFC type code (low 12 bits);
+         * params->lmsType / lmOtsType also pack a wolfSSL-internal hash
+         * family flag in the high 4 bits (LMS_HASH_MASK). Compare on the
+         * RFC code only -- safe as long as low-12-bit codes stay globally
+         * distinct across hash families (see wc_lms_impl.c step 3.d-e
+         * note). */
+        if (key->params == NULL) {
+            /* Auto-derive: find matching entry in the static map. Hold
+             * the candidate in a local until the length check passes to
+             * avoid leaving key->params half-set on failure. */
+            int i;
+            ret = WC_NO_ERR_TRACE(NOT_COMPILED_IN);
+            for (i = 0; i < WC_LMS_MAP_LEN; i++) {
+                if (((word32)wc_lms_map[i].params.levels == levels) &&
+                    ((word32)(wc_lms_map[i].params.lmsType & LMS_H_W_MASK) ==
+                                                                     lmsType) &&
+                    ((word32)(wc_lms_map[i].params.lmOtsType& LMS_H_W_MASK) ==
+                                                                   lmOtsType)) {
+                    matched = &wc_lms_map[i].params;
+                    ret = 0;
+                    break;
+                }
+            }
+            if (ret != 0) {
+                WOLFSSL_MSG("error: LMS params from pub key not supported");
+            }
+        }
+        else {
+            /* Validate against pre-set params. */
+            if (((word32)key->params->levels != levels) ||
+                ((word32)(key->params->lmsType & LMS_H_W_MASK) != lmsType) ||
+                ((word32)(key->params->lmOtsType & LMS_H_W_MASK) != lmOtsType)){
+                WOLFSSL_MSG("error: LMS pub key doesn't match set params");
+                ret = BAD_FUNC_ARG;
+            }
+            else {
+                matched = key->params;
+            }
+        }
+    }
+    if ((ret == 0) &&
+            (inLen != (word32)HSS_PUBLIC_KEY_LEN(matched->hash_len))) {
+        ret = BUFFER_E;
+    }
+
+    if (ret == 0) {
+        /* Commit params (no-op when already set) and copy the key.
+         * State is INITED/PARMSET/VERIFYONLY here (OK is rejected
+         * above), so promoting to VERIFYONLY is always correct. */
+        key->params = matched;
+        XMEMCPY(key->pub, in, inLen);
+        key->state = WC_LMS_STATE_VERIFYONLY;
     }
 
     return ret;
@@ -1625,14 +1713,15 @@ int wc_LmsKey_ImportPubRaw(LmsKey* key, const byte* in, word32 inLen)
  * @param [in]  key  LMS key.
  * @param [out] len  Length of a signature in bytes.
  * @return  0 on success.
- * @return  BAD_FUNC_ARG when key or len is NULL.
+ * @return  BAD_FUNC_ARG when key or len is NULL, or when the LMS
+ *          parameters have not been configured on the key.
  */
 int wc_LmsKey_GetSigLen(const LmsKey* key, word32* len)
 {
     int ret = 0;
 
     /* Validate parameters. */
-    if ((key == NULL) || (len == NULL)) {
+    if ((key == NULL) || (len == NULL) || (key->params == NULL)) {
         ret = BAD_FUNC_ARG;
     }
 

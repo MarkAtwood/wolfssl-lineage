@@ -2947,7 +2947,7 @@ static word32 SetAlgoIDImpl(int algoOID, byte* output, int type, int curveSz,
     word32    length = 0;
 
     tagSz = ((type == oidHashType ||
-             (type == oidSigType && !IsSigAlgoECC((word32)algoOID)) ||
+             (type == oidSigType && !IsSigAlgoNoParams((word32)algoOID)) ||
              (type == oidKeyType && algoOID == RSAk)) &&
                 (absentParams == FALSE)) ? 2U : 0U;
     algoName = OidFromId((word32)algoOID, (word32)type, &algoSz);

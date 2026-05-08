@@ -457,6 +457,8 @@ WOLFSSL_API int  wc_XmssKey_ExportPubRaw(const XmssKey* key, byte* out,
     word32* outLen);
 WOLFSSL_API int  wc_XmssKey_ImportPubRaw(XmssKey* key, const byte* in,
     word32 inLen);
+WOLFSSL_API int  wc_XmssKey_ImportPubRaw_ex(XmssKey* key, const byte* in,
+    word32 inLen, int is_xmssmt);
 WOLFSSL_API int  wc_XmssKey_Verify(XmssKey* key, const byte* sig, word32 sigSz,
     const byte* msg, int msgSz);
 
