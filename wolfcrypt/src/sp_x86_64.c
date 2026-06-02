@@ -47,6 +47,17 @@
 
 #include <wolfssl/wolfcrypt/sp.h>
 
+#if defined(WOLFSSL_USE_SAVE_VECTOR_REGISTERS) && !defined(WOLFSSL_SP_ASM) && \
+        !defined(DEBUG_VECTOR_REGISTER_ACCESS)
+    /* force off unneeded vector register save/restore. */
+    #undef SAVE_VECTOR_REGISTERS
+    #define SAVE_VECTOR_REGISTERS(fail_clause) SAVE_NO_VECTOR_REGISTERS(fail_clause)
+    #undef SAVE_VECTOR_REGISTERS2
+    #define SAVE_VECTOR_REGISTERS2() SAVE_NO_VECTOR_REGISTERS2()
+    #undef RESTORE_VECTOR_REGISTERS
+    #define RESTORE_VECTOR_REGISTERS() RESTORE_NO_VECTOR_REGISTERS()
+#endif
+
 #ifdef __IAR_SYSTEMS_ICC__
 #define __asm__        asm
 #define __volatile__   volatile
@@ -429,8 +440,6 @@ static void sp_2048_mont_norm_16(sp_digit* r, const sp_digit* m)
 {
     XMEMSET(r, 0, sizeof(sp_digit) * 16);
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     /* r = 2^n mod m */
     sp_2048_sub_in_place_16(r, m);
 }
@@ -520,7 +529,6 @@ extern sp_digit div_2048_word_asm_16(sp_digit d1, sp_digit d0, sp_digit div);
 static WC_INLINE sp_digit div_2048_word_16(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
 #if _MSC_VER >= 1920
     return _udiv128(d1, d0, div, NULL);
 #else
@@ -539,7 +547,6 @@ static WC_INLINE sp_digit div_2048_word_16(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
     register sp_digit r asm("rax");
-    ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
         : "=a" (r)
@@ -607,8 +614,6 @@ static WC_INLINE int sp_2048_div_16(const sp_digit* a, const sp_digit* d, sp_dig
     word32 cpuid_flags = cpuid_get_flags();
 #endif
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     (void)m;
 
     div = d[15];
@@ -661,18 +666,38 @@ static WC_INLINE int sp_2048_div_16(const sp_digit* a, const sp_digit* d, sp_dig
 static WC_INLINE int sp_2048_mod_16(sp_digit* r, const sp_digit* a,
         const sp_digit* m)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
     return sp_2048_div_16(a, m, NULL, r);
 }
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern void sp_2048_get_from_table_16(sp_digit* r, sp_digit** table, int idx);
-#ifdef __cplusplus
-}
-#endif
+#ifndef WC_NO_CACHE_RESISTANT
+static void sp_2048_get_from_table_16(sp_digit* r,
+        sp_digit** table, int idx)
+{
+    int e, j;
+    sp_digit mask;
+    sp_digit diff;
 
+    for (j = 0; j < 16; j++) {
+        r[j] = 0;
+    }
+
+    for (e = 0; e < 32; e++) {
+        /* Constant-time: mask = (e == idx) ? ~0 : 0
+         * diff = e ^ idx is 0 iff equal.
+         * (diff | -diff) has its sign bit set iff diff != 0.
+         * Shift to get 1/0, subtract from 1 to invert, negate to mask.
+         */
+        diff = (sp_digit)(e ^ idx);
+        diff = (diff | ((sp_digit)0 - diff))
+               >> (sizeof(sp_digit) * 8 - 1);  /* 1 if !=, 0 if == */
+        mask = (sp_digit)0 - ((sp_digit)1 - diff);  /* all-1 if ==, else 0 */
+
+        for (j = 0; j < 16; j++) {
+            r[j] |= table[e][j] & mask;
+        }
+    }
+}
+#endif /* !WC_NO_CACHE_RESISTANT */
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
  * r     A single precision number that is the result of the operation.
@@ -698,8 +723,6 @@ static int sp_2048_mod_exp_16(sp_digit* r, const sp_digit* a, const sp_digit* e,
     int c;
     byte y;
     int err = MP_OKAY;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     if (bits == 0) {
         err = MP_VAL;
@@ -869,6 +892,7 @@ extern void sp_2048_mont_reduce_avx2_16(sp_digit* a, const sp_digit* m, sp_digit
 SP_NOINLINE static void sp_2048_mont_mul_avx2_16(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
+    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_2048_mul_avx2_16(r, a, b);
     sp_2048_mont_reduce_avx2_16(r, m, mp);
 }
@@ -885,6 +909,7 @@ SP_NOINLINE static void sp_2048_mont_mul_avx2_16(sp_digit* r, const sp_digit* a,
 SP_NOINLINE static void sp_2048_mont_sqr_avx2_16(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
+    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_2048_sqr_avx2_16(r, a);
     sp_2048_mont_reduce_avx2_16(r, m, mp);
 }
@@ -926,7 +951,6 @@ static int sp_2048_mod_exp_avx2_16(sp_digit* r, const sp_digit* a, const sp_digi
     int err = MP_OKAY;
 
     ASSERT_SAVED_VECTOR_REGISTERS();
-
     if (bits == 0) {
         err = MP_VAL;
     }
@@ -1089,8 +1113,6 @@ static void sp_2048_mont_norm_32(sp_digit* r, const sp_digit* m)
 {
     XMEMSET(r, 0, sizeof(sp_digit) * 32);
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     /* r = 2^n mod m */
     sp_2048_sub_in_place_32(r, m);
 }
@@ -1174,7 +1196,6 @@ extern sp_digit div_2048_word_asm_32(sp_digit d1, sp_digit d0, sp_digit div);
 static WC_INLINE sp_digit div_2048_word_32(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
 #if _MSC_VER >= 1920
     return _udiv128(d1, d0, div, NULL);
 #else
@@ -1193,7 +1214,6 @@ static WC_INLINE sp_digit div_2048_word_32(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
     register sp_digit r asm("rax");
-    ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
         : "=a" (r)
@@ -1223,8 +1243,6 @@ static WC_INLINE int sp_2048_div_32_cond(const sp_digit* a, const sp_digit* d, s
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
 #endif
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     (void)m;
 
@@ -1284,7 +1302,6 @@ static WC_INLINE int sp_2048_div_32_cond(const sp_digit* a, const sp_digit* d, s
 static WC_INLINE int sp_2048_mod_32_cond(sp_digit* r, const sp_digit* a,
         const sp_digit* m)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
     return sp_2048_div_32_cond(a, m, NULL, r);
 }
 
@@ -1354,8 +1371,6 @@ static WC_INLINE int sp_2048_div_32(const sp_digit* a, const sp_digit* d, sp_dig
     word32 cpuid_flags = cpuid_get_flags();
 #endif
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     (void)m;
 
     div = d[31];
@@ -1409,19 +1424,39 @@ static WC_INLINE int sp_2048_div_32(const sp_digit* a, const sp_digit* d, sp_dig
 static WC_INLINE int sp_2048_mod_32(sp_digit* r, const sp_digit* a,
         const sp_digit* m)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
     return sp_2048_div_32(a, m, NULL, r);
 }
 
 #endif /* WOLFSSL_HAVE_SP_DH || !WOLFSSL_RSA_PUBLIC_ONLY */
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern void sp_2048_get_from_table_32(sp_digit* r, sp_digit** table, int idx);
-#ifdef __cplusplus
-}
-#endif
+#ifndef WC_NO_CACHE_RESISTANT
+static void sp_2048_get_from_table_32(sp_digit* r,
+        sp_digit** table, int idx)
+{
+    int e, j;
+    sp_digit mask;
+    sp_digit diff;
 
+    for (j = 0; j < 32; j++) {
+        r[j] = 0;
+    }
+
+    for (e = 0; e < 64; e++) {
+        /* Constant-time: mask = (e == idx) ? ~0 : 0
+         * diff = e ^ idx is 0 iff equal.
+         * (diff | -diff) has its sign bit set iff diff != 0.
+         * Shift to get 1/0, subtract from 1 to invert, negate to mask.
+         */
+        diff = (sp_digit)(e ^ idx);
+        diff = (diff | ((sp_digit)0 - diff))
+               >> (sizeof(sp_digit) * 8 - 1);  /* 1 if !=, 0 if == */
+        mask = (sp_digit)0 - ((sp_digit)1 - diff);  /* all-1 if ==, else 0 */
+
+        for (j = 0; j < 32; j++) {
+            r[j] |= table[e][j] & mask;
+        }
+    }
+}
+#endif /* !WC_NO_CACHE_RESISTANT */
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
  * r     A single precision number that is the result of the operation.
@@ -1447,8 +1482,6 @@ static int sp_2048_mod_exp_32(sp_digit* r, const sp_digit* a, const sp_digit* e,
     int c;
     byte y;
     int err = MP_OKAY;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     if (bits == 0) {
         err = MP_VAL;
@@ -1652,6 +1685,7 @@ extern void sp_2048_mont_reduce_avx2_32(sp_digit* a, const sp_digit* m, sp_digit
 SP_NOINLINE static void sp_2048_mont_mul_avx2_32(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
+    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_2048_mul_avx2_32(r, a, b);
     sp_2048_mont_reduce_avx2_32(r, m, mp);
 }
@@ -1668,6 +1702,7 @@ SP_NOINLINE static void sp_2048_mont_mul_avx2_32(sp_digit* r, const sp_digit* a,
 SP_NOINLINE static void sp_2048_mont_sqr_avx2_32(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
+    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_2048_sqr_avx2_32(r, a);
     sp_2048_mont_reduce_avx2_32(r, m, mp);
 }
@@ -1710,7 +1745,6 @@ static int sp_2048_mod_exp_avx2_32(sp_digit* r, const sp_digit* a, const sp_digi
     int err = MP_OKAY;
 
     ASSERT_SAVED_VECTOR_REGISTERS();
-
     if (bits == 0) {
         err = MP_VAL;
     }
@@ -1918,9 +1952,8 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     if (*outLen < 256) {
         err = MP_TO_E;
@@ -1953,6 +1986,13 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
     if (err == MP_OKAY) {
         sp_2048_from_mp(m, 32, mm);
 
+#ifdef HAVE_INTEL_AVX2
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+            IS_INTEL_AVX2(cpuid_flags) &&
+            (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+#endif
+
         if (e == 0x10001) {
             int i;
             sp_digit mp;
@@ -1967,9 +2007,7 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
             if (err == MP_OKAY) {
                 /* r = a ^ 0x10000 => r = a squared 16 times */
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                        IS_INTEL_AVX2(cpuid_flags) &&
-                        (SAVE_VECTOR_REGISTERS2() == 0)) {
+                if (saved_vector_registers) {
                     for (i = 15; i >= 0; i--) {
                         sp_2048_mont_sqr_avx2_32(r, r, m, mp);
                     }
@@ -1977,7 +2015,6 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
                      * mont_red(r.R * a) = (r.R.a / R) mod m = r.a mod m
                      */
                     sp_2048_mont_mul_avx2_32(r, r, ah, m, mp);
-                    RESTORE_VECTOR_REGISTERS();
                 }
                 else
 #endif
@@ -2001,9 +2038,7 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
         }
         else if (e == 0x3) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                    IS_INTEL_AVX2(cpuid_flags) &&
-                    (SAVE_VECTOR_REGISTERS2() == 0)) {
+            if (saved_vector_registers) {
                 if (err == MP_OKAY) {
                     sp_2048_sqr_avx2_32(r, ah);
                     err = sp_2048_mod_32_cond(r, r, m);
@@ -2012,7 +2047,6 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
                     sp_2048_mul_avx2_32(r, ah, r);
                     err = sp_2048_mod_32_cond(r, r, m);
                 }
-                RESTORE_VECTOR_REGISTERS();
             }
             else
 #endif
@@ -2046,9 +2080,7 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
 
                 XMEMCPY(r, a, sizeof(sp_digit) * 32);
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                        IS_INTEL_AVX2(cpuid_flags) &&
-                        (SAVE_VECTOR_REGISTERS2() == 0)) {
+                if (saved_vector_registers) {
                     for (i--; i>=0; i--) {
                         sp_2048_mont_sqr_avx2_32(r, r, m, mp);
                         if (((e >> i) & 1) == 1) {
@@ -2057,7 +2089,6 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
                     }
                     XMEMSET(&r[32], 0, sizeof(sp_digit) * 32);
                     sp_2048_mont_reduce_avx2_32(r, m, mp);
-                    RESTORE_VECTOR_REGISTERS();
                 }
                 else
 #endif
@@ -2086,6 +2117,11 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
         sp_2048_to_bin_32(r, out);
         *outLen = 256;
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     SP_FREE_VAR(a, NULL, DYNAMIC_TYPE_RSA);
 
@@ -2120,8 +2156,6 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
     sp_digit* m = NULL;
     sp_digit* r = NULL;
     int err = MP_OKAY;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     (void)pm;
     (void)qm;
@@ -2220,9 +2254,8 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     (void)dm;
     (void)mm;
@@ -2244,6 +2277,7 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
     }
 
     SP_ALLOC_VAR(sp_digit, a, 16 * 11, NULL, DYNAMIC_TYPE_RSA);
+
     if (err == MP_OKAY) {
         p = a + 32 * 2;
         q = p + 16;
@@ -2259,10 +2293,11 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
 
 #ifdef HAVE_INTEL_AVX2
         if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+            IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+
+        if (saved_vector_registers)
             err = sp_2048_mod_exp_avx2_16(tmpa, a, dp, 1024, p, 1);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             err = sp_2048_mod_exp_16(tmpa, a, dp, 1024, p, 1);
@@ -2270,11 +2305,8 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
     if (err == MP_OKAY) {
         sp_2048_from_mp(dq, 16, dqm);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             err = sp_2048_mod_exp_avx2_16(tmpb, a, dq, 1024, q, 1);
-            RESTORE_VECTOR_REGISTERS();
-       }
        else
 #endif
             err = sp_2048_mod_exp_16(tmpb, a, dq, 1024, q, 1);
@@ -2283,11 +2315,9 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
     if (err == MP_OKAY) {
         c = sp_2048_sub_in_place_16(tmpa, tmpb);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers) {
             c += sp_2048_cond_add_avx2_16(tmpa, tmpa, p, c);
             sp_2048_cond_add_avx2_16(tmpa, tmpa, p, c);
-            RESTORE_VECTOR_REGISTERS();
         }
         else
 #endif
@@ -2298,37 +2328,32 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
 
         sp_2048_from_mp(qi, 16, qim);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_2048_mul_avx2_16(tmpa, tmpa, qi);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
-        {
             sp_2048_mul_16(tmpa, tmpa, qi);
-        }
         err = sp_2048_mod_16(tmpa, tmpa, p);
     }
 
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_2048_mul_avx2_16(tmpa, q, tmpa);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
-        {
             sp_2048_mul_16(tmpa, q, tmpa);
-        }
         XMEMSET(&tmpb[16], 0, sizeof(sp_digit) * 16);
         sp_2048_add_32(r, tmpb, tmpa);
 
         sp_2048_to_bin_32(r, out);
         *outLen = 256;
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     SP_ZEROFREE_VAR(sp_digit, a, 16 * 11, NULL, DYNAMIC_TYPE_RSA);
 
@@ -2429,8 +2454,6 @@ int sp_ModExp_2048(const mp_int* base, const mp_int* exp, const mp_int* mod,
 #endif
     int expBits = mp_count_bits(exp);
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     if (mp_count_bits(base) > 2048) {
         err = MP_READ_E;
     }
@@ -2512,7 +2535,6 @@ static int sp_2048_mod_exp_2_avx2_32(sp_digit* r, const sp_digit* e, int bits,
     int err = MP_OKAY;
 
     ASSERT_SAVED_VECTOR_REGISTERS();
-
     if (bits == 0) {
         err = MP_VAL;
     }
@@ -2629,8 +2651,6 @@ static int sp_2048_mod_exp_2_32(sp_digit* r, const sp_digit* e, int bits,
     int c;
     byte y;
     int err = MP_OKAY;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     if (bits == 0) {
         err = MP_VAL;
@@ -2750,8 +2770,6 @@ int sp_DhExp_2048(const mp_int* base, const byte* exp, word32 expLen,
     word32 cpuid_flags = cpuid_get_flags();
 #endif
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     if (mp_count_bits(base) > 2048) {
         err = MP_READ_E;
     }
@@ -2842,8 +2860,6 @@ int sp_ModExp_1024(const mp_int* base, const mp_int* exp, const mp_int* mod,
     word32 cpuid_flags = cpuid_get_flags();
 #endif
     int expBits = mp_count_bits(exp);
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     if (mp_count_bits(base) > 1024) {
         err = MP_READ_E;
@@ -3238,8 +3254,6 @@ static void sp_3072_mont_norm_24(sp_digit* r, const sp_digit* m)
 {
     XMEMSET(r, 0, sizeof(sp_digit) * 24);
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     /* r = 2^n mod m */
     sp_3072_sub_in_place_24(r, m);
 }
@@ -3329,7 +3343,6 @@ extern sp_digit div_3072_word_asm_24(sp_digit d1, sp_digit d0, sp_digit div);
 static WC_INLINE sp_digit div_3072_word_24(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
 #if _MSC_VER >= 1920
     return _udiv128(d1, d0, div, NULL);
 #else
@@ -3348,7 +3361,6 @@ static WC_INLINE sp_digit div_3072_word_24(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
     register sp_digit r asm("rax");
-    ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
         : "=a" (r)
@@ -3416,8 +3428,6 @@ static WC_INLINE int sp_3072_div_24(const sp_digit* a, const sp_digit* d, sp_dig
     word32 cpuid_flags = cpuid_get_flags();
 #endif
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     (void)m;
 
     div = d[23];
@@ -3470,18 +3480,38 @@ static WC_INLINE int sp_3072_div_24(const sp_digit* a, const sp_digit* d, sp_dig
 static WC_INLINE int sp_3072_mod_24(sp_digit* r, const sp_digit* a,
         const sp_digit* m)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
     return sp_3072_div_24(a, m, NULL, r);
 }
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern void sp_3072_get_from_table_24(sp_digit* r, sp_digit** table, int idx);
-#ifdef __cplusplus
-}
-#endif
+#ifndef WC_NO_CACHE_RESISTANT
+static void sp_3072_get_from_table_24(sp_digit* r,
+        sp_digit** table, int idx)
+{
+    int e, j;
+    sp_digit mask;
+    sp_digit diff;
 
+    for (j = 0; j < 24; j++) {
+        r[j] = 0;
+    }
+
+    for (e = 0; e < 32; e++) {
+        /* Constant-time: mask = (e == idx) ? ~0 : 0
+         * diff = e ^ idx is 0 iff equal.
+         * (diff | -diff) has its sign bit set iff diff != 0.
+         * Shift to get 1/0, subtract from 1 to invert, negate to mask.
+         */
+        diff = (sp_digit)(e ^ idx);
+        diff = (diff | ((sp_digit)0 - diff))
+               >> (sizeof(sp_digit) * 8 - 1);  /* 1 if !=, 0 if == */
+        mask = (sp_digit)0 - ((sp_digit)1 - diff);  /* all-1 if ==, else 0 */
+
+        for (j = 0; j < 24; j++) {
+            r[j] |= table[e][j] & mask;
+        }
+    }
+}
+#endif /* !WC_NO_CACHE_RESISTANT */
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
  * r     A single precision number that is the result of the operation.
@@ -3507,8 +3537,6 @@ static int sp_3072_mod_exp_24(sp_digit* r, const sp_digit* a, const sp_digit* e,
     int c;
     byte y;
     int err = MP_OKAY;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     if (bits == 0) {
         err = MP_VAL;
@@ -3678,6 +3706,7 @@ extern void sp_3072_mont_reduce_avx2_24(sp_digit* a, const sp_digit* m, sp_digit
 SP_NOINLINE static void sp_3072_mont_mul_avx2_24(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
+    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_3072_mul_avx2_24(r, a, b);
     sp_3072_mont_reduce_avx2_24(r, m, mp);
 }
@@ -3694,6 +3723,7 @@ SP_NOINLINE static void sp_3072_mont_mul_avx2_24(sp_digit* r, const sp_digit* a,
 SP_NOINLINE static void sp_3072_mont_sqr_avx2_24(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
+    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_3072_sqr_avx2_24(r, a);
     sp_3072_mont_reduce_avx2_24(r, m, mp);
 }
@@ -3735,7 +3765,6 @@ static int sp_3072_mod_exp_avx2_24(sp_digit* r, const sp_digit* a, const sp_digi
     int err = MP_OKAY;
 
     ASSERT_SAVED_VECTOR_REGISTERS();
-
     if (bits == 0) {
         err = MP_VAL;
     }
@@ -3898,8 +3927,6 @@ static void sp_3072_mont_norm_48(sp_digit* r, const sp_digit* m)
 {
     XMEMSET(r, 0, sizeof(sp_digit) * 48);
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     /* r = 2^n mod m */
     sp_3072_sub_in_place_48(r, m);
 }
@@ -3983,7 +4010,6 @@ extern sp_digit div_3072_word_asm_48(sp_digit d1, sp_digit d0, sp_digit div);
 static WC_INLINE sp_digit div_3072_word_48(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
 #if _MSC_VER >= 1920
     return _udiv128(d1, d0, div, NULL);
 #else
@@ -4002,7 +4028,6 @@ static WC_INLINE sp_digit div_3072_word_48(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
     register sp_digit r asm("rax");
-    ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
         : "=a" (r)
@@ -4032,8 +4057,6 @@ static WC_INLINE int sp_3072_div_48_cond(const sp_digit* a, const sp_digit* d, s
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
 #endif
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     (void)m;
 
@@ -4093,7 +4116,6 @@ static WC_INLINE int sp_3072_div_48_cond(const sp_digit* a, const sp_digit* d, s
 static WC_INLINE int sp_3072_mod_48_cond(sp_digit* r, const sp_digit* a,
         const sp_digit* m)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
     return sp_3072_div_48_cond(a, m, NULL, r);
 }
 
@@ -4163,8 +4185,6 @@ static WC_INLINE int sp_3072_div_48(const sp_digit* a, const sp_digit* d, sp_dig
     word32 cpuid_flags = cpuid_get_flags();
 #endif
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     (void)m;
 
     div = d[47];
@@ -4218,19 +4238,39 @@ static WC_INLINE int sp_3072_div_48(const sp_digit* a, const sp_digit* d, sp_dig
 static WC_INLINE int sp_3072_mod_48(sp_digit* r, const sp_digit* a,
         const sp_digit* m)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
     return sp_3072_div_48(a, m, NULL, r);
 }
 
 #endif /* WOLFSSL_HAVE_SP_DH || !WOLFSSL_RSA_PUBLIC_ONLY */
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern void sp_3072_get_from_table_48(sp_digit* r, sp_digit** table, int idx);
-#ifdef __cplusplus
-}
-#endif
+#ifndef WC_NO_CACHE_RESISTANT
+static void sp_3072_get_from_table_48(sp_digit* r,
+        sp_digit** table, int idx)
+{
+    int e, j;
+    sp_digit mask;
+    sp_digit diff;
 
+    for (j = 0; j < 48; j++) {
+        r[j] = 0;
+    }
+
+    for (e = 0; e < 16; e++) {
+        /* Constant-time: mask = (e == idx) ? ~0 : 0
+         * diff = e ^ idx is 0 iff equal.
+         * (diff | -diff) has its sign bit set iff diff != 0.
+         * Shift to get 1/0, subtract from 1 to invert, negate to mask.
+         */
+        diff = (sp_digit)(e ^ idx);
+        diff = (diff | ((sp_digit)0 - diff))
+               >> (sizeof(sp_digit) * 8 - 1);  /* 1 if !=, 0 if == */
+        mask = (sp_digit)0 - ((sp_digit)1 - diff);  /* all-1 if ==, else 0 */
+
+        for (j = 0; j < 48; j++) {
+            r[j] |= table[e][j] & mask;
+        }
+    }
+}
+#endif /* !WC_NO_CACHE_RESISTANT */
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
  * r     A single precision number that is the result of the operation.
@@ -4256,8 +4296,6 @@ static int sp_3072_mod_exp_48(sp_digit* r, const sp_digit* a, const sp_digit* e,
     int c;
     byte y;
     int err = MP_OKAY;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     if (bits == 0) {
         err = MP_VAL;
@@ -4409,6 +4447,7 @@ extern void sp_3072_mont_reduce_avx2_48(sp_digit* a, const sp_digit* m, sp_digit
 SP_NOINLINE static void sp_3072_mont_mul_avx2_48(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
+    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_3072_mul_avx2_48(r, a, b);
     sp_3072_mont_reduce_avx2_48(r, m, mp);
 }
@@ -4425,6 +4464,7 @@ SP_NOINLINE static void sp_3072_mont_mul_avx2_48(sp_digit* r, const sp_digit* a,
 SP_NOINLINE static void sp_3072_mont_sqr_avx2_48(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
+    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_3072_sqr_avx2_48(r, a);
     sp_3072_mont_reduce_avx2_48(r, m, mp);
 }
@@ -4467,7 +4507,6 @@ static int sp_3072_mod_exp_avx2_48(sp_digit* r, const sp_digit* a, const sp_digi
     int err = MP_OKAY;
 
     ASSERT_SAVED_VECTOR_REGISTERS();
-
     if (bits == 0) {
         err = MP_VAL;
     }
@@ -4623,9 +4662,8 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     if (*outLen < 384) {
         err = MP_TO_E;
@@ -4658,6 +4696,13 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
     if (err == MP_OKAY) {
         sp_3072_from_mp(m, 48, mm);
 
+#ifdef HAVE_INTEL_AVX2
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+            IS_INTEL_AVX2(cpuid_flags) &&
+            (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+#endif
+
         if (e == 0x10001) {
             int i;
             sp_digit mp;
@@ -4672,9 +4717,7 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
             if (err == MP_OKAY) {
                 /* r = a ^ 0x10000 => r = a squared 16 times */
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                        IS_INTEL_AVX2(cpuid_flags) &&
-                        (SAVE_VECTOR_REGISTERS2() == 0)) {
+                if (saved_vector_registers) {
                     for (i = 15; i >= 0; i--) {
                         sp_3072_mont_sqr_avx2_48(r, r, m, mp);
                     }
@@ -4682,7 +4725,6 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
                      * mont_red(r.R * a) = (r.R.a / R) mod m = r.a mod m
                      */
                     sp_3072_mont_mul_avx2_48(r, r, ah, m, mp);
-                    RESTORE_VECTOR_REGISTERS();
                 }
                 else
 #endif
@@ -4706,9 +4748,7 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
         }
         else if (e == 0x3) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                    IS_INTEL_AVX2(cpuid_flags) &&
-                    (SAVE_VECTOR_REGISTERS2() == 0)) {
+            if (saved_vector_registers) {
                 if (err == MP_OKAY) {
                     sp_3072_sqr_avx2_48(r, ah);
                     err = sp_3072_mod_48_cond(r, r, m);
@@ -4717,7 +4757,6 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
                     sp_3072_mul_avx2_48(r, ah, r);
                     err = sp_3072_mod_48_cond(r, r, m);
                 }
-                RESTORE_VECTOR_REGISTERS();
             }
             else
 #endif
@@ -4751,9 +4790,7 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
 
                 XMEMCPY(r, a, sizeof(sp_digit) * 48);
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                        IS_INTEL_AVX2(cpuid_flags) &&
-                        (SAVE_VECTOR_REGISTERS2() == 0)) {
+                if (saved_vector_registers) {
                     for (i--; i>=0; i--) {
                         sp_3072_mont_sqr_avx2_48(r, r, m, mp);
                         if (((e >> i) & 1) == 1) {
@@ -4762,7 +4799,6 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
                     }
                     XMEMSET(&r[48], 0, sizeof(sp_digit) * 48);
                     sp_3072_mont_reduce_avx2_48(r, m, mp);
-                    RESTORE_VECTOR_REGISTERS();
                 }
                 else
 #endif
@@ -4791,6 +4827,11 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
         sp_3072_to_bin_48(r, out);
         *outLen = 384;
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     SP_FREE_VAR(a, NULL, DYNAMIC_TYPE_RSA);
 
@@ -4825,8 +4866,6 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
     sp_digit* m = NULL;
     sp_digit* r = NULL;
     int err = MP_OKAY;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     (void)pm;
     (void)qm;
@@ -4925,9 +4964,8 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     (void)dm;
     (void)mm;
@@ -4949,6 +4987,7 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
     }
 
     SP_ALLOC_VAR(sp_digit, a, 24 * 11, NULL, DYNAMIC_TYPE_RSA);
+
     if (err == MP_OKAY) {
         p = a + 48 * 2;
         q = p + 24;
@@ -4964,10 +5003,11 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
 
 #ifdef HAVE_INTEL_AVX2
         if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+            IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+
+        if (saved_vector_registers)
             err = sp_3072_mod_exp_avx2_24(tmpa, a, dp, 1536, p, 1);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             err = sp_3072_mod_exp_24(tmpa, a, dp, 1536, p, 1);
@@ -4975,11 +5015,8 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
     if (err == MP_OKAY) {
         sp_3072_from_mp(dq, 24, dqm);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             err = sp_3072_mod_exp_avx2_24(tmpb, a, dq, 1536, q, 1);
-            RESTORE_VECTOR_REGISTERS();
-       }
        else
 #endif
             err = sp_3072_mod_exp_24(tmpb, a, dq, 1536, q, 1);
@@ -4988,11 +5025,9 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
     if (err == MP_OKAY) {
         c = sp_3072_sub_in_place_24(tmpa, tmpb);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers) {
             c += sp_3072_cond_add_avx2_24(tmpa, tmpa, p, c);
             sp_3072_cond_add_avx2_24(tmpa, tmpa, p, c);
-            RESTORE_VECTOR_REGISTERS();
         }
         else
 #endif
@@ -5003,37 +5038,32 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
 
         sp_3072_from_mp(qi, 24, qim);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_3072_mul_avx2_24(tmpa, tmpa, qi);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
-        {
             sp_3072_mul_24(tmpa, tmpa, qi);
-        }
         err = sp_3072_mod_24(tmpa, tmpa, p);
     }
 
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_3072_mul_avx2_24(tmpa, q, tmpa);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
-        {
             sp_3072_mul_24(tmpa, q, tmpa);
-        }
         XMEMSET(&tmpb[24], 0, sizeof(sp_digit) * 24);
         sp_3072_add_48(r, tmpb, tmpa);
 
         sp_3072_to_bin_48(r, out);
         *outLen = 384;
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     SP_ZEROFREE_VAR(sp_digit, a, 24 * 11, NULL, DYNAMIC_TYPE_RSA);
 
@@ -5134,8 +5164,6 @@ int sp_ModExp_3072(const mp_int* base, const mp_int* exp, const mp_int* mod,
 #endif
     int expBits = mp_count_bits(exp);
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     if (mp_count_bits(base) > 3072) {
         err = MP_READ_E;
     }
@@ -5217,7 +5245,6 @@ static int sp_3072_mod_exp_2_avx2_48(sp_digit* r, const sp_digit* e, int bits,
     int err = MP_OKAY;
 
     ASSERT_SAVED_VECTOR_REGISTERS();
-
     if (bits == 0) {
         err = MP_VAL;
     }
@@ -5334,8 +5361,6 @@ static int sp_3072_mod_exp_2_48(sp_digit* r, const sp_digit* e, int bits,
     int c;
     byte y;
     int err = MP_OKAY;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     if (bits == 0) {
         err = MP_VAL;
@@ -5455,8 +5480,6 @@ int sp_DhExp_3072(const mp_int* base, const byte* exp, word32 expLen,
     word32 cpuid_flags = cpuid_get_flags();
 #endif
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     if (mp_count_bits(base) > 3072) {
         err = MP_READ_E;
     }
@@ -5547,8 +5570,6 @@ int sp_ModExp_1536(const mp_int* base, const mp_int* exp, const mp_int* mod,
     word32 cpuid_flags = cpuid_get_flags();
 #endif
     int expBits = mp_count_bits(exp);
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     if (mp_count_bits(base) > 1536) {
         err = MP_READ_E;
@@ -5859,8 +5880,6 @@ static void sp_4096_mont_norm_64(sp_digit* r, const sp_digit* m)
 {
     XMEMSET(r, 0, sizeof(sp_digit) * 64);
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     /* r = 2^n mod m */
     sp_4096_sub_in_place_64(r, m);
 }
@@ -5944,7 +5963,6 @@ extern sp_digit div_4096_word_asm_64(sp_digit d1, sp_digit d0, sp_digit div);
 static WC_INLINE sp_digit div_4096_word_64(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
 #if _MSC_VER >= 1920
     return _udiv128(d1, d0, div, NULL);
 #else
@@ -5963,7 +5981,6 @@ static WC_INLINE sp_digit div_4096_word_64(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
     register sp_digit r asm("rax");
-    ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
         : "=a" (r)
@@ -5993,8 +6010,6 @@ static WC_INLINE int sp_4096_div_64_cond(const sp_digit* a, const sp_digit* d, s
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
 #endif
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     (void)m;
 
@@ -6054,7 +6069,6 @@ static WC_INLINE int sp_4096_div_64_cond(const sp_digit* a, const sp_digit* d, s
 static WC_INLINE int sp_4096_mod_64_cond(sp_digit* r, const sp_digit* a,
         const sp_digit* m)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
     return sp_4096_div_64_cond(a, m, NULL, r);
 }
 
@@ -6124,8 +6138,6 @@ static WC_INLINE int sp_4096_div_64(const sp_digit* a, const sp_digit* d, sp_dig
     word32 cpuid_flags = cpuid_get_flags();
 #endif
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     (void)m;
 
     div = d[63];
@@ -6179,19 +6191,39 @@ static WC_INLINE int sp_4096_div_64(const sp_digit* a, const sp_digit* d, sp_dig
 static WC_INLINE int sp_4096_mod_64(sp_digit* r, const sp_digit* a,
         const sp_digit* m)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
     return sp_4096_div_64(a, m, NULL, r);
 }
 
 #endif /* WOLFSSL_HAVE_SP_DH || !WOLFSSL_RSA_PUBLIC_ONLY */
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern void sp_4096_get_from_table_64(sp_digit* r, sp_digit** table, int idx);
-#ifdef __cplusplus
-}
-#endif
+#ifndef WC_NO_CACHE_RESISTANT
+static void sp_4096_get_from_table_64(sp_digit* r,
+        sp_digit** table, int idx)
+{
+    int e, j;
+    sp_digit mask;
+    sp_digit diff;
 
+    for (j = 0; j < 64; j++) {
+        r[j] = 0;
+    }
+
+    for (e = 0; e < 16; e++) {
+        /* Constant-time: mask = (e == idx) ? ~0 : 0
+         * diff = e ^ idx is 0 iff equal.
+         * (diff | -diff) has its sign bit set iff diff != 0.
+         * Shift to get 1/0, subtract from 1 to invert, negate to mask.
+         */
+        diff = (sp_digit)(e ^ idx);
+        diff = (diff | ((sp_digit)0 - diff))
+               >> (sizeof(sp_digit) * 8 - 1);  /* 1 if !=, 0 if == */
+        mask = (sp_digit)0 - ((sp_digit)1 - diff);  /* all-1 if ==, else 0 */
+
+        for (j = 0; j < 64; j++) {
+            r[j] |= table[e][j] & mask;
+        }
+    }
+}
+#endif /* !WC_NO_CACHE_RESISTANT */
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
  * r     A single precision number that is the result of the operation.
@@ -6217,8 +6249,6 @@ static int sp_4096_mod_exp_64(sp_digit* r, const sp_digit* a, const sp_digit* e,
     int c;
     byte y;
     int err = MP_OKAY;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     if (bits == 0) {
         err = MP_VAL;
@@ -6370,6 +6400,7 @@ extern void sp_4096_mont_reduce_avx2_64(sp_digit* a, const sp_digit* m, sp_digit
 SP_NOINLINE static void sp_4096_mont_mul_avx2_64(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
+    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_4096_mul_avx2_64(r, a, b);
     sp_4096_mont_reduce_avx2_64(r, m, mp);
 }
@@ -6386,6 +6417,7 @@ SP_NOINLINE static void sp_4096_mont_mul_avx2_64(sp_digit* r, const sp_digit* a,
 SP_NOINLINE static void sp_4096_mont_sqr_avx2_64(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
+    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_4096_sqr_avx2_64(r, a);
     sp_4096_mont_reduce_avx2_64(r, m, mp);
 }
@@ -6428,7 +6460,6 @@ static int sp_4096_mod_exp_avx2_64(sp_digit* r, const sp_digit* a, const sp_digi
     int err = MP_OKAY;
 
     ASSERT_SAVED_VECTOR_REGISTERS();
-
     if (bits == 0) {
         err = MP_VAL;
     }
@@ -6584,9 +6615,8 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     if (*outLen < 512) {
         err = MP_TO_E;
@@ -6619,6 +6649,13 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
     if (err == MP_OKAY) {
         sp_4096_from_mp(m, 64, mm);
 
+#ifdef HAVE_INTEL_AVX2
+        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+            IS_INTEL_AVX2(cpuid_flags) &&
+            (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+#endif
+
         if (e == 0x10001) {
             int i;
             sp_digit mp;
@@ -6633,9 +6670,7 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
             if (err == MP_OKAY) {
                 /* r = a ^ 0x10000 => r = a squared 16 times */
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                        IS_INTEL_AVX2(cpuid_flags) &&
-                        (SAVE_VECTOR_REGISTERS2() == 0)) {
+                if (saved_vector_registers) {
                     for (i = 15; i >= 0; i--) {
                         sp_4096_mont_sqr_avx2_64(r, r, m, mp);
                     }
@@ -6643,7 +6678,6 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
                      * mont_red(r.R * a) = (r.R.a / R) mod m = r.a mod m
                      */
                     sp_4096_mont_mul_avx2_64(r, r, ah, m, mp);
-                    RESTORE_VECTOR_REGISTERS();
                 }
                 else
 #endif
@@ -6667,9 +6701,7 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
         }
         else if (e == 0x3) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                    IS_INTEL_AVX2(cpuid_flags) &&
-                    (SAVE_VECTOR_REGISTERS2() == 0)) {
+            if (saved_vector_registers) {
                 if (err == MP_OKAY) {
                     sp_4096_sqr_avx2_64(r, ah);
                     err = sp_4096_mod_64_cond(r, r, m);
@@ -6678,7 +6710,6 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
                     sp_4096_mul_avx2_64(r, ah, r);
                     err = sp_4096_mod_64_cond(r, r, m);
                 }
-                RESTORE_VECTOR_REGISTERS();
             }
             else
 #endif
@@ -6712,9 +6743,7 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
 
                 XMEMCPY(r, a, sizeof(sp_digit) * 64);
 #ifdef HAVE_INTEL_AVX2
-                if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                        IS_INTEL_AVX2(cpuid_flags) &&
-                        (SAVE_VECTOR_REGISTERS2() == 0)) {
+                if (saved_vector_registers) {
                     for (i--; i>=0; i--) {
                         sp_4096_mont_sqr_avx2_64(r, r, m, mp);
                         if (((e >> i) & 1) == 1) {
@@ -6723,7 +6752,6 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
                     }
                     XMEMSET(&r[64], 0, sizeof(sp_digit) * 64);
                     sp_4096_mont_reduce_avx2_64(r, m, mp);
-                    RESTORE_VECTOR_REGISTERS();
                 }
                 else
 #endif
@@ -6752,6 +6780,11 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
         sp_4096_to_bin_64(r, out);
         *outLen = 512;
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     SP_FREE_VAR(a, NULL, DYNAMIC_TYPE_RSA);
 
@@ -6786,8 +6819,6 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
     sp_digit* m = NULL;
     sp_digit* r = NULL;
     int err = MP_OKAY;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     (void)pm;
     (void)qm;
@@ -6886,9 +6917,8 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     (void)dm;
     (void)mm;
@@ -6910,6 +6940,7 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
     }
 
     SP_ALLOC_VAR(sp_digit, a, 32 * 11, NULL, DYNAMIC_TYPE_RSA);
+
     if (err == MP_OKAY) {
         p = a + 64 * 2;
         q = p + 32;
@@ -6925,10 +6956,11 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
 
 #ifdef HAVE_INTEL_AVX2
         if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+            IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+
+        if (saved_vector_registers)
             err = sp_2048_mod_exp_avx2_32(tmpa, a, dp, 2048, p, 1);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             err = sp_2048_mod_exp_32(tmpa, a, dp, 2048, p, 1);
@@ -6936,11 +6968,8 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
     if (err == MP_OKAY) {
         sp_4096_from_mp(dq, 32, dqm);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             err = sp_2048_mod_exp_avx2_32(tmpb, a, dq, 2048, q, 1);
-            RESTORE_VECTOR_REGISTERS();
-       }
        else
 #endif
             err = sp_2048_mod_exp_32(tmpb, a, dq, 2048, q, 1);
@@ -6949,11 +6978,9 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
     if (err == MP_OKAY) {
         c = sp_2048_sub_in_place_32(tmpa, tmpb);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers) {
             c += sp_4096_cond_add_avx2_32(tmpa, tmpa, p, c);
             sp_4096_cond_add_avx2_32(tmpa, tmpa, p, c);
-            RESTORE_VECTOR_REGISTERS();
         }
         else
 #endif
@@ -6964,37 +6991,32 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
 
         sp_2048_from_mp(qi, 32, qim);
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_2048_mul_avx2_32(tmpa, tmpa, qi);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
-        {
             sp_2048_mul_32(tmpa, tmpa, qi);
-        }
         err = sp_2048_mod_32(tmpa, tmpa, p);
     }
 
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_2048_mul_avx2_32(tmpa, q, tmpa);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
-        {
             sp_2048_mul_32(tmpa, q, tmpa);
-        }
         XMEMSET(&tmpb[32], 0, sizeof(sp_digit) * 32);
         sp_4096_add_64(r, tmpb, tmpa);
 
         sp_4096_to_bin_64(r, out);
         *outLen = 512;
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     SP_ZEROFREE_VAR(sp_digit, a, 32 * 11, NULL, DYNAMIC_TYPE_RSA);
 
@@ -7095,8 +7117,6 @@ int sp_ModExp_4096(const mp_int* base, const mp_int* exp, const mp_int* mod,
 #endif
     int expBits = mp_count_bits(exp);
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     if (mp_count_bits(base) > 4096) {
         err = MP_READ_E;
     }
@@ -7178,7 +7198,6 @@ static int sp_4096_mod_exp_2_avx2_64(sp_digit* r, const sp_digit* e, int bits,
     int err = MP_OKAY;
 
     ASSERT_SAVED_VECTOR_REGISTERS();
-
     if (bits == 0) {
         err = MP_VAL;
     }
@@ -7295,8 +7314,6 @@ static int sp_4096_mod_exp_2_64(sp_digit* r, const sp_digit* e, int bits,
     int c;
     byte y;
     int err = MP_OKAY;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     if (bits == 0) {
         err = MP_VAL;
@@ -7415,8 +7432,6 @@ int sp_DhExp_4096(const mp_int* base, const byte* exp, word32 expLen,
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
 #endif
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     if (mp_count_bits(base) > 4096) {
         err = MP_READ_E;
@@ -7635,8 +7650,6 @@ static int sp_256_mod_mul_norm_4(sp_digit* r, const sp_digit* a, const sp_digit*
     int64_t t[8];
     int64_t a32[8];
     int64_t o;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     (void)m;
 
@@ -10962,6 +10975,7 @@ int sp_ecc_mulmod_add_256(const mp_int* km, const ecc_point* gm,
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
 
     SP_ALLOC_VAR(sp_point_256, point, 2, heap, DYNAMIC_TYPE_ECC);
@@ -10986,33 +11000,26 @@ int sp_ecc_mulmod_add_256(const mp_int* km, const ecc_point* gm,
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
         if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+        if (saved_vector_registers)
             err = sp_256_ecc_mulmod_avx2_4(point, point, k, 0, 0, heap);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             err = sp_256_ecc_mulmod_4(point, point, k, 0, 0, heap);
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_256_proj_point_add_avx2_4(point, point, addP, tmp);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_256_proj_point_add_4(point, point, addP, tmp);
 
         if (map) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                    IS_INTEL_AVX2(cpuid_flags) &&
-                    (SAVE_VECTOR_REGISTERS2() == 0)) {
+            if (saved_vector_registers)
                 sp_256_map_avx2_4(point, point, tmp);
-                RESTORE_VECTOR_REGISTERS();
-            }
             else
 #endif
                 sp_256_map_4(point, point, tmp);
@@ -11020,6 +11027,11 @@ int sp_ecc_mulmod_add_256(const mp_int* km, const ecc_point* gm,
 
         err = sp_256_point_to_ecc_point_4(point, r);
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     SP_FREE_VAR(k, heap, DYNAMIC_TYPE_ECC);
     SP_FREE_VAR(point, heap, DYNAMIC_TYPE_ECC);
@@ -23718,6 +23730,7 @@ int sp_ecc_mulmod_base_add_256(const mp_int* km, const ecc_point* am,
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
 
     SP_ALLOC_VAR(sp_point_256, point, 2, NULL, DYNAMIC_TYPE_ECC);
@@ -23741,33 +23754,26 @@ int sp_ecc_mulmod_base_add_256(const mp_int* km, const ecc_point* am,
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
         if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+        if (saved_vector_registers)
             err = sp_256_ecc_mulmod_base_avx2_4(point, k, 0, 0, heap);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             err = sp_256_ecc_mulmod_base_4(point, k, 0, 0, heap);
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_256_proj_point_add_avx2_4(point, point, addP, tmp);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_256_proj_point_add_4(point, point, addP, tmp);
 
         if (map) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                    IS_INTEL_AVX2(cpuid_flags) &&
-                    (SAVE_VECTOR_REGISTERS2() == 0)) {
+            if (saved_vector_registers)
                 sp_256_map_avx2_4(point, point, tmp);
-                RESTORE_VECTOR_REGISTERS();
-            }
             else
 #endif
                 sp_256_map_4(point, point, tmp);
@@ -23775,6 +23781,11 @@ int sp_ecc_mulmod_base_add_256(const mp_int* km, const ecc_point* am,
 
         err = sp_256_point_to_ecc_point_4(point, r);
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     SP_FREE_VAR(k, NULL, DYNAMIC_TYPE_ECC);
     SP_FREE_VAR(point, NULL, DYNAMIC_TYPE_ECC);
@@ -23887,6 +23898,7 @@ int sp_ecc_make_key_256(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
 
     (void)heap;
@@ -23907,10 +23919,11 @@ int sp_ecc_make_key_256(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
         if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+
+        if (saved_vector_registers)
             err = sp_256_ecc_mulmod_base_avx2_4(point, k, 1, 1, NULL);
-            RESTORE_VECTOR_REGISTERS();
-       }
         else
 #endif
             err = sp_256_ecc_mulmod_base_4(point, k, 1, 1, NULL);
@@ -23919,11 +23932,9 @@ int sp_ecc_make_key_256(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 #ifdef WOLFSSL_VALIDATE_ECC_KEYGEN
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers) {
             err = sp_256_ecc_mulmod_avx2_4(infinity, point, p256_order, 1, 1,
                                                                           NULL);
-            RESTORE_VECTOR_REGISTERS();
         }
         else
 #endif
@@ -23934,6 +23945,11 @@ int sp_ecc_make_key_256(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
             err = ECC_INF_E;
         }
     }
+#endif
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
 #endif
 
     if (err == MP_OKAY) {
@@ -24211,7 +24227,6 @@ extern sp_digit div_256_word_asm_4(sp_digit d1, sp_digit d0, sp_digit div);
 static WC_INLINE sp_digit div_256_word_4(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
 #if _MSC_VER >= 1920
     return _udiv128(d1, d0, div, NULL);
 #else
@@ -24230,7 +24245,6 @@ static WC_INLINE sp_digit div_256_word_4(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
     register sp_digit r asm("rax");
-    ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
         : "=a" (r)
@@ -24282,8 +24296,6 @@ static WC_INLINE int sp_256_div_4(const sp_digit* a, const sp_digit* d, sp_digit
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
 #endif
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     (void)m;
 
@@ -24337,7 +24349,6 @@ static WC_INLINE int sp_256_div_4(const sp_digit* a, const sp_digit* d, sp_digit
 static WC_INLINE int sp_256_mod_4(sp_digit* r, const sp_digit* a,
         const sp_digit* m)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
     return sp_256_div_4(a, m, NULL, r);
 }
 
@@ -24351,7 +24362,6 @@ static WC_INLINE int sp_256_mod_4(sp_digit* r, const sp_digit* a,
  */
 static void sp_256_mont_mul_order_4(sp_digit* r, const sp_digit* a, const sp_digit* b)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_256_mul_4(r, a, b);
     sp_256_mont_reduce_order_4(r, p256_order, p256_mp_order);
 }
@@ -24377,7 +24387,6 @@ static const word64 p256_order_low[2] = {
  */
 static void sp_256_mont_sqr_order_4(sp_digit* r, const sp_digit* a)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_256_sqr_4(r, a);
     sp_256_mont_reduce_order_4(r, p256_order, p256_mp_order);
 }
@@ -24392,8 +24401,6 @@ static void sp_256_mont_sqr_order_4(sp_digit* r, const sp_digit* a)
 static void sp_256_mont_sqr_n_order_4(sp_digit* r, const sp_digit* a, int n)
 {
     int i;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     sp_256_mont_sqr_order_4(r, a);
     for (i=1; i<n; i++) {
@@ -24420,8 +24427,6 @@ static int sp_256_mont_inv_order_4_nb(sp_ecc_ctx_t* sp_ctx, sp_digit* r, const s
         sp_digit* t)
 {
     int err = FP_WOULDBLOCK;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     sp_256_mont_inv_order_4_ctx* ctx = (sp_256_mont_inv_order_4_ctx*)sp_ctx;
 
@@ -24482,8 +24487,6 @@ static void sp_256_mont_inv_order_4(sp_digit* r, const sp_digit* a,
     sp_digit* t3 = td + 4 * 4;
     sp_digit* t4 = td + 6 * 4;
     int i;
-
-    ASSERT_SAVED_VECTOR_REGISTERS();
 
     /* t = a^2 */
     sp_256_mont_sqr_order_4(t, a);
@@ -24617,7 +24620,6 @@ static void sp_256_mont_sqr_n_order_avx2_4(sp_digit* r, const sp_digit* a, int n
     int i;
 
     ASSERT_SAVED_VECTOR_REGISTERS();
-
     sp_256_mont_sqr_order_avx2_4(r, a);
     for (i=1; i<n; i++) {
         sp_256_mont_sqr_order_avx2_4(r, r);
@@ -24645,7 +24647,6 @@ static int sp_256_mont_inv_order_avx2_4_nb(sp_ecc_ctx_t* sp_ctx, sp_digit* r, co
     int err = FP_WOULDBLOCK;
 
     ASSERT_SAVED_VECTOR_REGISTERS();
-
     sp_256_mont_inv_order_avx2_4_ctx* ctx = (sp_256_mont_inv_order_avx2_4_ctx*)sp_ctx;
 
     typedef char ctx_size_test[sizeof(sp_256_mont_inv_order_avx2_4_ctx) >= sizeof(*sp_ctx) ? -1 : 1];
@@ -24707,7 +24708,6 @@ static void sp_256_mont_inv_order_avx2_4(sp_digit* r, const sp_digit* a,
     int i;
 
     ASSERT_SAVED_VECTOR_REGISTERS();
-
     /* t = a^2 */
     sp_256_mont_sqr_order_avx2_4(t, a);
     /* t = a^3 = t * a */
@@ -24839,15 +24839,16 @@ static int sp_256_calc_s_4(sp_digit* s, const sp_digit* r, sp_digit* k,
     sp_digit* kInv = k;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
 
     /* Conv k to Montgomery form (mod order) */
 #ifdef HAVE_INTEL_AVX2
     if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-            IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+            IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+        saved_vector_registers = 1;
+    if (saved_vector_registers)
         sp_256_mul_avx2_4(k, k, p256_norm_order);
-        RESTORE_VECTOR_REGISTERS();
-    }
     else
 #endif
         sp_256_mul_4(k, k, p256_norm_order);
@@ -24857,11 +24858,8 @@ static int sp_256_calc_s_4(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* kInv = 1/k mod order */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_256_mont_inv_order_avx2_4(kInv, k, tmp);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_256_mont_inv_order_4(kInv, k, tmp);
@@ -24869,11 +24867,8 @@ static int sp_256_calc_s_4(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* s = r * x + e */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_256_mul_avx2_4(x, x, r);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_256_mul_4(x, x, r);
@@ -24891,16 +24886,18 @@ static int sp_256_calc_s_4(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* s = s * k^-1 mod order */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_256_mont_mul_order_avx2_4(s, s, kInv);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_256_mont_mul_order_4(s, s, kInv);
         sp_256_norm_4(s);
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     return err;
 }
@@ -27843,6 +27840,7 @@ extern void sp_384_mont_reduce_order_avx2_6(sp_digit* a, const sp_digit* m, sp_d
 SP_NOINLINE static void sp_384_mont_mul_avx2_6(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
+    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_384_mul_avx2_6(r, a, b);
     sp_384_mont_reduce_avx2_6(r, m, mp);
 }
@@ -27859,6 +27857,7 @@ SP_NOINLINE static void sp_384_mont_mul_avx2_6(sp_digit* r, const sp_digit* a,
 SP_NOINLINE static void sp_384_mont_sqr_avx2_6(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
+    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_384_sqr_avx2_6(r, a);
     sp_384_mont_reduce_avx2_6(r, m, mp);
 }
@@ -29755,6 +29754,7 @@ int sp_ecc_mulmod_add_384(const mp_int* km, const ecc_point* gm,
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
 
     SP_ALLOC_VAR(sp_point_384, point, 2, heap, DYNAMIC_TYPE_ECC);
@@ -29779,33 +29779,26 @@ int sp_ecc_mulmod_add_384(const mp_int* km, const ecc_point* gm,
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
         if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+        if (saved_vector_registers)
             err = sp_384_ecc_mulmod_avx2_6(point, point, k, 0, 0, heap);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             err = sp_384_ecc_mulmod_6(point, point, k, 0, 0, heap);
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_384_proj_point_add_avx2_6(point, point, addP, tmp);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_384_proj_point_add_6(point, point, addP, tmp);
 
         if (map) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                    IS_INTEL_AVX2(cpuid_flags) &&
-                    (SAVE_VECTOR_REGISTERS2() == 0)) {
+            if (saved_vector_registers)
                 sp_384_map_avx2_6(point, point, tmp);
-                RESTORE_VECTOR_REGISTERS();
-            }
             else
 #endif
                 sp_384_map_6(point, point, tmp);
@@ -29813,6 +29806,11 @@ int sp_ecc_mulmod_add_384(const mp_int* km, const ecc_point* gm,
 
         err = sp_384_point_to_ecc_point_6(point, r);
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     SP_FREE_VAR(k, heap, DYNAMIC_TYPE_ECC);
     SP_FREE_VAR(point, heap, DYNAMIC_TYPE_ECC);
@@ -48325,6 +48323,7 @@ int sp_ecc_mulmod_base_add_384(const mp_int* km, const ecc_point* am,
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
 
     SP_ALLOC_VAR(sp_point_384, point, 2, NULL, DYNAMIC_TYPE_ECC);
@@ -48348,33 +48347,26 @@ int sp_ecc_mulmod_base_add_384(const mp_int* km, const ecc_point* am,
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
         if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+        if (saved_vector_registers)
             err = sp_384_ecc_mulmod_base_avx2_6(point, k, 0, 0, heap);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             err = sp_384_ecc_mulmod_base_6(point, k, 0, 0, heap);
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_384_proj_point_add_avx2_6(point, point, addP, tmp);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_384_proj_point_add_6(point, point, addP, tmp);
 
         if (map) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                    IS_INTEL_AVX2(cpuid_flags) &&
-                    (SAVE_VECTOR_REGISTERS2() == 0)) {
+            if (saved_vector_registers)
                 sp_384_map_avx2_6(point, point, tmp);
-                RESTORE_VECTOR_REGISTERS();
-            }
             else
 #endif
                 sp_384_map_6(point, point, tmp);
@@ -48382,6 +48374,11 @@ int sp_ecc_mulmod_base_add_384(const mp_int* km, const ecc_point* am,
 
         err = sp_384_point_to_ecc_point_6(point, r);
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     SP_FREE_VAR(k, NULL, DYNAMIC_TYPE_ECC);
     SP_FREE_VAR(point, NULL, DYNAMIC_TYPE_ECC);
@@ -48494,6 +48491,7 @@ int sp_ecc_make_key_384(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
 
     (void)heap;
@@ -48514,10 +48512,11 @@ int sp_ecc_make_key_384(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
         if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+
+        if (saved_vector_registers)
             err = sp_384_ecc_mulmod_base_avx2_6(point, k, 1, 1, NULL);
-            RESTORE_VECTOR_REGISTERS();
-       }
         else
 #endif
             err = sp_384_ecc_mulmod_base_6(point, k, 1, 1, NULL);
@@ -48526,11 +48525,9 @@ int sp_ecc_make_key_384(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 #ifdef WOLFSSL_VALIDATE_ECC_KEYGEN
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers) {
             err = sp_384_ecc_mulmod_avx2_6(infinity, point, p384_order, 1, 1,
                                                                           NULL);
-            RESTORE_VECTOR_REGISTERS();
         }
         else
 #endif
@@ -48541,6 +48538,11 @@ int sp_ecc_make_key_384(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
             err = ECC_INF_E;
         }
     }
+#endif
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
 #endif
 
     if (err == MP_OKAY) {
@@ -48818,7 +48820,6 @@ extern sp_digit div_384_word_asm_6(sp_digit d1, sp_digit d0, sp_digit div);
 static WC_INLINE sp_digit div_384_word_6(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
 #if _MSC_VER >= 1920
     return _udiv128(d1, d0, div, NULL);
 #else
@@ -48837,7 +48838,6 @@ static WC_INLINE sp_digit div_384_word_6(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
     register sp_digit r asm("rax");
-    ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
         : "=a" (r)
@@ -48892,8 +48892,6 @@ static WC_INLINE int sp_384_div_6(const sp_digit* a, const sp_digit* d, sp_digit
     word32 cpuid_flags = cpuid_get_flags();
 #endif
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     (void)m;
 
     div = d[5];
@@ -48946,7 +48944,6 @@ static WC_INLINE int sp_384_div_6(const sp_digit* a, const sp_digit* d, sp_digit
 static WC_INLINE int sp_384_mod_6(sp_digit* r, const sp_digit* a,
         const sp_digit* m)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
     return sp_384_div_6(a, m, NULL, r);
 }
 
@@ -49304,15 +49301,16 @@ static int sp_384_calc_s_6(sp_digit* s, const sp_digit* r, sp_digit* k,
     sp_digit* kInv = k;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
 
     /* Conv k to Montgomery form (mod order) */
 #ifdef HAVE_INTEL_AVX2
     if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-            IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+            IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+        saved_vector_registers = 1;
+    if (saved_vector_registers)
         sp_384_mul_avx2_6(k, k, p384_norm_order);
-        RESTORE_VECTOR_REGISTERS();
-    }
     else
 #endif
         sp_384_mul_6(k, k, p384_norm_order);
@@ -49322,11 +49320,8 @@ static int sp_384_calc_s_6(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* kInv = 1/k mod order */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_384_mont_inv_order_avx2_6(kInv, k, tmp);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_384_mont_inv_order_6(kInv, k, tmp);
@@ -49334,11 +49329,8 @@ static int sp_384_calc_s_6(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* s = r * x + e */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_384_mul_avx2_6(x, x, r);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_384_mul_6(x, x, r);
@@ -49356,16 +49348,18 @@ static int sp_384_calc_s_6(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* s = s * k^-1 mod order */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_384_mont_mul_order_avx2_6(s, s, kInv);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_384_mont_mul_order_6(s, s, kInv);
         sp_384_norm_6(s);
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     return err;
 }
@@ -54246,6 +54240,7 @@ int sp_ecc_mulmod_add_521(const mp_int* km, const ecc_point* gm,
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
 
     SP_ALLOC_VAR(sp_point_521, point, 2, heap, DYNAMIC_TYPE_ECC);
@@ -54270,33 +54265,26 @@ int sp_ecc_mulmod_add_521(const mp_int* km, const ecc_point* gm,
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
         if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+        if (saved_vector_registers)
             err = sp_521_ecc_mulmod_avx2_9(point, point, k, 0, 0, heap);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             err = sp_521_ecc_mulmod_9(point, point, k, 0, 0, heap);
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_521_proj_point_add_avx2_9(point, point, addP, tmp);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_521_proj_point_add_9(point, point, addP, tmp);
 
         if (map) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                    IS_INTEL_AVX2(cpuid_flags) &&
-                    (SAVE_VECTOR_REGISTERS2() == 0)) {
+            if (saved_vector_registers)
                 sp_521_map_avx2_9(point, point, tmp);
-                RESTORE_VECTOR_REGISTERS();
-            }
             else
 #endif
                 sp_521_map_9(point, point, tmp);
@@ -54304,6 +54292,11 @@ int sp_ecc_mulmod_add_521(const mp_int* km, const ecc_point* gm,
 
         err = sp_521_point_to_ecc_point_9(point, r);
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     SP_FREE_VAR(k, heap, DYNAMIC_TYPE_ECC);
     SP_FREE_VAR(point, heap, DYNAMIC_TYPE_ECC);
@@ -89002,6 +88995,7 @@ int sp_ecc_mulmod_base_add_521(const mp_int* km, const ecc_point* am,
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
 
     SP_ALLOC_VAR(sp_point_521, point, 2, NULL, DYNAMIC_TYPE_ECC);
@@ -89025,33 +89019,26 @@ int sp_ecc_mulmod_base_add_521(const mp_int* km, const ecc_point* am,
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
         if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+        if (saved_vector_registers)
             err = sp_521_ecc_mulmod_base_avx2_9(point, k, 0, 0, heap);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             err = sp_521_ecc_mulmod_base_9(point, k, 0, 0, heap);
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_521_proj_point_add_avx2_9(point, point, addP, tmp);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_521_proj_point_add_9(point, point, addP, tmp);
 
         if (map) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                    IS_INTEL_AVX2(cpuid_flags) &&
-                    (SAVE_VECTOR_REGISTERS2() == 0)) {
+            if (saved_vector_registers)
                 sp_521_map_avx2_9(point, point, tmp);
-                RESTORE_VECTOR_REGISTERS();
-            }
             else
 #endif
                 sp_521_map_9(point, point, tmp);
@@ -89059,6 +89046,11 @@ int sp_ecc_mulmod_base_add_521(const mp_int* km, const ecc_point* am,
 
         err = sp_521_point_to_ecc_point_9(point, r);
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     SP_FREE_VAR(k, NULL, DYNAMIC_TYPE_ECC);
     SP_FREE_VAR(point, NULL, DYNAMIC_TYPE_ECC);
@@ -89172,6 +89164,7 @@ int sp_ecc_make_key_521(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
 
     (void)heap;
@@ -89192,10 +89185,11 @@ int sp_ecc_make_key_521(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
         if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+
+        if (saved_vector_registers)
             err = sp_521_ecc_mulmod_base_avx2_9(point, k, 1, 1, NULL);
-            RESTORE_VECTOR_REGISTERS();
-       }
         else
 #endif
             err = sp_521_ecc_mulmod_base_9(point, k, 1, 1, NULL);
@@ -89204,11 +89198,9 @@ int sp_ecc_make_key_521(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 #ifdef WOLFSSL_VALIDATE_ECC_KEYGEN
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers) {
             err = sp_521_ecc_mulmod_avx2_9(infinity, point, p521_order, 1, 1,
                                                                           NULL);
-            RESTORE_VECTOR_REGISTERS();
         }
         else
 #endif
@@ -89219,6 +89211,11 @@ int sp_ecc_make_key_521(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
             err = ECC_INF_E;
         }
     }
+#endif
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
 #endif
 
     if (err == MP_OKAY) {
@@ -89517,7 +89514,6 @@ extern sp_digit div_521_word_asm_9(sp_digit d1, sp_digit d0, sp_digit div);
 static WC_INLINE sp_digit div_521_word_9(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
 #if _MSC_VER >= 1920
     return _udiv128(d1, d0, div, NULL);
 #else
@@ -89536,7 +89532,6 @@ static WC_INLINE sp_digit div_521_word_9(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
     register sp_digit r asm("rax");
-    ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
         : "=a" (r)
@@ -89595,8 +89590,6 @@ static WC_INLINE int sp_521_div_9(const sp_digit* a, const sp_digit* d, sp_digit
     word32 cpuid_flags = cpuid_get_flags();
 #endif
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     (void)m;
 
     div = (d[8] << 55) | (d[7] >> 9);
@@ -89651,7 +89644,6 @@ static WC_INLINE int sp_521_div_9(const sp_digit* a, const sp_digit* d, sp_digit
 static WC_INLINE int sp_521_mod_9(sp_digit* r, const sp_digit* a,
         const sp_digit* m)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
     return sp_521_div_9(a, m, NULL, r);
 }
 
@@ -90037,15 +90029,16 @@ static int sp_521_calc_s_9(sp_digit* s, const sp_digit* r, sp_digit* k,
     sp_digit* kInv = k;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
 
     /* Conv k to Montgomery form (mod order) */
 #ifdef HAVE_INTEL_AVX2
     if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-            IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+            IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+        saved_vector_registers = 1;
+    if (saved_vector_registers)
         sp_521_mul_avx2_9(k, k, p521_norm_order);
-        RESTORE_VECTOR_REGISTERS();
-    }
     else
 #endif
         sp_521_mul_9(k, k, p521_norm_order);
@@ -90055,11 +90048,8 @@ static int sp_521_calc_s_9(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* kInv = 1/k mod order */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_521_mont_inv_order_avx2_9(kInv, k, tmp);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_521_mont_inv_order_9(kInv, k, tmp);
@@ -90067,11 +90057,8 @@ static int sp_521_calc_s_9(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* s = r * x + e */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_521_mul_avx2_9(x, x, r);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_521_mul_9(x, x, r);
@@ -90089,16 +90076,18 @@ static int sp_521_calc_s_9(sp_digit* s, const sp_digit* r, sp_digit* k,
 
         /* s = s * k^-1 mod order */
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_521_mont_mul_order_avx2_9(s, s, kInv);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_521_mont_mul_order_9(s, s, kInv);
         sp_521_norm_9(s);
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     return err;
 }
@@ -91607,7 +91596,6 @@ extern sp_digit div_1024_word_asm_16(sp_digit d1, sp_digit d0, sp_digit div);
 static WC_INLINE sp_digit div_1024_word_16(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
 #if _MSC_VER >= 1920
     return _udiv128(d1, d0, div, NULL);
 #else
@@ -91626,7 +91614,6 @@ static WC_INLINE sp_digit div_1024_word_16(sp_digit d1, sp_digit d0,
         sp_digit div)
 {
     register sp_digit r asm("rax");
-    ASSERT_SAVED_VECTOR_REGISTERS();
     __asm__ __volatile__ (
         "divq %3"
         : "=a" (r)
@@ -91694,8 +91681,6 @@ static WC_INLINE int sp_1024_div_16(const sp_digit* a, const sp_digit* d, sp_dig
     word32 cpuid_flags = cpuid_get_flags();
 #endif
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
     (void)m;
 
     div = d[15];
@@ -91748,7 +91733,6 @@ static WC_INLINE int sp_1024_div_16(const sp_digit* a, const sp_digit* d, sp_dig
 static WC_INLINE int sp_1024_mod_16(sp_digit* r, const sp_digit* a,
         const sp_digit* m)
 {
-    ASSERT_SAVED_VECTOR_REGISTERS();
     return sp_1024_div_16(a, m, NULL, r);
 }
 
@@ -93220,6 +93204,7 @@ extern void sp_1024_mont_reduce_avx2_16(sp_digit* a, const sp_digit* m, sp_digit
 SP_NOINLINE static void sp_1024_mont_mul_avx2_16(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
 {
+    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_1024_mul_avx2_16(r, a, b);
     sp_1024_mont_reduce_avx2_16(r, m, mp);
 }
@@ -93236,6 +93221,7 @@ SP_NOINLINE static void sp_1024_mont_mul_avx2_16(sp_digit* r, const sp_digit* a,
 SP_NOINLINE static void sp_1024_mont_sqr_avx2_16(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
 {
+    ASSERT_SAVED_VECTOR_REGISTERS();
     sp_1024_sqr_avx2_16(r, a);
     sp_1024_mont_reduce_avx2_16(r, m, mp);
 }
@@ -98454,6 +98440,7 @@ int sp_ecc_mulmod_base_add_1024(const mp_int* km, const ecc_point* am,
     int err = MP_OKAY;
 #ifdef HAVE_INTEL_AVX2
     word32 cpuid_flags = cpuid_get_flags();
+    int saved_vector_registers = 0;
 #endif
 
     SP_ALLOC_VAR(sp_point_1024, point, 2, NULL, DYNAMIC_TYPE_ECC);
@@ -98477,33 +98464,26 @@ int sp_ecc_mulmod_base_add_1024(const mp_int* km, const ecc_point* am,
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
         if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0))
+            saved_vector_registers = 1;
+        if (saved_vector_registers)
             err = sp_1024_ecc_mulmod_base_avx2_16(point, k, 0, 0, heap);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             err = sp_1024_ecc_mulmod_base_16(point, k, 0, 0, heap);
     }
     if (err == MP_OKAY) {
 #ifdef HAVE_INTEL_AVX2
-        if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
+        if (saved_vector_registers)
             sp_1024_proj_point_add_avx2_16(point, point, addP, tmp);
-            RESTORE_VECTOR_REGISTERS();
-        }
         else
 #endif
             sp_1024_proj_point_add_16(point, point, addP, tmp);
 
         if (map) {
 #ifdef HAVE_INTEL_AVX2
-            if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
-                    IS_INTEL_AVX2(cpuid_flags) &&
-                    (SAVE_VECTOR_REGISTERS2() == 0)) {
+            if (saved_vector_registers)
                 sp_1024_map_avx2_16(point, point, tmp);
-                RESTORE_VECTOR_REGISTERS();
-            }
             else
 #endif
                 sp_1024_map_16(point, point, tmp);
@@ -98511,6 +98491,11 @@ int sp_ecc_mulmod_base_add_1024(const mp_int* km, const ecc_point* am,
 
         err = sp_1024_point_to_ecc_point_16(point, r);
     }
+
+#ifdef HAVE_INTEL_AVX2
+    if (saved_vector_registers)
+        RESTORE_VECTOR_REGISTERS();
+#endif
 
     SP_FREE_VAR(k, NULL, DYNAMIC_TYPE_ECC);
     SP_FREE_VAR(point, NULL, DYNAMIC_TYPE_ECC);
@@ -100712,11 +100697,11 @@ int sp_ModExp_Fp_star_1024(const mp_int* base, mp_int* exp, mp_int* res)
     word32 cpuid_flags = cpuid_get_flags();
 #endif
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
 #ifdef HAVE_INTEL_AVX2
-    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+            IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
         err = sp_ModExp_Fp_star_avx2_1024(base, exp, res);
+        RESTORE_VECTOR_REGISTERS();
     }
     else
 #endif
@@ -102314,11 +102299,11 @@ int sp_Pairing_1024(const ecc_point* pm, const ecc_point* qm, mp_int* res)
     word32 cpuid_flags = cpuid_get_flags();
 #endif
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
 #ifdef HAVE_INTEL_AVX2
-    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+            IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
         err = sp_Pairing_avx2_1024(pm, qm, res);
+        RESTORE_VECTOR_REGISTERS();
     }
     else
 #endif
@@ -103439,11 +103424,11 @@ int sp_Pairing_gen_precomp_1024(const ecc_point* pm, byte* table, word32* len)
     word32 cpuid_flags = cpuid_get_flags();
 #endif
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
 #ifdef HAVE_INTEL_AVX2
-    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+            IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
         err = sp_Pairing_gen_precomp_avx2_1024(pm, table, len);
+        RESTORE_VECTOR_REGISTERS();
     }
     else
 #endif
@@ -103475,11 +103460,11 @@ int sp_Pairing_precomp_1024(const ecc_point* pm, const ecc_point* qm, mp_int* re
     word32 cpuid_flags = cpuid_get_flags();
 #endif
 
-    ASSERT_SAVED_VECTOR_REGISTERS();
-
 #ifdef HAVE_INTEL_AVX2
-    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags)) {
+    if (IS_INTEL_BMI2(cpuid_flags) && IS_INTEL_ADX(cpuid_flags) &&
+            IS_INTEL_AVX2(cpuid_flags) && (SAVE_VECTOR_REGISTERS2() == 0)) {
         err = sp_Pairing_precomp_avx2_1024(pm, qm, res, table, len);
+        RESTORE_VECTOR_REGISTERS();
     }
     else
 #endif
