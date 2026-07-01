@@ -139,10 +139,10 @@
 #ifndef WOLFSSL_SP_NO_2048
 /* Read big endian unsigned byte array into r.
  *
- * r  A single precision integer.
- * size  Maximum number of bytes to convert
- * a  Byte array.
- * n  Number of bytes in array to read.
+ * @param [out] r     A single precision integer.
+ * @param [in]  size  Maximum number of bytes to convert
+ * @param [in]  a     Byte array.
+ * @param [in]  n     Number of bytes in array to read.
  */
 static void sp_2048_from_bin(sp_digit* r, int size, const byte* a, int n)
 {
@@ -186,9 +186,9 @@ static void sp_2048_from_bin(sp_digit* r, int size, const byte* a, int n)
 
 /* Convert an mp_int to an array of sp_digit.
  *
- * r  A single precision integer.
- * size  Maximum number of bytes to convert
- * a  A multi-precision integer.
+ * @param [out] r     A single precision integer.
+ * @param [in]  size  Maximum number of bytes to convert
+ * @param [in]  a     A multi-precision integer.
  */
 static void sp_2048_from_mp(sp_digit* r, int size, const mp_int* a)
 {
@@ -275,8 +275,8 @@ static void sp_2048_from_mp(sp_digit* r, int size, const mp_int* a)
 /* Write r as big endian to byte array.
  * Fixed length number of bytes written: 256
  *
- * r  A single precision integer.
- * a  Byte array.
+ * @param [in, out] r  A single precision integer.
+ * @param [out]     a  Byte array.
  */
 static void sp_2048_to_bin_64(sp_digit* r, byte* a)
 {
@@ -294,14 +294,14 @@ static void sp_2048_to_bin_64(sp_digit* r, byte* a)
 #if (defined(WOLFSSL_HAVE_SP_RSA) && (!defined(WOLFSSL_RSA_PUBLIC_ONLY) || !defined(WOLFSSL_SP_SMALL))) || defined(WOLFSSL_HAVE_SP_DH)
 /* Normalize the values in each word to 32.
  *
- * a  Array of sp_digit to normalize.
+ * @param [in] a  Array of sp_digit to normalize.
  */
 #define sp_2048_norm_64(a)
 
 #endif /* (WOLFSSL_HAVE_SP_RSA && (!WOLFSSL_RSA_PUBLIC_ONLY || !WOLFSSL_SP_SMALL)) || WOLFSSL_HAVE_SP_DH */
 /* Normalize the values in each word to 32.
  *
- * a  Array of sp_digit to normalize.
+ * @param [in] a  Array of sp_digit to normalize.
  */
 #define sp_2048_norm_64(a)
 
@@ -309,9 +309,9 @@ static void sp_2048_to_bin_64(sp_digit* r, byte* a)
 #ifndef WOLFSSL_SP_LARGE_CODE
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_8(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -557,9 +557,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_8(sp_digit* r,
 #else
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_8(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -9512,9 +9512,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_8(sp_digit* r,
 #endif /* !WOLFSSL_SP_LARGE_CODE */
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_8(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -9604,9 +9604,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_8(sp_digit* r,
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_word_8(
     sp_digit* r, const sp_digit* a, sp_digit b)
@@ -9693,8 +9693,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_word_8(
 
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_16(
     sp_digit* a, const sp_digit* b)
@@ -9859,9 +9859,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_16(
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_16(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -10019,9 +10019,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_16(sp_digit* r,
 
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_2048_mask_8(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -10045,9 +10045,9 @@ static void sp_2048_mask_8(sp_digit* r, const sp_digit* a, sp_digit m)
 
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 SP_NOINLINE static void sp_2048_mul_16(sp_digit* r, const sp_digit* a,
         const sp_digit* b)
@@ -10082,9 +10082,9 @@ SP_NOINLINE static void sp_2048_mul_16(sp_digit* r, const sp_digit* a,
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_word_16(
     sp_digit* r, const sp_digit* a, sp_digit b)
@@ -10235,8 +10235,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_word_16(
 
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_32(
     sp_digit* a, const sp_digit* b)
@@ -10545,9 +10545,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_32(
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_32(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -10841,9 +10841,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_32(sp_digit* r,
 
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_2048_mask_16(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -10871,9 +10871,9 @@ static void sp_2048_mask_16(sp_digit* r, const sp_digit* a, sp_digit m)
 
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 SP_NOINLINE static void sp_2048_mul_32(sp_digit* r, const sp_digit* a,
         const sp_digit* b)
@@ -10908,9 +10908,9 @@ SP_NOINLINE static void sp_2048_mul_32(sp_digit* r, const sp_digit* a,
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_word_32(
     sp_digit* r, const sp_digit* a, sp_digit b)
@@ -11189,8 +11189,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_word_32(
 
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_64(
     sp_digit* a, const sp_digit* b)
@@ -11787,9 +11787,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_64(
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_64(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -12355,9 +12355,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_64(sp_digit* r,
 
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_2048_mask_32(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -12385,9 +12385,9 @@ static void sp_2048_mask_32(sp_digit* r, const sp_digit* a, sp_digit m)
 
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 SP_NOINLINE static void sp_2048_mul_64(sp_digit* r, const sp_digit* a,
         const sp_digit* b)
@@ -12423,8 +12423,8 @@ SP_NOINLINE static void sp_2048_mul_64(sp_digit* r, const sp_digit* a,
 #ifndef WOLFSSL_SP_LARGE_CODE
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_sqr_8(sp_digit* r,
     const sp_digit* a)
@@ -12850,8 +12850,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_sqr_8(sp_digit* r,
 #else
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_sqr_8(sp_digit* r,
     const sp_digit* a)
@@ -19368,9 +19368,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_sqr_8(sp_digit* r,
 #endif /* !WOLFSSL_SP_LARGE_CODE */
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_8(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -19459,8 +19459,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_8(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 SP_NOINLINE static void sp_2048_sqr_16(sp_digit* r, const sp_digit* a)
 {
@@ -19494,9 +19494,9 @@ SP_NOINLINE static void sp_2048_sqr_16(sp_digit* r, const sp_digit* a)
 
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_16(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -19653,8 +19653,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_16(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 SP_NOINLINE static void sp_2048_sqr_32(sp_digit* r, const sp_digit* a)
 {
@@ -19688,9 +19688,9 @@ SP_NOINLINE static void sp_2048_sqr_32(sp_digit* r, const sp_digit* a)
 
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_32(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -19983,8 +19983,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_32(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 SP_NOINLINE static void sp_2048_sqr_64(sp_digit* r, const sp_digit* a)
 {
@@ -20020,9 +20020,9 @@ SP_NOINLINE static void sp_2048_sqr_64(sp_digit* r, const sp_digit* a)
 #ifdef WOLFSSL_SP_SMALL
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_64(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -20102,8 +20102,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_64(sp_digit* r,
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_64(
     sp_digit* a, const sp_digit* b)
@@ -20182,9 +20182,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_64(
 #ifdef WOLFSSL_SP_SMALL
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_64(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -20439,8 +20439,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_64(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_sqr_64(sp_digit* r,
     const sp_digit* a)
@@ -20893,9 +20893,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_sqr_64(sp_digit* r,
 #ifdef WOLFSSL_SP_SMALL
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_2048_mask_32(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -20910,9 +20910,9 @@ static void sp_2048_mask_32(sp_digit* r, const sp_digit* a, sp_digit m)
 #ifdef WOLFSSL_SP_SMALL
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_32(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -20986,8 +20986,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_add_32(sp_digit* r,
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_32(
     sp_digit* a, const sp_digit* b)
@@ -21060,9 +21060,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_in_place_32(
 #ifdef WOLFSSL_SP_SMALL
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_32(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -21307,8 +21307,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_32(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_sqr_32(sp_digit* r,
     const sp_digit* a)
@@ -21746,8 +21746,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_sqr_32(sp_digit* r,
 
 /* Calculate the bottom digit of -1/a mod 2^n.
  *
- * a    A single precision number.
- * rho  Bottom word of inverse.
+ * @param [in]  a    A single precision number.
+ * @param [out] rho  Bottom word of inverse.
  */
 static void sp_2048_mont_setup(const sp_digit* a, sp_digit* rho)
 {
@@ -21766,9 +21766,9 @@ static void sp_2048_mont_setup(const sp_digit* a, sp_digit* rho)
 
 /* Mul a by digit b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision digit.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_d_64(sp_digit* r,
     const sp_digit* a, sp_digit b)
@@ -21960,8 +21960,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_d_64(sp_digit* r,
 /* r = 2^n mod m where n is the number of bits to reduce by.
  * Given m must be 2048 bits, just need to subtract.
  *
- * r  A single precision number.
- * m  A single precision number.
+ * @param [out] r  A single precision number.
+ * @param [in]  m  A single precision number.
  */
 static void sp_2048_mont_norm_32(sp_digit* r, const sp_digit* m)
 {
@@ -21974,10 +21974,11 @@ static void sp_2048_mont_norm_32(sp_digit* r, const sp_digit* m)
 /* Conditionally subtract b from a using the mask m.
  * m is -1 to subtract and 0 when not copying.
  *
- * r  A single precision number representing condition subtract result.
- * a  A single precision number to subtract from.
- * b  A single precision number to subtract.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing condition subtract
+ *                 result.
+ * @param [in]  a  A single precision number to subtract from.
+ * @param [in]  b  A single precision number to subtract.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_cond_sub_32(
     sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -22038,9 +22039,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_cond_sub_32(
 #define sp_2048_mont_reduce_order_64   sp_2048_mont_reduce_64
 /* Reduce the number back to 2048 bits using Montgomery reduction.
  *
- * a   A single precision number to reduce in place.
- * m   The single precision number representing the modulus.
- * mp  The digit representing the negative inverse of m mod 2^n.
+ * @param [in, out] a   A single precision number to reduce in place.
+ * @param [in]      m   The single precision number representing the modulus.
+ * @param [in]      mp  The digit representing the negative inverse of
+ *                      m mod 2^n.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mont_reduce_32(
     sp_digit* a, const sp_digit* m, sp_digit mp)
@@ -23107,11 +23109,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mont_reduce_32(
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
- * r   Result of multiplication.
- * a   First number to multiply in Montgomery form.
- * b   Second number to multiply in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of multiplication.
+ * @param [in]  a   First number to multiply in Montgomery form.
+ * @param [in]  b   Second number to multiply in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_2048_mont_mul_32(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -23122,10 +23124,10 @@ SP_NOINLINE static void sp_2048_mont_mul_32(sp_digit* r, const sp_digit* a,
 
 /* Square the Montgomery form number. (r = a * a mod m)
  *
- * r   Result of squaring.
- * a   Number to square in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of squaring.
+ * @param [in]  a   Number to square in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_2048_mont_sqr_32(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -23136,9 +23138,9 @@ SP_NOINLINE static void sp_2048_mont_sqr_32(sp_digit* r, const sp_digit* a,
 
 /* Mul a by digit b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision digit.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_d_32(sp_digit* r,
     const sp_digit* a, sp_digit b)
@@ -23323,10 +23325,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mul_d_32(sp_digit* r,
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * d1   The high order half of the number to divide.
- * d0   The low order half of the number to divide.
- * div  The divisor.
- * returns the result of the division.
+ * @param [in] d1   The high order half of the number to divide.
+ * @param [in] d0   The low order half of the number to divide.
+ * @param [in] div  The divisor.
+ *
+ * @return  The result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
@@ -23940,10 +23943,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_2048_word_32(sp_digit d1,
 
 /* Compare a with b in constant time.
  *
- * a  A single precision integer.
- * b  A single precision integer.
- * return -ve, 0 or +ve if a is less than, equal to or greater than b
- * respectively.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
+ *
+ * @return  -ve, 0 or +ve if a is less than, equal to or greater than b
+ *          respectively.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_2048_cmp_32(
     const sp_digit* a, const sp_digit* b)
@@ -24052,11 +24056,12 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_2048_cmp_32(
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
- * a  Number to be divided.
- * d  Number to divide with.
- * m  Multiplier result.
- * r  Remainder from the division.
- * returns MP_OKAY indicating success.
+ * @param [in]  a  Number to be divided.
+ * @param [in]  d  Number to divide with.
+ * @param [in]  m  Multiplier result.
+ * @param [out] r  Remainder from the division.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_2048_div_32(const sp_digit* a, const sp_digit* d,
         sp_digit* m, sp_digit* r)
@@ -24094,10 +24099,11 @@ static WC_INLINE int sp_2048_div_32(const sp_digit* a, const sp_digit* d,
 
 /* Reduce a modulo m into r. (r = a mod m)
  *
- * r  A single precision number that is the reduced result.
- * a  A single precision number that is to be reduced.
- * m  A single precision number that is the modulus to reduce with.
- * returns MP_OKAY indicating success.
+ * @param [out] r  A single precision number that is the reduced result.
+ * @param [in]  a  A single precision number that is to be reduced.
+ * @param [in]  m  A single precision number that is the modulus to reduce with.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_2048_mod_32(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -24109,14 +24115,17 @@ static WC_INLINE int sp_2048_mod_32(sp_digit* r, const sp_digit* a, const sp_dig
 #ifdef WOLFSSL_SP_SMALL
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
- * r     A single precision number that is the result of the operation.
- * a     A single precision number being exponentiated.
- * e     A single precision number that is the exponent.
- * bits  The number of bits in the exponent.
- * m     A single precision number that is the modulus.
- * returns  0 on success.
- * returns  MEMORY_E on dynamic memory allocation failure.
- * returns  MP_VAL when base is even or exponent is 0.
+ * @param [out] r        A single precision number that is the result of the
+ *                       operation.
+ * @param [in]  a        A single precision number being exponentiated.
+ * @param [in]  e        A single precision number that is the exponent.
+ * @param [in]  bits     The number of bits in the exponent.
+ * @param [in]  m        A single precision number that is the modulus.
+ * @param [in]  reduceA  Whether to reduce a modulo m before the operation.
+ *
+ * @return  0 on success.
+ * @return  MEMORY_E on dynamic memory allocation failure.
+ * @return  MP_VAL when base is even or exponent is 0.
  */
 static int sp_2048_mod_exp_32(sp_digit* r, const sp_digit* a, const sp_digit* e,
         int bits, const sp_digit* m, int reduceA)
@@ -24246,14 +24255,17 @@ static int sp_2048_mod_exp_32(sp_digit* r, const sp_digit* a, const sp_digit* e,
 #else
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
- * r     A single precision number that is the result of the operation.
- * a     A single precision number being exponentiated.
- * e     A single precision number that is the exponent.
- * bits  The number of bits in the exponent.
- * m     A single precision number that is the modulus.
- * returns  0 on success.
- * returns  MEMORY_E on dynamic memory allocation failure.
- * returns  MP_VAL when base is even or exponent is 0.
+ * @param [out] r        A single precision number that is the result of the
+ *                       operation.
+ * @param [in]  a        A single precision number being exponentiated.
+ * @param [in]  e        A single precision number that is the exponent.
+ * @param [in]  bits     The number of bits in the exponent.
+ * @param [in]  m        A single precision number that is the modulus.
+ * @param [in]  reduceA  Whether to reduce a modulo m before the operation.
+ *
+ * @return  0 on success.
+ * @return  MEMORY_E on dynamic memory allocation failure.
+ * @return  MP_VAL when base is even or exponent is 0.
  */
 static int sp_2048_mod_exp_32(sp_digit* r, const sp_digit* a, const sp_digit* e,
         int bits, const sp_digit* m, int reduceA)
@@ -24405,8 +24417,8 @@ static int sp_2048_mod_exp_32(sp_digit* r, const sp_digit* a, const sp_digit* e,
 /* r = 2^n mod m where n is the number of bits to reduce by.
  * Given m must be 2048 bits, just need to subtract.
  *
- * r  A single precision number.
- * m  A single precision number.
+ * @param [out] r  A single precision number.
+ * @param [in]  m  A single precision number.
  */
 static void sp_2048_mont_norm_64(sp_digit* r, const sp_digit* m)
 {
@@ -24420,10 +24432,11 @@ static void sp_2048_mont_norm_64(sp_digit* r, const sp_digit* m)
 /* Conditionally subtract b from a using the mask m.
  * m is -1 to subtract and 0 when not copying.
  *
- * r  A single precision number representing condition subtract result.
- * a  A single precision number to subtract from.
- * b  A single precision number to subtract.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing condition subtract
+ *                 result.
+ * @param [in]  a  A single precision number to subtract from.
+ * @param [in]  b  A single precision number to subtract.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_cond_sub_64(
     sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -24489,9 +24502,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_cond_sub_64(
 #define sp_2048_mont_reduce_order_64   sp_2048_mont_reduce_64
 /* Reduce the number back to 2048 bits using Montgomery reduction.
  *
- * a   A single precision number to reduce in place.
- * m   The single precision number representing the modulus.
- * mp  The digit representing the negative inverse of m mod 2^n.
+ * @param [in, out] a   A single precision number to reduce in place.
+ * @param [in]      m   The single precision number representing the modulus.
+ * @param [in]      mp  The digit representing the negative inverse of
+ *                      m mod 2^n.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mont_reduce_64(
     sp_digit* a, const sp_digit* m, sp_digit mp)
@@ -26112,11 +26126,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_2048_mont_reduce_64(
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
- * r   Result of multiplication.
- * a   First number to multiply in Montgomery form.
- * b   Second number to multiply in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of multiplication.
+ * @param [in]  a   First number to multiply in Montgomery form.
+ * @param [in]  b   Second number to multiply in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_2048_mont_mul_64(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -26127,10 +26141,10 @@ SP_NOINLINE static void sp_2048_mont_mul_64(sp_digit* r, const sp_digit* a,
 
 /* Square the Montgomery form number. (r = a * a mod m)
  *
- * r   Result of squaring.
- * a   Number to square in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of squaring.
+ * @param [in]  a   Number to square in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_2048_mont_sqr_64(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -26142,9 +26156,9 @@ SP_NOINLINE static void sp_2048_mont_sqr_64(sp_digit* r, const sp_digit* a,
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_64(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -26217,9 +26231,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_64(sp_digit* r,
 #else
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_64(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -26785,10 +26799,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_sub_64(sp_digit* r,
 #endif /* WOLFSSL_SP_SMALL */
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * d1   The high order half of the number to divide.
- * d0   The low order half of the number to divide.
- * div  The divisor.
- * returns the result of the division.
+ * @param [in] d1   The high order half of the number to divide.
+ * @param [in] d0   The low order half of the number to divide.
+ * @param [in] div  The divisor.
+ *
+ * @return  The result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
@@ -27403,11 +27418,12 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_2048_word_64(sp_digit d1,
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
- * a  Number to be divided.
- * d  Number to divide with.
- * m  Multiplier result.
- * r  Remainder from the division.
- * returns MP_OKAY indicating success.
+ * @param [in]  a  Number to be divided.
+ * @param [in]  d  Number to divide with.
+ * @param [in]  m  Multiplier result.
+ * @param [out] r  Remainder from the division.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_2048_div_64_cond(const sp_digit* a, const sp_digit* d,
         sp_digit* m, sp_digit* r)
@@ -27461,10 +27477,11 @@ static WC_INLINE int sp_2048_div_64_cond(const sp_digit* a, const sp_digit* d,
 
 /* Reduce a modulo m into r. (r = a mod m)
  *
- * r  A single precision number that is the reduced result.
- * a  A single precision number that is to be reduced.
- * m  A single precision number that is the modulus to reduce with.
- * returns MP_OKAY indicating success.
+ * @param [out] r  A single precision number that is the reduced result.
+ * @param [in]  a  A single precision number that is to be reduced.
+ * @param [in]  m  A single precision number that is the modulus to reduce with.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_2048_mod_64_cond(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -27476,9 +27493,9 @@ static WC_INLINE int sp_2048_mod_64_cond(sp_digit* r, const sp_digit* a, const s
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_2048_mask_64(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -27506,10 +27523,11 @@ static void sp_2048_mask_64(sp_digit* r, const sp_digit* a, sp_digit m)
 
 /* Compare a with b in constant time.
  *
- * a  A single precision integer.
- * b  A single precision integer.
- * return -ve, 0 or +ve if a is less than, equal to or greater than b
- * respectively.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
+ *
+ * @return  -ve, 0 or +ve if a is less than, equal to or greater than b
+ *          respectively.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_2048_cmp_64(
     const sp_digit* a, const sp_digit* b)
@@ -27618,11 +27636,12 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_2048_cmp_64(
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
- * a  Number to be divided.
- * d  Number to divide with.
- * m  Multiplier result.
- * r  Remainder from the division.
- * returns MP_OKAY indicating success.
+ * @param [in]  a  Number to be divided.
+ * @param [in]  d  Number to divide with.
+ * @param [in]  m  Multiplier result.
+ * @param [out] r  Remainder from the division.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_2048_div_64(const sp_digit* a, const sp_digit* d,
         sp_digit* m, sp_digit* r)
@@ -27660,10 +27679,11 @@ static WC_INLINE int sp_2048_div_64(const sp_digit* a, const sp_digit* d,
 
 /* Reduce a modulo m into r. (r = a mod m)
  *
- * r  A single precision number that is the reduced result.
- * a  A single precision number that is to be reduced.
- * m  A single precision number that is the modulus to reduce with.
- * returns MP_OKAY indicating success.
+ * @param [out] r  A single precision number that is the reduced result.
+ * @param [in]  a  A single precision number that is to be reduced.
+ * @param [in]  m  A single precision number that is the modulus to reduce with.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_2048_mod_64(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -27677,14 +27697,17 @@ static WC_INLINE int sp_2048_mod_64(sp_digit* r, const sp_digit* a, const sp_dig
 #ifdef WOLFSSL_SP_SMALL
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
- * r     A single precision number that is the result of the operation.
- * a     A single precision number being exponentiated.
- * e     A single precision number that is the exponent.
- * bits  The number of bits in the exponent.
- * m     A single precision number that is the modulus.
- * returns  0 on success.
- * returns  MEMORY_E on dynamic memory allocation failure.
- * returns  MP_VAL when base is even or exponent is 0.
+ * @param [out] r        A single precision number that is the result of the
+ *                       operation.
+ * @param [in]  a        A single precision number being exponentiated.
+ * @param [in]  e        A single precision number that is the exponent.
+ * @param [in]  bits     The number of bits in the exponent.
+ * @param [in]  m        A single precision number that is the modulus.
+ * @param [in]  reduceA  Whether to reduce a modulo m before the operation.
+ *
+ * @return  0 on success.
+ * @return  MEMORY_E on dynamic memory allocation failure.
+ * @return  MP_VAL when base is even or exponent is 0.
  */
 static int sp_2048_mod_exp_64(sp_digit* r, const sp_digit* a, const sp_digit* e,
         int bits, const sp_digit* m, int reduceA)
@@ -27805,14 +27828,17 @@ static int sp_2048_mod_exp_64(sp_digit* r, const sp_digit* a, const sp_digit* e,
 #else
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
- * r     A single precision number that is the result of the operation.
- * a     A single precision number being exponentiated.
- * e     A single precision number that is the exponent.
- * bits  The number of bits in the exponent.
- * m     A single precision number that is the modulus.
- * returns  0 on success.
- * returns  MEMORY_E on dynamic memory allocation failure.
- * returns  MP_VAL when base is even or exponent is 0.
+ * @param [out] r        A single precision number that is the result of the
+ *                       operation.
+ * @param [in]  a        A single precision number being exponentiated.
+ * @param [in]  e        A single precision number that is the exponent.
+ * @param [in]  bits     The number of bits in the exponent.
+ * @param [in]  m        A single precision number that is the modulus.
+ * @param [in]  reduceA  Whether to reduce a modulo m before the operation.
+ *
+ * @return  0 on success.
+ * @return  MEMORY_E on dynamic memory allocation failure.
+ * @return  MP_VAL when base is even or exponent is 0.
  */
 static int sp_2048_mod_exp_64(sp_digit* r, const sp_digit* a, const sp_digit* e,
         int bits, const sp_digit* m, int reduceA)
@@ -27946,15 +27972,19 @@ static int sp_2048_mod_exp_64(sp_digit* r, const sp_digit* a, const sp_digit* e,
 #ifdef WOLFSSL_HAVE_SP_RSA
 /* RSA public key operation.
  *
- * in      Array of bytes representing the number to exponentiate, base.
- * inLen   Number of bytes in base.
- * em      Public exponent.
- * mm      Modulus.
- * out     Buffer to hold big-endian bytes of exponentiation result.
- *         Must be at least 256 bytes long.
- * outLen  Number of bytes in result.
- * returns 0 on success, MP_TO_E when the outLen is too small, MP_READ_E when
- * an array is too long and MEMORY_E when dynamic memory allocation fails.
+ * @param [in]      in      Array of bytes representing the number to
+ *                          exponentiate, base.
+ * @param [in]      inLen   Number of bytes in base.
+ * @param [in]      em      Public exponent.
+ * @param [in]      mm      Modulus.
+ * @param [out]     out     Buffer to hold big-endian bytes of exponentiation
+ *                          result. Must be at least 256 bytes long.
+ * @param [in, out] outLen  Number of bytes in result.
+ *
+ * @return  0 on success.
+ * @return  MP_TO_E when the outLen is too small.
+ * @return  MP_READ_E when an array is too long.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
     const mp_int* mm, byte* out, word32* outLen)
@@ -28094,10 +28124,11 @@ int sp_RsaPublic_2048(const byte* in, word32 inLen, const mp_int* em,
 /* Conditionally add a and b using the mask m.
  * m is -1 to add and 0 when not.
  *
- * r  A single precision number representing conditional add result.
- * a  A single precision number to add with.
- * b  A single precision number to add.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing conditional add
+ *                 result.
+ * @param [in]  a  A single precision number to add with.
+ * @param [in]  b  A single precision number to add.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_cond_add_32(
     sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -28164,20 +28195,24 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_2048_cond_add_32(
 #endif /* !SP_RSA_PRIVATE_EXP_D && !RSA_LOW_MEM */
 /* RSA private key operation.
  *
- * in      Array of bytes representing the number to exponentiate, base.
- * inLen   Number of bytes in base.
- * dm      Private exponent.
- * pm      First prime.
- * qm      Second prime.
- * dpm     First prime's CRT exponent.
- * dqm     Second prime's CRT exponent.
- * qim     Inverse of second prime mod p.
- * mm      Modulus.
- * out     Buffer to hold big-endian bytes of exponentiation result.
- *         Must be at least 256 bytes long.
- * outLen  Number of bytes in result.
- * returns 0 on success, MP_TO_E when the outLen is too small, MP_READ_E when
- * an array is too long and MEMORY_E when dynamic memory allocation fails.
+ * @param [in]      in      Array of bytes representing the number to
+ *                          exponentiate, base.
+ * @param [in]      inLen   Number of bytes in base.
+ * @param [in]      dm      Private exponent.
+ * @param [in]      pm      First prime.
+ * @param [in]      qm      Second prime.
+ * @param [in]      dpm     First prime's CRT exponent.
+ * @param [in]      dqm     Second prime's CRT exponent.
+ * @param [in]      qim     Inverse of second prime mod p.
+ * @param [in]      mm      Modulus.
+ * @param [out]     out     Buffer to hold big-endian bytes of exponentiation
+ *                          result. Must be at least 256 bytes long.
+ * @param [in, out] outLen  Number of bytes in result.
+ *
+ * @return  0 on success.
+ * @return  MP_TO_E when the outLen is too small.
+ * @return  MP_READ_E when an array is too long.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
     const mp_int* pm, const mp_int* qm, const mp_int* dpm, const mp_int* dqm,
@@ -28316,8 +28351,8 @@ int sp_RsaPrivate_2048(const byte* in, word32 inLen, const mp_int* dm,
                                               !defined(WOLFSSL_RSA_PUBLIC_ONLY))
 /* Convert an array of sp_digit to an mp_int.
  *
- * a  A single precision integer.
- * r  A multi-precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [out] r  A multi-precision integer.
  */
 static int sp_2048_to_mp(const sp_digit* a, mp_int* r)
 {
@@ -28384,12 +28419,14 @@ static int sp_2048_to_mp(const sp_digit* a, mp_int* r)
 
 /* Perform the modular exponentiation for Diffie-Hellman.
  *
- * base  Base. MP integer.
- * exp   Exponent. MP integer.
- * mod   Modulus. MP integer.
- * res   Result. MP integer.
- * returns 0 on success, MP_READ_E if there are too many bytes in an array
- * and MEMORY_E if memory allocation fails.
+ * @param [in]  base  Base. MP integer.
+ * @param [in]  exp   Exponent. MP integer.
+ * @param [in]  mod   Modulus. MP integer.
+ * @param [out] res   Result. MP integer.
+ *
+ * @return  0 on success.
+ * @return  MP_READ_E when there are too many bytes in an array.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ModExp_2048(const mp_int* base, const mp_int* exp, const mp_int* mod,
     mp_int* res)
@@ -28436,9 +28473,15 @@ int sp_ModExp_2048(const mp_int* base, const mp_int* exp, const mp_int* mod,
 #ifdef HAVE_FFDHE_2048
 /* Lefy shift a by n bits into r. (r = a << n)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * n  Integer representing number of bits to shift.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  n  Integer representing number of bits to shift.
+ */
+/* Shift number left by n bits.
+ *
+ * @param [out] r  Result of shift.
+ * @param [in]  a  Number to shift.
+ * @param [in]  n  Number of bits to shift.
  */
 WC_OMIT_FRAME_POINTER static void sp_2048_lshift_64(sp_digit* r,
     const sp_digit* a, byte n)
@@ -30029,13 +30072,15 @@ WC_OMIT_FRAME_POINTER static void sp_2048_lshift_64(sp_digit* r,
 
 /* Modular exponentiate 2 to the e mod m. (r = 2^e mod m)
  *
- * r     A single precision number that is the result of the operation.
- * e     A single precision number that is the exponent.
- * bits  The number of bits in the exponent.
- * m     A single precision number that is the modulus.
- * returns  0 on success.
- * returns  MEMORY_E on dynamic memory allocation failure.
- * returns  MP_VAL when base is even.
+ * @param [out] r     A single precision number that is the result of the
+ *                    operation.
+ * @param [in]  e     A single precision number that is the exponent.
+ * @param [in]  bits  The number of bits in the exponent.
+ * @param [in]  m     A single precision number that is the modulus.
+ *
+ * @return  0 on success.
+ * @return  MEMORY_E on dynamic memory allocation failure.
+ * @return  MP_VAL when base is even.
  */
 static int sp_2048_mod_exp_2_64(sp_digit* r, const sp_digit* e, int bits,
         const sp_digit* m)
@@ -30141,15 +30186,17 @@ static int sp_2048_mod_exp_2_64(sp_digit* r, const sp_digit* e, int bits,
 
 /* Perform the modular exponentiation for Diffie-Hellman.
  *
- * base     Base.
- * exp      Array of bytes that is the exponent.
- * expLen   Length of data, in bytes, in exponent.
- * mod      Modulus.
- * out      Buffer to hold big-endian bytes of exponentiation result.
- *          Must be at least 256 bytes long.
- * outLen   Length, in bytes, of exponentiation result.
- * returns 0 on success, MP_READ_E if there are too many bytes in an array
- * and MEMORY_E if memory allocation fails.
+ * @param [in]      base    Base.
+ * @param [in]      exp     Array of bytes that is the exponent.
+ * @param [in]      expLen  Length of data, in bytes, in exponent.
+ * @param [in]      mod     Modulus.
+ * @param [out]     out     Buffer to hold big-endian bytes of exponentiation
+ *                          result. Must be at least 256 bytes long.
+ * @param [in, out] outLen  Length, in bytes, of exponentiation result.
+ *
+ * @return  0 on success.
+ * @return  MP_READ_E when there are too many bytes in an array.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_DhExp_2048(const mp_int* base, const byte* exp, word32 expLen,
     const mp_int* mod, byte* out, word32* outLen)
@@ -30207,12 +30254,14 @@ int sp_DhExp_2048(const mp_int* base, const byte* exp, word32 expLen,
 
 /* Perform the modular exponentiation for Diffie-Hellman.
  *
- * base  Base. MP integer.
- * exp   Exponent. MP integer.
- * mod   Modulus. MP integer.
- * res   Result. MP integer.
- * returns 0 on success, MP_READ_E if there are too many bytes in an array
- * and MEMORY_E if memory allocation fails.
+ * @param [in]  base  Base. MP integer.
+ * @param [in]  exp   Exponent. MP integer.
+ * @param [in]  mod   Modulus. MP integer.
+ * @param [out] res   Result. MP integer.
+ *
+ * @return  0 on success.
+ * @return  MP_READ_E when there are too many bytes in an array.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ModExp_1024(const mp_int* base, const mp_int* exp, const mp_int* mod,
     mp_int* res)
@@ -30264,10 +30313,10 @@ int sp_ModExp_1024(const mp_int* base, const mp_int* exp, const mp_int* mod,
 #ifndef WOLFSSL_SP_NO_3072
 /* Read big endian unsigned byte array into r.
  *
- * r  A single precision integer.
- * size  Maximum number of bytes to convert
- * a  Byte array.
- * n  Number of bytes in array to read.
+ * @param [out] r     A single precision integer.
+ * @param [in]  size  Maximum number of bytes to convert
+ * @param [in]  a     Byte array.
+ * @param [in]  n     Number of bytes in array to read.
  */
 static void sp_3072_from_bin(sp_digit* r, int size, const byte* a, int n)
 {
@@ -30311,9 +30360,9 @@ static void sp_3072_from_bin(sp_digit* r, int size, const byte* a, int n)
 
 /* Convert an mp_int to an array of sp_digit.
  *
- * r  A single precision integer.
- * size  Maximum number of bytes to convert
- * a  A multi-precision integer.
+ * @param [out] r     A single precision integer.
+ * @param [in]  size  Maximum number of bytes to convert
+ * @param [in]  a     A multi-precision integer.
  */
 static void sp_3072_from_mp(sp_digit* r, int size, const mp_int* a)
 {
@@ -30400,8 +30449,8 @@ static void sp_3072_from_mp(sp_digit* r, int size, const mp_int* a)
 /* Write r as big endian to byte array.
  * Fixed length number of bytes written: 384
  *
- * r  A single precision integer.
- * a  Byte array.
+ * @param [in, out] r  A single precision integer.
+ * @param [out]     a  Byte array.
  */
 static void sp_3072_to_bin_96(sp_digit* r, byte* a)
 {
@@ -30419,14 +30468,14 @@ static void sp_3072_to_bin_96(sp_digit* r, byte* a)
 #if (defined(WOLFSSL_HAVE_SP_RSA) && (!defined(WOLFSSL_RSA_PUBLIC_ONLY) || !defined(WOLFSSL_SP_SMALL))) || defined(WOLFSSL_HAVE_SP_DH)
 /* Normalize the values in each word to 32.
  *
- * a  Array of sp_digit to normalize.
+ * @param [in] a  Array of sp_digit to normalize.
  */
 #define sp_3072_norm_96(a)
 
 #endif /* (WOLFSSL_HAVE_SP_RSA && (!WOLFSSL_RSA_PUBLIC_ONLY || !WOLFSSL_SP_SMALL)) || WOLFSSL_HAVE_SP_DH */
 /* Normalize the values in each word to 32.
  *
- * a  Array of sp_digit to normalize.
+ * @param [in] a  Array of sp_digit to normalize.
  */
 #define sp_3072_norm_96(a)
 
@@ -30434,9 +30483,9 @@ static void sp_3072_to_bin_96(sp_digit* r, byte* a)
 #ifndef WOLFSSL_SP_LARGE_CODE
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_12(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -30682,9 +30731,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_12(sp_digit* r,
 #else
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_12(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -50863,9 +50912,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_12(sp_digit* r,
 #endif /* !WOLFSSL_SP_LARGE_CODE */
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_12(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -50989,9 +51038,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_12(sp_digit* r,
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_word_12(
     sp_digit* r, const sp_digit* a, sp_digit b)
@@ -51110,8 +51159,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_word_12(
 
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_24(
     sp_digit* a, const sp_digit* b)
@@ -51348,9 +51397,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_24(
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_24(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -51576,9 +51625,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_24(sp_digit* r,
 
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_3072_mask_12(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -51606,9 +51655,9 @@ static void sp_3072_mask_12(sp_digit* r, const sp_digit* a, sp_digit m)
 
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 SP_NOINLINE static void sp_3072_mul_24(sp_digit* r, const sp_digit* a,
         const sp_digit* b)
@@ -51643,9 +51692,9 @@ SP_NOINLINE static void sp_3072_mul_24(sp_digit* r, const sp_digit* a,
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_word_24(
     sp_digit* r, const sp_digit* a, sp_digit b)
@@ -51860,8 +51909,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_word_24(
 
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_48(
     sp_digit* a, const sp_digit* b)
@@ -52314,9 +52363,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_48(
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_48(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -52746,9 +52795,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_48(sp_digit* r,
 
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_3072_mask_24(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -52776,9 +52825,9 @@ static void sp_3072_mask_24(sp_digit* r, const sp_digit* a, sp_digit m)
 
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 SP_NOINLINE static void sp_3072_mul_48(sp_digit* r, const sp_digit* a,
         const sp_digit* b)
@@ -52813,9 +52862,9 @@ SP_NOINLINE static void sp_3072_mul_48(sp_digit* r, const sp_digit* a,
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_word_48(
     sp_digit* r, const sp_digit* a, sp_digit b)
@@ -53222,8 +53271,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_word_48(
 
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_96(
     sp_digit* a, const sp_digit* b)
@@ -54108,9 +54157,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_96(
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_96(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -54948,9 +54997,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_96(sp_digit* r,
 
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_3072_mask_48(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -54978,9 +55027,9 @@ static void sp_3072_mask_48(sp_digit* r, const sp_digit* a, sp_digit m)
 
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 SP_NOINLINE static void sp_3072_mul_96(sp_digit* r, const sp_digit* a,
         const sp_digit* b)
@@ -55016,8 +55065,8 @@ SP_NOINLINE static void sp_3072_mul_96(sp_digit* r, const sp_digit* a,
 #ifndef WOLFSSL_SP_LARGE_CODE
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_sqr_12(sp_digit* r,
     const sp_digit* a)
@@ -55443,8 +55492,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_sqr_12(sp_digit* r,
 #else
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_sqr_12(sp_digit* r,
     const sp_digit* a)
@@ -70217,9 +70266,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_sqr_12(sp_digit* r,
 #endif /* !WOLFSSL_SP_LARGE_CODE */
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_12(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -70342,8 +70391,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_12(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 SP_NOINLINE static void sp_3072_sqr_24(sp_digit* r, const sp_digit* a)
 {
@@ -70377,9 +70426,9 @@ SP_NOINLINE static void sp_3072_sqr_24(sp_digit* r, const sp_digit* a)
 
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_24(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -70604,8 +70653,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_24(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 SP_NOINLINE static void sp_3072_sqr_48(sp_digit* r, const sp_digit* a)
 {
@@ -70639,9 +70688,9 @@ SP_NOINLINE static void sp_3072_sqr_48(sp_digit* r, const sp_digit* a)
 
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_48(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -71070,8 +71119,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_48(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 SP_NOINLINE static void sp_3072_sqr_96(sp_digit* r, const sp_digit* a)
 {
@@ -71107,9 +71156,9 @@ SP_NOINLINE static void sp_3072_sqr_96(sp_digit* r, const sp_digit* a)
 #ifdef WOLFSSL_SP_SMALL
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_96(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -71189,8 +71238,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_96(sp_digit* r,
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_96(
     sp_digit* a, const sp_digit* b)
@@ -71269,9 +71318,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_96(
 #ifdef WOLFSSL_SP_SMALL
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_96(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -71536,8 +71585,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_96(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_sqr_96(sp_digit* r,
     const sp_digit* a)
@@ -72005,9 +72054,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_sqr_96(sp_digit* r,
 #ifdef WOLFSSL_SP_SMALL
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_3072_mask_48(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -72022,9 +72071,9 @@ static void sp_3072_mask_48(sp_digit* r, const sp_digit* a, sp_digit m)
 #ifdef WOLFSSL_SP_SMALL
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_48(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -72098,8 +72147,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_add_48(sp_digit* r,
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_48(
     sp_digit* a, const sp_digit* b)
@@ -72172,9 +72221,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_in_place_48(
 #ifdef WOLFSSL_SP_SMALL
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_48(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -72424,8 +72473,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_48(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_sqr_48(sp_digit* r,
     const sp_digit* a)
@@ -72873,8 +72922,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_sqr_48(sp_digit* r,
 
 /* Calculate the bottom digit of -1/a mod 2^n.
  *
- * a    A single precision number.
- * rho  Bottom word of inverse.
+ * @param [in]  a    A single precision number.
+ * @param [out] rho  Bottom word of inverse.
  */
 static void sp_3072_mont_setup(const sp_digit* a, sp_digit* rho)
 {
@@ -72893,9 +72942,9 @@ static void sp_3072_mont_setup(const sp_digit* a, sp_digit* rho)
 
 /* Mul a by digit b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision digit.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_d_96(sp_digit* r,
     const sp_digit* a, sp_digit b)
@@ -73087,8 +73136,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_d_96(sp_digit* r,
 /* r = 2^n mod m where n is the number of bits to reduce by.
  * Given m must be 3072 bits, just need to subtract.
  *
- * r  A single precision number.
- * m  A single precision number.
+ * @param [out] r  A single precision number.
+ * @param [in]  m  A single precision number.
  */
 static void sp_3072_mont_norm_48(sp_digit* r, const sp_digit* m)
 {
@@ -73101,10 +73150,11 @@ static void sp_3072_mont_norm_48(sp_digit* r, const sp_digit* m)
 /* Conditionally subtract b from a using the mask m.
  * m is -1 to subtract and 0 when not copying.
  *
- * r  A single precision number representing condition subtract result.
- * a  A single precision number to subtract from.
- * b  A single precision number to subtract.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing condition subtract
+ *                 result.
+ * @param [in]  a  A single precision number to subtract from.
+ * @param [in]  b  A single precision number to subtract.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_cond_sub_48(
     sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -73165,9 +73215,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_cond_sub_48(
 #define sp_3072_mont_reduce_order_96   sp_3072_mont_reduce_96
 /* Reduce the number back to 3072 bits using Montgomery reduction.
  *
- * a   A single precision number to reduce in place.
- * m   The single precision number representing the modulus.
- * mp  The digit representing the negative inverse of m mod 2^n.
+ * @param [in, out] a   A single precision number to reduce in place.
+ * @param [in]      m   The single precision number representing the modulus.
+ * @param [in]      mp  The digit representing the negative inverse of
+ *                      m mod 2^n.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mont_reduce_48(
     sp_digit* a, const sp_digit* m, sp_digit mp)
@@ -74506,11 +74557,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mont_reduce_48(
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
- * r   Result of multiplication.
- * a   First number to multiply in Montgomery form.
- * b   Second number to multiply in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of multiplication.
+ * @param [in]  a   First number to multiply in Montgomery form.
+ * @param [in]  b   Second number to multiply in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_3072_mont_mul_48(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -74521,10 +74572,10 @@ SP_NOINLINE static void sp_3072_mont_mul_48(sp_digit* r, const sp_digit* a,
 
 /* Square the Montgomery form number. (r = a * a mod m)
  *
- * r   Result of squaring.
- * a   Number to square in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of squaring.
+ * @param [in]  a   Number to square in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_3072_mont_sqr_48(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -74535,9 +74586,9 @@ SP_NOINLINE static void sp_3072_mont_sqr_48(sp_digit* r, const sp_digit* a,
 
 /* Mul a by digit b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision digit.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_d_48(sp_digit* r,
     const sp_digit* a, sp_digit b)
@@ -74722,10 +74773,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mul_d_48(sp_digit* r,
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * d1   The high order half of the number to divide.
- * d0   The low order half of the number to divide.
- * div  The divisor.
- * returns the result of the division.
+ * @param [in] d1   The high order half of the number to divide.
+ * @param [in] d0   The low order half of the number to divide.
+ * @param [in] div  The divisor.
+ *
+ * @return  The result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
@@ -75339,10 +75391,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_3072_word_48(sp_digit d1,
 
 /* Compare a with b in constant time.
  *
- * a  A single precision integer.
- * b  A single precision integer.
- * return -ve, 0 or +ve if a is less than, equal to or greater than b
- * respectively.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
+ *
+ * @return  -ve, 0 or +ve if a is less than, equal to or greater than b
+ *          respectively.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_3072_cmp_48(
     const sp_digit* a, const sp_digit* b)
@@ -75451,11 +75504,12 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_3072_cmp_48(
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
- * a  Number to be divided.
- * d  Number to divide with.
- * m  Multiplier result.
- * r  Remainder from the division.
- * returns MP_OKAY indicating success.
+ * @param [in]  a  Number to be divided.
+ * @param [in]  d  Number to divide with.
+ * @param [in]  m  Multiplier result.
+ * @param [out] r  Remainder from the division.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_3072_div_48(const sp_digit* a, const sp_digit* d,
         sp_digit* m, sp_digit* r)
@@ -75493,10 +75547,11 @@ static WC_INLINE int sp_3072_div_48(const sp_digit* a, const sp_digit* d,
 
 /* Reduce a modulo m into r. (r = a mod m)
  *
- * r  A single precision number that is the reduced result.
- * a  A single precision number that is to be reduced.
- * m  A single precision number that is the modulus to reduce with.
- * returns MP_OKAY indicating success.
+ * @param [out] r  A single precision number that is the reduced result.
+ * @param [in]  a  A single precision number that is to be reduced.
+ * @param [in]  m  A single precision number that is the modulus to reduce with.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_3072_mod_48(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -75508,14 +75563,17 @@ static WC_INLINE int sp_3072_mod_48(sp_digit* r, const sp_digit* a, const sp_dig
 #ifdef WOLFSSL_SP_SMALL
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
- * r     A single precision number that is the result of the operation.
- * a     A single precision number being exponentiated.
- * e     A single precision number that is the exponent.
- * bits  The number of bits in the exponent.
- * m     A single precision number that is the modulus.
- * returns  0 on success.
- * returns  MEMORY_E on dynamic memory allocation failure.
- * returns  MP_VAL when base is even or exponent is 0.
+ * @param [out] r        A single precision number that is the result of the
+ *                       operation.
+ * @param [in]  a        A single precision number being exponentiated.
+ * @param [in]  e        A single precision number that is the exponent.
+ * @param [in]  bits     The number of bits in the exponent.
+ * @param [in]  m        A single precision number that is the modulus.
+ * @param [in]  reduceA  Whether to reduce a modulo m before the operation.
+ *
+ * @return  0 on success.
+ * @return  MEMORY_E on dynamic memory allocation failure.
+ * @return  MP_VAL when base is even or exponent is 0.
  */
 static int sp_3072_mod_exp_48(sp_digit* r, const sp_digit* a, const sp_digit* e,
         int bits, const sp_digit* m, int reduceA)
@@ -75645,14 +75703,17 @@ static int sp_3072_mod_exp_48(sp_digit* r, const sp_digit* a, const sp_digit* e,
 #else
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
- * r     A single precision number that is the result of the operation.
- * a     A single precision number being exponentiated.
- * e     A single precision number that is the exponent.
- * bits  The number of bits in the exponent.
- * m     A single precision number that is the modulus.
- * returns  0 on success.
- * returns  MEMORY_E on dynamic memory allocation failure.
- * returns  MP_VAL when base is even or exponent is 0.
+ * @param [out] r        A single precision number that is the result of the
+ *                       operation.
+ * @param [in]  a        A single precision number being exponentiated.
+ * @param [in]  e        A single precision number that is the exponent.
+ * @param [in]  bits     The number of bits in the exponent.
+ * @param [in]  m        A single precision number that is the modulus.
+ * @param [in]  reduceA  Whether to reduce a modulo m before the operation.
+ *
+ * @return  0 on success.
+ * @return  MEMORY_E on dynamic memory allocation failure.
+ * @return  MP_VAL when base is even or exponent is 0.
  */
 static int sp_3072_mod_exp_48(sp_digit* r, const sp_digit* a, const sp_digit* e,
         int bits, const sp_digit* m, int reduceA)
@@ -75804,8 +75865,8 @@ static int sp_3072_mod_exp_48(sp_digit* r, const sp_digit* a, const sp_digit* e,
 /* r = 2^n mod m where n is the number of bits to reduce by.
  * Given m must be 3072 bits, just need to subtract.
  *
- * r  A single precision number.
- * m  A single precision number.
+ * @param [out] r  A single precision number.
+ * @param [in]  m  A single precision number.
  */
 static void sp_3072_mont_norm_96(sp_digit* r, const sp_digit* m)
 {
@@ -75819,10 +75880,11 @@ static void sp_3072_mont_norm_96(sp_digit* r, const sp_digit* m)
 /* Conditionally subtract b from a using the mask m.
  * m is -1 to subtract and 0 when not copying.
  *
- * r  A single precision number representing condition subtract result.
- * a  A single precision number to subtract from.
- * b  A single precision number to subtract.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing condition subtract
+ *                 result.
+ * @param [in]  a  A single precision number to subtract from.
+ * @param [in]  b  A single precision number to subtract.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_cond_sub_96(
     sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -75888,9 +75950,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_cond_sub_96(
 #define sp_3072_mont_reduce_order_96   sp_3072_mont_reduce_96
 /* Reduce the number back to 3072 bits using Montgomery reduction.
  *
- * a   A single precision number to reduce in place.
- * m   The single precision number representing the modulus.
- * mp  The digit representing the negative inverse of m mod 2^n.
+ * @param [in, out] a   A single precision number to reduce in place.
+ * @param [in]      m   The single precision number representing the modulus.
+ * @param [in]      mp  The digit representing the negative inverse of
+ *                      m mod 2^n.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mont_reduce_96(
     sp_digit* a, const sp_digit* m, sp_digit mp)
@@ -78065,11 +78128,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_3072_mont_reduce_96(
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
- * r   Result of multiplication.
- * a   First number to multiply in Montgomery form.
- * b   Second number to multiply in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of multiplication.
+ * @param [in]  a   First number to multiply in Montgomery form.
+ * @param [in]  b   Second number to multiply in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_3072_mont_mul_96(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -78080,10 +78143,10 @@ SP_NOINLINE static void sp_3072_mont_mul_96(sp_digit* r, const sp_digit* a,
 
 /* Square the Montgomery form number. (r = a * a mod m)
  *
- * r   Result of squaring.
- * a   Number to square in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of squaring.
+ * @param [in]  a   Number to square in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_3072_mont_sqr_96(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -78095,9 +78158,9 @@ SP_NOINLINE static void sp_3072_mont_sqr_96(sp_digit* r, const sp_digit* a,
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_96(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -78170,9 +78233,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_96(sp_digit* r,
 #else
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_96(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -79010,10 +79073,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_sub_96(sp_digit* r,
 #endif /* WOLFSSL_SP_SMALL */
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * d1   The high order half of the number to divide.
- * d0   The low order half of the number to divide.
- * div  The divisor.
- * returns the result of the division.
+ * @param [in] d1   The high order half of the number to divide.
+ * @param [in] d0   The low order half of the number to divide.
+ * @param [in] div  The divisor.
+ *
+ * @return  The result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
@@ -79628,11 +79692,12 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_3072_word_96(sp_digit d1,
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
- * a  Number to be divided.
- * d  Number to divide with.
- * m  Multiplier result.
- * r  Remainder from the division.
- * returns MP_OKAY indicating success.
+ * @param [in]  a  Number to be divided.
+ * @param [in]  d  Number to divide with.
+ * @param [in]  m  Multiplier result.
+ * @param [out] r  Remainder from the division.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_3072_div_96_cond(const sp_digit* a, const sp_digit* d,
         sp_digit* m, sp_digit* r)
@@ -79686,10 +79751,11 @@ static WC_INLINE int sp_3072_div_96_cond(const sp_digit* a, const sp_digit* d,
 
 /* Reduce a modulo m into r. (r = a mod m)
  *
- * r  A single precision number that is the reduced result.
- * a  A single precision number that is to be reduced.
- * m  A single precision number that is the modulus to reduce with.
- * returns MP_OKAY indicating success.
+ * @param [out] r  A single precision number that is the reduced result.
+ * @param [in]  a  A single precision number that is to be reduced.
+ * @param [in]  m  A single precision number that is the modulus to reduce with.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_3072_mod_96_cond(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -79701,9 +79767,9 @@ static WC_INLINE int sp_3072_mod_96_cond(sp_digit* r, const sp_digit* a, const s
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_3072_mask_96(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -79731,10 +79797,11 @@ static void sp_3072_mask_96(sp_digit* r, const sp_digit* a, sp_digit m)
 
 /* Compare a with b in constant time.
  *
- * a  A single precision integer.
- * b  A single precision integer.
- * return -ve, 0 or +ve if a is less than, equal to or greater than b
- * respectively.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
+ *
+ * @return  -ve, 0 or +ve if a is less than, equal to or greater than b
+ *          respectively.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_3072_cmp_96(
     const sp_digit* a, const sp_digit* b)
@@ -79848,11 +79915,12 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_3072_cmp_96(
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
- * a  Number to be divided.
- * d  Number to divide with.
- * m  Multiplier result.
- * r  Remainder from the division.
- * returns MP_OKAY indicating success.
+ * @param [in]  a  Number to be divided.
+ * @param [in]  d  Number to divide with.
+ * @param [in]  m  Multiplier result.
+ * @param [out] r  Remainder from the division.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_3072_div_96(const sp_digit* a, const sp_digit* d,
         sp_digit* m, sp_digit* r)
@@ -79890,10 +79958,11 @@ static WC_INLINE int sp_3072_div_96(const sp_digit* a, const sp_digit* d,
 
 /* Reduce a modulo m into r. (r = a mod m)
  *
- * r  A single precision number that is the reduced result.
- * a  A single precision number that is to be reduced.
- * m  A single precision number that is the modulus to reduce with.
- * returns MP_OKAY indicating success.
+ * @param [out] r  A single precision number that is the reduced result.
+ * @param [in]  a  A single precision number that is to be reduced.
+ * @param [in]  m  A single precision number that is the modulus to reduce with.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_3072_mod_96(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -79907,14 +79976,17 @@ static WC_INLINE int sp_3072_mod_96(sp_digit* r, const sp_digit* a, const sp_dig
 #ifdef WOLFSSL_SP_SMALL
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
- * r     A single precision number that is the result of the operation.
- * a     A single precision number being exponentiated.
- * e     A single precision number that is the exponent.
- * bits  The number of bits in the exponent.
- * m     A single precision number that is the modulus.
- * returns  0 on success.
- * returns  MEMORY_E on dynamic memory allocation failure.
- * returns  MP_VAL when base is even or exponent is 0.
+ * @param [out] r        A single precision number that is the result of the
+ *                       operation.
+ * @param [in]  a        A single precision number being exponentiated.
+ * @param [in]  e        A single precision number that is the exponent.
+ * @param [in]  bits     The number of bits in the exponent.
+ * @param [in]  m        A single precision number that is the modulus.
+ * @param [in]  reduceA  Whether to reduce a modulo m before the operation.
+ *
+ * @return  0 on success.
+ * @return  MEMORY_E on dynamic memory allocation failure.
+ * @return  MP_VAL when base is even or exponent is 0.
  */
 static int sp_3072_mod_exp_96(sp_digit* r, const sp_digit* a, const sp_digit* e,
         int bits, const sp_digit* m, int reduceA)
@@ -80035,14 +80107,17 @@ static int sp_3072_mod_exp_96(sp_digit* r, const sp_digit* a, const sp_digit* e,
 #else
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
- * r     A single precision number that is the result of the operation.
- * a     A single precision number being exponentiated.
- * e     A single precision number that is the exponent.
- * bits  The number of bits in the exponent.
- * m     A single precision number that is the modulus.
- * returns  0 on success.
- * returns  MEMORY_E on dynamic memory allocation failure.
- * returns  MP_VAL when base is even or exponent is 0.
+ * @param [out] r        A single precision number that is the result of the
+ *                       operation.
+ * @param [in]  a        A single precision number being exponentiated.
+ * @param [in]  e        A single precision number that is the exponent.
+ * @param [in]  bits     The number of bits in the exponent.
+ * @param [in]  m        A single precision number that is the modulus.
+ * @param [in]  reduceA  Whether to reduce a modulo m before the operation.
+ *
+ * @return  0 on success.
+ * @return  MEMORY_E on dynamic memory allocation failure.
+ * @return  MP_VAL when base is even or exponent is 0.
  */
 static int sp_3072_mod_exp_96(sp_digit* r, const sp_digit* a, const sp_digit* e,
         int bits, const sp_digit* m, int reduceA)
@@ -80176,15 +80251,19 @@ static int sp_3072_mod_exp_96(sp_digit* r, const sp_digit* a, const sp_digit* e,
 #ifdef WOLFSSL_HAVE_SP_RSA
 /* RSA public key operation.
  *
- * in      Array of bytes representing the number to exponentiate, base.
- * inLen   Number of bytes in base.
- * em      Public exponent.
- * mm      Modulus.
- * out     Buffer to hold big-endian bytes of exponentiation result.
- *         Must be at least 384 bytes long.
- * outLen  Number of bytes in result.
- * returns 0 on success, MP_TO_E when the outLen is too small, MP_READ_E when
- * an array is too long and MEMORY_E when dynamic memory allocation fails.
+ * @param [in]      in      Array of bytes representing the number to
+ *                          exponentiate, base.
+ * @param [in]      inLen   Number of bytes in base.
+ * @param [in]      em      Public exponent.
+ * @param [in]      mm      Modulus.
+ * @param [out]     out     Buffer to hold big-endian bytes of exponentiation
+ *                          result. Must be at least 384 bytes long.
+ * @param [in, out] outLen  Number of bytes in result.
+ *
+ * @return  0 on success.
+ * @return  MP_TO_E when the outLen is too small.
+ * @return  MP_READ_E when an array is too long.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
     const mp_int* mm, byte* out, word32* outLen)
@@ -80324,10 +80403,11 @@ int sp_RsaPublic_3072(const byte* in, word32 inLen, const mp_int* em,
 /* Conditionally add a and b using the mask m.
  * m is -1 to add and 0 when not.
  *
- * r  A single precision number representing conditional add result.
- * a  A single precision number to add with.
- * b  A single precision number to add.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing conditional add
+ *                 result.
+ * @param [in]  a  A single precision number to add with.
+ * @param [in]  b  A single precision number to add.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_cond_add_48(
     sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -80394,20 +80474,24 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_3072_cond_add_48(
 #endif /* !SP_RSA_PRIVATE_EXP_D && !RSA_LOW_MEM */
 /* RSA private key operation.
  *
- * in      Array of bytes representing the number to exponentiate, base.
- * inLen   Number of bytes in base.
- * dm      Private exponent.
- * pm      First prime.
- * qm      Second prime.
- * dpm     First prime's CRT exponent.
- * dqm     Second prime's CRT exponent.
- * qim     Inverse of second prime mod p.
- * mm      Modulus.
- * out     Buffer to hold big-endian bytes of exponentiation result.
- *         Must be at least 384 bytes long.
- * outLen  Number of bytes in result.
- * returns 0 on success, MP_TO_E when the outLen is too small, MP_READ_E when
- * an array is too long and MEMORY_E when dynamic memory allocation fails.
+ * @param [in]      in      Array of bytes representing the number to
+ *                          exponentiate, base.
+ * @param [in]      inLen   Number of bytes in base.
+ * @param [in]      dm      Private exponent.
+ * @param [in]      pm      First prime.
+ * @param [in]      qm      Second prime.
+ * @param [in]      dpm     First prime's CRT exponent.
+ * @param [in]      dqm     Second prime's CRT exponent.
+ * @param [in]      qim     Inverse of second prime mod p.
+ * @param [in]      mm      Modulus.
+ * @param [out]     out     Buffer to hold big-endian bytes of exponentiation
+ *                          result. Must be at least 384 bytes long.
+ * @param [in, out] outLen  Number of bytes in result.
+ *
+ * @return  0 on success.
+ * @return  MP_TO_E when the outLen is too small.
+ * @return  MP_READ_E when an array is too long.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
     const mp_int* pm, const mp_int* qm, const mp_int* dpm, const mp_int* dqm,
@@ -80546,8 +80630,8 @@ int sp_RsaPrivate_3072(const byte* in, word32 inLen, const mp_int* dm,
                                               !defined(WOLFSSL_RSA_PUBLIC_ONLY))
 /* Convert an array of sp_digit to an mp_int.
  *
- * a  A single precision integer.
- * r  A multi-precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [out] r  A multi-precision integer.
  */
 static int sp_3072_to_mp(const sp_digit* a, mp_int* r)
 {
@@ -80614,12 +80698,14 @@ static int sp_3072_to_mp(const sp_digit* a, mp_int* r)
 
 /* Perform the modular exponentiation for Diffie-Hellman.
  *
- * base  Base. MP integer.
- * exp   Exponent. MP integer.
- * mod   Modulus. MP integer.
- * res   Result. MP integer.
- * returns 0 on success, MP_READ_E if there are too many bytes in an array
- * and MEMORY_E if memory allocation fails.
+ * @param [in]  base  Base. MP integer.
+ * @param [in]  exp   Exponent. MP integer.
+ * @param [in]  mod   Modulus. MP integer.
+ * @param [out] res   Result. MP integer.
+ *
+ * @return  0 on success.
+ * @return  MP_READ_E when there are too many bytes in an array.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ModExp_3072(const mp_int* base, const mp_int* exp, const mp_int* mod,
     mp_int* res)
@@ -80666,9 +80752,15 @@ int sp_ModExp_3072(const mp_int* base, const mp_int* exp, const mp_int* mod,
 #ifdef HAVE_FFDHE_3072
 /* Lefy shift a by n bits into r. (r = a << n)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * n  Integer representing number of bits to shift.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  n  Integer representing number of bits to shift.
+ */
+/* Shift number left by n bits.
+ *
+ * @param [out] r  Result of shift.
+ * @param [in]  a  Number to shift.
+ * @param [in]  n  Number of bits to shift.
  */
 WC_OMIT_FRAME_POINTER static void sp_3072_lshift_96(sp_digit* r,
     const sp_digit* a, byte n)
@@ -83057,13 +83149,15 @@ WC_OMIT_FRAME_POINTER static void sp_3072_lshift_96(sp_digit* r,
 
 /* Modular exponentiate 2 to the e mod m. (r = 2^e mod m)
  *
- * r     A single precision number that is the result of the operation.
- * e     A single precision number that is the exponent.
- * bits  The number of bits in the exponent.
- * m     A single precision number that is the modulus.
- * returns  0 on success.
- * returns  MEMORY_E on dynamic memory allocation failure.
- * returns  MP_VAL when base is even.
+ * @param [out] r     A single precision number that is the result of the
+ *                    operation.
+ * @param [in]  e     A single precision number that is the exponent.
+ * @param [in]  bits  The number of bits in the exponent.
+ * @param [in]  m     A single precision number that is the modulus.
+ *
+ * @return  0 on success.
+ * @return  MEMORY_E on dynamic memory allocation failure.
+ * @return  MP_VAL when base is even.
  */
 static int sp_3072_mod_exp_2_96(sp_digit* r, const sp_digit* e, int bits,
         const sp_digit* m)
@@ -83169,15 +83263,17 @@ static int sp_3072_mod_exp_2_96(sp_digit* r, const sp_digit* e, int bits,
 
 /* Perform the modular exponentiation for Diffie-Hellman.
  *
- * base     Base.
- * exp      Array of bytes that is the exponent.
- * expLen   Length of data, in bytes, in exponent.
- * mod      Modulus.
- * out      Buffer to hold big-endian bytes of exponentiation result.
- *          Must be at least 384 bytes long.
- * outLen   Length, in bytes, of exponentiation result.
- * returns 0 on success, MP_READ_E if there are too many bytes in an array
- * and MEMORY_E if memory allocation fails.
+ * @param [in]      base    Base.
+ * @param [in]      exp     Array of bytes that is the exponent.
+ * @param [in]      expLen  Length of data, in bytes, in exponent.
+ * @param [in]      mod     Modulus.
+ * @param [out]     out     Buffer to hold big-endian bytes of exponentiation
+ *                          result. Must be at least 384 bytes long.
+ * @param [in, out] outLen  Length, in bytes, of exponentiation result.
+ *
+ * @return  0 on success.
+ * @return  MP_READ_E when there are too many bytes in an array.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_DhExp_3072(const mp_int* base, const byte* exp, word32 expLen,
     const mp_int* mod, byte* out, word32* outLen)
@@ -83235,12 +83331,14 @@ int sp_DhExp_3072(const mp_int* base, const byte* exp, word32 expLen,
 
 /* Perform the modular exponentiation for Diffie-Hellman.
  *
- * base  Base. MP integer.
- * exp   Exponent. MP integer.
- * mod   Modulus. MP integer.
- * res   Result. MP integer.
- * returns 0 on success, MP_READ_E if there are too many bytes in an array
- * and MEMORY_E if memory allocation fails.
+ * @param [in]  base  Base. MP integer.
+ * @param [in]  exp   Exponent. MP integer.
+ * @param [in]  mod   Modulus. MP integer.
+ * @param [out] res   Result. MP integer.
+ *
+ * @return  0 on success.
+ * @return  MP_READ_E when there are too many bytes in an array.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ModExp_1536(const mp_int* base, const mp_int* exp, const mp_int* mod,
     mp_int* res)
@@ -83292,10 +83390,10 @@ int sp_ModExp_1536(const mp_int* base, const mp_int* exp, const mp_int* mod,
 #ifdef WOLFSSL_SP_4096
 /* Read big endian unsigned byte array into r.
  *
- * r  A single precision integer.
- * size  Maximum number of bytes to convert
- * a  Byte array.
- * n  Number of bytes in array to read.
+ * @param [out] r     A single precision integer.
+ * @param [in]  size  Maximum number of bytes to convert
+ * @param [in]  a     Byte array.
+ * @param [in]  n     Number of bytes in array to read.
  */
 static void sp_4096_from_bin(sp_digit* r, int size, const byte* a, int n)
 {
@@ -83339,9 +83437,9 @@ static void sp_4096_from_bin(sp_digit* r, int size, const byte* a, int n)
 
 /* Convert an mp_int to an array of sp_digit.
  *
- * r  A single precision integer.
- * size  Maximum number of bytes to convert
- * a  A multi-precision integer.
+ * @param [out] r     A single precision integer.
+ * @param [in]  size  Maximum number of bytes to convert
+ * @param [in]  a     A multi-precision integer.
  */
 static void sp_4096_from_mp(sp_digit* r, int size, const mp_int* a)
 {
@@ -83428,8 +83526,8 @@ static void sp_4096_from_mp(sp_digit* r, int size, const mp_int* a)
 /* Write r as big endian to byte array.
  * Fixed length number of bytes written: 512
  *
- * r  A single precision integer.
- * a  Byte array.
+ * @param [in, out] r  A single precision integer.
+ * @param [out]     a  Byte array.
  */
 static void sp_4096_to_bin_128(sp_digit* r, byte* a)
 {
@@ -83447,23 +83545,23 @@ static void sp_4096_to_bin_128(sp_digit* r, byte* a)
 #if (defined(WOLFSSL_HAVE_SP_RSA) && (!defined(WOLFSSL_RSA_PUBLIC_ONLY) || !defined(WOLFSSL_SP_SMALL))) || defined(WOLFSSL_HAVE_SP_DH)
 /* Normalize the values in each word to 32.
  *
- * a  Array of sp_digit to normalize.
+ * @param [in] a  Array of sp_digit to normalize.
  */
 #define sp_4096_norm_128(a)
 
 #endif /* (WOLFSSL_HAVE_SP_RSA && (!WOLFSSL_RSA_PUBLIC_ONLY || !WOLFSSL_SP_SMALL)) || WOLFSSL_HAVE_SP_DH */
 /* Normalize the values in each word to 32.
  *
- * a  Array of sp_digit to normalize.
+ * @param [in] a  Array of sp_digit to normalize.
  */
 #define sp_4096_norm_128(a)
 
 #ifndef WOLFSSL_SP_SMALL
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_add_word_64(
     sp_digit* r, const sp_digit* a, sp_digit b)
@@ -83998,8 +84096,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_add_word_64(
 
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_sub_in_place_128(
     sp_digit* a, const sp_digit* b)
@@ -85172,9 +85270,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_sub_in_place_128(
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_add_128(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -86284,9 +86382,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_add_128(sp_digit* r,
 
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 SP_NOINLINE static void sp_4096_mul_128(sp_digit* r, const sp_digit* a,
         const sp_digit* b)
@@ -86321,8 +86419,8 @@ SP_NOINLINE static void sp_4096_mul_128(sp_digit* r, const sp_digit* a,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 SP_NOINLINE static void sp_4096_sqr_128(sp_digit* r, const sp_digit* a)
 {
@@ -86358,9 +86456,9 @@ SP_NOINLINE static void sp_4096_sqr_128(sp_digit* r, const sp_digit* a)
 #ifdef WOLFSSL_SP_SMALL
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_add_128(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -86440,8 +86538,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_add_128(sp_digit* r,
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_sub_in_place_128(
     sp_digit* a, const sp_digit* b)
@@ -86520,9 +86618,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_sub_in_place_128(
 #ifdef WOLFSSL_SP_SMALL
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_4096_mul_128(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -86787,8 +86885,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_4096_mul_128(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_4096_sqr_128(sp_digit* r,
     const sp_digit* a)
@@ -87254,8 +87352,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_4096_sqr_128(sp_digit* r,
 #endif /* WOLFSSL_SP_SMALL */
 /* Calculate the bottom digit of -1/a mod 2^n.
  *
- * a    A single precision number.
- * rho  Bottom word of inverse.
+ * @param [in]  a    A single precision number.
+ * @param [out] rho  Bottom word of inverse.
  */
 static void sp_4096_mont_setup(const sp_digit* a, sp_digit* rho)
 {
@@ -87274,9 +87372,9 @@ static void sp_4096_mont_setup(const sp_digit* a, sp_digit* rho)
 
 /* Mul a by digit b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision digit.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_4096_mul_d_128(sp_digit* r,
     const sp_digit* a, sp_digit b)
@@ -87468,8 +87566,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_4096_mul_d_128(sp_digit* r,
 /* r = 2^n mod m where n is the number of bits to reduce by.
  * Given m must be 4096 bits, just need to subtract.
  *
- * r  A single precision number.
- * m  A single precision number.
+ * @param [out] r  A single precision number.
+ * @param [in]  m  A single precision number.
  */
 static void sp_4096_mont_norm_128(sp_digit* r, const sp_digit* m)
 {
@@ -87483,10 +87581,11 @@ static void sp_4096_mont_norm_128(sp_digit* r, const sp_digit* m)
 /* Conditionally subtract b from a using the mask m.
  * m is -1 to subtract and 0 when not copying.
  *
- * r  A single precision number representing condition subtract result.
- * a  A single precision number to subtract from.
- * b  A single precision number to subtract.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing condition subtract
+ *                 result.
+ * @param [in]  a  A single precision number to subtract from.
+ * @param [in]  b  A single precision number to subtract.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_cond_sub_128(
     sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -87552,9 +87651,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_cond_sub_128(
 #define sp_4096_mont_reduce_order_128   sp_4096_mont_reduce_128
 /* Reduce the number back to 4096 bits using Montgomery reduction.
  *
- * a   A single precision number to reduce in place.
- * m   The single precision number representing the modulus.
- * mp  The digit representing the negative inverse of m mod 2^n.
+ * @param [in, out] a   A single precision number to reduce in place.
+ * @param [in]      m   The single precision number representing the modulus.
+ * @param [in]      mp  The digit representing the negative inverse of
+ *                      m mod 2^n.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_4096_mont_reduce_128(
     sp_digit* a, const sp_digit* m, sp_digit mp)
@@ -90273,11 +90373,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_4096_mont_reduce_128(
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
- * r   Result of multiplication.
- * a   First number to multiply in Montgomery form.
- * b   Second number to multiply in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of multiplication.
+ * @param [in]  a   First number to multiply in Montgomery form.
+ * @param [in]  b   Second number to multiply in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_4096_mont_mul_128(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -90288,10 +90388,10 @@ SP_NOINLINE static void sp_4096_mont_mul_128(sp_digit* r, const sp_digit* a,
 
 /* Square the Montgomery form number. (r = a * a mod m)
  *
- * r   Result of squaring.
- * a   Number to square in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of squaring.
+ * @param [in]  a   Number to square in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_4096_mont_sqr_128(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -90303,9 +90403,9 @@ SP_NOINLINE static void sp_4096_mont_sqr_128(sp_digit* r, const sp_digit* a,
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_sub_128(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -90378,9 +90478,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_sub_128(sp_digit* r,
 #else
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_sub_128(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -91490,10 +91590,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_sub_128(sp_digit* r,
 #endif /* WOLFSSL_SP_SMALL */
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * d1   The high order half of the number to divide.
- * d0   The low order half of the number to divide.
- * div  The divisor.
- * returns the result of the division.
+ * @param [in] d1   The high order half of the number to divide.
+ * @param [in] d0   The low order half of the number to divide.
+ * @param [in] div  The divisor.
+ *
+ * @return  The result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
@@ -92108,11 +92209,12 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_4096_word_128(sp_digit d1,
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
- * a  Number to be divided.
- * d  Number to divide with.
- * m  Multiplier result.
- * r  Remainder from the division.
- * returns MP_OKAY indicating success.
+ * @param [in]  a  Number to be divided.
+ * @param [in]  d  Number to divide with.
+ * @param [in]  m  Multiplier result.
+ * @param [out] r  Remainder from the division.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_4096_div_128_cond(const sp_digit* a, const sp_digit* d,
         sp_digit* m, sp_digit* r)
@@ -92166,10 +92268,11 @@ static WC_INLINE int sp_4096_div_128_cond(const sp_digit* a, const sp_digit* d,
 
 /* Reduce a modulo m into r. (r = a mod m)
  *
- * r  A single precision number that is the reduced result.
- * a  A single precision number that is to be reduced.
- * m  A single precision number that is the modulus to reduce with.
- * returns MP_OKAY indicating success.
+ * @param [out] r  A single precision number that is the reduced result.
+ * @param [in]  a  A single precision number that is to be reduced.
+ * @param [in]  m  A single precision number that is the modulus to reduce with.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_4096_mod_128_cond(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -92181,9 +92284,9 @@ static WC_INLINE int sp_4096_mod_128_cond(sp_digit* r, const sp_digit* a, const 
 #if (defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_RSA_PUBLIC_ONLY)) || defined(WOLFSSL_HAVE_SP_DH)
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_4096_mask_128(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -92211,10 +92314,11 @@ static void sp_4096_mask_128(sp_digit* r, const sp_digit* a, sp_digit m)
 
 /* Compare a with b in constant time.
  *
- * a  A single precision integer.
- * b  A single precision integer.
- * return -ve, 0 or +ve if a is less than, equal to or greater than b
- * respectively.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
+ *
+ * @return  -ve, 0 or +ve if a is less than, equal to or greater than b
+ *          respectively.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_4096_cmp_128(
     const sp_digit* a, const sp_digit* b)
@@ -92328,11 +92432,12 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_4096_cmp_128(
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
- * a  Number to be divided.
- * d  Number to divide with.
- * m  Multiplier result.
- * r  Remainder from the division.
- * returns MP_OKAY indicating success.
+ * @param [in]  a  Number to be divided.
+ * @param [in]  d  Number to divide with.
+ * @param [in]  m  Multiplier result.
+ * @param [out] r  Remainder from the division.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_4096_div_128(const sp_digit* a, const sp_digit* d,
         sp_digit* m, sp_digit* r)
@@ -92370,10 +92475,11 @@ static WC_INLINE int sp_4096_div_128(const sp_digit* a, const sp_digit* d,
 
 /* Reduce a modulo m into r. (r = a mod m)
  *
- * r  A single precision number that is the reduced result.
- * a  A single precision number that is to be reduced.
- * m  A single precision number that is the modulus to reduce with.
- * returns MP_OKAY indicating success.
+ * @param [out] r  A single precision number that is the reduced result.
+ * @param [in]  a  A single precision number that is to be reduced.
+ * @param [in]  m  A single precision number that is the modulus to reduce with.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_4096_mod_128(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -92387,14 +92493,17 @@ static WC_INLINE int sp_4096_mod_128(sp_digit* r, const sp_digit* a, const sp_di
 #ifdef WOLFSSL_SP_SMALL
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
- * r     A single precision number that is the result of the operation.
- * a     A single precision number being exponentiated.
- * e     A single precision number that is the exponent.
- * bits  The number of bits in the exponent.
- * m     A single precision number that is the modulus.
- * returns  0 on success.
- * returns  MEMORY_E on dynamic memory allocation failure.
- * returns  MP_VAL when base is even or exponent is 0.
+ * @param [out] r        A single precision number that is the result of the
+ *                       operation.
+ * @param [in]  a        A single precision number being exponentiated.
+ * @param [in]  e        A single precision number that is the exponent.
+ * @param [in]  bits     The number of bits in the exponent.
+ * @param [in]  m        A single precision number that is the modulus.
+ * @param [in]  reduceA  Whether to reduce a modulo m before the operation.
+ *
+ * @return  0 on success.
+ * @return  MEMORY_E on dynamic memory allocation failure.
+ * @return  MP_VAL when base is even or exponent is 0.
  */
 static int sp_4096_mod_exp_128(sp_digit* r, const sp_digit* a, const sp_digit* e,
         int bits, const sp_digit* m, int reduceA)
@@ -92515,14 +92624,17 @@ static int sp_4096_mod_exp_128(sp_digit* r, const sp_digit* a, const sp_digit* e
 #else
 /* Modular exponentiate a to the e mod m. (r = a^e mod m)
  *
- * r     A single precision number that is the result of the operation.
- * a     A single precision number being exponentiated.
- * e     A single precision number that is the exponent.
- * bits  The number of bits in the exponent.
- * m     A single precision number that is the modulus.
- * returns  0 on success.
- * returns  MEMORY_E on dynamic memory allocation failure.
- * returns  MP_VAL when base is even or exponent is 0.
+ * @param [out] r        A single precision number that is the result of the
+ *                       operation.
+ * @param [in]  a        A single precision number being exponentiated.
+ * @param [in]  e        A single precision number that is the exponent.
+ * @param [in]  bits     The number of bits in the exponent.
+ * @param [in]  m        A single precision number that is the modulus.
+ * @param [in]  reduceA  Whether to reduce a modulo m before the operation.
+ *
+ * @return  0 on success.
+ * @return  MEMORY_E on dynamic memory allocation failure.
+ * @return  MP_VAL when base is even or exponent is 0.
  */
 static int sp_4096_mod_exp_128(sp_digit* r, const sp_digit* a, const sp_digit* e,
         int bits, const sp_digit* m, int reduceA)
@@ -92656,15 +92768,19 @@ static int sp_4096_mod_exp_128(sp_digit* r, const sp_digit* a, const sp_digit* e
 #ifdef WOLFSSL_HAVE_SP_RSA
 /* RSA public key operation.
  *
- * in      Array of bytes representing the number to exponentiate, base.
- * inLen   Number of bytes in base.
- * em      Public exponent.
- * mm      Modulus.
- * out     Buffer to hold big-endian bytes of exponentiation result.
- *         Must be at least 512 bytes long.
- * outLen  Number of bytes in result.
- * returns 0 on success, MP_TO_E when the outLen is too small, MP_READ_E when
- * an array is too long and MEMORY_E when dynamic memory allocation fails.
+ * @param [in]      in      Array of bytes representing the number to
+ *                          exponentiate, base.
+ * @param [in]      inLen   Number of bytes in base.
+ * @param [in]      em      Public exponent.
+ * @param [in]      mm      Modulus.
+ * @param [out]     out     Buffer to hold big-endian bytes of exponentiation
+ *                          result. Must be at least 512 bytes long.
+ * @param [in, out] outLen  Number of bytes in result.
+ *
+ * @return  0 on success.
+ * @return  MP_TO_E when the outLen is too small.
+ * @return  MP_READ_E when an array is too long.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
     const mp_int* mm, byte* out, word32* outLen)
@@ -92804,10 +92920,11 @@ int sp_RsaPublic_4096(const byte* in, word32 inLen, const mp_int* em,
 /* Conditionally add a and b using the mask m.
  * m is -1 to add and 0 when not.
  *
- * r  A single precision number representing conditional add result.
- * a  A single precision number to add with.
- * b  A single precision number to add.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing conditional add
+ *                 result.
+ * @param [in]  a  A single precision number to add with.
+ * @param [in]  b  A single precision number to add.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_cond_add_64(
     sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -92879,20 +92996,24 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_4096_cond_add_64(
 #endif /* !SP_RSA_PRIVATE_EXP_D && !RSA_LOW_MEM */
 /* RSA private key operation.
  *
- * in      Array of bytes representing the number to exponentiate, base.
- * inLen   Number of bytes in base.
- * dm      Private exponent.
- * pm      First prime.
- * qm      Second prime.
- * dpm     First prime's CRT exponent.
- * dqm     Second prime's CRT exponent.
- * qim     Inverse of second prime mod p.
- * mm      Modulus.
- * out     Buffer to hold big-endian bytes of exponentiation result.
- *         Must be at least 512 bytes long.
- * outLen  Number of bytes in result.
- * returns 0 on success, MP_TO_E when the outLen is too small, MP_READ_E when
- * an array is too long and MEMORY_E when dynamic memory allocation fails.
+ * @param [in]      in      Array of bytes representing the number to
+ *                          exponentiate, base.
+ * @param [in]      inLen   Number of bytes in base.
+ * @param [in]      dm      Private exponent.
+ * @param [in]      pm      First prime.
+ * @param [in]      qm      Second prime.
+ * @param [in]      dpm     First prime's CRT exponent.
+ * @param [in]      dqm     Second prime's CRT exponent.
+ * @param [in]      qim     Inverse of second prime mod p.
+ * @param [in]      mm      Modulus.
+ * @param [out]     out     Buffer to hold big-endian bytes of exponentiation
+ *                          result. Must be at least 512 bytes long.
+ * @param [in, out] outLen  Number of bytes in result.
+ *
+ * @return  0 on success.
+ * @return  MP_TO_E when the outLen is too small.
+ * @return  MP_READ_E when an array is too long.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
     const mp_int* pm, const mp_int* qm, const mp_int* dpm, const mp_int* dqm,
@@ -93031,8 +93152,8 @@ int sp_RsaPrivate_4096(const byte* in, word32 inLen, const mp_int* dm,
                                               !defined(WOLFSSL_RSA_PUBLIC_ONLY))
 /* Convert an array of sp_digit to an mp_int.
  *
- * a  A single precision integer.
- * r  A multi-precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [out] r  A multi-precision integer.
  */
 static int sp_4096_to_mp(const sp_digit* a, mp_int* r)
 {
@@ -93099,12 +93220,14 @@ static int sp_4096_to_mp(const sp_digit* a, mp_int* r)
 
 /* Perform the modular exponentiation for Diffie-Hellman.
  *
- * base  Base. MP integer.
- * exp   Exponent. MP integer.
- * mod   Modulus. MP integer.
- * res   Result. MP integer.
- * returns 0 on success, MP_READ_E if there are too many bytes in an array
- * and MEMORY_E if memory allocation fails.
+ * @param [in]  base  Base. MP integer.
+ * @param [in]  exp   Exponent. MP integer.
+ * @param [in]  mod   Modulus. MP integer.
+ * @param [out] res   Result. MP integer.
+ *
+ * @return  0 on success.
+ * @return  MP_READ_E when there are too many bytes in an array.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ModExp_4096(const mp_int* base, const mp_int* exp, const mp_int* mod,
     mp_int* res)
@@ -93151,9 +93274,15 @@ int sp_ModExp_4096(const mp_int* base, const mp_int* exp, const mp_int* mod,
 #ifdef HAVE_FFDHE_4096
 /* Lefy shift a by n bits into r. (r = a << n)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * n  Integer representing number of bits to shift.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  n  Integer representing number of bits to shift.
+ */
+/* Shift number left by n bits.
+ *
+ * @param [out] r  Result of shift.
+ * @param [in]  a  Number to shift.
+ * @param [in]  n  Number of bits to shift.
  */
 WC_OMIT_FRAME_POINTER static void sp_4096_lshift_128(sp_digit* r,
     const sp_digit* a, byte n)
@@ -96330,13 +96459,15 @@ WC_OMIT_FRAME_POINTER static void sp_4096_lshift_128(sp_digit* r,
 
 /* Modular exponentiate 2 to the e mod m. (r = 2^e mod m)
  *
- * r     A single precision number that is the result of the operation.
- * e     A single precision number that is the exponent.
- * bits  The number of bits in the exponent.
- * m     A single precision number that is the modulus.
- * returns  0 on success.
- * returns  MEMORY_E on dynamic memory allocation failure.
- * returns  MP_VAL when base is even.
+ * @param [out] r     A single precision number that is the result of the
+ *                    operation.
+ * @param [in]  e     A single precision number that is the exponent.
+ * @param [in]  bits  The number of bits in the exponent.
+ * @param [in]  m     A single precision number that is the modulus.
+ *
+ * @return  0 on success.
+ * @return  MEMORY_E on dynamic memory allocation failure.
+ * @return  MP_VAL when base is even.
  */
 static int sp_4096_mod_exp_2_128(sp_digit* r, const sp_digit* e, int bits,
         const sp_digit* m)
@@ -96442,15 +96573,17 @@ static int sp_4096_mod_exp_2_128(sp_digit* r, const sp_digit* e, int bits,
 
 /* Perform the modular exponentiation for Diffie-Hellman.
  *
- * base     Base.
- * exp      Array of bytes that is the exponent.
- * expLen   Length of data, in bytes, in exponent.
- * mod      Modulus.
- * out      Buffer to hold big-endian bytes of exponentiation result.
- *          Must be at least 512 bytes long.
- * outLen   Length, in bytes, of exponentiation result.
- * returns 0 on success, MP_READ_E if there are too many bytes in an array
- * and MEMORY_E if memory allocation fails.
+ * @param [in]      base    Base.
+ * @param [in]      exp     Array of bytes that is the exponent.
+ * @param [in]      expLen  Length of data, in bytes, in exponent.
+ * @param [in]      mod     Modulus.
+ * @param [out]     out     Buffer to hold big-endian bytes of exponentiation
+ *                          result. Must be at least 512 bytes long.
+ * @param [in, out] outLen  Length, in bytes, of exponentiation result.
+ *
+ * @return  0 on success.
+ * @return  MP_READ_E when there are too many bytes in an array.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_DhExp_4096(const mp_int* base, const byte* exp, word32 expLen,
     const mp_int* mod, byte* out, word32* outLen)
@@ -96597,9 +96730,9 @@ static const sp_digit p256_b[8] = {
 
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mul_8(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -96844,8 +96977,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mul_8(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_sqr_8(sp_digit* r,
     const sp_digit* a)
@@ -97271,9 +97404,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_sqr_8(sp_digit* r,
 #ifdef WOLFSSL_SP_SMALL
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_add_8(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -97346,9 +97479,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_add_8(sp_digit* r,
 #else
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_add_8(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -97439,9 +97572,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_add_8(sp_digit* r,
 #endif /* WOLFSSL_SP_SMALL */
 /* Multiply a number by Montgomery normalizer mod modulus (prime).
  *
- * r  The resulting Montgomery form number.
- * a  The number to convert.
- * m  The modulus (prime).
+ * @param [out] r  The resulting Montgomery form number.
+ * @param [in]  a  The number to convert.
+ * @param [in]  m  The modulus (prime).
  */
 static int sp_256_mod_mul_norm_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -97522,9 +97655,9 @@ static int sp_256_mod_mul_norm_8(sp_digit* r, const sp_digit* a, const sp_digit*
 
 /* Convert an mp_int to an array of sp_digit.
  *
- * r  A single precision integer.
- * size  Maximum number of bytes to convert
- * a  A multi-precision integer.
+ * @param [out] r     A single precision integer.
+ * @param [in]  size  Maximum number of bytes to convert
+ * @param [in]  a     A multi-precision integer.
  */
 static void sp_256_from_mp(sp_digit* r, int size, const mp_int* a)
 {
@@ -97610,8 +97743,8 @@ static void sp_256_from_mp(sp_digit* r, int size, const mp_int* a)
 
 /* Convert a point of type ecc_point to type sp_point_256.
  *
- * p   Point of type sp_point_256 (result).
- * pm  Point of type ecc_point.
+ * @param [out] p   Point of type sp_point_256 (result).
+ * @param [in]  pm  Point of type ecc_point.
  */
 static void sp_256_point_from_ecc_point_8(sp_point_256* p,
         const ecc_point* pm)
@@ -97627,8 +97760,8 @@ static void sp_256_point_from_ecc_point_8(sp_point_256* p,
 
 /* Convert an array of sp_digit to an mp_int.
  *
- * a  A single precision integer.
- * r  A multi-precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [out] r  A multi-precision integer.
  */
 static int sp_256_to_mp(const sp_digit* a, mp_int* r)
 {
@@ -97695,10 +97828,11 @@ static int sp_256_to_mp(const sp_digit* a, mp_int* r)
 
 /* Convert a point of type sp_point_256 to type ecc_point.
  *
- * p   Point of type sp_point_256.
- * pm  Point of type ecc_point (result).
- * returns MEMORY_E when allocation of memory in ecc_point fails otherwise
- * MP_OKAY.
+ * @param [in] p   Point of type sp_point_256.
+ * @param [in] pm  Point of type ecc_point (result).
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when allocation of memory in ecc_point fails.
  */
 static int sp_256_point_to_ecc_point_8(const sp_point_256* p, ecc_point* pm)
 {
@@ -97717,9 +97851,10 @@ static int sp_256_point_to_ecc_point_8(const sp_point_256* p, ecc_point* pm)
 
 /* Reduce the number back to 256 bits using Montgomery reduction.
  *
- * a   A single precision number to reduce in place.
- * m   The single precision number representing the modulus.
- * mp  The digit representing the negative inverse of m mod 2^n.
+ * @param [in, out] a   A single precision number to reduce in place.
+ * @param [in]      m   The single precision number representing the modulus.
+ * @param [in]      mp  The digit representing the negative inverse of
+ *                      m mod 2^n.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a,
     const sp_digit* m, sp_digit mp)
@@ -98040,9 +98175,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_reduce_8(sp_digit* a,
 
 /* Reduce the number back to 256 bits using Montgomery reduction.
  *
- * a   A single precision number to reduce in place.
- * m   The single precision number representing the modulus.
- * mp  The digit representing the negative inverse of m mod 2^n.
+ * @param [in, out] a   A single precision number to reduce in place.
+ * @param [in]      m   The single precision number representing the modulus.
+ * @param [in]      mp  The digit representing the negative inverse of
+ *                      m mod 2^n.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_reduce_order_8(
     sp_digit* a, const sp_digit* m, sp_digit mp)
@@ -98701,11 +98837,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_reduce_order_8(
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
- * r   Result of multiplication.
- * a   First number to multiply in Montgomery form.
- * b   Second number to multiply in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of multiplication.
+ * @param [in]  a   First number to multiply in Montgomery form.
+ * @param [in]  b   Second number to multiply in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_256_mont_mul_8(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -98716,10 +98852,10 @@ SP_NOINLINE static void sp_256_mont_mul_8(sp_digit* r, const sp_digit* a,
 
 /* Square the Montgomery form number. (r = a * a mod m)
  *
- * r   Result of squaring.
- * a   Number to square in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of squaring.
+ * @param [in]  a   Number to square in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_256_mont_sqr_8(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -98731,11 +98867,11 @@ SP_NOINLINE static void sp_256_mont_sqr_8(sp_digit* r, const sp_digit* a,
 #if !defined(WOLFSSL_SP_SMALL) || defined(HAVE_COMP_KEY)
 /* Square the Montgomery form number a number of times. (r = a ^ n mod m)
  *
- * r   Result of squaring.
- * a   Number to square in Montgomery form.
- * n   Number of times to square.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of squaring.
+ * @param [in]  a   Number to square in Montgomery form.
+ * @param [in]  n   Number of times to square.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_256_mont_sqr_n_8(sp_digit* r,
     const sp_digit* a, int n, const sp_digit* m, sp_digit mp)
@@ -98758,9 +98894,9 @@ static const word32 p256_mod_minus_2[8] = {
 /* Invert the number, in Montgomery form, modulo the modulus (prime) of the
  * P256 curve. (r = 1 / a mod m)
  *
- * r   Inverse result.
- * a   Number to invert.
- * td  Temporary data.
+ * @param [out] r   Inverse result.
+ * @param [in]  a   Number to invert.
+ * @param [out] td  Temporary data.
  */
 static void sp_256_mont_inv_8(sp_digit* r, const sp_digit* a, sp_digit* td)
 {
@@ -98826,10 +98962,11 @@ static void sp_256_mont_inv_8(sp_digit* r, const sp_digit* a, sp_digit* td)
 
 /* Compare a with b in constant time.
  *
- * a  A single precision integer.
- * b  A single precision integer.
- * return -ve, 0 or +ve if a is less than, equal to or greater than b
- * respectively.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
+ *
+ * @return  -ve, 0 or +ve if a is less than, equal to or greater than b
+ *          respectively.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_256_cmp_8(
     const sp_digit* a, const sp_digit* b)
@@ -98937,17 +99074,18 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_256_cmp_8(
 
 /* Normalize the values in each word to 32.
  *
- * a  Array of sp_digit to normalize.
+ * @param [in] a  Array of sp_digit to normalize.
  */
 #define sp_256_norm_8(a)
 
 /* Conditionally subtract b from a using the mask m.
  * m is -1 to subtract and 0 when not copying.
  *
- * r  A single precision number representing condition subtract result.
- * a  A single precision number to subtract from.
- * b  A single precision number to subtract.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing condition subtract
+ *                 result.
+ * @param [in]  a  A single precision number to subtract from.
+ * @param [in]  b  A single precision number to subtract.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_cond_sub_8(sp_digit* r,
     const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -99007,9 +99145,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_cond_sub_8(sp_digit* r,
 
 /* Map the Montgomery form projective coordinate point to an affine point.
  *
- * r  Resulting affine coordinate point.
- * p  Montgomery form projective coordinate point.
- * t  Temporary ordinate data.
+ * @param [out] r  Resulting affine coordinate point.
+ * @param [in]  p  Montgomery form projective coordinate point.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_256_map_8(sp_point_256* r, const sp_point_256* p,
     sp_digit* t)
@@ -99047,10 +99185,10 @@ static void sp_256_map_8(sp_point_256* r, const sp_point_256* p,
 
 /* Add two Montgomery form numbers (r = a + b % m).
  *
- * r   Result of addition.
- * a   First number to add in Montgomery form.
- * b   Second number to add in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of addition.
+ * @param [in]  a  First number to add in Montgomery form.
+ * @param [in]  b  Second number to add in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_add_8(sp_digit* r,
     const sp_digit* a, const sp_digit* b, const sp_digit* m)
@@ -99236,9 +99374,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_add_8(sp_digit* r,
 
 /* Double a Montgomery form number (r = a + a % m).
  *
- * r   Result of doubling.
- * a   Number to double in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of doubling.
+ * @param [in]  a  Number to double in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_dbl_8(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -99416,9 +99554,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_dbl_8(sp_digit* r,
 
 /* Triple a Montgomery form number (r = a + a + a % m).
  *
- * r   Result of Tripling.
- * a   Number to triple in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of Tripling.
+ * @param [in]  a  Number to triple in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_tpl_8(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -99752,10 +99890,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_tpl_8(sp_digit* r,
 
 /* Subtract two Montgomery form numbers (r = a - b % m).
  *
- * r   Result of subtration.
- * a   Number to subtract from in Montgomery form.
- * b   Number to subtract with in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of subtration.
+ * @param [in]  a  Number to subtract from in Montgomery form.
+ * @param [in]  b  Number to subtract with in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_sub_8(sp_digit* r,
     const sp_digit* a, const sp_digit* b, const sp_digit* m)
@@ -99934,9 +100072,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_sub_8(sp_digit* r,
 
 /* Divide the number by 2 mod the modulus (prime). (r = a / 2 % m)
  *
- * r  Result of division by 2.
- * a  Number to divide.
- * m  Modulus (prime).
+ * @param [out] r  Result of division by 2.
+ * @param [in]  a  Number to divide.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_div2_8(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -100209,9 +100347,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mont_div2_8(sp_digit* r,
 
 /* Double the Montgomery form projective point p.
  *
- * r  Result of doubling point.
- * p  Point to double.
- * t  Temporary ordinate data.
+ * @param [out] r  Result of doubling point.
+ * @param [in]  p  Point to double.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_256_proj_point_dbl_8(sp_point_256* r, const sp_point_256* p,
     sp_digit* t)
@@ -100280,9 +100418,13 @@ typedef struct sp_256_proj_point_dbl_8_ctx {
 
 /* Double the Montgomery form projective point p.
  *
- * r  Result of doubling point.
- * p  Point to double.
- * t  Temporary ordinate data.
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [out]     r       Result of doubling point.
+ * @param [in]      p       Point to double.
+ * @param [out]     t       Temporary ordinate data.
  */
 static int sp_256_proj_point_dbl_8_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
         const sp_point_256* p, sp_digit* t)
@@ -100412,9 +100554,10 @@ static int sp_256_proj_point_dbl_8_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
 /* Compare two numbers to determine if they are equal.
  * Constant time implementation.
  *
- * a  First number to compare.
- * b  Second number to compare.
- * returns 1 when equal and 0 otherwise.
+ * @param [in] a  First number to compare.
+ * @param [in] b  Second number to compare.
+ *
+ * @return  1 when equal and 0 otherwise.
  */
 static int sp_256_cmp_equal_8(const sp_digit* a, const sp_digit* b)
 {
@@ -100426,8 +100569,9 @@ static int sp_256_cmp_equal_8(const sp_digit* a, const sp_digit* b)
 /* Returns 1 if the number of zero.
  * Implementation is constant time.
  *
- * a  Number to check.
- * returns 1 if the number is zero and 0 otherwise.
+ * @param [in] a  Number to check.
+ *
+ * @return  1 when the number is zero and 0 otherwise.
  */
 static int sp_256_iszero_8(const sp_digit* a)
 {
@@ -100437,10 +100581,10 @@ static int sp_256_iszero_8(const sp_digit* a)
 
 /* Add two Montgomery form projective points.
  *
- * r  Result of addition.
- * p  First point to add.
- * q  Second point to add.
- * t  Temporary ordinate data.
+ * @param [out] r  Result of addition.
+ * @param [in]  p  First point to add.
+ * @param [in]  q  Second point to add.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_256_proj_point_add_8(sp_point_256* r,
         const sp_point_256* p, const sp_point_256* q, sp_digit* t)
@@ -100540,10 +100684,14 @@ typedef struct sp_256_proj_point_add_8_ctx {
 
 /* Add two Montgomery form projective points.
  *
- * r  Result of addition.
- * p  First point to add.
- * q  Second point to add.
- * t  Temporary ordinate data.
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [out]     r       Result of addition.
+ * @param [in]      p       First point to add.
+ * @param [in]      q       Second point to add.
+ * @param [out]     t       Temporary ordinate data.
  */
 static int sp_256_proj_point_add_8_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
     const sp_point_256* p, const sp_point_256* q, sp_digit* t)
@@ -100728,9 +100876,9 @@ static int sp_256_proj_point_add_8_nb(sp_ecc_ctx_t* sp_ctx, sp_point_256* r,
 #ifndef WC_NO_CACHE_RESISTANT
 /* Touch each possible point that could be being copied.
  *
- * r      Point to copy into.
- * table  Table - start of the entries to access
- * idx    Index of entry to retrieve.
+ * @param [out] r      Point to copy into.
+ * @param [in]  table  Table - start of the entries to access
+ * @param [in]  idx    Index of entry to retrieve.
  */
 static void sp_256_get_point_16_8(sp_point_256* r, const sp_point_256* table,
     int idx)
@@ -100800,13 +100948,15 @@ static void sp_256_get_point_16_8(sp_point_256* r, const sp_point_256* table,
  * 256 doubles.
  * 76 adds.
  *
- * r     Resulting point.
- * g     Point to multiply.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  g     Point to multiply.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_256_ecc_mulmod_fast_8(sp_point_256* r, const sp_point_256* g, const sp_digit* k,
         int map, int ct, void* heap)
@@ -100936,10 +101086,9 @@ static int sp_256_ecc_mulmod_fast_8(sp_point_256* r, const sp_point_256* g, cons
 #ifdef FP_ECC
 /* Double the Montgomery form projective point p a number of times.
  *
- * r  Result of repeated doubling of point.
- * p  Point to double.
- * n  Number of times to double
- * t  Temporary ordinate data.
+ * @param [in, out] p  Point to double and result.
+ * @param [in]      i  Number of times to double.
+ * @param [out]     t  Temporary ordinate data.
  */
 static void sp_256_proj_point_dbl_n_8(sp_point_256* p, int i,
     sp_digit* t)
@@ -101029,8 +101178,8 @@ static void sp_256_proj_point_dbl_n_8(sp_point_256* p, int i,
 /* Convert the projective point to affine.
  * Ordinates are in Montgomery form.
  *
- * a  Point to convert.
- * t  Temporary data.
+ * @param [in, out] a  Point to convert.
+ * @param [out]     t  Temporary data.
  */
 static void sp_256_proj_to_affine_8(sp_point_256* a, sp_digit* t)
 {
@@ -101061,10 +101210,10 @@ typedef struct sp_table_entry_256 {
  * one.
  * Only the first point can be the same pointer as the result point.
  *
- * r  Result of addition.
- * p  First point to add.
- * q  Second point to add.
- * t  Temporary ordinate data.
+ * @param [out] r  Result of addition.
+ * @param [in]  p  First point to add.
+ * @param [in]  q  Second point to add.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_256_proj_point_add_qz1_8(sp_point_256* r,
     const sp_point_256* p, const sp_point_256* q, sp_digit* t)
@@ -101146,10 +101295,10 @@ static void sp_256_proj_point_add_qz1_8(sp_point_256* r,
  * 16 entries
  * 64 bits between
  *
- * a      The base point.
- * table  Place to store generated point data.
- * tmp    Temporary data.
- * heap  Heap to use for allocation.
+ * @param [in]  a      The base point.
+ * @param [out] table  Place to store generated point data.
+ * @param [out] tmp    Temporary data.
+ * @param [in]  heap   Heap to use for allocation.
  */
 static int sp_256_gen_stripe_table_8(const sp_point_256* a,
         sp_table_entry_256* table, sp_digit* tmp, void* heap)
@@ -101221,9 +101370,9 @@ static int sp_256_gen_stripe_table_8(const sp_point_256* a,
 #ifndef WC_NO_CACHE_RESISTANT
 /* Touch each possible entry that could be being copied.
  *
- * r      Point to copy into.
- * table  Table - start of the entries to access
- * idx    Index of entry to retrieve.
+ * @param [out] r      Point to copy into.
+ * @param [in]  table  Table - start of the entries to access
+ * @param [in]  idx    Index of entry to retrieve.
  */
 static void sp_256_get_entry_16_8(sp_point_256* r,
     const sp_table_entry_256* table, int idx)
@@ -101278,13 +101427,16 @@ static void sp_256_get_entry_16_8(sp_point_256* r,
  * Pre-generated: products of all combinations of above.
  * 4 doubles and adds (with qz=1)
  *
- * r      Resulting point.
- * k      Scalar to multiply by.
- * table  Pre-computed table.
- * map    Indicates whether to convert result to affine.
- * ct     Constant time required.
- * heap   Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r      Resulting point.
+ * @param [in]  g      Point to multiply.
+ * @param [in]  table  Pre-computed table.
+ * @param [in]  k      Scalar to multiply by.
+ * @param [in]  map    Indicates whether to convert result to affine.
+ * @param [in]  ct     Constant time required.
+ * @param [in]  heap   Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_256_ecc_mulmod_stripe_8(sp_point_256* r, const sp_point_256* g,
         const sp_table_entry_256* table, const sp_digit* k, int map,
@@ -101401,8 +101553,8 @@ static THREAD_LS_T int sp_cache_256_inited = 0;
 
 /* Get the cache entry for the point.
  *
- * g      [in]   Point scalar multiplying.
- * cache  [out]  Cache table to use.
+ * @param [in]  g      Point scalar multiplying.
+ * @param [out] cache  Cache table to use.
  */
 static void sp_ecc_get_cache_256(const sp_point_256* g, sp_cache_256_t** cache)
 {
@@ -101465,13 +101617,15 @@ static void sp_ecc_get_cache_256(const sp_point_256* g, sp_cache_256_t** cache)
 /* Multiply the base point of P256 by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * r     Resulting point.
- * g     Point to multiply.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  g     Point to multiply.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_256_ecc_mulmod_8(sp_point_256* r, const sp_point_256* g,
         const sp_digit* k, int map, int ct, void* heap)
@@ -101551,10 +101705,10 @@ static int sp_256_ecc_mulmod_8(sp_point_256* r, const sp_point_256* g,
  * 256 entries
  * 32 bits between
  *
- * a      The base point.
- * table  Place to store generated point data.
- * tmp    Temporary data.
- * heap  Heap to use for allocation.
+ * @param [in]  a      The base point.
+ * @param [out] table  Place to store generated point data.
+ * @param [out] tmp    Temporary data.
+ * @param [in]  heap   Heap to use for allocation.
  */
 static int sp_256_gen_stripe_table_8(const sp_point_256* a,
         sp_table_entry_256* table, sp_digit* tmp, void* heap)
@@ -101626,9 +101780,9 @@ static int sp_256_gen_stripe_table_8(const sp_point_256* a,
 #ifndef WC_NO_CACHE_RESISTANT
 /* Touch each possible entry that could be being copied.
  *
- * r      Point to copy into.
- * table  Table - start of the entries to access
- * idx    Index of entry to retrieve.
+ * @param [out] r      Point to copy into.
+ * @param [in]  table  Table - start of the entries to access
+ * @param [in]  idx    Index of entry to retrieve.
  */
 static void sp_256_get_entry_256_8(sp_point_256* r,
     const sp_table_entry_256* table, int idx)
@@ -101683,13 +101837,16 @@ static void sp_256_get_entry_256_8(sp_point_256* r,
  * Pre-generated: products of all combinations of above.
  * 8 doubles and adds (with qz=1)
  *
- * r      Resulting point.
- * k      Scalar to multiply by.
- * table  Pre-computed table.
- * map    Indicates whether to convert result to affine.
- * ct     Constant time required.
- * heap   Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r      Resulting point.
+ * @param [in]  g      Point to multiply.
+ * @param [in]  table  Pre-computed table.
+ * @param [in]  k      Scalar to multiply by.
+ * @param [in]  map    Indicates whether to convert result to affine.
+ * @param [in]  ct     Constant time required.
+ * @param [in]  heap   Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_256_ecc_mulmod_stripe_8(sp_point_256* r, const sp_point_256* g,
         const sp_table_entry_256* table, const sp_digit* k, int map,
@@ -101806,8 +101963,8 @@ static THREAD_LS_T int sp_cache_256_inited = 0;
 
 /* Get the cache entry for the point.
  *
- * g      [in]   Point scalar multiplying.
- * cache  [out]  Cache table to use.
+ * @param [in]  g      Point scalar multiplying.
+ * @param [out] cache  Cache table to use.
  */
 static void sp_ecc_get_cache_256(const sp_point_256* g, sp_cache_256_t** cache)
 {
@@ -101870,13 +102027,15 @@ static void sp_ecc_get_cache_256(const sp_point_256* g, sp_cache_256_t** cache)
 /* Multiply the base point of P256 by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * r     Resulting point.
- * g     Point to multiply.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  g     Point to multiply.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_256_ecc_mulmod_8(sp_point_256* r, const sp_point_256* g,
         const sp_digit* k, int map, int ct, void* heap)
@@ -101952,12 +102111,14 @@ static int sp_256_ecc_mulmod_8(sp_point_256* r, const sp_point_256* g,
 /* Multiply the point by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * km    Scalar to multiply by.
- * p     Point to multiply.
- * r     Resulting point.
- * map   Indicates whether to convert result to affine.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km    Scalar to multiply by.
+ * @param [in]  gm    Point to multiply.
+ * @param [out] r     Resulting point.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_256(const mp_int* km, const ecc_point* gm, ecc_point* r,
         int map, void* heap)
@@ -101987,14 +102148,16 @@ int sp_ecc_mulmod_256(const mp_int* km, const ecc_point* gm, ecc_point* r,
 /* Multiply the point by the scalar, add point a and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * km      Scalar to multiply by.
- * p       Point to multiply.
- * am      Point to add to scalar multiply result.
- * inMont  Point to add is in montgomery form.
- * r       Resulting point.
- * map     Indicates whether to convert result to affine.
- * heap    Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km      Scalar to multiply by.
+ * @param [in]  gm      Point to multiply.
+ * @param [in]  am      Point to add to scalar multiply result.
+ * @param [in]  inMont  Point to add is in montgomery form.
+ * @param [out] r       Resulting point.
+ * @param [in]  map     Indicates whether to convert result to affine.
+ * @param [in]  heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_add_256(const mp_int* km, const ecc_point* gm,
     const ecc_point* am, int inMont, ecc_point* r, int map, void* heap)
@@ -102137,12 +102300,14 @@ static const sp_table_entry_256 p256_table[16] = {
  * Pre-generated: products of all combinations of above.
  * 4 doubles and adds (with qz=1)
  *
- * r     Resulting point.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_256_ecc_mulmod_base_8(sp_point_256* r, const sp_digit* k,
         int map, int ct, void* heap)
@@ -103445,12 +103610,14 @@ static const sp_table_entry_256 p256_table[256] = {
  * Pre-generated: products of all combinations of above.
  * 8 doubles and adds (with qz=1)
  *
- * r     Resulting point.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_256_ecc_mulmod_base_8(sp_point_256* r, const sp_digit* k,
         int map, int ct, void* heap)
@@ -103464,11 +103631,13 @@ static int sp_256_ecc_mulmod_base_8(sp_point_256* r, const sp_digit* k,
 /* Multiply the base point of P256 by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * km    Scalar to multiply by.
- * r     Resulting point.
- * map   Indicates whether to convert result to affine.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km    Scalar to multiply by.
+ * @param [out] r     Resulting point.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_base_256(const mp_int* km, ecc_point* r, int map, void* heap)
 {
@@ -103496,13 +103665,15 @@ int sp_ecc_mulmod_base_256(const mp_int* km, ecc_point* r, int map, void* heap)
 /* Multiply the base point of P256 by the scalar, add point a and return
  * the result. If map is true then convert result to affine coordinates.
  *
- * km      Scalar to multiply by.
- * am      Point to add to scalar multiply result.
- * inMont  Point to add is in montgomery form.
- * r       Resulting point.
- * map     Indicates whether to convert result to affine.
- * heap    Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km      Scalar to multiply by.
+ * @param [in]  am      Point to add to scalar multiply result.
+ * @param [in]  inMont  Point to add is in montgomery form.
+ * @param [out] r       Resulting point.
+ * @param [in]  map     Indicates whether to convert result to affine.
+ * @param [in]  heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_base_add_256(const mp_int* km, const ecc_point* am,
         int inMont, ecc_point* r, int map, void* heap)
@@ -103556,7 +103727,7 @@ int sp_ecc_mulmod_base_add_256(const mp_int* km, const ecc_point* am,
 #ifndef WC_NO_RNG
 /* Add 1 to a. (a = a + 1)
  *
- * a  A single precision integer.
+ * @param [in, out] a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_add_one_8(sp_digit* a)
 {
@@ -103643,10 +103814,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_add_one_8(sp_digit* a)
 #endif
 /* Read big endian unsigned byte array into r.
  *
- * r  A single precision integer.
- * size  Maximum number of bytes to convert
- * a  Byte array.
- * n  Number of bytes in array to read.
+ * @param [out] r     A single precision integer.
+ * @param [in]  size  Maximum number of bytes to convert
+ * @param [in]  a     Byte array.
+ * @param [in]  n     Number of bytes in array to read.
  */
 static void sp_256_from_bin(sp_digit* r, int size, const byte* a, int n)
 {
@@ -103690,10 +103861,12 @@ static void sp_256_from_bin(sp_digit* r, int size, const byte* a, int n)
 
 /* Generates a scalar that is in the range 1..order-1.
  *
- * rng  Random number generator.
- * k    Scalar value.
- * returns RNG failures, MEMORY_E when memory allocation fails and
- * MP_OKAY on success.
+ * @param [in] rng  Random number generator.
+ * @param [in] k    Scalar value.
+ *
+ * @return  MP_OKAY on success.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_256_ecc_gen_k_8(WC_RNG* rng, sp_digit* k)
 {
@@ -103723,12 +103896,15 @@ static int sp_256_ecc_gen_k_8(WC_RNG* rng, sp_digit* k)
 
 /* Makes a random EC key pair.
  *
- * rng   Random number generator.
- * priv  Generated private value.
- * pub   Generated public point.
- * heap  Heap to use for allocation.
- * returns ECC_INF_E when the point does not have the correct order, RNG
- * failures, MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  rng   Random number generator.
+ * @param [out] priv  Generated private value.
+ * @param [out] pub   Generated public point.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  ECC_INF_E when the point does not have the correct order.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_make_key_256(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 {
@@ -103800,6 +103976,23 @@ typedef struct sp_ecc_key_gen_256_ctx {
 #endif /* WOLFSSL_VALIDATE_ECC_KEYGEN */
 } sp_ecc_key_gen_256_ctx;
 
+/* Makes a random EC key pair.
+ *
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [in]      rng     Random number generator.
+ * @param [out]     priv    Generated private value.
+ * @param [out]     pub     Generated public point.
+ * @param [in]      heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  FP_WOULDBLOCK while more work remains.
+ * @return  ECC_INF_E when the point does not have the correct order.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
+ */
 int sp_ecc_make_key_256_nb(sp_ecc_ctx_t* sp_ctx, WC_RNG* rng, mp_int* priv,
     ecc_point* pub, void* heap)
 {
@@ -103870,8 +104063,8 @@ int sp_ecc_make_key_256_nb(sp_ecc_ctx_t* sp_ctx, WC_RNG* rng, mp_int* priv,
 /* Write r as big endian to byte array.
  * Fixed length number of bytes written: 32
  *
- * r  A single precision integer.
- * a  Byte array.
+ * @param [in, out] r  A single precision integer.
+ * @param [out]     a  Byte array.
  */
 static void sp_256_to_bin_8(sp_digit* r, byte* a)
 {
@@ -103889,14 +104082,16 @@ static void sp_256_to_bin_8(sp_digit* r, byte* a)
 /* Multiply the point by the scalar and serialize the X ordinate.
  * The number is 0 padded to maximum size on output.
  *
- * priv    Scalar to multiply the point by.
- * pub     Point to multiply.
- * out     Buffer to hold X ordinate.
- * outLen  On entry, size of the buffer in bytes.
- *         On exit, length of data in buffer in bytes.
- * heap    Heap to use for allocation.
- * returns BUFFER_E if the buffer is to small for output size,
- * MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]      priv    Scalar to multiply the point by.
+ * @param [in]      pub     Point to multiply.
+ * @param [out]     out     Buffer to hold X ordinate.
+ * @param [in, out] outLen  On entry, size of the buffer in bytes.
+ *                          On exit, length of data in buffer in bytes.
+ * @param [in]      heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  BUFFER_E when the buffer is too small for output size.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_secret_gen_256(const mp_int* priv, const ecc_point* pub, byte* out,
                           word32* outLen, void* heap)
@@ -103937,6 +104132,25 @@ typedef struct sp_ecc_sec_gen_256_ctx {
     sp_point_256 point;
 } sp_ecc_sec_gen_256_ctx;
 
+/* Multiply the point by the scalar and serialize the X ordinate.
+ * The number is 0 padded to maximum size on output.
+ *
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [in]      priv    Scalar to multiply the point by.
+ * @param [in]      pub     Point to multiply.
+ * @param [out]     out     Buffer to hold X ordinate.
+ * @param [in, out] outLen  On entry, size of the buffer in bytes.
+ *                          On exit, length of data in buffer in bytes.
+ * @param [in]      heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  FP_WOULDBLOCK while more work remains.
+ * @return  BUFFER_E when the buffer is too small for output size.
+ * @return  MEMORY_E when memory allocation fails.
+ */
 int sp_ecc_secret_gen_256_nb(sp_ecc_ctx_t* sp_ctx, const mp_int* priv,
     const ecc_point* pub, byte* out, word32* outLen, void* heap)
 {
@@ -103986,8 +104200,8 @@ int sp_ecc_secret_gen_256_nb(sp_ecc_ctx_t* sp_ctx, const mp_int* priv,
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_sub_in_place_8(
     sp_digit* a, const sp_digit* b)
@@ -104059,8 +104273,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_sub_in_place_8(
 #else
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_sub_in_place_8(
     sp_digit* a, const sp_digit* b)
@@ -104154,9 +104368,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_sub_in_place_8(
 #endif /* WOLFSSL_SP_SMALL */
 /* Mul a by digit b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision digit.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mul_d_8(sp_digit* r,
     const sp_digit* a, sp_digit b)
@@ -104341,10 +104555,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_256_mul_d_8(sp_digit* r,
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * d1   The high order half of the number to divide.
- * d0   The low order half of the number to divide.
- * div  The divisor.
- * returns the result of the division.
+ * @param [in] d1   The high order half of the number to divide.
+ * @param [in] d0   The low order half of the number to divide.
+ * @param [in] div  The divisor.
+ *
+ * @return  The result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
@@ -104958,9 +105173,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_256_word_8(sp_digit d1,
 
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_256_mask_8(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -104985,11 +105200,12 @@ static void sp_256_mask_8(sp_digit* r, const sp_digit* a, sp_digit m)
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
- * a  Number to be divided.
- * d  Number to divide with.
- * m  Multiplier result.
- * r  Remainder from the division.
- * returns MP_OKAY indicating success.
+ * @param [in]  a  Number to be divided.
+ * @param [in]  d  Number to divide with.
+ * @param [in]  m  Multiplier result.
+ * @param [out] r  Remainder from the division.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_256_div_8(const sp_digit* a, const sp_digit* d,
         sp_digit* m, sp_digit* r)
@@ -105027,10 +105243,11 @@ static WC_INLINE int sp_256_div_8(const sp_digit* a, const sp_digit* d,
 
 /* Reduce a modulo m into r. (r = a mod m)
  *
- * r  A single precision number that is the reduced result.
- * a  A single precision number that is to be reduced.
- * m  A single precision number that is the modulus to reduce with.
- * returns MP_OKAY indicating success.
+ * @param [out] r  A single precision number that is the reduced result.
+ * @param [in]  a  A single precision number that is to be reduced.
+ * @param [in]  m  A single precision number that is the modulus to reduce with.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_256_mod_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -105043,9 +105260,9 @@ static WC_INLINE int sp_256_mod_8(sp_digit* r, const sp_digit* a, const sp_digit
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 /* Multiply two number mod the order of P256 curve. (r = a * b mod order)
  *
- * r  Result of the multiplication.
- * a  First operand of the multiplication.
- * b  Second operand of the multiplication.
+ * @param [out] r  Result of the multiplication.
+ * @param [in]  a  First operand of the multiplication.
+ * @param [in]  b  Second operand of the multiplication.
  */
 static void sp_256_mont_mul_order_8(sp_digit* r, const sp_digit* a, const sp_digit* b)
 {
@@ -105069,8 +105286,8 @@ static const sp_int_digit p256_order_low[4] = {
 
 /* Square number mod the order of P256 curve. (r = a * a mod order)
  *
- * r  Result of the squaring.
- * a  Number to square.
+ * @param [out] r  Result of the squaring.
+ * @param [in]  a  Number to square.
  */
 static void sp_256_mont_sqr_order_8(sp_digit* r, const sp_digit* a)
 {
@@ -105082,8 +105299,9 @@ static void sp_256_mont_sqr_order_8(sp_digit* r, const sp_digit* a)
 /* Square number mod the order of P256 curve a number of times.
  * (r = a ^ n mod order)
  *
- * r  Result of the squaring.
- * a  Number to square.
+ * @param [out] r  Result of the squaring.
+ * @param [in]  a  Number to square.
+ * @param [in]  n  Number of times to square.
  */
 static void sp_256_mont_sqr_n_order_8(sp_digit* r, const sp_digit* a, int n)
 {
@@ -105096,19 +105314,24 @@ static void sp_256_mont_sqr_n_order_8(sp_digit* r, const sp_digit* a, int n)
 }
 #endif /* !WOLFSSL_SP_SMALL */
 
+#ifdef WOLFSSL_SP_NONBLOCK
+/* Context of non-blocking modular inversion with Montgomery form number. */
+typedef struct sp_256_mont_inv_order_8_ctx {
+    int state;    /* State of next operation. */
+    int i;        /* Index of bit in order. */
+} sp_256_mont_inv_order_8_ctx;
+
 /* Invert the number, in Montgomery form, modulo the order of the P256 curve.
  * (r = 1 / a mod order)
  *
- * r   Inverse result.
- * a   Number to invert.
- * td  Temporary data.
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [out]     r       Inverse result.
+ * @param [in]      a       Number to invert.
+ * @param [out]     t       Temporary data.
  */
-
-#ifdef WOLFSSL_SP_NONBLOCK
-typedef struct sp_256_mont_inv_order_8_ctx {
-    int state;
-    int i;
-} sp_256_mont_inv_order_8_ctx;
 static int sp_256_mont_inv_order_8_nb(sp_ecc_ctx_t* sp_ctx, sp_digit* r, const sp_digit* a,
         sp_digit* t)
 {
@@ -105144,6 +105367,13 @@ static int sp_256_mont_inv_order_8_nb(sp_ecc_ctx_t* sp_ctx, sp_digit* r, const s
 }
 #endif /* WOLFSSL_SP_NONBLOCK */
 
+/* Invert the number, in Montgomery form, modulo the order of the P256 curve.
+ * (r = 1 / a mod order)
+ *
+ * @param [out] r   Inverse result.
+ * @param [in]  a   Number to invert.
+ * @param [out] td  Temporary data.
+ */
 static void sp_256_mont_inv_order_8(sp_digit* r, const sp_digit* a,
         sp_digit* td)
 {
@@ -105252,13 +105482,15 @@ static void sp_256_mont_inv_order_8(sp_digit* r, const sp_digit* a,
  *
  * s = (r * x + e) / k
  *
- * s    Signature value.
- * r    First signature value.
- * k    Ephemeral private key.
- * x    Private key as a number.
- * e    Hash of message as a number.
- * tmp  Temporary storage for intermediate numbers.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] s    Signature value.
+ * @param [in]  r    First signature value.
+ * @param [in]  k    Ephemeral private key.
+ * @param [in]  x    Private key as a number.
+ * @param [in]  e    Hash of message as a number.
+ * @param [out] tmp  Temporary storage for intermediate numbers.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_256_calc_s_8(sp_digit* s, const sp_digit* r, sp_digit* k,
     sp_digit* x, const sp_digit* e, sp_digit* tmp)
@@ -105306,15 +105538,18 @@ static int sp_256_calc_s_8(sp_digit* s, const sp_digit* r, sp_digit* k,
  *   s = (r * x + e) / k mod order
  * The hash is truncated to the first 256 bits.
  *
- * hash     Hash to sign.
- * hashLen  Length of the hash data.
- * rng      Random number generator.
- * priv     Private part of key - scalar.
- * rm       First part of result as an mp_int.
- * sm       Sirst part of result as an mp_int.
- * heap     Heap to use for allocation.
- * returns RNG failures, MEMORY_E when memory allocation fails and
- * MP_OKAY on success.
+ * @param [in]      hash     Hash to sign.
+ * @param [in]      hashLen  Length of the hash data.
+ * @param [in]      rng      Random number generator.
+ * @param [in]      priv     Private part of key - scalar.
+ * @param [out]     rm       First part of result as an mp_int.
+ * @param [out]     sm       Second part of result as an mp_int.
+ * @param [in, out] km       Ephemeral key as an mp_int.
+ * @param [in]      heap     Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_sign_256(const byte* hash, word32 hashLen, WC_RNG* rng,
     const mp_int* priv, mp_int* rm, mp_int* sm, mp_int* km, void* heap)
@@ -105422,6 +105657,30 @@ typedef struct sp_ecc_sign_256_ctx {
     int i;
 } sp_ecc_sign_256_ctx;
 
+/* Sign the hash using the private key.
+ *   e = [hash, 256 bits] from binary
+ *   r = (k.G)->x mod order
+ *   s = (r * x + e) / k mod order
+ * The hash is truncated to the first 256 bits.
+ *
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx   Context to save state in for non-blocking calls.
+ * @param [in]      hash     Hash to sign.
+ * @param [in]      hashLen  Length of the hash data.
+ * @param [in]      rng      Random number generator.
+ * @param [in]      priv     Private part of key - scalar.
+ * @param [out]     rm       First part of result as an mp_int.
+ * @param [out]     sm       Second part of result as an mp_int.
+ * @param [in, out] km       Ephemeral key as an mp_int.
+ * @param [in]      heap     Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  FP_WOULDBLOCK while more work remains.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
+ */
 int sp_ecc_sign_256_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, WC_RNG* rng,
     mp_int* priv, mp_int* rm, mp_int* sm, mp_int* km, void* heap)
 {
@@ -105572,9 +105831,9 @@ int sp_ecc_sign_256_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_sub_8(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -105641,9 +105900,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_sub_8(sp_digit* r,
 #else
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_sub_8(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -105733,8 +105992,14 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_256_sub_8(sp_digit* r,
 #endif /* WOLFSSL_SP_SMALL */
 /* Right shift a by 1 bit into r. (r = a >> 1)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ */
+/* Shift number right one bit.
+ * Bottom bit is lost.
+ *
+ * @param [out] r  Result of shift.
+ * @param [in]  a  Number to shift.
  */
 WC_OMIT_FRAME_POINTER static void sp_256_rshift1_8(sp_digit* r,
     const sp_digit* a)
@@ -105889,9 +106154,9 @@ WC_OMIT_FRAME_POINTER static void sp_256_rshift1_8(sp_digit* r,
 
 /* Divide the number by 2 mod the modulus. (r = a / 2 % m)
  *
- * r  Result of division by 2.
- * a  Number to divide.
- * m  Modulus.
+ * @param [out] r  Result of division by 2.
+ * @param [in]  a  Number to divide.
+ * @param [in]  m  Modulus.
  */
 WC_OMIT_FRAME_POINTER static void sp_256_div2_mod_8(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -106160,6 +106425,12 @@ WC_OMIT_FRAME_POINTER static void sp_256_div2_mod_8(sp_digit* r,
     );
 }
 
+/* Get the number of bits in the number.
+ *
+ * @param [in] a  Number to count bits in.
+ *
+ * @return  The number of bits.
+ */
 WC_OMIT_FRAME_POINTER static int sp_256_num_bits_8(sp_digit* a)
 {
 
@@ -106919,9 +107190,10 @@ WC_OMIT_FRAME_POINTER static int sp_256_num_bits_8(sp_digit* a)
 
 /* Non-constant time modular inversion.
  *
- * @param  [out]  r   Resulting number.
- * @param  [in]   a   Number to invert.
- * @param  [in]   m   Modulus.
+ * @param [out] r  Resulting number.
+ * @param [in]  a  Number to invert.
+ * @param [in]  m  Modulus.
+ *
  * @return  MP_OKAY on success.
  */
 static int sp_256_mod_inv_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
@@ -107003,9 +107275,9 @@ static int sp_256_mod_inv_8(sp_digit* r, const sp_digit* a, const sp_digit* m)
 
 /* Add point p1 into point p2. Handles p1 == p2 and result at infinity.
  *
- * p1   First point to add and holds result.
- * p2   Second point to add.
- * tmp  Temporary storage for intermediate numbers.
+ * @param [in, out] p1   First point to add and holds result.
+ * @param [in]      p2   Second point to add.
+ * @param [out]     tmp  Temporary storage for intermediate numbers.
  */
 static void sp_256_add_points_8(sp_point_256* p1, const sp_point_256* p2,
     sp_digit* tmp)
@@ -107033,13 +107305,16 @@ static void sp_256_add_points_8(sp_point_256* p1, const sp_point_256* p2,
 
 /* Calculate the verification point: [e/s]G + [r/s]Q
  *
- * p1    Calculated point.
- * p2    Public point and temporary.
- * s     Second part of signature as a number.
- * u1    Temporary number.
- * u2    Temporary number.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out]     p1    Calculated point.
+ * @param [in, out] p2    Public point and temporary.
+ * @param [in]      s     Second part of signature as a number.
+ * @param [out]     u1    Temporary number.
+ * @param [out]     u2    Temporary number.
+ * @param [out]     tmp   Temporary number.
+ * @param [in]      heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_256_calc_vfy_point_8(sp_point_256* p1, sp_point_256* p2,
     sp_digit* s, sp_digit* u1, sp_digit* u2, sp_digit* tmp, void* heap)
@@ -107100,14 +107375,18 @@ static int sp_256_calc_vfy_point_8(sp_point_256* p1, sp_point_256* p2,
  *   (r + n*order).z'.z' mod prime == (u1.G + u2.Q)->x'
  * The hash is truncated to the first 256 bits.
  *
- * hash     Hash to sign.
- * hashLen  Length of the hash data.
- * rng      Random number generator.
- * priv     Private part of key - scalar.
- * rm       First part of result as an mp_int.
- * sm       Sirst part of result as an mp_int.
- * heap     Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  hash     Hash to verify.
+ * @param [in]  hashLen  Length of the hash data.
+ * @param [in]  pX       X ordinate of public point.
+ * @param [in]  pY       Y ordinate of public point.
+ * @param [in]  pZ       Z ordinate of public point.
+ * @param [in]  rm       First part of signature as an mp_int.
+ * @param [in]  sm       Second part of signature as an mp_int.
+ * @param [out] res      Result of the verification: 1 == valid, 0 == invalid.
+ * @param [in]  heap     Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_verify_256(const byte* hash, word32 hashLen, const mp_int* pX,
     const mp_int* pY, const mp_int* pZ, const mp_int* rm, const mp_int* sm,
@@ -107203,6 +107482,32 @@ typedef struct sp_ecc_verify_256_ctx {
     sp_point_256 p2;
 } sp_ecc_verify_256_ctx;
 
+/* Verify the signature values with the hash and public key.
+ *   e = Truncate(hash, 256)
+ *   u1 = e/s mod order
+ *   u2 = r/s mod order
+ *   r == (u1.G + u2.Q)->x mod order
+ * The hash is truncated to the first 256 bits.
+ *
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx   Context to save state in for non-blocking calls.
+ * @param [in]      hash     Hash to verify.
+ * @param [in]      hashLen  Length of the hash data.
+ * @param [in]      pX       X ordinate of public point.
+ * @param [in]      pY       Y ordinate of public point.
+ * @param [in]      pZ       Z ordinate of public point.
+ * @param [in]      rm       First part of signature as an mp_int.
+ * @param [in]      sm       Second part of signature as an mp_int.
+ * @param [out]     res      Result of the verification: 1 == valid,
+ *                           0 == invalid.
+ * @param [in]      heap     Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  FP_WOULDBLOCK while more work remains.
+ * @return  MEMORY_E when memory allocation fails.
+ */
 int sp_ecc_verify_256_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
     word32 hashLen, const mp_int* pX, const mp_int* pY, const mp_int* pZ,
     const mp_int* rm, const mp_int* sm, int* res, void* heap)
@@ -107339,10 +107644,12 @@ int sp_ecc_verify_256_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
 
 /* Check that the x and y ordinates are a valid point on the curve.
  *
- * point  EC point.
- * heap   Heap to use if dynamically allocating.
- * returns MEMORY_E if dynamic memory allocation fails, MP_VAL if the point is
- * not on the curve and MP_OKAY otherwise.
+ * @param [in] point  EC point.
+ * @param [in] heap   Heap to use if dynamically allocating.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
+ * @return  MP_VAL when the point is not on the curve.
  */
 static int sp_256_ecc_is_point_8(const sp_point_256* point,
     void* heap)
@@ -107384,10 +107691,12 @@ static int sp_256_ecc_is_point_8(const sp_point_256* point,
 
 /* Check that the x and y ordinates are a valid point on the curve.
  *
- * pX  X ordinate of EC point.
- * pY  Y ordinate of EC point.
- * returns MEMORY_E if dynamic memory allocation fails, MP_VAL if the point is
- * not on the curve and MP_OKAY otherwise.
+ * @param [in] pX  X ordinate of EC point.
+ * @param [in] pY  Y ordinate of EC point.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
+ * @return  MP_VAL when the point is not on the curve.
  */
 int sp_ecc_is_point_256(const mp_int* pX, const mp_int* pY)
 {
@@ -107413,13 +107722,17 @@ int sp_ecc_is_point_256(const mp_int* pX, const mp_int* pY)
 /* Check that the private scalar generates the EC point (px, py), the point is
  * on the curve and the point has the correct order.
  *
- * pX     X ordinate of EC point.
- * pY     Y ordinate of EC point.
- * privm  Private scalar that generates EC point.
- * returns MEMORY_E if dynamic memory allocation fails, MP_VAL if the point is
- * not on the curve, ECC_INF_E if the point does not have the correct order,
- * ECC_PRIV_KEY_E when the private scalar doesn't generate the EC point and
- * MP_OKAY otherwise.
+ * @param [in] pX     X ordinate of EC point.
+ * @param [in] pY     Y ordinate of EC point.
+ * @param [in] privm  Private scalar that generates EC point.
+ * @param [in] heap   Heap to use for allocation.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
+ * @return  MP_VAL when the point is not on the curve.
+ * @return  ECC_INF_E when the point does not have the correct order.
+ * @return  ECC_PRIV_KEY_E when the private scalar doesn't generate the EC
+ *          point.
  */
 int sp_ecc_check_key_256(const mp_int* pX, const mp_int* pY,
     const mp_int* privm, void* heap)
@@ -107503,16 +107816,18 @@ int sp_ecc_check_key_256(const mp_int* pX, const mp_int* pY,
 /* Add two projective EC points together.
  * (pX, pY, pZ) + (qX, qY, qZ) = (rX, rY, rZ)
  *
- * pX   First EC point's X ordinate.
- * pY   First EC point's Y ordinate.
- * pZ   First EC point's Z ordinate.
- * qX   Second EC point's X ordinate.
- * qY   Second EC point's Y ordinate.
- * qZ   Second EC point's Z ordinate.
- * rX   Resultant EC point's X ordinate.
- * rY   Resultant EC point's Y ordinate.
- * rZ   Resultant EC point's Z ordinate.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in]  pX  First EC point's X ordinate.
+ * @param [in]  pY  First EC point's Y ordinate.
+ * @param [in]  pZ  First EC point's Z ordinate.
+ * @param [in]  qX  Second EC point's X ordinate.
+ * @param [in]  qY  Second EC point's Y ordinate.
+ * @param [in]  qZ  Second EC point's Z ordinate.
+ * @param [out] rX  Resultant EC point's X ordinate.
+ * @param [out] rY  Resultant EC point's Y ordinate.
+ * @param [out] rZ  Resultant EC point's Z ordinate.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_ecc_proj_add_point_256(mp_int* pX, mp_int* pY, mp_int* pZ,
                               mp_int* qX, mp_int* qY, mp_int* qZ,
@@ -107561,13 +107876,15 @@ int sp_ecc_proj_add_point_256(mp_int* pX, mp_int* pY, mp_int* pZ,
 /* Double a projective EC point.
  * (pX, pY, pZ) + (pX, pY, pZ) = (rX, rY, rZ)
  *
- * pX   EC point's X ordinate.
- * pY   EC point's Y ordinate.
- * pZ   EC point's Z ordinate.
- * rX   Resultant EC point's X ordinate.
- * rY   Resultant EC point's Y ordinate.
- * rZ   Resultant EC point's Z ordinate.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in]  pX  EC point's X ordinate.
+ * @param [in]  pY  EC point's Y ordinate.
+ * @param [in]  pZ  EC point's Z ordinate.
+ * @param [out] rX  Resultant EC point's X ordinate.
+ * @param [out] rY  Resultant EC point's Y ordinate.
+ * @param [out] rZ  Resultant EC point's Z ordinate.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_ecc_proj_dbl_point_256(mp_int* pX, mp_int* pY, mp_int* pZ,
                               mp_int* rX, mp_int* rY, mp_int* rZ)
@@ -107607,10 +107924,12 @@ int sp_ecc_proj_dbl_point_256(mp_int* pX, mp_int* pY, mp_int* pZ,
 /* Map a projective EC point to affine in place.
  * pZ will be one.
  *
- * pX   EC point's X ordinate.
- * pY   EC point's Y ordinate.
- * pZ   EC point's Z ordinate.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in] pX  EC point's X ordinate.
+ * @param [in] pY  EC point's Y ordinate.
+ * @param [in] pZ  EC point's Z ordinate.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_ecc_map_256(mp_int* pX, mp_int* pY, mp_int* pZ)
 {
@@ -107650,8 +107969,10 @@ int sp_ecc_map_256(mp_int* pX, mp_int* pY, mp_int* pZ)
 #ifdef HAVE_COMP_KEY
 /* Find the square root of a number mod the prime of the curve.
  *
- * y  The number to operate on and the result.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in, out] y  The number to operate on and the result.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 static int sp_256_mont_sqrt_8(sp_digit* y)
 {
@@ -107704,10 +108025,12 @@ static int sp_256_mont_sqrt_8(sp_digit* y)
 
 /* Uncompress the point given the X ordinate.
  *
- * xm    X ordinate.
- * odd   Whether the Y ordinate is odd.
- * ym    Calculated Y ordinate.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in]  xm   X ordinate.
+ * @param [in]  odd  Whether the Y ordinate is odd.
+ * @param [out] ym   Calculated Y ordinate.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_ecc_uncompress_256(mp_int* xm, int odd, mp_int* ym)
 {
@@ -107844,9 +108167,9 @@ static const sp_digit p384_b[12] = {
 
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mul_12(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -108091,8 +108414,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mul_12(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_sqr_12(sp_digit* r,
     const sp_digit* a)
@@ -108518,9 +108841,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_sqr_12(sp_digit* r,
 #ifdef WOLFSSL_SP_SMALL
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_add_12(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -108593,9 +108916,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_add_12(sp_digit* r,
 #else
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_add_12(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -108720,10 +109043,12 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_add_12(sp_digit* r,
 #endif /* WOLFSSL_SP_SMALL */
 /* Multiply a number by Montgomery normalizer mod modulus (prime).
  *
- * r  The resulting Montgomery form number.
- * a  The number to convert.
- * m  The modulus (prime).
- * returns MEMORY_E when memory allocation fails and MP_OKAY otherwise.
+ * @param [out] r  The resulting Montgomery form number.
+ * @param [in]  a  The number to convert.
+ * @param [in]  m  The modulus (prime).
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_384_mod_mul_norm_12(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -108809,9 +109134,9 @@ static int sp_384_mod_mul_norm_12(sp_digit* r, const sp_digit* a, const sp_digit
 
 /* Convert an mp_int to an array of sp_digit.
  *
- * r  A single precision integer.
- * size  Maximum number of bytes to convert
- * a  A multi-precision integer.
+ * @param [out] r     A single precision integer.
+ * @param [in]  size  Maximum number of bytes to convert
+ * @param [in]  a     A multi-precision integer.
  */
 static void sp_384_from_mp(sp_digit* r, int size, const mp_int* a)
 {
@@ -108897,8 +109222,8 @@ static void sp_384_from_mp(sp_digit* r, int size, const mp_int* a)
 
 /* Convert a point of type ecc_point to type sp_point_384.
  *
- * p   Point of type sp_point_384 (result).
- * pm  Point of type ecc_point.
+ * @param [out] p   Point of type sp_point_384 (result).
+ * @param [in]  pm  Point of type ecc_point.
  */
 static void sp_384_point_from_ecc_point_12(sp_point_384* p,
         const ecc_point* pm)
@@ -108914,8 +109239,8 @@ static void sp_384_point_from_ecc_point_12(sp_point_384* p,
 
 /* Convert an array of sp_digit to an mp_int.
  *
- * a  A single precision integer.
- * r  A multi-precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [out] r  A multi-precision integer.
  */
 static int sp_384_to_mp(const sp_digit* a, mp_int* r)
 {
@@ -108982,10 +109307,11 @@ static int sp_384_to_mp(const sp_digit* a, mp_int* r)
 
 /* Convert a point of type sp_point_384 to type ecc_point.
  *
- * p   Point of type sp_point_384.
- * pm  Point of type ecc_point (result).
- * returns MEMORY_E when allocation of memory in ecc_point fails otherwise
- * MP_OKAY.
+ * @param [in] p   Point of type sp_point_384.
+ * @param [in] pm  Point of type ecc_point (result).
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when allocation of memory in ecc_point fails.
  */
 static int sp_384_point_to_ecc_point_12(const sp_point_384* p, ecc_point* pm)
 {
@@ -109005,10 +109331,11 @@ static int sp_384_point_to_ecc_point_12(const sp_point_384* p, ecc_point* pm)
 /* Conditionally subtract b from a using the mask m.
  * m is -1 to subtract and 0 when not copying.
  *
- * r  A single precision number representing condition subtract result.
- * a  A single precision number to subtract from.
- * b  A single precision number to subtract.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing condition subtract
+ *                 result.
+ * @param [in]  a  A single precision number to subtract from.
+ * @param [in]  b  A single precision number to subtract.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_cond_sub_12(
     sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -109070,9 +109397,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_cond_sub_12(
 
 /* Reduce the number back to 384 bits using Montgomery reduction.
  *
- * a   A single precision number to reduce in place.
- * m   The single precision number representing the modulus.
- * mp  The digit representing the negative inverse of m mod 2^n.
+ * @param [in, out] a   A single precision number to reduce in place.
+ * @param [in]      m   The single precision number representing the modulus.
+ * @param [in]      mp  The digit representing the negative inverse of
+ *                      m mod 2^n.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_reduce_12(sp_digit* a,
     const sp_digit* m, sp_digit mp)
@@ -109799,11 +110127,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_reduce_12(sp_digit* a,
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
- * r   Result of multiplication.
- * a   First number to multiply in Montgomery form.
- * b   Second number to multiply in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of multiplication.
+ * @param [in]  a   First number to multiply in Montgomery form.
+ * @param [in]  b   Second number to multiply in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_384_mont_mul_12(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -109814,10 +110142,10 @@ SP_NOINLINE static void sp_384_mont_mul_12(sp_digit* r, const sp_digit* a,
 
 /* Square the Montgomery form number. (r = a * a mod m)
  *
- * r   Result of squaring.
- * a   Number to square in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of squaring.
+ * @param [in]  a   Number to square in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_384_mont_sqr_12(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -109829,11 +110157,11 @@ SP_NOINLINE static void sp_384_mont_sqr_12(sp_digit* r, const sp_digit* a,
 #if !defined(WOLFSSL_SP_SMALL) || defined(HAVE_COMP_KEY)
 /* Square the Montgomery form number a number of times. (r = a ^ n mod m)
  *
- * r   Result of squaring.
- * a   Number to square in Montgomery form.
- * n   Number of times to square.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of squaring.
+ * @param [in]  a   Number to square in Montgomery form.
+ * @param [in]  n   Number of times to square.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_384_mont_sqr_n_12(sp_digit* r,
     const sp_digit* a, int n, const sp_digit* m, sp_digit mp)
@@ -109856,9 +110184,9 @@ static const word32 p384_mod_minus_2[12] = {
 /* Invert the number, in Montgomery form, modulo the modulus (prime) of the
  * P384 curve. (r = 1 / a mod m)
  *
- * r   Inverse result.
- * a   Number to invert.
- * td  Temporary data.
+ * @param [out] r   Inverse result.
+ * @param [in]  a   Number to invert.
+ * @param [out] td  Temporary data.
  */
 static void sp_384_mont_inv_12(sp_digit* r, const sp_digit* a, sp_digit* td)
 {
@@ -109940,10 +110268,11 @@ static void sp_384_mont_inv_12(sp_digit* r, const sp_digit* a, sp_digit* td)
 
 /* Compare a with b in constant time.
  *
- * a  A single precision integer.
- * b  A single precision integer.
- * return -ve, 0 or +ve if a is less than, equal to or greater than b
- * respectively.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
+ *
+ * @return  -ve, 0 or +ve if a is less than, equal to or greater than b
+ *          respectively.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_384_cmp_12(
     const sp_digit* a, const sp_digit* b)
@@ -110051,15 +110380,15 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_384_cmp_12(
 
 /* Normalize the values in each word to 32.
  *
- * a  Array of sp_digit to normalize.
+ * @param [in] a  Array of sp_digit to normalize.
  */
 #define sp_384_norm_12(a)
 
 /* Map the Montgomery form projective coordinate point to an affine point.
  *
- * r  Resulting affine coordinate point.
- * p  Montgomery form projective coordinate point.
- * t  Temporary ordinate data.
+ * @param [out] r  Resulting affine coordinate point.
+ * @param [in]  p  Montgomery form projective coordinate point.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_384_map_12(sp_point_384* r, const sp_point_384* p,
     sp_digit* t)
@@ -110097,10 +110426,10 @@ static void sp_384_map_12(sp_point_384* r, const sp_point_384* p,
 
 /* Add two Montgomery form numbers (r = a + b % m).
  *
- * r   Result of addition.
- * a   First number to add in Montgomery form.
- * b   Second number to add in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of addition.
+ * @param [in]  a  First number to add in Montgomery form.
+ * @param [in]  b  Second number to add in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_add_12(sp_digit* r,
     const sp_digit* a, const sp_digit* b, const sp_digit* m)
@@ -110114,9 +110443,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_add_12(sp_digit* r,
 
 /* Double a Montgomery form number (r = a + a % m).
  *
- * r   Result of doubling.
- * a   Number to double in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of doubling.
+ * @param [in]  a  Number to double in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_dbl_12(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -110130,9 +110459,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_dbl_12(sp_digit* r,
 
 /* Triple a Montgomery form number (r = a + a + a % m).
  *
- * r   Result of Tripling.
- * a   Number to triple in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of Tripling.
+ * @param [in]  a  Number to triple in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_tpl_12(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -110149,9 +110478,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_tpl_12(sp_digit* r,
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_sub_12(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -110218,9 +110547,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_sub_12(sp_digit* r,
 #else
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_sub_12(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -110345,10 +110674,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_sub_12(sp_digit* r,
 /* Conditionally add a and b using the mask m.
  * m is -1 to add and 0 when not.
  *
- * r  A single precision number representing conditional add result.
- * a  A single precision number to add with.
- * b  A single precision number to add.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing conditional add
+ *                 result.
+ * @param [in]  a  A single precision number to add with.
+ * @param [in]  b  A single precision number to add.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_cond_add_12(
     sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -110414,10 +110744,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_cond_add_12(
 
 /* Subtract two Montgomery form numbers (r = a - b % m).
  *
- * r   Result of subtration.
- * a   Number to subtract from in Montgomery form.
- * b   Number to subtract with in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of subtration.
+ * @param [in]  a  Number to subtract from in Montgomery form.
+ * @param [in]  b  Number to subtract with in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_sub_12(sp_digit* r,
     const sp_digit* a, const sp_digit* b, const sp_digit* m)
@@ -110431,8 +110761,14 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_sub_12(sp_digit* r,
 
 /* Right shift a by 1 bit into r. (r = a >> 1)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ */
+/* Shift number right one bit.
+ * Bottom bit is lost.
+ *
+ * @param [out] r  Result of shift.
+ * @param [in]  a  Number to shift.
  */
 WC_OMIT_FRAME_POINTER static void sp_384_rshift1_12(sp_digit* r,
     const sp_digit* a)
@@ -110663,9 +110999,9 @@ WC_OMIT_FRAME_POINTER static void sp_384_rshift1_12(sp_digit* r,
 
 /* Divide the number by 2 mod the modulus (prime). (r = a / 2 % m)
  *
- * r  Result of division by 2.
- * a  Number to divide.
- * m  Modulus (prime).
+ * @param [out] r  Result of division by 2.
+ * @param [in]  a  Number to divide.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_div2_12(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -110680,9 +111016,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mont_div2_12(sp_digit* r,
 
 /* Double the Montgomery form projective point p.
  *
- * r  Result of doubling point.
- * p  Point to double.
- * t  Temporary ordinate data.
+ * @param [out] r  Result of doubling point.
+ * @param [in]  p  Point to double.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_384_proj_point_dbl_12(sp_point_384* r, const sp_point_384* p,
     sp_digit* t)
@@ -110751,9 +111087,13 @@ typedef struct sp_384_proj_point_dbl_12_ctx {
 
 /* Double the Montgomery form projective point p.
  *
- * r  Result of doubling point.
- * p  Point to double.
- * t  Temporary ordinate data.
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [out]     r       Result of doubling point.
+ * @param [in]      p       Point to double.
+ * @param [out]     t       Temporary ordinate data.
  */
 static int sp_384_proj_point_dbl_12_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
         const sp_point_384* p, sp_digit* t)
@@ -110883,9 +111223,10 @@ static int sp_384_proj_point_dbl_12_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
 /* Compare two numbers to determine if they are equal.
  * Constant time implementation.
  *
- * a  First number to compare.
- * b  Second number to compare.
- * returns 1 when equal and 0 otherwise.
+ * @param [in] a  First number to compare.
+ * @param [in] b  Second number to compare.
+ *
+ * @return  1 when equal and 0 otherwise.
  */
 static int sp_384_cmp_equal_12(const sp_digit* a, const sp_digit* b)
 {
@@ -110898,8 +111239,9 @@ static int sp_384_cmp_equal_12(const sp_digit* a, const sp_digit* b)
 /* Returns 1 if the number of zero.
  * Implementation is constant time.
  *
- * a  Number to check.
- * returns 1 if the number is zero and 0 otherwise.
+ * @param [in] a  Number to check.
+ *
+ * @return  1 when the number is zero and 0 otherwise.
  */
 static int sp_384_iszero_12(const sp_digit* a)
 {
@@ -110910,10 +111252,10 @@ static int sp_384_iszero_12(const sp_digit* a)
 
 /* Add two Montgomery form projective points.
  *
- * r  Result of addition.
- * p  First point to add.
- * q  Second point to add.
- * t  Temporary ordinate data.
+ * @param [out] r  Result of addition.
+ * @param [in]  p  First point to add.
+ * @param [in]  q  Second point to add.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_384_proj_point_add_12(sp_point_384* r,
         const sp_point_384* p, const sp_point_384* q, sp_digit* t)
@@ -111013,10 +111355,14 @@ typedef struct sp_384_proj_point_add_12_ctx {
 
 /* Add two Montgomery form projective points.
  *
- * r  Result of addition.
- * p  First point to add.
- * q  Second point to add.
- * t  Temporary ordinate data.
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [out]     r       Result of addition.
+ * @param [in]      p       First point to add.
+ * @param [in]      q       Second point to add.
+ * @param [out]     t       Temporary ordinate data.
  */
 static int sp_384_proj_point_add_12_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
     const sp_point_384* p, const sp_point_384* q, sp_digit* t)
@@ -111201,9 +111547,9 @@ static int sp_384_proj_point_add_12_nb(sp_ecc_ctx_t* sp_ctx, sp_point_384* r,
 #ifndef WC_NO_CACHE_RESISTANT
 /* Touch each possible point that could be being copied.
  *
- * r      Point to copy into.
- * table  Table - start of the entries to access
- * idx    Index of entry to retrieve.
+ * @param [out] r      Point to copy into.
+ * @param [in]  table  Table - start of the entries to access
+ * @param [in]  idx    Index of entry to retrieve.
  */
 static void sp_384_get_point_16_12(sp_point_384* r, const sp_point_384* table,
     int idx)
@@ -111297,13 +111643,15 @@ static void sp_384_get_point_16_12(sp_point_384* r, const sp_point_384* table,
  * 384 doubles.
  * 108 adds.
  *
- * r     Resulting point.
- * g     Point to multiply.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  g     Point to multiply.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_384_ecc_mulmod_fast_12(sp_point_384* r, const sp_point_384* g, const sp_digit* k,
         int map, int ct, void* heap)
@@ -111433,10 +111781,9 @@ static int sp_384_ecc_mulmod_fast_12(sp_point_384* r, const sp_point_384* g, con
 #ifdef FP_ECC
 /* Double the Montgomery form projective point p a number of times.
  *
- * r  Result of repeated doubling of point.
- * p  Point to double.
- * n  Number of times to double
- * t  Temporary ordinate data.
+ * @param [in, out] p  Point to double and result.
+ * @param [in]      i  Number of times to double.
+ * @param [out]     t  Temporary ordinate data.
  */
 static void sp_384_proj_point_dbl_n_12(sp_point_384* p, int i,
     sp_digit* t)
@@ -111526,8 +111873,8 @@ static void sp_384_proj_point_dbl_n_12(sp_point_384* p, int i,
 /* Convert the projective point to affine.
  * Ordinates are in Montgomery form.
  *
- * a  Point to convert.
- * t  Temporary data.
+ * @param [in, out] a  Point to convert.
+ * @param [out]     t  Temporary data.
  */
 static void sp_384_proj_to_affine_12(sp_point_384* a, sp_digit* t)
 {
@@ -111558,10 +111905,10 @@ typedef struct sp_table_entry_384 {
  * one.
  * Only the first point can be the same pointer as the result point.
  *
- * r  Result of addition.
- * p  First point to add.
- * q  Second point to add.
- * t  Temporary ordinate data.
+ * @param [out] r  Result of addition.
+ * @param [in]  p  First point to add.
+ * @param [in]  q  Second point to add.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_384_proj_point_add_qz1_12(sp_point_384* r,
     const sp_point_384* p, const sp_point_384* q, sp_digit* t)
@@ -111643,10 +111990,10 @@ static void sp_384_proj_point_add_qz1_12(sp_point_384* r,
  * 16 entries
  * 96 bits between
  *
- * a      The base point.
- * table  Place to store generated point data.
- * tmp    Temporary data.
- * heap  Heap to use for allocation.
+ * @param [in]  a      The base point.
+ * @param [out] table  Place to store generated point data.
+ * @param [out] tmp    Temporary data.
+ * @param [in]  heap   Heap to use for allocation.
  */
 static int sp_384_gen_stripe_table_12(const sp_point_384* a,
         sp_table_entry_384* table, sp_digit* tmp, void* heap)
@@ -111718,9 +112065,9 @@ static int sp_384_gen_stripe_table_12(const sp_point_384* a,
 #ifndef WC_NO_CACHE_RESISTANT
 /* Touch each possible entry that could be being copied.
  *
- * r      Point to copy into.
- * table  Table - start of the entries to access
- * idx    Index of entry to retrieve.
+ * @param [out] r      Point to copy into.
+ * @param [in]  table  Table - start of the entries to access
+ * @param [in]  idx    Index of entry to retrieve.
  */
 static void sp_384_get_entry_16_12(sp_point_384* r,
     const sp_table_entry_384* table, int idx)
@@ -111791,13 +112138,16 @@ static void sp_384_get_entry_16_12(sp_point_384* r,
  * Pre-generated: products of all combinations of above.
  * 4 doubles and adds (with qz=1)
  *
- * r      Resulting point.
- * k      Scalar to multiply by.
- * table  Pre-computed table.
- * map    Indicates whether to convert result to affine.
- * ct     Constant time required.
- * heap   Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r      Resulting point.
+ * @param [in]  g      Point to multiply.
+ * @param [in]  table  Pre-computed table.
+ * @param [in]  k      Scalar to multiply by.
+ * @param [in]  map    Indicates whether to convert result to affine.
+ * @param [in]  ct     Constant time required.
+ * @param [in]  heap   Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_384_ecc_mulmod_stripe_12(sp_point_384* r, const sp_point_384* g,
         const sp_table_entry_384* table, const sp_digit* k, int map,
@@ -111914,8 +112264,8 @@ static THREAD_LS_T int sp_cache_384_inited = 0;
 
 /* Get the cache entry for the point.
  *
- * g      [in]   Point scalar multiplying.
- * cache  [out]  Cache table to use.
+ * @param [in]  g      Point scalar multiplying.
+ * @param [out] cache  Cache table to use.
  */
 static void sp_ecc_get_cache_384(const sp_point_384* g, sp_cache_384_t** cache)
 {
@@ -111978,13 +112328,15 @@ static void sp_ecc_get_cache_384(const sp_point_384* g, sp_cache_384_t** cache)
 /* Multiply the base point of P384 by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * r     Resulting point.
- * g     Point to multiply.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  g     Point to multiply.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_384_ecc_mulmod_12(sp_point_384* r, const sp_point_384* g,
         const sp_digit* k, int map, int ct, void* heap)
@@ -112064,10 +112416,10 @@ static int sp_384_ecc_mulmod_12(sp_point_384* r, const sp_point_384* g,
  * 256 entries
  * 48 bits between
  *
- * a      The base point.
- * table  Place to store generated point data.
- * tmp    Temporary data.
- * heap  Heap to use for allocation.
+ * @param [in]  a      The base point.
+ * @param [out] table  Place to store generated point data.
+ * @param [out] tmp    Temporary data.
+ * @param [in]  heap   Heap to use for allocation.
  */
 static int sp_384_gen_stripe_table_12(const sp_point_384* a,
         sp_table_entry_384* table, sp_digit* tmp, void* heap)
@@ -112139,9 +112491,9 @@ static int sp_384_gen_stripe_table_12(const sp_point_384* a,
 #ifndef WC_NO_CACHE_RESISTANT
 /* Touch each possible entry that could be being copied.
  *
- * r      Point to copy into.
- * table  Table - start of the entries to access
- * idx    Index of entry to retrieve.
+ * @param [out] r      Point to copy into.
+ * @param [in]  table  Table - start of the entries to access
+ * @param [in]  idx    Index of entry to retrieve.
  */
 static void sp_384_get_entry_256_12(sp_point_384* r,
     const sp_table_entry_384* table, int idx)
@@ -112212,13 +112564,16 @@ static void sp_384_get_entry_256_12(sp_point_384* r,
  * Pre-generated: products of all combinations of above.
  * 8 doubles and adds (with qz=1)
  *
- * r      Resulting point.
- * k      Scalar to multiply by.
- * table  Pre-computed table.
- * map    Indicates whether to convert result to affine.
- * ct     Constant time required.
- * heap   Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r      Resulting point.
+ * @param [in]  g      Point to multiply.
+ * @param [in]  table  Pre-computed table.
+ * @param [in]  k      Scalar to multiply by.
+ * @param [in]  map    Indicates whether to convert result to affine.
+ * @param [in]  ct     Constant time required.
+ * @param [in]  heap   Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_384_ecc_mulmod_stripe_12(sp_point_384* r, const sp_point_384* g,
         const sp_table_entry_384* table, const sp_digit* k, int map,
@@ -112335,8 +112690,8 @@ static THREAD_LS_T int sp_cache_384_inited = 0;
 
 /* Get the cache entry for the point.
  *
- * g      [in]   Point scalar multiplying.
- * cache  [out]  Cache table to use.
+ * @param [in]  g      Point scalar multiplying.
+ * @param [out] cache  Cache table to use.
  */
 static void sp_ecc_get_cache_384(const sp_point_384* g, sp_cache_384_t** cache)
 {
@@ -112399,13 +112754,15 @@ static void sp_ecc_get_cache_384(const sp_point_384* g, sp_cache_384_t** cache)
 /* Multiply the base point of P384 by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * r     Resulting point.
- * g     Point to multiply.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  g     Point to multiply.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_384_ecc_mulmod_12(sp_point_384* r, const sp_point_384* g,
         const sp_digit* k, int map, int ct, void* heap)
@@ -112481,12 +112838,14 @@ static int sp_384_ecc_mulmod_12(sp_point_384* r, const sp_point_384* g,
 /* Multiply the point by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * km    Scalar to multiply by.
- * p     Point to multiply.
- * r     Resulting point.
- * map   Indicates whether to convert result to affine.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km    Scalar to multiply by.
+ * @param [in]  gm    Point to multiply.
+ * @param [out] r     Resulting point.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_384(const mp_int* km, const ecc_point* gm, ecc_point* r,
         int map, void* heap)
@@ -112516,14 +112875,16 @@ int sp_ecc_mulmod_384(const mp_int* km, const ecc_point* gm, ecc_point* r,
 /* Multiply the point by the scalar, add point a and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * km      Scalar to multiply by.
- * p       Point to multiply.
- * am      Point to add to scalar multiply result.
- * inMont  Point to add is in montgomery form.
- * r       Resulting point.
- * map     Indicates whether to convert result to affine.
- * heap    Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km      Scalar to multiply by.
+ * @param [in]  gm      Point to multiply.
+ * @param [in]  am      Point to add to scalar multiply result.
+ * @param [in]  inMont  Point to add is in montgomery form.
+ * @param [out] r       Resulting point.
+ * @param [in]  map     Indicates whether to convert result to affine.
+ * @param [in]  heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_add_384(const mp_int* km, const ecc_point* gm,
     const ecc_point* am, int inMont, ecc_point* r, int map, void* heap)
@@ -112666,12 +113027,14 @@ static const sp_table_entry_384 p384_table[16] = {
  * Pre-generated: products of all combinations of above.
  * 4 doubles and adds (with qz=1)
  *
- * r     Resulting point.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_384_ecc_mulmod_base_12(sp_point_384* r, const sp_digit* k,
         int map, int ct, void* heap)
@@ -113974,12 +114337,14 @@ static const sp_table_entry_384 p384_table[256] = {
  * Pre-generated: products of all combinations of above.
  * 8 doubles and adds (with qz=1)
  *
- * r     Resulting point.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_384_ecc_mulmod_base_12(sp_point_384* r, const sp_digit* k,
         int map, int ct, void* heap)
@@ -113993,11 +114358,13 @@ static int sp_384_ecc_mulmod_base_12(sp_point_384* r, const sp_digit* k,
 /* Multiply the base point of P384 by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * km    Scalar to multiply by.
- * r     Resulting point.
- * map   Indicates whether to convert result to affine.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km    Scalar to multiply by.
+ * @param [out] r     Resulting point.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_base_384(const mp_int* km, ecc_point* r, int map, void* heap)
 {
@@ -114025,13 +114392,15 @@ int sp_ecc_mulmod_base_384(const mp_int* km, ecc_point* r, int map, void* heap)
 /* Multiply the base point of P384 by the scalar, add point a and return
  * the result. If map is true then convert result to affine coordinates.
  *
- * km      Scalar to multiply by.
- * am      Point to add to scalar multiply result.
- * inMont  Point to add is in montgomery form.
- * r       Resulting point.
- * map     Indicates whether to convert result to affine.
- * heap    Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km      Scalar to multiply by.
+ * @param [in]  am      Point to add to scalar multiply result.
+ * @param [in]  inMont  Point to add is in montgomery form.
+ * @param [out] r       Resulting point.
+ * @param [in]  map     Indicates whether to convert result to affine.
+ * @param [in]  heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_base_add_384(const mp_int* km, const ecc_point* am,
         int inMont, ecc_point* r, int map, void* heap)
@@ -114085,7 +114454,7 @@ int sp_ecc_mulmod_base_add_384(const mp_int* km, const ecc_point* am,
 #ifndef WC_NO_RNG
 /* Add 1 to a. (a = a + 1)
  *
- * a  A single precision integer.
+ * @param [in, out] a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_add_one_12(sp_digit* a)
 {
@@ -114208,10 +114577,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_add_one_12(sp_digit* a)
 #endif
 /* Read big endian unsigned byte array into r.
  *
- * r  A single precision integer.
- * size  Maximum number of bytes to convert
- * a  Byte array.
- * n  Number of bytes in array to read.
+ * @param [out] r     A single precision integer.
+ * @param [in]  size  Maximum number of bytes to convert
+ * @param [in]  a     Byte array.
+ * @param [in]  n     Number of bytes in array to read.
  */
 static void sp_384_from_bin(sp_digit* r, int size, const byte* a, int n)
 {
@@ -114255,10 +114624,12 @@ static void sp_384_from_bin(sp_digit* r, int size, const byte* a, int n)
 
 /* Generates a scalar that is in the range 1..order-1.
  *
- * rng  Random number generator.
- * k    Scalar value.
- * returns RNG failures, MEMORY_E when memory allocation fails and
- * MP_OKAY on success.
+ * @param [in] rng  Random number generator.
+ * @param [in] k    Scalar value.
+ *
+ * @return  MP_OKAY on success.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_384_ecc_gen_k_12(WC_RNG* rng, sp_digit* k)
 {
@@ -114288,12 +114659,15 @@ static int sp_384_ecc_gen_k_12(WC_RNG* rng, sp_digit* k)
 
 /* Makes a random EC key pair.
  *
- * rng   Random number generator.
- * priv  Generated private value.
- * pub   Generated public point.
- * heap  Heap to use for allocation.
- * returns ECC_INF_E when the point does not have the correct order, RNG
- * failures, MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  rng   Random number generator.
+ * @param [out] priv  Generated private value.
+ * @param [out] pub   Generated public point.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  ECC_INF_E when the point does not have the correct order.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_make_key_384(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 {
@@ -114365,6 +114739,23 @@ typedef struct sp_ecc_key_gen_384_ctx {
 #endif /* WOLFSSL_VALIDATE_ECC_KEYGEN */
 } sp_ecc_key_gen_384_ctx;
 
+/* Makes a random EC key pair.
+ *
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [in]      rng     Random number generator.
+ * @param [out]     priv    Generated private value.
+ * @param [out]     pub     Generated public point.
+ * @param [in]      heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  FP_WOULDBLOCK while more work remains.
+ * @return  ECC_INF_E when the point does not have the correct order.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
+ */
 int sp_ecc_make_key_384_nb(sp_ecc_ctx_t* sp_ctx, WC_RNG* rng, mp_int* priv,
     ecc_point* pub, void* heap)
 {
@@ -114435,8 +114826,8 @@ int sp_ecc_make_key_384_nb(sp_ecc_ctx_t* sp_ctx, WC_RNG* rng, mp_int* priv,
 /* Write r as big endian to byte array.
  * Fixed length number of bytes written: 48
  *
- * r  A single precision integer.
- * a  Byte array.
+ * @param [in, out] r  A single precision integer.
+ * @param [out]     a  Byte array.
  */
 static void sp_384_to_bin_12(sp_digit* r, byte* a)
 {
@@ -114454,14 +114845,16 @@ static void sp_384_to_bin_12(sp_digit* r, byte* a)
 /* Multiply the point by the scalar and serialize the X ordinate.
  * The number is 0 padded to maximum size on output.
  *
- * priv    Scalar to multiply the point by.
- * pub     Point to multiply.
- * out     Buffer to hold X ordinate.
- * outLen  On entry, size of the buffer in bytes.
- *         On exit, length of data in buffer in bytes.
- * heap    Heap to use for allocation.
- * returns BUFFER_E if the buffer is to small for output size,
- * MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]      priv    Scalar to multiply the point by.
+ * @param [in]      pub     Point to multiply.
+ * @param [out]     out     Buffer to hold X ordinate.
+ * @param [in, out] outLen  On entry, size of the buffer in bytes.
+ *                          On exit, length of data in buffer in bytes.
+ * @param [in]      heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  BUFFER_E when the buffer is too small for output size.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_secret_gen_384(const mp_int* priv, const ecc_point* pub, byte* out,
                           word32* outLen, void* heap)
@@ -114502,6 +114895,25 @@ typedef struct sp_ecc_sec_gen_384_ctx {
     sp_point_384 point;
 } sp_ecc_sec_gen_384_ctx;
 
+/* Multiply the point by the scalar and serialize the X ordinate.
+ * The number is 0 padded to maximum size on output.
+ *
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [in]      priv    Scalar to multiply the point by.
+ * @param [in]      pub     Point to multiply.
+ * @param [out]     out     Buffer to hold X ordinate.
+ * @param [in, out] outLen  On entry, size of the buffer in bytes.
+ *                          On exit, length of data in buffer in bytes.
+ * @param [in]      heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  FP_WOULDBLOCK while more work remains.
+ * @return  BUFFER_E when the buffer is too small for output size.
+ * @return  MEMORY_E when memory allocation fails.
+ */
 int sp_ecc_secret_gen_384_nb(sp_ecc_ctx_t* sp_ctx, const mp_int* priv,
     const ecc_point* pub, byte* out, word32* outLen, void* heap)
 {
@@ -114551,8 +114963,8 @@ int sp_ecc_secret_gen_384_nb(sp_ecc_ctx_t* sp_ctx, const mp_int* priv,
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_sub_in_place_12(
     sp_digit* a, const sp_digit* b)
@@ -114624,8 +115036,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_sub_in_place_12(
 #else
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_sub_in_place_12(
     sp_digit* a, const sp_digit* b)
@@ -114755,9 +115167,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_384_sub_in_place_12(
 #endif /* WOLFSSL_SP_SMALL */
 /* Mul a by digit b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision digit.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mul_d_12(sp_digit* r,
     const sp_digit* a, sp_digit b)
@@ -114942,10 +115354,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_384_mul_d_12(sp_digit* r,
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * d1   The high order half of the number to divide.
- * d0   The low order half of the number to divide.
- * div  The divisor.
- * returns the result of the division.
+ * @param [in] d1   The high order half of the number to divide.
+ * @param [in] d0   The low order half of the number to divide.
+ * @param [in] div  The divisor.
+ *
+ * @return  The result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
@@ -115559,9 +115972,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_384_word_12(sp_digit d1,
 
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_384_mask_12(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -115590,11 +116003,12 @@ static void sp_384_mask_12(sp_digit* r, const sp_digit* a, sp_digit m)
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
- * a  Number to be divided.
- * d  Number to divide with.
- * m  Multiplier result.
- * r  Remainder from the division.
- * returns MP_OKAY indicating success.
+ * @param [in]  a  Number to be divided.
+ * @param [in]  d  Number to divide with.
+ * @param [in]  m  Multiplier result.
+ * @param [out] r  Remainder from the division.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_384_div_12(const sp_digit* a, const sp_digit* d,
         sp_digit* m, sp_digit* r)
@@ -115632,10 +116046,11 @@ static WC_INLINE int sp_384_div_12(const sp_digit* a, const sp_digit* d,
 
 /* Reduce a modulo m into r. (r = a mod m)
  *
- * r  A single precision number that is the reduced result.
- * a  A single precision number that is to be reduced.
- * m  A single precision number that is the modulus to reduce with.
- * returns MP_OKAY indicating success.
+ * @param [out] r  A single precision number that is the reduced result.
+ * @param [in]  a  A single precision number that is to be reduced.
+ * @param [in]  m  A single precision number that is the modulus to reduce with.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_384_mod_12(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -115648,9 +116063,9 @@ static WC_INLINE int sp_384_mod_12(sp_digit* r, const sp_digit* a, const sp_digi
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 /* Multiply two number mod the order of P384 curve. (r = a * b mod order)
  *
- * r  Result of the multiplication.
- * a  First operand of the multiplication.
- * b  Second operand of the multiplication.
+ * @param [out] r  Result of the multiplication.
+ * @param [in]  a  First operand of the multiplication.
+ * @param [in]  b  Second operand of the multiplication.
  */
 static void sp_384_mont_mul_order_12(sp_digit* r, const sp_digit* a, const sp_digit* b)
 {
@@ -115674,8 +116089,8 @@ static const word32 p384_order_low[6] = {
 
 /* Square number mod the order of P384 curve. (r = a * a mod order)
  *
- * r  Result of the squaring.
- * a  Number to square.
+ * @param [out] r  Result of the squaring.
+ * @param [in]  a  Number to square.
  */
 static void sp_384_mont_sqr_order_12(sp_digit* r, const sp_digit* a)
 {
@@ -115687,8 +116102,9 @@ static void sp_384_mont_sqr_order_12(sp_digit* r, const sp_digit* a)
 /* Square number mod the order of P384 curve a number of times.
  * (r = a ^ n mod order)
  *
- * r  Result of the squaring.
- * a  Number to square.
+ * @param [out] r  Result of the squaring.
+ * @param [in]  a  Number to square.
+ * @param [in]  n  Number of times to square.
  */
 static void sp_384_mont_sqr_n_order_12(sp_digit* r, const sp_digit* a, int n)
 {
@@ -115701,19 +116117,24 @@ static void sp_384_mont_sqr_n_order_12(sp_digit* r, const sp_digit* a, int n)
 }
 #endif /* !WOLFSSL_SP_SMALL */
 
+#ifdef WOLFSSL_SP_NONBLOCK
+/* Context of non-blocking modular inversion with Montgomery form number. */
+typedef struct sp_384_mont_inv_order_12_ctx {
+    int state;    /* State of next operation. */
+    int i;        /* Index of bit in order. */
+} sp_384_mont_inv_order_12_ctx;
+
 /* Invert the number, in Montgomery form, modulo the order of the P384 curve.
  * (r = 1 / a mod order)
  *
- * r   Inverse result.
- * a   Number to invert.
- * td  Temporary data.
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [out]     r       Inverse result.
+ * @param [in]      a       Number to invert.
+ * @param [out]     t       Temporary data.
  */
-
-#ifdef WOLFSSL_SP_NONBLOCK
-typedef struct sp_384_mont_inv_order_12_ctx {
-    int state;
-    int i;
-} sp_384_mont_inv_order_12_ctx;
 static int sp_384_mont_inv_order_12_nb(sp_ecc_ctx_t* sp_ctx, sp_digit* r, const sp_digit* a,
         sp_digit* t)
 {
@@ -115749,6 +116170,13 @@ static int sp_384_mont_inv_order_12_nb(sp_ecc_ctx_t* sp_ctx, sp_digit* r, const 
 }
 #endif /* WOLFSSL_SP_NONBLOCK */
 
+/* Invert the number, in Montgomery form, modulo the order of the P384 curve.
+ * (r = 1 / a mod order)
+ *
+ * @param [out] r   Inverse result.
+ * @param [in]  a   Number to invert.
+ * @param [out] td  Temporary data.
+ */
 static void sp_384_mont_inv_order_12(sp_digit* r, const sp_digit* a,
         sp_digit* td)
 {
@@ -115824,13 +116252,15 @@ static void sp_384_mont_inv_order_12(sp_digit* r, const sp_digit* a,
  *
  * s = (r * x + e) / k
  *
- * s    Signature value.
- * r    First signature value.
- * k    Ephemeral private key.
- * x    Private key as a number.
- * e    Hash of message as a number.
- * tmp  Temporary storage for intermediate numbers.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] s    Signature value.
+ * @param [in]  r    First signature value.
+ * @param [in]  k    Ephemeral private key.
+ * @param [in]  x    Private key as a number.
+ * @param [in]  e    Hash of message as a number.
+ * @param [out] tmp  Temporary storage for intermediate numbers.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_384_calc_s_12(sp_digit* s, const sp_digit* r, sp_digit* k,
     sp_digit* x, const sp_digit* e, sp_digit* tmp)
@@ -115878,15 +116308,18 @@ static int sp_384_calc_s_12(sp_digit* s, const sp_digit* r, sp_digit* k,
  *   s = (r * x + e) / k mod order
  * The hash is truncated to the first 384 bits.
  *
- * hash     Hash to sign.
- * hashLen  Length of the hash data.
- * rng      Random number generator.
- * priv     Private part of key - scalar.
- * rm       First part of result as an mp_int.
- * sm       Sirst part of result as an mp_int.
- * heap     Heap to use for allocation.
- * returns RNG failures, MEMORY_E when memory allocation fails and
- * MP_OKAY on success.
+ * @param [in]      hash     Hash to sign.
+ * @param [in]      hashLen  Length of the hash data.
+ * @param [in]      rng      Random number generator.
+ * @param [in]      priv     Private part of key - scalar.
+ * @param [out]     rm       First part of result as an mp_int.
+ * @param [out]     sm       Second part of result as an mp_int.
+ * @param [in, out] km       Ephemeral key as an mp_int.
+ * @param [in]      heap     Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_sign_384(const byte* hash, word32 hashLen, WC_RNG* rng,
     const mp_int* priv, mp_int* rm, mp_int* sm, mp_int* km, void* heap)
@@ -115994,6 +116427,30 @@ typedef struct sp_ecc_sign_384_ctx {
     int i;
 } sp_ecc_sign_384_ctx;
 
+/* Sign the hash using the private key.
+ *   e = [hash, 384 bits] from binary
+ *   r = (k.G)->x mod order
+ *   s = (r * x + e) / k mod order
+ * The hash is truncated to the first 384 bits.
+ *
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx   Context to save state in for non-blocking calls.
+ * @param [in]      hash     Hash to sign.
+ * @param [in]      hashLen  Length of the hash data.
+ * @param [in]      rng      Random number generator.
+ * @param [in]      priv     Private part of key - scalar.
+ * @param [out]     rm       First part of result as an mp_int.
+ * @param [out]     sm       Second part of result as an mp_int.
+ * @param [in, out] km       Ephemeral key as an mp_int.
+ * @param [in]      heap     Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  FP_WOULDBLOCK while more work remains.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
+ */
 int sp_ecc_sign_384_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, WC_RNG* rng,
     mp_int* priv, mp_int* rm, mp_int* sm, mp_int* km, void* heap)
 {
@@ -116143,9 +116600,9 @@ int sp_ecc_sign_384_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
 #ifndef WOLFSSL_SP_SMALL
 /* Divide the number by 2 mod the modulus. (r = a / 2 % m)
  *
- * r  Result of division by 2.
- * a  Number to divide.
- * m  Modulus.
+ * @param [out] r  Result of division by 2.
+ * @param [in]  a  Number to divide.
+ * @param [in]  m  Modulus.
  */
 WC_OMIT_FRAME_POINTER static void sp_384_div2_mod_12(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -116548,6 +117005,12 @@ WC_OMIT_FRAME_POINTER static void sp_384_div2_mod_12(sp_digit* r,
     );
 }
 
+/* Get the number of bits in the number.
+ *
+ * @param [in] a  Number to count bits in.
+ *
+ * @return  The number of bits.
+ */
 WC_OMIT_FRAME_POINTER static int sp_384_num_bits_12(sp_digit* a)
 {
 
@@ -117751,9 +118214,10 @@ WC_OMIT_FRAME_POINTER static int sp_384_num_bits_12(sp_digit* a)
 
 /* Non-constant time modular inversion.
  *
- * @param  [out]  r   Resulting number.
- * @param  [in]   a   Number to invert.
- * @param  [in]   m   Modulus.
+ * @param [out] r  Resulting number.
+ * @param [in]  a  Number to invert.
+ * @param [in]  m  Modulus.
+ *
  * @return  MP_OKAY on success.
  */
 static int sp_384_mod_inv_12(sp_digit* r, const sp_digit* a, const sp_digit* m)
@@ -117835,9 +118299,9 @@ static int sp_384_mod_inv_12(sp_digit* r, const sp_digit* a, const sp_digit* m)
 
 /* Add point p1 into point p2. Handles p1 == p2 and result at infinity.
  *
- * p1   First point to add and holds result.
- * p2   Second point to add.
- * tmp  Temporary storage for intermediate numbers.
+ * @param [in, out] p1   First point to add and holds result.
+ * @param [in]      p2   Second point to add.
+ * @param [out]     tmp  Temporary storage for intermediate numbers.
  */
 static void sp_384_add_points_12(sp_point_384* p1, const sp_point_384* p2,
     sp_digit* tmp)
@@ -117869,13 +118333,16 @@ static void sp_384_add_points_12(sp_point_384* p1, const sp_point_384* p2,
 
 /* Calculate the verification point: [e/s]G + [r/s]Q
  *
- * p1    Calculated point.
- * p2    Public point and temporary.
- * s     Second part of signature as a number.
- * u1    Temporary number.
- * u2    Temporary number.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out]     p1    Calculated point.
+ * @param [in, out] p2    Public point and temporary.
+ * @param [in]      s     Second part of signature as a number.
+ * @param [out]     u1    Temporary number.
+ * @param [out]     u2    Temporary number.
+ * @param [out]     tmp   Temporary number.
+ * @param [in]      heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_384_calc_vfy_point_12(sp_point_384* p1, sp_point_384* p2,
     sp_digit* s, sp_digit* u1, sp_digit* u2, sp_digit* tmp, void* heap)
@@ -117936,14 +118403,18 @@ static int sp_384_calc_vfy_point_12(sp_point_384* p1, sp_point_384* p2,
  *   (r + n*order).z'.z' mod prime == (u1.G + u2.Q)->x'
  * The hash is truncated to the first 384 bits.
  *
- * hash     Hash to sign.
- * hashLen  Length of the hash data.
- * rng      Random number generator.
- * priv     Private part of key - scalar.
- * rm       First part of result as an mp_int.
- * sm       Sirst part of result as an mp_int.
- * heap     Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  hash     Hash to verify.
+ * @param [in]  hashLen  Length of the hash data.
+ * @param [in]  pX       X ordinate of public point.
+ * @param [in]  pY       Y ordinate of public point.
+ * @param [in]  pZ       Z ordinate of public point.
+ * @param [in]  rm       First part of signature as an mp_int.
+ * @param [in]  sm       Second part of signature as an mp_int.
+ * @param [out] res      Result of the verification: 1 == valid, 0 == invalid.
+ * @param [in]  heap     Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_verify_384(const byte* hash, word32 hashLen, const mp_int* pX,
     const mp_int* pY, const mp_int* pZ, const mp_int* rm, const mp_int* sm,
@@ -118039,6 +118510,32 @@ typedef struct sp_ecc_verify_384_ctx {
     sp_point_384 p2;
 } sp_ecc_verify_384_ctx;
 
+/* Verify the signature values with the hash and public key.
+ *   e = Truncate(hash, 384)
+ *   u1 = e/s mod order
+ *   u2 = r/s mod order
+ *   r == (u1.G + u2.Q)->x mod order
+ * The hash is truncated to the first 384 bits.
+ *
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx   Context to save state in for non-blocking calls.
+ * @param [in]      hash     Hash to verify.
+ * @param [in]      hashLen  Length of the hash data.
+ * @param [in]      pX       X ordinate of public point.
+ * @param [in]      pY       Y ordinate of public point.
+ * @param [in]      pZ       Z ordinate of public point.
+ * @param [in]      rm       First part of signature as an mp_int.
+ * @param [in]      sm       Second part of signature as an mp_int.
+ * @param [out]     res      Result of the verification: 1 == valid,
+ *                           0 == invalid.
+ * @param [in]      heap     Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  FP_WOULDBLOCK while more work remains.
+ * @return  MEMORY_E when memory allocation fails.
+ */
 int sp_ecc_verify_384_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
     word32 hashLen, const mp_int* pX, const mp_int* pY, const mp_int* pZ,
     const mp_int* rm, const mp_int* sm, int* res, void* heap)
@@ -118175,10 +118672,12 @@ int sp_ecc_verify_384_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
 
 /* Check that the x and y ordinates are a valid point on the curve.
  *
- * point  EC point.
- * heap   Heap to use if dynamically allocating.
- * returns MEMORY_E if dynamic memory allocation fails, MP_VAL if the point is
- * not on the curve and MP_OKAY otherwise.
+ * @param [in] point  EC point.
+ * @param [in] heap   Heap to use if dynamically allocating.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
+ * @return  MP_VAL when the point is not on the curve.
  */
 static int sp_384_ecc_is_point_12(const sp_point_384* point,
     void* heap)
@@ -118220,10 +118719,12 @@ static int sp_384_ecc_is_point_12(const sp_point_384* point,
 
 /* Check that the x and y ordinates are a valid point on the curve.
  *
- * pX  X ordinate of EC point.
- * pY  Y ordinate of EC point.
- * returns MEMORY_E if dynamic memory allocation fails, MP_VAL if the point is
- * not on the curve and MP_OKAY otherwise.
+ * @param [in] pX  X ordinate of EC point.
+ * @param [in] pY  Y ordinate of EC point.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
+ * @return  MP_VAL when the point is not on the curve.
  */
 int sp_ecc_is_point_384(const mp_int* pX, const mp_int* pY)
 {
@@ -118249,13 +118750,17 @@ int sp_ecc_is_point_384(const mp_int* pX, const mp_int* pY)
 /* Check that the private scalar generates the EC point (px, py), the point is
  * on the curve and the point has the correct order.
  *
- * pX     X ordinate of EC point.
- * pY     Y ordinate of EC point.
- * privm  Private scalar that generates EC point.
- * returns MEMORY_E if dynamic memory allocation fails, MP_VAL if the point is
- * not on the curve, ECC_INF_E if the point does not have the correct order,
- * ECC_PRIV_KEY_E when the private scalar doesn't generate the EC point and
- * MP_OKAY otherwise.
+ * @param [in] pX     X ordinate of EC point.
+ * @param [in] pY     Y ordinate of EC point.
+ * @param [in] privm  Private scalar that generates EC point.
+ * @param [in] heap   Heap to use for allocation.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
+ * @return  MP_VAL when the point is not on the curve.
+ * @return  ECC_INF_E when the point does not have the correct order.
+ * @return  ECC_PRIV_KEY_E when the private scalar doesn't generate the EC
+ *          point.
  */
 int sp_ecc_check_key_384(const mp_int* pX, const mp_int* pY,
     const mp_int* privm, void* heap)
@@ -118339,16 +118844,18 @@ int sp_ecc_check_key_384(const mp_int* pX, const mp_int* pY,
 /* Add two projective EC points together.
  * (pX, pY, pZ) + (qX, qY, qZ) = (rX, rY, rZ)
  *
- * pX   First EC point's X ordinate.
- * pY   First EC point's Y ordinate.
- * pZ   First EC point's Z ordinate.
- * qX   Second EC point's X ordinate.
- * qY   Second EC point's Y ordinate.
- * qZ   Second EC point's Z ordinate.
- * rX   Resultant EC point's X ordinate.
- * rY   Resultant EC point's Y ordinate.
- * rZ   Resultant EC point's Z ordinate.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in]  pX  First EC point's X ordinate.
+ * @param [in]  pY  First EC point's Y ordinate.
+ * @param [in]  pZ  First EC point's Z ordinate.
+ * @param [in]  qX  Second EC point's X ordinate.
+ * @param [in]  qY  Second EC point's Y ordinate.
+ * @param [in]  qZ  Second EC point's Z ordinate.
+ * @param [out] rX  Resultant EC point's X ordinate.
+ * @param [out] rY  Resultant EC point's Y ordinate.
+ * @param [out] rZ  Resultant EC point's Z ordinate.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_ecc_proj_add_point_384(mp_int* pX, mp_int* pY, mp_int* pZ,
                               mp_int* qX, mp_int* qY, mp_int* qZ,
@@ -118397,13 +118904,15 @@ int sp_ecc_proj_add_point_384(mp_int* pX, mp_int* pY, mp_int* pZ,
 /* Double a projective EC point.
  * (pX, pY, pZ) + (pX, pY, pZ) = (rX, rY, rZ)
  *
- * pX   EC point's X ordinate.
- * pY   EC point's Y ordinate.
- * pZ   EC point's Z ordinate.
- * rX   Resultant EC point's X ordinate.
- * rY   Resultant EC point's Y ordinate.
- * rZ   Resultant EC point's Z ordinate.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in]  pX  EC point's X ordinate.
+ * @param [in]  pY  EC point's Y ordinate.
+ * @param [in]  pZ  EC point's Z ordinate.
+ * @param [out] rX  Resultant EC point's X ordinate.
+ * @param [out] rY  Resultant EC point's Y ordinate.
+ * @param [out] rZ  Resultant EC point's Z ordinate.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_ecc_proj_dbl_point_384(mp_int* pX, mp_int* pY, mp_int* pZ,
                               mp_int* rX, mp_int* rY, mp_int* rZ)
@@ -118443,10 +118952,12 @@ int sp_ecc_proj_dbl_point_384(mp_int* pX, mp_int* pY, mp_int* pZ,
 /* Map a projective EC point to affine in place.
  * pZ will be one.
  *
- * pX   EC point's X ordinate.
- * pY   EC point's Y ordinate.
- * pZ   EC point's Z ordinate.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in] pX  EC point's X ordinate.
+ * @param [in] pY  EC point's Y ordinate.
+ * @param [in] pZ  EC point's Z ordinate.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_ecc_map_384(mp_int* pX, mp_int* pY, mp_int* pZ)
 {
@@ -118486,8 +118997,10 @@ int sp_ecc_map_384(mp_int* pX, mp_int* pY, mp_int* pZ)
 #ifdef HAVE_COMP_KEY
 /* Find the square root of a number mod the prime of the curve.
  *
- * y  The number to operate on and the result.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in, out] y  The number to operate on and the result.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 static int sp_384_mont_sqrt_12(sp_digit* y)
 {
@@ -118571,10 +119084,12 @@ static int sp_384_mont_sqrt_12(sp_digit* y)
 
 /* Uncompress the point given the X ordinate.
  *
- * xm    X ordinate.
- * odd   Whether the Y ordinate is odd.
- * ym    Calculated Y ordinate.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in]  xm   X ordinate.
+ * @param [in]  odd  Whether the Y ordinate is odd.
+ * @param [out] ym   Calculated Y ordinate.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_ecc_uncompress_384(mp_int* xm, int odd, mp_int* ym)
 {
@@ -118723,9 +119238,9 @@ static const sp_digit p521_b[17] = {
 
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mul_17(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -118970,8 +119485,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mul_17(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_sqr_17(sp_digit* r,
     const sp_digit* a)
@@ -119397,9 +119912,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_sqr_17(sp_digit* r,
 #ifdef WOLFSSL_SP_SMALL
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_add_17(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -119472,9 +119987,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_add_17(sp_digit* r,
 #else
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_add_17(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -119643,10 +120158,12 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_add_17(sp_digit* r,
 #endif /* WOLFSSL_SP_SMALL */
 /* Multiply a number by Montgomery normalizer mod modulus (prime).
  *
- * r  The resulting Montgomery form number.
- * a  The number to convert.
- * m  The modulus (prime).
- * returns MEMORY_E when memory allocation fails and MP_OKAY otherwise.
+ * @param [out] r  The resulting Montgomery form number.
+ * @param [in]  a  The number to convert.
+ * @param [in]  m  The modulus (prime).
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_521_mod_mul_norm_17(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -119661,9 +120178,9 @@ static int sp_521_mod_mul_norm_17(sp_digit* r, const sp_digit* a, const sp_digit
 
 /* Convert an mp_int to an array of sp_digit.
  *
- * r  A single precision integer.
- * size  Maximum number of bytes to convert
- * a  A multi-precision integer.
+ * @param [out] r     A single precision integer.
+ * @param [in]  size  Maximum number of bytes to convert
+ * @param [in]  a     A multi-precision integer.
  */
 static void sp_521_from_mp(sp_digit* r, int size, const mp_int* a)
 {
@@ -119749,8 +120266,8 @@ static void sp_521_from_mp(sp_digit* r, int size, const mp_int* a)
 
 /* Convert a point of type ecc_point to type sp_point_521.
  *
- * p   Point of type sp_point_521 (result).
- * pm  Point of type ecc_point.
+ * @param [out] p   Point of type sp_point_521 (result).
+ * @param [in]  pm  Point of type ecc_point.
  */
 static void sp_521_point_from_ecc_point_17(sp_point_521* p,
         const ecc_point* pm)
@@ -119766,8 +120283,8 @@ static void sp_521_point_from_ecc_point_17(sp_point_521* p,
 
 /* Convert an array of sp_digit to an mp_int.
  *
- * a  A single precision integer.
- * r  A multi-precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [out] r  A multi-precision integer.
  */
 static int sp_521_to_mp(const sp_digit* a, mp_int* r)
 {
@@ -119834,10 +120351,11 @@ static int sp_521_to_mp(const sp_digit* a, mp_int* r)
 
 /* Convert a point of type sp_point_521 to type ecc_point.
  *
- * p   Point of type sp_point_521.
- * pm  Point of type ecc_point (result).
- * returns MEMORY_E when allocation of memory in ecc_point fails otherwise
- * MP_OKAY.
+ * @param [in] p   Point of type sp_point_521.
+ * @param [in] pm  Point of type ecc_point (result).
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when allocation of memory in ecc_point fails.
  */
 static int sp_521_point_to_ecc_point_17(const sp_point_521* p, ecc_point* pm)
 {
@@ -119857,10 +120375,11 @@ static int sp_521_point_to_ecc_point_17(const sp_point_521* p, ecc_point* pm)
 /* Conditionally subtract b from a using the mask m.
  * m is -1 to subtract and 0 when not copying.
  *
- * r  A single precision number representing condition subtract result.
- * a  A single precision number to subtract from.
- * b  A single precision number to subtract.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing condition subtract
+ *                 result.
+ * @param [in]  a  A single precision number to subtract from.
+ * @param [in]  b  A single precision number to subtract.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_cond_sub_17(
     sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -119920,9 +120439,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_cond_sub_17(
 
 /* Reduce the number back to 521 bits using Montgomery reduction.
  *
- * a   A single precision number to reduce in place.
- * m   The single precision number representing the modulus.
- * mp  The digit representing the negative inverse of m mod 2^n.
+ * @param [in, out] a   A single precision number to reduce in place.
+ * @param [in]      m   The single precision number representing the modulus.
+ * @param [in]      mp  The digit representing the negative inverse of
+ *                      m mod 2^n.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_reduce_17(sp_digit* a,
     const sp_digit* m, sp_digit mp)
@@ -120570,9 +121090,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_reduce_17(sp_digit* a,
 
 /* Reduce the number back to 521 bits using Montgomery reduction.
  *
- * a   A single precision number to reduce in place.
- * m   The single precision number representing the modulus.
- * mp  The digit representing the negative inverse of m mod 2^n.
+ * @param [in, out] a   A single precision number to reduce in place.
+ * @param [in]      m   The single precision number representing the modulus.
+ * @param [in]      mp  The digit representing the negative inverse of
+ *                      m mod 2^n.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_reduce_order_17(
     sp_digit* a, const sp_digit* m, sp_digit mp)
@@ -121740,11 +122261,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_reduce_order_17(
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
- * r   Result of multiplication.
- * a   First number to multiply in Montgomery form.
- * b   Second number to multiply in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of multiplication.
+ * @param [in]  a   First number to multiply in Montgomery form.
+ * @param [in]  b   Second number to multiply in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_521_mont_mul_17(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -121755,10 +122276,10 @@ SP_NOINLINE static void sp_521_mont_mul_17(sp_digit* r, const sp_digit* a,
 
 /* Square the Montgomery form number. (r = a * a mod m)
  *
- * r   Result of squaring.
- * a   Number to square in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of squaring.
+ * @param [in]  a   Number to square in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_521_mont_sqr_17(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -121770,11 +122291,11 @@ SP_NOINLINE static void sp_521_mont_sqr_17(sp_digit* r, const sp_digit* a,
 #ifndef WOLFSSL_SP_SMALL
 /* Square the Montgomery form number a number of times. (r = a ^ n mod m)
  *
- * r   Result of squaring.
- * a   Number to square in Montgomery form.
- * n   Number of times to square.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of squaring.
+ * @param [in]  a   Number to square in Montgomery form.
+ * @param [in]  n   Number of times to square.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_521_mont_sqr_n_17(sp_digit* r,
     const sp_digit* a, int n, const sp_digit* m, sp_digit mp)
@@ -121798,9 +122319,9 @@ static const word32 p521_mod_minus_2[17] = {
 /* Invert the number, in Montgomery form, modulo the modulus (prime) of the
  * P521 curve. (r = 1 / a mod m)
  *
- * r   Inverse result.
- * a   Number to invert.
- * td  Temporary data.
+ * @param [out] r   Inverse result.
+ * @param [in]  a   Number to invert.
+ * @param [out] td  Temporary data.
  */
 static void sp_521_mont_inv_17(sp_digit* r, const sp_digit* a, sp_digit* td)
 {
@@ -121878,10 +122399,11 @@ static void sp_521_mont_inv_17(sp_digit* r, const sp_digit* a, sp_digit* td)
 
 /* Compare a with b in constant time.
  *
- * a  A single precision integer.
- * b  A single precision integer.
- * return -ve, 0 or +ve if a is less than, equal to or greater than b
- * respectively.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
+ *
+ * @return  -ve, 0 or +ve if a is less than, equal to or greater than b
+ *          respectively.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_521_cmp_17(
     const sp_digit* a, const sp_digit* b)
@@ -121989,15 +122511,15 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_521_cmp_17(
 
 /* Normalize the values in each word to 32.
  *
- * a  Array of sp_digit to normalize.
+ * @param [in] a  Array of sp_digit to normalize.
  */
 #define sp_521_norm_17(a)
 
 /* Map the Montgomery form projective coordinate point to an affine point.
  *
- * r  Resulting affine coordinate point.
- * p  Montgomery form projective coordinate point.
- * t  Temporary ordinate data.
+ * @param [out] r  Resulting affine coordinate point.
+ * @param [in]  p  Montgomery form projective coordinate point.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_521_map_17(sp_point_521* r, const sp_point_521* p,
     sp_digit* t)
@@ -122035,10 +122557,10 @@ static void sp_521_map_17(sp_point_521* r, const sp_point_521* p,
 
 /* Add two Montgomery form numbers (r = a + b % m).
  *
- * r   Result of addition.
- * a   First number to add in Montgomery form.
- * b   Second number to add in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of addition.
+ * @param [in]  a  First number to add in Montgomery form.
+ * @param [in]  b  Second number to add in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_add_17(sp_digit* r,
     const sp_digit* a, const sp_digit* b, const sp_digit* m)
@@ -122370,9 +122892,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_add_17(sp_digit* r,
 
 /* Double a Montgomery form number (r = a + a % m).
  *
- * r   Result of doubling.
- * a   Number to double in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of doubling.
+ * @param [in]  a  Number to double in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_dbl_17(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -122687,9 +123209,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_dbl_17(sp_digit* r,
 
 /* Triple a Montgomery form number (r = a + a + a % m).
  *
- * r   Result of Tripling.
- * a   Number to triple in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of Tripling.
+ * @param [in]  a  Number to triple in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_tpl_17(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -123166,10 +123688,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_tpl_17(sp_digit* r,
 
 /* Subtract two Montgomery form numbers (r = a - b % m).
  *
- * r   Result of subtration.
- * a   Number to subtract from in Montgomery form.
- * b   Number to subtract with in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of subtration.
+ * @param [in]  a  Number to subtract from in Montgomery form.
+ * @param [in]  b  Number to subtract with in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_sub_17(sp_digit* r,
     const sp_digit* a, const sp_digit* b, const sp_digit* m)
@@ -123508,10 +124030,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_sub_17(sp_digit* r,
 /* Conditionally add a and b using the mask m.
  * m is -1 to add and 0 when not.
  *
- * r  A single precision number representing conditional add result.
- * a  A single precision number to add with.
- * b  A single precision number to add.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing conditional add
+ *                 result.
+ * @param [in]  a  A single precision number to add with.
+ * @param [in]  b  A single precision number to add.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_cond_add_17(
     sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -123577,8 +124100,14 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_cond_add_17(
 
 /* Right shift a by 1 bit into r. (r = a >> 1)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ */
+/* Shift number right one bit.
+ * Bottom bit is lost.
+ *
+ * @param [out] r  Result of shift.
+ * @param [in]  a  Number to shift.
  */
 WC_OMIT_FRAME_POINTER static void sp_521_rshift1_17(sp_digit* r,
     const sp_digit* a)
@@ -123904,9 +124433,9 @@ WC_OMIT_FRAME_POINTER static void sp_521_rshift1_17(sp_digit* r,
 
 /* Divide the number by 2 mod the modulus (prime). (r = a / 2 % m)
  *
- * r  Result of division by 2.
- * a  Number to divide.
- * m  Modulus (prime).
+ * @param [out] r  Result of division by 2.
+ * @param [in]  a  Number to divide.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_div2_17(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -123921,9 +124450,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mont_div2_17(sp_digit* r,
 
 /* Double the Montgomery form projective point p.
  *
- * r  Result of doubling point.
- * p  Point to double.
- * t  Temporary ordinate data.
+ * @param [out] r  Result of doubling point.
+ * @param [in]  p  Point to double.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_521_proj_point_dbl_17(sp_point_521* r, const sp_point_521* p,
     sp_digit* t)
@@ -123992,9 +124521,13 @@ typedef struct sp_521_proj_point_dbl_17_ctx {
 
 /* Double the Montgomery form projective point p.
  *
- * r  Result of doubling point.
- * p  Point to double.
- * t  Temporary ordinate data.
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [out]     r       Result of doubling point.
+ * @param [in]      p       Point to double.
+ * @param [out]     t       Temporary ordinate data.
  */
 static int sp_521_proj_point_dbl_17_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
         const sp_point_521* p, sp_digit* t)
@@ -124124,9 +124657,10 @@ static int sp_521_proj_point_dbl_17_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
 /* Compare two numbers to determine if they are equal.
  * Constant time implementation.
  *
- * a  First number to compare.
- * b  Second number to compare.
- * returns 1 when equal and 0 otherwise.
+ * @param [in] a  First number to compare.
+ * @param [in] b  Second number to compare.
+ *
+ * @return  1 when equal and 0 otherwise.
  */
 static int sp_521_cmp_equal_17(const sp_digit* a, const sp_digit* b)
 {
@@ -124141,8 +124675,9 @@ static int sp_521_cmp_equal_17(const sp_digit* a, const sp_digit* b)
 /* Returns 1 if the number of zero.
  * Implementation is constant time.
  *
- * a  Number to check.
- * returns 1 if the number is zero and 0 otherwise.
+ * @param [in] a  Number to check.
+ *
+ * @return  1 when the number is zero and 0 otherwise.
  */
 static int sp_521_iszero_17(const sp_digit* a)
 {
@@ -124154,10 +124689,10 @@ static int sp_521_iszero_17(const sp_digit* a)
 
 /* Add two Montgomery form projective points.
  *
- * r  Result of addition.
- * p  First point to add.
- * q  Second point to add.
- * t  Temporary ordinate data.
+ * @param [out] r  Result of addition.
+ * @param [in]  p  First point to add.
+ * @param [in]  q  Second point to add.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_521_proj_point_add_17(sp_point_521* r,
         const sp_point_521* p, const sp_point_521* q, sp_digit* t)
@@ -124257,10 +124792,14 @@ typedef struct sp_521_proj_point_add_17_ctx {
 
 /* Add two Montgomery form projective points.
  *
- * r  Result of addition.
- * p  First point to add.
- * q  Second point to add.
- * t  Temporary ordinate data.
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [out]     r       Result of addition.
+ * @param [in]      p       First point to add.
+ * @param [in]      q       Second point to add.
+ * @param [out]     t       Temporary ordinate data.
  */
 static int sp_521_proj_point_add_17_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
     const sp_point_521* p, const sp_point_521* q, sp_digit* t)
@@ -124445,9 +124984,9 @@ static int sp_521_proj_point_add_17_nb(sp_ecc_ctx_t* sp_ctx, sp_point_521* r,
 #ifndef WC_NO_CACHE_RESISTANT
 /* Touch each possible point that could be being copied.
  *
- * r      Point to copy into.
- * table  Table - start of the entries to access
- * idx    Index of entry to retrieve.
+ * @param [out] r      Point to copy into.
+ * @param [in]  table  Table - start of the entries to access
+ * @param [in]  idx    Index of entry to retrieve.
  */
 static void sp_521_get_point_16_17(sp_point_521* r, const sp_point_521* table,
     int idx)
@@ -124571,13 +125110,15 @@ static void sp_521_get_point_16_17(sp_point_521* r, const sp_point_521* table,
  * 521 doubles.
  * 143 adds.
  *
- * r     Resulting point.
- * g     Point to multiply.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  g     Point to multiply.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_521_ecc_mulmod_fast_17(sp_point_521* r, const sp_point_521* g, const sp_digit* k,
         int map, int ct, void* heap)
@@ -124721,10 +125262,9 @@ static int sp_521_ecc_mulmod_fast_17(sp_point_521* r, const sp_point_521* g, con
 #ifdef FP_ECC
 /* Double the Montgomery form projective point p a number of times.
  *
- * r  Result of repeated doubling of point.
- * p  Point to double.
- * n  Number of times to double
- * t  Temporary ordinate data.
+ * @param [in, out] p  Point to double and result.
+ * @param [in]      i  Number of times to double.
+ * @param [out]     t  Temporary ordinate data.
  */
 static void sp_521_proj_point_dbl_n_17(sp_point_521* p, int i,
     sp_digit* t)
@@ -124814,8 +125354,8 @@ static void sp_521_proj_point_dbl_n_17(sp_point_521* p, int i,
 /* Convert the projective point to affine.
  * Ordinates are in Montgomery form.
  *
- * a  Point to convert.
- * t  Temporary data.
+ * @param [in, out] a  Point to convert.
+ * @param [out]     t  Temporary data.
  */
 static void sp_521_proj_to_affine_17(sp_point_521* a, sp_digit* t)
 {
@@ -124846,10 +125386,10 @@ typedef struct sp_table_entry_521 {
  * one.
  * Only the first point can be the same pointer as the result point.
  *
- * r  Result of addition.
- * p  First point to add.
- * q  Second point to add.
- * t  Temporary ordinate data.
+ * @param [out] r  Result of addition.
+ * @param [in]  p  First point to add.
+ * @param [in]  q  Second point to add.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_521_proj_point_add_qz1_17(sp_point_521* r,
     const sp_point_521* p, const sp_point_521* q, sp_digit* t)
@@ -124931,10 +125471,10 @@ static void sp_521_proj_point_add_qz1_17(sp_point_521* r,
  * 16 entries
  * 130 bits between
  *
- * a      The base point.
- * table  Place to store generated point data.
- * tmp    Temporary data.
- * heap  Heap to use for allocation.
+ * @param [in]  a      The base point.
+ * @param [out] table  Place to store generated point data.
+ * @param [out] tmp    Temporary data.
+ * @param [in]  heap   Heap to use for allocation.
  */
 static int sp_521_gen_stripe_table_17(const sp_point_521* a,
         sp_table_entry_521* table, sp_digit* tmp, void* heap)
@@ -125006,9 +125546,9 @@ static int sp_521_gen_stripe_table_17(const sp_point_521* a,
 #ifndef WC_NO_CACHE_RESISTANT
 /* Touch each possible entry that could be being copied.
  *
- * r      Point to copy into.
- * table  Table - start of the entries to access
- * idx    Index of entry to retrieve.
+ * @param [out] r      Point to copy into.
+ * @param [in]  table  Table - start of the entries to access
+ * @param [in]  idx    Index of entry to retrieve.
  */
 static void sp_521_get_entry_16_17(sp_point_521* r,
     const sp_table_entry_521* table, int idx)
@@ -125099,13 +125639,16 @@ static void sp_521_get_entry_16_17(sp_point_521* r,
  * Pre-generated: products of all combinations of above.
  * 4 doubles and adds (with qz=1)
  *
- * r      Resulting point.
- * k      Scalar to multiply by.
- * table  Pre-computed table.
- * map    Indicates whether to convert result to affine.
- * ct     Constant time required.
- * heap   Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r      Resulting point.
+ * @param [in]  g      Point to multiply.
+ * @param [in]  table  Pre-computed table.
+ * @param [in]  k      Scalar to multiply by.
+ * @param [in]  map    Indicates whether to convert result to affine.
+ * @param [in]  ct     Constant time required.
+ * @param [in]  heap   Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_521_ecc_mulmod_stripe_17(sp_point_521* r, const sp_point_521* g,
         const sp_table_entry_521* table, const sp_digit* k, int map,
@@ -125222,8 +125765,8 @@ static THREAD_LS_T int sp_cache_521_inited = 0;
 
 /* Get the cache entry for the point.
  *
- * g      [in]   Point scalar multiplying.
- * cache  [out]  Cache table to use.
+ * @param [in]  g      Point scalar multiplying.
+ * @param [out] cache  Cache table to use.
  */
 static void sp_ecc_get_cache_521(const sp_point_521* g, sp_cache_521_t** cache)
 {
@@ -125286,13 +125829,15 @@ static void sp_ecc_get_cache_521(const sp_point_521* g, sp_cache_521_t** cache)
 /* Multiply the base point of P521 by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * r     Resulting point.
- * g     Point to multiply.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  g     Point to multiply.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_521_ecc_mulmod_17(sp_point_521* r, const sp_point_521* g,
         const sp_digit* k, int map, int ct, void* heap)
@@ -125372,10 +125917,10 @@ static int sp_521_ecc_mulmod_17(sp_point_521* r, const sp_point_521* g,
  * 256 entries
  * 65 bits between
  *
- * a      The base point.
- * table  Place to store generated point data.
- * tmp    Temporary data.
- * heap  Heap to use for allocation.
+ * @param [in]  a      The base point.
+ * @param [out] table  Place to store generated point data.
+ * @param [out] tmp    Temporary data.
+ * @param [in]  heap   Heap to use for allocation.
  */
 static int sp_521_gen_stripe_table_17(const sp_point_521* a,
         sp_table_entry_521* table, sp_digit* tmp, void* heap)
@@ -125447,9 +125992,9 @@ static int sp_521_gen_stripe_table_17(const sp_point_521* a,
 #ifndef WC_NO_CACHE_RESISTANT
 /* Touch each possible entry that could be being copied.
  *
- * r      Point to copy into.
- * table  Table - start of the entries to access
- * idx    Index of entry to retrieve.
+ * @param [out] r      Point to copy into.
+ * @param [in]  table  Table - start of the entries to access
+ * @param [in]  idx    Index of entry to retrieve.
  */
 static void sp_521_get_entry_256_17(sp_point_521* r,
     const sp_table_entry_521* table, int idx)
@@ -125540,13 +126085,16 @@ static void sp_521_get_entry_256_17(sp_point_521* r,
  * Pre-generated: products of all combinations of above.
  * 8 doubles and adds (with qz=1)
  *
- * r      Resulting point.
- * k      Scalar to multiply by.
- * table  Pre-computed table.
- * map    Indicates whether to convert result to affine.
- * ct     Constant time required.
- * heap   Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r      Resulting point.
+ * @param [in]  g      Point to multiply.
+ * @param [in]  table  Pre-computed table.
+ * @param [in]  k      Scalar to multiply by.
+ * @param [in]  map    Indicates whether to convert result to affine.
+ * @param [in]  ct     Constant time required.
+ * @param [in]  heap   Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_521_ecc_mulmod_stripe_17(sp_point_521* r, const sp_point_521* g,
         const sp_table_entry_521* table, const sp_digit* k, int map,
@@ -125663,8 +126211,8 @@ static THREAD_LS_T int sp_cache_521_inited = 0;
 
 /* Get the cache entry for the point.
  *
- * g      [in]   Point scalar multiplying.
- * cache  [out]  Cache table to use.
+ * @param [in]  g      Point scalar multiplying.
+ * @param [out] cache  Cache table to use.
  */
 static void sp_ecc_get_cache_521(const sp_point_521* g, sp_cache_521_t** cache)
 {
@@ -125727,13 +126275,15 @@ static void sp_ecc_get_cache_521(const sp_point_521* g, sp_cache_521_t** cache)
 /* Multiply the base point of P521 by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * r     Resulting point.
- * g     Point to multiply.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  g     Point to multiply.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_521_ecc_mulmod_17(sp_point_521* r, const sp_point_521* g,
         const sp_digit* k, int map, int ct, void* heap)
@@ -125809,12 +126359,14 @@ static int sp_521_ecc_mulmod_17(sp_point_521* r, const sp_point_521* g,
 /* Multiply the point by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * km    Scalar to multiply by.
- * p     Point to multiply.
- * r     Resulting point.
- * map   Indicates whether to convert result to affine.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km    Scalar to multiply by.
+ * @param [in]  gm    Point to multiply.
+ * @param [out] r     Resulting point.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_521(const mp_int* km, const ecc_point* gm, ecc_point* r,
         int map, void* heap)
@@ -125844,14 +126396,16 @@ int sp_ecc_mulmod_521(const mp_int* km, const ecc_point* gm, ecc_point* r,
 /* Multiply the point by the scalar, add point a and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * km      Scalar to multiply by.
- * p       Point to multiply.
- * am      Point to add to scalar multiply result.
- * inMont  Point to add is in montgomery form.
- * r       Resulting point.
- * map     Indicates whether to convert result to affine.
- * heap    Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km      Scalar to multiply by.
+ * @param [in]  gm      Point to multiply.
+ * @param [in]  am      Point to add to scalar multiply result.
+ * @param [in]  inMont  Point to add is in montgomery form.
+ * @param [out] r       Resulting point.
+ * @param [in]  map     Indicates whether to convert result to affine.
+ * @param [in]  heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_add_521(const mp_int* km, const ecc_point* gm,
     const ecc_point* am, int inMont, ecc_point* r, int map, void* heap)
@@ -126026,12 +126580,14 @@ static const sp_table_entry_521 p521_table[16] = {
  * Pre-generated: products of all combinations of above.
  * 4 doubles and adds (with qz=1)
  *
- * r     Resulting point.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_521_ecc_mulmod_base_17(sp_point_521* r, const sp_digit* k,
         int map, int ct, void* heap)
@@ -127846,12 +128402,14 @@ static const sp_table_entry_521 p521_table[256] = {
  * Pre-generated: products of all combinations of above.
  * 8 doubles and adds (with qz=1)
  *
- * r     Resulting point.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_521_ecc_mulmod_base_17(sp_point_521* r, const sp_digit* k,
         int map, int ct, void* heap)
@@ -127865,11 +128423,13 @@ static int sp_521_ecc_mulmod_base_17(sp_point_521* r, const sp_digit* k,
 /* Multiply the base point of P521 by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * km    Scalar to multiply by.
- * r     Resulting point.
- * map   Indicates whether to convert result to affine.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km    Scalar to multiply by.
+ * @param [out] r     Resulting point.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_base_521(const mp_int* km, ecc_point* r, int map, void* heap)
 {
@@ -127897,13 +128457,15 @@ int sp_ecc_mulmod_base_521(const mp_int* km, ecc_point* r, int map, void* heap)
 /* Multiply the base point of P521 by the scalar, add point a and return
  * the result. If map is true then convert result to affine coordinates.
  *
- * km      Scalar to multiply by.
- * am      Point to add to scalar multiply result.
- * inMont  Point to add is in montgomery form.
- * r       Resulting point.
- * map     Indicates whether to convert result to affine.
- * heap    Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km      Scalar to multiply by.
+ * @param [in]  am      Point to add to scalar multiply result.
+ * @param [in]  inMont  Point to add is in montgomery form.
+ * @param [out] r       Resulting point.
+ * @param [in]  map     Indicates whether to convert result to affine.
+ * @param [in]  heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_base_add_521(const mp_int* km, const ecc_point* am,
         int inMont, ecc_point* r, int map, void* heap)
@@ -127957,7 +128519,7 @@ int sp_ecc_mulmod_base_add_521(const mp_int* km, const ecc_point* am,
 #ifndef WC_NO_RNG
 /* Add 1 to a. (a = a + 1)
  *
- * a  A single precision integer.
+ * @param [in, out] a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_add_one_17(sp_digit* a)
 {
@@ -128125,10 +128687,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_add_one_17(sp_digit* a)
 #endif
 /* Read big endian unsigned byte array into r.
  *
- * r  A single precision integer.
- * size  Maximum number of bytes to convert
- * a  Byte array.
- * n  Number of bytes in array to read.
+ * @param [out] r     A single precision integer.
+ * @param [in]  size  Maximum number of bytes to convert
+ * @param [in]  a     Byte array.
+ * @param [in]  n     Number of bytes in array to read.
  */
 static void sp_521_from_bin(sp_digit* r, int size, const byte* a, int n)
 {
@@ -128172,10 +128734,12 @@ static void sp_521_from_bin(sp_digit* r, int size, const byte* a, int n)
 
 /* Generates a scalar that is in the range 1..order-1.
  *
- * rng  Random number generator.
- * k    Scalar value.
- * returns RNG failures, MEMORY_E when memory allocation fails and
- * MP_OKAY on success.
+ * @param [in] rng  Random number generator.
+ * @param [in] k    Scalar value.
+ *
+ * @return  MP_OKAY on success.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_521_ecc_gen_k_17(WC_RNG* rng, sp_digit* k)
 {
@@ -128206,12 +128770,15 @@ static int sp_521_ecc_gen_k_17(WC_RNG* rng, sp_digit* k)
 
 /* Makes a random EC key pair.
  *
- * rng   Random number generator.
- * priv  Generated private value.
- * pub   Generated public point.
- * heap  Heap to use for allocation.
- * returns ECC_INF_E when the point does not have the correct order, RNG
- * failures, MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  rng   Random number generator.
+ * @param [out] priv  Generated private value.
+ * @param [out] pub   Generated public point.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  ECC_INF_E when the point does not have the correct order.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_make_key_521(WC_RNG* rng, mp_int* priv, ecc_point* pub, void* heap)
 {
@@ -128283,6 +128850,23 @@ typedef struct sp_ecc_key_gen_521_ctx {
 #endif /* WOLFSSL_VALIDATE_ECC_KEYGEN */
 } sp_ecc_key_gen_521_ctx;
 
+/* Makes a random EC key pair.
+ *
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [in]      rng     Random number generator.
+ * @param [out]     priv    Generated private value.
+ * @param [out]     pub     Generated public point.
+ * @param [in]      heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  FP_WOULDBLOCK while more work remains.
+ * @return  ECC_INF_E when the point does not have the correct order.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
+ */
 int sp_ecc_make_key_521_nb(sp_ecc_ctx_t* sp_ctx, WC_RNG* rng, mp_int* priv,
     ecc_point* pub, void* heap)
 {
@@ -128353,8 +128937,8 @@ int sp_ecc_make_key_521_nb(sp_ecc_ctx_t* sp_ctx, WC_RNG* rng, mp_int* priv,
 /* Write r as big endian to byte array.
  * Fixed length number of bytes written: 66
  *
- * r  A single precision integer.
- * a  Byte array.
+ * @param [in, out] r  A single precision integer.
+ * @param [out]     a  Byte array.
  */
 static void sp_521_to_bin_17(sp_digit* r, byte* a)
 {
@@ -128374,14 +128958,16 @@ static void sp_521_to_bin_17(sp_digit* r, byte* a)
 /* Multiply the point by the scalar and serialize the X ordinate.
  * The number is 0 padded to maximum size on output.
  *
- * priv    Scalar to multiply the point by.
- * pub     Point to multiply.
- * out     Buffer to hold X ordinate.
- * outLen  On entry, size of the buffer in bytes.
- *         On exit, length of data in buffer in bytes.
- * heap    Heap to use for allocation.
- * returns BUFFER_E if the buffer is to small for output size,
- * MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]      priv    Scalar to multiply the point by.
+ * @param [in]      pub     Point to multiply.
+ * @param [out]     out     Buffer to hold X ordinate.
+ * @param [in, out] outLen  On entry, size of the buffer in bytes.
+ *                          On exit, length of data in buffer in bytes.
+ * @param [in]      heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  BUFFER_E when the buffer is too small for output size.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_secret_gen_521(const mp_int* priv, const ecc_point* pub, byte* out,
                           word32* outLen, void* heap)
@@ -128422,6 +129008,25 @@ typedef struct sp_ecc_sec_gen_521_ctx {
     sp_point_521 point;
 } sp_ecc_sec_gen_521_ctx;
 
+/* Multiply the point by the scalar and serialize the X ordinate.
+ * The number is 0 padded to maximum size on output.
+ *
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [in]      priv    Scalar to multiply the point by.
+ * @param [in]      pub     Point to multiply.
+ * @param [out]     out     Buffer to hold X ordinate.
+ * @param [in, out] outLen  On entry, size of the buffer in bytes.
+ *                          On exit, length of data in buffer in bytes.
+ * @param [in]      heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  FP_WOULDBLOCK while more work remains.
+ * @return  BUFFER_E when the buffer is too small for output size.
+ * @return  MEMORY_E when memory allocation fails.
+ */
 int sp_ecc_secret_gen_521_nb(sp_ecc_ctx_t* sp_ctx, const mp_int* priv,
     const ecc_point* pub, byte* out, word32* outLen, void* heap)
 {
@@ -128466,9 +129071,16 @@ int sp_ecc_secret_gen_521_nb(sp_ecc_ctx_t* sp_ctx, const mp_int* priv,
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 /* Right shift a by n bits into r. (r = a >> n)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * n  Integer representing number of bits to shift.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  n  Integer representing number of bits to shift.
+ */
+/* Shift number right by n bits.
+ * Bottom bits are lost.
+ *
+ * @param [out] r  Result of shift.
+ * @param [in]  a  Number to shift.
+ * @param [in]  n  Number of bits to shift.
  */
 WC_OMIT_FRAME_POINTER static void sp_521_rshift_17(sp_digit* r,
     const sp_digit* a, byte n)
@@ -128824,9 +129436,15 @@ WC_OMIT_FRAME_POINTER static void sp_521_rshift_17(sp_digit* r,
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 /* Lefy shift a by n bits into r. (r = a << n)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * n  Integer representing number of bits to shift.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  n  Integer representing number of bits to shift.
+ */
+/* Shift number left by n bits.
+ *
+ * @param [out] r  Result of shift.
+ * @param [in]  a  Number to shift.
+ * @param [in]  n  Number of bits to shift.
  */
 WC_OMIT_FRAME_POINTER static void sp_521_lshift_17(sp_digit* r,
     const sp_digit* a, byte n)
@@ -129249,9 +129867,15 @@ WC_OMIT_FRAME_POINTER static void sp_521_lshift_17(sp_digit* r,
 
 /* Lefy shift a by n bits into r. (r = a << n)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * n  Integer representing number of bits to shift.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  n  Integer representing number of bits to shift.
+ */
+/* Shift number left by n bits.
+ *
+ * @param [out] r  Result of shift.
+ * @param [in]  a  Number to shift.
+ * @param [in]  n  Number of bits to shift.
  */
 WC_OMIT_FRAME_POINTER static void sp_521_lshift_34(sp_digit* r,
     const sp_digit* a, byte n)
@@ -130113,8 +130737,8 @@ WC_OMIT_FRAME_POINTER static void sp_521_lshift_34(sp_digit* r,
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_sub_in_place_17(
     sp_digit* a, const sp_digit* b)
@@ -130186,8 +130810,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_sub_in_place_17(
 #else
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_sub_in_place_17(
     sp_digit* a, const sp_digit* b)
@@ -130363,9 +130987,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_sub_in_place_17(
 #endif /* WOLFSSL_SP_SMALL */
 /* Mul a by digit b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision digit.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mul_d_17(sp_digit* r,
     const sp_digit* a, sp_digit b)
@@ -130550,10 +131174,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_521_mul_d_17(sp_digit* r,
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * d1   The high order half of the number to divide.
- * d0   The low order half of the number to divide.
- * div  The divisor.
- * returns the result of the division.
+ * @param [in] d1   The high order half of the number to divide.
+ * @param [in] d0   The low order half of the number to divide.
+ * @param [in] div  The divisor.
+ *
+ * @return  The result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
@@ -131167,9 +131792,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_521_word_17(sp_digit d1,
 
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_521_mask_17(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -131199,11 +131824,12 @@ static void sp_521_mask_17(sp_digit* r, const sp_digit* a, sp_digit m)
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
- * a  Number to be divided.
- * d  Number to divide with.
- * m  Multiplier result.
- * r  Remainder from the division.
- * returns MP_OKAY indicating success.
+ * @param [in]  a  Number to be divided.
+ * @param [in]  d  Number to divide with.
+ * @param [in]  m  Multiplier result.
+ * @param [out] r  Remainder from the division.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_521_div_17(const sp_digit* a, const sp_digit* d,
         sp_digit* m, sp_digit* r)
@@ -131245,10 +131871,11 @@ static WC_INLINE int sp_521_div_17(const sp_digit* a, const sp_digit* d,
 
 /* Reduce a modulo m into r. (r = a mod m)
  *
- * r  A single precision number that is the reduced result.
- * a  A single precision number that is to be reduced.
- * m  A single precision number that is the modulus to reduce with.
- * returns MP_OKAY indicating success.
+ * @param [out] r  A single precision number that is the reduced result.
+ * @param [in]  a  A single precision number that is to be reduced.
+ * @param [in]  m  A single precision number that is the modulus to reduce with.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_521_mod_17(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -131261,9 +131888,9 @@ static WC_INLINE int sp_521_mod_17(sp_digit* r, const sp_digit* a, const sp_digi
 #if defined(HAVE_ECC_SIGN) || defined(HAVE_ECC_VERIFY)
 /* Multiply two number mod the order of P521 curve. (r = a * b mod order)
  *
- * r  Result of the multiplication.
- * a  First operand of the multiplication.
- * b  Second operand of the multiplication.
+ * @param [out] r  Result of the multiplication.
+ * @param [in]  a  First operand of the multiplication.
+ * @param [in]  b  Second operand of the multiplication.
  */
 static void sp_521_mont_mul_order_17(sp_digit* r, const sp_digit* a, const sp_digit* b)
 {
@@ -131289,8 +131916,8 @@ static const word32 p521_order_low[9] = {
 
 /* Square number mod the order of P521 curve. (r = a * a mod order)
  *
- * r  Result of the squaring.
- * a  Number to square.
+ * @param [out] r  Result of the squaring.
+ * @param [in]  a  Number to square.
  */
 static void sp_521_mont_sqr_order_17(sp_digit* r, const sp_digit* a)
 {
@@ -131302,8 +131929,9 @@ static void sp_521_mont_sqr_order_17(sp_digit* r, const sp_digit* a)
 /* Square number mod the order of P521 curve a number of times.
  * (r = a ^ n mod order)
  *
- * r  Result of the squaring.
- * a  Number to square.
+ * @param [out] r  Result of the squaring.
+ * @param [in]  a  Number to square.
+ * @param [in]  n  Number of times to square.
  */
 static void sp_521_mont_sqr_n_order_17(sp_digit* r, const sp_digit* a, int n)
 {
@@ -131316,19 +131944,24 @@ static void sp_521_mont_sqr_n_order_17(sp_digit* r, const sp_digit* a, int n)
 }
 #endif /* !WOLFSSL_SP_SMALL */
 
+#ifdef WOLFSSL_SP_NONBLOCK
+/* Context of non-blocking modular inversion with Montgomery form number. */
+typedef struct sp_521_mont_inv_order_17_ctx {
+    int state;    /* State of next operation. */
+    int i;        /* Index of bit in order. */
+} sp_521_mont_inv_order_17_ctx;
+
 /* Invert the number, in Montgomery form, modulo the order of the P521 curve.
  * (r = 1 / a mod order)
  *
- * r   Inverse result.
- * a   Number to invert.
- * td  Temporary data.
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [out]     r       Inverse result.
+ * @param [in]      a       Number to invert.
+ * @param [out]     t       Temporary data.
  */
-
-#ifdef WOLFSSL_SP_NONBLOCK
-typedef struct sp_521_mont_inv_order_17_ctx {
-    int state;
-    int i;
-} sp_521_mont_inv_order_17_ctx;
 static int sp_521_mont_inv_order_17_nb(sp_ecc_ctx_t* sp_ctx, sp_digit* r, const sp_digit* a,
         sp_digit* t)
 {
@@ -131364,6 +131997,13 @@ static int sp_521_mont_inv_order_17_nb(sp_ecc_ctx_t* sp_ctx, sp_digit* r, const 
 }
 #endif /* WOLFSSL_SP_NONBLOCK */
 
+/* Invert the number, in Montgomery form, modulo the order of the P521 curve.
+ * (r = 1 / a mod order)
+ *
+ * @param [out] r   Inverse result.
+ * @param [in]  a   Number to invert.
+ * @param [out] td  Temporary data.
+ */
 static void sp_521_mont_inv_order_17(sp_digit* r, const sp_digit* a,
         sp_digit* td)
 {
@@ -131452,13 +132092,15 @@ static void sp_521_mont_inv_order_17(sp_digit* r, const sp_digit* a,
  *
  * s = (r * x + e) / k
  *
- * s    Signature value.
- * r    First signature value.
- * k    Ephemeral private key.
- * x    Private key as a number.
- * e    Hash of message as a number.
- * tmp  Temporary storage for intermediate numbers.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] s    Signature value.
+ * @param [in]  r    First signature value.
+ * @param [in]  k    Ephemeral private key.
+ * @param [in]  x    Private key as a number.
+ * @param [in]  e    Hash of message as a number.
+ * @param [out] tmp  Temporary storage for intermediate numbers.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_521_calc_s_17(sp_digit* s, const sp_digit* r, sp_digit* k,
     sp_digit* x, const sp_digit* e, sp_digit* tmp)
@@ -131506,15 +132148,18 @@ static int sp_521_calc_s_17(sp_digit* s, const sp_digit* r, sp_digit* k,
  *   s = (r * x + e) / k mod order
  * The hash is truncated to the first 521 bits.
  *
- * hash     Hash to sign.
- * hashLen  Length of the hash data.
- * rng      Random number generator.
- * priv     Private part of key - scalar.
- * rm       First part of result as an mp_int.
- * sm       Sirst part of result as an mp_int.
- * heap     Heap to use for allocation.
- * returns RNG failures, MEMORY_E when memory allocation fails and
- * MP_OKAY on success.
+ * @param [in]      hash     Hash to sign.
+ * @param [in]      hashLen  Length of the hash data.
+ * @param [in]      rng      Random number generator.
+ * @param [in]      priv     Private part of key - scalar.
+ * @param [out]     rm       First part of result as an mp_int.
+ * @param [out]     sm       Second part of result as an mp_int.
+ * @param [in, out] km       Ephemeral key as an mp_int.
+ * @param [in]      heap     Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_sign_521(const byte* hash, word32 hashLen, WC_RNG* rng,
     const mp_int* priv, mp_int* rm, mp_int* sm, mp_int* km, void* heap)
@@ -131627,6 +132272,30 @@ typedef struct sp_ecc_sign_521_ctx {
     int i;
 } sp_ecc_sign_521_ctx;
 
+/* Sign the hash using the private key.
+ *   e = [hash, 521 bits] from binary
+ *   r = (k.G)->x mod order
+ *   s = (r * x + e) / k mod order
+ * The hash is truncated to the first 521 bits.
+ *
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx   Context to save state in for non-blocking calls.
+ * @param [in]      hash     Hash to sign.
+ * @param [in]      hashLen  Length of the hash data.
+ * @param [in]      rng      Random number generator.
+ * @param [in]      priv     Private part of key - scalar.
+ * @param [out]     rm       First part of result as an mp_int.
+ * @param [out]     sm       Second part of result as an mp_int.
+ * @param [in, out] km       Ephemeral key as an mp_int.
+ * @param [in]      heap     Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  FP_WOULDBLOCK while more work remains.
+ * @return  RNG failures.
+ * @return  MEMORY_E when memory allocation fails.
+ */
 int sp_ecc_sign_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, WC_RNG* rng,
     mp_int* priv, mp_int* rm, mp_int* sm, mp_int* km, void* heap)
 {
@@ -131780,9 +132449,9 @@ int sp_ecc_sign_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash, word32 hashLen, W
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_sub_17(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -131849,9 +132518,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_sub_17(sp_digit* r,
 #else
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_sub_17(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -132019,9 +132688,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_521_sub_17(sp_digit* r,
 #endif /* WOLFSSL_SP_SMALL */
 /* Divide the number by 2 mod the modulus. (r = a / 2 % m)
  *
- * r  Result of division by 2.
- * a  Number to divide.
- * m  Modulus.
+ * @param [out] r  Result of division by 2.
+ * @param [in]  a  Number to divide.
+ * @param [in]  m  Modulus.
  */
 WC_OMIT_FRAME_POINTER static void sp_521_div2_mod_17(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -132579,6 +133248,12 @@ WC_OMIT_FRAME_POINTER static void sp_521_div2_mod_17(sp_digit* r,
     );
 }
 
+/* Get the number of bits in the number.
+ *
+ * @param [in] a  Number to count bits in.
+ *
+ * @return  The number of bits.
+ */
 WC_OMIT_FRAME_POINTER static int sp_521_num_bits_17(sp_digit* a)
 {
 
@@ -134352,9 +135027,10 @@ WC_OMIT_FRAME_POINTER static int sp_521_num_bits_17(sp_digit* a)
 
 /* Non-constant time modular inversion.
  *
- * @param  [out]  r   Resulting number.
- * @param  [in]   a   Number to invert.
- * @param  [in]   m   Modulus.
+ * @param [out] r  Resulting number.
+ * @param [in]  a  Number to invert.
+ * @param [in]  m  Modulus.
+ *
  * @return  MP_OKAY on success.
  */
 static int sp_521_mod_inv_17(sp_digit* r, const sp_digit* a, const sp_digit* m)
@@ -134436,9 +135112,9 @@ static int sp_521_mod_inv_17(sp_digit* r, const sp_digit* a, const sp_digit* m)
 
 /* Add point p1 into point p2. Handles p1 == p2 and result at infinity.
  *
- * p1   First point to add and holds result.
- * p2   Second point to add.
- * tmp  Temporary storage for intermediate numbers.
+ * @param [in, out] p1   First point to add and holds result.
+ * @param [in]      p2   Second point to add.
+ * @param [out]     tmp  Temporary storage for intermediate numbers.
  */
 static void sp_521_add_points_17(sp_point_521* p1, const sp_point_521* p2,
     sp_digit* tmp)
@@ -134475,13 +135151,16 @@ static void sp_521_add_points_17(sp_point_521* p1, const sp_point_521* p2,
 
 /* Calculate the verification point: [e/s]G + [r/s]Q
  *
- * p1    Calculated point.
- * p2    Public point and temporary.
- * s     Second part of signature as a number.
- * u1    Temporary number.
- * u2    Temporary number.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out]     p1    Calculated point.
+ * @param [in, out] p2    Public point and temporary.
+ * @param [in]      s     Second part of signature as a number.
+ * @param [out]     u1    Temporary number.
+ * @param [out]     u2    Temporary number.
+ * @param [out]     tmp   Temporary number.
+ * @param [in]      heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_521_calc_vfy_point_17(sp_point_521* p1, sp_point_521* p2,
     sp_digit* s, sp_digit* u1, sp_digit* u2, sp_digit* tmp, void* heap)
@@ -134542,14 +135221,18 @@ static int sp_521_calc_vfy_point_17(sp_point_521* p1, sp_point_521* p2,
  *   (r + n*order).z'.z' mod prime == (u1.G + u2.Q)->x'
  * The hash is truncated to the first 521 bits.
  *
- * hash     Hash to sign.
- * hashLen  Length of the hash data.
- * rng      Random number generator.
- * priv     Private part of key - scalar.
- * rm       First part of result as an mp_int.
- * sm       Sirst part of result as an mp_int.
- * heap     Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  hash     Hash to verify.
+ * @param [in]  hashLen  Length of the hash data.
+ * @param [in]  pX       X ordinate of public point.
+ * @param [in]  pY       Y ordinate of public point.
+ * @param [in]  pZ       Z ordinate of public point.
+ * @param [in]  rm       First part of signature as an mp_int.
+ * @param [in]  sm       Second part of signature as an mp_int.
+ * @param [out] res      Result of the verification: 1 == valid, 0 == invalid.
+ * @param [in]  heap     Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_verify_521(const byte* hash, word32 hashLen, const mp_int* pX,
     const mp_int* pY, const mp_int* pZ, const mp_int* rm, const mp_int* sm,
@@ -134649,6 +135332,32 @@ typedef struct sp_ecc_verify_521_ctx {
     sp_point_521 p2;
 } sp_ecc_verify_521_ctx;
 
+/* Verify the signature values with the hash and public key.
+ *   e = Truncate(hash, 521)
+ *   u1 = e/s mod order
+ *   u2 = r/s mod order
+ *   r == (u1.G + u2.Q)->x mod order
+ * The hash is truncated to the first 521 bits.
+ *
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx   Context to save state in for non-blocking calls.
+ * @param [in]      hash     Hash to verify.
+ * @param [in]      hashLen  Length of the hash data.
+ * @param [in]      pX       X ordinate of public point.
+ * @param [in]      pY       Y ordinate of public point.
+ * @param [in]      pZ       Z ordinate of public point.
+ * @param [in]      rm       First part of signature as an mp_int.
+ * @param [in]      sm       Second part of signature as an mp_int.
+ * @param [out]     res      Result of the verification: 1 == valid,
+ *                           0 == invalid.
+ * @param [in]      heap     Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  FP_WOULDBLOCK while more work remains.
+ * @return  MEMORY_E when memory allocation fails.
+ */
 int sp_ecc_verify_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
     word32 hashLen, const mp_int* pX, const mp_int* pY, const mp_int* pZ,
     const mp_int* rm, const mp_int* sm, int* res, void* heap)
@@ -134788,10 +135497,12 @@ int sp_ecc_verify_521_nb(sp_ecc_ctx_t* sp_ctx, const byte* hash,
 
 /* Check that the x and y ordinates are a valid point on the curve.
  *
- * point  EC point.
- * heap   Heap to use if dynamically allocating.
- * returns MEMORY_E if dynamic memory allocation fails, MP_VAL if the point is
- * not on the curve and MP_OKAY otherwise.
+ * @param [in] point  EC point.
+ * @param [in] heap   Heap to use if dynamically allocating.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
+ * @return  MP_VAL when the point is not on the curve.
  */
 static int sp_521_ecc_is_point_17(const sp_point_521* point,
     void* heap)
@@ -134833,10 +135544,12 @@ static int sp_521_ecc_is_point_17(const sp_point_521* point,
 
 /* Check that the x and y ordinates are a valid point on the curve.
  *
- * pX  X ordinate of EC point.
- * pY  Y ordinate of EC point.
- * returns MEMORY_E if dynamic memory allocation fails, MP_VAL if the point is
- * not on the curve and MP_OKAY otherwise.
+ * @param [in] pX  X ordinate of EC point.
+ * @param [in] pY  Y ordinate of EC point.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
+ * @return  MP_VAL when the point is not on the curve.
  */
 int sp_ecc_is_point_521(const mp_int* pX, const mp_int* pY)
 {
@@ -134862,13 +135575,17 @@ int sp_ecc_is_point_521(const mp_int* pX, const mp_int* pY)
 /* Check that the private scalar generates the EC point (px, py), the point is
  * on the curve and the point has the correct order.
  *
- * pX     X ordinate of EC point.
- * pY     Y ordinate of EC point.
- * privm  Private scalar that generates EC point.
- * returns MEMORY_E if dynamic memory allocation fails, MP_VAL if the point is
- * not on the curve, ECC_INF_E if the point does not have the correct order,
- * ECC_PRIV_KEY_E when the private scalar doesn't generate the EC point and
- * MP_OKAY otherwise.
+ * @param [in] pX     X ordinate of EC point.
+ * @param [in] pY     Y ordinate of EC point.
+ * @param [in] privm  Private scalar that generates EC point.
+ * @param [in] heap   Heap to use for allocation.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
+ * @return  MP_VAL when the point is not on the curve.
+ * @return  ECC_INF_E when the point does not have the correct order.
+ * @return  ECC_PRIV_KEY_E when the private scalar doesn't generate the EC
+ *          point.
  */
 int sp_ecc_check_key_521(const mp_int* pX, const mp_int* pY,
     const mp_int* privm, void* heap)
@@ -134952,16 +135669,18 @@ int sp_ecc_check_key_521(const mp_int* pX, const mp_int* pY,
 /* Add two projective EC points together.
  * (pX, pY, pZ) + (qX, qY, qZ) = (rX, rY, rZ)
  *
- * pX   First EC point's X ordinate.
- * pY   First EC point's Y ordinate.
- * pZ   First EC point's Z ordinate.
- * qX   Second EC point's X ordinate.
- * qY   Second EC point's Y ordinate.
- * qZ   Second EC point's Z ordinate.
- * rX   Resultant EC point's X ordinate.
- * rY   Resultant EC point's Y ordinate.
- * rZ   Resultant EC point's Z ordinate.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in]  pX  First EC point's X ordinate.
+ * @param [in]  pY  First EC point's Y ordinate.
+ * @param [in]  pZ  First EC point's Z ordinate.
+ * @param [in]  qX  Second EC point's X ordinate.
+ * @param [in]  qY  Second EC point's Y ordinate.
+ * @param [in]  qZ  Second EC point's Z ordinate.
+ * @param [out] rX  Resultant EC point's X ordinate.
+ * @param [out] rY  Resultant EC point's Y ordinate.
+ * @param [out] rZ  Resultant EC point's Z ordinate.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_ecc_proj_add_point_521(mp_int* pX, mp_int* pY, mp_int* pZ,
                               mp_int* qX, mp_int* qY, mp_int* qZ,
@@ -135010,13 +135729,15 @@ int sp_ecc_proj_add_point_521(mp_int* pX, mp_int* pY, mp_int* pZ,
 /* Double a projective EC point.
  * (pX, pY, pZ) + (pX, pY, pZ) = (rX, rY, rZ)
  *
- * pX   EC point's X ordinate.
- * pY   EC point's Y ordinate.
- * pZ   EC point's Z ordinate.
- * rX   Resultant EC point's X ordinate.
- * rY   Resultant EC point's Y ordinate.
- * rZ   Resultant EC point's Z ordinate.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in]  pX  EC point's X ordinate.
+ * @param [in]  pY  EC point's Y ordinate.
+ * @param [in]  pZ  EC point's Z ordinate.
+ * @param [out] rX  Resultant EC point's X ordinate.
+ * @param [out] rY  Resultant EC point's Y ordinate.
+ * @param [out] rZ  Resultant EC point's Z ordinate.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_ecc_proj_dbl_point_521(mp_int* pX, mp_int* pY, mp_int* pZ,
                               mp_int* rX, mp_int* rY, mp_int* rZ)
@@ -135056,10 +135777,12 @@ int sp_ecc_proj_dbl_point_521(mp_int* pX, mp_int* pY, mp_int* pZ,
 /* Map a projective EC point to affine in place.
  * pZ will be one.
  *
- * pX   EC point's X ordinate.
- * pY   EC point's Y ordinate.
- * pZ   EC point's Z ordinate.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in] pX  EC point's X ordinate.
+ * @param [in] pY  EC point's Y ordinate.
+ * @param [in] pZ  EC point's Z ordinate.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_ecc_map_521(mp_int* pX, mp_int* pY, mp_int* pZ)
 {
@@ -135106,8 +135829,10 @@ static const word32 p521_sqrt_power[17] = {
 
 /* Find the square root of a number mod the prime of the curve.
  *
- * y  The number to operate on and the result.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in, out] y  The number to operate on and the result.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 static int sp_521_mont_sqrt_17(sp_digit* y)
 {
@@ -135138,10 +135863,12 @@ static int sp_521_mont_sqrt_17(sp_digit* y)
 
 /* Uncompress the point given the X ordinate.
  *
- * xm    X ordinate.
- * odd   Whether the Y ordinate is odd.
- * ym    Calculated Y ordinate.
- * returns MEMORY_E if dynamic memory allocation fails and MP_OKAY otherwise.
+ * @param [in]  xm   X ordinate.
+ * @param [in]  odd  Whether the Y ordinate is odd.
+ * @param [out] ym   Calculated Y ordinate.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 int sp_ecc_uncompress_521(mp_int* xm, int odd, mp_int* ym)
 {
@@ -135209,9 +135936,9 @@ typedef struct sp_point_1024 {
 #ifndef WOLFSSL_SP_LARGE_CODE
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mul_16(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -135457,9 +136184,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mul_16(sp_digit* r,
 #else
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mul_16(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -171345,8 +172072,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mul_16(sp_digit* r,
 #ifndef WOLFSSL_SP_LARGE_CODE
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_sqr_16(sp_digit* r,
     const sp_digit* a)
@@ -171772,8 +172499,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_sqr_16(sp_digit* r,
 #else
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_sqr_16(sp_digit* r,
     const sp_digit* a)
@@ -198130,9 +198857,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_sqr_16(sp_digit* r,
 #endif /* !WOLFSSL_SP_LARGE_CODE */
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_add_16(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -198290,9 +199017,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_add_16(sp_digit* r,
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_add_word_16(
     sp_digit* r, const sp_digit* a, sp_digit b)
@@ -198443,8 +199170,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_add_word_16(
 
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_sub_in_place_32(
     sp_digit* a, const sp_digit* b)
@@ -198753,9 +199480,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_sub_in_place_32(
 
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_add_32(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -199049,9 +199776,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_add_32(sp_digit* r,
 
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_1024_mask_16(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -199079,9 +199806,9 @@ static void sp_1024_mask_16(sp_digit* r, const sp_digit* a, sp_digit m)
 
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 SP_NOINLINE static void sp_1024_mul_32(sp_digit* r, const sp_digit* a,
         const sp_digit* b)
@@ -199116,9 +199843,9 @@ SP_NOINLINE static void sp_1024_mul_32(sp_digit* r, const sp_digit* a,
 
 /* Sub b from a into r. (r = a - b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_sub_16(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -199275,8 +200002,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_sub_16(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 SP_NOINLINE static void sp_1024_sqr_32(sp_digit* r, const sp_digit* a)
 {
@@ -199311,9 +200038,9 @@ SP_NOINLINE static void sp_1024_sqr_32(sp_digit* r, const sp_digit* a)
 #else
 /* Multiply a and b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mul_32(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -199558,8 +200285,8 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mul_32(sp_digit* r,
 
 /* Square a and put result in r. (r = a * a)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_sqr_32(sp_digit* r,
     const sp_digit* a)
@@ -200081,8 +200808,8 @@ static const sp_point_1024 p1024_base = {
 #ifdef WOLFSSL_SP_SMALL
 /* Sub b from a into a. (a -= b)
  *
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_sub_in_place_32(
     sp_digit* a, const sp_digit* b)
@@ -200155,10 +200882,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_sub_in_place_32(
 /* Conditionally subtract b from a using the mask m.
  * m is -1 to subtract and 0 when not copying.
  *
- * r  A single precision number representing condition subtract result.
- * a  A single precision number to subtract from.
- * b  A single precision number to subtract.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing condition subtract
+ *                 result.
+ * @param [in]  a  A single precision number to subtract from.
+ * @param [in]  b  A single precision number to subtract.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_cond_sub_32(
     sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -200219,9 +200947,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_cond_sub_32(
 #ifdef WOLFSSL_SP_SMALL
 /* Add b to a into r. (r = a + b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision integer.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_add_32(sp_digit* r,
     const sp_digit* a, const sp_digit* b)
@@ -200294,9 +201022,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_add_32(sp_digit* r,
 #endif /* WOLFSSL_SP_SMALL */
 /* Mul a by digit b into r. (r = a * b)
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * b  A single precision digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  b  A single precision digit.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mul_d_32(sp_digit* r,
     const sp_digit* a, sp_digit b)
@@ -200481,10 +201209,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mul_d_32(sp_digit* r,
 
 /* Divide the double width number (d1|d0) by the divisor. (d1|d0 / div)
  *
- * d1   The high order half of the number to divide.
- * d0   The low order half of the number to divide.
- * div  The divisor.
- * returns the result of the division.
+ * @param [in] d1   The high order half of the number to divide.
+ * @param [in] d0   The low order half of the number to divide.
+ * @param [in] div  The divisor.
+ *
+ * @return  The result of the division.
  *
  * Note that this is an approximate div. It may give an answer 1 larger.
  */
@@ -201098,9 +201827,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit div_1024_word_32(sp_digit d1,
 
 /* AND m into each word of a and store in r.
  *
- * r  A single precision integer.
- * a  A single precision integer.
- * m  Mask to AND against each digit.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [in]  m  Mask to AND against each digit.
  */
 static void sp_1024_mask_32(sp_digit* r, const sp_digit* a, sp_digit m)
 {
@@ -201128,10 +201857,11 @@ static void sp_1024_mask_32(sp_digit* r, const sp_digit* a, sp_digit m)
 
 /* Compare a with b in constant time.
  *
- * a  A single precision integer.
- * b  A single precision integer.
- * return -ve, 0 or +ve if a is less than, equal to or greater than b
- * respectively.
+ * @param [in] a  A single precision integer.
+ * @param [in] b  A single precision integer.
+ *
+ * @return  -ve, 0 or +ve if a is less than, equal to or greater than b
+ *          respectively.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_1024_cmp_32(
     const sp_digit* a, const sp_digit* b)
@@ -201240,11 +201970,12 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_int32 sp_1024_cmp_32(
 /* Divide d in a and put remainder into r (m*d + r = a)
  * m is not calculated as it is not needed at this time.
  *
- * a  Number to be divided.
- * d  Number to divide with.
- * m  Multiplier result.
- * r  Remainder from the division.
- * returns MP_OKAY indicating success.
+ * @param [in]  a  Number to be divided.
+ * @param [in]  d  Number to divide with.
+ * @param [in]  m  Multiplier result.
+ * @param [out] r  Remainder from the division.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_1024_div_32(const sp_digit* a, const sp_digit* d,
         sp_digit* m, sp_digit* r)
@@ -201282,10 +202013,11 @@ static WC_INLINE int sp_1024_div_32(const sp_digit* a, const sp_digit* d,
 
 /* Reduce a modulo m into r. (r = a mod m)
  *
- * r  A single precision number that is the reduced result.
- * a  A single precision number that is to be reduced.
- * m  A single precision number that is the modulus to reduce with.
- * returns MP_OKAY indicating success.
+ * @param [out] r  A single precision number that is the reduced result.
+ * @param [in]  a  A single precision number that is to be reduced.
+ * @param [in]  m  A single precision number that is the modulus to reduce with.
+ *
+ * @return  MP_OKAY indicating success.
  */
 static WC_INLINE int sp_1024_mod_32(sp_digit* r, const sp_digit* a, const sp_digit* m)
 {
@@ -201296,10 +202028,12 @@ static WC_INLINE int sp_1024_mod_32(sp_digit* r, const sp_digit* a, const sp_dig
 
 /* Multiply a number by Montgomery normalizer mod modulus (prime).
  *
- * r  The resulting Montgomery form number.
- * a  The number to convert.
- * m  The modulus (prime).
- * returns MEMORY_E when memory allocation fails and MP_OKAY otherwise.
+ * @param [out] r  The resulting Montgomery form number.
+ * @param [in]  a  The number to convert.
+ * @param [in]  m  The modulus (prime).
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_1024_mod_mul_norm_32(sp_digit* r, const sp_digit* a,
         const sp_digit* m)
@@ -201312,10 +202046,12 @@ static int sp_1024_mod_mul_norm_32(sp_digit* r, const sp_digit* a,
 #ifdef WOLFCRYPT_HAVE_SAKKE
 /* Create a new point.
  *
- * heap  [in]   Buffer to allocate dynamic memory from.
- * sp    [in]   Data for point - only if not allocating.
- * p     [out]  New point.
- * returns MEMORY_E when dynamic memory allocation fails and 0 otherwise.
+ * @param [in]  heap  Buffer to allocate dynamic memory from.
+ * @param [in]  sp    Data for point - only if not allocating.
+ * @param [out] p     New point.
+ *
+ * @return  0 otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
  */
 static int sp_1024_point_new_ex_32(void* heap, sp_point_1024* sp,
     sp_point_1024** p)
@@ -201347,9 +202083,9 @@ static int sp_1024_point_new_ex_32(void* heap, sp_point_1024* sp,
 #ifdef WOLFCRYPT_HAVE_SAKKE
 /* Free the point.
  *
- * p      [in,out]  Point to free.
- * clear  [in]      Indicates whether to zeroize point.
- * heap   [in]      Buffer from which dynamic memory was allocate from.
+ * @param [in, out] p      Point to free.
+ * @param [in]      clear  Indicates whether to zeroize point.
+ * @param [in]      heap   Buffer from which dynamic memory was allocate from.
  */
 static void sp_1024_point_free_32(sp_point_1024* p, int clear, void* heap)
 {
@@ -201374,9 +202110,9 @@ static void sp_1024_point_free_32(sp_point_1024* p, int clear, void* heap)
 
 /* Convert an mp_int to an array of sp_digit.
  *
- * r  A single precision integer.
- * size  Maximum number of bytes to convert
- * a  A multi-precision integer.
+ * @param [out] r     A single precision integer.
+ * @param [in]  size  Maximum number of bytes to convert
+ * @param [in]  a     A multi-precision integer.
  */
 static void sp_1024_from_mp(sp_digit* r, int size, const mp_int* a)
 {
@@ -201462,8 +202198,8 @@ static void sp_1024_from_mp(sp_digit* r, int size, const mp_int* a)
 
 /* Convert a point of type ecc_point to type sp_point_1024.
  *
- * p   Point of type sp_point_1024 (result).
- * pm  Point of type ecc_point.
+ * @param [out] p   Point of type sp_point_1024 (result).
+ * @param [in]  pm  Point of type ecc_point.
  */
 static void sp_1024_point_from_ecc_point_32(sp_point_1024* p,
         const ecc_point* pm)
@@ -201479,8 +202215,8 @@ static void sp_1024_point_from_ecc_point_32(sp_point_1024* p,
 
 /* Convert an array of sp_digit to an mp_int.
  *
- * a  A single precision integer.
- * r  A multi-precision integer.
+ * @param [in]  a  A single precision integer.
+ * @param [out] r  A multi-precision integer.
  */
 static int sp_1024_to_mp(const sp_digit* a, mp_int* r)
 {
@@ -201547,10 +202283,11 @@ static int sp_1024_to_mp(const sp_digit* a, mp_int* r)
 
 /* Convert a point of type sp_point_1024 to type ecc_point.
  *
- * p   Point of type sp_point_1024.
- * pm  Point of type ecc_point (result).
- * returns MEMORY_E when allocation of memory in ecc_point fails otherwise
- * MP_OKAY.
+ * @param [in] p   Point of type sp_point_1024.
+ * @param [in] pm  Point of type ecc_point (result).
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when allocation of memory in ecc_point fails.
  */
 static int sp_1024_point_to_ecc_point_32(const sp_point_1024* p, ecc_point* pm)
 {
@@ -201570,9 +202307,10 @@ static int sp_1024_point_to_ecc_point_32(const sp_point_1024* p, ecc_point* pm)
 #define sp_1024_mont_reduce_order_32   sp_1024_mont_reduce_32
 /* Reduce the number back to 1024 bits using Montgomery reduction.
  *
- * a   A single precision number to reduce in place.
- * m   The single precision number representing the modulus.
- * mp  The digit representing the negative inverse of m mod 2^n.
+ * @param [in, out] a   A single precision number to reduce in place.
+ * @param [in]      m   The single precision number representing the modulus.
+ * @param [in]      mp  The digit representing the negative inverse of
+ *                      m mod 2^n.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_reduce_32(
     sp_digit* a, const sp_digit* m, sp_digit mp)
@@ -202659,11 +203397,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_reduce_32(
 /* Multiply two Montgomery form numbers mod the modulus (prime).
  * (r = a * b mod m)
  *
- * r   Result of multiplication.
- * a   First number to multiply in Montgomery form.
- * b   Second number to multiply in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of multiplication.
+ * @param [in]  a   First number to multiply in Montgomery form.
+ * @param [in]  b   Second number to multiply in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_1024_mont_mul_32(sp_digit* r, const sp_digit* a,
         const sp_digit* b, const sp_digit* m, sp_digit mp)
@@ -202674,10 +203412,10 @@ SP_NOINLINE static void sp_1024_mont_mul_32(sp_digit* r, const sp_digit* a,
 
 /* Square the Montgomery form number. (r = a * a mod m)
  *
- * r   Result of squaring.
- * a   Number to square in Montgomery form.
- * m   Modulus (prime).
- * mp  Montgomery multiplier.
+ * @param [out] r   Result of squaring.
+ * @param [in]  a   Number to square in Montgomery form.
+ * @param [in]  m   Modulus (prime).
+ * @param [in]  mp  Montgomery multiplier.
  */
 SP_NOINLINE static void sp_1024_mont_sqr_32(sp_digit* r, const sp_digit* a,
         const sp_digit* m, sp_digit mp)
@@ -202712,9 +203450,9 @@ static const word8 p1024_mod_minus_2[] = {
 /* Invert the number, in Montgomery form, modulo the modulus (prime) of the
  * P1024 curve. (r = 1 / a mod m)
  *
- * r   Inverse result.
- * a   Number to invert.
- * td  Temporary data.
+ * @param [out] r   Inverse result.
+ * @param [in]  a   Number to invert.
+ * @param [out] td  Temporary data.
  */
 static void sp_1024_mont_inv_32(sp_digit* r, const sp_digit* a,
         sp_digit* td)
@@ -202749,15 +203487,15 @@ static void sp_1024_mont_inv_32(sp_digit* r, const sp_digit* a,
 
 /* Normalize the values in each word to 32.
  *
- * a  Array of sp_digit to normalize.
+ * @param [in] a  Array of sp_digit to normalize.
  */
 #define sp_1024_norm_32(a)
 
 /* Map the Montgomery form projective coordinate point to an affine point.
  *
- * r  Resulting affine coordinate point.
- * p  Montgomery form projective coordinate point.
- * t  Temporary ordinate data.
+ * @param [out] r  Resulting affine coordinate point.
+ * @param [in]  p  Montgomery form projective coordinate point.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_1024_map_32(sp_point_1024* r, const sp_point_1024* p,
     sp_digit* t)
@@ -202795,10 +203533,10 @@ static void sp_1024_map_32(sp_point_1024* r, const sp_point_1024* p,
 
 /* Add two Montgomery form numbers (r = a + b % m).
  *
- * r   Result of addition.
- * a   First number to add in Montgomery form.
- * b   Second number to add in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of addition.
+ * @param [in]  a  First number to add in Montgomery form.
+ * @param [in]  b  Second number to add in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_add_32(sp_digit* r,
     const sp_digit* a, const sp_digit* b, const sp_digit* m)
@@ -203706,9 +204444,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_add_32(sp_digit* r,
 
 /* Double a Montgomery form number (r = a + a % m).
  *
- * r   Result of doubling.
- * a   Number to double in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of doubling.
+ * @param [in]  a  Number to double in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_dbl_32(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -204584,9 +205322,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_dbl_32(sp_digit* r,
 
 /* Triple a Montgomery form number (r = a + a + a % m).
  *
- * r   Result of Tripling.
- * a   Number to triple in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of Tripling.
+ * @param [in]  a  Number to triple in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_tpl_32(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -206355,10 +207093,10 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_tpl_32(sp_digit* r,
 
 /* Subtract two Montgomery form numbers (r = a - b % m).
  *
- * r   Result of subtration.
- * a   Number to subtract from in Montgomery form.
- * b   Number to subtract with in Montgomery form.
- * m   Modulus (prime).
+ * @param [out] r  Result of subtration.
+ * @param [in]  a  Number to subtract from in Montgomery form.
+ * @param [in]  b  Number to subtract with in Montgomery form.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_sub_32(sp_digit* r,
     const sp_digit* a, const sp_digit* b, const sp_digit* m)
@@ -207791,10 +208529,11 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_sub_32(sp_digit* r,
 /* Conditionally add a and b using the mask m.
  * m is -1 to add and 0 when not.
  *
- * r  A single precision number representing conditional add result.
- * a  A single precision number to add with.
- * b  A single precision number to add.
- * m  Mask value to apply.
+ * @param [out] r  A single precision number representing conditional add
+ *                 result.
+ * @param [in]  a  A single precision number to add with.
+ * @param [in]  b  A single precision number to add.
+ * @param [in]  m  Mask value to apply.
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_cond_add_32(
     sp_digit* r, const sp_digit* a, const sp_digit* b, sp_digit m)
@@ -207860,8 +208599,14 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE sp_digit sp_1024_cond_add_32(
 
 /* Right shift a by 1 bit into r. (r = a >> 1)
  *
- * r  A single precision integer.
- * a  A single precision integer.
+ * @param [out] r  A single precision integer.
+ * @param [in]  a  A single precision integer.
+ */
+/* Shift number right one bit.
+ * Bottom bit is lost.
+ *
+ * @param [out] r  Result of shift.
+ * @param [in]  a  Number to shift.
  */
 WC_OMIT_FRAME_POINTER static void sp_1024_rshift1_32(sp_digit* r,
     const sp_digit* a)
@@ -208472,9 +209217,9 @@ WC_OMIT_FRAME_POINTER static void sp_1024_rshift1_32(sp_digit* r,
 
 /* Divide the number by 2 mod the modulus (prime). (r = a / 2 % m)
  *
- * r  Result of division by 2.
- * a  Number to divide.
- * m  Modulus (prime).
+ * @param [out] r  Result of division by 2.
+ * @param [in]  a  Number to divide.
+ * @param [in]  m  Modulus (prime).
  */
 WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_div2_32(sp_digit* r,
     const sp_digit* a, const sp_digit* m)
@@ -208489,9 +209234,9 @@ WC_OMIT_FRAME_POINTER static SP_NOINLINE void sp_1024_mont_div2_32(sp_digit* r,
 
 /* Double the Montgomery form projective point p.
  *
- * r  Result of doubling point.
- * p  Point to double.
- * t  Temporary ordinate data.
+ * @param [out] r  Result of doubling point.
+ * @param [in]  p  Point to double.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_1024_proj_point_dbl_32(sp_point_1024* r, const sp_point_1024* p,
     sp_digit* t)
@@ -208560,9 +209305,13 @@ typedef struct sp_1024_proj_point_dbl_32_ctx {
 
 /* Double the Montgomery form projective point p.
  *
- * r  Result of doubling point.
- * p  Point to double.
- * t  Temporary ordinate data.
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [out]     r       Result of doubling point.
+ * @param [in]      p       Point to double.
+ * @param [out]     t       Temporary ordinate data.
  */
 static int sp_1024_proj_point_dbl_32_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
         const sp_point_1024* p, sp_digit* t)
@@ -208692,9 +209441,10 @@ static int sp_1024_proj_point_dbl_32_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
 /* Compare two numbers to determine if they are equal.
  * Constant time implementation.
  *
- * a  First number to compare.
- * b  Second number to compare.
- * returns 1 when equal and 0 otherwise.
+ * @param [in] a  First number to compare.
+ * @param [in] b  Second number to compare.
+ *
+ * @return  1 when equal and 0 otherwise.
  */
 static int sp_1024_cmp_equal_32(const sp_digit* a, const sp_digit* b)
 {
@@ -208714,8 +209464,9 @@ static int sp_1024_cmp_equal_32(const sp_digit* a, const sp_digit* b)
 /* Returns 1 if the number of zero.
  * Implementation is constant time.
  *
- * a  Number to check.
- * returns 1 if the number is zero and 0 otherwise.
+ * @param [in] a  Number to check.
+ *
+ * @return  1 when the number is zero and 0 otherwise.
  */
 static int sp_1024_iszero_32(const sp_digit* a)
 {
@@ -208728,10 +209479,10 @@ static int sp_1024_iszero_32(const sp_digit* a)
 
 /* Add two Montgomery form projective points.
  *
- * r  Result of addition.
- * p  First point to add.
- * q  Second point to add.
- * t  Temporary ordinate data.
+ * @param [out] r  Result of addition.
+ * @param [in]  p  First point to add.
+ * @param [in]  q  Second point to add.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_1024_proj_point_add_32(sp_point_1024* r,
         const sp_point_1024* p, const sp_point_1024* q, sp_digit* t)
@@ -208831,10 +209582,14 @@ typedef struct sp_1024_proj_point_add_32_ctx {
 
 /* Add two Montgomery form projective points.
  *
- * r  Result of addition.
- * p  First point to add.
- * q  Second point to add.
- * t  Temporary ordinate data.
+ * Non-blocking version.  Call repeatedly until it does not return
+ * FP_WOULDBLOCK.  State is saved and restored through sp_ctx.
+ *
+ * @param [in, out] sp_ctx  Context to save state in for non-blocking calls.
+ * @param [out]     r       Result of addition.
+ * @param [in]      p       First point to add.
+ * @param [in]      q       Second point to add.
+ * @param [out]     t       Temporary ordinate data.
  */
 static int sp_1024_proj_point_add_32_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
     const sp_point_1024* p, const sp_point_1024* q, sp_digit* t)
@@ -209025,13 +209780,15 @@ static int sp_1024_proj_point_add_32_nb(sp_ecc_ctx_t* sp_ctx, sp_point_1024* r,
  * 1024 doubles.
  * 268 adds.
  *
- * r     Resulting point.
- * g     Point to multiply.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  g     Point to multiply.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_1024_ecc_mulmod_fast_32(sp_point_1024* r, const sp_point_1024* g, const sp_digit* k,
         int map, int ct, void* heap)
@@ -209132,10 +209889,9 @@ static int sp_1024_ecc_mulmod_fast_32(sp_point_1024* r, const sp_point_1024* g, 
 #if defined(FP_ECC) || !defined(WOLFSSL_SP_SMALL)
 /* Double the Montgomery form projective point p a number of times.
  *
- * r  Result of repeated doubling of point.
- * p  Point to double.
- * n  Number of times to double
- * t  Temporary ordinate data.
+ * @param [in, out] p  Point to double and result.
+ * @param [in]      i  Number of times to double.
+ * @param [out]     t  Temporary ordinate data.
  */
 static void sp_1024_proj_point_dbl_n_32(sp_point_1024* p, int i,
     sp_digit* t)
@@ -209225,8 +209981,8 @@ static void sp_1024_proj_point_dbl_n_32(sp_point_1024* p, int i,
 /* Convert the projective point to affine.
  * Ordinates are in Montgomery form.
  *
- * a  Point to convert.
- * t  Temporary data.
+ * @param [in, out] a  Point to convert.
+ * @param [out]     t  Temporary data.
  */
 static void sp_1024_proj_to_affine_32(sp_point_1024* a, sp_digit* t)
 {
@@ -209257,10 +210013,10 @@ typedef struct sp_table_entry_1024 {
  * one.
  * Only the first point can be the same pointer as the result point.
  *
- * r  Result of addition.
- * p  First point to add.
- * q  Second point to add.
- * t  Temporary ordinate data.
+ * @param [out] r  Result of addition.
+ * @param [in]  p  First point to add.
+ * @param [in]  q  Second point to add.
+ * @param [out] t  Temporary ordinate data.
  */
 static void sp_1024_proj_point_add_qz1_32(sp_point_1024* r,
     const sp_point_1024* p, const sp_point_1024* q, sp_digit* t)
@@ -209342,10 +210098,10 @@ static void sp_1024_proj_point_add_qz1_32(sp_point_1024* r,
  * 16 entries
  * 256 bits between
  *
- * a      The base point.
- * table  Place to store generated point data.
- * tmp    Temporary data.
- * heap  Heap to use for allocation.
+ * @param [in]  a      The base point.
+ * @param [out] table  Place to store generated point data.
+ * @param [out] tmp    Temporary data.
+ * @param [in]  heap   Heap to use for allocation.
  */
 static int sp_1024_gen_stripe_table_32(const sp_point_1024* a,
         sp_table_entry_1024* table, sp_digit* tmp, void* heap)
@@ -209422,13 +210178,16 @@ static int sp_1024_gen_stripe_table_32(const sp_point_1024* a,
  * Pre-generated: products of all combinations of above.
  * 4 doubles and adds (with qz=1)
  *
- * r      Resulting point.
- * k      Scalar to multiply by.
- * table  Pre-computed table.
- * map    Indicates whether to convert result to affine.
- * ct     Constant time required.
- * heap   Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r      Resulting point.
+ * @param [in]  g      Point to multiply.
+ * @param [in]  table  Pre-computed table.
+ * @param [in]  k      Scalar to multiply by.
+ * @param [in]  map    Indicates whether to convert result to affine.
+ * @param [in]  ct     Constant time required.
+ * @param [in]  heap   Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_1024_ecc_mulmod_stripe_32(sp_point_1024* r, const sp_point_1024* g,
         const sp_table_entry_1024* table, const sp_digit* k, int map,
@@ -209530,8 +210289,8 @@ static THREAD_LS_T int sp_cache_1024_inited = 0;
 
 /* Get the cache entry for the point.
  *
- * g      [in]   Point scalar multiplying.
- * cache  [out]  Cache table to use.
+ * @param [in]  g      Point scalar multiplying.
+ * @param [out] cache  Cache table to use.
  */
 static void sp_ecc_get_cache_1024(const sp_point_1024* g, sp_cache_1024_t** cache)
 {
@@ -209594,13 +210353,15 @@ static void sp_ecc_get_cache_1024(const sp_point_1024* g, sp_cache_1024_t** cach
 /* Multiply the base point of P1024 by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * r     Resulting point.
- * g     Point to multiply.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  g     Point to multiply.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_1024_ecc_mulmod_32(sp_point_1024* r, const sp_point_1024* g,
         const sp_digit* k, int map, int ct, void* heap)
@@ -209680,10 +210441,10 @@ static int sp_1024_ecc_mulmod_32(sp_point_1024* r, const sp_point_1024* g,
  * 256 entries
  * 128 bits between
  *
- * a      The base point.
- * table  Place to store generated point data.
- * tmp    Temporary data.
- * heap  Heap to use for allocation.
+ * @param [in]  a      The base point.
+ * @param [out] table  Place to store generated point data.
+ * @param [out] tmp    Temporary data.
+ * @param [in]  heap   Heap to use for allocation.
  */
 static int sp_1024_gen_stripe_table_32(const sp_point_1024* a,
         sp_table_entry_1024* table, sp_digit* tmp, void* heap)
@@ -209760,13 +210521,16 @@ static int sp_1024_gen_stripe_table_32(const sp_point_1024* a,
  * Pre-generated: products of all combinations of above.
  * 8 doubles and adds (with qz=1)
  *
- * r      Resulting point.
- * k      Scalar to multiply by.
- * table  Pre-computed table.
- * map    Indicates whether to convert result to affine.
- * ct     Constant time required.
- * heap   Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r      Resulting point.
+ * @param [in]  g      Point to multiply.
+ * @param [in]  table  Pre-computed table.
+ * @param [in]  k      Scalar to multiply by.
+ * @param [in]  map    Indicates whether to convert result to affine.
+ * @param [in]  ct     Constant time required.
+ * @param [in]  heap   Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_1024_ecc_mulmod_stripe_32(sp_point_1024* r, const sp_point_1024* g,
         const sp_table_entry_1024* table, const sp_digit* k, int map,
@@ -209868,8 +210632,8 @@ static THREAD_LS_T int sp_cache_1024_inited = 0;
 
 /* Get the cache entry for the point.
  *
- * g      [in]   Point scalar multiplying.
- * cache  [out]  Cache table to use.
+ * @param [in]  g      Point scalar multiplying.
+ * @param [out] cache  Cache table to use.
  */
 static void sp_ecc_get_cache_1024(const sp_point_1024* g, sp_cache_1024_t** cache)
 {
@@ -209932,13 +210696,15 @@ static void sp_ecc_get_cache_1024(const sp_point_1024* g, sp_cache_1024_t** cach
 /* Multiply the base point of P1024 by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * r     Resulting point.
- * g     Point to multiply.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  g     Point to multiply.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_1024_ecc_mulmod_32(sp_point_1024* r, const sp_point_1024* g,
         const sp_digit* k, int map, int ct, void* heap)
@@ -210014,12 +210780,14 @@ static int sp_1024_ecc_mulmod_32(sp_point_1024* r, const sp_point_1024* g,
 /* Multiply the point by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * km    Scalar to multiply by.
- * p     Point to multiply.
- * r     Resulting point.
- * map   Indicates whether to convert result to affine.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km    Scalar to multiply by.
+ * @param [in]  gm    Point to multiply.
+ * @param [out] r     Resulting point.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_1024(const mp_int* km, const ecc_point* gm, ecc_point* r,
         int map, void* heap)
@@ -210264,12 +211032,14 @@ static const sp_table_entry_1024 p1024_table[16] = {
  * Pre-generated: products of all combinations of above.
  * 4 doubles and adds (with qz=1)
  *
- * r     Resulting point.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_1024_ecc_mulmod_base_32(sp_point_1024* r, const sp_digit* k,
         int map, int ct, void* heap)
@@ -213616,12 +214386,14 @@ static const sp_table_entry_1024 p1024_table[256] = {
  * Pre-generated: products of all combinations of above.
  * 8 doubles and adds (with qz=1)
  *
- * r     Resulting point.
- * k     Scalar to multiply by.
- * map   Indicates whether to convert result to affine.
- * ct    Constant time required.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [out] r     Resulting point.
+ * @param [in]  k     Scalar to multiply by.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  ct    Constant time required.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 static int sp_1024_ecc_mulmod_base_32(sp_point_1024* r, const sp_digit* k,
         int map, int ct, void* heap)
@@ -213635,11 +214407,13 @@ static int sp_1024_ecc_mulmod_base_32(sp_point_1024* r, const sp_digit* k,
 /* Multiply the base point of P1024 by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * km    Scalar to multiply by.
- * r     Resulting point.
- * map   Indicates whether to convert result to affine.
- * heap  Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km    Scalar to multiply by.
+ * @param [out] r     Resulting point.
+ * @param [in]  map   Indicates whether to convert result to affine.
+ * @param [in]  heap  Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_base_1024(const mp_int* km, ecc_point* r, int map, void* heap)
 {
@@ -213667,13 +214441,15 @@ int sp_ecc_mulmod_base_1024(const mp_int* km, ecc_point* r, int map, void* heap)
 /* Multiply the base point of P1024 by the scalar, add point a and return
  * the result. If map is true then convert result to affine coordinates.
  *
- * km      Scalar to multiply by.
- * am      Point to add to scalar multiply result.
- * inMont  Point to add is in montgomery form.
- * r       Resulting point.
- * map     Indicates whether to convert result to affine.
- * heap    Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km      Scalar to multiply by.
+ * @param [in]  am      Point to add to scalar multiply result.
+ * @param [in]  inMont  Point to add is in montgomery form.
+ * @param [out] r       Resulting point.
+ * @param [in]  map     Indicates whether to convert result to affine.
+ * @param [in]  heap    Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_base_add_1024(const mp_int* km, const ecc_point* am,
         int inMont, ecc_point* r, int map, void* heap)
@@ -213724,12 +214500,15 @@ int sp_ecc_mulmod_base_add_1024(const mp_int* km, const ecc_point* am,
 #ifndef WOLFSSL_SP_SMALL
 /* Generate a pre-computation table for the point.
  *
- * gm     Point to generate table for.
- * table  Buffer to hold pre-computed points table.
- * len    Length of table.
- * heap   Heap to use for allocation.
- * returns BAD_FUNC_ARG when gm or len is NULL, LENGTH_ONLY_E when table is
- * NULL and length is returned, BUFFER_E if length is too small and 0 otherwise.
+ * @param [in]      gm     Point to generate table for.
+ * @param [out]     table  Buffer to hold pre-computed points table.
+ * @param [in, out] len    Length of table.
+ * @param [in]      heap   Heap to use for allocation.
+ *
+ * @return  0 otherwise.
+ * @return  BAD_FUNC_ARG when gm or len is NULL.
+ * @return  LENGTH_ONLY_E when table is NULL and length is returned.
+ * @return  BUFFER_E when length is too small.
  */
 int sp_ecc_gen_table_1024(const ecc_point* gm, byte* table, word32* len,
     void* heap)
@@ -213769,12 +214548,15 @@ int sp_ecc_gen_table_1024(const ecc_point* gm, byte* table, word32* len,
 #else
 /* Generate a pre-computation table for the point.
  *
- * gm     Point to generate table for.
- * table  Buffer to hold pre-computed points table.
- * len    Length of table.
- * heap   Heap to use for allocation.
- * returns BAD_FUNC_ARG when gm or len is NULL, LENGTH_ONLY_E when table is
- * NULL and length is returned, BUFFER_E if length is too small and 0 otherwise.
+ * @param [in]      gm     Point to generate table for.
+ * @param [out]     table  Buffer to hold pre-computed points table.
+ * @param [in, out] len    Length of table.
+ * @param [in]      heap   Heap to use for allocation.
+ *
+ * @return  0 otherwise.
+ * @return  BAD_FUNC_ARG when gm or len is NULL.
+ * @return  LENGTH_ONLY_E when table is NULL and length is returned.
+ * @return  BUFFER_E when length is too small.
  */
 int sp_ecc_gen_table_1024(const ecc_point* gm, byte* table, word32* len,
     void* heap)
@@ -213804,13 +214586,15 @@ int sp_ecc_gen_table_1024(const ecc_point* gm, byte* table, word32* len,
 /* Multiply the point by the scalar and return the result.
  * If map is true then convert result to affine coordinates.
  *
- * km     Scalar to multiply by.
- * gm     Point to multiply.
- * table  Pre-computed points.
- * r      Resulting point.
- * map    Indicates whether to convert result to affine.
- * heap   Heap to use for allocation.
- * returns MEMORY_E when memory allocation fails and MP_OKAY on success.
+ * @param [in]  km     Scalar to multiply by.
+ * @param [in]  gm     Point to multiply.
+ * @param [in]  table  Pre-computed points.
+ * @param [out] r      Resulting point.
+ * @param [in]  map    Indicates whether to convert result to affine.
+ * @param [in]  heap   Heap to use for allocation.
+ *
+ * @return  MP_OKAY on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ecc_mulmod_table_1024(const mp_int* km, const ecc_point* gm, byte* table,
         ecc_point* r, int map, void* heap)
@@ -213848,10 +214632,12 @@ int sp_ecc_mulmod_table_1024(const mp_int* km, const ecc_point* gm, byte* table,
  * r.x = p.x - (p.y * q.y)
  * r.y = (p.x * q.y) + p.y
  *
- * px  [in,out]  A single precision integer - X ordinate of number to multiply.
- * py  [in,out]  A single precision integer - Y ordinate of number to multiply.
- * q   [in]      A single precision integer - multiplier.
- * t   [in]      Two single precision integers - temps.
+ * @param [in, out] px  A single precision integer - X ordinate of number to
+ *                      multiply.
+ * @param [in, out] py  A single precision integer - Y ordinate of number to
+ *                      multiply.
+ * @param [in]      q   A single precision integer - multiplier.
+ * @param [in]      t   Two single precision integers - temps.
  */
 static void sp_1024_proj_mul_qx1_32(sp_digit* px, sp_digit* py,
         const sp_digit* q, sp_digit* t)
@@ -213874,9 +214660,11 @@ static void sp_1024_proj_mul_qx1_32(sp_digit* px, sp_digit* py,
  *   px' = (p.x + p.y) * (p.x - p.y) = p.x^2 - p.y^2
  *   py' = 2 * p.x * p.y
  *
- * px  [in,out]  A single precision integer - X ordinate of number to square.
- * py  [in,out]  A single precision integer - Y ordinate of number to square.
- * t   [in]      Two single precision integers - temps.
+ * @param [in, out] px  A single precision integer - X ordinate of number to
+ *                      multiply.
+ * @param [in, out] py  A single precision integer - Y ordinate of number to
+ *                      multiply.
+ * @param [in]      t   Two single precision integers - temps.
  */
 static void sp_1024_proj_sqr_32(sp_digit* px, sp_digit* py, sp_digit* t)
 {
@@ -213901,10 +214689,12 @@ static void sp_1024_proj_sqr_32(sp_digit* px, sp_digit* py, sp_digit* t)
  * Simple square and multiply when expontent bit is one algorithm.
  * Square and multiply performed in Fp*.
  *
- * base  [in]   Base. MP integer.
- * exp   [in]   Exponent. MP integer.
- * res   [out]  Result. MP integer.
- * returns 0 on success and MEMORY_E if memory allocation fails.
+ * @param [in]  base  Base. MP integer.
+ * @param [in]  exp   Exponent. MP integer.
+ * @param [out] res   Result. MP integer.
+ *
+ * @return  0 on success.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ModExp_Fp_star_1024(const mp_int* base, mp_int* exp, mp_int* res)
 {
@@ -215797,11 +216587,13 @@ static const sp_digit sp_1024_g_table[256][32] = {
  * Total of 256 points in table.
  * Square and multiply performed in Fp*.
  *
- * base  [in]   Base. MP integer.
- * exp   [in]   Exponent. MP integer.
- * res   [out]  Result. MP integer.
- * returns 0 on success, MP_READ_E if there are too many bytes in an array
- * and MEMORY_E if memory allocation fails.
+ * @param [in]  base  Base. MP integer.
+ * @param [in]  exp   Exponent. MP integer.
+ * @param [out] res   Result. MP integer.
+ *
+ * @return  0 on success.
+ * @return  MP_READ_E when there are too many bytes in an array.
+ * @return  MEMORY_E when memory allocation fails.
  */
 int sp_ModExp_Fp_star_1024(const mp_int* base, mp_int* exp, mp_int* res)
 {
@@ -215896,13 +216688,15 @@ int sp_ModExp_Fp_star_1024(const mp_int* base, mp_int* exp, mp_int* res)
  *   p.x' = v0 - v1
  *   p.y' = (px + py) * (qx + qy) - v0 - v1
  *
- * px  [in,out]  A single precision integer - X ordinate of number to multiply.
- * py  [in,out]  A single precision integer - Y ordinate of number to multiply.
- * qx  [in]      A single precision integer - X ordinate of number of
- *               multiplier.
- * qy  [in]      A single precision integer - Y ordinate of number of
- *               multiplier.
- * t   [in]      Two single precision integers - temps.
+ * @param [in, out] px  A single precision integer - X ordinate of number to
+ *                      multiply.
+ * @param [in, out] py  A single precision integer - Y ordinate of number to
+ *                      multiply.
+ * @param [in]      qx  A single precision integer - X ordinate of number of
+ *                      multiplier.
+ * @param [in]      qy  A single precision integer - Y ordinate of number of
+ *                      multiplier.
+ * @param [in]      t   Two single precision integers - temps.
  */
 static void sp_1024_proj_mul_32(sp_digit* px, sp_digit* py,
         const sp_digit* qx, const sp_digit* qy, sp_digit* t)
@@ -215932,8 +216726,8 @@ static void sp_1024_proj_mul_32(sp_digit* px, sp_digit* py,
 /*
  * Convert point from projective to affine but keep in Montgomery form.
  *
- * p  [in,out]  Point to convert.
- * t  [in]      Temporary numbers: 2.
+ * @param [in, out] p  Point to convert.
+ * @param [in]      t  Temporary numbers: 2.
  */
 static void sp_1024_mont_map_32(sp_point_1024* p, sp_digit* t)
 {
@@ -215962,11 +216756,11 @@ static void sp_1024_mont_map_32(sp_point_1024* p, sp_digit* t)
  *   p'.y = (4 * p.y^2 * p.x - p'.x) * l - 8 * p.y^4
  *   p'.z = 2 * p.y * p.z
  *
- * @param  [in,out]  vx  X-ordinate of projective value in F*.
- * @param  [in,out]  vy  Y-ordinate of projective value in F*.
- * @param  [in,out]  p   ECC point - point on E(F_p^2) to double.
- * @param  [in]      q   ECC point - second point on E(F_P^2).
- * @param  [in]      t   SP temporaries (6 used).
+ * @param [in, out] vx  X-ordinate of projective value in F*.
+ * @param [in, out] vy  Y-ordinate of projective value in F*.
+ * @param [in, out] p   ECC point - point on E(F_p^2) to double.
+ * @param [in]      q   ECC point - second point on E(F_P^2).
+ * @param [in]      t   SP temporaries (6 used).
  */
 static void sp_1024_accumulate_line_dbl_32(sp_digit* vx, sp_digit* vy,
         sp_point_1024* p, const sp_point_1024* q, sp_digit* t)
@@ -216052,14 +216846,14 @@ static void sp_1024_accumulate_line_dbl_32(sp_digit* vx, sp_digit* vy,
  *   c'.y = r * (c'.x - c.x * h^2) - c.y * h^3
  *   c'.z = (c.x - p.x * c.z^2) * c.z
  *
- * @param  [in,out]  vx     X-ordinate of projective value in F*.
- * @param  [in,out]  vy     Y-ordinate of projective value in F*.
- * @param  [in,out]  c      ECC point - current point on E(F_p^2) to be added
+ * @param [in, out] vx     X-ordinate of projective value in F*.
+ * @param [in, out] vy     Y-ordinate of projective value in F*.
+ * @param [in, out] c      ECC point - current point on E(F_p^2) to be added
  *                          to.
- * @param  [in]      p      ECC point - point on E(F_p^2) to add.
- * @param  [in]      q      ECC point - second point on E(F_P^2).
- * @param  [in]      qx_px  SP that is a constant value across adds.
- * @param  [in]      t      SP temporaries (6 used).
+ * @param [in]      p      ECC point - point on E(F_p^2) to add.
+ * @param [in]      q      ECC point - second point on E(F_P^2).
+ * @param [in]      qx_px  SP that is a constant value across adds.
+ * @param [in]      t      SP temporaries (6 used).
  */
 static void sp_1024_accumulate_line_add_one_32(sp_digit* vx, sp_digit* vy,
         sp_point_1024* c, sp_point_1024* p, sp_point_1024* q, sp_digit* qx_px,
@@ -216136,10 +216930,10 @@ static void sp_1024_accumulate_line_add_one_32(sp_digit* vx, sp_digit* vy,
  *
  * That is, multiply base in PF_p[q] by the scalar s, such that s.P = Q.
  *
- * @param  [in]  key  SAKKE key.
- * @param  [in]  p    First point on E(F_p)[q].
- * @param  [in]  q    Second point on E(F_p)[q].
- * @param  [in]  r    Result of calculation.
+ * @param [in]  pm   First point on E(F_p)[q].
+ * @param [in]  qm   Second point on E(F_p)[q].
+ * @param [out] res  Result of calculation.
+ *
  * @return  0 on success.
  * @return  MEMORY_E when dynamic memory allocation fails.
  * @return  Other -ve value on internal failure.
@@ -216273,14 +217067,14 @@ int sp_Pairing_1024(const ecc_point* pm, const ecc_point* qm, mp_int* res)
  *   c'.y = r * (c.x * p.z^2 * h^2 - c'.x) - c.y * p.z^3 * h^3
  *   c'.z = (p.x * c.z^2 - c.x * p.z^2) * c.z
  *
- * @param  [in,out]  vx     X-ordinate of projective value in F*.
- * @param  [in,out]  vy     Y-ordinate of projective value in F*.
- * @param  [in,out]  c      ECC point - current point on E(F_p^2) to be added
- *                          to.
- * @param  [in,out]  p      ECC point - point on E(F_p^2) to add.
- * @param  [in,out]  q      ECC point - second point on E(F_P^2).
- * @param  [in,out]  t      SP temporaries (6 used).
- * @param  [in,out]  neg    Indicates to use negative P.
+ * @param [in, out] vx   X-ordinate of projective value in F*.
+ * @param [in, out] vy   Y-ordinate of projective value in F*.
+ * @param [in, out] c    ECC point - current point on E(F_p^2) to be added to.
+ * @param [in]      p    ECC point - point on E(F_p^2) to add.
+ * @param [in]      q    ECC point - second point on E(F_P^2).
+ * @param [in, out] t    SP temporaries (6 used).
+ * @param [in]      neg  Indicates to use negative P.
+ *
  * @return  0 on success.
  * @return  MEMORY_E when dynamic memory allocation fails.
  * @return  Other -ve value on internal failure.
@@ -216394,12 +217188,12 @@ static void sp_1024_accumulate_line_add_n_32(sp_digit* vx, sp_digit* vy,
  * Finally:
  *   p'.y = py' / 2
  *
- * @param  [in,out]  vx  X-ordinate of projective value in F*.
- * @param  [in,out]  vy  Y-ordinate of projective value in F*.
- * @param  [in,out]  p   ECC point - point on E(F_p^2) to double.
- * @param  [in]      q   ECC point - second point on E(F_P^2).
- * @param  [in]      n   Number of times to double.
- * @param  [in]      t   SP temporaries (6 used).
+ * @param [in, out] vx  X-ordinate of projective value in F*.
+ * @param [in, out] vy  Y-ordinate of projective value in F*.
+ * @param [in, out] p   ECC point - point on E(F_p^2) to double.
+ * @param [in]      q   ECC point - second point on E(F_P^2).
+ * @param [in]      n   Number of times to double.
+ * @param [in]      t   SP temporaries (6 used).
  */
 static void sp_1024_accumulate_line_dbl_n_32(sp_digit* vx, sp_digit* vy,
         sp_point_1024* p, const sp_point_1024* q, int n, sp_digit* t)
@@ -216514,9 +217308,10 @@ static const signed char sp_1024_order_op[] = {
  * Subtract if top bit in window is one.
  * Width of 6 bits.
  *
- * @param  [in]  pm   First point on E(F_p)[q].
- * @param  [in]  qm   Second point on E(F_p)[q].
- * @param  [in]  res  Result of calculation.
+ * @param [in]  pm   First point on E(F_p)[q].
+ * @param [in]  qm   Second point on E(F_p)[q].
+ * @param [out] res  Result of calculation.
+ *
  * @return  0 on success.
  * @return  MEMORY_E when dynamic memory allocation fails.
  */
@@ -216688,13 +217483,14 @@ int sp_Pairing_1024(const ecc_point* pm, const ecc_point* qm, mp_int* res)
  *
  * Small implementation does not use a table - returns 0 length.
  *
- * pm     [in]      Point to generate table for.
- * table  [in]      Generated table.
- * len    [in,out]  On in, the size of the buffer.
- *                  On out, length of table generated.
+ * @param [in]      pm     Point to generate table for.
+ * @param [out]     table  Generated table.
+ * @param [in, out] len    On in, the size of the buffer.
+ *                         On out, length of table generated.
+ *
  * @return  0 on success.
- *          LENGTH_ONLY_E when table is NULL and only length returned.
- *          BUFFER_E when len is too small.
+ * @return  LENGTH_ONLY_E when table is NULL and only length returned.
+ * @return  BUFFER_E when len is too small.
  */
 int sp_Pairing_gen_precomp_1024(const ecc_point* pm, byte* table,
         word32* len)
@@ -216721,11 +217517,12 @@ int sp_Pairing_gen_precomp_1024(const ecc_point* pm, byte* table,
  *
  * Small implementation does not use a table - use the normal implementation.
  *
- * @param  [in]  pm     First point on E(F_p)[q].
- * @param  [in]  qm     Second point on E(F_p)[q].
- * @param  [in]  res    Result of calculation.
- * @param  [in]  table  Precomputed table of values.
- * @param  [in]  len    Length of precomputed table of values in bytes.
+ * @param [in]  pm     First point on E(F_p)[q].
+ * @param [in]  qm     Second point on E(F_p)[q].
+ * @param [out] res    Result of calculation.
+ * @param [in]  table  Precomputed table of values.
+ * @param [in]  len    Length of precomputed table of values in bytes.
+ *
  * @return  0 on success.
  * @return  MEMORY_E when dynamic memory allocation fails.
  */
@@ -216744,11 +217541,11 @@ int sp_Pairing_precomp_1024(const ecc_point* pm, const ecc_point* qm,
  * l = 3 * (p.x^2 - 1) / (2 * p.y)
  * c = l * p.x - p.y
  *
- * @param  [out]  lr  Gradient result - table entry.
- * @param  [out]  cr  Constant result - table entry.
- * @param  [in]   px  X-ordinate of point to double.
- * @param  [in]   py  Y-ordinate of point to double.
- * @param  [in]   t   SP temporaries (3 used).
+ * @param [out] lr  Gradient result - table entry.
+ * @param [out] cr  Constant result - table entry.
+ * @param [in]  px  X-ordinate of point to double.
+ * @param [in]  py  Y-ordinate of point to double.
+ * @param [in]  t   SP temporaries (3 used).
  */
 static void sp_1024_accum_dbl_calc_lc_32(sp_digit* lr, sp_digit* cr,
         const sp_digit* px, const sp_digit* py, sp_digit* t)
@@ -216785,13 +217582,13 @@ static void sp_1024_accum_dbl_calc_lc_32(sp_digit* lr, sp_digit* cr,
  * l = (c.y - p.y) / (c.x - p.x)
  * c = (p.x * c.y - cx * p.y) / (cx - p.x)
  *
- * @param  [out]  lr  Gradient result - table entry.
- * @param  [out]  cr  Constant result - table entry.
- * @param  [in]   px  X-ordinate of point to add.
- * @param  [in]   py  Y-ordinate of point to add.
- * @param  [in]   cx  X-ordinate of current point.
- * @param  [in]   cy  Y-ordinate of current point.
- * @param  [in]   t   SP temporaries (3 used).
+ * @param [out] lr  Gradient result - table entry.
+ * @param [out] cr  Constant result - table entry.
+ * @param [in]  px  X-ordinate of point to add.
+ * @param [in]  py  Y-ordinate of point to add.
+ * @param [in]  cx  X-ordinate of current point.
+ * @param [in]  cy  Y-ordinate of current point.
+ * @param [in]  t   SP temporaries (3 used).
  */
 static void sp_1024_accum_add_calc_lc_32(sp_digit* lr, sp_digit* cr,
         const sp_digit* px, const sp_digit* py, const sp_digit* cx,
@@ -216835,13 +217632,13 @@ static void sp_1024_accum_add_calc_lc_32(sp_digit* lr, sp_digit* cr,
  * r.y = q->y
  * v*  = v* * r*
  *
- * @param  [in,out]  vx     X-ordinate of projective value in F*.
- * @param  [in,out]  vy     Y-ordinate of projective value in F*.
- * @param  [in]      l      Gradient to multiply with.
- * @param  [in]      c      Constant to add with.
- * @param  [in]      q      ECC point - second point on E(F_P^2).
- * @param  [in]      t      SP temporaries (3 used).
- * @param  [in]      dbl    Indicates whether this is for doubling. Otherwise
+ * @param [in, out] vx   X-ordinate of projective value in F*.
+ * @param [in, out] vy   Y-ordinate of projective value in F*.
+ * @param [in]      l    Gradient to multiply with.
+ * @param [in]      c    Constant to add with.
+ * @param [in]      q    ECC point - second point on E(F_P^2).
+ * @param [in]      t    SP temporaries (3 used).
+ * @param [in]      dbl  Indicates whether this is for doubling. Otherwise
  *                          adding.
  */
 static void sp_1024_accumulate_line_lc_32(sp_digit* vx, sp_digit* vy,
@@ -216897,14 +217694,15 @@ static const signed char sp_1024_order_op_pre[] = {
  * Subtract if top bit in window is one.
  * Width of 6 bits.
  *
- * pm     [in]      Point to generate table for.
- * table  [in]      Generated table.
- * len    [in,out]  On in, the size of the buffer.
- *                  On out, length of table generated.
+ * @param [in]      pm     Point to generate table for.
+ * @param [out]     table  Generated table.
+ * @param [in, out] len    On in, the size of the buffer.
+ *                         On out, length of table generated.
+ *
  * @return  0 on success.
- *          LENGTH_ONLY_E when table is NULL and only length returned.
- *          BUFFER_E when len is too small.
- *          MEMORY_E when dynamic memory allocation fauls.
+ * @return  LENGTH_ONLY_E when table is NULL and only length returned.
+ * @return  BUFFER_E when len is too small.
+ * @return  MEMORY_E when dynamic memory allocation fauls.
  */
 int sp_Pairing_gen_precomp_1024(const ecc_point* pm, byte* table,
         word32* len)
@@ -217058,11 +217856,12 @@ int sp_Pairing_gen_precomp_1024(const ecc_point* pm, byte* table,
  * Pre-generate values in window (1, 3, ...) - only V.
  * Table contains all gradient l and a constant for each point on the path.
  *
- * @param  [in]  pm     First point on E(F_p)[q].
- * @param  [in]  qm     Second point on E(F_p)[q].
- * @param  [in]  res    Result of calculation.
- * @param  [in]  table  Precomputed table of values.
- * @param  [in]  len    Length of precomputed table of values in bytes.
+ * @param [in]  pm     First point on E(F_p)[q].
+ * @param [in]  qm     Second point on E(F_p)[q].
+ * @param [out] res    Result of calculation.
+ * @param [in]  table  Precomputed table of values.
+ * @param [in]  len    Length of precomputed table of values in bytes.
+ *
  * @return  0 on success.
  * @return  MEMORY_E when dynamic memory allocation fails.
  */
@@ -217243,10 +218042,10 @@ int sp_Pairing_precomp_1024(const ecc_point* pm, const ecc_point* qm,
 #endif /* WOLFSSL_SP_SMALL */
 /* Read big endian unsigned byte array into r.
  *
- * r  A single precision integer.
- * size  Maximum number of bytes to convert
- * a  Byte array.
- * n  Number of bytes in array to read.
+ * @param [out] r     A single precision integer.
+ * @param [in]  size  Maximum number of bytes to convert
+ * @param [in]  a     Byte array.
+ * @param [in]  n     Number of bytes in array to read.
  */
 static void sp_1024_from_bin(sp_digit* r, int size, const byte* a, int n)
 {
@@ -217290,10 +218089,12 @@ static void sp_1024_from_bin(sp_digit* r, int size, const byte* a, int n)
 
 /* Check that the x and y ordinates are a valid point on the curve.
  *
- * point  EC point.
- * heap   Heap to use if dynamically allocating.
- * returns MEMORY_E if dynamic memory allocation fails, MP_VAL if the point is
- * not on the curve and MP_OKAY otherwise.
+ * @param [in] point  EC point.
+ * @param [in] heap   Heap to use if dynamically allocating.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
+ * @return  MP_VAL when the point is not on the curve.
  */
 static int sp_1024_ecc_is_point_32(const sp_point_1024* point,
     void* heap)
@@ -217339,10 +218140,12 @@ static int sp_1024_ecc_is_point_32(const sp_point_1024* point,
 
 /* Check that the x and y ordinates are a valid point on the curve.
  *
- * pX  X ordinate of EC point.
- * pY  Y ordinate of EC point.
- * returns MEMORY_E if dynamic memory allocation fails, MP_VAL if the point is
- * not on the curve and MP_OKAY otherwise.
+ * @param [in] pX  X ordinate of EC point.
+ * @param [in] pY  Y ordinate of EC point.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
+ * @return  MP_VAL when the point is not on the curve.
  */
 int sp_ecc_is_point_1024(const mp_int* pX, const mp_int* pY)
 {
@@ -217368,13 +218171,17 @@ int sp_ecc_is_point_1024(const mp_int* pX, const mp_int* pY)
 /* Check that the private scalar generates the EC point (px, py), the point is
  * on the curve and the point has the correct order.
  *
- * pX     X ordinate of EC point.
- * pY     Y ordinate of EC point.
- * privm  Private scalar that generates EC point.
- * returns MEMORY_E if dynamic memory allocation fails, MP_VAL if the point is
- * not on the curve, ECC_INF_E if the point does not have the correct order,
- * ECC_PRIV_KEY_E when the private scalar doesn't generate the EC point and
- * MP_OKAY otherwise.
+ * @param [in] pX     X ordinate of EC point.
+ * @param [in] pY     Y ordinate of EC point.
+ * @param [in] privm  Private scalar that generates EC point.
+ * @param [in] heap   Heap to use for allocation.
+ *
+ * @return  MP_OKAY otherwise.
+ * @return  MEMORY_E when dynamic memory allocation fails.
+ * @return  MP_VAL when the point is not on the curve.
+ * @return  ECC_INF_E when the point does not have the correct order.
+ * @return  ECC_PRIV_KEY_E when the private scalar doesn't generate the EC
+ *          point.
  */
 int sp_ecc_check_key_1024(const mp_int* pX, const mp_int* pY,
     const mp_int* privm, void* heap)
