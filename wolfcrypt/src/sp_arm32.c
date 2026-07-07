@@ -11951,9 +11951,8 @@ WC_OMIT_FRAME_POINTER static sp_digit div_2048_word_32(sp_digit d1, sp_digit d0,
         "subs	r7, %[d0], r4\n\t"
         "sbc	r8, %[d1], r5\n\t"
         "add	r3, r3, r8\n\t"
-        "subs	r6, %[div], r7\n\t"
-        "sbc	r6, r6, r6\n\t"
-        "sub	%[d1], r3, r6\n\t"
+        "subs	r6, r7, %[div]\n\t"
+        "adc	%[d1], r3, #0\n\t"
 #ifndef WOLFSSL_NO_VAR_ASSIGN_REG
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
@@ -16382,9 +16381,8 @@ WC_OMIT_FRAME_POINTER static sp_digit div_2048_word_64(sp_digit d1, sp_digit d0,
         "subs	r7, %[d0], r4\n\t"
         "sbc	r8, %[d1], r5\n\t"
         "add	r3, r3, r8\n\t"
-        "subs	r6, %[div], r7\n\t"
-        "sbc	r6, r6, r6\n\t"
-        "sub	%[d1], r3, r6\n\t"
+        "subs	r6, r7, %[div]\n\t"
+        "adc	%[d1], r3, #0\n\t"
 #ifndef WOLFSSL_NO_VAR_ASSIGN_REG
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
@@ -37688,9 +37686,8 @@ WC_OMIT_FRAME_POINTER static sp_digit div_3072_word_48(sp_digit d1, sp_digit d0,
         "subs	r7, %[d0], r4\n\t"
         "sbc	r8, %[d1], r5\n\t"
         "add	r3, r3, r8\n\t"
-        "subs	r6, %[div], r7\n\t"
-        "sbc	r6, r6, r6\n\t"
-        "sub	%[d1], r3, r6\n\t"
+        "subs	r6, r7, %[div]\n\t"
+        "adc	%[d1], r3, #0\n\t"
 #ifndef WOLFSSL_NO_VAR_ASSIGN_REG
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
@@ -43807,9 +43804,8 @@ WC_OMIT_FRAME_POINTER static sp_digit div_3072_word_96(sp_digit d1, sp_digit d0,
         "subs	r7, %[d0], r4\n\t"
         "sbc	r8, %[d1], r5\n\t"
         "add	r3, r3, r8\n\t"
-        "subs	r6, %[div], r7\n\t"
-        "sbc	r6, r6, r6\n\t"
-        "sub	%[d1], r3, r6\n\t"
+        "subs	r6, r7, %[div]\n\t"
+        "adc	%[d1], r3, #0\n\t"
 #ifndef WOLFSSL_NO_VAR_ASSIGN_REG
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
@@ -59105,9 +59101,8 @@ WC_OMIT_FRAME_POINTER static sp_digit div_4096_word_128(sp_digit d1,
         "subs	r7, %[d0], r4\n\t"
         "sbc	r8, %[d1], r5\n\t"
         "add	r3, r3, r8\n\t"
-        "subs	r6, %[div], r7\n\t"
-        "sbc	r6, r6, r6\n\t"
-        "sub	%[d1], r3, r6\n\t"
+        "subs	r6, r7, %[div]\n\t"
+        "adc	%[d1], r3, #0\n\t"
 #ifndef WOLFSSL_NO_VAR_ASSIGN_REG
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
@@ -79263,9 +79258,8 @@ WC_OMIT_FRAME_POINTER static sp_digit div_256_word_8(sp_digit d1, sp_digit d0,
         "subs	r7, %[d0], r4\n\t"
         "sbc	r8, %[d1], r5\n\t"
         "add	r3, r3, r8\n\t"
-        "subs	r6, %[div], r7\n\t"
-        "sbc	r6, r6, r6\n\t"
-        "sub	%[d1], r3, r6\n\t"
+        "subs	r6, r7, %[div]\n\t"
+        "adc	%[d1], r3, #0\n\t"
 #ifndef WOLFSSL_NO_VAR_ASSIGN_REG
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
@@ -97707,9 +97701,8 @@ WC_OMIT_FRAME_POINTER static sp_digit div_384_word_12(sp_digit d1, sp_digit d0,
         "subs	r7, %[d0], r4\n\t"
         "sbc	r8, %[d1], r5\n\t"
         "add	r3, r3, r8\n\t"
-        "subs	r6, %[div], r7\n\t"
-        "sbc	r6, r6, r6\n\t"
-        "sub	%[d1], r3, r6\n\t"
+        "subs	r6, r7, %[div]\n\t"
+        "adc	%[d1], r3, #0\n\t"
 #ifndef WOLFSSL_NO_VAR_ASSIGN_REG
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
@@ -126361,9 +126354,8 @@ WC_OMIT_FRAME_POINTER static sp_digit div_521_word_17(sp_digit d1, sp_digit d0,
         "subs	r7, %[d0], r4\n\t"
         "sbc	r8, %[d1], r5\n\t"
         "add	r3, r3, r8\n\t"
-        "subs	r6, %[div], r7\n\t"
-        "sbc	r6, r6, r6\n\t"
-        "sub	%[d1], r3, r6\n\t"
+        "subs	r6, r7, %[div]\n\t"
+        "adc	%[d1], r3, #0\n\t"
 #ifndef WOLFSSL_NO_VAR_ASSIGN_REG
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
@@ -146927,9 +146919,8 @@ WC_OMIT_FRAME_POINTER static sp_digit div_1024_word_32(sp_digit d1, sp_digit d0,
         "subs	r7, %[d0], r4\n\t"
         "sbc	r8, %[d1], r5\n\t"
         "add	r3, r3, r8\n\t"
-        "subs	r6, %[div], r7\n\t"
-        "sbc	r6, r6, r6\n\t"
-        "sub	%[d1], r3, r6\n\t"
+        "subs	r6, r7, %[div]\n\t"
+        "adc	%[d1], r3, #0\n\t"
 #ifndef WOLFSSL_NO_VAR_ASSIGN_REG
         : [d1] "+r" (d1), [d0] "+r" (d0), [div] "+r" (div)
         :
