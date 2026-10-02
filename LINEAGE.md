@@ -91,6 +91,29 @@ archive (lower bound) > earliest upper bound (distro import, SourceForge
 upload, MySQL import). A date later than any upper bound is replaced by that
 upper bound and marked CONFLICT. Dates not from README or freecode are weak.
 
+## yaSSL and CyaSSL: related code, no shared commits
+
+`yassl` and `main` share no commits. yaSSL (C++) ended at 2.4.4 and did not
+become wolfSSL; wolfSSL descends from CyaSSL (C). The two are still family:
+CyaSSL's crypto layer, CTaoCrypt (`ctaocrypt/`), is a C sibling modeled on
+yaSSL's TaoCrypt (`taocrypt/`). It is not a line-by-line port. Evidence,
+comparing `yassl-1.2.2` with `cyassl-0.2.0`:
+
+- Same author and company: both trees are copyright Sawtooth Consulting Ltd.
+- Name and role: the CyaSSL 0.2.0 README introduces "CyaSSL and its crypt
+  brother, CTaoCrypt".
+- Module layout: every CTaoCrypt 0.2.0 source module (arc4, asn, coding,
+  integer, md5, random, rsa, sha; des3 vs des) has a TaoCrypt counterpart.
+- Shared ASN.1 sizing constants: `MAX_ALGO_SZ`, `MAX_SEQ_SZ`, `MAX_LENGTH_SZ`,
+  `SHA_SIZE`.
+- Different big-integer foundations: TaoCrypt `integer.cpp` is "based on Wei
+  Dai's integer.cpp from CryptoPP"; CTaoCrypt `integer.c` is "Based on public
+  domain LibTomMath 0.38".
+
+This relationship is recorded here, not as git ancestry: no commit exists
+that moved code from one tree to the other, and a synthetic merge would
+misstate the history.
+
 ## Gaps and caveats
 
 - Weak dates: cyassl-2.3.1, cyassl-3.2.0, cyassl-3.3.0, yassl-0.9.7, yassl-1.4.2, yassl-1.4.3, yassl-1.6.5, yassl-1.8.0, yassl-2.1.4, yassl-2.2.0, yassl-2.2.3b, yassl-2.3.9, yassl-2.3.9b, yassl-2.4.0, yassl-2.4.2, yassl-2.4.4
