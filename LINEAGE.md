@@ -6,26 +6,69 @@ official wolfSSL repository.
 
 ## Branches and refs
 
-- `yassl`: one commit per yaSSL release (and the yaSSL CVS history when present).
-- `cyassl`: one commit per CyaSSL release before wolfSSL git started (and the
-  CyaSSL CVS history when present).
+- `yassl`: yaSSL releases 0.2.0..1.2.2 as snapshots, then the yaSSL CVS history
+  (198 commits, 2006-03-28 "yaSSL 1.2.2 cvs import" .. 2015-03-18), then
+  releases 2.3.7c..2.4.4 as snapshots. 236 commits on the branch line.
+- `cyassl`: CyaSSL releases 0.2.0..0.5.0 as snapshots, then the CyaSSL CVS
+  history (200 commits, 2006-04-05 "cyassl 0.5.1 cvs import" .. 2011-01-06).
+  204 commits on the branch line.
 - `main`: wolfSSL `master` fetched unchanged from a local wolfSSL clone.
 - `notes`: this file plus `catalog.tsv`, on an orphan branch.
 - `refs/replace/6b88eb05b11a43a48a80fbabfa0ad4b87eb46fbc`: graft making wolfSSL's root commit
-  ("1.8.8 init") a child of the `cyassl` tip `5494f63a26c0af5707ca3f3f07cd4fc1fd831f3f`. `git log main`
-  therefore runs back through CyaSSL. Use `git --no-replace-objects log` to see
+  ("1.8.8 init", 2011-02-05) a child of the `cyassl` tip, the last CyaSSL CVS
+  commit `adc5a5503` (2011-01-06). `git log main` therefore runs back through
+  CyaSSL CVS and releases to 2006. Use `git --no-replace-objects log` to see
   wolfSSL's real history. Replace refs are not fetched or pushed by default; a
   clone needs `git fetch origin 'refs/replace/*:refs/replace/*'`.
-- Tags `yassl-<ver>`, `cyassl-<ver>`: annotated. `Kind:` in each annotation says
-  what the tag is: `snapshot` (tree == release archive), `cvs-match` (CVS commit
-  best matching the archive, with diff counts), `archive-side` (exact archive
-  tree kept beside a poorly matching CVS commit, tag suffix `-archive`),
-  `wolfssl-tag` (wolfSSL commit carrying the matching wolfSSL `v<ver>` tag).
+- Tags `yassl-<ver>`, `cyassl-<ver>`: annotated. Release tags whose `Kind:` is
+  `snapshot` have tree == release archive (byte-identical, verified). Releases
+  dated inside a CVS window are side commits: the exact archive tree, parented
+  on the last CVS commit at or before the release date, so the branch line
+  stays pure CVS and each release shows where it forked. Releases before or
+  after the CVS window are on the branch line. `wolfssl-tag` tags sit on
+  wolfSSL commits carrying the matching wolfSSL `v<ver>` tag.
+- `refs/pre-cvs/*`: the snapshot-only branches, tags and graft parent from
+  before the CVS splice, kept as a fallback.
 
-## CVS state at build time
+## CVS history
 
-- yassl: no CVS export present at build time; release snapshots only
-- cyassl: no CVS export present at build time; release snapshots only
+Source: Software Heritage archive of the old SourceForge CVS repositories,
+fetched as Vault git-bare exports of yaSSL `swh:1:rev:1e31aca5a98100ff2d36ff465b95c6fb25866af6`
+(snapshot `swh:1:snp:11570859eba21613988dddfd9cf6da8b36fe1ddb`) and CyaSSL
+`swh:1:rev:3142ffdbe908b692a59bd28128e688d5cf739e08` (snapshot
+`swh:1:snp:b0580dbd109bb966d6c304cb76b9d61e0fd2978a`).
+
+The SWH conversion has CVS user names with no email (`author touska <ts>`),
+which git fsck rejects. Each line was rewritten to `touska <touska>` and then
+mapped by reposurgeon `authors read`:
+
+    touska      = Todd Ouska <todd@yassl.com>
+    chrisconlon = Chris Conlon <chris@wolfssl.com>
+    myassl      = myassl <myassl@users.sourceforge.net>
+    uid182869   = uid182869 <uid182869@users.sourceforge.net>
+
+Timestamps, messages and file contents are unchanged. 127 yaSSL SWH commits
+carry an empty `mySTL/` directory (CVS cannot remove directories); git cannot
+store empty directories, so it is absent here. Every CVS commit was verified
+file-by-file (path, mode, blob) against the SWH original: 198/198 and 200/200.
+
+## Splice procedure (reposurgeon)
+
+Per product, inputs were the snapshot branch plus its release tags, and the
+SWH CVS export as a fast-export stream. Script, run once:
+
+    read <snap.fi
+    read <swh.fi
+    unite --prune snap swh          # CVS root grafted on last pre-CVS release;
+                                    # --prune keeps CVS trees exact
+    authors read <authors.map
+    <anchor>,<release> reparent --use-order    # per CVS-era release
+    <cvs-head>,<first post-CVS release> reparent --use-order   # yassl only
+    write >united.fi
+
+`reparent` without `--rebase` preserves the reparented commit's tree, so every
+release tag tree is unchanged (verified against the pre-splice tags: 100/100).
+Work files: ~/TASKS/yassl-lineage/surgery/.
 
 ## Sources and selection rules
 
@@ -47,13 +90,6 @@ date > earliest freecode/freshmeat announcement > newest file mtime in the
 archive (lower bound) > earliest upper bound (distro import, SourceForge
 upload, MySQL import). A date later than any upper bound is replaced by that
 upper bound and marked CONFLICT. Dates not from README or freecode are weak.
-
-CVS matching rule: for releases dated inside a CVS window, the CVS commit
-dated on or before release_date + 7 days that minimizes the number of CVS-tracked
-files absent from or different in the archive (CRLF-normalized); ties go to
-fewer archive-only files, then the later commit. If more than 2 tracked files
-differ, the exact archive tree is also committed as a side commit (parent: the
-matched CVS commit) tagged `<product>-<ver>-archive`.
 
 ## Gaps and caveats
 
@@ -78,10 +114,9 @@ The graft is a replace ref, so wolfSSL commit ids are unchanged. To bake it in
 or `git filter-branch -- --all`; afterwards the replace ref is redundant. Do
 this only in a scratch clone.
 
-## Rebuild
+## Provenance of the snapshot layer
 
-    python3 ~/TASKS/yassl-lineage/build/build_lineage.py <new-path>
-    python3 ~/TASKS/yassl-lineage/build/verify_lineage.py <new-path>
-
-The builder uses swh/yassl and swh/cyassl automatically when those bare git
-repos exist.
+The release snapshots were built by ~/TASKS/yassl-lineage/build/build_lineage.py
+and verified by verify_lineage.py (independent extraction of each archive vs
+`git archive <tag>`). The CVS layer was added afterwards by the reposurgeon
+splice above; the builder's own CVS path was not used.
