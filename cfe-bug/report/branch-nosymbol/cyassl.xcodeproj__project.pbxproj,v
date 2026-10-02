@@ -1,0 +1,403 @@
+head	1.23;
+access;
+symbols
+	r1-4-4:1.14
+	Alexey:1.13.0.2
+	fasthugemath:1.10
+	cyassl-1_0_3:1.9
+	dtls-branch:1.5.0.2
+	rc2-1-0-0:1.5
+	bNoMalloc-rc1-mergePoint:1.2.2.1
+	bNoMalloc:1.2.0.2
+	v0-9-9e:1.2;
+locks; strict;
+comment	@# @;
+
+
+1.23
+date	2010.12.21.21.09.20;	author touska;	state Exp;
+branches;
+next	1.22;
+
+1.22
+date	2010.12.15.01.56.00;	author touska;	state Exp;
+branches;
+next	1.21;
+
+1.21
+date	2010.12.14.04.23.31;	author touska;	state Exp;
+branches;
+next	1.20;
+
+1.20
+date	2010.12.14.00.09.27;	author touska;	state Exp;
+branches;
+next	1.19;
+
+1.19
+date	2010.10.12.20.33.11;	author touska;	state Exp;
+branches;
+next	1.18;
+
+1.18
+date	2010.09.09.03.34.45;	author touska;	state Exp;
+branches;
+next	1.17;
+
+1.17
+date	2010.08.25.00.56.32;	author touska;	state Exp;
+branches;
+next	1.16;
+
+1.16
+date	2010.06.18.00.10.45;	author touska;	state Exp;
+branches;
+next	1.15;
+
+1.15
+date	2010.03.13.01.10.24;	author touska;	state Exp;
+branches;
+next	1.14;
+
+1.14
+date	2009.09.29.19.48.29;	author touska;	state Exp;
+branches;
+next	1.13;
+
+1.13
+date	2009.08.13.22.10.52;	author touska;	state Exp;
+branches;
+next	1.12;
+
+1.12
+date	2009.08.03.15.16.46;	author touska;	state Exp;
+branches;
+next	1.11;
+
+1.11
+date	2009.05.19.23.01.10;	author touska;	state Exp;
+branches;
+next	1.10;
+
+1.10
+date	2009.05.13.02.41.39;	author touska;	state Exp;
+branches;
+next	1.9;
+
+1.9
+date	2009.05.12.03.52.52;	author touska;	state Exp;
+branches;
+next	1.8;
+
+1.8
+date	2009.04.07.23.58.20;	author touska;	state Exp;
+branches;
+next	1.7;
+
+1.7
+date	2009.04.05.21.55.52;	author touska;	state Exp;
+branches;
+next	1.6;
+
+1.6
+date	2009.02.27.21.08.39;	author touska;	state Exp;
+branches;
+next	1.5;
+
+1.5
+date	2009.01.22.19.47.28;	author touska;	state Exp;
+branches;
+next	1.4;
+
+1.4
+date	2009.01.22.19.06.41;	author touska;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	2008.12.17.23.42.49;	author touska;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	2008.10.15.21.05.53;	author touska;	state Exp;
+branches
+	1.2.2.1;
+next	1.1;
+
+1.1
+date	2008.10.14.00.48.09;	author touska;	state Exp;
+branches;
+next	;
+
+1.2.2.1
+date	2008.10.24.01.03.38;	author touska;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.23
+log
+@adea19717d6b412225ac176c509aa2b2
+@
+text
+@repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.23
+@
+
+
+1.22
+log
+@26598bc20e9d8fe2ef2db356caf0fd96
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.22
+@
+
+
+1.21
+log
+@8a4c43e9f5000bce2151a823722df273
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.21
+@
+
+
+1.20
+log
+@a3b3633cd86471dda158c5b48a9bffd7
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.20
+@
+
+
+1.19
+log
+@37b074adf87005ea3c63d7fc615cabdd
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.19
+@
+
+
+1.18
+log
+@3b64cefb50ed63ac0ada44cc915bfca3
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.18
+@
+
+
+1.17
+log
+@8702dcbb3c796f9bc2496768549517e7
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.17
+@
+
+
+1.16
+log
+@2ebc114b35907978f2c9731bb471002a
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.16
+@
+
+
+1.15
+log
+@43e94a4872e8dd8e74dfd4c85156c411
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.15
+@
+
+
+1.14
+log
+@d894a96308c73779e11fa2da03057d2d
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.14
+@
+
+
+1.13
+log
+@dfc7ce59e6ab250d6a38a81e6052aa99
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.13
+@
+
+
+1.12
+log
+@2d7339f928b2196137a1d0f9f77a0400
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.12
+@
+
+
+1.11
+log
+@6f699a1a1f678fd0c0804facfa7ac986
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.11
+@
+
+
+1.10
+log
+@f4cff84e7264e335c9a0cdf8f96295e8
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.10
+@
+
+
+1.9
+log
+@b14dc61ac9931f9ca0611b79c2a8fa1a
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.9
+@
+
+
+1.8
+log
+@f9aedf70927b929cdc9ee67750c4ff6d
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.8
+@
+
+
+1.7
+log
+@b19065094e1102e777844486654bde57
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.7
+@
+
+
+1.6
+log
+@6968ec8462683e7a9479762b94d6f29b
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.6
+@
+
+
+1.5
+log
+@65ec7fa97b00fb5041f7a521df94952a
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.5
+@
+
+
+1.4
+log
+@4b0af130e3fa58e618e3d2d82094cff2
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.4
+@
+
+
+1.3
+log
+@4dab9f9b07db47f6f925903e0daf9683
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.3
+@
+
+
+1.2
+log
+@f1a7213d4af996706fa5cfcc2b6798a4
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.2
+@
+
+
+1.2.2.1
+log
+@b668ecbf5196406c409f9d73368cc624
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.2.2.1
+@
+
+
+1.1
+log
+@44066077635f4d814dceea8d151d9849
+@
+text
+@d1 1
+a1 1
+repro-b2/cyassl.xcodeproj__project.pbxproj,v content for 1.1
+@
+

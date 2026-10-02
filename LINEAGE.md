@@ -19,7 +19,8 @@ the Crypto++ 3.2 import (2000-06-26) to wolfSSL master.
 - `main`: wolfSSL `master` (upstream `0bcda7efa2ec`) with the grafts below
   baked in. Its tree equals upstream's, but every yaSSL, CyaSSL and wolfSSL
   commit ID is rewritten, so `main` commit IDs do NOT match upstream wolfSSL.
-  Translate with `.git/filter-repo/commit-map` (old ID, new ID per line).
+  Translate with `commit-map.txt` on this branch (old ID, new ID per line; a
+  copy of the builder's `.git/filter-repo/commit-map` after the last bake).
   filter-repo chained all six bakes, so its keys are the original IDs
   (upstream wolfSSL, and the first snapshot/CVS build) and its values are the
   current IDs; e.g. wolfSSL "1.8.8 init" `6b88eb05b` is `57735b92db94` here.
@@ -67,15 +68,11 @@ the Crypto++ 3.2 import (2000-06-26) to wolfSSL master.
   also `--prune-empty never --prune-degenerate never`). No replace refs
   remain; a plain clone shows the full history. LibTom commits and `notes`
   keep their IDs.
-- Pre-bake backups: mirrors taken before bakes 1-3 were deleted on
-  2026-10-02, and with them the `refs/pre-cvs/*` snapshot-only fallback refs
-  and the intermediate commit IDs. `~/GIT/wolfssl-lineage-pre-cvsrebuild.git`
-  holds the state before bake 4 (SWH-derived CVS layer), with the bake-3
-  commit map in `filter-repo-run3/`. Bake 5 had no separate backup; its input
-  state is reproducible from that mirror plus
-  ~/TASKS/yassl-lineage/upstream-check/cryptopp/build/.
-  `~/GIT/wolfssl-lineage-pre-yassl00x.git` holds the state before bake 6,
-  with the bake-5 commit map in `filter-repo-run5/`.
+- Pre-bake backups: a mirror was taken before each bake; all were deleted on
+  2026-10-02 after the final push, and with them the `refs/pre-cvs/*`
+  snapshot-only fallback refs, the Software Heritage-derived CVS layer, and
+  the intermediate commit IDs. `commit-map.txt` still maps original IDs to
+  current ones.
 
 ## CVS history
 
@@ -86,7 +83,7 @@ the RCS `,v` masters for modules `yassl` (297 files, 1,860 revisions) and
 `cyassl` (274 files, 1,904 revisions). Oracle: real CVS 1.12.13 run on that
 repository (`cvs export`, `cvs co -p -r REV`).
 
-Build (`~/TASKS/yassl-lineage/sourceforge/build_cvs.py`):
+Build (`tools/build_cvs.py`):
 
 - Changeset grouping and commit metadata come from cvs-fast-export 2.5
   (`-A authors.map -R revmap`). File contents do not: every file revision is
@@ -138,7 +135,7 @@ file contents at every SWH commit, plus
 - all CVS tags and branches (SWH kept only HEAD).
 
 cvs-fast-export 2.5 problems found on these inputs (draft report, not filed:
-~/TASKS/yassl-lineage/cfe-bug/DRAFT.md): the vendor commit / `start` tag drops
+`cfe-bug/DRAFT.md`): the vendor commit / `start` tag drops
 the files never changed after import when run without a visible CVSROOT
 (same symptom as closed GitLab issue #57); the `bNoMallocUpdate1` branch base
 keeps 15 files CVS does not have there; one `cvs import` is split into 22-25
@@ -149,7 +146,7 @@ do by design.
 
 ## Splice procedure
 
-`~/TASKS/yassl-lineage/sourceforge/splice.py`: the rebuilt histories were
+`tools/splice.py`: the rebuilt histories were
 fetched into the repo; every commit outside the old CVS first-parent chain
 with a parent inside it (CVS-era release side commits, yaSSL 2.3.7c, wolfSSL
 "1.8.8 init") was regrafted onto the new trunk commit current at its
@@ -158,8 +155,9 @@ committer time (the same anchor rule as the original reposurgeon splice; all
 bits); the new import commit onto the last pre-CVS release; TomsFastMath onto
 the new "add optional fast math and alloc overrides" commit. Then baked
 (bake 4). The original 2026-10-02 reposurgeon splice of the SWH streams
-(`unite --prune`, tree-preserving `reparent --use-order`) is in
-~/TASKS/yassl-lineage/surgery/.
+(`unite --prune`, tree-preserving `reparent --use-order`) is
+`tools/surgeryA-*.rs`, with anchors from `tools/anchors.py` and checks by
+`tools/cvscheck.py`.
 
 ## Sources and selection rules
 
@@ -249,7 +247,7 @@ bytes, sha256 `55c4d3a26695be533d1d5797334319f811d1e3d889d0bc85f549558740b4d6b2`
 modules `src` (Crypto++ 3.2 to 4.2, 2000-06-26 to 2002-12-12) and `c5` (5.0 on).
 The upstream git history (weidai11/cryptopp, via cvs2svn and SourceForge SVN)
 matches this CVS and SVN exactly for all 48 commits up to `CRYPTOPP_5_1`
-(~/TASKS/yassl-lineage/upstream-check/cryptopp/REPORT.md), but lacks `src`
+(`reports/cryptopp-vs-sourceforge.md`), but lacks `src`
 entirely and flattens the `c50-fixes` branch into empty commits.
 
 `src` keeps its main line on the vendor branch: three `cvs import`s of release
@@ -258,7 +256,7 @@ branch `WEIDAI`, then ordinary trunk commits. CVS treats a file whose only
 trunk revision is the import as following the vendor branch; cvs-fast-export
 2.5 does not, so its trunk keeps those files at 1.1 and never reaches the
 `CRYPTOPP_4_1` or `CRYPTOPP_4_2` states. The trunk here is therefore built by
-sampling (`~/TASKS/yassl-lineage/sourceforge/build_sampled.py`): each
+sampling (`tools/build_sampled.py`): each
 cvs-fast-export changeset supplies a time and metadata, and its tree is
 `cvs export -D <time>`; each import burst is one commit with the vendor
 import's message and time. 46 commits (3 imports, 43 changesets). Checks:
@@ -298,7 +296,7 @@ release. 0.0.2 is a root commit, 0.0.3 its child, and yaSSL 0.2.0 has parents
 build system, certificates, `crypto/`, `stunnel/` and the bundled archives as
 added; that reflects what the update archives omitted, not what 0.2.0 added.
 11 of the 26 files are byte-identical in 0.0.3 and 0.2.0. Script:
-~/TASKS/yassl-lineage/updates/add_000x.py.
+`tools/add_000x.py`.
 
 ## Third-party code not grafted
 
@@ -346,7 +344,7 @@ unchanged from it (`main` 32130 = 32086 + 44 `src` commits up to the fork);
 `main` tree equals upstream wolfSSL `0bcda7efa2ec`; LibTom tags kept their
 IDs; `git fsck --full --strict` is clean.
 
-Fourth bake (CVS layer rebuild), against `~/GIT/wolfssl-lineage-pre-cvsrebuild.git`:
+Fourth bake (CVS layer rebuild), against its pre-bake mirror (since deleted):
 no replace refs left; all 146 refs (4 branches + 6 CVS branches, 125 release
 and upstream tags + 11 CVS tags) have the same trees as in the grafted state;
 the old ref trees are unchanged except `cyassl`, whose tip differs from the
@@ -376,9 +374,27 @@ outside `refs/tags/` into duplicate `refs/tags/refs/pre-cvs/tags/*` refs and
 left one fallback ref on an unrewritten commit; that is why the fallback was
 dropped here; the copy in the mirror was deleted with it.
 
+## Files on this branch
+
+- `LINEAGE.md` (this file), `catalog.tsv` (every archive considered: source,
+  sha256, release date and basis, how it was used).
+- `commit-map.txt`: original commit ID to current ID, chained across all bakes.
+- `tools/`: `build_lineage.py` and `verify_lineage.py` (release snapshots);
+  `anchors.py`, `cvscheck.py`, `surgeryA-*.rs` (original reposurgeon splice);
+  `build_cvs.py`, `build_sampled.py`, `splice.py`, `refcheck.sh`,
+  `trunkcheck.sh` (CVS rebuild from SourceForge and its checks);
+  `add_000x.py` (yaSSL 0.0.2/0.0.3); `authors.map`. They are records of how
+  this repository was built; paths inside them refer to the builder's
+  machine. Inputs (release archives, SourceForge CVS zips) are not stored here;
+  `catalog.tsv` and the sections above give their URLs and sha256.
+- `reports/`: Crypto++ git vs SourceForge CVS/SVN; LibTom grafts vs signed
+  release tarballs.
+- `cfe-bug/`: unfiled draft report of cvs-fast-export 2.5 problems found
+  here, with stripped RCS repros.
+
 ## Provenance of the snapshot layer
 
-The release snapshots were built by ~/TASKS/yassl-lineage/build/build_lineage.py
+The release snapshots were built by `tools/build_lineage.py`
 and verified by verify_lineage.py (independent extraction of each archive vs
 `git archive <tag>`). The CVS layer was added afterwards (see "CVS history"
 and "Splice procedure"); the builder's own CVS path was not used.

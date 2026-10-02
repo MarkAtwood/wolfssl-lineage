@@ -1,0 +1,34 @@
+# cvs-fast-export  2.5  |  Concurrent Versions System (CVS) 1.12.13-MirDebian-30 (client/server)  |  git 2.55.0
+
+=== 1. vendor-import: start tag and trunk import
+cvs export -r start      : testsuite__input testsuite__Makefile.am testsuite__quit 
+cfe start (RCS mode)     : testsuite__Makefile.am 
+cfe start (CVS mode)     : testsuite__Makefile.am testsuite__input testsuite__quit 
+cvs export -D '2006-04-05 01:37:13 UTC': testsuite__input testsuite__Makefile.am testsuite__quit 
+cfe rcsmode: commits on master dated 2006-04-05 (all 1.1 revs share date, author, log):
+  4049f2e 2006-04-05T01:37:13Z da28248b4ec75efbe0ba7461142ed60d
+testsuite__Makefile.am
+testsuite__input
+  6d40ec5 2006-04-05T01:37:13Z da28248b4ec75efbe0ba7461142ed60d
+testsuite__quit
+cfe cvsmode: commits on master dated 2006-04-05 (all 1.1 revs share date, author, log):
+  4049f2e 2006-04-05T01:37:13Z da28248b4ec75efbe0ba7461142ed60d
+testsuite__Makefile.am
+testsuite__input
+  6d40ec5 2006-04-05T01:37:13Z da28248b4ec75efbe0ba7461142ed60d
+testsuite__quit
+cfe rcsmode start commit vs its parent:
+  D	testsuite__input
+  D	testsuite__quit
+
+=== 2. branch-nosymbol: sub-branch bNoMallocUpdate1 of bNoMalloc
+cvs export -r bNoMallocUpdate1 : include__cyassl_int.h 
+cfe bNoMallocUpdate1 (RCS mode): cyassl.xcodeproj__project.pbxproj include__cyassl_int.h 
+cfe bNoMallocUpdate1 (CVS mode): cyassl.xcodeproj__project.pbxproj include__cyassl_int.h 
+
+=== 2. branch-dead-on-parent: sub-branch bNoMallocUpdate1 of bNoMalloc
+cvs export -r bNoMallocUpdate1 : include__cyassl_int.h 
+cfe bNoMallocUpdate1 (RCS mode): aclocal.m4 include__cyassl_int.h 
+cfe bNoMallocUpdate1 (CVS mode): aclocal.m4 include__cyassl_int.h 
+
+# scratch left in /tmp/claude-1001/-home-langwei-TASKS/85869165-d775-43c7-aea4-0926882b0ade/scratchpad/tmp.SxJS4Nxii2

@@ -1,0 +1,56 @@
+head	1.1;
+branch	1.1.1;
+access;
+symbols
+	r1-4-4:1.1.1.1
+	Alexey:1.1.1.1.0.8
+	fasthugemath:1.1.1.1
+	cyassl-1_0_3:1.1.1.1
+	dtls-branch:1.1.1.1.0.6
+	rc2-1-0-0:1.1.1.1
+	bNoMalloc-rc1-mergePoint:1.1.1.1
+	noMalloc-Merge-IO:1.1.1.1
+	noMallocUpdate1-IOadd:1.1.1.1
+	bNoMallocUpdate1:1.1.1.1.0.4
+	noMalloc-CheckIn:1.1.1.1
+	bNoMalloc:1.1.1.1.0.2
+	v0-9-9e:1.1.1.1
+	start:1.1.1.1
+	touska:1.1.1;
+locks; strict;
+comment	@# @;
+
+
+1.1
+date	2006.04.05.01.37.13;	author touska;	state Exp;
+branches
+	1.1.1.1;
+next	;
+
+1.1.1.1
+date	2006.04.05.01.37.13;	author touska;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+
+1.1
+log
+@da28248b4ec75efbe0ba7461142ed60d
+@
+text
+@quit
+
+@
+
+
+1.1.1.1
+log
+@f57a61a21e27f0ada724c5b2ff0baf0e
+@
+text
+@@

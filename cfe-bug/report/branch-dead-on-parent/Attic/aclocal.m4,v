@@ -1,0 +1,110 @@
+head	1.4;
+access;
+symbols
+	bNoMalloc:1.3.0.2
+	v0-9-9e:1.3
+	start:1.1.1.1
+	touska:1.1.1;
+locks; strict;
+comment	@# @;
+
+
+1.4
+date	2008.10.21.22.06.25;	author touska;	state dead;
+branches;
+next	1.3;
+
+1.3
+date	2008.05.21.21.12.24;	author touska;	state Exp;
+branches
+	1.3.2.1;
+next	1.2;
+
+1.2
+date	2008.05.19.23.26.53;	author touska;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2006.04.05.01.36.50;	author touska;	state Exp;
+branches
+	1.1.1.1;
+next	;
+
+1.1.1.1
+date	2006.04.05.01.36.50;	author touska;	state Exp;
+branches;
+next	;
+
+1.3.2.1
+date	2008.10.21.22.19.55;	author touska;	state dead;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.4
+log
+@f792d1b664ef49de06902a0d9480fc36
+@
+text
+@repro-b2-dead/Attic/aclocal.m4,v content for 1.4
+@
+
+
+1.3
+log
+@37064cca2873955b54c166612f2064a2
+@
+text
+@d1 1
+a1 1
+repro-b2-dead/Attic/aclocal.m4,v content for 1.3
+@
+
+
+1.3.2.1
+log
+@295aa4bcc826efa6964f215ade4dfa5f
+@
+text
+@d1 1
+a1 1
+repro-b2-dead/Attic/aclocal.m4,v content for 1.3.2.1
+@
+
+
+1.2
+log
+@d74be8439d1e13cb7f2e3ed215b0f95f
+@
+text
+@d1 1
+a1 1
+repro-b2-dead/Attic/aclocal.m4,v content for 1.2
+@
+
+
+1.1
+log
+@da28248b4ec75efbe0ba7461142ed60d
+@
+text
+@d1 1
+a1 1
+repro-b2-dead/Attic/aclocal.m4,v content for 1.1
+@
+
+
+1.1.1.1
+log
+@f57a61a21e27f0ada724c5b2ff0baf0e
+@
+text
+@d1 1
+a1 1
+repro-b2-dead/Attic/aclocal.m4,v content for 1.1.1.1
+@
