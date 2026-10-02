@@ -51,14 +51,12 @@ reconstruction; not an official wolfSSL repository.
   third bakes also `--prune-empty never --prune-degenerate never`). No replace
   refs remain; a plain clone shows the full history. Upstream library commits
   and `notes` keep their IDs.
-- Pre-bake state: `~/GIT/wolfssl-lineage-pre-bake.git` (mirror) holds the
-  repo before the first bake, with grafts 1-2 as replace refs, the original
-  wolfSSL commit IDs, and the `refs/pre-cvs/*` snapshot-only fallback from
-  before the CVS splice (those fallback refs were dropped from this repo).
-  `~/GIT/wolfssl-lineage-pre-bignum.git` (mirror) holds the repo between the
-  first two bakes; its `filter-repo-run1/commit-map` is the first bake's map.
-  `~/GIT/wolfssl-lineage-pre-libtomcrypt.git` (mirror) holds the repo between
-  the second and third bakes, with that map in `filter-repo-run2/`.
+- Pre-bake backups: a mirror was taken before each of the three bakes and
+  verified against (see "Bake verification"); all three were deleted on
+  2026-10-02. With them went the `refs/pre-cvs/*` snapshot-only fallback refs
+  (from before the CVS splice) and the intermediate commit IDs between bakes.
+  Original upstream wolfSSL IDs remain translatable via the chained
+  `.git/filter-repo/commit-map`, and upstream history is in `~/GIT/wolfssl`.
 
 ## CVS history
 
@@ -147,8 +145,7 @@ No commit ever moved code from one tree to the other, so the link is a graft
 is the C++ to C translation: TaoCrypt and the C++ SSL layer removed,
 CTaoCrypt and CyaSSL added. `git blame` and `--follow` do not cross it,
 because the C code was written fresh (different big-integer base, `.cpp` to
-`.c`). The pre-bake mirror shows the trees as unrelated with
-`git --no-replace-objects`.
+`.c`). Before the bake, the trees were unrelated in the real objects.
 
 ## Upstream library ancestry
 
@@ -214,24 +211,25 @@ verified line by line.
 
 ## Bake verification (2026-10-02)
 
-Third bake (LibTomCrypt), against `~/GIT/wolfssl-lineage-pre-libtomcrypt.git`:
+Third bake (LibTomCrypt), against its pre-bake mirror (since deleted):
 no replace refs left; all 129 refs have unchanged trees; branch commit counts
 unchanged from the grafted state (`main` 32086 = 32041 + 45); all four
 upstream tags kept their commit IDs; `git fsck --full --strict` is clean.
 
-Second bake (bignum part of graft 3), against `~/GIT/wolfssl-lineage-pre-bignum.git`: no
+Second bake (bignum part of graft 3), against its pre-bake mirror (since
+deleted): no
 replace refs left; all 128 refs (4 branches, 124 tags) have unchanged trees;
 branch commit counts unchanged from the grafted state (`main` 32041 = 31945
 + 48 + 38 + 10); the three upstream tags kept their commit IDs;
 `git fsck --full --strict` is clean.
 
-First bake (grafts 1-2), against the pre-bake mirror: no replace refs left; `main` has 31945 commits
+First bake (grafts 1-2), against its pre-bake mirror (since deleted): no replace refs left; `main` has 31945 commits
 and its tree equals wolfSSL `master`; the tips of `main`, `yassl`, `cyassl`
 and `notes` have unchanged trees; all 121 release tags have unchanged trees;
 `git fsck --full --strict` is clean. filter-repo split annotated tags stored
 outside `refs/tags/` into duplicate `refs/tags/refs/pre-cvs/tags/*` refs and
 left one fallback ref on an unrewritten commit; that is why the fallback was
-dropped here and kept only in the mirror.
+dropped here; the copy in the mirror was deleted with it.
 
 ## Provenance of the snapshot layer
 
