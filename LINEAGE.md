@@ -37,23 +37,28 @@ reconstruction; not an official wolfSSL repository.
   time). `git merge-base yassl main` is yaSSL 1.1.5.
   This records lineage, not code flow; see "yaSSL and CyaSSL" below.
 - Graft 3 (permanent): upstream bignum libraries as extra merge parents on
-  the commits that imported them; see "Upstream bignum ancestry" below.
+  the commits that imported them, plus LibTomCrypt (ECC) the same way; see
+  "Upstream library ancestry" below.
   `git log main` therefore runs back to the Crypto++ 5.0 import (2002-10-04);
   `git log --first-parent main` stays on the yaSSL/CyaSSL/wolfSSL line.
-- Tags `cryptopp-5.1`, `libtommath-0.38`, `tomsfastmath-0.10`: the upstream
-  annotated tags (`CRYPTOPP_5_1`, `0.38`, `0.10`), renamed.
-- Grafts 1-2 were baked in on 2026-10-02 (first bake), graft 3 later the same
-  day (second bake), each first as replace refs, then with
-  `git filter-repo --proceed --force --replace-refs delete-no-add` (second
-  bake also `--prune-empty never --prune-degenerate never`). No replace refs
-  remain; a plain clone shows the full history. Upstream bignum commits and
-  `notes` keep their IDs.
+- Tags `cryptopp-5.1`, `libtommath-0.38`, `tomsfastmath-0.10`,
+  `libtomcrypt-1.17`: the upstream annotated tags (`CRYPTOPP_5_1`, `0.38`,
+  `0.10`, `1.17`), renamed.
+- All grafts were baked in on 2026-10-02: grafts 1-2 (first bake), the
+  bignum part of graft 3 (second bake), LibTomCrypt (third bake). Each was
+  first a replace ref, then baked with
+  `git filter-repo --proceed --force --replace-refs delete-no-add` (second and
+  third bakes also `--prune-empty never --prune-degenerate never`). No replace
+  refs remain; a plain clone shows the full history. Upstream library commits
+  and `notes` keep their IDs.
 - Pre-bake state: `~/GIT/wolfssl-lineage-pre-bake.git` (mirror) holds the
   repo before the first bake, with grafts 1-2 as replace refs, the original
   wolfSSL commit IDs, and the `refs/pre-cvs/*` snapshot-only fallback from
   before the CVS splice (those fallback refs were dropped from this repo).
   `~/GIT/wolfssl-lineage-pre-bignum.git` (mirror) holds the repo between the
-  two bakes; its `filter-repo-run1/commit-map` is the first bake's map.
+  first two bakes; its `filter-repo-run1/commit-map` is the first bake's map.
+  `~/GIT/wolfssl-lineage-pre-libtomcrypt.git` (mirror) holds the repo between
+  the second and third bakes, with that map in `filter-repo-run2/`.
 
 ## CVS history
 
@@ -145,27 +150,54 @@ because the C code was written fresh (different big-integer base, `.cpp` to
 `.c`). The pre-bake mirror shows the trees as unrelated with
 `git --no-replace-objects`.
 
-## Upstream bignum ancestry
+## Upstream library ancestry
 
-Both crypto layers started from someone else's big-integer code. Each upstream
-release is an extra (second) parent of the commit that imported it, fetched
-from the upstream git repos with history up to that tag only:
+Both crypto layers started from someone else's big-integer code, and CyaSSL's
+ECC came from LibTomCrypt. Each upstream release is an extra (second) parent
+of the commit that imported it, fetched from the upstream git repos with
+history up to that tag only:
 
 | Upstream (repo, tag) | Commits | Grafted onto | Evidence |
 |---|---|---|---|
 | Crypto++ 5.1, Wei Dai (`weidai11/cryptopp` `CRYPTOPP_5_1`, `b2f710a95`, 2003-03-22) | 48 | yaSSL 0.2.0 `cbcf661b5` (was a root commit) | yaSSL 0.2.0 ships `cryptopp51/crypto51.zip`; 309 of 310 files equal the tag tree (only `crypto++.mcp`, a binary CodeWarrior project, differs) |
 | LibTomMath 0.38, Tom St Denis (`libtom/libtommath` `0.38`, `21adca01d`, 2006-01-26) | 38 | CyaSSL 0.2.0 `915cda82b` | `integer.c`: "Based on public domain LibTomMath 0.38"; `mpi_class.h` differs from `tommath_class.h` in 7 of 999 lines |
 | TomsFastMath 0.10, Tom St Denis (`libtom/tomsfastmath` `0.10`, `ea10e969b`, 2006-11-01) | 10 | CyaSSL CVS "add optional fast math and alloc overrides" `eaa612b89` (2008-07-24, adds `tfm.c`) | `tfm.c`: "Based on public domain TomsFashMath 0.10" [sic] |
+| LibTomCrypt 1.17, Tom St Denis (`libtom/libtomcrypt` `1.17`, `bbc52b9e1`, 2007-07-20) | 45 | wolfSSL "fix gcc lots o warnings for optional library build features" `6567ee3c8` (2011-04-28, upstream wolfSSL `1ce566971`; adds the 1517-line `ecc.c` body despite the message) | No attribution in `ecc.c`. LibTomCrypt fingerprints: `ecc_sets[]` with "ECC-192".."ECC-521" names, `ecc_projective_add_point`, `ecc_projective_dbl_point`, `ecc_map` (LibTomCrypt's `ltc_`-prefixed functions). Version is a best match, not proof: after normalizing `ltc_`/`CRYPT_OK` naming, `ecc.c` shares 127 lines with 1.17's ECC sources vs 126 with 1.16 and 1.18.0, and matches one line unique to 1.17 against each neighbour and none unique to either; 1.17 was also the current release in 2011 (1.18 shipped 2017) |
 
 Licenses, from each tag's own file: Crypto++ 5.1 is a compilation copyright
 by Wei Dai with the individual files in the public domain (except
-`mars.cpp`); LibTomMath and TomsFastMath are public domain.
+`mars.cpp`); LibTomMath, TomsFastMath and LibTomCrypt 1.17 are public domain.
 
 The merges carry attribution, not content: each merge's tree is the
 yaSSL/CyaSSL tree, unchanged. `git blame` does not cross them; LibTomMath's
 separate `bn_*.c` files were concatenated into one `integer.c`, and TaoCrypt's
 `integer.cpp` was reworked. Releases after these (e.g. later LibTomMath or
 TomsFastMath fixes wolfSSL may have pulled in) are not grafted.
+
+Crypto++ 5.1 covers more than bignum: by yaSSL 1.2.2, TaoCrypt files cite
+"Wei Dai's X from CryptoPP" for aes, aestables, algebra, arc4, bfinit,
+blowfish, des, integer, md2, md5, misc, modarith, ripemd, rsa, sha, tftables
+and twofish. yaSSL 0.2.0's `crypto/Readme.txt` instead claims "Copyright (C)
+2003 Sawtooth Consulting" for every file in `crypto/`; the per-file Crypto++
+credits appear in later releases.
+
+## Third-party code not grafted
+
+No usable upstream git history, or not part of the library:
+
+| Code | Source | First release | Credited in file |
+|---|---|---|---|
+| `stunnel/` | stunnel 4.05, Michal Trojnara (GPL), with one mod_ssl-derived function; bundled port demo | yassl-0.2.0 | yes |
+| `rabbit.c` | eSTREAM Rabbit reference code (keeps its `U32V()` macro) | cyassl-1.0.0rc2 | no |
+| `hc128.c` | presumed eSTREAM HC-128 reference (Hongjun Wu); no fingerprint found | cyassl-1.0.0rc2 | no |
+| `camellia.c` | NTT Camellia reference 1.2.0 (BSD) | cyassl-2.5.0 | yes (NTT copyright) |
+| `blake2b.c` | BLAKE2 reference, Samuel Neves (CC0) | cyassl-2.6.0 | yes |
+| `chacha.c` | D. J. Bernstein `chacha-ref.c` 20080118 | cyassl-3.2.0 | yes |
+| `poly1305.c` | Andrew Moon / D. J. Bernstein public-domain code | cyassl-3.2.0 | yes |
+
+CTaoCrypt's md5, sha, des3, arc4, aes and hmac carry no outside attribution;
+they are presumably C rewrites of TaoCrypt (so second-hand Crypto++), not
+verified line by line.
 
 ## Gaps and caveats
 
@@ -182,7 +214,12 @@ TomsFastMath fixes wolfSSL may have pulled in) are not grafted.
 
 ## Bake verification (2026-10-02)
 
-Second bake (graft 3), against `~/GIT/wolfssl-lineage-pre-bignum.git`: no
+Third bake (LibTomCrypt), against `~/GIT/wolfssl-lineage-pre-libtomcrypt.git`:
+no replace refs left; all 129 refs have unchanged trees; branch commit counts
+unchanged from the grafted state (`main` 32086 = 32041 + 45); all four
+upstream tags kept their commit IDs; `git fsck --full --strict` is clean.
+
+Second bake (bignum part of graft 3), against `~/GIT/wolfssl-lineage-pre-bignum.git`: no
 replace refs left; all 128 refs (4 branches, 124 tags) have unchanged trees;
 branch commit counts unchanged from the grafted state (`main` 32041 = 31945
 + 48 + 38 + 10); the three upstream tags kept their commit IDs;
