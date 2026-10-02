@@ -12,14 +12,15 @@ official wolfSSL repository.
 - `cyassl`: CyaSSL releases 0.2.0..0.5.0 as snapshots, then the CyaSSL CVS
   history (200 commits, 2006-04-05 "cyassl 0.5.1 cvs import" .. 2011-01-06).
   204 commits on the branch line.
-- `main`: wolfSSL `master` fetched unchanged from a local wolfSSL clone.
+- `main`: wolfSSL `master` with the grafts below baked in. Its tree equals
+  wolfSSL `master`, but every commit ID from CyaSSL 0.2.0 onward is rewritten,
+  so `main` commit IDs do NOT match upstream wolfSSL. Translate with
+  `.git/filter-repo/commit-map` (old ID, new ID per line); e.g. wolfSSL
+  "1.8.8 init" `6b88eb05b` is `c2031a6c1cf8` here.
 - `notes`: this file plus `catalog.tsv`, on an orphan branch.
-- `refs/replace/6b88eb05b11a43a48a80fbabfa0ad4b87eb46fbc`: graft making wolfSSL's root commit
-  ("1.8.8 init", 2011-02-05) a child of the `cyassl` tip, the last CyaSSL CVS
-  commit `adc5a5503` (2011-01-06). `git log main` therefore runs back through
-  CyaSSL CVS and releases to 2006. Use `git --no-replace-objects log` to see
-  wolfSSL's real history. Replace refs are not fetched or pushed by default; a
-  clone needs `git fetch origin 'refs/replace/*:refs/replace/*'`.
+- Graft 1 (permanent): wolfSSL's root commit "1.8.8 init" (2011-02-05,
+  `c2031a6c1cf8`) is a child of the `cyassl` tip, the last CyaSSL CVS commit
+  (2011-01-06, `900d94aea534`; was `adc5a5503`).
 - Tags `yassl-<ver>`, `cyassl-<ver>`: annotated. Release tags whose `Kind:` is
   `snapshot` have tree == release archive (byte-identical, verified). Releases
   dated inside a CVS window are side commits: the exact archive tree, parented
@@ -27,15 +28,19 @@ official wolfSSL repository.
   stays pure CVS and each release shows where it forked. Releases before or
   after the CVS window are on the branch line. `wolfssl-tag` tags sit on
   wolfSSL commits carrying the matching wolfSSL `v<ver>` tag.
-- `refs/replace/85faa773e1ada75b6b2e8d8da59f40468413d60e`: interpretive graft
-  making CyaSSL 0.2.0 (2006-02-19, root of the `cyassl` line) a child of yaSSL
-  1.1.5 `4dcebc25b` (2006-01-09, the yaSSL release current at the time).
-  `git log main` therefore runs back to yaSSL 0.2.0 (2004-06-28), and
-  `git merge-base yassl main` is yaSSL 1.1.5. This records lineage, not code
-  flow; see "yaSSL and CyaSSL" below. Remove it with
-  `git replace -d 85faa773e1ada75b6b2e8d8da59f40468413d60e`.
-- `refs/pre-cvs/*`: the snapshot-only branches, tags and graft parent from
-  before the CVS splice, kept as a fallback.
+- Graft 2 (permanent, interpretive): CyaSSL 0.2.0 (2006-02-19, `5ac328bb489a`;
+  was `85faa773e`) is a child of yaSSL 1.1.5 (2006-01-09, `4dcebc25b`, the
+  yaSSL release current at the time). `git log main` therefore runs back to
+  yaSSL 0.2.0 (2004-06-28), and `git merge-base yassl main` is yaSSL 1.1.5.
+  This records lineage, not code flow; see "yaSSL and CyaSSL" below.
+- Both grafts were first added as replace refs, then baked in on 2026-10-02
+  with `git filter-repo --proceed --force --replace-refs delete-no-add`. No
+  replace refs remain; a plain clone shows the full history. yaSSL commits
+  (whose parents did not change) and `notes` kept their IDs.
+- Pre-bake state: `~/GIT/wolfssl-lineage-pre-bake.git` (mirror) holds the
+  repo as it was before the rewrite, with both grafts as replace refs, the
+  original wolfSSL commit IDs, and the `refs/pre-cvs/*` snapshot-only fallback
+  from before the CVS splice. Those fallback refs were dropped from this repo.
 
 ## CVS history
 
@@ -118,13 +123,14 @@ comparing `yassl-1.2.2` with `cyassl-0.2.0`:
   Dai's integer.cpp from CryptoPP"; CTaoCrypt `integer.c` is "Based on public
   domain LibTomMath 0.38".
 
-No commit ever moved code from one tree to the other, so the link is a replace
-ref graft (CyaSSL 0.2.0 -> yaSSL 1.1.5), not a rewritten or synthetic commit.
-The CyaSSL 0.2.0 commit's diff against yaSSL 1.1.5 is the C++ to C
-translation: TaoCrypt and the C++ SSL layer removed, CTaoCrypt and CyaSSL
-added. `git blame` and `--follow` do not cross it, because the C code was
-written fresh (different big-integer base, `.cpp` to `.c`). Use
-`git --no-replace-objects` to see the trees as unrelated.
+No commit ever moved code from one tree to the other, so the link is a graft
+(CyaSSL 0.2.0 -> yaSSL 1.1.5), not a synthetic commit. It is now a real parent
+(see "Branches and refs"). The CyaSSL 0.2.0 commit's diff against yaSSL 1.1.5
+is the C++ to C translation: TaoCrypt and the C++ SSL layer removed,
+CTaoCrypt and CyaSSL added. `git blame` and `--follow` do not cross it,
+because the C code was written fresh (different big-integer base, `.cpp` to
+`.c`). The pre-bake mirror shows the trees as unrelated with
+`git --no-replace-objects`.
 
 ## Gaps and caveats
 
@@ -139,15 +145,15 @@ written fresh (different big-integer base, `.cpp` to `.c`). Use
 - CyaSSL releases dated on/after 2011-02-05 are tagged on wolfSSL commits only
   where wolfSSL has a matching tag; see `lineage` column in catalog.tsv.
 
-## Making the graft permanent
+## Bake verification (2026-10-02)
 
-The graft is a replace ref, so wolfSSL commit ids are unchanged. To bake it in
-(this rewrites every wolfSSL commit id):
-
-    git filter-repo --proceed --force   # filter-repo >= 2.38; replace refs become real parents
-
-or `git filter-branch -- --all`; afterwards the replace ref is redundant. Do
-this only in a scratch clone.
+Against the pre-bake mirror: no replace refs left; `main` has 31945 commits
+and its tree equals wolfSSL `master`; the tips of `main`, `yassl`, `cyassl`
+and `notes` have unchanged trees; all 121 release tags have unchanged trees;
+`git fsck --full --strict` is clean. filter-repo split annotated tags stored
+outside `refs/tags/` into duplicate `refs/tags/refs/pre-cvs/tags/*` refs and
+left one fallback ref on an unrewritten commit; that is why the fallback was
+dropped here and kept only in the mirror.
 
 ## Provenance of the snapshot layer
 
