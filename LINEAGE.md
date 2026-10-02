@@ -27,6 +27,13 @@ official wolfSSL repository.
   stays pure CVS and each release shows where it forked. Releases before or
   after the CVS window are on the branch line. `wolfssl-tag` tags sit on
   wolfSSL commits carrying the matching wolfSSL `v<ver>` tag.
+- `refs/replace/85faa773e1ada75b6b2e8d8da59f40468413d60e`: interpretive graft
+  making CyaSSL 0.2.0 (2006-02-19, root of the `cyassl` line) a child of yaSSL
+  1.1.5 `4dcebc25b` (2006-01-09, the yaSSL release current at the time).
+  `git log main` therefore runs back to yaSSL 0.2.0 (2004-06-28), and
+  `git merge-base yassl main` is yaSSL 1.1.5. This records lineage, not code
+  flow; see "yaSSL and CyaSSL" below. Remove it with
+  `git replace -d 85faa773e1ada75b6b2e8d8da59f40468413d60e`.
 - `refs/pre-cvs/*`: the snapshot-only branches, tags and graft parent from
   before the CVS splice, kept as a fallback.
 
@@ -91,10 +98,11 @@ archive (lower bound) > earliest upper bound (distro import, SourceForge
 upload, MySQL import). A date later than any upper bound is replaced by that
 upper bound and marked CONFLICT. Dates not from README or freecode are weak.
 
-## yaSSL and CyaSSL: related code, no shared commits
+## yaSSL and CyaSSL: related code, joined by an interpretive graft
 
-`yassl` and `main` share no commits. yaSSL (C++) ended at 2.4.4 and did not
-become wolfSSL; wolfSSL descends from CyaSSL (C). The two are still family:
+In the real objects, `yassl` and `main` share no commits. yaSSL (C++) ended at
+2.4.4 and did not become wolfSSL; wolfSSL descends from CyaSSL (C). The two are
+still family:
 CyaSSL's crypto layer, CTaoCrypt (`ctaocrypt/`), is a C sibling modeled on
 yaSSL's TaoCrypt (`taocrypt/`). It is not a line-by-line port. Evidence,
 comparing `yassl-1.2.2` with `cyassl-0.2.0`:
@@ -110,9 +118,13 @@ comparing `yassl-1.2.2` with `cyassl-0.2.0`:
   Dai's integer.cpp from CryptoPP"; CTaoCrypt `integer.c` is "Based on public
   domain LibTomMath 0.38".
 
-This relationship is recorded here, not as git ancestry: no commit exists
-that moved code from one tree to the other, and a synthetic merge would
-misstate the history.
+No commit ever moved code from one tree to the other, so the link is a replace
+ref graft (CyaSSL 0.2.0 -> yaSSL 1.1.5), not a rewritten or synthetic commit.
+The CyaSSL 0.2.0 commit's diff against yaSSL 1.1.5 is the C++ to C
+translation: TaoCrypt and the C++ SSL layer removed, CTaoCrypt and CyaSSL
+added. `git blame` and `--follow` do not cross it, because the C code was
+written fresh (different big-integer base, `.cpp` to `.c`). Use
+`git --no-replace-objects` to see the trees as unrelated.
 
 ## Gaps and caveats
 
