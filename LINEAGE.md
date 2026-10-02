@@ -8,11 +8,11 @@ the Crypto++ 3.2 import (2000-06-26) to wolfSSL master.
 
 ## Branches and refs
 
-- `yassl`: yaSSL releases 0.2.0..1.2.2 as snapshots, then the yaSSL CVS history
+- `yassl`: yaSSL 0.0.2 and 0.0.3 as source-only commits (see "yaSSL 0.0.2 and
+  0.0.3"), releases 0.2.0..1.2.2 as snapshots, then the yaSSL CVS history
   (201 commits, 2006-03-28 "yaSSL 1.2.2 cvs import" .. 2015-03-18), then
-  releases 2.3.7c..2.4.4 as snapshots. 239 commits on the branch line from
-  yaSSL 0.2.0 (`git rev-list --first-parent` also walks the 48 Crypto++
-  commits below it).
+  releases 2.3.7c..2.4.4 as snapshots. 241 commits on the branch line from
+  yaSSL 0.0.2.
 - `cyassl`: CyaSSL releases 0.2.0..0.5.0 as snapshots, then the CyaSSL CVS
   history (200 commits, 2006-04-05 "cyassl 0.5.1 cvs import" .. 2011-01-06).
   204 commits on the branch line from CyaSSL 0.2.0.
@@ -20,9 +20,9 @@ the Crypto++ 3.2 import (2000-06-26) to wolfSSL master.
   baked in. Its tree equals upstream's, but every yaSSL, CyaSSL and wolfSSL
   commit ID is rewritten, so `main` commit IDs do NOT match upstream wolfSSL.
   Translate with `.git/filter-repo/commit-map` (old ID, new ID per line).
-  filter-repo chained all five bakes, so its keys are the original IDs
+  filter-repo chained all six bakes, so its keys are the original IDs
   (upstream wolfSSL, and the first snapshot/CVS build) and its values are the
-  current IDs; e.g. wolfSSL "1.8.8 init" `6b88eb05b` is `4364d7039e4e` here.
+  current IDs; e.g. wolfSSL "1.8.8 init" `6b88eb05b` is `57735b92db94` here.
 - `notes`: this file plus `catalog.tsv`, on an orphan branch.
 - `cvs/yassl/*`, `cvs/cyassl/*` (branches and tags): every CVS tag and branch
   from the SourceForge repository; see "CVS history".
@@ -30,8 +30,8 @@ the Crypto++ 3.2 import (2000-06-26) to wolfSSL master.
   CVS history". `cvs/cryptopp-src/trunk` is the Crypto++ 3.x/4.x line, which
   continues two commits past the 5.0 fork (to 2002-12-12).
 - Graft 1 (permanent): wolfSSL's root commit "1.8.8 init" (2011-02-05,
-  `4364d7039e4e`) is a child of the `cyassl` tip, the last CyaSSL CVS commit
-  (2011-01-06, `5ec928468c7b`; originally `adc5a5503`).
+  `57735b92db94`) is a child of the `cyassl` tip, the last CyaSSL CVS commit
+  (2011-01-06, `6124bc1f4cf8`; originally `adc5a5503`).
 - Tags `yassl-<ver>`, `cyassl-<ver>`: annotated. Release tags whose `Kind:` is
   `snapshot` have tree == release archive (byte-identical, verified). Releases
   dated inside a CVS window are side commits: the exact archive tree, parented
@@ -39,9 +39,9 @@ the Crypto++ 3.2 import (2000-06-26) to wolfSSL master.
   stays pure CVS and each release shows where it forked. Releases before or
   after the CVS window are on the branch line. `wolfssl-tag` tags sit on
   wolfSSL commits carrying the matching wolfSSL `v<ver>` tag.
-- Graft 2 (permanent, interpretive): CyaSSL 0.2.0 (2006-02-19, `4033361957cb`;
+- Graft 2 (permanent, interpretive): CyaSSL 0.2.0 (2006-02-19, `7b23622e94d7`;
   originally `85faa773e`) is a child of yaSSL 1.1.5 (2006-01-09,
-  `cb9b7003eb25`, originally `4dcebc25b`, the yaSSL release current at the
+  `7cfc8f7f9402`, originally `4dcebc25b`, the yaSSL release current at the
   time). `git merge-base yassl main` is yaSSL 1.1.5.
   This records lineage, not code flow; see "yaSSL and CyaSSL" below.
 - Graft 3 (permanent): upstream bignum libraries as extra merge parents on
@@ -59,11 +59,11 @@ the Crypto++ 3.2 import (2000-06-26) to wolfSSL master.
   `0.10`, `1.17`), renamed. Since graft 4 the Crypto++ commits have new IDs
   (`cryptopp-5.1` is `67c42df98eba` here, upstream `b2f710a95`); the LibTom
   commits keep upstream IDs.
-- All grafts were baked in on 2026-10-02 in five bakes: grafts 1-2, the
-  bignum part of graft 3, LibTomCrypt, the CVS layer rebuild, and the
-  Crypto++ CVS history (graft 4). Each was
+- All grafts were baked in on 2026-10-02 in six bakes: grafts 1-2, the
+  bignum part of graft 3, LibTomCrypt, the CVS layer rebuild, the Crypto++
+  CVS history (graft 4), and yaSSL 0.0.2/0.0.3. Each was
   first a replace ref, then baked with
-  `git filter-repo --proceed --force --replace-refs delete-no-add` (bakes 2-5
+  `git filter-repo --proceed --force --replace-refs delete-no-add` (bakes 2-6
   also `--prune-empty never --prune-degenerate never`). No replace refs
   remain; a plain clone shows the full history. LibTom commits and `notes`
   keep their IDs.
@@ -74,6 +74,8 @@ the Crypto++ 3.2 import (2000-06-26) to wolfSSL master.
   commit map in `filter-repo-run3/`. Bake 5 had no separate backup; its input
   state is reproducible from that mirror plus
   ~/TASKS/yassl-lineage/upstream-check/cryptopp/build/.
+  `~/GIT/wolfssl-lineage-pre-yassl00x.git` holds the state before bake 6,
+  with the bake-5 commit map in `filter-repo-run5/`.
 
 ## CVS history
 
@@ -217,10 +219,10 @@ history up to that tag only:
 
 | Upstream (repo, tag) | Commits | Grafted onto | Evidence |
 |---|---|---|---|
-| Crypto++ 5.1, Wei Dai (`weidai11/cryptopp` `CRYPTOPP_5_1`, upstream `b2f710a95`, here `67c42df98`, 2003-03-22) | 48 | yaSSL 0.2.0 `5063391a0` (was a root commit) | yaSSL 0.2.0 ships `cryptopp51/crypto51.zip`; 309 of 310 files equal the tag tree (only `crypto++.mcp`, a binary CodeWarrior project, differs) |
-| LibTomMath 0.38, Tom St Denis (`libtom/libtommath` `0.38`, `21adca01d`, 2006-01-26) | 38 | CyaSSL 0.2.0 `403336195` | `integer.c`: "Based on public domain LibTomMath 0.38"; `mpi_class.h` differs from `tommath_class.h` in 7 of 999 lines |
-| TomsFastMath 0.10, Tom St Denis (`libtom/tomsfastmath` `0.10`, `ea10e969b`, 2006-11-01) | 10 | CyaSSL CVS "add optional fast math and alloc overrides" `1b89db896` (2008-07-24, adds `tfm.c`) | `tfm.c`: "Based on public domain TomsFashMath 0.10" [sic] |
-| LibTomCrypt 1.17, Tom St Denis (`libtom/libtomcrypt` `1.17`, `bbc52b9e1`, 2007-07-20) | 45 | wolfSSL "fix gcc lots o warnings for optional library build features" `dda4af2de` (2011-04-28, upstream wolfSSL `1ce566971`; adds the 1517-line `ecc.c` body despite the message) | No attribution in `ecc.c`. LibTomCrypt fingerprints: `ecc_sets[]` with "ECC-192".."ECC-521" names, `ecc_projective_add_point`, `ecc_projective_dbl_point`, `ecc_map` (LibTomCrypt's `ltc_`-prefixed functions). Version is a best match, not proof: after normalizing `ltc_`/`CRYPT_OK` naming, `ecc.c` shares 127 lines with 1.17's ECC sources vs 126 with 1.16 and 1.18.0, and matches one line unique to 1.17 against each neighbour and none unique to either; 1.17 was also the current release in 2011 (1.18 shipped 2017) |
+| Crypto++ 5.1, Wei Dai (`weidai11/cryptopp` `CRYPTOPP_5_1`, upstream `b2f710a95`, here `67c42df98`, 2003-03-22) | 48 | yaSSL 0.2.0 `e45633e49` (second parent; first parent is yaSSL 0.0.3) | yaSSL 0.2.0 ships `cryptopp51/crypto51.zip`; 309 of 310 files equal the tag tree (only `crypto++.mcp`, a binary CodeWarrior project, differs) |
+| LibTomMath 0.38, Tom St Denis (`libtom/libtommath` `0.38`, `21adca01d`, 2006-01-26) | 38 | CyaSSL 0.2.0 `7b23622e9` | `integer.c`: "Based on public domain LibTomMath 0.38"; `mpi_class.h` differs from `tommath_class.h` in 7 of 999 lines |
+| TomsFastMath 0.10, Tom St Denis (`libtom/tomsfastmath` `0.10`, `ea10e969b`, 2006-11-01) | 10 | CyaSSL CVS "add optional fast math and alloc overrides" `2c313f7fd` (2008-07-24, adds `tfm.c`) | `tfm.c`: "Based on public domain TomsFashMath 0.10" [sic] |
+| LibTomCrypt 1.17, Tom St Denis (`libtom/libtomcrypt` `1.17`, `bbc52b9e1`, 2007-07-20) | 45 | wolfSSL "fix gcc lots o warnings for optional library build features" `389f2c4ab` (2011-04-28, upstream wolfSSL `1ce566971`; adds the 1517-line `ecc.c` body despite the message) | No attribution in `ecc.c`. LibTomCrypt fingerprints: `ecc_sets[]` with "ECC-192".."ECC-521" names, `ecc_projective_add_point`, `ecc_projective_dbl_point`, `ecc_map` (LibTomCrypt's `ltc_`-prefixed functions). Version is a best match, not proof: after normalizing `ltc_`/`CRYPT_OK` naming, `ecc.c` shares 127 lines with 1.17's ECC sources vs 126 with 1.16 and 1.18.0, and matches one line unique to 1.17 against each neighbour and none unique to either; 1.17 was also the current release in 2011 (1.18 shipped 2017) |
 
 Licenses, from each tag's own file: Crypto++ 5.1 is a compilation copyright
 by Wei Dai with the individual files in the public domain (except
@@ -275,6 +277,29 @@ cvs-fast-export does, then 4 commits sampled with
 conversion). `c50-fixes-merged` is the branch tip; `CRYPTOPP_5_0` and vendor
 branch `WEIDAI` are the 5.0 import.
 
+## yaSSL 0.0.2 and 0.0.3
+
+No full 0.0.x release survives. The 0.0.1 download was a "complete build"
+that bundled CryptoPP, CML (the Certificate Management Library) and a
+`buildall` script; 0.0.2 and 0.0.3 were also published as update archives
+(`yassl-update-0.0.2.tar.gz`, `yassl-update-0.0.3.tar.gz`, from the wolfssl.com
+web root, Freshmeat dates 2004-03-18 and 2004-03-29) that overwrite all of
+yaSSL's own code: the same 26 files each time (10 `src/`, 15 `include/`,
+`Readme.txt`), all of yaSSL's source of that era (the full 0.2.0 adds only 4
+OpenSSL-compatibility headers to `src/` and `include/`). They are not diffs, so
+they cannot be reversed to recover 0.0.1 or 0.1.0.
+
+Tags `yassl-0.0.2` and `yassl-0.0.3` (`Kind: source-only (update archive)`)
+point at commits whose trees are those archives' bytes exactly (verified
+against an independent extraction). The archives store every file as mode
+0777 (made on Windows); modes are normalized to 100644, as in the full 0.2.0
+release. 0.0.2 is a root commit, 0.0.3 its child, and yaSSL 0.2.0 has parents
+0.0.3 (first) and Crypto++ 5.1. The 0.0.3 to 0.2.0 diff therefore shows the
+build system, certificates, `crypto/`, `stunnel/` and the bundled archives as
+added; that reflects what the update archives omitted, not what 0.2.0 added.
+11 of the 26 files are byte-identical in 0.0.3 and 0.2.0. Script:
+~/TASKS/yassl-lineage/updates/add_000x.py.
+
 ## Third-party code not grafted
 
 No usable upstream git history, or not part of the library:
@@ -296,17 +321,24 @@ verified line by line.
 ## Gaps and caveats
 
 - Weak dates: cyassl-2.3.1, cyassl-3.2.0, cyassl-3.3.0, yassl-0.9.7, yassl-1.4.2, yassl-1.4.3, yassl-1.6.5, yassl-1.8.0, yassl-2.1.4, yassl-2.2.0, yassl-2.2.3b, yassl-2.3.9, yassl-2.3.9b, yassl-2.4.0, yassl-2.4.2, yassl-2.4.4
-- Versions known from dates evidence but with no archive anywhere: cyassl-0.5.1, cyassl-0.5.5, cyassl-0.6.0, cyassl-0.6.3, cyassl-0.9.9e, cyassl-3.0.2, yassl-0.0.1, yassl-0.0.2, yassl-0.0.3, yassl-0.1.0, yassl-2.1.2, yassl-2.2.1
+- Versions known from dates evidence but with no archive anywhere: cyassl-0.5.1, cyassl-0.5.5, cyassl-0.6.0, cyassl-0.6.3, cyassl-0.9.9e, cyassl-3.0.2, yassl-0.0.1, yassl-0.1.0, yassl-2.1.2, yassl-2.2.1
 - yassl-1.8.0.zip as served (and as captured by Wayback in 2016) is damaged:
   a stray byte shifts local headers. All entries except `configure` were
   recovered with valid CRC-32; `configure` (generated by autoconf) is omitted.
-- yassl-update-* tarballs are partial updates; cataloged, not committed.
+- yassl-update-0.0.2 and 0.0.3 are committed as source-only releases (see
+  "yaSSL 0.0.2 and 0.0.3"); yassl-update-0.2.0 and 0.2.9 are cataloged, not
+  committed, since the full 0.2.0 and 0.2.9 releases exist.
 - taocrypt standalone and wolfssl 3.x archives are cataloged only; wolfSSL git
   covers wolfssl 3.x.
 - CyaSSL releases dated on/after 2011-02-05 are tagged on wolfSSL commits only
   where wolfSSL has a matching tag; see `lineage` column in catalog.tsv.
 
 ## Bake verification (2026-10-02)
+
+Sixth bake (yaSSL 0.0.2/0.0.3): no replace refs left; all 159 refs have the
+same trees as in the grafted state; branch commit counts unchanged from it
+(`main` 32132 and `yassl` 333, each +2); `main` tree equals upstream wolfSSL
+`0bcda7efa2ec`; `git fsck --full --strict` is clean.
 
 Fifth bake (Crypto++ CVS history, graft 4): no replace refs left; all 157
 refs have the same trees as in the grafted state; branch commit counts
