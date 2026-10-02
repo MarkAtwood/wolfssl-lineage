@@ -3,27 +3,35 @@
 Reconstructed history of yaSSL (C++, 2004-2017), CyaSSL (C, 2006-2011) and
 its continuation wolfSSL (git from 2011-02-05), plus the upstream bignum
 libraries they were built on (Crypto++, LibTomMath, TomsFastMath). Local
-reconstruction; not an official wolfSSL repository.
+reconstruction; not an official wolfSSL repository. `git log main` runs from
+the Crypto++ 3.2 import (2000-06-26) to wolfSSL master.
 
 ## Branches and refs
 
 - `yassl`: yaSSL releases 0.2.0..1.2.2 as snapshots, then the yaSSL CVS history
-  (198 commits, 2006-03-28 "yaSSL 1.2.2 cvs import" .. 2015-03-18), then
-  releases 2.3.7c..2.4.4 as snapshots. 236 commits on the branch line.
+  (201 commits, 2006-03-28 "yaSSL 1.2.2 cvs import" .. 2015-03-18), then
+  releases 2.3.7c..2.4.4 as snapshots. 239 commits on the branch line from
+  yaSSL 0.2.0 (`git rev-list --first-parent` also walks the 48 Crypto++
+  commits below it).
 - `cyassl`: CyaSSL releases 0.2.0..0.5.0 as snapshots, then the CyaSSL CVS
   history (200 commits, 2006-04-05 "cyassl 0.5.1 cvs import" .. 2011-01-06).
-  204 commits on the branch line.
-- `main`: wolfSSL `master` with the grafts below baked in. Its tree equals
-  wolfSSL `master`, but every yaSSL, CyaSSL and wolfSSL commit ID is rewritten,
-  so `main` commit IDs do NOT match upstream wolfSSL. Translate with
-  `.git/filter-repo/commit-map` (old ID, new ID per line). filter-repo chained
-  the two bakes, so its keys are the original IDs (upstream wolfSSL, and the
-  first snapshot/CVS build) and its values are the current IDs; e.g. wolfSSL
-  "1.8.8 init" `6b88eb05b` is `17c7acc5c905` here.
+  204 commits on the branch line from CyaSSL 0.2.0.
+- `main`: wolfSSL `master` (upstream `0bcda7efa2ec`) with the grafts below
+  baked in. Its tree equals upstream's, but every yaSSL, CyaSSL and wolfSSL
+  commit ID is rewritten, so `main` commit IDs do NOT match upstream wolfSSL.
+  Translate with `.git/filter-repo/commit-map` (old ID, new ID per line).
+  filter-repo chained all five bakes, so its keys are the original IDs
+  (upstream wolfSSL, and the first snapshot/CVS build) and its values are the
+  current IDs; e.g. wolfSSL "1.8.8 init" `6b88eb05b` is `4364d7039e4e` here.
 - `notes`: this file plus `catalog.tsv`, on an orphan branch.
+- `cvs/yassl/*`, `cvs/cyassl/*` (branches and tags): every CVS tag and branch
+  from the SourceForge repository; see "CVS history".
+- `cvs/cryptopp-src/*`, `cvs/cryptopp-c5/*`: Crypto++ CVS refs; see "Crypto++
+  CVS history". `cvs/cryptopp-src/trunk` is the Crypto++ 3.x/4.x line, which
+  continues two commits past the 5.0 fork (to 2002-12-12).
 - Graft 1 (permanent): wolfSSL's root commit "1.8.8 init" (2011-02-05,
-  `17c7acc5c905`) is a child of the `cyassl` tip, the last CyaSSL CVS commit
-  (2011-01-06, `79be995f69e3`; originally `adc5a5503`).
+  `4364d7039e4e`) is a child of the `cyassl` tip, the last CyaSSL CVS commit
+  (2011-01-06, `5ec928468c7b`; originally `adc5a5503`).
 - Tags `yassl-<ver>`, `cyassl-<ver>`: annotated. Release tags whose `Kind:` is
   `snapshot` have tree == release archive (byte-identical, verified). Releases
   dated inside a CVS window are side commits: the exact archive tree, parented
@@ -31,72 +39,125 @@ reconstruction; not an official wolfSSL repository.
   stays pure CVS and each release shows where it forked. Releases before or
   after the CVS window are on the branch line. `wolfssl-tag` tags sit on
   wolfSSL commits carrying the matching wolfSSL `v<ver>` tag.
-- Graft 2 (permanent, interpretive): CyaSSL 0.2.0 (2006-02-19, `915cda82b295`;
+- Graft 2 (permanent, interpretive): CyaSSL 0.2.0 (2006-02-19, `4033361957cb`;
   originally `85faa773e`) is a child of yaSSL 1.1.5 (2006-01-09,
-  `b8fd98215af7`, originally `4dcebc25b`, the yaSSL release current at the
+  `cb9b7003eb25`, originally `4dcebc25b`, the yaSSL release current at the
   time). `git merge-base yassl main` is yaSSL 1.1.5.
   This records lineage, not code flow; see "yaSSL and CyaSSL" below.
 - Graft 3 (permanent): upstream bignum libraries as extra merge parents on
   the commits that imported them, plus LibTomCrypt (ECC) the same way; see
   "Upstream library ancestry" below.
-  `git log main` therefore runs back to the Crypto++ 5.0 import (2002-10-04);
   `git log --first-parent main` stays on the yaSSL/CyaSSL/wolfSSL line.
+- Graft 4 (permanent, interpretive): the Crypto++ 5.0 import (root of the
+  upstream git history, "Initial revision" 2002-10-04 17:31:41, `2b81d01420d8`)
+  is a child of the Crypto++ 4.x CVS trunk commit current at that moment
+  ("fix for MacOS X", 2002-10-04 00:38:40, `9322c7ddd427`). Wei Dai imported
+  5.0 as a fresh CVS module (`c5`) rather than continuing `src`, so no commit
+  records the link; this records lineage, like graft 2.
 - Tags `cryptopp-5.1`, `libtommath-0.38`, `tomsfastmath-0.10`,
   `libtomcrypt-1.17`: the upstream annotated tags (`CRYPTOPP_5_1`, `0.38`,
-  `0.10`, `1.17`), renamed.
-- All grafts were baked in on 2026-10-02: grafts 1-2 (first bake), the
-  bignum part of graft 3 (second bake), LibTomCrypt (third bake). Each was
+  `0.10`, `1.17`), renamed. Since graft 4 the Crypto++ commits have new IDs
+  (`cryptopp-5.1` is `67c42df98eba` here, upstream `b2f710a95`); the LibTom
+  commits keep upstream IDs.
+- All grafts were baked in on 2026-10-02 in five bakes: grafts 1-2, the
+  bignum part of graft 3, LibTomCrypt, the CVS layer rebuild, and the
+  Crypto++ CVS history (graft 4). Each was
   first a replace ref, then baked with
-  `git filter-repo --proceed --force --replace-refs delete-no-add` (second and
-  third bakes also `--prune-empty never --prune-degenerate never`). No replace
-  refs remain; a plain clone shows the full history. Upstream library commits
-  and `notes` keep their IDs.
-- Pre-bake backups: a mirror was taken before each of the three bakes and
-  verified against (see "Bake verification"); all three were deleted on
-  2026-10-02. With them went the `refs/pre-cvs/*` snapshot-only fallback refs
-  (from before the CVS splice) and the intermediate commit IDs between bakes.
-  Original upstream wolfSSL IDs remain translatable via the chained
-  `.git/filter-repo/commit-map`, and upstream history is in `~/GIT/wolfssl`.
+  `git filter-repo --proceed --force --replace-refs delete-no-add` (bakes 2-5
+  also `--prune-empty never --prune-degenerate never`). No replace refs
+  remain; a plain clone shows the full history. LibTom commits and `notes`
+  keep their IDs.
+- Pre-bake backups: mirrors taken before bakes 1-3 were deleted on
+  2026-10-02, and with them the `refs/pre-cvs/*` snapshot-only fallback refs
+  and the intermediate commit IDs. `~/GIT/wolfssl-lineage-pre-cvsrebuild.git`
+  holds the state before bake 4 (SWH-derived CVS layer), with the bake-3
+  commit map in `filter-repo-run3/`. Bake 5 had no separate backup; its input
+  state is reproducible from that mirror plus
+  ~/TASKS/yassl-lineage/upstream-check/cryptopp/build/.
 
 ## CVS history
 
-Source: Software Heritage archive of the old SourceForge CVS repositories,
-fetched as Vault git-bare exports of yaSSL `swh:1:rev:1e31aca5a98100ff2d36ff465b95c6fb25866af6`
-(snapshot `swh:1:snp:11570859eba21613988dddfd9cf6da8b36fe1ddb`) and CyaSSL
-`swh:1:rev:3142ffdbe908b692a59bd28128e688d5cf739e08` (snapshot
-`swh:1:snp:b0580dbd109bb966d6c304cb76b9d61e0fd2978a`).
+Source: SourceForge's raw CVS repository snapshot
+<https://sourceforge.net/code-snapshots/cvs/y/ya/yassl.zip> (5,544,041 bytes,
+sha256 `61f1d24167a1c5c00fd799cd4170029dfd554cb6602ac43863a7fd32cd7bd10d`),
+the RCS `,v` masters for modules `yassl` (297 files, 1,860 revisions) and
+`cyassl` (274 files, 1,904 revisions). Oracle: real CVS 1.12.13 run on that
+repository (`cvs export`, `cvs co -p -r REV`).
 
-The SWH conversion has CVS user names with no email (`author touska <ts>`),
-which git fsck rejects. Each line was rewritten to `touska <touska>` and then
-mapped by reposurgeon `authors read`:
+Build (`~/TASKS/yassl-lineage/sourceforge/build_cvs.py`):
 
-    touska      = Todd Ouska <todd@yassl.com>
-    chrisconlon = Chris Conlon <chris@wolfssl.com>
-    myassl      = myassl <myassl@users.sourceforge.net>
-    uid182869   = uid182869 <uid182869@users.sourceforge.net>
+- Changeset grouping and commit metadata come from cvs-fast-export 2.5
+  (`-A authors.map -R revmap`). File contents do not: every file revision is
+  checked out with `cvs co -p -r REV` (default keyword expansion, as in
+  `cvs export` and the release tarballs), deletions are accepted only where
+  RCS has a dead revision within cvs-fast-export's 300 s window, and file
+  modes come from the `,v` masters' execute bits.
+- The trunk 1.1 revisions of the initial `cvs import`, which cvs-fast-export
+  splits into 25 (yassl) / 22 (cyassl) "empty log message" commits, are one
+  commit carrying the vendor revision's message and time ("yaSSL 1.2.2 cvs
+  import", "cyassl 0.5.1 cvs import"); its tree equals `cvs export -r start`.
+- Every cvs-fast-export synthetic commit (branch bases, mixed-state tags)
+  takes its tree from `cvs export -r SYMBOL`.
+- Authors: `touska` = Todd Ouska <todd@yassl.com>, `chrisconlon` = Chris
+  Conlon <chris@wolfssl.com>, `myassl` and `uid182869` = `<name>@users.sourceforge.net`.
 
-Timestamps, messages and file contents are unchanged. 127 yaSSL SWH commits
-carry an empty `mySTL/` directory (CVS cannot remove directories); git cannot
-store empty directories, so it is absent here. Every CVS commit was verified
-file-by-file (path, mode, blob) against the SWH original: 198/198 and 200/200.
+Verification, all against `cvs export` and including file modes: every trunk
+commit at its timestamp (yassl 201/201, cyassl 200/200, re-run after the
+bake), every branch commit on its branch, and every tag and branch tip
+(17/17). Unused RCS dead revisions: 3, all "file was initially added on
+branch" placeholders.
 
-## Splice procedure (reposurgeon)
+CVS refs (`refs/heads/cvs/<module>/*`, `refs/tags/cvs/<module>/*`):
 
-Per product, inputs were the snapshot branch plus its release tags, and the
-SWH CVS export as a fast-export stream. Script, run once:
+- yassl: vendor branch `touska` and tag `start` (both the import commit).
+- cyassl: branches `bNoMalloc` (2008-10/12, 10 commits), `bNoMallocUpdate1`
+  (2008-10, sub-branch of bNoMalloc), `dtls-branch` (2009-04, 3 commits),
+  `Alexey` (branch point only, no commits), vendor branch `touska`; tags
+  `start`, `v0-9-9e`, `noMalloc-CheckIn`, `noMalloc-Merge-IO`,
+  `noMallocUpdate1-IOadd`, `bNoMalloc-rc1-mergePoint`, `rc2-1-0-0`,
+  `cyassl-1_0_3`, `fasthugemath`, `r1-4-4`. The last three plus
+  `noMalloc-Merge-IO` are mixed-revision tags that match no single changeset;
+  each points at its own parentless commit whose tree is the exact CVS tag
+  state (as cvs-fast-export represents them).
 
-    read <snap.fi
-    read <swh.fi
-    unite --prune snap swh          # CVS root grafted on last pre-CVS release;
-                                    # --prune keeps CVS trees exact
-    authors read <authors.map
-    <anchor>,<release> reparent --use-order    # per CVS-era release
-    <cvs-head>,<first post-CVS release> reparent --use-order   # yassl only
-    write >united.fi
+Compared with the previous Software Heritage-derived layer (SWH Vault exports
+`swh:1:rev:1e31aca5a98100ff2d36ff465b95c6fb25866af6` and
+`swh:1:rev:3142ffdbe908b692a59bd28128e688d5cf739e08`, which also passed
+`cvs export` at every one of its own commits): same timestamps, messages and
+file contents at every SWH commit, plus
 
-`reparent` without `--rebase` preserves the reparented commit's tree, so every
-release tag tree is unchanged (verified against the pre-splice tags: 100/100).
-Work files: ~/TASKS/yassl-lineage/surgery/.
+- 3 yaSSL commits SWH merged away, each holding a file revision that existed
+  in no SWH commit: "test" 2006-03-29 02:58:36, "commit list test" 2006-05-14
+  22:21:09 (README), "Add SSL_set_quiet_shutdown..." 2007-08-06 08:02:27
+  (src/ssl.cpp);
+- execute bits: SWH stored all files as 644; CVS has 755 on 41 yaSSL and 39
+  CyaSSL files (`configure`, `config.guess`, `config.sub`, `depcomp`,
+  `autogen.sh`, ...), matching the release tarballs;
+- all CVS tags and branches (SWH kept only HEAD).
+
+cvs-fast-export 2.5 problems found on these inputs (draft report, not filed:
+~/TASKS/yassl-lineage/cfe-bug/DRAFT.md): the vendor commit / `start` tag drops
+the files never changed after import when run without a visible CVSROOT
+(same symptom as closed GitLab issue #57); the `bNoMallocUpdate1` branch base
+keeps 15 files CVS does not have there; one `cvs import` is split into 22-25
+commits; and (Crypto++ `src`) trunk ignores later vendor imports for files
+whose default branch is the vendor branch. File contents otherwise differ
+from `cvs export` only by keyword expansion, which cvs-fast-export does not
+do by design.
+
+## Splice procedure
+
+`~/TASKS/yassl-lineage/sourceforge/splice.py`: the rebuilt histories were
+fetched into the repo; every commit outside the old CVS first-parent chain
+with a parent inside it (CVS-era release side commits, yaSSL 2.3.7c, wolfSSL
+"1.8.8 init") was regrafted onto the new trunk commit current at its
+committer time (the same anchor rule as the original reposurgeon splice; all
+60 anchors are content-identical to the old ones, differing only in execute
+bits); the new import commit onto the last pre-CVS release; TomsFastMath onto
+the new "add optional fast math and alloc overrides" commit. Then baked
+(bake 4). The original 2026-10-02 reposurgeon splice of the SWH streams
+(`unite --prune`, tree-preserving `reparent --use-order`) is in
+~/TASKS/yassl-lineage/surgery/.
 
 ## Sources and selection rules
 
@@ -156,10 +217,10 @@ history up to that tag only:
 
 | Upstream (repo, tag) | Commits | Grafted onto | Evidence |
 |---|---|---|---|
-| Crypto++ 5.1, Wei Dai (`weidai11/cryptopp` `CRYPTOPP_5_1`, `b2f710a95`, 2003-03-22) | 48 | yaSSL 0.2.0 `cbcf661b5` (was a root commit) | yaSSL 0.2.0 ships `cryptopp51/crypto51.zip`; 309 of 310 files equal the tag tree (only `crypto++.mcp`, a binary CodeWarrior project, differs) |
-| LibTomMath 0.38, Tom St Denis (`libtom/libtommath` `0.38`, `21adca01d`, 2006-01-26) | 38 | CyaSSL 0.2.0 `915cda82b` | `integer.c`: "Based on public domain LibTomMath 0.38"; `mpi_class.h` differs from `tommath_class.h` in 7 of 999 lines |
-| TomsFastMath 0.10, Tom St Denis (`libtom/tomsfastmath` `0.10`, `ea10e969b`, 2006-11-01) | 10 | CyaSSL CVS "add optional fast math and alloc overrides" `eaa612b89` (2008-07-24, adds `tfm.c`) | `tfm.c`: "Based on public domain TomsFashMath 0.10" [sic] |
-| LibTomCrypt 1.17, Tom St Denis (`libtom/libtomcrypt` `1.17`, `bbc52b9e1`, 2007-07-20) | 45 | wolfSSL "fix gcc lots o warnings for optional library build features" `6567ee3c8` (2011-04-28, upstream wolfSSL `1ce566971`; adds the 1517-line `ecc.c` body despite the message) | No attribution in `ecc.c`. LibTomCrypt fingerprints: `ecc_sets[]` with "ECC-192".."ECC-521" names, `ecc_projective_add_point`, `ecc_projective_dbl_point`, `ecc_map` (LibTomCrypt's `ltc_`-prefixed functions). Version is a best match, not proof: after normalizing `ltc_`/`CRYPT_OK` naming, `ecc.c` shares 127 lines with 1.17's ECC sources vs 126 with 1.16 and 1.18.0, and matches one line unique to 1.17 against each neighbour and none unique to either; 1.17 was also the current release in 2011 (1.18 shipped 2017) |
+| Crypto++ 5.1, Wei Dai (`weidai11/cryptopp` `CRYPTOPP_5_1`, upstream `b2f710a95`, here `67c42df98`, 2003-03-22) | 48 | yaSSL 0.2.0 `5063391a0` (was a root commit) | yaSSL 0.2.0 ships `cryptopp51/crypto51.zip`; 309 of 310 files equal the tag tree (only `crypto++.mcp`, a binary CodeWarrior project, differs) |
+| LibTomMath 0.38, Tom St Denis (`libtom/libtommath` `0.38`, `21adca01d`, 2006-01-26) | 38 | CyaSSL 0.2.0 `403336195` | `integer.c`: "Based on public domain LibTomMath 0.38"; `mpi_class.h` differs from `tommath_class.h` in 7 of 999 lines |
+| TomsFastMath 0.10, Tom St Denis (`libtom/tomsfastmath` `0.10`, `ea10e969b`, 2006-11-01) | 10 | CyaSSL CVS "add optional fast math and alloc overrides" `1b89db896` (2008-07-24, adds `tfm.c`) | `tfm.c`: "Based on public domain TomsFashMath 0.10" [sic] |
+| LibTomCrypt 1.17, Tom St Denis (`libtom/libtomcrypt` `1.17`, `bbc52b9e1`, 2007-07-20) | 45 | wolfSSL "fix gcc lots o warnings for optional library build features" `dda4af2de` (2011-04-28, upstream wolfSSL `1ce566971`; adds the 1517-line `ecc.c` body despite the message) | No attribution in `ecc.c`. LibTomCrypt fingerprints: `ecc_sets[]` with "ECC-192".."ECC-521" names, `ecc_projective_add_point`, `ecc_projective_dbl_point`, `ecc_map` (LibTomCrypt's `ltc_`-prefixed functions). Version is a best match, not proof: after normalizing `ltc_`/`CRYPT_OK` naming, `ecc.c` shares 127 lines with 1.17's ECC sources vs 126 with 1.16 and 1.18.0, and matches one line unique to 1.17 against each neighbour and none unique to either; 1.17 was also the current release in 2011 (1.18 shipped 2017) |
 
 Licenses, from each tag's own file: Crypto++ 5.1 is a compilation copyright
 by Wei Dai with the individual files in the public domain (except
@@ -177,6 +238,42 @@ blowfish, des, integer, md2, md5, misc, modarith, ripemd, rsa, sha, tftables
 and twofish. yaSSL 0.2.0's `crypto/Readme.txt` instead claims "Copyright (C)
 2003 Sawtooth Consulting" for every file in `crypto/`; the per-file Crypto++
 credits appear in later releases.
+
+## Crypto++ CVS history
+
+Source: SourceForge raw CVS snapshot
+<https://sourceforge.net/code-snapshots/cvs/c/cr/cryptopp.zip> (3,342,544
+bytes, sha256 `55c4d3a26695be533d1d5797334319f811d1e3d889d0bc85f549558740b4d6b2`),
+modules `src` (Crypto++ 3.2 to 4.2, 2000-06-26 to 2002-12-12) and `c5` (5.0 on).
+The upstream git history (weidai11/cryptopp, via cvs2svn and SourceForge SVN)
+matches this CVS and SVN exactly for all 48 commits up to `CRYPTOPP_5_1`
+(~/TASKS/yassl-lineage/upstream-check/cryptopp/REPORT.md), but lacks `src`
+entirely and flattens the `c50-fixes` branch into empty commits.
+
+`src` keeps its main line on the vendor branch: three `cvs import`s of release
+snapshots (2000-06-26 05:33, 2000-06-26 06:12, 2000-10-27 09:35) onto vendor
+branch `WEIDAI`, then ordinary trunk commits. CVS treats a file whose only
+trunk revision is the import as following the vendor branch; cvs-fast-export
+2.5 does not, so its trunk keeps those files at 1.1 and never reaches the
+`CRYPTOPP_4_1` or `CRYPTOPP_4_2` states. The trunk here is therefore built by
+sampling (`~/TASKS/yassl-lineage/sourceforge/build_sampled.py`): each
+cvs-fast-export changeset supplies a time and metadata, and its tree is
+`cvs export -D <time>`; each import burst is one commit with the vendor
+import's message and time. 46 commits (3 imports, 43 changesets). Checks:
+release tags `CRYPTOPP_3_2`, `CRYPTOPP_4_1`, `CRYPTOPP_4_2` (exact per-file
+revisions, no date logic) each equal a trunk state; the tip equals
+`cvs export -r HEAD` and cvs-fast-export's tip. `CRYPTOPP_4_0` and `start`
+are mixed-revision tags and the vendor branch tip `WEIDAI` matches no trunk
+state; each points at its own parentless commit with the exact CVS tree.
+
+`c5` refs added on the existing 5.0 history: `c50-fixes` (2002-12-06 to
+2003-03-10): a branch-base commit with the exact CVS branch-point tree (mixed:
+16 files away from the nearest trunk commit), parented on the 5.0 import as
+cvs-fast-export does, then 4 commits sampled with
+`cvs export -r c50-fixes -D <time>`. All 5 trees equal SourceForge SVN
+`branches/c50-fixes` at r22, r23, r25, r29, r36 (cvs2svn's independent
+conversion). `c50-fixes-merged` is the branch tip; `CRYPTOPP_5_0` and vendor
+branch `WEIDAI` are the 5.0 import.
 
 ## Third-party code not grafted
 
@@ -211,6 +308,22 @@ verified line by line.
 
 ## Bake verification (2026-10-02)
 
+Fifth bake (Crypto++ CVS history, graft 4): no replace refs left; all 157
+refs have the same trees as in the grafted state; branch commit counts
+unchanged from it (`main` 32130 = 32086 + 44 `src` commits up to the fork);
+`main` tree equals upstream wolfSSL `0bcda7efa2ec`; LibTom tags kept their
+IDs; `git fsck --full --strict` is clean.
+
+Fourth bake (CVS layer rebuild), against `~/GIT/wolfssl-lineage-pre-cvsrebuild.git`:
+no replace refs left; all 146 refs (4 branches + 6 CVS branches, 125 release
+and upstream tags + 11 CVS tags) have the same trees as in the grafted state;
+the old ref trees are unchanged except `cyassl`, whose tip differs from the
+old tip only in execute bits; `main` 32086 (unchanged: it reaches yaSSL only
+through 1.1.5, before CVS), `yassl` 287 (+3 recovered commits), `cyassl`
+327; `main` tree equals upstream wolfSSL `0bcda7efa2ec`; all four upstream
+tags kept their commit IDs; CVS layers re-verified against `cvs export`
+(201/201, 200/200, 17/17 refs); `git fsck --full --strict` is clean.
+
 Third bake (LibTomCrypt), against its pre-bake mirror (since deleted):
 no replace refs left; all 129 refs have unchanged trees; branch commit counts
 unchanged from the grafted state (`main` 32086 = 32041 + 45); all four
@@ -235,5 +348,5 @@ dropped here; the copy in the mirror was deleted with it.
 
 The release snapshots were built by ~/TASKS/yassl-lineage/build/build_lineage.py
 and verified by verify_lineage.py (independent extraction of each archive vs
-`git archive <tag>`). The CVS layer was added afterwards by the reposurgeon
-splice above; the builder's own CVS path was not used.
+`git archive <tag>`). The CVS layer was added afterwards (see "CVS history"
+and "Splice procedure"); the builder's own CVS path was not used.
