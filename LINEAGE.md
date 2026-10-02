@@ -1,8 +1,9 @@
 # wolfssl-lineage
 
 Reconstructed history of yaSSL (C++, 2004-2017), CyaSSL (C, 2006-2011) and
-its continuation wolfSSL (git from 2011-02-05). Local reconstruction; not an
-official wolfSSL repository.
+its continuation wolfSSL (git from 2011-02-05), plus the upstream bignum
+libraries they were built on (Crypto++, LibTomMath, TomsFastMath). Local
+reconstruction; not an official wolfSSL repository.
 
 ## Branches and refs
 
@@ -13,14 +14,16 @@ official wolfSSL repository.
   history (200 commits, 2006-04-05 "cyassl 0.5.1 cvs import" .. 2011-01-06).
   204 commits on the branch line.
 - `main`: wolfSSL `master` with the grafts below baked in. Its tree equals
-  wolfSSL `master`, but every commit ID from CyaSSL 0.2.0 onward is rewritten,
+  wolfSSL `master`, but every yaSSL, CyaSSL and wolfSSL commit ID is rewritten,
   so `main` commit IDs do NOT match upstream wolfSSL. Translate with
-  `.git/filter-repo/commit-map` (old ID, new ID per line); e.g. wolfSSL
-  "1.8.8 init" `6b88eb05b` is `c2031a6c1cf8` here.
+  `.git/filter-repo/commit-map` (old ID, new ID per line). filter-repo chained
+  the two bakes, so its keys are the original IDs (upstream wolfSSL, and the
+  first snapshot/CVS build) and its values are the current IDs; e.g. wolfSSL
+  "1.8.8 init" `6b88eb05b` is `17c7acc5c905` here.
 - `notes`: this file plus `catalog.tsv`, on an orphan branch.
 - Graft 1 (permanent): wolfSSL's root commit "1.8.8 init" (2011-02-05,
-  `c2031a6c1cf8`) is a child of the `cyassl` tip, the last CyaSSL CVS commit
-  (2011-01-06, `900d94aea534`; was `adc5a5503`).
+  `17c7acc5c905`) is a child of the `cyassl` tip, the last CyaSSL CVS commit
+  (2011-01-06, `79be995f69e3`; originally `adc5a5503`).
 - Tags `yassl-<ver>`, `cyassl-<ver>`: annotated. Release tags whose `Kind:` is
   `snapshot` have tree == release archive (byte-identical, verified). Releases
   dated inside a CVS window are side commits: the exact archive tree, parented
@@ -28,19 +31,29 @@ official wolfSSL repository.
   stays pure CVS and each release shows where it forked. Releases before or
   after the CVS window are on the branch line. `wolfssl-tag` tags sit on
   wolfSSL commits carrying the matching wolfSSL `v<ver>` tag.
-- Graft 2 (permanent, interpretive): CyaSSL 0.2.0 (2006-02-19, `5ac328bb489a`;
-  was `85faa773e`) is a child of yaSSL 1.1.5 (2006-01-09, `4dcebc25b`, the
-  yaSSL release current at the time). `git log main` therefore runs back to
-  yaSSL 0.2.0 (2004-06-28), and `git merge-base yassl main` is yaSSL 1.1.5.
+- Graft 2 (permanent, interpretive): CyaSSL 0.2.0 (2006-02-19, `915cda82b295`;
+  originally `85faa773e`) is a child of yaSSL 1.1.5 (2006-01-09,
+  `b8fd98215af7`, originally `4dcebc25b`, the yaSSL release current at the
+  time). `git merge-base yassl main` is yaSSL 1.1.5.
   This records lineage, not code flow; see "yaSSL and CyaSSL" below.
-- Both grafts were first added as replace refs, then baked in on 2026-10-02
-  with `git filter-repo --proceed --force --replace-refs delete-no-add`. No
-  replace refs remain; a plain clone shows the full history. yaSSL commits
-  (whose parents did not change) and `notes` kept their IDs.
+- Graft 3 (permanent): upstream bignum libraries as extra merge parents on
+  the commits that imported them; see "Upstream bignum ancestry" below.
+  `git log main` therefore runs back to the Crypto++ 5.0 import (2002-10-04);
+  `git log --first-parent main` stays on the yaSSL/CyaSSL/wolfSSL line.
+- Tags `cryptopp-5.1`, `libtommath-0.38`, `tomsfastmath-0.10`: the upstream
+  annotated tags (`CRYPTOPP_5_1`, `0.38`, `0.10`), renamed.
+- Grafts 1-2 were baked in on 2026-10-02 (first bake), graft 3 later the same
+  day (second bake), each first as replace refs, then with
+  `git filter-repo --proceed --force --replace-refs delete-no-add` (second
+  bake also `--prune-empty never --prune-degenerate never`). No replace refs
+  remain; a plain clone shows the full history. Upstream bignum commits and
+  `notes` keep their IDs.
 - Pre-bake state: `~/GIT/wolfssl-lineage-pre-bake.git` (mirror) holds the
-  repo as it was before the rewrite, with both grafts as replace refs, the
-  original wolfSSL commit IDs, and the `refs/pre-cvs/*` snapshot-only fallback
-  from before the CVS splice. Those fallback refs were dropped from this repo.
+  repo before the first bake, with grafts 1-2 as replace refs, the original
+  wolfSSL commit IDs, and the `refs/pre-cvs/*` snapshot-only fallback from
+  before the CVS splice (those fallback refs were dropped from this repo).
+  `~/GIT/wolfssl-lineage-pre-bignum.git` (mirror) holds the repo between the
+  two bakes; its `filter-repo-run1/commit-map` is the first bake's map.
 
 ## CVS history
 
@@ -132,6 +145,28 @@ because the C code was written fresh (different big-integer base, `.cpp` to
 `.c`). The pre-bake mirror shows the trees as unrelated with
 `git --no-replace-objects`.
 
+## Upstream bignum ancestry
+
+Both crypto layers started from someone else's big-integer code. Each upstream
+release is an extra (second) parent of the commit that imported it, fetched
+from the upstream git repos with history up to that tag only:
+
+| Upstream (repo, tag) | Commits | Grafted onto | Evidence |
+|---|---|---|---|
+| Crypto++ 5.1, Wei Dai (`weidai11/cryptopp` `CRYPTOPP_5_1`, `b2f710a95`, 2003-03-22) | 48 | yaSSL 0.2.0 `cbcf661b5` (was a root commit) | yaSSL 0.2.0 ships `cryptopp51/crypto51.zip`; 309 of 310 files equal the tag tree (only `crypto++.mcp`, a binary CodeWarrior project, differs) |
+| LibTomMath 0.38, Tom St Denis (`libtom/libtommath` `0.38`, `21adca01d`, 2006-01-26) | 38 | CyaSSL 0.2.0 `915cda82b` | `integer.c`: "Based on public domain LibTomMath 0.38"; `mpi_class.h` differs from `tommath_class.h` in 7 of 999 lines |
+| TomsFastMath 0.10, Tom St Denis (`libtom/tomsfastmath` `0.10`, `ea10e969b`, 2006-11-01) | 10 | CyaSSL CVS "add optional fast math and alloc overrides" `eaa612b89` (2008-07-24, adds `tfm.c`) | `tfm.c`: "Based on public domain TomsFashMath 0.10" [sic] |
+
+Licenses, from each tag's own file: Crypto++ 5.1 is a compilation copyright
+by Wei Dai with the individual files in the public domain (except
+`mars.cpp`); LibTomMath and TomsFastMath are public domain.
+
+The merges carry attribution, not content: each merge's tree is the
+yaSSL/CyaSSL tree, unchanged. `git blame` does not cross them; LibTomMath's
+separate `bn_*.c` files were concatenated into one `integer.c`, and TaoCrypt's
+`integer.cpp` was reworked. Releases after these (e.g. later LibTomMath or
+TomsFastMath fixes wolfSSL may have pulled in) are not grafted.
+
 ## Gaps and caveats
 
 - Weak dates: cyassl-2.3.1, cyassl-3.2.0, cyassl-3.3.0, yassl-0.9.7, yassl-1.4.2, yassl-1.4.3, yassl-1.6.5, yassl-1.8.0, yassl-2.1.4, yassl-2.2.0, yassl-2.2.3b, yassl-2.3.9, yassl-2.3.9b, yassl-2.4.0, yassl-2.4.2, yassl-2.4.4
@@ -147,7 +182,13 @@ because the C code was written fresh (different big-integer base, `.cpp` to
 
 ## Bake verification (2026-10-02)
 
-Against the pre-bake mirror: no replace refs left; `main` has 31945 commits
+Second bake (graft 3), against `~/GIT/wolfssl-lineage-pre-bignum.git`: no
+replace refs left; all 128 refs (4 branches, 124 tags) have unchanged trees;
+branch commit counts unchanged from the grafted state (`main` 32041 = 31945
++ 48 + 38 + 10); the three upstream tags kept their commit IDs;
+`git fsck --full --strict` is clean.
+
+First bake (grafts 1-2), against the pre-bake mirror: no replace refs left; `main` has 31945 commits
 and its tree equals wolfSSL `master`; the tips of `main`, `yassl`, `cyassl`
 and `notes` have unchanged trees; all 121 release tags have unchanged trees;
 `git fsck --full --strict` is clean. filter-repo split annotated tags stored
